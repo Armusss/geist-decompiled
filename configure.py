@@ -408,7 +408,7 @@ config.libs = [
             Object(Matching, "dolphin/os/OSAlloc.c"),
             Object(Matching, "dolphin/os/OSArena.c"),
             Object(Matching, "dolphin/os/OSAudioSystem.c"),
-            Object(NonMatching, "dolphin/os/OSCache.c"),
+            Object(Matching, "dolphin/os/OSCache.c"),
             Object(Matching, "dolphin/os/OSContext.c"),
             Object(Matching, "dolphin/os/OSError.c"),
             Object(Matching, "dolphin/os/OSExec.c"),
@@ -435,7 +435,7 @@ config.libs = [
     DolphinLib(
         "vi",
         [
-            Object(NonMatching, "dolphin/vi/vi.c"),
+            Object(Matching, "dolphin/vi/vi.c"),
         ],
     ),
     DolphinLib(
@@ -454,7 +454,7 @@ config.libs = [
     DolphinLib(
         "si",
         [
-            Object(NonMatching, "dolphin/si/SIBios.c"),
+            Object(Matching, "dolphin/si/SIBios.c"),
             Object(Matching, "dolphin/si/SISamplingRate.c"),
         ],
     ),

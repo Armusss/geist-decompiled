@@ -272,9 +272,10 @@ VIRetraceCallback VISetPreRetraceCallback(VIRetraceCallback cb) {
     BOOL enabled;
     VIRetraceCallback oldcb;
 
-    oldcb = PreCB;
+    // Geist's SDK build (Apr 2004) reads and writes PostCB here, not PreCB (verified against the DOL).
+    oldcb = PostCB;
     enabled = OSDisableInterrupts();
-    PreCB = cb;
+    PostCB = cb;
     OSRestoreInterrupts(enabled);
     return oldcb;
 }

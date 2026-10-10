@@ -218,6 +218,7 @@ dolphin/os/OSAudioSystem.c:
 
 dolphin/os/OSCache.c:
 	.text       start:0x8030F1BC end:0x8030F8D8
+	.data       start:0x803C8808 end:0x803C8A38
 
 dolphin/os/OSContext.c:
 	.text       start:0x8030F8D8 end:0x80310148
@@ -289,6 +290,10 @@ dolphin/pad/Pad.c:
 
 dolphin/vi/vi.c:
 	.text       start:0x8031802C end:0x80319D50
+	.data       start:0x803CA3A8 end:0x803CA790
+	.bss        start:0x804A9DA0 end:0x804A9EE8
+	.sdata      start:0x804D3F70 end:0x804D3F80
+	.sbss       start:0x804D5B90 end:0x804D5BF8
 
 dolphin/ai/ai.c:
 	.text       start:0x80319D50 end:0x8031A684
@@ -305,6 +310,10 @@ dolphin/exi/EXIUart.c:
 
 dolphin/si/SIBios.c:
 	.text       start:0x8031C618 end:0x8031DD08
+	.data       start:0x803CA8E8 end:0x803CAA00
+	.bss        start:0x804A9FA8 end:0x804AA1A8
+	.sdata      start:0x804D3F90 end:0x804D3F94
+	.sbss       start:0x804D5C50 end:0x804D5C60
 
 dolphin/si/SISamplingRate.c:
 	.text       start:0x8031DD08 end:0x8031DE10
