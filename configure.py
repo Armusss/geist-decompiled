@@ -355,14 +355,14 @@ config.libs = [
     DolphinLib(
         "dsp",
         [
-            Object(NonMatching, "dolphin/dsp/dsp.c"),
-            Object(NonMatching, "dolphin/dsp/dsp_task.c"),
+            Object(Matching, "dolphin/dsp/dsp.c"),
+            Object(Matching, "dolphin/dsp/dsp_task.c"),
         ],
     ),
     DolphinLib(
         "dvd",
         [
-            Object(NonMatching, "dolphin/dvd/dvdlow.c", extra_cflags=["-char signed"]),
+            Object(Matching, "dolphin/dvd/dvdlow.c", extra_cflags=["-char signed"]),
             Object(NonMatching, "dolphin/dvd/dvdfs.c", extra_cflags=["-char signed"]),
             Object(NonMatching, "dolphin/dvd/dvd.c", extra_cflags=["-char signed"]),
             Object(Matching, "dolphin/dvd/dvdqueue.c", extra_cflags=["-char signed"]),
@@ -403,7 +403,7 @@ config.libs = [
     DolphinLib(
         "os",
         [
-            Object(NonMatching, "dolphin/os/OS.c"),
+            Object(Matching, "dolphin/os/OS.c"),
             Object(Matching, "dolphin/os/OSAlarm.c"),
             Object(Matching, "dolphin/os/OSAlloc.c"),
             Object(Matching, "dolphin/os/OSArena.c"),
@@ -429,7 +429,7 @@ config.libs = [
         "pad",
         [
             Object(Matching, "dolphin/pad/Padclamp.c"),
-            Object(NonMatching, "dolphin/pad/Pad.c"),
+            Object(Matching, "dolphin/pad/Pad.c"),
         ],
     ),
     DolphinLib(

@@ -80,12 +80,20 @@ dolphin/db/db.c:
 
 dolphin/dsp/dsp.c:
 	.text       start:0x802FF8C4 end:0x802FFA44
+	.data       start:0x803C70D8 end:0x803C7158
+	.sdata      start:0x804D3E70 end:0x804D3E74
+	.sbss       start:0x804D5938 end:0x804D593C
 
 dolphin/dsp/dsp_task.c:
 	.text       start:0x802FFA94 end:0x80300318
+	.data       start:0x803C7158 end:0x803C7294
+	.sbss       start:0x804D593C end:0x804D5958
 
 dolphin/dvd/dvdlow.c:
 	.text       start:0x80300318 end:0x80301194
+	.bss        start:0x804A8A10 end:0x804A8AE0
+	.sdata      start:0x804D3E78 end:0x804D3E7C
+	.sbss       start:0x804D5958 end:0x804D59A0
 
 dolphin/dvd/dvdfs.c:
 	.text       start:0x80301194 end:0x80301A50
@@ -183,6 +191,10 @@ dolphin/mtx/quat.c:
 
 dolphin/os/OS.c:
 	.text       start:0x8030D644 end:0x8030E110
+	.data       start:0x803C81E8 end:0x803C83E0
+	.bss        start:0x804A9240 end:0x804A92AC
+	.sdata      start:0x804D3F10 end:0x804D3F20
+	.sbss       start:0x804D5A88 end:0x804D5AC0
 
 dolphin/os/OSAlarm.c:
 	.text       start:0x8030E110 end:0x8030E86C
@@ -270,6 +282,10 @@ dolphin/pad/Padclamp.c:
 
 dolphin/pad/Pad.c:
 	.text       start:0x803166E4 end:0x8031802C
+	.data       start:0x803CA350 end:0x803CA3A8
+	.bss        start:0x804A9D50 end:0x804A9DA0
+	.sdata      start:0x804D3F50 end:0x804D3F70
+	.sbss       start:0x804D5B5C end:0x804D5B8C
 
 dolphin/vi/vi.c:
 	.text       start:0x8031802C end:0x80319D50
