@@ -33,7 +33,7 @@ The baseline (all code still as split assembly) builds and verifies: `build/GITE
 
 ## State as of 2026-10-10
 See **STATUS.md** for the detailed handoff (compiler findings, SDK splits, next steps).
-- 75 Dolphin SDK translation units split; 53 of them now build from C and match.
+- 75 Dolphin SDK translation units split; 64 of them now build from C and match.
 - dtk analysis found 8,706 functions in main.dol and split it into 70 units, all still assembly (0% matched).
 - `config/GITE01/symbols.txt` and `splits.txt` were auto-generated. There's no symbol map on the disc,
   so names are `fn_`/`lbl_` except for SDK/runtime functions dtk recognised by signature.

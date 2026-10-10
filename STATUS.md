@@ -2,6 +2,39 @@
 
 Handoff file for the matching decompilation. Newest section first. See README.md for setup/build.
 
+## Chunk 6 — SDK: 64 / 75 files matched
+
+**Result:** `SDK Code: 97.86% fuzzy, 97.85% matched, 76.91% linked (64 / 75 files)`, DOL byte-identical.
+New: dsp, dsp_task, dvdlow, OS, Pad, OSCache, SIBios, vi, CARDBios, __ppc_eabi_init, EXIBios.
+
+**Fixes that mattered:**
+- **Pooled sections are force-active** (`...data.0` / `...bss.0` markers): nothing inside them is
+  stripped, so their split covers the full compiled size (e.g. dsp.c keeps "DSPInit(): Build Date"
+  strings that no code uses in release builds).
+- **Alignment padding** between a section and the next split (< 32 zero bytes) is absorbed, otherwise
+  objdiff-cli's report fails on a tiny gap unit.
+- **vi.c reproduces a bug in Geist's SDK build:** `VISetPreRetraceCallback` reads and writes `PostCB`.
+- **EXIBios** must be built with `-O3,p` *instead of* `-O4,p` (`cflags_dolphin_O3`); appending
+  `-O3,p` after `-O4,p` does not override it.
+- CARDBios.c starts at 0x802F8BB0 (`__CARDDefaultApiCallback`); __ppc_eabi_init.c also has `.init`
+  0x800054EC-0x80005544 (`__init_hardware`, `__flush_cache`).
+
+**Remaining (11):**
+- `dvd/dvdfs.c`, `os/OSFont.c`: the DOL links identically, but objdiff-cli's report refuses
+  (compiled `.data` is 4 bytes longer than the split because the linker strips a trailing object).
+  Needs a symbols/splits workaround that objdiff accepts.
+- `gx/GXInit.c` + `gx/GXFrameBuf.c`: GXInit uses the video-mode tables (`GXNtsc480IntDf` at
+  0x803C7CE8 etc.) defined in GXFrameBuf.c, whose `.data` isn't split yet; a first attempt pulled in
+  GXAttr's jump tables. Give GXFrameBuf a .data split exactly covering the four tables, then GXInit.
+- `gx/GXFifo.c` (undefined `lbl_804D5A48` from GXInit), `dvd/dvd.c` (`__DVDThreadQueue`),
+  `ar/arq.c` (overlaps ar.c data): symbol naming/placement between neighbours.
+- `gx/GXAttr.c`: dtk's `GXTexRegionAddrTable` size; `mtx/mtx.c`, `vec.c`, `quat.c`: shared .sdata2
+  constant tangle; `os/OSRtc.c`: waits on the OSSync linker hang.
+
+**Safety:** commit after every successful batch. `KEEP=1` leaves a failed attempt in place for
+`dol_diff.py`; afterwards restore with `git checkout -- config/GITE01/splits.txt
+config/GITE01/symbols.txt configure.py` (only safe because everything good is committed).
+
 ## Chunk 5 — SDK: 53 / 75 files matched
 
 **Result:** `SDK Code: 95.99% fuzzy, 93.02% matched, 48.70% linked (53 / 75 files)`, DOL byte-identical.

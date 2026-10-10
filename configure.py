@@ -277,6 +277,10 @@ cflags_dolphin = [
 ]
 
 
+# EXIBios.c is built at -O3,p in the SDK (dolsdk2004 does the same); a later -O3,p does not override -O4,p.
+cflags_dolphin_O3 = ["-O3,p" if f == "-O4,p" else f for f in cflags_dolphin]
+
+
 # Helper function for Dolphin libraries
 def DolphinLib(lib_name: str, objects: List[Object]) -> Dict[str, Any]:
     return {
@@ -447,7 +451,7 @@ config.libs = [
     DolphinLib(
         "exi",
         [
-            Object(NonMatching, "dolphin/exi/EXIBios.c", extra_cflags=["-O3,p"]),
+            Object(Matching, "dolphin/exi/EXIBios.c", cflags=cflags_dolphin_O3),
             Object(Matching, "dolphin/exi/EXIUart.c"),
         ],
     ),
