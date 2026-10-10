@@ -552,7 +552,7 @@ config.libs = [
             Object(NonMatching, "Runtime.PPCEABI.H/runtime.c"),
             Object(NonMatching, "Runtime.PPCEABI.H/__init_cpp_exceptions.cpp"),
             Object(NonMatching, "Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp", extra_cflags=['-Cpp_exceptions on']),
-            Object(NonMatching, "Runtime.PPCEABI.H/GCN_mem_alloc.c", extra_cflags=['-str reuse,nopool,readonly']),
+            Object(Matching, "Runtime.PPCEABI.H/GCN_mem_alloc.c", extra_cflags=['-str reuse,nopool,readonly']),
         ],
     },
     {

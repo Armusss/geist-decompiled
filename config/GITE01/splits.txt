@@ -156,6 +156,7 @@ Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp:
 
 Runtime.PPCEABI.H/GCN_mem_alloc.c:
 	.text       start:0x802ECD08 end:0x802ECE78
+	.rodata     start:0x8034E690 end:0x8034E704
 
 MSL_C/MSL_Common/Src/abort_exit.c:
 	.text       start:0x802ECE78 end:0x802ECFD0
