@@ -22,16 +22,20 @@ TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/nubevent.c:
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/nubinit.c:
 	.text       start:0x802E4B78 end:0x802E4D10
+	.rodata     start:0x8034DD78 end:0x8034DDA4
+	.bss        start:0x804A56B8 end:0x804A56BC
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msg.c:
 	.text       start:0x802E4D10 end:0x802E4D54
 	.rodata     start:0x8034DDA8 end:0x8034DDD0
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msgbuf.c:
-	.text       start:0x802E4D54 end:0x802E5598
+	.text       start:0x802E4D54 end:0x802E5590
+	.rodata     start:0x8034DDD0 end:0x8034DDF0
+	.bss        start:0x804A56C0 end:0x804A7070
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/serpoll.c:
-	.text       start:0x802E5598 end:0x802E5848
+	.text       start:0x802E5590 end:0x802E5848
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/usr_put.c:
 	.text       start:0x802E5848 end:0x802E58D4
