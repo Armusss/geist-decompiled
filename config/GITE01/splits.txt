@@ -108,6 +108,9 @@ TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/UDP_Stubs.c:
 
 TRK_MINNOW_DOLPHIN/gamedev/cust_connection/cc/exi2/GCN/EXI2_DDH_GCN/main.c:
 	.text       start:0x802EA0F4 end:0x802EA438
+	.rodata     start:0x8034E400 end:0x8034E4E0
+	.bss        start:0x804A7630 end:0x804A7E4C
+	.sbss       start:0x804D58A0 end:0x804D58A4
 
 TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/CircleBuffer.c:
 	.text       start:0x802EA438 end:0x802EA6A0
