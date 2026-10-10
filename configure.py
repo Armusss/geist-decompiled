@@ -243,6 +243,29 @@ cflags_runtime = [
 # ==== helper-msl cflags (only helper-msl edits this block) ====
 # ==== end helper-msl cflags ====
 # ==== helper-musyx cflags (only helper-musyx edits this block) ====
+# MusyX 2.0.3 (Factor 5), source layout from AxioDL/musyx (MIT) at the commit Prime's decomp pins.
+# Evidence (helper-musyx): compiling all MusyX sources and searching main.dol, GC/1.3.2 + MusyX 2.0.3
+# matched the most functions (368/613; 2.0.2: 350, 2.6: fewer, e.g. snd_math 1/4 vs 4/4; 1.2.5n: ~25).
+cflags_musyx = [
+    "-proc gekko",
+    "-nodefaults",
+    "-nosyspath",
+    "-i include/musyx/compat",
+    "-i include",
+    "-i include/libc",
+    f"-i build/{config.version}/include",
+    "-inline auto,depth=4",
+    "-O4,p",
+    "-fp hard",
+    "-enum int",
+    "-Cpp_exceptions off",
+    "-str reuse,pool,readonly",
+    "-fp_contract off",
+    "-DMUSY_TARGET=1",
+    "-DMUSY_VERSION_MAJOR=2",
+    "-DMUSY_VERSION_MINOR=0",
+    "-DMUSY_VERSION_PATCH=3",
+]
 # ==== end helper-musyx cflags ====
 
 # REL flags
@@ -480,6 +503,39 @@ config.libs = [
     },
     # ==== end helper-msl ====
     # ==== helper-musyx: MusyX / zlib libs (only helper-musyx edits this block) ====
+    {
+        "lib": "musyx",
+        "mw_version": "GC/1.3.2",
+        "cflags": cflags_musyx,
+        "progress_category": "sdk",
+        "objects": [
+            Object(NonMatching, "musyx/runtime/seq.c"),
+            Object(NonMatching, "musyx/runtime/synth.c"),
+            Object(NonMatching, "musyx/runtime/seq_api.c"),
+            Object(NonMatching, "musyx/runtime/snd_synthapi.c"),
+            Object(NonMatching, "musyx/runtime/stream.c"),
+            Object(NonMatching, "musyx/runtime/synthdata.c"),
+            Object(NonMatching, "musyx/runtime/synthmacros.c"),
+            Object(NonMatching, "musyx/runtime/synthvoice.c"),
+            Object(NonMatching, "musyx/runtime/synth_ac.c"),
+            Object(NonMatching, "musyx/runtime/synth_adsr.c"),
+            Object(NonMatching, "musyx/runtime/synth_vsamples.c"),
+            Object(NonMatching, "musyx/runtime/s_data.c"),
+            Object(NonMatching, "musyx/runtime/hw_dspctrl.c"),
+            Object(NonMatching, "musyx/runtime/hw_volconv.c"),
+            Object(NonMatching, "musyx/runtime/snd3d.c"),
+            Object(NonMatching, "musyx/runtime/snd_init.c"),
+            Object(NonMatching, "musyx/runtime/snd_math.c"),
+            Object(NonMatching, "musyx/runtime/snd_midictrl.c"),
+            Object(NonMatching, "musyx/runtime/snd_service.c"),
+            Object(NonMatching, "musyx/runtime/hardware.c"),
+            Object(NonMatching, "musyx/runtime/hw_aramdma.c"),
+            Object(NonMatching, "musyx/runtime/hw_dolphin.c"),
+            Object(NonMatching, "musyx/runtime/hw_memory.c"),
+            Object(NonMatching, "musyx/runtime/CheapReverb/creverb_fx.c"),
+            Object(NonMatching, "musyx/runtime/CheapReverb/creverb.c"),
+        ],
+    },
     # ==== end helper-musyx ====
 ]
 

@@ -328,3 +328,78 @@ dolphin/si/SISamplingRate.c:
 	.text       start:0x8031DD08 end:0x8031DE10
 	.data       start:0x803CAA00 end:0x803CAA94
 	.sbss       start:0x804D5C60 end:0x804D5C64
+
+musyx/runtime/seq.c:
+	.text       start:0x8031EAF4 end:0x80322AC0
+
+musyx/runtime/synth.c:
+	.text       start:0x80322AC0 end:0x80325F48
+
+musyx/runtime/seq_api.c:
+	.text       start:0x80325F48 end:0x80326258
+
+musyx/runtime/snd_synthapi.c:
+	.text       start:0x80326258 end:0x80326B84
+
+musyx/runtime/stream.c:
+	.text       start:0x80326B84 end:0x803297E8
+
+musyx/runtime/synthdata.c:
+	.text       start:0x803297E8 end:0x8032B4D4
+
+musyx/runtime/synthmacros.c:
+	.text       start:0x8032B4D4 end:0x803303BC
+
+musyx/runtime/synthvoice.c:
+	.text       start:0x803303BC end:0x8033219C
+
+musyx/runtime/synth_ac.c:
+	.text       start:0x8033219C end:0x80332314
+
+musyx/runtime/synth_adsr.c:
+	.text       start:0x80332314 end:0x80332A7C
+
+musyx/runtime/synth_vsamples.c:
+	.text       start:0x80332A7C end:0x80333414
+
+musyx/runtime/s_data.c:
+	.text       start:0x80333414 end:0x80334024
+
+musyx/runtime/hw_dspctrl.c:
+	.text       start:0x80334024 end:0x803376E0
+
+musyx/runtime/hw_volconv.c:
+	.text       start:0x803376E0 end:0x80337DD0
+
+musyx/runtime/snd3d.c:
+	.text       start:0x80337DD0 end:0x8033A230
+
+musyx/runtime/snd_init.c:
+	.text       start:0x8033A230 end:0x8033A368
+
+musyx/runtime/snd_math.c:
+	.text       start:0x8033A368 end:0x8033A728
+
+musyx/runtime/snd_midictrl.c:
+	.text       start:0x8033A728 end:0x8033CA38
+
+musyx/runtime/snd_service.c:
+	.text       start:0x8033CA38 end:0x8033CD0C
+
+musyx/runtime/hardware.c:
+	.text       start:0x8033CD0C end:0x8033DE20
+
+musyx/runtime/hw_aramdma.c:
+	.text       start:0x8033DE20 end:0x8033EBA4
+
+musyx/runtime/hw_dolphin.c:
+	.text       start:0x8033EBA4 end:0x8033F06C
+
+musyx/runtime/hw_memory.c:
+	.text       start:0x8033F06C end:0x8033F0F8
+
+musyx/runtime/CheapReverb/creverb_fx.c:
+	.text       start:0x8033F0F8 end:0x8033F190
+
+musyx/runtime/CheapReverb/creverb.c:
+	.text       start:0x8033F190 end:0x8033F990
