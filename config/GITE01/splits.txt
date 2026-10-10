@@ -331,6 +331,10 @@ dolphin/si/SISamplingRate.c:
 
 musyx/runtime/seq.c:
 	.text       start:0x8031EAF4 end:0x80322AC0
+	.data       start:0x803CAAB8 end:0x803CAB08
+	.bss        start:0x804AA1C0 end:0x804B7B00
+	.sbss       start:0x804D5C78 end:0x804D5C98
+	.sdata2     start:0x804DB8C0 end:0x804DB8E0
 
 musyx/runtime/synth.c:
 	.text       start:0x80322AC0 end:0x80325F48
@@ -358,6 +362,10 @@ musyx/runtime/synthdata.c:
 
 musyx/runtime/synthmacros.c:
 	.text       start:0x8032B4D4 end:0x803303BC
+	.data       start:0x803CAB08 end:0x803CAF50
+	.bss        start:0x804C5320 end:0x804C5340
+	.sbss       start:0x804D5D40 end:0x804D5D60
+	.sdata2     start:0x804DB950 end:0x804DB978
 
 musyx/runtime/synthvoice.c:
 	.text       start:0x803303BC end:0x8033219C
@@ -382,6 +390,8 @@ musyx/runtime/hw_dspctrl.c:
 
 musyx/runtime/hw_volconv.c:
 	.text       start:0x803376E0 end:0x80337DD0
+	.data       start:0x803CD538 end:0x803CD760
+	.sdata2     start:0x804DB9B8 end:0x804DB9F0
 
 musyx/runtime/snd3d.c:
 	.text       start:0x80337DD0 end:0x8033A230
@@ -415,9 +425,13 @@ musyx/runtime/hardware.c:
 
 musyx/runtime/hw_aramdma.c:
 	.text       start:0x8033DE20 end:0x8033EBA4
+	.bss        start:0x804CFBA8 end:0x804D04B0
+	.sbss       start:0x804D5DF8 end:0x804D5E14
 
 musyx/runtime/hw_dolphin.c:
 	.text       start:0x8033EBA4 end:0x8033F06C
+	.bss        start:0x804D04C0 end:0x804D2520
+	.sbss       start:0x804D5E18 end:0x804D5E48
 
 musyx/runtime/hw_memory.c:
 	.text       start:0x8033F06C end:0x8033F0F8
@@ -427,3 +441,5 @@ musyx/runtime/CheapReverb/creverb_fx.c:
 
 musyx/runtime/CheapReverb/creverb.c:
 	.text       start:0x8033F190 end:0x8033F990
+	.data       start:0x803CFEC0 end:0x803CFED0
+	.sdata2     start:0x804DBA90 end:0x804DBAD0
