@@ -156,6 +156,7 @@ Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp:
 
 MSL_C/MSL_Common_Embedded/Math/Double_precision/e_acos.c:
 	.text       start:0x802F353C end:0x802F3778
+	.sdata2     start:0x804DB338 end:0x804DB3C0
 
 MSL_C/MSL_Common_Embedded/Math/Double_precision/e_atan2.c:
 	.text       start:0x802F3778 end:0x802F3A08
@@ -172,6 +173,8 @@ MSL_C/MSL_Common_Embedded/Math/Double_precision/e_fmod.c:
 
 MSL_C/MSL_Common_Embedded/Math/Double_precision/e_pow.c:
 	.text       start:0x802F3F68 end:0x802F4798
+	.rodata     start:0x8034E868 end:0x8034E898
+	.sdata2     start:0x804DB490 end:0x804DB5A0
 
 MSL_C/MSL_Common_Embedded/Math/Double_precision/e_rem_pio2.c:
 	.text       start:0x802F4798 end:0x802F4B38
@@ -248,6 +251,7 @@ MSL_C/MSL_Common_Embedded/Math/Double_precision/w_pow.c:
 
 MSL_C/MSL_Common_Embedded/Math/Double_precision/e_sqrt.c:
 	.text       start:0x802F6778 end:0x802F699C
+	.sdata2     start:0x804DB770 end:0x804DB778
 
 MSL_C/PPC_EABI/Src/math_ppc.c:
 	.text       start:0x802F699C end:0x802F6A2C
