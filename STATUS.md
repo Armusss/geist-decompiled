@@ -6,7 +6,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
-| Lead (main session) | `geist-matching` / `main` | The remaining SDK files (`dolphin/*`; GXInit done -> 65/75), tail stubs 0x8033F5B8-0x80341200, merging | working |
+| Lead (main session) | `geist-matching` / `main` | SDK done (77/77 linked); now small unknown SDK units, tail stubs 0x8033F5B8-0x80341200, merging | working |
 | helper-msl | `.claude/worktrees/optimistic-khayyam-7b9401` / `claude/optimistic-khayyam-7b9401` | **MSL_C + Runtime.PPCEABI.H + TRK_MINNOW_DOLPHIN**: `.text` from the first TRK/Runtime function (about 0x802E4800, find the exact start) up to 0x802F6B9C (`AMC_IsStub` and everything from 0x802F6BA4 is SDK, not yours) plus their data | working (Remote Control on) |
 | helper-musyx | `.claude/worktrees/goofy-clarke-759020` / `claude/goofy-clarke-759020` | **MusyX + zlib 1.1.4**: `.text` 0x8031DE10-0x8033F5B8 (382 functions, none named yet) plus their data; also find where zlib's inflate lives (it may be elsewhere) | working (Remote Control on) |
 
@@ -35,6 +35,45 @@ Handoff file for the matching decompilation. Newest section first. See README.md
    reference repos; read them only. Record the compiler version and flags with evidence.
 6. When done (or blocked), send the Lead a short report: units matched, compiler/flags, anything odd,
    exact verify command + expected output. Then stop.
+
+## Chunk 7 — SDK: all 77 units build from C (Lead, 2026-10-10)
+
+**Result:** `SDK Code: 99.97% fuzzy, 99.96% matched, 100.00% linked (77 / 77 files)`, DOL byte-identical.
+New: GXInit, GXAttr, GXFifo, dvd, arq, dvdfs, OSFont, mtx, mtx44 (new unit), vec, quat, OSSync (new
+unit), OSRtc.
+
+**Findings:**
+- **The "linker hang at 0x80314318" was a duplicate label**, not a boundary problem: symbols.txt had
+  `SystemCallVector` both as a label and as a function there. Renaming the label to
+  `__OSSystemCallVectorStart` lets OSSync.c be its own unit; nothing hangs.
+- Geist's SDK `GXData` is 0x5B8 bytes (dolsdk2004: 0x5B0); `__gx.h` pads it with 8 bytes at the end.
+- GXFifo: `CPUFifo`/`GPFifo` are statics declared before `__GXCurrentThread` (retail .sbss order).
+  0x803069DC is `GXGetCPUFifo`, not `GXGetCurrentGXThread` (that one is stripped).
+- Video-mode tables in GXFrameBuf .data: GXNtsc480IntDf 0x803C7CE8, GXNtsc480Prog 0x803C7D24 (the game
+  picks it for progressive scan), GXMpal480IntDf, GXPal528IntDf, GXEurgb60Hz480IntDf.
+- dvd.c's .text runs to 0x803045BC (DVDCancelAllAsync, DVDGetCurrentDiskID, DVDCheckDisk,
+  __DVDPrepareResetAsync, __DVDTestAlarm); its .sbss starts at `executing` 0x804D59C0 (the two
+  objects before it are dvdfs.c's). arq.c keeps `ARQGetChunkSize` (0x802F8A94).
+- mtx44.c (C_MTXPerspective, C_MTXOrtho, PSMTX44Identity) sits at 0x8030D114-0x8030D2B0 after
+  mtx44vec.c; sdata2: mtx 0x804DB868, mtx44 0x804DB87C, vec 0x804DB898, quat 0x804DB8A0-0x804DB8B8.
+- objdiff `gap_... size out of section bounds` = alignment padding after the *previous* unit's
+  section; extend that unit's end over it (dsp_task .data, OSError .data/.sdata, fstload .sdata).
+- Tool bugs fixed: `auto_match.py` ninja timeout 180 s -> 600 s (it was reverting good attempts);
+  `names_from_relocs.py` only renames placeholder names (fn_/lbl_/jumptable_/@) now.
+
+**Left in the SDK area (Lead):** unknown small units with no dolsdk2004 source: dvdfatal.c
+(`__DVDPrintFatalMessage` 0x80304A44 + `FatalFunc` .sbss 0x804D5A10), the 0x50-byte function
+0x802FFA44 between dsp.c and dsp_task.c, `fn_8031439C` (4 bytes, after OSSync), and the stub libs
+0x8033F5B8-0x80341200 (`Hu_IsStub` etc.). objdiff still scores OSExec `Run` at 50% (asm; DOL is
+identical), so check the reloc naming.
+
+**Verify:**
+```sh
+cd ~/Documents/"Claude code"/geist-matching && export PATH=$HOME/.local/bin:$PATH
+python3 configure.py && rm -f build/GITE01/main.dol && ninja | grep -E "main.dol|SDK Code"
+# build/GITE01/main.dol: OK
+# SDK Code: 99.97% fuzzy, 99.96% matched, 100.00% linked (77 / 77 files)
+```
 
 ## Chunk 6 — SDK: 64 / 75 files matched
 
