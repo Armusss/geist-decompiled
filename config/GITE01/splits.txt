@@ -374,9 +374,12 @@ musyx/runtime/synthvoice.c:
 
 musyx/runtime/synth_ac.c:
 	.text       start:0x8033219C end:0x803322BC
+	.data       start:0x803CAF50 end:0x803CB350
+	.sdata2     start:0x804DB978 end:0x804DB98C
 
 musyx/runtime/synth_adsr.c:
 	.text       start:0x803322BC end:0x80332A7C
+	.sdata2     start:0x804DB990 end:0x804DB9B8
 
 musyx/runtime/synth_vsamples.c:
 	.text       start:0x80332A7C end:0x80333414

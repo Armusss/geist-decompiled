@@ -283,7 +283,8 @@ static void RemoveSamples(unsigned short* ref, void* sdir) {
 
 static void InsertFXTab(unsigned short gid, FX_DATA* fd) { dataInsertFX(gid, fd->fx, fd->num); }
 
-static void RemoveFXTab(unsigned short gid) { dataRemoveFX(gid); }
+// Not static in Geist: game code calls it.
+void RemoveFXTab(unsigned short gid) { dataRemoveFX(gid); }
 
 void sndSetSampleDataUploadCallback(void* (*callback)(u32, u32), u32 chunckSize) {
   hwSetSaveSampleCallback(callback, chunckSize);
