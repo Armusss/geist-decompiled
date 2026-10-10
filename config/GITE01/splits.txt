@@ -81,11 +81,14 @@ TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/dolphin_trk.c:
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/main_TRK.c:
 	.text       start:0x802E946C end:0x802E94C4
-	.rodata     start:0x8034E2E8 end:0x8034E2F4
+	.rodata     start:0x8034E2E8 end:0x8034E2F8
 	.bss        start:0x804A7618 end:0x804A761C
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/dolphin_trk_glue.c:
 	.text       start:0x802E94C4 end:0x802E9A1C
+	.rodata     start:0x8034E2F8 end:0x8034E3FC
+	.data       start:0x803C6580 end:0x803C65A8
+	.bss        start:0x804A7620 end:0x804A7628
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/targcont.c:
 	.text       start:0x802E9A1C end:0x802E9A50
