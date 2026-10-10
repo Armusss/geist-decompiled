@@ -120,11 +120,16 @@ dolphin/dvd/fstload.c:
 	.text       start:0x80304A74 end:0x80304CB4
 	.data       start:0x803C7858 end:0x803C78C8
 	.bss        start:0x804A8B98 end:0x804A8C08
-	.sdata      start:0x804D3EA0 end:0x804D3EAC
+	.sdata      start:0x804D3EA0 end:0x804D3EB0
 	.sbss       start:0x804D5A18 end:0x804D5A24
 
 dolphin/gx/GXInit.c:
 	.text       start:0x80304CB4 end:0x80306040
+	.data       start:0x803C78E0 end:0x803C7B1C
+	.bss        start:0x804A8C08 end:0x804A9240
+	.sdata      start:0x804D3EB0 end:0x804D3EB4
+	.sbss       start:0x804D5A28 end:0x804D5A50
+	.sdata2     start:0x804DB778 end:0x804DB7A0
 
 dolphin/gx/GXFifo.c:
 	.text       start:0x80306040 end:0x803069EC

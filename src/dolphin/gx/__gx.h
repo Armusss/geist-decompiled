@@ -307,6 +307,8 @@ typedef struct __GXData_struct {
     u8 abtWaitPECopy;
     u8 dirtyVAT;
     u32 dirtyState;
+    // Geist's SDK build (Apr 2004) has 8 more bytes here: gxData is 0x5B8 in the DOL (fields unused by GX code).
+    u8 geistPad[8];
 } GXData;
 
 extern GXData* const __GXData;
