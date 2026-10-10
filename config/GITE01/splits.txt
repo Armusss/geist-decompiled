@@ -255,12 +255,16 @@ dolphin/os/OSError.c:
 
 dolphin/os/OSExec.c:
 	.text       start:0x80310648 end:0x80310FA8
-	.data       start:0x803C8F30 end:0x803C8F3C
-	.sdata      start:0x804D3F38 end:0x804D3F3C
+	.data       start:0x803C8F30 end:0x803C8F40
+	.sdata      start:0x804D3F38 end:0x804D3F40
 	.sbss       start:0x804D5AE0 end:0x804D5AE8
 
 dolphin/os/OSFont.c:
 	.text       start:0x80310FA8 end:0x80311E7C
+	.data       start:0x803C8F40 end:0x803C9A50
+	.sdata      start:0x804D3F40 end:0x804D3F44
+	.sbss       start:0x804D5AE8 end:0x804D5AF8
+	.sdata2     start:0x804DB8B8 end:0x804DB8C0
 
 dolphin/os/OSInterrupt.c:
 	.text       start:0x80311E7C end:0x803126E8
