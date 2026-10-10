@@ -13,6 +13,90 @@ Sections:
 	.sdata2     type:rodata align:8
 	.sbss2      type:bss align:32
 
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mainloop.c:
+	.text       start:0x802E4858 end:0x802E4950
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/nubevent.c:
+	.text       start:0x802E4950 end:0x802E4B78
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/nubinit.c:
+	.text       start:0x802E4B78 end:0x802E4D10
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msg.c:
+	.text       start:0x802E4D10 end:0x802E4D54
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msgbuf.c:
+	.text       start:0x802E4D54 end:0x802E5598
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/serpoll.c:
+	.text       start:0x802E5598 end:0x802E5848
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/usr_put.c:
+	.text       start:0x802E5848 end:0x802E58D4
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/dispatch.c:
+	.text       start:0x802E58D4 end:0x802E5A4C
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msghndlr.c:
+	.text       start:0x802E5A4C end:0x802E6A1C
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/support.c:
+	.text       start:0x802E6A1C end:0x802E7150
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mutex_TRK.c:
+	.text       start:0x802E7150 end:0x802E7168
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/notify.c:
+	.text       start:0x802E7168 end:0x802E7200
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/flush_cache.c:
+	.text       start:0x802E7200 end:0x802E7238
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mem_TRK.c:
+	.text       start:0x802E7238 end:0x802E72F0
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/targimpl.c:
+	.text       start:0x802E72F0 end:0x802E8DC0
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/mpc_7xx_603e.c:
+	.text       start:0x802E8DE0 end:0x802E9150
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/dolphin_trk.c:
+	.text       start:0x802E9150 end:0x802E946C
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/main_TRK.c:
+	.text       start:0x802E946C end:0x802E94C4
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/dolphin_trk_glue.c:
+	.text       start:0x802E94C4 end:0x802E9A1C
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/targcont.c:
+	.text       start:0x802E9A1C end:0x802E9A50
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/target_options.c:
+	.text       start:0x802E9A50 end:0x802E9A6C
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Export/mslsupp.c:
+	.text       start:0x802E9A6C end:0x802EA0AC
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/UDP_Stubs.c:
+	.text       start:0x802EA0AC end:0x802EA0F4
+
+TRK_MINNOW_DOLPHIN/gamedev/cust_connection/cc/exi2/GCN/EXI2_DDH_GCN/main.c:
+	.text       start:0x802EA0F4 end:0x802EA438
+
+TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/CircleBuffer.c:
+	.text       start:0x802EA438 end:0x802EA6A0
+
+TRK_MINNOW_DOLPHIN/gamedev/cust_connection/cc/exi2/GCN/EXI2_GDEV_GCN/main.c:
+	.text       start:0x802EA6A0 end:0x802EA9EC
+
+TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/MWTrace.c:
+	.text       start:0x802EA9EC end:0x802EAA3C
+
+TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/gc/MWCriticalSection_gc.c:
+	.text       start:0x802EAA3C end:0x802EAA94
+
 dolphin/ar/ar.c:
 	.text       start:0x802F6BA4 end:0x802F86EC
 	.data       start:0x803C6E38 end:0x803C6E7C

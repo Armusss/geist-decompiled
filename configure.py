@@ -241,6 +241,41 @@ cflags_runtime = [
 ]
 
 # ==== helper-msl cflags (only helper-msl edits this block) ====
+# MSL_C / Runtime.PPCEABI.H / TRK_MINNOW_DOLPHIN: GC/2.6 (TP's TRK/Runtime/MSL math sources match with
+# GC/2.5-2.7; NMWException's __construct_array only with 2.5+, the linker rules out 2.7). Flags follow
+# zeldaret/tp's cflags_trk / cflags_runtime.
+cflags_msl_base = [
+    *cflags_base,
+    "-i include/MSL_C",
+    "-i include/Runtime.PPCEABI.H",
+    "-i include/TRK_MINNOW_DOLPHIN",
+    "-D__GEKKO__",
+]
+cflags_trk = [
+    *cflags_msl_base,
+    "-use_lmw_stmw on",
+    "-rostr",
+    "-str reuse",
+    "-gccinc",
+    "-common off",
+    "-inline deferred,auto",
+    "-char signed",
+    "-sdata 0",
+    "-sdata2 0",
+]
+cflags_rt = [
+    *cflags_msl_base,
+    "-use_lmw_stmw on",
+    "-str reuse,pool,readonly",
+    "-common off",
+    "-char signed",
+    "-func_align 4",
+    "-inline deferred,auto",
+]
+# MSL_C common sources: Geist's (older) MSL is built without the global optimizer (strlen etc. match
+# GC/1.3.2-2.6 only with "-opt level=0,peephole"); the math library is -O4,p like the runtime.
+cflags_msl = [f for f in cflags_rt if f != "-O4,p"] + ["-opt level=0,peephole"]
+cflags_msl_math = cflags_rt
 # ==== end helper-msl cflags ====
 # ==== helper-musyx cflags (only helper-musyx edits this block) ====
 # ==== end helper-musyx cflags ====
@@ -469,13 +504,39 @@ config.libs = [
     ),
     # ==== helper-msl: MSL_C / Runtime.PPCEABI.H / TRK_MINNOW_DOLPHIN libs (only helper-msl edits this block) ====
     {
-        "lib": "Runtime.PPCEABI.H",
-        "mw_version": config.linker_version,
-        "cflags": cflags_runtime,
-        "progress_category": "sdk",  # str | List[str]
+        "lib": "TRK_MINNOW_DOLPHIN",
+        "mw_version": "GC/2.6",
+        "cflags": cflags_trk,
+        "progress_category": "sdk",
         "objects": [
-            Object(NonMatching, "Runtime.PPCEABI.H/global_destructor_chain.c"),
-            Object(NonMatching, "Runtime.PPCEABI.H/__init_cpp_exceptions.cpp"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mainloop.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/nubevent.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/nubinit.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msg.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msgbuf.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/serpoll.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/usr_put.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/dispatch.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msghndlr.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/support.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mutex_TRK.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/notify.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/flush_cache.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mem_TRK.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/targimpl.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/mpc_7xx_603e.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/dolphin_trk.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/main_TRK.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/dolphin_trk_glue.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/targcont.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/target_options.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Export/mslsupp.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/UDP_Stubs.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/gamedev/cust_connection/cc/exi2/GCN/EXI2_DDH_GCN/main.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/CircleBuffer.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/gamedev/cust_connection/cc/exi2/GCN/EXI2_GDEV_GCN/main.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/MWTrace.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/gc/MWCriticalSection_gc.c"),
         ],
     },
     # ==== end helper-msl ====

@@ -1,0 +1,36 @@
+#ifndef _TRK_OS_H_
+#define _TRK_OS_H_
+/* The few Dolphin OS declarations the TRK sources use. */
+#include <types.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
+typedef struct OSContext {
+    u32 gpr[32];
+    u32 cr;
+    u32 lr;
+    u32 ctr;
+    u32 xer;
+    f64 fpr[32];
+    u32 fpscr_pad;
+    u32 fpscr;
+    u32 srr0;
+    u32 srr1;
+    u16 mode;
+    u16 state;
+    u32 gqr[8];
+    u32 psf_pad;
+    f64 psf[32];
+} OSContext;
+typedef s16 __OSInterrupt;
+typedef void (*__OSInterruptHandler)(__OSInterrupt interrupt, OSContext* context);
+typedef void (*EXICallback)(s32 chan, OSContext* context);
+BOOL OSDisableInterrupts(void);
+BOOL OSRestoreInterrupts(BOOL level);
+s32 OSEnableScheduler(void);
+void OSResetSystem(int reset, u32 resetCode, BOOL forceMenu);
+DECL_WEAK void OSReport(const char* msg, ...);
+#ifdef __cplusplus
+}
+#endif
+#endif
