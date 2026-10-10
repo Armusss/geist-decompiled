@@ -266,6 +266,32 @@ cflags_musyx = [
     "-DMUSY_VERSION_MINOR=0",
     "-DMUSY_VERSION_PATCH=3",
 ]
+# zlib 1.1.4 (linked into game code, 0x80197E50-0x8019FD58). Evidence (helper-musyx): Geist compiled zlib
+# as C++ (comparisons are byte-sized bools, deflateInit2_'s local static is guard-initialized, internal
+# functions would be mangled); sources are upstream 1.1.4 with K&R definitions converted to ANSI.
+# Registers are saved with stmw, functions come out in reverse source order (-inline deferred), strings
+# are pooled. GC/1.3.2 and 2.0 differ on deflate_*; 2.5/2.6/2.7 match, 2.6 as for the rest of the game.
+# -lang must come first: options before it are reset.
+cflags_zlib = [
+    "-lang=c++",
+    "-proc gekko",
+    "-nodefaults",
+    "-nosyspath",
+    "-i include/zlib/compat",
+    "-i include/zlib",
+    "-i src/zlib",
+    "-i include",
+    "-i include/libc",
+    f"-i build/{config.version}/include",
+    "-fp hard",
+    "-enum int",
+    "-Cpp_exceptions off",
+    "-RTTI off",
+    "-O4,p",
+    "-inline auto,deferred",
+    "-use_lmw_stmw on",
+    "-str pool",
+]
 # ==== end helper-musyx cflags ====
 
 # REL flags
@@ -535,6 +561,25 @@ config.libs = [
             Object(Matching, "musyx/runtime/hw_memory.c"),
             Object(Matching, "musyx/runtime/CheapReverb/creverb_fx.c"),
             Object(Matching, "musyx/runtime/CheapReverb/creverb.c"),
+        ],
+    },
+    {
+        "lib": "zlib",
+        "mw_version": "GC/2.6",
+        "cflags": cflags_zlib,
+        "progress_category": "sdk",
+        "objects": [
+            Object(NonMatching, "zlib/adler32.c"),
+            Object(NonMatching, "zlib/compress.c"),
+            Object(NonMatching, "zlib/deflate.c"),
+            Object(NonMatching, "zlib/infblock.c"),
+            Object(NonMatching, "zlib/infcodes.c"),
+            Object(NonMatching, "zlib/inffast.c"),
+            Object(NonMatching, "zlib/inflate.c"),
+            Object(NonMatching, "zlib/inftrees.c"),
+            Object(NonMatching, "zlib/infutil.c"),
+            Object(NonMatching, "zlib/trees.c"),
+            Object(NonMatching, "zlib/uncompr.c"),
         ],
     },
     # ==== end helper-musyx ====

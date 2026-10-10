@@ -13,6 +13,39 @@ Sections:
 	.sdata2     type:rodata align:8
 	.sbss2      type:bss align:32
 
+zlib/adler32.c:
+	.text       start:0x80197E50 end:0x80197FD4
+
+zlib/compress.c:
+	.text       start:0x80197FD4 end:0x801980A0
+
+zlib/deflate.c:
+	.text       start:0x801980A0 end:0x8019A0A8
+
+zlib/infblock.c:
+	.text       start:0x8019A0A8 end:0x8019B1EC
+
+zlib/infcodes.c:
+	.text       start:0x8019B1EC end:0x8019BBD4
+
+zlib/inffast.c:
+	.text       start:0x8019BBD4 end:0x8019C1C8
+
+zlib/inflate.c:
+	.text       start:0x8019C1C8 end:0x8019CA2C
+
+zlib/inftrees.c:
+	.text       start:0x8019CA2C end:0x8019D27C
+
+zlib/infutil.c:
+	.text       start:0x8019D27C end:0x8019D3FC
+
+zlib/trees.c:
+	.text       start:0x8019D3FC end:0x8019FC84
+
+zlib/uncompr.c:
+	.text       start:0x8019FC84 end:0x8019FD58
+
 dolphin/ar/ar.c:
 	.text       start:0x802F6BA4 end:0x802F86EC
 	.data       start:0x803C6E38 end:0x803C6E7C
