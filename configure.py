@@ -407,7 +407,7 @@ config.libs = [
             Object(Matching, "dolphin/mtx/mtx44vec.c"),
             Object(Matching, "dolphin/mtx/mtx44.c", extra_cflags=["-char signed"]),
             Object(Matching, "dolphin/mtx/vec.c"),
-            Object(NonMatching, "dolphin/mtx/quat.c"),
+            Object(Matching, "dolphin/mtx/quat.c"),
         ],
     ),
     DolphinLib(
