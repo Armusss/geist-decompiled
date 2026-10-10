@@ -6,9 +6,9 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
-| Lead (main session) | `geist-matching` / `main` | The 11 remaining SDK files (`dolphin/*`), tail stubs 0x8033F5B8-0x80341200, merging | working |
-| helper-msl | own worktree (branch: reported by helper) | **MSL_C + Runtime.PPCEABI.H + TRK_MINNOW_DOLPHIN**: `.text` from the first TRK/Runtime function (about 0x802E4800, find the exact start) up to 0x802F6B9C (`AMC_IsStub` and everything from 0x802F6BA4 is SDK, not yours) plus their data | starting |
-| helper-musyx | own worktree (branch: reported by helper) | **MusyX + zlib 1.1.4**: `.text` 0x8031DE10-0x8033F5B8 (382 functions, none named yet) plus their data; also find where zlib's inflate lives (it may be elsewhere) | starting |
+| Lead (main session) | `geist-matching` / `main` | The remaining SDK files (`dolphin/*`; GXInit done -> 65/75), tail stubs 0x8033F5B8-0x80341200, merging | working |
+| helper-msl | `.claude/worktrees/optimistic-khayyam-7b9401` / `claude/optimistic-khayyam-7b9401` | **MSL_C + Runtime.PPCEABI.H + TRK_MINNOW_DOLPHIN**: `.text` from the first TRK/Runtime function (about 0x802E4800, find the exact start) up to 0x802F6B9C (`AMC_IsStub` and everything from 0x802F6BA4 is SDK, not yours) plus their data | working (Remote Control on) |
+| helper-musyx | `.claude/worktrees/goofy-clarke-759020` / `claude/goofy-clarke-759020` | **MusyX + zlib 1.1.4**: `.text` 0x8031DE10-0x8033F5B8 (382 functions, none named yet) plus their data; also find where zlib's inflate lives (it may be elsewhere) | working (Remote Control on) |
 
 **Rules for helpers:**
 1. Work only in your own worktree and branch. Never edit `main`, never push, never touch `orig/`, game
