@@ -199,6 +199,8 @@ dolphin/gx/GXPerf.c:
 
 dolphin/mtx/mtx.c:
 	.text       start:0x8030C87C end:0x8030D06C
+	.sdata      start:0x804D3F08 end:0x804D3F10
+	.sdata2     start:0x804DB868 end:0x804DB87C
 
 dolphin/mtx/mtxvec.c:
 	.text       start:0x8030D06C end:0x8030D0C0
