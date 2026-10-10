@@ -272,9 +272,9 @@ cflags_rt = [
     "-func_align 4",
     "-inline deferred,auto",
 ]
-# MSL_C common sources: Geist's (older) MSL is built without the global optimizer (strlen etc. match
-# GC/1.3.2-2.6 only with "-opt level=0,peephole"); the math library is -O4,p like the runtime.
-cflags_msl = [f for f in cflags_rt if f != "-O4,p"] + ["-opt level=0,peephole"]
+# MSL_C common sources: Geist's (older) MSL is built without the global optimizer (strlen, rand, time match
+# only with "-opt level=0,peephole,schedule", not levels 1-4); the math library is -O4,p like the runtime.
+cflags_msl = [f for f in cflags_rt if f != "-O4,p"] + ["-opt level=0,peephole,schedule"]
 cflags_msl_math = cflags_rt
 # ==== end helper-msl cflags ====
 # ==== helper-musyx cflags (only helper-musyx edits this block) ====
@@ -552,7 +552,7 @@ config.libs = [
             Object(NonMatching, "Runtime.PPCEABI.H/runtime.c"),
             Object(NonMatching, "Runtime.PPCEABI.H/__init_cpp_exceptions.cpp"),
             Object(NonMatching, "Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp", extra_cflags=['-Cpp_exceptions on']),
-            Object(NonMatching, "Runtime.PPCEABI.H/GCN_mem_alloc.c"),
+            Object(NonMatching, "Runtime.PPCEABI.H/GCN_mem_alloc.c", extra_cflags=['-str reuse,nopool,readonly']),
         ],
     },
     {
