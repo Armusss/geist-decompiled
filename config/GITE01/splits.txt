@@ -20,7 +20,10 @@ dolphin/ar/ar.c:
 	.sbss       start:0x804D58E0 end:0x804D5900
 
 dolphin/ar/arq.c:
-	.text       start:0x802F86EC end:0x802F8A94
+	.text       start:0x802F86EC end:0x802F8A9C
+	.data       start:0x803C6E80 end:0x803C6EC8
+	.sdata      start:0x804D3E50 end:0x804D3E58
+	.sbss       start:0x804D5900 end:0x804D5928
 
 dolphin/base/PPCArch.c:
 	.text       start:0x802F8A9C end:0x802F8BB0
