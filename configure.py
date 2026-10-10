@@ -240,6 +240,11 @@ cflags_runtime = [
     "-inline auto",
 ]
 
+# ==== helper-msl cflags (only helper-msl edits this block) ====
+# ==== end helper-msl cflags ====
+# ==== helper-musyx cflags (only helper-musyx edits this block) ====
+# ==== end helper-musyx cflags ====
+
 # REL flags
 cflags_rel = [
     *cflags_base,
@@ -462,6 +467,7 @@ config.libs = [
             Object(Matching, "dolphin/si/SISamplingRate.c"),
         ],
     ),
+    # ==== helper-msl: MSL_C / Runtime.PPCEABI.H / TRK_MINNOW_DOLPHIN libs (only helper-msl edits this block) ====
     {
         "lib": "Runtime.PPCEABI.H",
         "mw_version": config.linker_version,
@@ -472,6 +478,9 @@ config.libs = [
             Object(NonMatching, "Runtime.PPCEABI.H/__init_cpp_exceptions.cpp"),
         ],
     },
+    # ==== end helper-msl ====
+    # ==== helper-musyx: MusyX / zlib libs (only helper-musyx edits this block) ====
+    # ==== end helper-musyx ====
 ]
 
 

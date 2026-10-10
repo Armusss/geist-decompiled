@@ -2,6 +2,40 @@
 
 Handoff file for the matching decompilation. Newest section first. See README.md for setup/build.
 
+## Team board (Decomp Lead + helpers) — 2026-10-10
+
+| Who | Worktree / branch | Assignment | State |
+|---|---|---|---|
+| Lead (main session) | `geist-matching` / `main` | The 11 remaining SDK files (`dolphin/*`), tail stubs 0x8033F5B8-0x80341200, merging | working |
+| helper-msl | own worktree, branch `helper-msl` | **MSL_C + Runtime.PPCEABI.H + TRK_MINNOW_DOLPHIN**: `.text` from the first TRK/Runtime function (about 0x802E4800, find the exact start) up to 0x802F6B9C (`AMC_IsStub` and everything from 0x802F6BA4 is SDK, not yours) plus their data | starting |
+| helper-musyx | own worktree, branch `helper-musyx` | **MusyX + zlib 1.1.4**: `.text` 0x8031DE10-0x8033F5B8 (382 functions, none named yet) plus their data; also find where zlib's inflate lives (it may be elsewhere) | starting |
+
+**Rules for helpers:**
+1. Work only in your own worktree and branch. Never edit `main`, never push, never touch `orig/`, game
+   installs or other folders. Kill processes only by exact PID.
+2. File ownership, so merges stay clean:
+   - `configure.py`: only between your own `# ==== helper-<name> ... ====` / `# ==== end helper-<name> ...`
+     markers (one libs block and one cflags block each).
+   - `config/GITE01/splits.txt` / `symbols.txt`: only entries whose address is inside your range (and
+     the data those units own). Don't reorder or rewrite other lines.
+   - Sources only under your own dirs: helper-msl -> `src/MSL_C/`, `src/Runtime.PPCEABI.H/`,
+     `src/TRK_MINNOW_DOLPHIN/`, `include/MSL_C/`... ; helper-musyx -> `src/musyx/`, `src/zlib/`,
+     `include/musyx/`, `include/zlib/`. Don't edit `src/dolphin/`, `include/dolphin/` or `STATUS.md`
+     (report to the Lead instead; the Lead keeps this board).
+   - Tools: copy what you need from `~/geist-work/mwprobe/` into your own folder
+     (`~/geist-work/helper-msl/` or `~/geist-work/helper-musyx/`); don't write into `mwprobe/`.
+     `probe.py`, `auto_match.py` and `dol_diff.py` take the repo path from the `GM` env var.
+3. Setup in a fresh worktree: `orig/GITE01/` is git-ignored, so symlink it:
+   `ln -s "$HOME/Documents/Claude code/geist-matching/orig/GITE01/sys" orig/GITE01/sys` (same for `files`).
+4. Every step must keep `build/GITE01/main.dol: OK` (SHA-1 6612f52ce6c50bb831ffddd5264b22973304f288).
+   Check units with `objdiff-cli` (`ninja` builds the report). Commit on your branch after each green
+   batch; message ends with the Co-Authored-By line used in this repo.
+5. Prefer real library source you can reconstruct (MSL/TRK/Runtime from the CodeWarrior GC versions,
+   MusyX from public decomps' structure, zlib 1.1.4 is public). Don't run scripts from cloned
+   reference repos; read them only. Record the compiler version and flags with evidence.
+6. When done (or blocked), send the Lead a short report: units matched, compiler/flags, anything odd,
+   exact verify command + expected output. Then stop.
+
 ## Chunk 6 — SDK: 64 / 75 files matched
 
 **Result:** `SDK Code: 97.86% fuzzy, 97.85% matched, 76.91% linked (64 / 75 files)`, DOL byte-identical.
