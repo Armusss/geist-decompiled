@@ -210,6 +210,7 @@ dolphin/mtx/mtx44vec.c:
 
 dolphin/mtx/mtx44.c:
 	.text       start:0x8030D114 end:0x8030D2B0
+	.sdata2     start:0x804DB87C end:0x804DB898
 
 dolphin/mtx/vec.c:
 	.text       start:0x8030D2B0 end:0x8030D420

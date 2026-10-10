@@ -405,7 +405,7 @@ config.libs = [
             Object(Matching, "dolphin/mtx/mtx.c", extra_cflags=["-char signed"]),
             Object(Matching, "dolphin/mtx/mtxvec.c"),
             Object(Matching, "dolphin/mtx/mtx44vec.c"),
-            Object(NonMatching, "dolphin/mtx/mtx44.c", extra_cflags=["-char signed"]),
+            Object(Matching, "dolphin/mtx/mtx44.c", extra_cflags=["-char signed"]),
             Object(NonMatching, "dolphin/mtx/vec.c"),
             Object(NonMatching, "dolphin/mtx/quat.c"),
         ],
