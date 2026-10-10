@@ -26,7 +26,11 @@ dolphin/base/PPCArch.c:
 	.text       start:0x802F8A9C end:0x802F8BB0
 
 dolphin/card/CARDBios.c:
-	.text       start:0x802F8BB4 end:0x802FA0A4
+	.text       start:0x802F8BB0 end:0x802FA0A4
+	.data       start:0x803C6EC8 end:0x803C6F20
+	.bss        start:0x804A87D0 end:0x804A8A10
+	.sdata      start:0x804D3E58 end:0x804D3E60
+	.sbss       start:0x804D5928 end:0x804D5930
 
 dolphin/card/CARDUnlock.c:
 	.text       start:0x802FA0A4 end:0x802FB304
@@ -275,6 +279,7 @@ dolphin/os/OSTime.c:
 	.data       start:0x803CA2F0 end:0x803CA350
 
 dolphin/os/__ppc_eabi_init.c:
+	.init       start:0x800054EC end:0x80005544
 	.text       start:0x8031640C end:0x80316480
 
 dolphin/pad/Padclamp.c:

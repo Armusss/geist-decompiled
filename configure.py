@@ -329,7 +329,7 @@ config.libs = [
     DolphinLib(
         "card",
         [
-            Object(NonMatching, "dolphin/card/CARDBios.c"),
+            Object(Matching, "dolphin/card/CARDBios.c"),
             Object(Matching, "dolphin/card/CARDUnlock.c"),
             Object(Matching, "dolphin/card/CARDRdwr.c"),
             Object(Matching, "dolphin/card/CARDBlock.c"),
@@ -422,7 +422,7 @@ config.libs = [
             Object(Matching, "dolphin/os/OSResetSW.c"),
             Object(NonMatching, "dolphin/os/OSRtc.c"),
             Object(Matching, "dolphin/os/OSTime.c"),
-            Object(NonMatching, "dolphin/os/__ppc_eabi_init.c"),
+            Object(Matching, "dolphin/os/__ppc_eabi_init.c"),
         ],
     ),
     DolphinLib(
