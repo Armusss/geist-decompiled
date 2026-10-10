@@ -539,6 +539,21 @@ config.libs = [
             Object(Matching, "TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/gc/MWCriticalSection_gc.c"),
         ],
     },
+    {
+        "lib": "Runtime.PPCEABI.H",
+        "mw_version": "GC/2.6",
+        "cflags": cflags_rt,
+        "progress_category": "sdk",
+        "objects": [
+            Object(NonMatching, "Runtime.PPCEABI.H/__va_arg.c"),
+            Object(NonMatching, "Runtime.PPCEABI.H/global_destructor_chain.c"),
+            Object(NonMatching, "Runtime.PPCEABI.H/NMWException.cp", extra_cflags=['-Cpp_exceptions on']),
+            Object(NonMatching, "Runtime.PPCEABI.H/ptmf.c"),
+            Object(NonMatching, "Runtime.PPCEABI.H/runtime.c"),
+            Object(NonMatching, "Runtime.PPCEABI.H/__init_cpp_exceptions.cpp"),
+            Object(NonMatching, "Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp", extra_cflags=['-Cpp_exceptions on']),
+        ],
+    },
     # ==== end helper-msl ====
     # ==== helper-musyx: MusyX / zlib libs (only helper-musyx edits this block) ====
     # ==== end helper-musyx ====

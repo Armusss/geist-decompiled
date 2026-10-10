@@ -121,6 +121,36 @@ TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/MWTrace.c:
 TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/gc/MWCriticalSection_gc.c:
 	.text       start:0x802EAA3C end:0x802EAA94
 
+Runtime.PPCEABI.H/__va_arg.c:
+	.text       start:0x802EAA94 end:0x802EAB5C
+
+Runtime.PPCEABI.H/global_destructor_chain.c:
+	.text       start:0x802EAB5C end:0x802EABBC
+	.dtors      start:0x80341268 end:0x8034126C
+
+Runtime.PPCEABI.H/NMWException.cp:
+	extab       start:0x80005600 end:0x80005690
+	extabindex  start:0x80005720 end:0x80005780
+	.text       start:0x802EABBC end:0x802EB158
+
+Runtime.PPCEABI.H/ptmf.c:
+	extab       start:0x80005690 end:0x80005698
+	extabindex  start:0x80005780 end:0x8000578C
+	.text       start:0x802EB158 end:0x802EB178
+
+Runtime.PPCEABI.H/runtime.c:
+	.text       start:0x802EB178 end:0x802EB854
+
+Runtime.PPCEABI.H/__init_cpp_exceptions.cpp:
+	.text       start:0x802EB854 end:0x802EB8D0
+	.ctors      start:0x80341200 end:0x80341204
+	.dtors      start:0x80341260 end:0x80341268
+
+Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp:
+	extab       start:0x80005698 end:0x8000570C
+	extabindex  start:0x8000578C end:0x800057E0
+	.text       start:0x802EB8D0 end:0x802ECCFC
+
 dolphin/ar/ar.c:
 	.text       start:0x802F6BA4 end:0x802F86EC
 	.data       start:0x803C6E38 end:0x803C6E7C
