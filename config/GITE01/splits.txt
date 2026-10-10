@@ -437,6 +437,10 @@ musyx/runtime/hardware.c:
 	.sbss       start:0x804D5DF0 end:0x804D5DF8
 	.sdata2     start:0x804DBA68 end:0x804DBA90
 
+musyx/runtime/dsp_import.c:
+	.data       start:0x803CE000 end:0x803CFEC0
+	.sdata      start:0x804D3FC0 end:0x804D3FC8
+
 musyx/runtime/hw_aramdma.c:
 	.text       start:0x8033DE20 end:0x8033EBA4
 	.bss        start:0x804CFBA8 end:0x804D04B0
