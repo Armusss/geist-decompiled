@@ -284,7 +284,7 @@ dolphin/os/__ppc_eabi_init.c:
 
 dolphin/pad/Padclamp.c:
 	.text       start:0x803164A0 end:0x803166E4
-	.rodata     start:0x8034EB70 end:0x8034EB7C
+	.rodata     start:0x8034EB70 end:0x8034EB80
 
 dolphin/pad/Pad.c:
 	.text       start:0x803166E4 end:0x8031802C
@@ -392,6 +392,10 @@ musyx/runtime/s_data.c:
 
 musyx/runtime/hw_dspctrl.c:
 	.text       start:0x80334024 end:0x803376E0
+	.rodata     start:0x8034EB80 end:0x8034EBB8
+	.data       start:0x803CBAE0 end:0x803CD538
+	.bss        start:0x804C7468 end:0x804C7B48
+	.sbss       start:0x804D5D88 end:0x804D5DC8
 
 musyx/runtime/hw_volconv.c:
 	.text       start:0x803376E0 end:0x80337DD0
