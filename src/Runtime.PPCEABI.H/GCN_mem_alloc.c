@@ -32,3 +32,11 @@ void __sys_free(void* p) {
 
     OSFreeToHeap(__OSCurrHeap, p);
 }
+
+void* __sys_alloc(u32 size) {
+    if (__OSCurrHeap == -1) {
+        InitDefaultHeap();
+    }
+
+    return OSAllocFromHeap(__OSCurrHeap, size);
+}

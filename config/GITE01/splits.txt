@@ -152,7 +152,79 @@ Runtime.PPCEABI.H/__init_cpp_exceptions.cpp:
 Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp:
 	extab       start:0x80005698 end:0x8000570C
 	extabindex  start:0x8000578C end:0x800057E0
-	.text       start:0x802EB8D0 end:0x802ECCFC
+	.text       start:0x802EB8D0 end:0x802ECD08
+
+Runtime.PPCEABI.H/GCN_mem_alloc.c:
+	.text       start:0x802ECD08 end:0x802ECE78
+
+MSL_C/MSL_Common/Src/abort_exit.c:
+	.text       start:0x802ECE78 end:0x802ECFD0
+
+MSL_C/MSL_Common/Src/alloc.c:
+	.text       start:0x802ECFD0 end:0x802EDF74
+
+MSL_C/MSL_Common/Src/ansi_files.c:
+	.text       start:0x802EDF74 end:0x802EE2C4
+
+MSL_C/MSL_Common_Embedded/Src/ansi_fp.c:
+	.text       start:0x802EE2C4 end:0x802EEEF4
+
+MSL_C/MSL_Common/Src/buffer_io.c:
+	.text       start:0x802EEEF4 end:0x802EF240
+
+MSL_C/PPC_EABI/Src/critical_regions.gamecube.c:
+	.text       start:0x802EF240 end:0x802EF254
+
+MSL_C/MSL_Common/Src/ctype.c:
+	.text       start:0x802EF254 end:0x802EF2C8
+
+MSL_C/MSL_Common/Src/direct_io.c:
+	.text       start:0x802EF2C8 end:0x802EFA44
+
+MSL_C/MSL_Common/Src/file_io.c:
+	.text       start:0x802EFA44 end:0x802EFF6C
+
+MSL_C/MSL_Common/Src/FILE_POS.c:
+	.text       start:0x802EFF6C end:0x802F02C0
+
+MSL_C/MSL_Common/Src/mbstring.c:
+	.text       start:0x802F02C0 end:0x802F0480
+
+MSL_C/MSL_Common/Src/mem.c:
+	.text       start:0x802F0480 end:0x802F06B8
+
+MSL_C/MSL_Common/Src/mem_funcs.c:
+	.text       start:0x802F06B8 end:0x802F09C8
+
+MSL_C/MSL_Common/Src/misc_io.c:
+	.text       start:0x802F09C8 end:0x802F09D8
+
+MSL_C/MSL_Common/Src/printf.c:
+	.text       start:0x802F09D8 end:0x802F2B5C
+
+MSL_C/MSL_Common/Src/scanf.c:
+	.text       start:0x802F2B5C end:0x802F2CF4
+
+MSL_C/MSL_Common/Src/rand.c:
+	.text       start:0x802F2CF4 end:0x802F2D20
+
+MSL_C/MSL_Common/Src/signal.c:
+	.text       start:0x802F2D20 end:0x802F2E08
+
+MSL_C/MSL_Common/Src/string.c:
+	.text       start:0x802F2E08 end:0x802F3320
+
+MSL_C/MSL_Common/Src/time.c:
+	.text       start:0x802F3320 end:0x802F3368
+
+MSL_C/MSL_Common/Src/wchar_io.c:
+	.text       start:0x802F3368 end:0x802F3418
+
+MSL_C/PPC_EABI/Src/time.gamecube.c:
+	.text       start:0x802F3418 end:0x802F3450
+
+MSL_C/PPC_EABI/Src/uart_console_io_gcn.c:
+	.text       start:0x802F3450 end:0x802F353C
 
 MSL_C/MSL_Common_Embedded/Math/Double_precision/e_acos.c:
 	.text       start:0x802F353C end:0x802F3778

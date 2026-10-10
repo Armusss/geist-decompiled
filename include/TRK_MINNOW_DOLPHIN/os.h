@@ -30,6 +30,18 @@ BOOL OSRestoreInterrupts(BOOL level);
 s32 OSEnableScheduler(void);
 void OSResetSystem(int reset, u32 resetCode, BOOL forceMenu);
 DECL_WEAK void OSReport(const char* msg, ...);
+typedef int OSHeapHandle;
+extern volatile OSHeapHandle __OSCurrHeap;
+void* OSGetArenaLo(void);
+void* OSGetArenaHi(void);
+void OSSetArenaLo(void* addr);
+void* OSInitAlloc(void* arenaStart, void* arenaEnd, int maxHeaps);
+OSHeapHandle OSCreateHeap(void* start, void* end);
+OSHeapHandle OSSetCurrentHeap(OSHeapHandle heap);
+void* OSAllocFromHeap(OSHeapHandle heap, u32 size);
+void OSFreeToHeap(OSHeapHandle heap, void* ptr);
+#define OSRoundUp32B(x) (((u32)(x) + 32 - 1) & ~(32 - 1))
+#define OSRoundDown32B(x) (((u32)(x)) & ~(32 - 1))
 #ifdef __cplusplus
 }
 #endif
