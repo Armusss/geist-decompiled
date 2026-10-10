@@ -64,7 +64,10 @@ unit), OSRtc.
 **Left in the SDK area (Lead):** unknown small units with no dolsdk2004 source: dvdfatal.c
 (`__DVDPrintFatalMessage` 0x80304A44 + `FatalFunc` .sbss 0x804D5A10), the 0x50-byte function
 0x802FFA44 between dsp.c and dsp_task.c, `fn_8031439C` (4 bytes, after OSSync), and the stub libs
-0x8033F5B8-0x80341200 (`Hu_IsStub` etc.). objdiff still scores OSExec `Run` at 50% (asm; DOL is
+0x8033F5B8-0x80341200 (odemuexi2 DebuggerDriver: "Can't select EXI2 port!" string; no reference
+source here; plus a 0x3B4-byte float function at 0x8033F5B8 with a 0x24 wrapper). The 8-byte
+`return 0` stubs dtk named `AMC_IsStub` (0x802F6B9C) and `Hu_IsStub` (0x8033F990) don't match dolsdk2004's
+amcstubs (which returns 1), so their real names/units are unconfirmed. objdiff still scores OSExec `Run` at 50% (asm; DOL is
 identical), so check the reloc naming.
 
 **Verify:**
