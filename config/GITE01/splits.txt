@@ -18,6 +18,7 @@ TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mainloop.c:
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/nubevent.c:
 	.text       start:0x802E4950 end:0x802E4B78
+	.bss        start:0x804A5690 end:0x804A56B8
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/nubinit.c:
 	.text       start:0x802E4B78 end:0x802E4D10
@@ -56,6 +57,7 @@ TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/flush_cache.
 	.text       start:0x802E7200 end:0x802E7238
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mem_TRK.c:
+	.init       start:0x80003100 end:0x80003154
 	.text       start:0x802E7238 end:0x802E72F0
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/targimpl.c:
@@ -65,7 +67,10 @@ TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/mpc_7xx_603e
 	.text       start:0x802E8DE0 end:0x802E9150
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/dolphin_trk.c:
+	.init       start:0x80005088 end:0x800050B4
 	.text       start:0x802E9150 end:0x802E946C
+	.data       start:0x803C6540 end:0x803C657C
+	.bss        start:0x804A7610 end:0x804A7614
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/main_TRK.c:
 	.text       start:0x802E946C end:0x802E94C4
