@@ -6,9 +6,9 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
-| Lead (main session) | `geist-matching` / `main` | SDK done (77/77 linked); now small unknown SDK units; **AMC EXI2 comm lib 0x8031E490-0x8031EAF4** (taken out of helper-musyx's range; EXI2_* named on main), tail stubs 0x8033F5B8-0x80341200, merging | working |
+| Lead (main session) | `geist-matching` / `main` | SDK done (77/77 linked); now small unknown SDK units; **EXI2 debugger libs 0x8031DE10-0x8031EAF4** (low-level EXI2 driver + AMC EXI2 comm; taken out of helper-musyx's range; EXI2_* named on main), tail stubs 0x8033F5B8-0x80341200, merging | working |
 | helper-msl | `.claude/worktrees/optimistic-khayyam-7b9401` / `claude/optimistic-khayyam-7b9401` | **MSL_C + Runtime.PPCEABI.H + TRK_MINNOW_DOLPHIN**: `.text` from the first TRK/Runtime function (about 0x802E4800, find the exact start) up to 0x802F6B9C (`AMC_IsStub` and everything from 0x802F6BA4 is SDK, not yours) plus their data | working (Remote Control on) |
-| helper-musyx | `.claude/worktrees/goofy-clarke-759020` / `claude/goofy-clarke-759020` | **MusyX + zlib 1.1.4**: `.text` 0x8031DE10-0x8033F5B8 (382 functions, none named yet) plus their data; also find where zlib's inflate lives (it may be elsewhere) | working (Remote Control on) |
+| helper-musyx | `.claude/worktrees/goofy-clarke-759020` / `claude/goofy-clarke-759020` | **MusyX 2.0.3 (GC/1.3.2)**: `.text` 0x8031EAF4-0x8033F990 (creverb.c ends at Hu_IsStub) plus their data. **zlib 1.1.4**: inflate is in game .text around 0x80197FD4-0x8019FC84 (inside auto unit 0x801920B8; copyright string 0x80347538), so split only the zlib functions and their data | working (Remote Control on) |
 
 **Rules for helpers:**
 1. Work only in your own worktree and branch. Never edit `main`, never push, never touch `orig/`, game
