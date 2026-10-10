@@ -154,6 +154,93 @@ Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp:
 	extabindex  start:0x8000578C end:0x800057E0
 	.text       start:0x802EB8D0 end:0x802ECCFC
 
+MSL_C/MSL_Common_Embedded/Math/Double_precision/e_acos.c:
+	.text       start:0x802F353C end:0x802F3778
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/e_atan2.c:
+	.text       start:0x802F3778 end:0x802F3A08
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/e_exp.c:
+	.text       start:0x802F3A08 end:0x802F3C2C
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/e_fmod.c:
+	.text       start:0x802F3C2C end:0x802F3F68
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/e_pow.c:
+	.text       start:0x802F3F68 end:0x802F4798
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/e_rem_pio2.c:
+	.text       start:0x802F4798 end:0x802F4B38
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/k_cos.c:
+	.text       start:0x802F4BE4 end:0x802F4CD8
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/k_rem_pio2.c:
+	.text       start:0x802F4CD8 end:0x802F5B2C
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/k_sin.c:
+	.text       start:0x802F5B2C end:0x802F5BCC
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/k_tan.c:
+	.text       start:0x802F5BCC end:0x802F5DE0
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_atan.c:
+	.text       start:0x802F5DE0 end:0x802F5FF8
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_copysign.c:
+	.text       start:0x802F5FF8 end:0x802F6020
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_cos.c:
+	.text       start:0x802F6020 end:0x802F60F4
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_floor.c:
+	.text       start:0x802F60F4 end:0x802F623C
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_frexp.c:
+	.text       start:0x802F623C end:0x802F62C8
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_ldexp.c:
+	.text       start:0x802F62C8 end:0x802F648C
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_modf.c:
+	.text       start:0x802F648C end:0x802F6588
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_sin.c:
+	.text       start:0x802F6588 end:0x802F6660
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_tan.c:
+	.text       start:0x802F6660 end:0x802F66D8
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/w_acos.c:
+	.text       start:0x802F66D8 end:0x802F66F8
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/w_atan2.c:
+	.text       start:0x802F66F8 end:0x802F6718
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/w_exp.c:
+	.text       start:0x802F6718 end:0x802F6738
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/w_fmod.c:
+	.text       start:0x802F6738 end:0x802F6758
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/w_pow.c:
+	.text       start:0x802F6758 end:0x802F6778
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/e_sqrt.c:
+	.text       start:0x802F6778 end:0x802F699C
+
+MSL_C/PPC_EABI/Src/math_ppc.c:
+	.text       start:0x802F699C end:0x802F6A2C
+
+MSL_C/MSL_Common/Src/math_api.c:
+	.text       start:0x802F6A2C end:0x802F6AAC
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/w_sqrt.c:
+	.text       start:0x802F6AAC end:0x802F6ACC
+
+MSL_C/MSL_Common/Src/extras.c:
+	.text       start:0x802F6ACC end:0x802F6B9C
+
 dolphin/ar/ar.c:
 	.text       start:0x802F6BA4 end:0x802F86EC
 	.data       start:0x803C6E38 end:0x803C6E7C
