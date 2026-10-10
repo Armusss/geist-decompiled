@@ -1,0 +1,18 @@
+# See config.example.yml for documentation.
+object_base: orig/GITE01
+object: sys/main.dol
+hash: 6612f52ce6c50bb831ffddd5264b22973304f288
+symbols: config/GITE01/symbols.txt
+splits: config/GITE01/splits.txt
+# Provisional: game built Jul 2005 with Dolphin SDK Apr 2004 (0x2301).
+# Confirm the CodeWarrior version by matching SDK/MSL functions, then update this.
+mw_comment_version: 10
+
+# loader.rel (1 KB, 10 functions) is left out for now: its imports from main.dol use
+# ELF-style section indices with absolute addresses, which dtk v1.8.4 misreads
+# (it creates lbl_800144A4 in extab). Re-add once main.dol is set up; see README.md.
+# modules:
+# - object: files/loader.rel
+#   hash: 20cc25827a68208dd48e0929e901ef6a83feda42
+#   symbols: config/GITE01/loader/symbols.txt
+#   splits: config/GITE01/loader/splits.txt

@@ -29,7 +29,7 @@ from tools.project import (
 # Game versions
 DEFAULT_VERSION = 0
 VERSIONS = [
-    "GAMEID",  # 0
+    "GITE01",  # 0
 ]
 
 parser = argparse.ArgumentParser()
@@ -158,7 +158,7 @@ if not config.non_matching:
 # Tool versions
 config.binutils_tag = "2.42-2"
 config.compilers_tag = "20251118"
-config.dtk_tag = "v1.8.3"
+config.dtk_tag = "v1.8.4"
 config.objdiff_tag = "v3.6.1"
 config.sjiswrap_tag = "v1.2.2"
 config.wibo_tag = "1.0.3"
@@ -247,7 +247,34 @@ cflags_rel = [
     "-sdata2 0",
 ]
 
-config.linker_version = "GC/1.3.2"
+# Evidence (STATUS.md, 2026-10-10): linkers GC/1.2.5n-2.6 reproduce the retail DOL; GC/2.7 warns that the
+# game's runtime is older than 2.7 and changes 67 bytes; 3.0 crashes. Game code matches GC/1.3.2-2.7
+# (not 1.2.5n/3.0). 2.5 and 2.6 generate identical code on all SDK sources tested; 2.6 is the working choice.
+config.linker_version = "GC/2.6"
+
+
+# Dolphin SDK flags, as used by doldecomp/dolsdk2004 (whose sources are in src/dolphin).
+cflags_dolphin = [
+    "-char unsigned",
+    "-nodefaults",
+    "-proc gekko",
+    "-fp hard",
+    "-Cpp_exceptions off",
+    "-enum int",
+    "-warn pragmas",
+    "-requireprotos",
+    '-pragma "cats off"',
+    "-O4,p",
+    "-inline auto",
+    "-D__GEKKO__",
+    "-DSDK_REVISION=2",
+    "-DRELEASE",
+    "-I-",
+    "-i include",
+    "-i include/libc",
+    "-ir src/dolphin",
+    f"-i build/{config.version}/include",
+]
 
 
 # Helper function for Dolphin libraries
@@ -255,7 +282,7 @@ def DolphinLib(lib_name: str, objects: List[Object]) -> Dict[str, Any]:
     return {
         "lib": lib_name,
         "mw_version": "GC/1.2.5n",
-        "cflags": cflags_base,
+        "cflags": cflags_dolphin,
         "progress_category": "sdk",
         "objects": objects,
     }
@@ -285,6 +312,152 @@ def MatchingFor(*versions):
 config.warn_missing_config = True
 config.warn_missing_source = False
 config.libs = [
+    # Dolphin SDK (GC/1.2.5n). Units found by matching dolsdk2004 sources against main.dol; see STATUS.md.
+    DolphinLib(
+        "ar",
+        [
+            Object(NonMatching, "dolphin/ar/ar.c"),
+            Object(NonMatching, "dolphin/ar/arq.c"),
+        ],
+    ),
+    DolphinLib(
+        "base",
+        [
+            Object(Matching, "dolphin/base/PPCArch.c"),
+        ],
+    ),
+    DolphinLib(
+        "card",
+        [
+            Object(NonMatching, "dolphin/card/CARDBios.c"),
+            Object(NonMatching, "dolphin/card/CARDUnlock.c"),
+            Object(NonMatching, "dolphin/card/CARDRdwr.c"),
+            Object(NonMatching, "dolphin/card/CARDBlock.c"),
+            Object(NonMatching, "dolphin/card/CARDDir.c"),
+            Object(NonMatching, "dolphin/card/CARDCheck.c"),
+            Object(NonMatching, "dolphin/card/CARDMount.c"),
+            Object(Matching, "dolphin/card/CARDFormat.c"),
+            Object(Matching, "dolphin/card/CARDOpen.c", extra_cflags=["-char signed"]),
+            Object(Matching, "dolphin/card/CARDCreate.c"),
+            Object(Matching, "dolphin/card/CARDRead.c"),
+            Object(Matching, "dolphin/card/CARDWrite.c"),
+            Object(Matching, "dolphin/card/CARDDelete.c"),
+            Object(Matching, "dolphin/card/CARDStat.c"),
+            Object(Matching, "dolphin/card/CARDRename.c", extra_cflags=["-char signed"]),
+        ],
+    ),
+    DolphinLib(
+        "db",
+        [
+            Object(NonMatching, "dolphin/db/db.c"),
+        ],
+    ),
+    DolphinLib(
+        "dsp",
+        [
+            Object(NonMatching, "dolphin/dsp/dsp.c"),
+            Object(NonMatching, "dolphin/dsp/dsp_task.c"),
+        ],
+    ),
+    DolphinLib(
+        "dvd",
+        [
+            Object(NonMatching, "dolphin/dvd/dvdlow.c", extra_cflags=["-char signed"]),
+            Object(NonMatching, "dolphin/dvd/dvdfs.c", extra_cflags=["-char signed"]),
+            Object(NonMatching, "dolphin/dvd/dvd.c", extra_cflags=["-char signed"]),
+            Object(Matching, "dolphin/dvd/dvdqueue.c", extra_cflags=["-char signed"]),
+            Object(Matching, "dolphin/dvd/dvderror.c", extra_cflags=["-char signed"]),
+            Object(NonMatching, "dolphin/dvd/dvdidutils.c", extra_cflags=["-char signed"]),
+            Object(Matching, "dolphin/dvd/fstload.c", extra_cflags=["-char signed"]),
+        ],
+    ),
+    DolphinLib(
+        "gx",
+        [
+            Object(NonMatching, "dolphin/gx/GXInit.c"),
+            Object(NonMatching, "dolphin/gx/GXFifo.c"),
+            Object(NonMatching, "dolphin/gx/GXAttr.c"),
+            Object(NonMatching, "dolphin/gx/GXMisc.c"),
+            Object(NonMatching, "dolphin/gx/GXGeometry.c"),
+            Object(Matching, "dolphin/gx/GXFrameBuf.c"),
+            Object(Matching, "dolphin/gx/GXLight.c"),
+            Object(NonMatching, "dolphin/gx/GXTexture.c"),
+            Object(Matching, "dolphin/gx/GXBump.c"),
+            Object(Matching, "dolphin/gx/GXTev.c"),
+            Object(Matching, "dolphin/gx/GXPixel.c"),
+            Object(Matching, "dolphin/gx/GXDisplayList.c"),
+            Object(NonMatching, "dolphin/gx/GXTransform.c"),
+            Object(Matching, "dolphin/gx/GXPerf.c"),
+        ],
+    ),
+    DolphinLib(
+        "mtx",
+        [
+            Object(NonMatching, "dolphin/mtx/mtx.c", extra_cflags=["-char signed"]),
+            Object(Matching, "dolphin/mtx/mtxvec.c"),
+            Object(Matching, "dolphin/mtx/mtx44vec.c"),
+            Object(NonMatching, "dolphin/mtx/vec.c"),
+            Object(NonMatching, "dolphin/mtx/quat.c"),
+        ],
+    ),
+    DolphinLib(
+        "os",
+        [
+            Object(NonMatching, "dolphin/os/OS.c"),
+            Object(NonMatching, "dolphin/os/OSAlarm.c"),
+            Object(Matching, "dolphin/os/OSAlloc.c"),
+            Object(Matching, "dolphin/os/OSArena.c"),
+            Object(Matching, "dolphin/os/OSAudioSystem.c"),
+            Object(NonMatching, "dolphin/os/OSCache.c"),
+            Object(NonMatching, "dolphin/os/OSContext.c"),
+            Object(Matching, "dolphin/os/OSError.c"),
+            Object(NonMatching, "dolphin/os/OSExec.c"),
+            Object(NonMatching, "dolphin/os/OSFont.c"),
+            Object(NonMatching, "dolphin/os/OSInterrupt.c"),
+            Object(Matching, "dolphin/os/OSLink.c"),
+            Object(Matching, "dolphin/os/OSMemory.c"),
+            Object(Matching, "dolphin/os/OSMutex.c"),
+            Object(Matching, "dolphin/os/OSReboot.c"),
+            Object(NonMatching, "dolphin/os/OSReset.c"),
+            Object(Matching, "dolphin/os/OSResetSW.c"),
+            Object(NonMatching, "dolphin/os/OSRtc.c"),
+            Object(NonMatching, "dolphin/os/OSTime.c"),
+            Object(NonMatching, "dolphin/os/__ppc_eabi_init.c"),
+        ],
+    ),
+    DolphinLib(
+        "pad",
+        [
+            Object(Matching, "dolphin/pad/Padclamp.c"),
+            Object(NonMatching, "dolphin/pad/Pad.c"),
+        ],
+    ),
+    DolphinLib(
+        "vi",
+        [
+            Object(NonMatching, "dolphin/vi/vi.c"),
+        ],
+    ),
+    DolphinLib(
+        "ai",
+        [
+            Object(NonMatching, "dolphin/ai/ai.c"),
+        ],
+    ),
+    DolphinLib(
+        "exi",
+        [
+            Object(NonMatching, "dolphin/exi/EXIBios.c", extra_cflags=["-O3,p"]),
+            Object(Matching, "dolphin/exi/EXIUart.c"),
+        ],
+    ),
+    DolphinLib(
+        "si",
+        [
+            Object(NonMatching, "dolphin/si/SIBios.c"),
+            Object(Matching, "dolphin/si/SISamplingRate.c"),
+        ],
+    ),
     {
         "lib": "Runtime.PPCEABI.H",
         "mw_version": config.linker_version,
