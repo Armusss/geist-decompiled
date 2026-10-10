@@ -373,7 +373,7 @@ config.libs = [
         [
             Object(Matching, "dolphin/dvd/dvdlow.c", extra_cflags=["-char signed"]),
             Object(NonMatching, "dolphin/dvd/dvdfs.c", extra_cflags=["-char signed"]),
-            Object(NonMatching, "dolphin/dvd/dvd.c", extra_cflags=["-char signed"]),
+            Object(Matching, "dolphin/dvd/dvd.c", extra_cflags=["-char signed"]),
             Object(Matching, "dolphin/dvd/dvdqueue.c", extra_cflags=["-char signed"]),
             Object(Matching, "dolphin/dvd/dvderror.c", extra_cflags=["-char signed"]),
             Object(Matching, "dolphin/dvd/dvdidutils.c", extra_cflags=["-char signed"]),
