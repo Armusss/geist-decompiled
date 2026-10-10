@@ -141,6 +141,7 @@ dolphin/gx/GXGeometry.c:
 
 dolphin/gx/GXFrameBuf.c:
 	.text       start:0x80308578 end:0x80309020
+	.data       start:0x803C7CE8 end:0x803C7E18
 	.sdata2     start:0x804DB7A0 end:0x804DB7A4
 
 dolphin/gx/GXLight.c:
