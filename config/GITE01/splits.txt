@@ -334,24 +334,35 @@ musyx/runtime/seq.c:
 
 musyx/runtime/synth.c:
 	.text       start:0x80322AC0 end:0x80325F48
+	.bss        start:0x804B7B00 end:0x804B90E4
+	.sbss       start:0x804D5C98 end:0x804D5CE0
+	.sdata2     start:0x804DB8E0 end:0x804DB920
 
 musyx/runtime/seq_api.c:
 	.text       start:0x80325F48 end:0x80326258
 
 musyx/runtime/snd_synthapi.c:
 	.text       start:0x80326258 end:0x80326B84
+	.sdata2     start:0x804DB920 end:0x804DB938
 
 musyx/runtime/stream.c:
 	.text       start:0x80326B84 end:0x803297E8
+	.bss        start:0x804B90E8 end:0x804BAAE8
+	.sbss       start:0x804D5CE0 end:0x804D5CF0
+	.sdata2     start:0x804DB938 end:0x804DB94C
 
 musyx/runtime/synthdata.c:
 	.text       start:0x803297E8 end:0x8032B4D4
+	.bss        start:0x804BAAE8 end:0x804C5320
+	.sbss       start:0x804D5CF0 end:0x804D5D3C
 
 musyx/runtime/synthmacros.c:
 	.text       start:0x8032B4D4 end:0x803303BC
 
 musyx/runtime/synthvoice.c:
 	.text       start:0x803303BC end:0x8033219C
+	.bss        start:0x804C5340 end:0x804C6300
+	.sbss       start:0x804D5D60 end:0x804D5D74
 
 musyx/runtime/synth_ac.c:
 	.text       start:0x8033219C end:0x80332314
@@ -361,6 +372,7 @@ musyx/runtime/synth_adsr.c:
 
 musyx/runtime/synth_vsamples.c:
 	.text       start:0x80332A7C end:0x80333414
+	.bss        start:0x804C6300 end:0x804C6E50
 
 musyx/runtime/s_data.c:
 	.text       start:0x80333414 end:0x80334024
@@ -373,18 +385,30 @@ musyx/runtime/hw_volconv.c:
 
 musyx/runtime/snd3d.c:
 	.text       start:0x80337DD0 end:0x8033A230
+	.bss        start:0x804C7B48 end:0x804C8D98
+	.sbss       start:0x804D5DC8 end:0x804D5DE4
+	.sdata2     start:0x804DB9F0 end:0x804DBA40
 
 musyx/runtime/snd_init.c:
 	.text       start:0x8033A230 end:0x8033A368
 
 musyx/runtime/snd_math.c:
 	.text       start:0x8033A368 end:0x8033A728
+	.sdata2     start:0x804DBA40 end:0x804DBA5C
 
 musyx/runtime/snd_midictrl.c:
 	.text       start:0x8033A728 end:0x8033CA38
+	.rodata     start:0x8034EBB8 end:0x8034ECC8
+	.data       start:0x803CD760 end:0x803CD7EC
+	.bss        start:0x804C8D98 end:0x804CFB98
+	.sbss       start:0x804D5DE8 end:0x804D5DF0
 
 musyx/runtime/snd_service.c:
 	.text       start:0x8033CA38 end:0x8033CD0C
+	.rodata     start:0x8034ECC8 end:0x8034ECF4
+	.data       start:0x803CD7F0 end:0x803CDFF0
+	.sdata      start:0x804D3FA8 end:0x804D3FAC
+	.sdata2     start:0x804DBA60 end:0x804DBA68
 
 musyx/runtime/hardware.c:
 	.text       start:0x8033CD0C end:0x8033DE20
