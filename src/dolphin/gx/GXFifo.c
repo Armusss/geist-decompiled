@@ -5,6 +5,9 @@
 
 #include "__gx.h"
 
+// Geist's SDK build: CPUFifo/GPFifo are statics declared first (retail .sbss order: CPUFifo, GPFifo, ...).
+static __GXFifoObj* CPUFifo;
+static __GXFifoObj* GPFifo;
 static OSThread* __GXCurrentThread;
 static GXBool CPGPLinked;
 static BOOL GXOverflowSuspendInProgress;
@@ -15,8 +18,6 @@ static u32 __GXOverflowCount;
 static BOOL IsWGPipeRedirected;
 #endif
 
-__GXFifoObj* CPUFifo;
-__GXFifoObj* GPFifo;
 void* __GXCurrentBP;
 
 static void __GXFifoReadEnable(void);
