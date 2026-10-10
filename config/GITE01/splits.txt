@@ -373,10 +373,10 @@ musyx/runtime/synthvoice.c:
 	.sbss       start:0x804D5D60 end:0x804D5D74
 
 musyx/runtime/synth_ac.c:
-	.text       start:0x8033219C end:0x80332314
+	.text       start:0x8033219C end:0x803322BC
 
 musyx/runtime/synth_adsr.c:
-	.text       start:0x80332314 end:0x80332A7C
+	.text       start:0x803322BC end:0x80332A7C
 
 musyx/runtime/synth_vsamples.c:
 	.text       start:0x80332A7C end:0x80333414

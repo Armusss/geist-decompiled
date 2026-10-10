@@ -2078,9 +2078,8 @@ void salDeactivateVoice(DSPvoice *dsp_vptr) {
 
 #endif
 
-#if MUSY_VERSION <=                                                                                \
-    MUSY_VERSION_CHECK(2, 0,                                                                       \
-                       2) // dropped in the SMS 2.0.3 fork (unused; kept for upstream <= 2.0.2)
+// Geist's 2.0.3 keeps these (the SMS 2.0.3 fork dropped them); salReconnectVoice is linker-stripped.
+#if 1
 #if MUSY_TARGET != MUSY_TARGET_PC
 void salReconnectVoice(DSPvoice *dsp_vptr, u8 studio) {
   if (dsp_vptr->state != DSP_VOICE_STATE_INACTIVE) {
