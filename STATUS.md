@@ -7,8 +7,8 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
 | Lead (main session) | `geist-matching` / `main` | The 11 remaining SDK files (`dolphin/*`), tail stubs 0x8033F5B8-0x80341200, merging | working |
-| helper-msl | own worktree, branch `helper-msl` | **MSL_C + Runtime.PPCEABI.H + TRK_MINNOW_DOLPHIN**: `.text` from the first TRK/Runtime function (about 0x802E4800, find the exact start) up to 0x802F6B9C (`AMC_IsStub` and everything from 0x802F6BA4 is SDK, not yours) plus their data | starting |
-| helper-musyx | own worktree, branch `helper-musyx` | **MusyX + zlib 1.1.4**: `.text` 0x8031DE10-0x8033F5B8 (382 functions, none named yet) plus their data; also find where zlib's inflate lives (it may be elsewhere) | starting |
+| helper-msl | own worktree (branch: reported by helper) | **MSL_C + Runtime.PPCEABI.H + TRK_MINNOW_DOLPHIN**: `.text` from the first TRK/Runtime function (about 0x802E4800, find the exact start) up to 0x802F6B9C (`AMC_IsStub` and everything from 0x802F6BA4 is SDK, not yours) plus their data | starting |
+| helper-musyx | own worktree (branch: reported by helper) | **MusyX + zlib 1.1.4**: `.text` 0x8031DE10-0x8033F5B8 (382 functions, none named yet) plus their data; also find where zlib's inflate lives (it may be elsewhere) | starting |
 
 **Rules for helpers:**
 1. Work only in your own worktree and branch. Never edit `main`, never push, never touch `orig/`, game
