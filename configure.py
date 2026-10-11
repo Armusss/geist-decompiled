@@ -274,7 +274,9 @@ cflags_rt = [
 ]
 # MSL_C common sources: Geist's (older) MSL is built without the global optimizer (strlen, rand, time match
 # only with "-opt level=0,peephole,schedule", not levels 1-4); the math library is -O4,p like the runtime.
-cflags_msl = [f for f in cflags_rt if f != "-O4,p"] + ["-opt level=0,peephole,schedule"]
+# MSL_C common: "-O4,p" followed by "-opt level=0,peephole,schedule" (the -O4 sub-options stay set;
+# dropping -O4,p changes register saves, e.g. stmw for two registers).
+cflags_msl = [*cflags_rt, "-opt level=0,peephole,schedule"]
 cflags_msl_math = cflags_rt
 # ==== end helper-msl cflags ====
 # ==== helper-musyx cflags (only helper-musyx edits this block) ====
@@ -630,7 +632,7 @@ config.libs = [
             Object(NonMatching, "MSL_C/MSL_Common/Src/scanf.c", cflags=cflags_msl),
             Object(Matching, "MSL_C/MSL_Common/Src/rand.c", cflags=cflags_msl),
             Object(Matching, "MSL_C/MSL_Common/Src/signal.c", extra_cflags=['-use_lmw_stmw off'], cflags=cflags_msl),
-            Object(NonMatching, "MSL_C/MSL_Common/Src/string.c", cflags=cflags_msl),
+            Object(Matching, "MSL_C/MSL_Common/Src/string.c", cflags=cflags_msl),
             Object(Matching, "MSL_C/MSL_Common/Src/time.c", extra_cflags=['-use_lmw_stmw off'], cflags=cflags_msl),
             Object(Matching, "MSL_C/MSL_Common/Src/wchar_io.c", extra_cflags=['-use_lmw_stmw off'], cflags=cflags_msl),
             Object(Matching, "MSL_C/PPC_EABI/Src/time.gamecube.c", cflags=cflags_msl),
