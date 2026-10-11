@@ -97,21 +97,15 @@ game/u_8009C74C.cpp:
 	.text       start:0x8009C74C end:0x8009C87C
 
 game/Shadow2.cpp:
-	.text       start:0x8009C87C end:0x8009D5E4
+	.text       start:0x8009C87C end:0x8009D710
 	.ctors      start:0x8034120C end:0x80341210
 
-game/u_8009D5E4.cpp:
-	.text       start:0x8009D5E4 end:0x8009D71C
-
 game/Memory.cpp:
-	.text       start:0x8009D71C end:0x8009DDF0
-
-game/u_8009DDF0.cpp:
-	.text       start:0x8009DDF0 end:0x8009DE4C
+	.text       start:0x8009D710 end:0x8009DE94
 	.ctors      start:0x80341210 end:0x80341214
 
-game/u_8009DE4C.cpp:
-	.text       start:0x8009DE4C end:0x800A6F18
+game/u_8009DE94.cpp:
+	.text       start:0x8009DE94 end:0x800A6F18
 
 game/u_800A6F18.cpp:
 	.text       start:0x800A6F18 end:0x800B1834

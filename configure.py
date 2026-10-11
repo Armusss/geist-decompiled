@@ -597,10 +597,8 @@ config.libs = [
             Object(NonMatching, "game/u_8008DCDC.cpp"),  # guess
             Object(NonMatching, "game/u_8009C74C.cpp"),  # known
             Object(NonMatching, "game/Shadow2.cpp"),  # guess
-            Object(NonMatching, "game/u_8009D5E4.cpp"),  # known
             Object(NonMatching, "game/Memory.cpp"),  # guess
-            Object(NonMatching, "game/u_8009DDF0.cpp"),  # guess
-            Object(NonMatching, "game/u_8009DE4C.cpp"),  # known
+            Object(NonMatching, "game/u_8009DE94.cpp"),  # known
             Object(NonMatching, "game/u_800A6F18.cpp"),  # guess
             Object(NonMatching, "game/u_800B1834.cpp"),  # guess
             Object(NonMatching, "game/u_800BAA14.cpp"),  # guess
