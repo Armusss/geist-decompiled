@@ -20,6 +20,15 @@ int stricmp(const char* str1, const char* str2) {
 	return 0;
 }
 
-int strnicmp(const char* str1, const char* str2, int n) {
-    return __msl_strnicmp(str1, str2, n);
+// Geist's extras.c is built at -O4 with MSL's inline ctype (MSL_USE_INLINES), unlike the rest of MSL common.
+// The 0x44-byte function before stricmp is strupr (in-place toupper), not strnicmp.
+char* strupr(char* str) {
+    char* p = str;
+
+    while (*p) {
+        *p = toupper(*p);
+        p++;
+    }
+
+    return str;
 }

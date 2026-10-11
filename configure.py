@@ -665,7 +665,7 @@ config.libs = [
             Object(Matching, "MSL_C/PPC_EABI/Src/math_ppc.c", cflags=cflags_msl_math),
             Object(Matching, "MSL_C/MSL_Common/Src/math_api.c", cflags=cflags_msl_math),
             Object(Matching, "MSL_C/MSL_Common_Embedded/Math/Double_precision/w_sqrt.c", cflags=cflags_msl_math),
-            Object(NonMatching, "MSL_C/MSL_Common/Src/extras.c", cflags=cflags_msl_math),
+            Object(Matching, "MSL_C/MSL_Common/Src/extras.c", extra_cflags=["-DMSL_USE_INLINES=1"], cflags=cflags_rt),
         ],
     },
     # ==== end helper-msl ====
