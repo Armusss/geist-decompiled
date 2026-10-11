@@ -126,6 +126,66 @@ static const unsigned long fix_pool_sizes[] = {4, 12, 20, 36, 52, 68};
 
 void __sys_free();
 
+// Geist (older MSL): full allocator. Functions present in zeldaret/tp are kept as-is; the allocation half is
+// written from the MSL algorithm (cross-checked with PrimeDecomp/prime) and matched against the DOL. With
+// -inline off the compiler still emits a file in reverse source order, so this order mirrors the DOL backwards.
+// Status: 19/24 functions match; FixBlock_construct (retail inlines FixSubBlock_construct, which only happens
+// with -inline on,noauto, but that flag breaks deallocate_from_var_pools), soft_/allocate_from_var_pools and
+// allocate_from_fixed_pools still differ.
+
+static void SubBlock_construct(SubBlock* ths, unsigned long size, Block* bp, int prev_alloc, int this_alloc);
+static SubBlock* SubBlock_split(SubBlock* ths, unsigned long sz);
+static void Block_unlink(Block* ths, SubBlock* sb);
+void Block_link(Block* ths, SubBlock* sb);
+void* __sys_alloc(unsigned long size);
+
+static void Block_construct(Block* ths, unsigned long size) {
+    SubBlock* sb;
+
+    ths->size = size | 0x2 | 0x1;
+    *(unsigned long*)((char*)ths + size - 8) = ths->size;
+    sb = (SubBlock*)((char*)ths + 16);
+    SubBlock_construct(sb, size - 24, ths, 0, 0);
+    ths->max_size = size - 24;
+    Block_start(ths) = 0;
+    Block_link(ths, sb);
+}
+
+static SubBlock* Block_subBlock(Block* ths, unsigned long size) {
+    SubBlock* st;
+    SubBlock* sb;
+    unsigned long sbsize;
+    unsigned long max_found;
+
+    st = Block_start(ths);
+    if (st == 0) {
+        ths->max_size = 0;
+        return 0;
+    }
+
+    sb = st;
+    sbsize = SubBlock_size(sb);
+    max_found = sbsize;
+
+    while (sbsize < size) {
+        sb = sb->next;
+        sbsize = SubBlock_size(sb);
+        if (max_found < sbsize)
+            max_found = sbsize;
+        if (sb == st) {
+            ths->max_size = max_found;
+            return 0;
+        }
+    }
+
+    if (sbsize - size >= 80)
+        SubBlock_split(sb, size);
+
+    Block_start(ths) = sb->next;
+    Block_unlink(ths, sb);
+    return sb;
+}
+
 void Block_link(Block* ths, SubBlock* sb) {
     SubBlock** st;
     SubBlock_set_free(sb);
@@ -146,6 +206,59 @@ void Block_link(Block* ths, SubBlock* sb) {
     }
     if (ths->max_size < SubBlock_size(*st))
         ths->max_size = SubBlock_size(*st);
+}
+
+static void Block_unlink(Block* ths, SubBlock* sb) {
+    SubBlock** st;
+    unsigned long size = SubBlock_size(sb);
+
+    sb->size |= 0x2;
+    *(unsigned long*)((char*)sb + size) |= 0x4;
+    st = &Block_start(ths);
+
+    if (*st == sb)
+        *st = sb->next;
+
+    if (*st == sb) {
+        *st = 0;
+        ths->max_size = 0;
+    } else {
+        sb->next->prev = sb->prev;
+        sb->prev->next = sb->next;
+    }
+}
+
+static void SubBlock_construct(SubBlock* ths, unsigned long size, Block* bp, int prev_alloc, int this_alloc) {
+    ths->block = (Block*)((unsigned long)bp | 0x1);
+    ths->size = size;
+    if (prev_alloc)
+        ths->size |= 0x4;
+    if (this_alloc) {
+        ths->size |= 0x2;
+        *(unsigned long*)((char*)ths + size) |= 0x4;
+    } else {
+        *(unsigned long*)((char*)ths + size - sizeof(unsigned long)) = size;
+    }
+}
+
+static SubBlock* SubBlock_split(SubBlock* ths, unsigned long sz) {
+    unsigned long origsize = SubBlock_size(ths);
+    int isfree = SubBlock_is_free(ths);
+    int isprevalloc = (int)(ths->size & 0x04);
+    SubBlock* np = (SubBlock*)((char*)ths + sz);
+    Block* bp = SubBlock_block(ths);
+
+    SubBlock_construct(ths, sz, bp, isprevalloc, !isfree);
+    SubBlock_construct(np, origsize - sz, bp, !isfree, !isfree);
+
+    if (isfree) {
+        np->next = ths->next;
+        np->next->prev = np;
+        np->prev = ths;
+        ths->next = np;
+    }
+
+    return np;
 }
 
 static SubBlock* SubBlock_merge_prev(SubBlock* ths, SubBlock** start) {
@@ -203,6 +316,20 @@ static void SubBlock_merge_next(SubBlock* pBlock, SubBlock** pStart) {
     }
 }
 
+static void link(__mem_pool_obj* pool_obj, Block* bp) {
+    if (pool_obj->start_ != 0) {
+        bp->prev = pool_obj->start_->prev;
+        bp->prev->next = bp;
+        bp->next = pool_obj->start_;
+        pool_obj->start_->prev = bp;
+        pool_obj->start_ = bp;
+    } else {
+        pool_obj->start_ = bp;
+        bp->prev = bp;
+        bp->next = bp;
+    }
+}
+
 static Block* __unlink(__mem_pool_obj* pool_obj, Block* bp) {
     Block* result = bp->next;
     if (result == bp) {
@@ -223,6 +350,87 @@ static Block* __unlink(__mem_pool_obj* pool_obj, Block* bp) {
     return result;
 }
 
+static Block* link_new_block(__mem_pool_obj* pool_obj, unsigned long size) {
+    Block* bp;
+
+    size += 24;
+    size = (size + 7) & ~7;
+    if (size < 0x10000)
+        size = 0x10000;
+
+    bp = (Block*)__sys_alloc(size);
+    if (bp == 0)
+        return 0;
+
+    Block_construct(bp, size);
+    link(pool_obj, bp);
+    return bp;
+}
+
+static void* allocate_from_var_pools(__mem_pool_obj* pool_obj, unsigned long size) {
+    Block* bp;
+    SubBlock* sb;
+
+    size = (size + 15) & ~7;
+    if (size < 80)
+        size = 80;
+
+    bp = pool_obj->start_ != 0 ? pool_obj->start_ : link_new_block(pool_obj, size);
+    if (bp == 0)
+        return 0;
+
+    do {
+        if (size <= bp->max_size) {
+            sb = Block_subBlock(bp, size);
+            if (sb) {
+                pool_obj->start_ = bp;
+                goto allocated;
+            }
+        }
+        bp = bp->next;
+    } while (bp != pool_obj->start_);
+
+    bp = link_new_block(pool_obj, size);
+    if (bp == 0)
+        return 0;
+    sb = Block_subBlock(bp, size);
+
+allocated:
+    return (char*)sb + 8;
+}
+
+static void* soft_allocate_from_var_pools(__mem_pool_obj* pool_obj, unsigned long size, unsigned long* max_size) {
+    Block* bp;
+    SubBlock* sb;
+
+    size = (size + 15) & ~7;
+    if (size < 80)
+        size = 80;
+
+    *max_size = 0;
+    bp = pool_obj->start_;
+    if (bp == 0)
+        return 0;
+
+    do {
+        if (size <= bp->max_size) {
+            sb = Block_subBlock(bp, size);
+            if (sb) {
+                pool_obj->start_ = bp;
+                goto allocated;
+            }
+        }
+        if (bp->max_size > 8 && *max_size < bp->max_size - 8)
+            *max_size = bp->max_size - 8;
+        bp = bp->next;
+    } while (bp != pool_obj->start_);
+
+    return 0;
+
+allocated:
+    return (char*)sb + 8;
+}
+
 static void deallocate_from_var_pools(__mem_pool_obj* pool_obj, void* ptr) {
     SubBlock* sb = SubBlock_from_pointer(ptr);
     SubBlock* _sb;
@@ -236,11 +444,44 @@ static void deallocate_from_var_pools(__mem_pool_obj* pool_obj, void* ptr) {
     }
 }
 
-inline void __init_pool_obj(__mem_pool* pool_obj) {
+static inline void FixSubBlock_construct(FixSubBlock* ths, FixBlock* b, FixSubBlock* next) {
+    ths->block_ = b;
+    ths->next_ = next;
+}
+
+static void FixBlock_construct(FixBlock* ths, FixBlock* prev, FixBlock* next, unsigned long index,
+                               FixSubBlock* chunk, unsigned long chunk_size) {
+    unsigned long fixSubBlock_size;
+    unsigned long n;
+    char* p;
+    unsigned long i;
+    char* np;
+
+    ths->prev_ = prev;
+    ths->next_ = next;
+    prev->next_ = ths;
+    next->prev_ = ths;
+    ths->client_size_ = fix_pool_sizes[index];
+    fixSubBlock_size = fix_pool_sizes[index] + 4;
+    n = chunk_size / fixSubBlock_size;
+    p = (char*)chunk;
+
+    for (i = 0; i < n - 1; ++i) {
+        np = p + fixSubBlock_size;
+        FixSubBlock_construct((FixSubBlock*)p, ths, (FixSubBlock*)np);
+        p = np;
+    }
+
+    FixSubBlock_construct((FixSubBlock*)p, ths, 0);
+    ths->start_ = chunk;
+    ths->n_allocated_ = 0;
+}
+
+void __init_pool_obj(__mem_pool* pool_obj) {
     memset(pool_obj, 0, sizeof(__mem_pool_obj));
 }
 
-static inline __mem_pool* get_malloc_pool(void) {
+static __mem_pool* get_malloc_pool(void) {
     static __mem_pool protopool;
     static unsigned char init = 0;
     if (!init) {
@@ -249,6 +490,62 @@ static inline __mem_pool* get_malloc_pool(void) {
     }
 
     return &protopool;
+}
+
+static void* allocate_from_fixed_pools(__mem_pool_obj* pool_obj, unsigned long size) {
+    unsigned long i = 0;
+    FixStart* fs;
+    FixBlock* b;
+    FixSubBlock* p;
+    unsigned long n;
+    unsigned long original_n;
+    unsigned long max_size;
+
+    while (size > fix_pool_sizes[i])
+        ++i;
+
+    fs = &pool_obj->fix_start[i];
+    if (fs->head_ == 0 || fs->head_->start_ == 0) {
+        n = (4096 - sizeof(FixBlock)) / (fix_pool_sizes[i] + 4);
+        if (n > 256)
+            n = 256;
+        original_n = n;
+        b = 0;
+        while (n >= 10) {
+            b = (FixBlock*)soft_allocate_from_var_pools(pool_obj, n * (fix_pool_sizes[i] + 4) + sizeof(FixBlock),
+                                                        &max_size);
+            if (b != 0)
+                break;
+            if (max_size > sizeof(FixBlock))
+                n = (max_size - sizeof(FixBlock)) / (fix_pool_sizes[i] + 4);
+            else
+                n = 0;
+        }
+        if (b == 0 && n < original_n) {
+            b = (FixBlock*)allocate_from_var_pools(pool_obj, original_n * (fix_pool_sizes[i] + 4) + sizeof(FixBlock));
+            if (b == 0)
+                return 0;
+        }
+        size = __msize_inline(b);
+        if (fs->head_ == 0) {
+            fs->head_ = b;
+            fs->tail_ = b;
+        }
+        FixBlock_construct(b, fs->tail_, fs->head_, i, (FixSubBlock*)((char*)b + sizeof(FixBlock)),
+                           size - sizeof(FixBlock));
+        fs->head_ = b;
+    }
+
+    p = fs->head_->start_;
+    fs->head_->start_ = p->next_;
+    ++fs->head_->n_allocated_;
+
+    if (fs->head_->start_ == 0) {
+        fs->head_ = fs->head_->next_;
+        fs->tail_ = fs->tail_->next_;
+    }
+
+    return (char*)p + 4;
 }
 
 void deallocate_from_fixed_pools(__mem_pool_obj* pool_obj, void* ptr, unsigned long size) {
@@ -307,6 +604,26 @@ void deallocate_from_fixed_pools(__mem_pool_obj* pool_obj, void* ptr, unsigned l
     }
 }
 
+void* __pool_alloc(__mem_pool* pool, unsigned long size) {
+    void* result;
+    __mem_pool_obj* pool_obj;
+
+    if (size == 0)
+        return 0;
+
+    if (size > 0xFFFFFFCF)
+        return 0;
+
+    pool_obj = (__mem_pool_obj*)pool;
+
+    if (size <= 68)
+        result = allocate_from_fixed_pools(pool_obj, size);
+    else
+        result = allocate_from_var_pools(pool_obj, size);
+
+    return result;
+}
+
 void __pool_free(__mem_pool* pool, void* ptr) {
     __mem_pool_obj* pool_obj;
     unsigned long size;
@@ -323,6 +640,16 @@ void __pool_free(__mem_pool* pool, void* ptr) {
     } else {
         deallocate_from_var_pools(pool_obj, ptr);
     }
+}
+
+void* malloc(unsigned long size) {
+    void* result;
+
+    __begin_critical_region(malloc_pool_access);
+    result = __pool_alloc(get_malloc_pool(), size);
+    __end_critical_region(malloc_pool_access);
+
+    return result;
 }
 
 void free(void* ptr) {
