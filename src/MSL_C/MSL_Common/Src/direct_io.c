@@ -6,6 +6,152 @@
 #include "wchar_io.h"
 #include <cstring>
 
+int __load_buffer(FILE* file, size_t* bytes_loaded, int alignment);
+size_t __fread(void* buffer, size_t size, size_t count, FILE* file);
+
+#define set_eof(file)                                                                              \
+    do {                                                                                           \
+        (file)->file_state.io_state = __neutral;                                                   \
+        (file)->file_state.eof = 1;                                                                \
+        (file)->buffer_length = 0;                                                                 \
+    } while (0)
+int __flush_line_buffered_output_files(void);
+
+// Geist keeps fread/__fread (MSL reference algorithm, matched against the DOL).
+size_t fread(void* buffer, size_t size, size_t count, FILE* stream) {
+    size_t retval;
+
+    __begin_critical_region(stdin_access);
+    retval = __fread(buffer, size, count, stream);
+    __end_critical_region(stdin_access);
+
+    return (retval);
+}
+
+size_t __fread(void* buffer, size_t size, size_t count, FILE* file) {
+    unsigned char* read_ptr;
+    size_t num_bytes, bytes_to_go, bytes_read;
+    int ioresult, always_buffer;
+
+    if (fwide(file, 0) == 0) {
+        fwide(file, -1);
+    }
+
+    bytes_to_go = size * count;
+
+    if (!bytes_to_go || file->file_state.error || file->file_mode.file_kind == __closed_file) {
+        return 0;
+    }
+
+    always_buffer = !file->file_mode.binary_io || file->file_mode.buffer_mode == _IOFBF;
+
+    if (file->file_state.io_state == __neutral) {
+        if (file->file_mode.io_mode & __read) {
+            file->file_state.io_state = __reading;
+            file->buffer_length = 0;
+        }
+    }
+
+    if (file->file_state.io_state < __reading) {
+        set_error(file);
+        return 0;
+    }
+
+    if (file->file_mode.buffer_mode & _IOLBF) {
+        if (__flush_line_buffered_output_files()) {
+            set_error(file);
+            return 0;
+        }
+    }
+
+    read_ptr = (unsigned char*)buffer;
+    bytes_read = 0;
+
+    if (bytes_to_go && file->file_state.io_state >= __rereading) {
+        do {
+            if (fwide(file, 0) == 1) {
+                *(wchar_t*)read_ptr = file->ungetc_wide_buffer[file->file_state.io_state - __rereading];
+                read_ptr += sizeof(wchar_t);
+                bytes_read += sizeof(wchar_t);
+                bytes_to_go -= sizeof(wchar_t);
+            } else {
+                *read_ptr++ = ((unsigned char*)file->ungetc_buffer)[file->file_state.io_state - __rereading];
+                bytes_read++;
+                bytes_to_go--;
+            }
+
+            file->file_state.io_state--;
+        } while (bytes_to_go && file->file_state.io_state >= __rereading);
+
+        if (file->file_state.io_state == __reading) {
+            file->buffer_length = file->save_buffer_length;
+        }
+    }
+
+    if (bytes_to_go && (file->buffer_length || always_buffer)) {
+        do {
+            if (!file->buffer_length) {
+                ioresult = __load_buffer(file, NULL, __align_buffer);
+
+                if (ioresult) {
+                    if (ioresult == __io_error) {
+                        set_error(file);
+                    } else {
+                        set_eof(file);
+                    }
+
+                    bytes_to_go = 0;
+                    break;
+                }
+            }
+
+            num_bytes = file->buffer_length;
+
+            if (num_bytes > bytes_to_go) {
+                num_bytes = bytes_to_go;
+            }
+
+            memcpy(read_ptr, file->buffer_ptr, num_bytes);
+
+            read_ptr += num_bytes;
+            bytes_read += num_bytes;
+            bytes_to_go -= num_bytes;
+
+            file->buffer_ptr += num_bytes;
+            file->buffer_length -= num_bytes;
+        } while (bytes_to_go && always_buffer);
+    }
+
+    if (bytes_to_go && !always_buffer) {
+        unsigned char* save_buffer = file->buffer;
+        size_t save_size = file->buffer_size;
+
+        file->buffer = read_ptr;
+        file->buffer_size = bytes_to_go;
+
+        ioresult = __load_buffer(file, &num_bytes, __dont_align_buffer);
+
+        if (ioresult) {
+            if (ioresult == __io_error) {
+                set_error(file);
+            } else {
+                set_eof(file);
+            }
+        }
+
+        bytes_read += num_bytes;
+
+        file->buffer = save_buffer;
+        file->buffer_size = save_size;
+
+        __prep_buffer(file);
+
+        file->buffer_length = 0;
+    }
+
+    return (bytes_read / size);
+}
+
 size_t fwrite(const void* buffer, size_t size, size_t count, FILE* stream) {
     size_t retval;
 
