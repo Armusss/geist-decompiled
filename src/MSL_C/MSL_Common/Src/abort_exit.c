@@ -14,27 +14,18 @@ static int __atexit_curr_func;
 
 static int __aborting;
 
+// Geist's (older) MSL: abort() goes through exit(), and exit() hands over to __exit().
+void __destroy_global_chain(void);
+void _ExitProcess(void);
+void __exit(int status);
+
 void abort(void) {
     raise(1);
     __aborting = 1;
-    __begin_critical_region(atexit_funcs_access);
-
-    while (__atexit_curr_func > 0)
-        __atexit_funcs[--__atexit_curr_func]();
-
-    __end_critical_region(atexit_funcs_access);
-    __kill_critical_regions();
-
-    if (__console_exit != NULL) {
-        __console_exit();
-        __console_exit = NULL;
-    }
-
-    _ExitProcess();
+    exit(1);
 }
 
 void exit(int status) {
-    int i;
     void (**dtor)(void);
 
     if (!__aborting) {
@@ -54,7 +45,12 @@ void exit(int status) {
         }
     }
 
+    __exit(status);
+}
+
+void __exit(int status) {
     __begin_critical_region(atexit_funcs_access);
+
     while (__atexit_curr_func > 0)
         __atexit_funcs[--__atexit_curr_func]();
 

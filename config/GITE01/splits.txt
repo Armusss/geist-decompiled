@@ -221,6 +221,8 @@ Runtime.PPCEABI.H/GCN_mem_alloc.c:
 
 MSL_C/MSL_Common/Src/abort_exit.c:
 	.text       start:0x802ECE78 end:0x802ECFD0
+	.bss        start:0x804A8380 end:0x804A8480
+	.sbss       start:0x804D58B8 end:0x804D58C8
 
 MSL_C/MSL_Common/Src/alloc.c:
 	.text       start:0x802ECFD0 end:0x802EDF74
@@ -707,7 +709,7 @@ dolphin/os/OSTime.c:
 
 dolphin/os/__ppc_eabi_init.c:
 	.init       start:0x800054EC end:0x80005544
-	.text       start:0x8031640C end:0x80316480
+	.text       start:0x8031640C end:0x803164A0
 
 dolphin/pad/Padclamp.c:
 	.text       start:0x803164A0 end:0x803166E4
