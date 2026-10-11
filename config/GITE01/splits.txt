@@ -193,6 +193,7 @@ Runtime.PPCEABI.H/ptmf.c:
 
 Runtime.PPCEABI.H/runtime.c:
 	.text       start:0x802EB178 end:0x802EB854
+	.rodata     start:0x8034E5E0 end:0x8034E5F8
 
 Runtime.PPCEABI.H/__init_cpp_exceptions.cpp:
 	.text       start:0x802EB854 end:0x802EB8D0
