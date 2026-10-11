@@ -1,6 +1,7 @@
 #include "NMWException.h"
 #include "MWCPlusLib.h"
 
+namespace std {
 typedef void (*unexpected_handler)();
 unexpected_handler set_unexpected(unexpected_handler handler);
 void unexpected();
@@ -8,6 +9,7 @@ void unexpected();
 typedef void (*terminate_handler)();
 terminate_handler set_terminate(terminate_handler handler);
 void terminate();
+} // namespace std
 
 #define ARRAY_HEADER_SIZE 16
 
@@ -212,7 +214,3 @@ extern void __destroy_new_array(void* block, ConstructorDestructor dtor) {
 		::operator delete[]((char*)block - ARRAY_HEADER_SIZE);
 	}
 }
-
-void __destroy_new_array2(void) {}
-
-void __destroy_new_array3(void) {}
