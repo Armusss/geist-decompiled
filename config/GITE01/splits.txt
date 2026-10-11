@@ -493,10 +493,7 @@ game/u_80247EB0.cpp:
 	.text       start:0x80247EB0 end:0x80248FC8
 
 game/u_80248FC8.cpp:
-	.text       start:0x80248FC8 end:0x8024CA7C
-
-game/u_8024CA7C.cpp:
-	.text       start:0x8024CA7C end:0x8024CAA0
+	.text       start:0x80248FC8 end:0x8024CAA0
 	.ctors      start:0x80341238 end:0x8034123C
 
 game/u_8024CAA0.cpp:
@@ -589,10 +586,7 @@ game/u_8029E714.cpp:
 	.text       start:0x8029E714 end:0x802A770C
 
 game/u_802A770C.cpp:
-	.text       start:0x802A770C end:0x802A9810
-
-game/u_802A9810.cpp:
-	.text       start:0x802A9810 end:0x802A9824
+	.text       start:0x802A770C end:0x802A9824
 	.ctors      start:0x80341244 end:0x80341248
 
 game/u_802A9824.cpp:
