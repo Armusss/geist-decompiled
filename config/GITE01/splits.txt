@@ -234,6 +234,9 @@ MSL_C/MSL_Common/Src/ansi_files.c:
 
 MSL_C/MSL_Common_Embedded/Src/ansi_fp.c:
 	.text       start:0x802EE2C4 end:0x802EEEF4
+	.rodata     start:0x8034E720 end:0x8034E800
+	.data       start:0x803C67E0 end:0x803C6908
+	.sdata2     start:0x804DB320 end:0x804DB328
 
 MSL_C/MSL_Common/Src/buffer_io.c:
 	.text       start:0x802EEEF4 end:0x802EF248
