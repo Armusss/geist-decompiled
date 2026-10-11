@@ -212,6 +212,7 @@ MSL_C/MSL_Common/Src/rand.c:
 
 MSL_C/MSL_Common/Src/signal.c:
 	.text       start:0x802F2D20 end:0x802F2E08
+	.bss        start:0x804A87B8 end:0x804A87D0
 
 MSL_C/MSL_Common/Src/string.c:
 	.text       start:0x802F2E08 end:0x802F3320
