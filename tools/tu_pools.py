@@ -6,7 +6,7 @@ exec(src.split("refs = []\n")[0])          # loads funcs, objs, text(), SEC
 GM = os.environ.get('GM', os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 def is_stringy(t):
     b = text(t, 4) or b''
-    return all(32 <= c < 127 or c in (9, 10, 13) for c in b[:3]) and b[:1] != b'\0'
+    return len(b) == 4 and all(32 <= c < 127 or c in (9, 10, 13) for c in b[:3])
 pool_of = []      # per function: set of pool bases
 for a, size, n in funcs:
     code = text(a, size) or b''; hi = {}; bases = set()
@@ -16,7 +16,7 @@ for a, size, n in funcs:
         if op == 15 and rA == 0: hi[rD] = imm << 16; continue
         if op == 14 and rA in hi:
             t = hi[rA] + simm
-            if (0x80341280 <= t < 0x8034EE00 or 0x8034EE00 <= t < 0x803D0000) and is_stringy(t): bases.add(t)
+            if (0x80341280 <= t < 0x8034EE00 or 0x8034EE00 <= t < 0x803CFEE0) and is_stringy(t): bases.add(t)
     pool_of.append(bases)
 users = collections.defaultdict(list)
 for i, b in enumerate(pool_of):
@@ -33,7 +33,7 @@ mono = json.load(open(GM + '/build/tu_mono.json'))
 allowed = set(mono['ok'])
 forced = []
 pairs = []
-for sec_lo, sec_hi in ((0x80341280, 0x8034EE00), (0x8034EE00, 0x803D0000)):   # .rodata pools, .data pools
+for sec_lo, sec_hi in ((0x80341280, 0x8034EE00), (0x8034EE00, 0x803CFEE0)):   # .rodata pools, .data pools
     first = sorted((min(us), t) for t, us in pools.items() if sec_lo <= t < sec_hi)
     # consecutive pools in address order are consecutive files (same section, same order as code)
     first = sorted(first, key=lambda x: x[1])

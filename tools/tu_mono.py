@@ -7,7 +7,7 @@ d = open(GM + '/orig/GITE01/sys/main.dol', 'rb').read()
 offs = struct.unpack_from('>18I', d, 0); adr = struct.unpack_from('>18I', d, 0x48); sz = struct.unpack_from('>18I', d, 0x90)
 secs = [(o, b, s) for o, b, s in zip(offs, adr, sz) if s]
 R13, R2 = 0x804DA520, 0x804DDE80
-LO, HI = 0x80005800, 0x802E4858
+LO, HI = int(os.environ.get('LO', '0x80005800'), 16), int(os.environ.get('HI', '0x802E4858'), 16)
 funcs = []; objs = {}
 for l in open(GM + '/config/GITE01/symbols.txt'):
     m = re.match(r'(\S+) = (\S+):0x([0-9A-F]+); // type:(\w+)(?: size:0x([0-9A-F]+))?(.*)', l)
@@ -16,7 +16,9 @@ for l in open(GM + '/config/GITE01/symbols.txt'):
     if m[4] == 'function' and LO <= a < HI: funcs.append((a, size, m[1]))
     elif m[4] == 'object': objs[a] = (m[2], m[1], size, m[6])
 funcs.sort()
-SEC = {'.sdata2': (0x804D5E80, 0x804DE000), '.rodata': (0x80341280, 0x8034EE00), '.data': (0x8034EE00, 0x803D0000)}
+SEC = {'.sdata2': (0x804D5E80, 0x804DE000), '.rodata': (0x80341280, 0x8034EE00), '.data': (0x8034EE00, 0x803CFEE0)}
+if os.environ.get('STATICS', '0') == '1':   # file-local variables follow code order too (shared ones are filtered)
+    SEC.update({'.bss': (0x803CFEE0, 0x804D2520), '.sdata': (0x804D2520, 0x804D3FE0), '.sbss': (0x804D3FE0, 0x804D5E80)})
 def text(a, n):
     for o, b, s in secs:
         if b <= a < b + s: return d[o + a - b:o + a - b + n]
@@ -42,6 +44,8 @@ def private(t):
             if name == '.rodata':
                 b = text(t, 3) or b''
                 return name if len(b) == 3 and all(32 <= c < 127 or c in (9, 10) for c in b) else None
+            if name in ('.bss', '.sdata', '.sbss'):
+                return name
             if name == '.data':
                 o = objs.get(t)
                 return name if (o and o[1].startswith('jumptable_')) else None  # vtables: weak, shared between files
@@ -59,6 +63,7 @@ for a, size, n in funcs:
         if op == 15 and rA == 0: hi[(w >> 21) & 31] = imm << 16; continue
         if op in (14, 32, 34, 36, 40, 48, 50, 52, 54) and rA in hi: t = hi[rA] + simm
         elif op in (14, 32, 34, 40, 48, 50) and rA == 2: t = R2 + simm
+        elif op in (14, 32, 34, 36, 38, 40, 44, 48, 50, 52, 54) and rA == 13: t = R13 + simm
         if t is not None:
             s = private(t)
             if s: r[s].append(t)
@@ -69,14 +74,16 @@ users = collections.defaultdict(list)
 for i, r in enumerate(refs):
     for sname, ts in r.items():
         for t in ts: users[(sname, t if sname == '.sdata2' else obj_key(t))].append(i)
-shared = {k for k, us in users.items() if funcs[max(us)][0] - funcs[min(us)][0] > WIN}
+WIN_S = int(os.environ.get('WIN_S', '0x1000'), 16)   # statics: only tightly-used variables count as private
+shared = {k for k, us in users.items()
+          if funcs[max(us)][0] - funcs[min(us)][0] > (WIN_S if k[0] in ('.bss', '.sdata', '.sbss') else WIN)}
 for i, r in enumerate(refs):
     for sname in list(r):
         r[sname] = [t for t in r[sname] if (sname, t if sname == ".sdata2" else obj_key(t)) not in shared and not (sname == ".sdata2" and t >= 0x804DB338)]
 print('shared objects dropped', len(shared))
 # outlier pass: drop references far from the local trend (neighbouring functions' median address)
 import statistics
-THR = {'.sdata2': int(os.environ.get('THR2', '0x400'), 16), '.rodata': int(os.environ.get('THRR', '0x2000'), 16), '.data': 0x4000}
+THR = {'.sdata2': int(os.environ.get('THR2', '0x400'), 16), '.rodata': int(os.environ.get('THRR', '0x2000'), 16), '.data': 0x4000, '.bss': 0x8000, '.sdata': 0x400, '.sbss': 0x400}
 K = int(os.environ.get('K', '40'))
 dropped = 0
 for sname in SEC:

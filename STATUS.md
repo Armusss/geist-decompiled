@@ -58,8 +58,22 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 - `tools/tu_propose.py` -> `build/tu_proposal.json`: **194 proposed game units** (35 pinned by pools,
   12 known from zlib, 146 guesses at the first allowed boundary; median 0x2694 bytes, largest 0x29A6C).
   Run: `python3 tools/tu_mono.py && python3 tools/tu_pools.py && python3 tools/tu_propose.py`.
-- **Next:** G1 (confirm game flags on small functions), then G2: write these ranges as asm units into
-  splits.txt (DOL must stay OK) and refine them while matching.
+- **Validation on library code** (0x802E4858-0x8033F990, all 189 real boundaries known; run with
+  `LO=0x802E4858 HI=0x8033F990 NOKNOWN=1`): the order constraint keeps **100%** of real boundaries (safe,
+  but in library C code it rules out little). String-pool spans now never cross a real boundary (0/189,
+  after fixing a bug that treated `.bss` addresses as strings), so **"same pool = same file" is reliable**.
+  The reverse is not: "different pools = boundary" was right in only 2 of 5 pinned cases (some files have
+  two string pools), and call-graph placement of the other cuts was right 13/36.
+- Also added: static initializers (16/17 agree with the constraint; all 17 used as known file ends), file
+  names from assert strings (27 units named, e.g. main.cpp, File.cpp, DataStream.cpp, Image.cpp,
+  asyncio.cpp, Memory.cpp, Script.c, VM.c, FearMap2.c, Msx.cpp), and **zutil.c** (zlib) found unsplit at
+  0x8019FD58. Static variables (.bss/.sbss/.sdata) were tried and rejected (globals used by neighbouring
+  files make them unreliable; `STATICS=1` re-enables).
+- Current proposal: **205 units** (29 known, 35 pinned, 140 guessed). Treat cut positions as provisional:
+  a cut is only confirmed when the whole file matches. Hard facts usable now: allowed-boundary set (upper
+  bound), pool spans (lower bound: never split inside one), static-initializer ends, zlib.
+- **Next:** G1 (confirm game flags on small functions), then G2: write provisional ranges as asm units
+  (DOL must stay OK; more units than real files is harmless for asm) and fix cuts while matching.
 
 ## Game code plan (Lead, 2026-10-11)
 
