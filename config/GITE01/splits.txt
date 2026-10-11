@@ -167,10 +167,12 @@ game/DeferPriority.cpp:
 	.ctors      start:0x80341214 end:0x80341218
 
 game/u_800F14A8.cpp:
-	.text       start:0x800F14A8 end:0x800F2B00
+	.text       start:0x800F14A8 end:0x800F2B08
 
 game/Image.cpp:
-	.text       start:0x800F2B00 end:0x800F396C
+	.text       start:0x800F2B08 end:0x800F396C
+	.rodata     start:0x80345320 end:0x80345358
+	.sdata2     start:0x804D7348 end:0x804D7390
 
 game/u_800F396C.cpp:
 	.text       start:0x800F396C end:0x800F73C8
