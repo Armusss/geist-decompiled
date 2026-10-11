@@ -577,7 +577,7 @@ config.libs = [
             Object(Matching, "zlib/inffast.c"),
             Object(Matching, "zlib/inflate.c"),
             Object(Matching, "zlib/inftrees.c"),
-            Object(NonMatching, "zlib/infutil.c"),
+            Object(Matching, "zlib/infutil.c"),
             Object(Matching, "zlib/trees.c"),
             Object(Matching, "zlib/uncompr.c"),
         ],
