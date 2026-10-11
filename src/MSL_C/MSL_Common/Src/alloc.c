@@ -371,7 +371,8 @@ static void* allocate_from_var_pools(__mem_pool_obj* pool_obj, unsigned long siz
     Block* bp;
     SubBlock* sb;
 
-    size = (size + 15) & ~7;
+    size += 8;
+    size = (size + 7) & ~7;
     if (size < 80)
         size = 80;
 
@@ -403,7 +404,8 @@ static void* soft_allocate_from_var_pools(__mem_pool_obj* pool_obj, unsigned lon
     Block* bp;
     SubBlock* sb;
 
-    size = (size + 15) & ~7;
+    size += 8;
+    size = (size + 7) & ~7;
     if (size < 80)
         size = 80;
 
@@ -491,46 +493,56 @@ static __mem_pool* get_malloc_pool(void) {
 
 static void* allocate_from_fixed_pools(__mem_pool_obj* pool_obj, unsigned long size) {
     unsigned long i = 0;
-    FixStart* fs;
-    FixBlock* b;
     FixSubBlock* p;
-    unsigned long n;
-    unsigned long original_n;
-    unsigned long max_size;
+    FixStart* fs;
 
     while (size > fix_pool_sizes[i])
         ++i;
 
     fs = &pool_obj->fix_start[i];
+
     if (fs->head_ == 0 || fs->head_->start_ == 0) {
-        n = (4096 - sizeof(FixBlock)) / (fix_pool_sizes[i] + 4);
+        unsigned long size_requested = 4096;
+        char* newblock;
+        unsigned long size_received;
+        unsigned long n;
+        unsigned long nsave;
+        unsigned long chunk_size;
+
+        n = (size_requested - sizeof(FixBlock)) / (fix_pool_sizes[i] + sizeof(FixBlock*));
         if (n > 256)
             n = 256;
-        original_n = n;
-        b = 0;
+        nsave = n;
+
         while (n >= 10) {
-            b = (FixBlock*)soft_allocate_from_var_pools(pool_obj, n * (fix_pool_sizes[i] + 4) + sizeof(FixBlock),
-                                                        &max_size);
-            if (b != 0)
+            size_requested = n * (fix_pool_sizes[i] + sizeof(FixBlock*)) + sizeof(FixBlock);
+            newblock = (char*)soft_allocate_from_var_pools(pool_obj, size_requested, &size_received);
+            if (newblock != 0)
                 break;
-            if (max_size > sizeof(FixBlock))
-                n = (max_size - sizeof(FixBlock)) / (fix_pool_sizes[i] + 4);
+            if (size_received > sizeof(FixBlock))
+                n = (size_received - sizeof(FixBlock)) / (fix_pool_sizes[i] + sizeof(FixBlock*));
             else
                 n = 0;
         }
-        if (b == 0 && n < original_n) {
-            b = (FixBlock*)allocate_from_var_pools(pool_obj, original_n * (fix_pool_sizes[i] + 4) + sizeof(FixBlock));
-            if (b == 0)
+
+        if (newblock == 0 && n < nsave) {
+            n = nsave;
+            size_requested = n * (fix_pool_sizes[i] + sizeof(FixBlock*)) + sizeof(FixBlock);
+            newblock = (char*)allocate_from_var_pools(pool_obj, size_requested);
+            if (newblock == 0)
                 return 0;
         }
-        size = __msize_inline(b);
+
+        chunk_size = __msize_inline(newblock);
+
         if (fs->head_ == 0) {
-            fs->head_ = b;
-            fs->tail_ = b;
+            fs->head_ = (FixBlock*)newblock;
+            fs->tail_ = (FixBlock*)newblock;
         }
-        FixBlock_construct(b, fs->tail_, fs->head_, i, (FixSubBlock*)((char*)b + sizeof(FixBlock)),
-                           size - sizeof(FixBlock));
-        fs->head_ = b;
+
+        FixBlock_construct((FixBlock*)newblock, fs->tail_, fs->head_, i,
+                           (FixSubBlock*)(newblock + sizeof(FixBlock)), chunk_size - sizeof(FixBlock));
+        fs->head_ = (FixBlock*)newblock;
     }
 
     p = fs->head_->start_;
