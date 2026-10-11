@@ -12,6 +12,10 @@ Template documentation is in [`docs/`](docs/).
 - Dolphin SDK source in `src/dolphin/` and headers in `include/` come from
   [doldecomp/dolsdk2004](https://github.com/doldecomp/dolsdk2004) (commit 2328b416). That repository has
   **no licence**, so keep this project private.
+- MusyX source in `src/musyx/` is adapted from [AxioDL/musyx](https://github.com/AxioDL/musyx)
+  (MIT, (c) 2023 Axiomatic Data Laboratories; commit ec4697520f70), licence in `src/musyx/LICENSE`.
+- zlib 1.1.4 in `src/zlib/` is from [madler/zlib](https://github.com/madler/zlib) tag v1.1.4 (zlib licence,
+  `src/zlib/README.license`); K&R definitions converted to ANSI.
 
 ## Never distribute game data
 `orig/`, `build/` and all game binaries are gitignored. Never commit or upload the DOL, REL,
@@ -33,7 +37,7 @@ The baseline (all code still as split assembly) builds and verifies: `build/GITE
 
 ## State as of 2026-10-10
 See **STATUS.md** for the detailed handoff (compiler findings, SDK splits, next steps).
-- 77 Dolphin SDK translation units split; all 77 build from C and match (DOL byte-identical).
+- 77 Dolphin SDK, 26 MusyX and 11 zlib units build from C and match (DOL byte-identical).
 - dtk analysis found 8,706 functions in main.dol and split it into 70 units, all still assembly (0% matched).
 - `config/GITE01/symbols.txt` and `splits.txt` were auto-generated. There's no symbol map on the disc,
   so names are `fn_`/`lbl_` except for SDK/runtime functions dtk recognised by signature.
