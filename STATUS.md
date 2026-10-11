@@ -36,6 +36,25 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 6. When done (or blocked), send the Lead a short report: units matched, compiler/flags, anything odd,
    exact verify command + expected output. Then stop.
 
+## G3 — first game file: Memory.cpp matched (Lead, 2026-10-11)
+
+**Result:** `Game Code: ... (1 / 190 files)`, DOL OK. `src/game/Memory.cpp` (0x8009D710-0x8009DE94): heap
+wrapper with "Out of Memory <file> <line>" reports, two scratch ring buffers (0x160000/0x40000), and the
+"VMem" pool object (0x6C0000 block) whose methods live at 0x801BEC4C-0x801BF5xx.
+**Settled for game code:**
+- GC/1.3.2 with cflags_game works (`-lang=c++ -O4,p -inline auto -fp_contract on`, string pooling).
+  **No deferred inlining:** functions come out in source order (unlike the GC/2.6 libraries), and small
+  functions defined earlier in the file are auto-inlined (MemAlloc/MemFree inlined into MemInit/MemShutdown).
+- A C++ file ends after its `__sinit_*`: CodeWarrior then emits static-destructor helpers and weak inline
+  functions (ctors/dtors, e.g. `__dt__4VMemFv`), so those belong to the file.
+- String pools keep strings of dead-stripped functions; add an unused function using them, in pool order
+  (Memory.cpp: `MemOutOfMemory`).
+- symbols.txt needs the **mangled** names (e.g. `MemAlloc__FiPCci`, `Free__4VMemFPv`) for C++ functions,
+  including external ones the file calls.
+- Typical fixes: the order of declarations and temporaries decides registers; `if (x > 0) {...}` vs
+  `if (x < 1)` changes the compare; early `return`s vs a result variable; ternaries in call arguments.
+- Tool: `~/geist-work/mwprobe/mdiff.py UNIT FUNC ADDR [SIZE]` diffs one function of a unit against the DOL.
+
 ## G2 — game code split into provisional units (Lead, 2026-10-11)
 
 **Result:** `Game Code: 0/192 files`, `SDK Code ... (199 / 202 files)`, DOL OK.
