@@ -6,9 +6,9 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
-| Lead (main session) | `geist-matching` / `main` | Game loader files: game/File.cpp, game/asyncio.cpp, game/Image.cpp, game/DataStream.cpp (+ Memory.cpp done); merging, boundaries, library leftovers | working |
-| helper-game-a | own worktree (branch reported by helper) | **Game units 0x80005800-0x80150000** except the Lead's files above | starting |
-| helper-game-b | own worktree (branch reported by helper) | **Game units 0x80150000-0x802E4858** except zlib (done), game/zutil.c (zlib, GC/2.6) and the Lead's files above | starting |
+| Lead (main session) | `geist-matching` / `main` | Game loader files: game/File.cpp, game/DataStream.cpp (Memory.cpp, asyncio.cpp, Image.cpp done); merging, boundaries, library leftovers | working |
+| helper-game-a | `.claude/worktrees/optimistic-khayyam-7b9401` / `claude/intelligent-babbage-a49862` | **Game units 0x80005800-0x80150000** except the Lead's files above | working (Remote Control on) |
+| helper-game-b | `.claude/worktrees/goofy-clarke-759020` / `claude/frosty-gauss-da470f` | **Game units 0x80150000-0x802E4858** except zlib (done), game/zutil.c (zlib, GC/2.6) and the Lead's files above | working (Remote Control on) |
 
 Earlier helpers (2026-10-10): helper-msl (MSL/Runtime/TRK) and helper-musyx (MusyX/zlib), both done and merged.
 
@@ -67,6 +67,17 @@ wrapper with "Out of Memory <file> <line>" reports, two scratch ring buffers (0x
   Buffered async DVD streams with zlib "BILZ" files. Lessons: **`-use_lmw_stmw on`** is required (now in
   cflags_game); repeated blocks are usually **inline helper functions** (AsyncCheckHeader, AsyncQueueNext,
   AsyncDumpBuffers): writing them out by hand gives different registers; `switch` vs if/else matters.
+- **Image.cpp matched** (0x800F2B08-0x800F396C, .rodata 0x80345320-58, .sdata2 0x804D7348-90; the stub at
+  0x800F2B00 returning 1.0f belongs to the previous file: a file never holds the same float constant twice,
+  and 1.0f appears again at 0x804D735C). TPL loading with a local copy of the SDK's `TPLBind` (assert line 337),
+  plus screen quads. Lessons: game files can `#include <dolphin/gx.h>` etc. (cflags_game now has
+  `-i include/libc`); SDK struct typedefs mangle by their tag (`GXTexObj*` -> `P9_GXTexObj`); quad corners
+  passed as float **locals** stay in registers while literals reload; an early `u8 a = alpha;` explains a
+  `clrlwi` at entry; `/ 2.0f` compiles to `* 0.5f` but allocates differently; statement order (x0, x1, y0,
+  y1) decides float registers. Graphics wrappers named in symbols.txt: GfxLoadTexObj 0x8000F944,
+  GfxSetVtxDesc 0x80008DAC, GfxSetCullMode 0x80008B44, GfxFrameEnd/Swap/Begin 0x8000ADDC/0x8000A028/0x80009EE0,
+  GfxSetMaterial 0x80112AB0, GfxResetTev 0x8010D130, GfxSetBlendMode 0x801D8A10; data gDVDMutex 0x803D7114,
+  gWideScreen 0x804D4008.
 
 ## G2 — game code split into provisional units (Lead, 2026-10-11)
 
