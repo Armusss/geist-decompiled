@@ -629,7 +629,7 @@ config.libs = [
             Object(Matching, "MSL_C/MSL_Common/Src/mem_funcs.c", cflags=cflags_msl),
             Object(Matching, "MSL_C/MSL_Common/Src/misc_io.c", cflags=cflags_msl),
             Object(NonMatching, "MSL_C/MSL_Common/Src/printf.c", cflags=cflags_msl),
-            Object(NonMatching, "MSL_C/MSL_Common/Src/scanf.c", cflags=cflags_msl),
+            Object(Matching, "MSL_C/MSL_Common/Src/qsort.c", cflags=cflags_msl),
             Object(Matching, "MSL_C/MSL_Common/Src/rand.c", cflags=cflags_msl),
             Object(Matching, "MSL_C/MSL_Common/Src/signal.c", extra_cflags=['-use_lmw_stmw off'], cflags=cflags_msl),
             Object(Matching, "MSL_C/MSL_Common/Src/string.c", cflags=cflags_msl),
