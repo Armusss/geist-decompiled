@@ -290,7 +290,7 @@ cflags_zlib = [
     "-O4,p",
     "-inline auto,deferred",
     "-use_lmw_stmw on",
-    "-str pool",
+    "-str pool,readonly",
 ]
 # ==== end helper-musyx cflags ====
 
@@ -569,17 +569,17 @@ config.libs = [
         "cflags": cflags_zlib,
         "progress_category": "sdk",
         "objects": [
-            Object(NonMatching, "zlib/adler32.c"),
-            Object(NonMatching, "zlib/compress.c"),
-            Object(NonMatching, "zlib/deflate.c"),
-            Object(NonMatching, "zlib/infblock.c"),
-            Object(NonMatching, "zlib/infcodes.c"),
-            Object(NonMatching, "zlib/inffast.c"),
-            Object(NonMatching, "zlib/inflate.c"),
-            Object(NonMatching, "zlib/inftrees.c"),
+            Object(Matching, "zlib/adler32.c"),
+            Object(Matching, "zlib/compress.c"),
+            Object(Matching, "zlib/deflate.c"),
+            Object(Matching, "zlib/infblock.c"),
+            Object(Matching, "zlib/infcodes.c"),
+            Object(Matching, "zlib/inffast.c"),
+            Object(Matching, "zlib/inflate.c"),
+            Object(Matching, "zlib/inftrees.c"),
             Object(NonMatching, "zlib/infutil.c"),
-            Object(NonMatching, "zlib/trees.c"),
-            Object(NonMatching, "zlib/uncompr.c"),
+            Object(Matching, "zlib/trees.c"),
+            Object(Matching, "zlib/uncompr.c"),
         ],
     },
     # ==== end helper-musyx ====

@@ -18,33 +18,49 @@ zlib/adler32.c:
 
 zlib/compress.c:
 	.text       start:0x80197FD4 end:0x801980A0
+	.rodata     start:0x80347308 end:0x80347310
 
 zlib/deflate.c:
 	.text       start:0x801980A0 end:0x8019A0A8
+	.rodata     start:0x80347310 end:0x80347390
+	.sbss       start:0x804D5140 end:0x804D5148
 
 zlib/infblock.c:
 	.text       start:0x8019A0A8 end:0x8019B1EC
+	.rodata     start:0x80347390 end:0x8034744C
+	.data       start:0x803A9740 end:0x803A9768
 
 zlib/infcodes.c:
 	.text       start:0x8019B1EC end:0x8019BBD4
+	.rodata     start:0x80347450 end:0x80347484
+	.data       start:0x803A9768 end:0x803A9790
 
 zlib/inffast.c:
 	.text       start:0x8019BBD4 end:0x8019C1C8
+	.rodata     start:0x80347488 end:0x803474BC
 
 zlib/inflate.c:
 	.text       start:0x8019C1C8 end:0x8019CA2C
+	.rodata     start:0x803474C0 end:0x80347534
+	.data       start:0x803A9790 end:0x803A97C8
 
 zlib/inftrees.c:
 	.text       start:0x8019CA2C end:0x8019D27C
+	.rodata     start:0x80347538 end:0x80347838
+	.data       start:0x803A97C8 end:0x803AA8C8
+	.sdata      start:0x804D3080 end:0x804D3088
 
 zlib/infutil.c:
 	.text       start:0x8019D27C end:0x8019D3FC
 
 zlib/trees.c:
 	.text       start:0x8019D3FC end:0x8019FC84
+	.rodata     start:0x80347838 end:0x80348268
+	.data       start:0x803AA910 end:0x803AA94C
 
 zlib/uncompr.c:
 	.text       start:0x8019FC84 end:0x8019FD58
+	.rodata     start:0x80348268 end:0x80348270
 
 dolphin/ar/ar.c:
 	.text       start:0x802F6BA4 end:0x802F86EC
