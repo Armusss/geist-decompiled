@@ -284,11 +284,16 @@ game/u_8018D2D4.cpp:
 	.text       start:0x8018D2D4 end:0x8018FAE8
 
 game/u_8018FAE8.cpp:
-	.text       start:0x8018FAE8 end:0x80191E2C
+	.text       start:0x8018FAE8 end:0x80191C6C
 
-game/u_80191E2C.cpp:
-	.text       start:0x80191E2C end:0x801920B8
+game/Repel.cpp:
+	.text       start:0x80191C6C end:0x801920B8
 	.ctors      start:0x80341228 end:0x8034122C
+	.rodata     start:0x803471A0 end:0x80347200
+	.data       start:0x803A8F78 end:0x803A8FA8
+	.bss        start:0x80495B98 end:0x80495CA8
+	.sbss       start:0x804D5130 end:0x804D5140
+	.sdata2     start:0x804D8618 end:0x804D8638
 
 game/u_801920B8.cpp:
 	.text       start:0x801920B8 end:0x801965FC

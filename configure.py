@@ -656,7 +656,7 @@ config.libs = [
             Object(NonMatching, "game/u_8018C358.cpp"),  # guess
             Object(NonMatching, "game/u_8018D2D4.cpp"),  # pinned
             Object(NonMatching, "game/u_8018FAE8.cpp"),  # guess
-            Object(NonMatching, "game/u_80191E2C.cpp"),  # guess
+            Object(Matching, "game/Repel.cpp"),  # starts 0x80191C6C (helper-game-b)
             Object(NonMatching, "game/u_801920B8.cpp"),  # known
             Object(NonMatching, "game/u_801965FC.cpp"),  # guess
             Object(NonMatching, "game/zutil.c"),  # known
