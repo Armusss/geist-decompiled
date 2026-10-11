@@ -63,13 +63,13 @@ game/u_8006C604.cpp:
 	.text       start:0x8006C604 end:0x800776FC
 
 game/u_800776FC.cpp:
-	.text       start:0x800776FC end:0x8007C5C8
+	.text       start:0x800776FC end:0x8007C868
 
 game/Arena.c:
-	.text       start:0x8007C5C8 end:0x8007CB14
+	.text       start:0x8007C868 end:0x8007CC04
 
 game/Audio.c:
-	.text       start:0x8007CB14 end:0x8007D7E8
+	.text       start:0x8007CC04 end:0x8007D7E8
 
 game/u_8007D7E8.cpp:
 	.text       start:0x8007D7E8 end:0x8007EE68
