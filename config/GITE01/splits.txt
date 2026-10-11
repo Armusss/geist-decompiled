@@ -265,10 +265,14 @@ MSL_C/MSL_Common/Src/mem_funcs.c:
 	.text       start:0x802F06B8 end:0x802F09C8
 
 MSL_C/MSL_Common/Src/misc_io.c:
-	.text       start:0x802F09C8 end:0x802F09D8
+	.text       start:0x802F09C8 end:0x802F09EC
 
 MSL_C/MSL_Common/Src/printf.c:
-	.text       start:0x802F09D8 end:0x802F2B5C
+	.text       start:0x802F09EC end:0x802F2B5C
+	.rodata     start:0x8034E800 end:0x8034E828
+	.data       start:0x803C6C08 end:0x803C6E38
+	.sdata      start:0x804D3E30 end:0x804D3E38
+	.sdata2     start:0x804DB330 end:0x804DB338
 
 MSL_C/MSL_Common/Src/qsort.c:
 	.text       start:0x802F2B5C end:0x802F2CF4

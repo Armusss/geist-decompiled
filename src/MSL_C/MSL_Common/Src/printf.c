@@ -11,6 +11,10 @@
 #include <cstring>
 #include <cstdint>
 
+// Geist's older MSL stdarg: va_start also evaluates its second argument (as in PrimeDecomp/prime's libc).
+#undef va_start
+#define va_start(ap, fmt) ((void)fmt, __builtin_va_info(&ap))
+
 #define LDBL_MANT_DIG 53
 
 #define TARGET_FLOAT_BITS 64
@@ -538,7 +542,7 @@ static char* longlong2str(signed long long num, char* pBuf, print_format fmt) {
 
 static char* double2hex(long double num, char* buff, print_format format) {
     #if PLATFORM_GCN
-    int offset, what_nibble = 0;
+    int offset, what_nibble;
     char* wrk_byte_ptr;
     char *p, *q;
     char working_byte;
@@ -676,9 +680,6 @@ static char* double2hex(long double num, char* buff, print_format format) {
     int mantissa_bit;
     decform form;
     decimal dec;
-    int radix_marker;
-    
-    radix_marker = *(unsigned char *)(__lconv).decimal_point;
     p = buff;
     ld = num;
     
@@ -776,7 +777,7 @@ static char* double2hex(long double num, char* buff, print_format format) {
 
             if (!TARGET_FLOAT_IMPLICIT_J_BIT) {
                 if (mantissa_bit == 1 + expbits) {
-                    *--p = radix_marker;
+                    *--p = '.'; // Geist's older MSL: no locale radix
                     working_byte &= 0x1;
                 }
             }
@@ -802,7 +803,7 @@ static char* double2hex(long double num, char* buff, print_format format) {
     
     if (TARGET_FLOAT_IMPLICIT_J_BIT){
         if (format.precision || format.alternate_form) {
-            *--p = radix_marker;
+            *--p = '.'; // Geist's older MSL: no locale radix
         }
 
         if(fabsl(ld) != 0.0)
@@ -894,13 +895,6 @@ static char* float2str(long double num, char* buff, print_format format) {
     char* q;
     int n, digits, sign;
     int int_digits, frac_digits;
-    int radix_marker;
-
-    #if PLATFORM_GCN
-    radix_marker = '.';
-    #else
-    radix_marker = *(unsigned char*)__lconv.decimal_point;
-    #endif
 
     if (format.precision > 509) {
         return 0;
@@ -1043,7 +1037,7 @@ static char* float2str(long double num, char* buff, print_format format) {
         }
 
         if (format.precision || format.alternate_form) {
-            *--p = radix_marker;
+            *--p = '.'; // Geist's older MSL: no locale radix
         }
 
         *--p = *dec.sig.text;
@@ -1089,7 +1083,7 @@ static char* float2str(long double num, char* buff, print_format format) {
             *--p = '0';
 
         if (format.precision || format.alternate_form)
-            *--p = radix_marker;
+            *--p = '.'; // Geist's older MSL: no locale radix
 
         if (int_digits) {
             for (digits = 0; digits < int_digits - dec.sig.length; ++digits) {
@@ -1548,6 +1542,19 @@ int vprintf(const char* format, va_list arg) {
     #endif
     __end_critical_region(stdin_access);
     return ret;
+}
+
+int vfprintf(FILE* file, const char* format, va_list arg) {
+    int retval;
+
+    if (fwide(file, -1) >= 0) {
+        return -1;
+    }
+
+    __begin_critical_region(stdin_access);
+    retval = __pformatter(&__FileWrite, (void*)file, format, arg);
+    __end_critical_region(stdin_access);
+    return retval;
 }
 
 int vsnprintf(char* s, size_t n, const char* fmt, va_list args) {
