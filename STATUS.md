@@ -36,6 +36,26 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 6. When done (or blocked), send the Lead a short report: units matched, compiler/flags, anything odd,
    exact verify command + expected output. Then stop.
 
+## Chunk 10 — library leftovers (Lead, 2026-10-11)
+
+**Result:** `SDK Code: 94.76% fuzzy, 93.37% matched, 92.11% linked (184 / 202 files)`, DOL OK.
+New: runtime.c, __init_cpp_exceptions.cpp, global_destructor_chain.c, NMWException.cp, **exception.cp
+(new unit)**, TRK msghndlr.c, support.c, mslsupp.c. "ptmf.c" was not a real unit (ptmf is stripped);
+its function is NMWException's dthandler, so it was folded in.
+- Unreferenced .ctors/.dtors entries in C: `#pragma force_active on` + `__declspec(section ".ctors")`
+  (plain section names; dtk's ldscript does not merge `.ctors$10`).
+- Geist's older C++ runtime: std::exception (dtor, what, RTTI on) and a `throw()` operator delete form
+  their own unit 0x802EABBC-0x802EAC88 before NMWException; duhandler inlines std::terminate (handler
+  declarations inside `namespace std`); GetR2 is a called `asm char* GetR2(void)`.
+- 0x802ECF9C is MSL `abort` (overrides the SDK's weak abort); 0x802EBF6C is `__unexpected`.
+- MetroTRK v2.0 differences: Read/WriteMemory use a plain `u8 buf[0x800]` (no ARAM, no 32-byte offset);
+  TRKSuppAccessFile flags EOF on short transfers; mslsupp has __open_file/__close_file/__position_file/
+  __close_console (targsupp stubs TRKOpenFile 0x802E8DC8, TRKCloseFile, TRKPositionFile).
+- `~/geist-work/mwprobe/rdis.py ADDR SIZE` disassembles retail with symbol names.
+- **Left (18):** 16 MSL_C common files (older MSL revision: e.g. memchr keeps a dead copy of `n`; no -opt
+  setting reproduces it, so they need that revision's source), Gecko_ExceptionPPC.cp (full C++ EH
+  runtime), EXI2_GDEV main.c (`gdev_cc_read` register allocation: retail keeps p1/p2 apart from size).
+
 ## Chunk 9 — merged helper-msl: MSL_C / Runtime / TRK (2026-10-10)
 
 **Result after merge:** `SDK Code: 94.32% fuzzy, 92.52% matched, 89.34% linked (176 / 202 files)`, DOL OK.
