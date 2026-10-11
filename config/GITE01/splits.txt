@@ -13,6 +13,280 @@ Sections:
 	.sdata2     type:rodata align:8
 	.sbss2      type:bss align:32
 
+game/Cube.cpp:
+	.text       start:0x80005800 end:0x8000DC24
+
+game/main.cpp:
+	.text       start:0x8000DC24 end:0x8000F2F0
+
+game/u_8000F2F0.cpp:
+	.text       start:0x8000F2F0 end:0x80012E04
+
+game/Turf.cpp:
+	.text       start:0x80012E04 end:0x8001598C
+
+game/File.cpp:
+	.text       start:0x8001598C end:0x80019A04
+
+game/DbRoom.c:
+	.text       start:0x80019A04 end:0x80022B10
+
+game/u_80022B10.cpp:
+	.text       start:0x80022B10 end:0x800265C8
+
+game/ModInfo.cpp:
+	.text       start:0x800265C8 end:0x8003B98C
+
+game/u_8003B98C.cpp:
+	.text       start:0x8003B98C end:0x8003CC90
+
+game/u_8003CC90.cpp:
+	.text       start:0x8003CC90 end:0x800448D0
+
+game/Store.c:
+	.text       start:0x800448D0 end:0x8004572C
+
+game/FearActor.c:
+	.text       start:0x8004572C end:0x80064FD4
+
+game/u_80064FD4.cpp:
+	.text       start:0x80064FD4 end:0x80067FF8
+	.ctors      start:0x80341204 end:0x80341208
+
+game/u_80067FF8.cpp:
+	.text       start:0x80067FF8 end:0x80068004
+
+game/u_80068004.cpp:
+	.text       start:0x80068004 end:0x8006C604
+
+game/u_8006C604.cpp:
+	.text       start:0x8006C604 end:0x800776FC
+
+game/u_800776FC.cpp:
+	.text       start:0x800776FC end:0x8007C5C8
+
+game/Arena.c:
+	.text       start:0x8007C5C8 end:0x8007CB14
+
+game/Audio.c:
+	.text       start:0x8007CB14 end:0x8007D7E8
+
+game/u_8007D7E8.cpp:
+	.text       start:0x8007D7E8 end:0x8007EE68
+
+game/u_8007EE68.cpp:
+	.text       start:0x8007EE68 end:0x80083360
+
+game/Script.c:
+	.text       start:0x80083360 end:0x80085CDC
+
+game/u_80085CDC.cpp:
+	.text       start:0x80085CDC end:0x80086400
+
+game/AppMain.c:
+	.text       start:0x80086400 end:0x800886C8
+
+game/u_800886C8.cpp:
+	.text       start:0x800886C8 end:0x8008DCDC
+
+game/u_8008DCDC.cpp:
+	.text       start:0x8008DCDC end:0x8009C74C
+	.ctors      start:0x80341208 end:0x8034120C
+
+game/u_8009C74C.cpp:
+	.text       start:0x8009C74C end:0x8009C87C
+
+game/Shadow2.cpp:
+	.text       start:0x8009C87C end:0x8009D5E4
+	.ctors      start:0x8034120C end:0x80341210
+
+game/u_8009D5E4.cpp:
+	.text       start:0x8009D5E4 end:0x8009D71C
+
+game/Memory.cpp:
+	.text       start:0x8009D71C end:0x8009DDF0
+
+game/u_8009DDF0.cpp:
+	.text       start:0x8009DDF0 end:0x8009DE4C
+	.ctors      start:0x80341210 end:0x80341214
+
+game/u_8009DE4C.cpp:
+	.text       start:0x8009DE4C end:0x800A6F18
+
+game/u_800A6F18.cpp:
+	.text       start:0x800A6F18 end:0x800B1834
+
+game/u_800B1834.cpp:
+	.text       start:0x800B1834 end:0x800BAA14
+
+game/u_800BAA14.cpp:
+	.text       start:0x800BAA14 end:0x800C5028
+
+game/u_800C5028.cpp:
+	.text       start:0x800C5028 end:0x800D0224
+
+game/Progress.cpp:
+	.text       start:0x800D0224 end:0x800D0BF4
+
+game/u_800D0BF4.cpp:
+	.text       start:0x800D0BF4 end:0x800D32E8
+
+game/u_800D32E8.cpp:
+	.text       start:0x800D32E8 end:0x800DD92C
+
+game/u_800DD92C.cpp:
+	.text       start:0x800DD92C end:0x800DE0C4
+
+game/u_800DE0C4.cpp:
+	.text       start:0x800DE0C4 end:0x800DEC54
+
+game/u_800DEC54.cpp:
+	.text       start:0x800DEC54 end:0x800E051C
+
+game/SAM.cpp:
+	.text       start:0x800E051C end:0x800E0B54
+
+game/asyncio.cpp:
+	.text       start:0x800E0B54 end:0x800E1C04
+
+game/u_800E1C04.cpp:
+	.text       start:0x800E1C04 end:0x800E9418
+
+game/u_800E9418.cpp:
+	.text       start:0x800E9418 end:0x800EB1B8
+
+game/u_800EB1B8.cpp:
+	.text       start:0x800EB1B8 end:0x800F0320
+
+game/DeferPriority.cpp:
+	.text       start:0x800F0320 end:0x800F14A8
+	.ctors      start:0x80341214 end:0x80341218
+
+game/u_800F14A8.cpp:
+	.text       start:0x800F14A8 end:0x800F2B00
+
+game/Image.cpp:
+	.text       start:0x800F2B00 end:0x800F396C
+
+game/u_800F396C.cpp:
+	.text       start:0x800F396C end:0x800F73C8
+
+game/u_800F73C8.cpp:
+	.text       start:0x800F73C8 end:0x800FDDE4
+
+game/u_800FDDE4.cpp:
+	.text       start:0x800FDDE4 end:0x80100EB0
+
+game/u_80100EB0.cpp:
+	.text       start:0x80100EB0 end:0x80104134
+
+game/CubeTev.cpp:
+	.text       start:0x80104134 end:0x80112308
+
+game/u_80112308.cpp:
+	.text       start:0x80112308 end:0x80116B28
+
+game/u_80116B28.cpp:
+	.text       start:0x80116B28 end:0x8011818C
+
+game/u_8011818C.cpp:
+	.text       start:0x8011818C end:0x8012071C
+
+game/u_8012071C.cpp:
+	.text       start:0x8012071C end:0x80120C80
+
+game/u_80120C80.cpp:
+	.text       start:0x80120C80 end:0x80125DE4
+
+game/u_80125DE4.cpp:
+	.text       start:0x80125DE4 end:0x80127D80
+
+game/u_80127D80.cpp:
+	.text       start:0x80127D80 end:0x80136884
+
+game/u_80136884.cpp:
+	.text       start:0x80136884 end:0x8013A3D4
+
+game/u_8013A3D4.cpp:
+	.text       start:0x8013A3D4 end:0x8013CA38
+	.ctors      start:0x80341218 end:0x8034121C
+
+game/u_8013CA38.cpp:
+	.text       start:0x8013CA38 end:0x80140A30
+
+game/u_80140A30.cpp:
+	.text       start:0x80140A30 end:0x80142E88
+
+game/u_80142E88.cpp:
+	.text       start:0x80142E88 end:0x80150148
+	.ctors      start:0x8034121C end:0x80341220
+
+game/u_80150148.cpp:
+	.text       start:0x80150148 end:0x80150300
+
+game/u_80150300.cpp:
+	.text       start:0x80150300 end:0x80153C10
+
+game/u_80153C10.cpp:
+	.text       start:0x80153C10 end:0x80157730
+
+game/u_80157730.cpp:
+	.text       start:0x80157730 end:0x80160188
+
+game/u_80160188.cpp:
+	.text       start:0x80160188 end:0x80160BB0
+
+game/u_80160BB0.cpp:
+	.text       start:0x80160BB0 end:0x80160DB0
+
+game/u_80160DB0.cpp:
+	.text       start:0x80160DB0 end:0x80161F40
+
+game/u_80161F40.cpp:
+	.text       start:0x80161F40 end:0x80161FF4
+
+game/u_80161FF4.cpp:
+	.text       start:0x80161FF4 end:0x8016A774
+
+game/u_8016A774.cpp:
+	.text       start:0x8016A774 end:0x8016C244
+
+game/u_8016C244.cpp:
+	.text       start:0x8016C244 end:0x8016D440
+
+game/Msx.cpp:
+	.text       start:0x8016D440 end:0x80175D60
+	.ctors      start:0x80341220 end:0x80341224
+
+game/u_80175D60.cpp:
+	.text       start:0x80175D60 end:0x8017BE38
+
+game/DataStream.cpp:
+	.text       start:0x8017BE38 end:0x8017D6C4
+	.ctors      start:0x80341224 end:0x80341228
+
+game/u_8017D6C4.cpp:
+	.text       start:0x8017D6C4 end:0x8018C358
+
+game/u_8018C358.cpp:
+	.text       start:0x8018C358 end:0x8018D2D4
+
+game/u_8018D2D4.cpp:
+	.text       start:0x8018D2D4 end:0x8018FAE8
+
+game/u_8018FAE8.cpp:
+	.text       start:0x8018FAE8 end:0x80191E2C
+
+game/u_80191E2C.cpp:
+	.text       start:0x80191E2C end:0x801920B8
+	.ctors      start:0x80341228 end:0x8034122C
+
+game/u_801920B8.cpp:
+	.text       start:0x801920B8 end:0x801965FC
+
+game/u_801965FC.cpp:
+	.text       start:0x801965FC end:0x80197E50
+
 zlib/adler32.c:
 	.text       start:0x80197E50 end:0x80197FD4
 
@@ -62,6 +336,325 @@ zlib/trees.c:
 zlib/uncompr.c:
 	.text       start:0x8019FC84 end:0x8019FD58
 	.rodata     start:0x80348268 end:0x80348270
+
+game/zutil.c:
+	.text       start:0x8019FD58 end:0x801A0F2C
+
+game/u_801A0F2C.cpp:
+	.text       start:0x801A0F2C end:0x801A1D24
+
+game/u_801A1D24.cpp:
+	.text       start:0x801A1D24 end:0x801A28A4
+
+game/u_801A28A4.cpp:
+	.text       start:0x801A28A4 end:0x801A6094
+
+game/u_801A6094.cpp:
+	.text       start:0x801A6094 end:0x801AADA8
+
+game/u_801AADA8.cpp:
+	.text       start:0x801AADA8 end:0x801AE50C
+
+game/u_801AE50C.cpp:
+	.text       start:0x801AE50C end:0x801BEC4C
+	.ctors      start:0x8034122C end:0x80341230
+
+game/u_801BEC4C.cpp:
+	.text       start:0x801BEC4C end:0x801D9A70
+
+game/u_801D9A70.cpp:
+	.text       start:0x801D9A70 end:0x801E0EDC
+
+game/u_801E0EDC.cpp:
+	.text       start:0x801E0EDC end:0x801E241C
+
+game/u_801E241C.cpp:
+	.text       start:0x801E241C end:0x801E7DE0
+
+game/u_801E7DE0.cpp:
+	.text       start:0x801E7DE0 end:0x801EAACC
+
+game/u_801EAACC.cpp:
+	.text       start:0x801EAACC end:0x801EDE74
+
+game/u_801EDE74.cpp:
+	.text       start:0x801EDE74 end:0x801F1798
+
+game/u_801F1798.cpp:
+	.text       start:0x801F1798 end:0x801F2DA4
+
+game/u_801F2DA4.cpp:
+	.text       start:0x801F2DA4 end:0x801F676C
+
+game/u_801F676C.cpp:
+	.text       start:0x801F676C end:0x801F7F48
+
+game/u_801F7F48.cpp:
+	.text       start:0x801F7F48 end:0x801FC634
+	.ctors      start:0x80341230 end:0x80341234
+
+game/u_801FC634.cpp:
+	.text       start:0x801FC634 end:0x801FD994
+
+game/FearMap2.c:
+	.text       start:0x801FD994 end:0x80202AB8
+
+game/u_80202AB8.cpp:
+	.text       start:0x80202AB8 end:0x802052B4
+
+game/u_802052B4.cpp:
+	.text       start:0x802052B4 end:0x80208238
+
+game/u_80208238.cpp:
+	.text       start:0x80208238 end:0x8020A650
+
+game/u_8020A650.cpp:
+	.text       start:0x8020A650 end:0x8020B77C
+
+game/u_8020B77C.cpp:
+	.text       start:0x8020B77C end:0x8020D47C
+
+game/u_8020D47C.cpp:
+	.text       start:0x8020D47C end:0x80210D80
+
+game/u_80210D80.cpp:
+	.text       start:0x80210D80 end:0x802128E0
+
+game/linkObjSys.c:
+	.text       start:0x802128E0 end:0x8021427C
+
+game/u_8021427C.cpp:
+	.text       start:0x8021427C end:0x802154B0
+
+game/u_802154B0.cpp:
+	.text       start:0x802154B0 end:0x80221100
+	.ctors      start:0x80341234 end:0x80341238
+
+game/u_80221100.cpp:
+	.text       start:0x80221100 end:0x80222C08
+
+game/u_80222C08.cpp:
+	.text       start:0x80222C08 end:0x80226DE8
+
+game/u_80226DE8.cpp:
+	.text       start:0x80226DE8 end:0x8022EEEC
+
+game/u_8022EEEC.cpp:
+	.text       start:0x8022EEEC end:0x80230224
+
+game/u_80230224.cpp:
+	.text       start:0x80230224 end:0x80230504
+
+game/u_80230504.cpp:
+	.text       start:0x80230504 end:0x80231550
+
+game/u_80231550.cpp:
+	.text       start:0x80231550 end:0x80234AD8
+
+game/Corona.cpp:
+	.text       start:0x80234AD8 end:0x8023824C
+
+game/u_8023824C.cpp:
+	.text       start:0x8023824C end:0x8023B96C
+
+game/u_8023B96C.cpp:
+	.text       start:0x8023B96C end:0x8023E7E0
+
+game/u_8023E7E0.cpp:
+	.text       start:0x8023E7E0 end:0x8023FA5C
+
+game/u_8023FA5C.cpp:
+	.text       start:0x8023FA5C end:0x80243B0C
+
+game/u_80243B0C.cpp:
+	.text       start:0x80243B0C end:0x80244728
+
+game/u_80244728.cpp:
+	.text       start:0x80244728 end:0x80247EB0
+
+game/u_80247EB0.cpp:
+	.text       start:0x80247EB0 end:0x80248FC8
+
+game/u_80248FC8.cpp:
+	.text       start:0x80248FC8 end:0x8024CA7C
+
+game/u_8024CA7C.cpp:
+	.text       start:0x8024CA7C end:0x8024CAA0
+	.ctors      start:0x80341238 end:0x8034123C
+
+game/u_8024CAA0.cpp:
+	.text       start:0x8024CAA0 end:0x8024E374
+
+game/u_8024E374.cpp:
+	.text       start:0x8024E374 end:0x8024E5D0
+
+game/u_8024E5D0.cpp:
+	.text       start:0x8024E5D0 end:0x80251CB8
+
+game/u_80251CB8.cpp:
+	.text       start:0x80251CB8 end:0x802541D4
+
+game/u_802541D4.cpp:
+	.text       start:0x802541D4 end:0x8025643C
+
+game/u_8025643C.cpp:
+	.text       start:0x8025643C end:0x8025951C
+
+game/u_8025951C.cpp:
+	.text       start:0x8025951C end:0x80259AB0
+
+game/u_80259AB0.cpp:
+	.text       start:0x80259AB0 end:0x8025ECF8
+
+game/u_8025ECF8.cpp:
+	.text       start:0x8025ECF8 end:0x802665A8
+	.ctors      start:0x8034123C end:0x80341240
+
+game/u_802665A8.cpp:
+	.text       start:0x802665A8 end:0x80267558
+
+game/u_80267558.cpp:
+	.text       start:0x80267558 end:0x80268780
+
+game/u_80268780.cpp:
+	.text       start:0x80268780 end:0x8026A158
+
+game/u_8026A158.cpp:
+	.text       start:0x8026A158 end:0x8026A37C
+
+game/u_8026A37C.cpp:
+	.text       start:0x8026A37C end:0x8026C200
+
+game/u_8026C200.cpp:
+	.text       start:0x8026C200 end:0x802766F0
+
+game/u_802766F0.cpp:
+	.text       start:0x802766F0 end:0x80277600
+
+game/u_80277600.cpp:
+	.text       start:0x80277600 end:0x8027D3EC
+
+game/u_8027D3EC.cpp:
+	.text       start:0x8027D3EC end:0x8028009C
+
+game/u_8028009C.cpp:
+	.text       start:0x8028009C end:0x80285014
+	.ctors      start:0x80341240 end:0x80341244
+
+game/u_80285014.cpp:
+	.text       start:0x80285014 end:0x80286AF0
+
+game/VM.c:
+	.text       start:0x80286AF0 end:0x8028703C
+
+game/u_8028703C.cpp:
+	.text       start:0x8028703C end:0x8028A77C
+
+game/u_8028A77C.cpp:
+	.text       start:0x8028A77C end:0x8028C54C
+
+game/u_8028C54C.cpp:
+	.text       start:0x8028C54C end:0x8028DA1C
+
+game/u_8028DA1C.cpp:
+	.text       start:0x8028DA1C end:0x80290C58
+
+game/u_80290C58.cpp:
+	.text       start:0x80290C58 end:0x80294548
+
+game/u_80294548.cpp:
+	.text       start:0x80294548 end:0x8029C0AC
+
+game/u_8029C0AC.cpp:
+	.text       start:0x8029C0AC end:0x8029E714
+
+game/u_8029E714.cpp:
+	.text       start:0x8029E714 end:0x802A770C
+
+game/u_802A770C.cpp:
+	.text       start:0x802A770C end:0x802A9810
+
+game/u_802A9810.cpp:
+	.text       start:0x802A9810 end:0x802A9824
+	.ctors      start:0x80341244 end:0x80341248
+
+game/u_802A9824.cpp:
+	.text       start:0x802A9824 end:0x802AE27C
+
+game/u_802AE27C.cpp:
+	.text       start:0x802AE27C end:0x802B2680
+
+game/u_802B2680.cpp:
+	.text       start:0x802B2680 end:0x802B3430
+
+game/u_802B3430.cpp:
+	.text       start:0x802B3430 end:0x802B4600
+
+game/u_802B4600.cpp:
+	.text       start:0x802B4600 end:0x802B7120
+
+game/u_802B7120.cpp:
+	.text       start:0x802B7120 end:0x802B9088
+
+game/u_802B9088.cpp:
+	.text       start:0x802B9088 end:0x802BA078
+
+game/u_802BA078.cpp:
+	.text       start:0x802BA078 end:0x802BB1F4
+
+game/u_802BB1F4.cpp:
+	.text       start:0x802BB1F4 end:0x802BF114
+
+game/u_802BF114.cpp:
+	.text       start:0x802BF114 end:0x802C01E8
+
+game/u_802C01E8.cpp:
+	.text       start:0x802C01E8 end:0x802C30A4
+
+game/u_802C30A4.cpp:
+	.text       start:0x802C30A4 end:0x802C8900
+
+game/u_802C8900.cpp:
+	.text       start:0x802C8900 end:0x802C9818
+
+game/u_802C9818.cpp:
+	.text       start:0x802C9818 end:0x802CBB44
+
+game/u_802CBB44.cpp:
+	.text       start:0x802CBB44 end:0x802CED5C
+
+game/u_802CED5C.cpp:
+	.text       start:0x802CED5C end:0x802D439C
+
+game/u_802D439C.cpp:
+	.text       start:0x802D439C end:0x802D4D18
+
+game/u_802D4D18.cpp:
+	.text       start:0x802D4D18 end:0x802D77AC
+
+game/u_802D77AC.cpp:
+	.text       start:0x802D77AC end:0x802D8C7C
+
+game/u_802D8C7C.cpp:
+	.text       start:0x802D8C7C end:0x802DB9D0
+
+game/u_802DB9D0.cpp:
+	.text       start:0x802DB9D0 end:0x802DC82C
+
+game/u_802DC82C.cpp:
+	.text       start:0x802DC82C end:0x802DDEDC
+
+game/u_802DDEDC.cpp:
+	.text       start:0x802DDEDC end:0x802E2F08
+
+game/u_802E2F08.cpp:
+	.text       start:0x802E2F08 end:0x802E32D0
+
+game/u_802E32D0.cpp:
+	.text       start:0x802E32D0 end:0x802E378C
+
+game/u_802E378C.cpp:
+	.text       start:0x802E378C end:0x802E4858
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mainloop.c:
 	.text       start:0x802E4858 end:0x802E4950

@@ -73,20 +73,12 @@ def main():
         text(8, y, f"{label}: {done}/{len(items)}", 13, MUTED)
         y = squares(items, y + 6)
 
-    # game code: everything in the game .text range that is not inside a library unit
-    lo, hi = GAME_TEXT
-    lib_in_game = sum(max(0, min(e, hi) - max(s, lo)) for n, (s, e) in tr.items()
-                      if any(n.startswith(g) for _, g in GROUPS))
-    game_bytes = hi - lo - lib_in_game
-    game_done = sum(max(0, min(e, hi) - max(s, lo)) for n, (s, e) in tr.items()
-                    if not any(n.startswith(g) for _, g in GROUPS) and (n, True) in [(p, ok) for p, ok in us])
-    n = (game_bytes + GAME_CHUNK - 1) // GAME_CHUNK
-    done_sq = game_done // GAME_CHUNK
+    # game code: one square per (provisional) game file
+    gitems = [(ok, f"{p} - {'matching' if ok else 'asm'}") for p, ok in us if p.startswith('game/')]
+    gdone = sum(ok for ok, _ in gitems)
     y += 20
-    text(8, y, f"Game code: {100 * game_done / game_bytes:.1f}% ({game_done // 1024} / {game_bytes // 1024} KB "
-               f"of .text; one square = 16 KB)", 13, MUTED)
-    items = [(i < done_sq, f"game .text block {i + 1}/{n}") for i in range(n)]
-    y = squares(items, y + 6)
+    text(8, y, f"Game code: {gdone}/{len(gitems)} files (provisional file boundaries)", 13, MUTED)
+    y = squares(gitems, y + 6)
     y += 22
     svg.append(f'<rect x="8" y="{y - 11}" width="12" height="12" rx="2" fill="{GREEN}"/>')
     text(26, y, "byte-identical C", 12, MUTED)
@@ -99,7 +91,7 @@ def main():
     os.makedirs(os.path.join(ROOT, "docs"), exist_ok=True)
     path = os.path.join(ROOT, "docs/progress.svg")
     open(path, "w").write("\n".join(out) + "\n")
-    print(f"wrote {path}: libraries {lib_done}/{lib_total}, game {game_done}/{game_bytes} bytes")
+    print(f"wrote {path}: libraries {lib_done}/{lib_total}, game {gdone}/{len(gitems)} files")
 
 
 if __name__ == "__main__":
