@@ -113,6 +113,62 @@ extern files __files = {
     },
 };
 
+// Geist (older MSL) also has __find_unopened_file, __init_file and __flush_line_buffered_output_files.
+int setvbuf(FILE* file, char* buff, int mode, size_t size);
+int __position_file(__file_handle handle, fpos_t* position, int mode, __idle_proc idle_proc);
+int __read_file(__file_handle handle, unsigned char* buffer, size_t* count, __idle_proc idle_proc);
+int __write_file(__file_handle handle, unsigned char* buffer, size_t* count, __idle_proc idle_proc);
+int __close_file(__file_handle handle);
+
+FILE* __find_unopened_file(void) {
+    FILE* p = __files._stderr.next_file;
+    FILE* plast;
+
+    while (p != NULL) {
+        if (p->file_mode.file_kind == __closed_file)
+            return p;
+
+        plast = p;
+        p = p->next_file;
+    }
+
+    if ((p = (FILE*)malloc(sizeof(FILE))) != NULL) {
+        memset(p, 0, sizeof(FILE));
+        p->is_dynamically_allocated = 1;
+        plast->next_file = p;
+        return p;
+    }
+
+    return NULL;
+}
+
+void __init_file(FILE* file, file_modes mode, char* buff, size_t size) {
+    file->handle = 0;
+    file->file_mode = mode;
+    file->file_state.io_state = __neutral;
+    file->file_state.free_buffer = 0;
+    file->file_state.eof = 0;
+    file->file_state.error = 0;
+    file->position = 0;
+
+    if (size)
+        setvbuf(file, buff, _IOFBF, size);
+    else
+        setvbuf(file, NULL, _IONBF, 0);
+
+    file->buffer_ptr = file->buffer;
+    file->buffer_length = 0;
+
+    if (file->file_mode.file_kind == __disk_file) {
+        file->position_fn = __position_file;
+        file->read_fn = __read_file;
+        file->write_fn = __write_file;
+        file->close_fn = __close_file;
+    }
+
+    file->idle_fn = NULL;
+}
+
 void __close_all(void) {
     FILE* file = &__files._stdin;
     FILE* last_file;
@@ -152,4 +208,21 @@ unsigned int __flush_all(void) {
     }
 
     return ret;
+}
+
+int __flush_line_buffered_output_files(void) {
+    int result = 0;
+    FILE* file = &__files._stdin;
+
+    while (file) {
+        if (file->file_mode.file_kind && (file->file_mode.buffer_mode & _IOLBF) &&
+            file->file_state.io_state == __writing) {
+            if (fflush(file))
+                result = -1;
+        }
+
+        file = file->next_file;
+    }
+
+    return result;
 }

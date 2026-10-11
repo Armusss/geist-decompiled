@@ -227,6 +227,8 @@ MSL_C/MSL_Common/Src/alloc.c:
 
 MSL_C/MSL_Common/Src/ansi_files.c:
 	.text       start:0x802EDF74 end:0x802EE2C4
+	.data       start:0x803C66A0 end:0x803C67E0
+	.bss        start:0x804A84B8 end:0x804A87B8
 
 MSL_C/MSL_Common_Embedded/Src/ansi_fp.c:
 	.text       start:0x802EE2C4 end:0x802EEEF4

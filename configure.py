@@ -616,7 +616,7 @@ config.libs = [
         "objects": [
             Object(NonMatching, "MSL_C/MSL_Common/Src/abort_exit.c", cflags=cflags_msl),
             Object(NonMatching, "MSL_C/MSL_Common/Src/alloc.c", cflags=cflags_msl),
-            Object(NonMatching, "MSL_C/MSL_Common/Src/ansi_files.c", extra_cflags=['-use_lmw_stmw off'], cflags=cflags_msl),
+            Object(Matching, "MSL_C/MSL_Common/Src/ansi_files.c", extra_cflags=['-use_lmw_stmw off'], cflags=cflags_msl),
             Object(NonMatching, "MSL_C/MSL_Common_Embedded/Src/ansi_fp.c", cflags=cflags_msl),
             Object(Matching, "MSL_C/MSL_Common/Src/buffer_io.c", cflags=cflags_msl),
             Object(Matching, "MSL_C/PPC_EABI/Src/critical_regions.gamecube.c", cflags=cflags_msl),
