@@ -636,7 +636,7 @@ config.libs = [
             Object(Matching, "MSL_C/MSL_Common/Src/time.c", extra_cflags=['-use_lmw_stmw off'], cflags=cflags_msl),
             Object(Matching, "MSL_C/MSL_Common/Src/wchar_io.c", extra_cflags=['-use_lmw_stmw off'], cflags=cflags_msl),
             Object(Matching, "MSL_C/PPC_EABI/Src/time.gamecube.c", cflags=cflags_msl),
-            Object(NonMatching, "MSL_C/PPC_EABI/Src/uart_console_io_gcn.c", cflags=cflags_msl),
+            Object(Matching, "MSL_C/PPC_EABI/Src/uart_console_io_gcn.c", cflags=cflags_msl),
             Object(Matching, "MSL_C/MSL_Common_Embedded/Math/Double_precision/e_acos.c", cflags=cflags_msl_math),
             Object(Matching, "MSL_C/MSL_Common_Embedded/Math/Double_precision/e_atan2.c", cflags=cflags_msl_math),
             Object(Matching, "MSL_C/MSL_Common_Embedded/Math/Double_precision/e_exp.c", cflags=cflags_msl_math),

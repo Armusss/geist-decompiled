@@ -6,21 +6,15 @@ int WriteUARTN(unsigned char*, size_t);
 int __TRK_write_console(__file_handle handle, unsigned char* buffer, size_t* count,
                         __idle_proc idle_fn);
 
+// Geist: UART setup is split into __init_uart_console; __close_console lives in MetroTRK's mslsupp.c.
+static int initialized;
+
+int __init_uart_console(void);
+
 int __write_console(__file_handle handle, unsigned char* buffer, size_t* count,
                     __idle_proc idle_fn) {
-    static int initialized;
-
     if ((OSGetConsoleType() & 0x20000000) == 0) {
-        int uart_init = 0;
-        if (initialized == FALSE) {
-            uart_init = InitializeUART(0xE100);
-
-            if (uart_init == 0) {
-                initialized = 1;
-            }
-        }
-
-        if (uart_init != 0) {
+        if (__init_uart_console() != 0) {
             return 1;
         }
 
@@ -34,6 +28,16 @@ int __write_console(__file_handle handle, unsigned char* buffer, size_t* count,
     return 0;
 }
 
-int __close_console(__file_handle handle) {
-    return 0;
+int __init_uart_console(void) {
+    int err = 0;
+
+    if (initialized == FALSE) {
+        err = InitializeUART(0xE100);
+
+        if (err == 0) {
+            initialized = 1;
+        }
+    }
+
+    return err;
 }
