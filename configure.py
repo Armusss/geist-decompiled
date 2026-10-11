@@ -575,7 +575,8 @@ config.libs = [
             Object(NonMatching, "game/main.cpp"),  # guess
             Object(NonMatching, "game/u_8000F2F0.cpp"),  # guess
             Object(NonMatching, "game/Turf.cpp"),  # guess
-            Object(NonMatching, "game/File.cpp"),  # guess
+            Object(NonMatching, "game/u_8001598C.cpp"),
+            Object(Matching, "game/File.cpp"),
             Object(NonMatching, "game/DbRoom.c"),  # guess
             Object(NonMatching, "game/u_80022B10.cpp"),  # guess
             Object(NonMatching, "game/ModInfo.cpp"),  # guess

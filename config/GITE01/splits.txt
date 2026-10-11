@@ -25,8 +25,15 @@ game/u_8000F2F0.cpp:
 game/Turf.cpp:
 	.text       start:0x80012E04 end:0x8001598C
 
+game/u_8001598C.cpp:
+	.text       start:0x8001598C end:0x800190D4
+
 game/File.cpp:
-	.text       start:0x8001598C end:0x80019A04
+	.text       start:0x800190D4 end:0x80019A04
+	.rodata     start:0x80341E98 end:0x80341F30
+	.bss        start:0x803DAA88 end:0x803DAE88
+	.sbss       start:0x804D41A0 end:0x804D41B0
+	.sdata2     start:0x804D60A0 end:0x804D60A8
 
 game/DbRoom.c:
 	.text       start:0x80019A04 end:0x80022B10

@@ -6,7 +6,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
-| Lead (main session) | `geist-matching` / `main` | Game loader files: game/File.cpp (Memory.cpp, asyncio.cpp, Image.cpp, DataStream.cpp done); merging, boundaries, library leftovers | working |
+| Lead (main session) | `geist-matching` / `main` | Game loader files all done (Memory.cpp, asyncio.cpp, Image.cpp, DataStream.cpp, File.cpp); next: merging, boundaries, library leftovers; merging, boundaries, library leftovers | working |
 | helper-game-a | `.claude/worktrees/optimistic-khayyam-7b9401` / `claude/intelligent-babbage-a49862` | **Game units 0x80005800-0x80150000** except the Lead's files above | working (Remote Control on) |
 | helper-game-b | `.claude/worktrees/goofy-clarke-759020` / `claude/frosty-gauss-da470f` | **Game units 0x80150000-0x802E4858** except zlib (done), game/zutil.c (zlib, GC/2.6) and the Lead's files above | working (Remote Control on) |
 
@@ -90,6 +90,16 @@ wrapper with "Out of Memory <file> <line>" reports, two scratch ring buffers (0x
   request pointer, sPendingBytes, sFileOpen). All the file's .bss is reached from one base register (the first
   static), which confirms which statics belong to the file. A run of string literals in .rodata that nothing
   references (POSSESS, GHOSTACTION, ...) repeats in several files: a header-defined static table.
+- **File.cpp matched** (.text 0x800190D4-0x80019A04; .rodata 0x80341E98-0x80341F30, .bss 0x803DAA88-0x803DAE88,
+  .sbss 0x804D41A0-B0, .sdata2 0x804D60A0-A8). The provisional unit started at 0x8001598C; everything before
+  0x800190D4 touches other data (sdata2 0x804D6030-609C, sbss 0x804D4198) and is now u_8001598C (still several
+  files: module hooks called from 0x80087BB0/0x80087FA8 tables etc.). OLC level loader: chunk handler table,
+  per-type disc offsets (ArchiveFindOffset), whole-file readers. Lessons: `x = f(); if (x != y)` vs
+  `if (f() != y)` swaps cmpw operands; error paths placed after the main path come from `if (ok) {...} else
+  {error}` shapes; declaration order decides callee-saved registers, so search it with
+  `~/geist-work/mwprobe/perm.py SRC FUNC ADDR SIZE` (declaration lines on stdin). Also new:
+  `udiff.py SRC START END` (all functions of a unit) and `adiff.py MDIFF_OUT` (aligned diff that tolerates
+  length differences).
 
 ## G2 — game code split into provisional units (Lead, 2026-10-11)
 
