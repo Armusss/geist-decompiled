@@ -11,7 +11,6 @@ int fflush(FILE* file);
 // The older MSL numbers its critical regions differently: setvbuf locks region 2 (files_access).
 #define GEIST_FILES_ACCESS 2
 
-#pragma dont_inline on // Geist calls the stubs and __prep_buffer instead of inlining them
 
 void __convert_to_newlines(unsigned char* buf, size_t* n) {}
 
@@ -130,5 +129,3 @@ int setvbuf(FILE* file, char* buff, int mode, size_t size) {
 
     return 0;
 }
-
-#pragma dont_inline reset

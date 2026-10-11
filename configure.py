@@ -276,7 +276,7 @@ cflags_rt = [
 # only with "-opt level=0,peephole,schedule", not levels 1-4); the math library is -O4,p like the runtime.
 # MSL_C common: "-O4,p" followed by "-opt level=0,peephole,schedule" (the -O4 sub-options stay set;
 # dropping -O4,p changes register saves, e.g. stmw for two registers).
-cflags_msl = [*cflags_rt, "-opt level=0,peephole,schedule"]
+cflags_msl = [*cflags_rt, "-opt level=0,peephole,schedule", "-inline off"]  # no inlining at all (mem.c, alloc.c, buffer_io.c)
 cflags_msl_math = cflags_rt
 # ==== end helper-msl cflags ====
 # ==== helper-musyx cflags (only helper-musyx edits this block) ====
@@ -625,7 +625,7 @@ config.libs = [
             Object(NonMatching, "MSL_C/MSL_Common/Src/file_io.c", cflags=cflags_msl),
             Object(NonMatching, "MSL_C/MSL_Common/Src/FILE_POS.c", cflags=cflags_msl),
             Object(NonMatching, "MSL_C/MSL_Common/Src/mbstring.c", cflags=cflags_msl),
-            Object(NonMatching, "MSL_C/MSL_Common/Src/mem.c", cflags=cflags_msl),
+            Object(Matching, "MSL_C/MSL_Common/Src/mem.c", cflags=cflags_msl),
             Object(Matching, "MSL_C/MSL_Common/Src/mem_funcs.c", cflags=cflags_msl),
             Object(Matching, "MSL_C/MSL_Common/Src/misc_io.c", cflags=cflags_msl),
             Object(NonMatching, "MSL_C/MSL_Common/Src/printf.c", cflags=cflags_msl),
