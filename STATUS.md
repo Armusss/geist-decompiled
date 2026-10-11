@@ -36,6 +36,39 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 6. When done (or blocked), send the Lead a short report: units matched, compiler/flags, anything odd,
    exact verify command + expected output. Then stop.
 
+## Chunk 12 — MSL_C common almost done (Lead, 2026-10-11)
+
+**Result:** `SDK Code: 98.70% fuzzy, 98.52% matched, 98.14% linked (199 / 202 files)`, DOL OK.
+New: direct_io, buffer_io, mem, ansi_files, extras, ctype, uart_console_io_gcn, abort_exit, FILE_POS,
+mbstring, qsort (the unit split as "scanf.c"), printf (+clearerr in misc_io), ansi_fp, alloc.
+- **MSL_C common flags:** `-O4,p -opt level=0,peephole,schedule -inline off` (cflags_msl). extras.c is
+  different: cflags_rt (-O4,p, inlining) + `-DMSL_USE_INLINES=1`; ctype.c also needs `-DMSL_USE_INLINES=1`
+  (weak inline ctype functions; only tolower/isupper/isdigit survive).
+- Even with -inline off, files are emitted in **reverse source order**.
+- **Comma expressions** (e.g. macros like `((a)->x = b, (a)->y = c)`) make the compiler reserve saved
+  registers for temporaries; that explains "reserved but unused" registers (alloc's FixSubBlock_construct is
+  such a macro; Block_empty too).
+- Older-revision details: printf's `va_start(ap, fmt)` evaluates `(void)fmt` (Prime's stdarg); no locale radix
+  (`'.'`); fprintf/vfprintf check `fwide(file, -1) >= 0`; abort -> exit -> __exit; UART init split into
+  __init_uart_console; critical-region ids differ from TP's enum (setvbuf uses 2).
+- Wrong dtk names fixed: 0x802EF06C is __flush_buffer and 0x802EF138 __load_buffer (were swapped);
+  "strnicmp" 0x802F6ACC is strupr; the "scanf.c" unit is qsort; 0x80316480 is _ExitProcess (now in
+  __ppc_eabi_init.c's split).
+- Tool: `~/geist-work/mwprobe/mtry.py UNIT_SRC CANDIDATE [flags]` compiles a candidate with the unit's exact
+  ninja flags and reports per-function matches inside the unit's range (it does not check order; the DOL
+  check does). `INC=build/scratch/plibc` swaps in Prime's libc headers (copied there with a minimal types.h).
+- **Left (3):** file_io.c (fflush: retail reserves r29 but compares r3 directly; everything else matches),
+  Gecko_ExceptionPPC.cp (full C++ EH runtime, no reference source), EXI2_GDEV main.c (gdev_cc_read
+  register allocation).
+
+**Verify:**
+```sh
+cd ~/Documents/"Claude code"/geist-matching && export PATH=$HOME/.local/bin:$PATH
+python3 configure.py && rm -f build/GITE01/main.dol && ninja | grep -E "main.dol|SDK Code"
+# build/GITE01/main.dol: OK
+# SDK Code: 98.70% fuzzy, 98.52% matched, 98.14% linked (199 / 202 files)
+```
+
 ## Chunk 11 — MSL flags fix + Prime reference (Lead, 2026-10-11)
 
 **Result:** `SDK Code: 95.02% fuzzy, 93.87% matched, 92.44% linked (185 / 202 files)`, DOL OK. New: string.c.
