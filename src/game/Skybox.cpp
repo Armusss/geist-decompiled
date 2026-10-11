@@ -4,7 +4,7 @@
 
 struct Actor;
 
-typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data);
+typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
 typedef int (*ActorFunc)(Actor* actor);
 
 // Actor type descriptor (0x30 bytes), registered in a table of 64 types.
@@ -45,20 +45,20 @@ struct SoundMsg {
 };
 
 int ActorTypeRegister(ActorType* type);                  // 0x800C83F0
-int ActorDefaultMsg(Actor* actor, int msg, void* data);  // 0x800E4C64
+int ActorDefaultMsg(Actor* actor, int msg, void* data, int arg); // 0x800E4C64
 void ActorFn80022D98(Actor* actor, int arg);             // 0x80022D98
-void SendMsg(int target, int msg, SoundMsg* data);       // 0x800265D4
+int SendMsg(int target, int msg, void* data);            // 0x800265D4
 void ActorFn8002378C(Actor* actor, int a, int b, int c, int d, int e, int f); // 0x8002378C
 void Fn8007CEA4(void* p);                                 // 0x8007CEA4
 
-int SkyboxMsg(Actor* actor, int msg, void* data);
+int SkyboxMsg(Actor* actor, int msg, void* data, int arg);
 int SkyboxSpawn(Actor* actor);
 
 ActorType gSkyboxType = { 0, "Skybox", SkyboxMsg, 0, SkyboxSpawn };
 
 void SkyboxRegister(void) { ActorTypeRegister(&gSkyboxType); }
 
-int SkyboxMsg(Actor* actor, int msg, void* data) {
+int SkyboxMsg(Actor* actor, int msg, void* data, int arg) {
     SoundMsg m;
 
     switch (msg) {
@@ -84,7 +84,7 @@ int SkyboxMsg(Actor* actor, int msg, void* data) {
         return 1;
     }
     default:
-        return ActorDefaultMsg(actor, msg, data);
+        return ActorDefaultMsg(actor, msg, data, arg);
     }
 }
 
