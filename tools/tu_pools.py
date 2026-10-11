@@ -31,11 +31,19 @@ for t, us in pools.items():
 # forced boundaries: consecutive pool-user functions with different pools and no merge between
 mono = json.load(open(GM + '/build/tu_mono.json'))
 allowed = set(mono['ok'])
-first = sorted((min(us), t) for t, us in pools.items())
 forced = []
-for (i1, t1), (i2, t2) in zip(first, first[1:]):
+pairs = []
+for sec_lo, sec_hi in ((0x80341280, 0x8034EE00), (0x8034EE00, 0x803D0000)):   # .rodata pools, .data pools
+    first = sorted((min(us), t) for t, us in pools.items() if sec_lo <= t < sec_hi)
+    # consecutive pools in address order are consecutive files (same section, same order as code)
+    first = sorted(first, key=lambda x: x[1])
+    pairs += list(zip(first, first[1:]))
+for (i1, t1), (i2, t2) in pairs:
+    if i2 <= i1:
+        continue                      # pool order disagrees with code order: not a clean pair
     last1 = max(pools[t1])
-    if last1 < i2:
+    if last1 < min(pools[t2]):
+        i2 = min(pools[t2])
         cands = [k for k in range(last1 + 1, i2 + 1) if funcs[k][0] in allowed and not merge[k]]
         forced.append((last1, i2, cands))
 print('string pools', len(pools), 'pool-separated gaps', len(forced),

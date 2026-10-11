@@ -50,8 +50,16 @@ Handoff file for the matching decompilation. Newest section first. See README.md
   allowed boundary (pinned), 21 have none: probably files with both a `.rodata` and a `.data` pool, so pools
   must be paired before "different pool = different file" holds. Writes `build/tu_pools.json`.
 - No zero padding between game functions (4-byte alignment), so padding gives no boundary signal.
-- **Next:** pair `.rodata`/`.data` pools by order, add vtable/RTTI and assert-file-name anchors and the
-  17 `.ctors` initializers (each ends a C++ file), then emit a first full game split (asm units, DOL OK).
+- Refinements (validated on zlib, whose 9 real boundaries are known): only *compiler-generated* private
+  data counts: `.rodata` strings (not named tables like zlib's `_length_code`), `.sdata2` constants, jump
+  tables. "Shared" is decided per symbol object (per raw address in `.sdata2`). Vtables are NOT usable
+  (weak, shared between files). Now **2,566 allowed boundaries**, all 9 zlib boundaries allowed; pool
+  contradictions down to 8 (one area 0x801B4xxx-0x801D7xxx, probably built without string pooling).
+- `tools/tu_propose.py` -> `build/tu_proposal.json`: **194 proposed game units** (35 pinned by pools,
+  12 known from zlib, 146 guesses at the first allowed boundary; median 0x2694 bytes, largest 0x29A6C).
+  Run: `python3 tools/tu_mono.py && python3 tools/tu_pools.py && python3 tools/tu_propose.py`.
+- **Next:** G1 (confirm game flags on small functions), then G2: write these ranges as asm units into
+  splits.txt (DOL must stay OK) and refine them while matching.
 
 ## Game code plan (Lead, 2026-10-11)
 

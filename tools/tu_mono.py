@@ -20,13 +20,31 @@ SEC = {'.sdata2': (0x804D5E80, 0x804DE000), '.rodata': (0x80341280, 0x8034EE00),
 def text(a, n):
     for o, b, s in secs:
         if b <= a < b + s: return d[o + a - b:o + a - b + n]
+# vtable-like tables: runs of >= 3 pointers to game functions inside .data (referenced by constructors)
+import bisect as _b
+_fs = sorted(f[0] for f in funcs); _fset = set(_fs)
+_do, _db, _ds = next((o, b, s) for o, b, s in secs if b <= 0x8034EE00 < b + s or b == 0x8034EE00)
+VT = {}                        # table start -> list of target functions
+_cur = []
+for _i in range(0, _ds, 4):
+    _w = struct.unpack_from('>I', d, _do + _i)[0]
+    if _w in _fset: _cur.append((_db + _i, _w)); continue
+    if len(_cur) >= 3: VT[_cur[0][0]] = [w for _, w in _cur]
+    _cur = []
+_vt_starts = sorted(VT)
+def in_vtable(t):
+    i = _b.bisect_right(_vt_starts, t) - 1
+    return i >= 0 and t < _vt_starts[i] + 4 * len(VT[_vt_starts[i]])
 def private(t):
     # sdata2 / rodata anything; .data only jump tables (per function, compiler generated)
     for name, (lo, hi) in SEC.items():
         if lo <= t < hi:
+            if name == '.rodata':
+                b = text(t, 3) or b''
+                return name if len(b) == 3 and all(32 <= c < 127 or c in (9, 10) for c in b) else None
             if name == '.data':
                 o = objs.get(t)
-                return name if o and o[1].startswith('jumptable_') else None
+                return name if (o and o[1].startswith('jumptable_')) else None  # vtables: weak, shared between files
             return name
 ostarts = sorted(objs)
 def obj_key(t):
@@ -50,11 +68,11 @@ WIN = int(os.environ.get('WIN', '0x10000'), 16)
 users = collections.defaultdict(list)
 for i, r in enumerate(refs):
     for sname, ts in r.items():
-        for t in ts: users[(sname, t)].append(i)
+        for t in ts: users[(sname, t if sname == '.sdata2' else obj_key(t))].append(i)
 shared = {k for k, us in users.items() if funcs[max(us)][0] - funcs[min(us)][0] > WIN}
 for i, r in enumerate(refs):
     for sname in list(r):
-        r[sname] = [t for t in r[sname] if (sname, t) not in shared and not (sname == ".sdata2" and t >= 0x804DB338)]
+        r[sname] = [t for t in r[sname] if (sname, t if sname == ".sdata2" else obj_key(t)) not in shared and not (sname == ".sdata2" and t >= 0x804DB338)]
 print('shared objects dropped', len(shared))
 # outlier pass: drop references far from the local trend (neighbouring functions' median address)
 import statistics
@@ -62,13 +80,16 @@ THR = {'.sdata2': int(os.environ.get('THR2', '0x400'), 16), '.rodata': int(os.en
 K = int(os.environ.get('K', '40'))
 dropped = 0
 for sname in SEC:
+    k = K if sname != '.data' else 4 * K
     meds = []
     for i in range(N):
-        pool = [t for j in range(max(0, i - K), min(N, i + K + 1)) for t in refs[j][sname]]
-        meds.append(statistics.median(pool) if pool else None)
+        pool = [t for j in range(max(0, i - k), min(N, i + k + 1)) for t in refs[j][sname]]
+        meds.append(statistics.median(pool) if len(pool) >= 5 else None)
     for i in range(N):
-        if meds[i] is None: continue
-        keep = [t for t in refs[i][sname] if abs(t - meds[i]) <= THR[sname]]
+        if meds[i] is None:
+            keep = []                     # too little context to trust these references
+        else:
+            keep = [t for t in refs[i][sname] if abs(t - meds[i]) <= THR[sname]]
         dropped += len(refs[i][sname]) - len(keep); refs[i][sname] = keep
 print('outlier references dropped', dropped)
 ok = [True] * N            # ok[i]: boundary allowed before function i
