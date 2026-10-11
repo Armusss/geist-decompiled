@@ -36,6 +36,26 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 6. When done (or blocked), send the Lead a short report: units matched, compiler/flags, anything odd,
    exact verify command + expected output. Then stop.
 
+## Chunk 11 — MSL flags fix + Prime reference (Lead, 2026-10-11)
+
+**Result:** `SDK Code: 95.02% fuzzy, 93.87% matched, 92.44% linked (185 / 202 files)`, DOL OK. New: string.c.
+- **Flag fix:** MSL_C common files are `-O4,p` *followed by* `-opt level=0,peephole,schedule`
+  (`cflags_msl = [*cflags_rt, "-opt level=0,peephole,schedule"]`). The helper's probes always had -O4,p first;
+  configure had dropped it, which changes register saves (stmw for 2 registers). All matched MSL units
+  still match with the fix.
+- **Reference:** `~/geist-work/refs/prime` (sparse clone of PrimeDecomp/prime, read-only:
+  extern/sdk/{runtime,libc,include}) has an *older* MSL revision. string.c: strlen..strchr from Prime match;
+  strcat/strrchr from TP; strncat/strstr written from the MSL algorithm (all 10 match).
+  Prime's Gecko_ExceptionPPC.cpp is only a 40-line stub (no help).
+- Probe Prime files with: `cd ~/geist-work/refs/prime/extern/sdk && GM=... probe.py 2.6 runtime/<f>.c
+  -opt level=0,peephole,schedule -gccinc -i include -i libc -i runtime -use_lmw_stmw on
+  -str reuse,pool,readonly -common off -char signed -func_align 4 -inline deferred,auto` (probe adds -O4,p
+  itself). First results: alloc 3/15, uart_console_io 1/2, mem 0/4 (mem matches neither TP nor Prime yet:
+  retail memchr keeps a dead copy of `n` in r29). Others failed to compile only for lack of `-gccinc`.
+- **Next:** per MSL file, pick per function the TP or Prime version that matches; files still left:
+  abort_exit, alloc, ansi_files, ansi_fp, buffer_io, ctype, direct_io, extras, file_io, FILE_POS,
+  mbstring, mem, printf, scanf, uart_console_io_gcn (+ Gecko_ExceptionPPC, gdev main.c).
+
 ## Chunk 10 — library leftovers (Lead, 2026-10-11)
 
 **Result:** `SDK Code: 94.76% fuzzy, 93.37% matched, 92.11% linked (184 / 202 files)`, DOL OK.
