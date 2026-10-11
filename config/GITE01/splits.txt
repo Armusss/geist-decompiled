@@ -522,7 +522,7 @@ game/u_8025ECF8.cpp:
 	.text       start:0x8025ECF8 end:0x802665A8
 	.ctors      start:0x8034123C end:0x80341240
 
-game/u_802665A8.cpp:
+game/Thermostat.cpp:
 	.text       start:0x802665A8 end:0x80267558
 
 game/u_80267558.cpp:
