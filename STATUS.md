@@ -6,7 +6,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
-| Lead (main session) | `geist-matching` / `main` | Game loader files all done (Memory.cpp, asyncio.cpp, Image.cpp, DataStream.cpp, File.cpp); next: merging, boundaries, library leftovers; merging, boundaries, library leftovers | working |
+| Lead (main session) | `geist-matching` / `main` | Game loader files all done (Memory.cpp, asyncio.cpp, Image.cpp, DataStream.cpp, File.cpp); next: merging helper work, boundaries, library leftovers | paused (2026-10-11) |
 | helper-game-a | `.claude/worktrees/optimistic-khayyam-7b9401` / `claude/intelligent-babbage-a49862` | **Game units 0x80005800-0x80150000** except the Lead's files above | working (Remote Control on) |
 | helper-game-b | `.claude/worktrees/goofy-clarke-759020` / `claude/frosty-gauss-da470f` | **Game units 0x80150000-0x802E4858** except zlib (done), game/zutil.c (zlib, GC/2.6) and the Lead's files above | working (Remote Control on) |
 
