@@ -243,6 +243,55 @@ cflags_runtime = [
 # ==== helper-msl cflags (only helper-msl edits this block) ====
 # ==== end helper-msl cflags ====
 # ==== helper-musyx cflags (only helper-musyx edits this block) ====
+# MusyX 2.0.3 (Factor 5), source layout from AxioDL/musyx (MIT) at the commit Prime's decomp pins.
+# Evidence (helper-musyx): compiling all MusyX sources and searching main.dol, GC/1.3.2 + MusyX 2.0.3
+# matched the most functions (368/613; 2.0.2: 350, 2.6: fewer, e.g. snd_math 1/4 vs 4/4; 1.2.5n: ~25).
+cflags_musyx = [
+    "-proc gekko",
+    "-nodefaults",
+    "-nosyspath",
+    "-i include/musyx/compat",
+    "-i include",
+    "-i include/libc",
+    f"-i build/{config.version}/include",
+    "-inline auto,depth=4",
+    "-O4,p",
+    "-fp hard",
+    "-enum int",
+    "-Cpp_exceptions off",
+    "-str reuse,pool,readonly",
+    "-fp_contract off",
+    "-DMUSY_TARGET=1",
+    "-DMUSY_VERSION_MAJOR=2",
+    "-DMUSY_VERSION_MINOR=0",
+    "-DMUSY_VERSION_PATCH=3",
+]
+# zlib 1.1.4 (linked into game code, 0x80197E50-0x8019FD58). Evidence (helper-musyx): Geist compiled zlib
+# as C++ (comparisons are byte-sized bools, deflateInit2_'s local static is guard-initialized, internal
+# functions would be mangled); sources are upstream 1.1.4 with K&R definitions converted to ANSI.
+# Registers are saved with stmw, functions come out in reverse source order (-inline deferred), strings
+# are pooled. GC/1.3.2 and 2.0 differ on deflate_*; 2.5/2.6/2.7 match, 2.6 as for the rest of the game.
+# -lang must come first: options before it are reset.
+cflags_zlib = [
+    "-lang=c++",
+    "-proc gekko",
+    "-nodefaults",
+    "-nosyspath",
+    "-i include/zlib/compat",
+    "-i include/zlib",
+    "-i src/zlib",
+    "-i include",
+    "-i include/libc",
+    f"-i build/{config.version}/include",
+    "-fp hard",
+    "-enum int",
+    "-Cpp_exceptions off",
+    "-RTTI off",
+    "-O4,p",
+    "-inline auto,deferred",
+    "-use_lmw_stmw on",
+    "-str pool,readonly",
+]
 # ==== end helper-musyx cflags ====
 
 # REL flags
@@ -482,6 +531,59 @@ config.libs = [
     },
     # ==== end helper-msl ====
     # ==== helper-musyx: MusyX / zlib libs (only helper-musyx edits this block) ====
+    {
+        "lib": "musyx",
+        "mw_version": "GC/1.3.2",
+        "cflags": cflags_musyx,
+        "progress_category": "sdk",
+        "objects": [
+            Object(Matching, "musyx/runtime/seq.c"),
+            Object(Matching, "musyx/runtime/synth.c"),
+            Object(Matching, "musyx/runtime/seq_api.c"),
+            Object(Matching, "musyx/runtime/snd_synthapi.c"),
+            Object(Matching, "musyx/runtime/stream.c"),
+            Object(Matching, "musyx/runtime/synthdata.c"),
+            Object(Matching, "musyx/runtime/synthmacros.c"),
+            Object(Matching, "musyx/runtime/synthvoice.c"),
+            Object(Matching, "musyx/runtime/synth_ac.c"),
+            Object(Matching, "musyx/runtime/synth_adsr.c"),
+            Object(Matching, "musyx/runtime/synth_vsamples.c"),
+            Object(Matching, "musyx/runtime/s_data.c"),
+            Object(Matching, "musyx/runtime/hw_dspctrl.c"),
+            Object(Matching, "musyx/runtime/hw_volconv.c"),
+            Object(Matching, "musyx/runtime/snd3d.c"),
+            Object(Matching, "musyx/runtime/snd_init.c"),
+            Object(Matching, "musyx/runtime/snd_math.c"),
+            Object(Matching, "musyx/runtime/snd_midictrl.c"),
+            Object(Matching, "musyx/runtime/snd_service.c"),
+            Object(Matching, "musyx/runtime/hardware.c"),
+            Object(Matching, "musyx/runtime/hw_aramdma.c"),
+            Object(Matching, "musyx/runtime/dsp_import.c"),
+            Object(Matching, "musyx/runtime/hw_dolphin.c"),
+            Object(Matching, "musyx/runtime/hw_memory.c"),
+            Object(Matching, "musyx/runtime/CheapReverb/creverb_fx.c"),
+            Object(Matching, "musyx/runtime/CheapReverb/creverb.c"),
+        ],
+    },
+    {
+        "lib": "zlib",
+        "mw_version": "GC/2.6",
+        "cflags": cflags_zlib,
+        "progress_category": "sdk",
+        "objects": [
+            Object(Matching, "zlib/adler32.c"),
+            Object(Matching, "zlib/compress.c"),
+            Object(Matching, "zlib/deflate.c"),
+            Object(Matching, "zlib/infblock.c"),
+            Object(Matching, "zlib/infcodes.c"),
+            Object(Matching, "zlib/inffast.c"),
+            Object(Matching, "zlib/inflate.c"),
+            Object(Matching, "zlib/inftrees.c"),
+            Object(Matching, "zlib/infutil.c"),
+            Object(Matching, "zlib/trees.c"),
+            Object(Matching, "zlib/uncompr.c"),
+        ],
+    },
     # ==== end helper-musyx ====
 ]
 

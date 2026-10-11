@@ -13,6 +13,56 @@ Sections:
 	.sdata2     type:rodata align:8
 	.sbss2      type:bss align:32
 
+zlib/adler32.c:
+	.text       start:0x80197E50 end:0x80197FD4
+
+zlib/compress.c:
+	.text       start:0x80197FD4 end:0x801980A0
+	.rodata     start:0x80347308 end:0x80347310
+
+zlib/deflate.c:
+	.text       start:0x801980A0 end:0x8019A0A8
+	.rodata     start:0x80347310 end:0x80347390
+	.sbss       start:0x804D5140 end:0x804D5148
+
+zlib/infblock.c:
+	.text       start:0x8019A0A8 end:0x8019B1EC
+	.rodata     start:0x80347390 end:0x8034744C
+	.data       start:0x803A9740 end:0x803A9768
+
+zlib/infcodes.c:
+	.text       start:0x8019B1EC end:0x8019BBD4
+	.rodata     start:0x80347450 end:0x80347484
+	.data       start:0x803A9768 end:0x803A9790
+
+zlib/inffast.c:
+	.text       start:0x8019BBD4 end:0x8019C1C8
+	.rodata     start:0x80347488 end:0x803474BC
+
+zlib/inflate.c:
+	.text       start:0x8019C1C8 end:0x8019CA2C
+	.rodata     start:0x803474C0 end:0x80347534
+	.data       start:0x803A9790 end:0x803A97C8
+
+zlib/inftrees.c:
+	.text       start:0x8019CA2C end:0x8019D27C
+	.rodata     start:0x80347538 end:0x80347838
+	.data       start:0x803A97C8 end:0x803AA8C8
+	.sdata      start:0x804D3080 end:0x804D3088
+
+zlib/infutil.c:
+	.text       start:0x8019D27C end:0x8019D3FC
+	.data       start:0x803AA8C8 end:0x803AA910
+
+zlib/trees.c:
+	.text       start:0x8019D3FC end:0x8019FC84
+	.rodata     start:0x80347838 end:0x80348268
+	.data       start:0x803AA910 end:0x803AA94C
+
+zlib/uncompr.c:
+	.text       start:0x8019FC84 end:0x8019FD58
+	.rodata     start:0x80348268 end:0x80348270
+
 dolphin/ar/ar.c:
 	.text       start:0x802F6BA4 end:0x802F86EC
 	.data       start:0x803C6E38 end:0x803C6E7C
@@ -319,7 +369,7 @@ dolphin/os/__ppc_eabi_init.c:
 
 dolphin/pad/Padclamp.c:
 	.text       start:0x803164A0 end:0x803166E4
-	.rodata     start:0x8034EB70 end:0x8034EB7C
+	.rodata     start:0x8034EB70 end:0x8034EB80
 
 dolphin/pad/Pad.c:
 	.text       start:0x803166E4 end:0x8031802C
@@ -363,3 +413,136 @@ dolphin/si/SISamplingRate.c:
 	.text       start:0x8031DD08 end:0x8031DE10
 	.data       start:0x803CAA00 end:0x803CAA94
 	.sbss       start:0x804D5C60 end:0x804D5C64
+
+musyx/runtime/seq.c:
+	.text       start:0x8031EAF4 end:0x80322AC0
+	.data       start:0x803CAAB8 end:0x803CAB08
+	.bss        start:0x804AA1C0 end:0x804B7B00
+	.sbss       start:0x804D5C78 end:0x804D5C98
+	.sdata2     start:0x804DB8C0 end:0x804DB8E0
+
+musyx/runtime/synth.c:
+	.text       start:0x80322AC0 end:0x80325F48
+	.bss        start:0x804B7B00 end:0x804B90E4
+	.sbss       start:0x804D5C98 end:0x804D5CE0
+	.sdata2     start:0x804DB8E0 end:0x804DB920
+
+musyx/runtime/seq_api.c:
+	.text       start:0x80325F48 end:0x80326258
+
+musyx/runtime/snd_synthapi.c:
+	.text       start:0x80326258 end:0x80326B84
+	.sdata2     start:0x804DB920 end:0x804DB938
+
+musyx/runtime/stream.c:
+	.text       start:0x80326B84 end:0x803297E8
+	.bss        start:0x804B90E8 end:0x804BAAE8
+	.sbss       start:0x804D5CE0 end:0x804D5CF0
+	.sdata2     start:0x804DB938 end:0x804DB94C
+
+musyx/runtime/synthdata.c:
+	.text       start:0x803297E8 end:0x8032B4D4
+	.bss        start:0x804BAAE8 end:0x804C5320
+	.sbss       start:0x804D5CF0 end:0x804D5D3C
+
+musyx/runtime/synthmacros.c:
+	.text       start:0x8032B4D4 end:0x803303BC
+	.data       start:0x803CAB08 end:0x803CAF50
+	.bss        start:0x804C5320 end:0x804C5340
+	.sbss       start:0x804D5D40 end:0x804D5D60
+	.sdata2     start:0x804DB950 end:0x804DB978
+
+musyx/runtime/synthvoice.c:
+	.text       start:0x803303BC end:0x8033219C
+	.bss        start:0x804C5340 end:0x804C6300
+	.sbss       start:0x804D5D60 end:0x804D5D74
+
+musyx/runtime/synth_ac.c:
+	.text       start:0x8033219C end:0x803322BC
+	.data       start:0x803CAF50 end:0x803CB350
+	.sdata2     start:0x804DB978 end:0x804DB98C
+
+musyx/runtime/synth_adsr.c:
+	.text       start:0x803322BC end:0x80332A7C
+	.sdata2     start:0x804DB990 end:0x804DB9B8
+
+musyx/runtime/synth_vsamples.c:
+	.text       start:0x80332A7C end:0x80333414
+	.bss        start:0x804C6300 end:0x804C6E50
+
+musyx/runtime/s_data.c:
+	.text       start:0x80333414 end:0x80334024
+	.bss        start:0x804C6E50 end:0x804C7468
+	.sbss       start:0x804D5D78 end:0x804D5D84
+
+musyx/runtime/hw_dspctrl.c:
+	.text       start:0x80334024 end:0x803376E0
+	.rodata     start:0x8034EB80 end:0x8034EBB8
+	.data       start:0x803CBAE0 end:0x803CD538
+	.bss        start:0x804C7468 end:0x804C7B48
+	.sbss       start:0x804D5D88 end:0x804D5DC8
+
+musyx/runtime/hw_volconv.c:
+	.text       start:0x803376E0 end:0x80337DD0
+	.data       start:0x803CD538 end:0x803CD760
+	.sdata2     start:0x804DB9B8 end:0x804DB9F0
+
+musyx/runtime/snd3d.c:
+	.text       start:0x80337DD0 end:0x8033A230
+	.bss        start:0x804C7B48 end:0x804C8D98
+	.sbss       start:0x804D5DC8 end:0x804D5DE4
+	.sdata2     start:0x804DB9F0 end:0x804DBA40
+
+musyx/runtime/snd_init.c:
+	.text       start:0x8033A230 end:0x8033A368
+
+musyx/runtime/snd_math.c:
+	.text       start:0x8033A368 end:0x8033A728
+	.sdata2     start:0x804DBA40 end:0x804DBA5C
+
+musyx/runtime/snd_midictrl.c:
+	.text       start:0x8033A728 end:0x8033CA38
+	.rodata     start:0x8034EBB8 end:0x8034ECC8
+	.data       start:0x803CD760 end:0x803CD7EC
+	.bss        start:0x804C8D98 end:0x804CFB98
+	.sbss       start:0x804D5DE8 end:0x804D5DF0
+
+musyx/runtime/snd_service.c:
+	.text       start:0x8033CA38 end:0x8033CD0C
+	.rodata     start:0x8034ECC8 end:0x8034ECF4
+	.data       start:0x803CD7F0 end:0x803CDFF0
+	.sdata      start:0x804D3FA8 end:0x804D3FAC
+	.sdata2     start:0x804DBA60 end:0x804DBA68
+
+musyx/runtime/hardware.c:
+	.text       start:0x8033CD0C end:0x8033DE20
+	.rodata     start:0x8034ECF8 end:0x8034EDF8
+	.bss        start:0x804CFB98 end:0x804CFBA8
+	.sdata      start:0x804D3FB0 end:0x804D3FC0
+	.sbss       start:0x804D5DF0 end:0x804D5DF8
+	.sdata2     start:0x804DBA68 end:0x804DBA90
+
+musyx/runtime/dsp_import.c:
+	.data       start:0x803CE000 end:0x803CFEC0
+	.sdata      start:0x804D3FC0 end:0x804D3FC8
+
+musyx/runtime/hw_aramdma.c:
+	.text       start:0x8033DE20 end:0x8033EBA4
+	.bss        start:0x804CFBA8 end:0x804D04B0
+	.sbss       start:0x804D5DF8 end:0x804D5E14
+
+musyx/runtime/hw_dolphin.c:
+	.text       start:0x8033EBA4 end:0x8033F06C
+	.bss        start:0x804D04C0 end:0x804D2520
+	.sbss       start:0x804D5E18 end:0x804D5E48
+
+musyx/runtime/hw_memory.c:
+	.text       start:0x8033F06C end:0x8033F0F8
+
+musyx/runtime/CheapReverb/creverb_fx.c:
+	.text       start:0x8033F0F8 end:0x8033F190
+
+musyx/runtime/CheapReverb/creverb.c:
+	.text       start:0x8033F190 end:0x8033F990
+	.data       start:0x803CFEC0 end:0x803CFED0
+	.sdata2     start:0x804DBA90 end:0x804DBAD0
