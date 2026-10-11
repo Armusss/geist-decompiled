@@ -106,6 +106,7 @@ TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msghndlr.c:
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/support.c:
 	.text       start:0x802E6A1C end:0x802E7150
+	.rodata     start:0x8034E1A8 end:0x8034E250
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mutex_TRK.c:
 	.text       start:0x802E7150 end:0x802E7168

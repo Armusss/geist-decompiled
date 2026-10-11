@@ -71,6 +71,10 @@ DSError TRKSuppAccessFile(u32 file_handle, u8* data, size_t* count, DSIOResult* 
                 }
 
                 if (replyLength != length) {
+                    // Geist (MetroTRK v2.0): a short transfer reports end-of-file
+                    if ((!read || replyLength >= length) && replyIOResult == 0) {
+                        replyIOResult = 1;
+                    }
                     length = replyLength;
                     exit = TRUE;
                 }
