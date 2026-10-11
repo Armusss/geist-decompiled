@@ -5,6 +5,11 @@ The goal is C/C++ source that recompiles, with the original Metrowerks CodeWarri
 into a `main.dol` that is **byte-identical** to the retail one. Once that's complete, the matched
 source becomes the reference for the Rust rewrite in `../geist-rs`.
 
+![progress map](docs/progress.svg)
+
+Green = translation unit rebuilt from C/C++ byte-identically; grey = still assembly. Hover a square for the
+file name. Regenerate after a build with `python3 tools/progress_svg.py`.
+
 Built on [encounter/dtk-template](https://github.com/encounter/dtk-template) (git remote `template`).
 Template documentation is in [`docs/`](docs/).
 

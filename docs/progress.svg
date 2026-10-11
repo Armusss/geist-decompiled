@@ -1,0 +1,399 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 496" width="1000" height="496">
+<rect width="1000" height="496" fill="#0d1117"/>
+<text x="8" y="26" font-family="sans-serif" font-size="16" font-weight="bold" fill="#ffffff">Geist (GITE01) matching decompilation — libraries: 185/202 files (91.6%) byte-identical</text>
+<text x="8" y="60" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">Dolphin SDK: 77/77</text>
+<rect x="8" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/ar/ar.c — matching</title></rect>
+<rect x="28" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/ar/arq.c — matching</title></rect>
+<rect x="48" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/base/PPCArch.c — matching</title></rect>
+<rect x="68" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDBios.c — matching</title></rect>
+<rect x="88" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDUnlock.c — matching</title></rect>
+<rect x="108" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDRdwr.c — matching</title></rect>
+<rect x="128" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDBlock.c — matching</title></rect>
+<rect x="148" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDDir.c — matching</title></rect>
+<rect x="168" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDCheck.c — matching</title></rect>
+<rect x="188" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDMount.c — matching</title></rect>
+<rect x="208" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDFormat.c — matching</title></rect>
+<rect x="228" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDOpen.c — matching</title></rect>
+<rect x="248" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDCreate.c — matching</title></rect>
+<rect x="268" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDRead.c — matching</title></rect>
+<rect x="288" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDWrite.c — matching</title></rect>
+<rect x="308" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDDelete.c — matching</title></rect>
+<rect x="328" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDStat.c — matching</title></rect>
+<rect x="348" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDRename.c — matching</title></rect>
+<rect x="368" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/db/db.c — matching</title></rect>
+<rect x="388" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dsp/dsp.c — matching</title></rect>
+<rect x="408" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dsp/dsp_task.c — matching</title></rect>
+<rect x="428" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvdlow.c — matching</title></rect>
+<rect x="448" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvdfs.c — matching</title></rect>
+<rect x="468" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvd.c — matching</title></rect>
+<rect x="488" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvdqueue.c — matching</title></rect>
+<rect x="508" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvderror.c — matching</title></rect>
+<rect x="528" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvdidutils.c — matching</title></rect>
+<rect x="548" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/fstload.c — matching</title></rect>
+<rect x="568" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXInit.c — matching</title></rect>
+<rect x="588" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXFifo.c — matching</title></rect>
+<rect x="608" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXAttr.c — matching</title></rect>
+<rect x="628" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXMisc.c — matching</title></rect>
+<rect x="648" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXGeometry.c — matching</title></rect>
+<rect x="668" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXFrameBuf.c — matching</title></rect>
+<rect x="688" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXLight.c — matching</title></rect>
+<rect x="708" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXTexture.c — matching</title></rect>
+<rect x="728" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXBump.c — matching</title></rect>
+<rect x="748" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXTev.c — matching</title></rect>
+<rect x="768" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXPixel.c — matching</title></rect>
+<rect x="788" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXDisplayList.c — matching</title></rect>
+<rect x="808" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXTransform.c — matching</title></rect>
+<rect x="828" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXPerf.c — matching</title></rect>
+<rect x="848" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/mtx.c — matching</title></rect>
+<rect x="868" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/mtxvec.c — matching</title></rect>
+<rect x="888" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/mtx44vec.c — matching</title></rect>
+<rect x="908" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/mtx44.c — matching</title></rect>
+<rect x="928" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/vec.c — matching</title></rect>
+<rect x="948" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/quat.c — matching</title></rect>
+<rect x="8" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OS.c — matching</title></rect>
+<rect x="28" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSAlarm.c — matching</title></rect>
+<rect x="48" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSAlloc.c — matching</title></rect>
+<rect x="68" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSArena.c — matching</title></rect>
+<rect x="88" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSAudioSystem.c — matching</title></rect>
+<rect x="108" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSCache.c — matching</title></rect>
+<rect x="128" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSContext.c — matching</title></rect>
+<rect x="148" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSError.c — matching</title></rect>
+<rect x="168" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSExec.c — matching</title></rect>
+<rect x="188" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSFont.c — matching</title></rect>
+<rect x="208" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSInterrupt.c — matching</title></rect>
+<rect x="228" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSLink.c — matching</title></rect>
+<rect x="248" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSMemory.c — matching</title></rect>
+<rect x="268" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSMutex.c — matching</title></rect>
+<rect x="288" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSReboot.c — matching</title></rect>
+<rect x="308" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSReset.c — matching</title></rect>
+<rect x="328" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSResetSW.c — matching</title></rect>
+<rect x="348" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSRtc.c — matching</title></rect>
+<rect x="368" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSSync.c — matching</title></rect>
+<rect x="388" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSTime.c — matching</title></rect>
+<rect x="408" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/__ppc_eabi_init.c — matching</title></rect>
+<rect x="428" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/pad/Padclamp.c — matching</title></rect>
+<rect x="448" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/pad/Pad.c — matching</title></rect>
+<rect x="468" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/vi/vi.c — matching</title></rect>
+<rect x="488" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/ai/ai.c — matching</title></rect>
+<rect x="508" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/exi/EXIBios.c — matching</title></rect>
+<rect x="528" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/exi/EXIUart.c — matching</title></rect>
+<rect x="548" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/si/SIBios.c — matching</title></rect>
+<rect x="568" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/si/SISamplingRate.c — matching</title></rect>
+<text x="8" y="126" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">MusyX: 26/26</text>
+<rect x="8" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/seq.c — matching</title></rect>
+<rect x="28" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synth.c — matching</title></rect>
+<rect x="48" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/seq_api.c — matching</title></rect>
+<rect x="68" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd_synthapi.c — matching</title></rect>
+<rect x="88" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/stream.c — matching</title></rect>
+<rect x="108" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synthdata.c — matching</title></rect>
+<rect x="128" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synthmacros.c — matching</title></rect>
+<rect x="148" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synthvoice.c — matching</title></rect>
+<rect x="168" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synth_ac.c — matching</title></rect>
+<rect x="188" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synth_adsr.c — matching</title></rect>
+<rect x="208" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synth_vsamples.c — matching</title></rect>
+<rect x="228" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/s_data.c — matching</title></rect>
+<rect x="248" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hw_dspctrl.c — matching</title></rect>
+<rect x="268" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hw_volconv.c — matching</title></rect>
+<rect x="288" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd3d.c — matching</title></rect>
+<rect x="308" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd_init.c — matching</title></rect>
+<rect x="328" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd_math.c — matching</title></rect>
+<rect x="348" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd_midictrl.c — matching</title></rect>
+<rect x="368" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd_service.c — matching</title></rect>
+<rect x="388" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hardware.c — matching</title></rect>
+<rect x="408" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hw_aramdma.c — matching</title></rect>
+<rect x="428" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/dsp_import.c — matching</title></rect>
+<rect x="448" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hw_dolphin.c — matching</title></rect>
+<rect x="468" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hw_memory.c — matching</title></rect>
+<rect x="488" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/CheapReverb/creverb_fx.c — matching</title></rect>
+<rect x="508" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/CheapReverb/creverb.c — matching</title></rect>
+<text x="8" y="172" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">zlib 1.1.4: 11/11</text>
+<rect x="8" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/adler32.c — matching</title></rect>
+<rect x="28" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/compress.c — matching</title></rect>
+<rect x="48" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/deflate.c — matching</title></rect>
+<rect x="68" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/infblock.c — matching</title></rect>
+<rect x="88" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/infcodes.c — matching</title></rect>
+<rect x="108" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/inffast.c — matching</title></rect>
+<rect x="128" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/inflate.c — matching</title></rect>
+<rect x="148" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/inftrees.c — matching</title></rect>
+<rect x="168" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/infutil.c — matching</title></rect>
+<rect x="188" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/trees.c — matching</title></rect>
+<rect x="208" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/uncompr.c — matching</title></rect>
+<text x="8" y="218" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">MSL C: 37/52</text>
+<rect x="8" y="224" width="18" height="18" rx="2" fill="#30363d"><title>MSL_C/MSL_Common/Src/abort_exit.c — asm</title></rect>
+<rect x="28" y="224" width="18" height="18" rx="2" fill="#30363d"><title>MSL_C/MSL_Common/Src/alloc.c — asm</title></rect>
+<rect x="48" y="224" width="18" height="18" rx="2" fill="#30363d"><title>MSL_C/MSL_Common/Src/ansi_files.c — asm</title></rect>
+<rect x="68" y="224" width="18" height="18" rx="2" fill="#30363d"><title>MSL_C/MSL_Common_Embedded/Src/ansi_fp.c — asm</title></rect>
+<rect x="88" y="224" width="18" height="18" rx="2" fill="#30363d"><title>MSL_C/MSL_Common/Src/buffer_io.c — asm</title></rect>
+<rect x="108" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/PPC_EABI/Src/critical_regions.gamecube.c — matching</title></rect>
+<rect x="128" y="224" width="18" height="18" rx="2" fill="#30363d"><title>MSL_C/MSL_Common/Src/ctype.c — asm</title></rect>
+<rect x="148" y="224" width="18" height="18" rx="2" fill="#30363d"><title>MSL_C/MSL_Common/Src/direct_io.c — asm</title></rect>
+<rect x="168" y="224" width="18" height="18" rx="2" fill="#30363d"><title>MSL_C/MSL_Common/Src/file_io.c — asm</title></rect>
+<rect x="188" y="224" width="18" height="18" rx="2" fill="#30363d"><title>MSL_C/MSL_Common/Src/FILE_POS.c — asm</title></rect>
+<rect x="208" y="224" width="18" height="18" rx="2" fill="#30363d"><title>MSL_C/MSL_Common/Src/mbstring.c — asm</title></rect>
+<rect x="228" y="224" width="18" height="18" rx="2" fill="#30363d"><title>MSL_C/MSL_Common/Src/mem.c — asm</title></rect>
+<rect x="248" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/mem_funcs.c — matching</title></rect>
+<rect x="268" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/misc_io.c — matching</title></rect>
+<rect x="288" y="224" width="18" height="18" rx="2" fill="#30363d"><title>MSL_C/MSL_Common/Src/printf.c — asm</title></rect>
+<rect x="308" y="224" width="18" height="18" rx="2" fill="#30363d"><title>MSL_C/MSL_Common/Src/scanf.c — asm</title></rect>
+<rect x="328" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/rand.c — matching</title></rect>
+<rect x="348" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/signal.c — matching</title></rect>
+<rect x="368" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/string.c — matching</title></rect>
+<rect x="388" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/time.c — matching</title></rect>
+<rect x="408" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/wchar_io.c — matching</title></rect>
+<rect x="428" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/PPC_EABI/Src/time.gamecube.c — matching</title></rect>
+<rect x="448" y="224" width="18" height="18" rx="2" fill="#30363d"><title>MSL_C/PPC_EABI/Src/uart_console_io_gcn.c — asm</title></rect>
+<rect x="468" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_acos.c — matching</title></rect>
+<rect x="488" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_atan2.c — matching</title></rect>
+<rect x="508" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_exp.c — matching</title></rect>
+<rect x="528" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_fmod.c — matching</title></rect>
+<rect x="548" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_pow.c — matching</title></rect>
+<rect x="568" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_rem_pio2.c — matching</title></rect>
+<rect x="588" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/k_cos.c — matching</title></rect>
+<rect x="608" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/k_rem_pio2.c — matching</title></rect>
+<rect x="628" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/k_sin.c — matching</title></rect>
+<rect x="648" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/k_tan.c — matching</title></rect>
+<rect x="668" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_atan.c — matching</title></rect>
+<rect x="688" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_copysign.c — matching</title></rect>
+<rect x="708" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_cos.c — matching</title></rect>
+<rect x="728" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_floor.c — matching</title></rect>
+<rect x="748" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_frexp.c — matching</title></rect>
+<rect x="768" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_ldexp.c — matching</title></rect>
+<rect x="788" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_modf.c — matching</title></rect>
+<rect x="808" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_sin.c — matching</title></rect>
+<rect x="828" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_tan.c — matching</title></rect>
+<rect x="848" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_acos.c — matching</title></rect>
+<rect x="868" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_atan2.c — matching</title></rect>
+<rect x="888" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_exp.c — matching</title></rect>
+<rect x="908" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_fmod.c — matching</title></rect>
+<rect x="928" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_pow.c — matching</title></rect>
+<rect x="948" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_sqrt.c — matching</title></rect>
+<rect x="8" y="244" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/PPC_EABI/Src/math_ppc.c — matching</title></rect>
+<rect x="28" y="244" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/math_api.c — matching</title></rect>
+<rect x="48" y="244" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_sqrt.c — matching</title></rect>
+<rect x="68" y="244" width="18" height="18" rx="2" fill="#30363d"><title>MSL_C/MSL_Common/Src/extras.c — asm</title></rect>
+<text x="8" y="284" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">Runtime: 7/8</text>
+<rect x="8" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/__va_arg.c — matching</title></rect>
+<rect x="28" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/global_destructor_chain.c — matching</title></rect>
+<rect x="48" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/exception.cp — matching</title></rect>
+<rect x="68" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/NMWException.cp — matching</title></rect>
+<rect x="88" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/runtime.c — matching</title></rect>
+<rect x="108" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/__init_cpp_exceptions.cpp — matching</title></rect>
+<rect x="128" y="290" width="18" height="18" rx="2" fill="#30363d"><title>Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp — asm</title></rect>
+<rect x="148" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/GCN_mem_alloc.c — matching</title></rect>
+<text x="8" y="330" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">MetroTRK: 27/28</text>
+<rect x="8" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mainloop.c — matching</title></rect>
+<rect x="28" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/nubevent.c — matching</title></rect>
+<rect x="48" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/nubinit.c — matching</title></rect>
+<rect x="68" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msg.c — matching</title></rect>
+<rect x="88" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msgbuf.c — matching</title></rect>
+<rect x="108" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/serpoll.c — matching</title></rect>
+<rect x="128" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/usr_put.c — matching</title></rect>
+<rect x="148" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/dispatch.c — matching</title></rect>
+<rect x="168" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msghndlr.c — matching</title></rect>
+<rect x="188" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/support.c — matching</title></rect>
+<rect x="208" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mutex_TRK.c — matching</title></rect>
+<rect x="228" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/notify.c — matching</title></rect>
+<rect x="248" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/flush_cache.c — matching</title></rect>
+<rect x="268" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mem_TRK.c — matching</title></rect>
+<rect x="288" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/targimpl.c — matching</title></rect>
+<rect x="308" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/mpc_7xx_603e.c — matching</title></rect>
+<rect x="328" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/dolphin_trk.c — matching</title></rect>
+<rect x="348" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/main_TRK.c — matching</title></rect>
+<rect x="368" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/dolphin_trk_glue.c — matching</title></rect>
+<rect x="388" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/targcont.c — matching</title></rect>
+<rect x="408" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/target_options.c — matching</title></rect>
+<rect x="428" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Export/mslsupp.c — matching</title></rect>
+<rect x="448" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/UDP_Stubs.c — matching</title></rect>
+<rect x="468" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/cc/exi2/GCN/EXI2_DDH_GCN/main.c — matching</title></rect>
+<rect x="488" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/CircleBuffer.c — matching</title></rect>
+<rect x="508" y="336" width="18" height="18" rx="2" fill="#30363d"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/cc/exi2/GCN/EXI2_GDEV_GCN/main.c — asm</title></rect>
+<rect x="528" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/MWTrace.c — matching</title></rect>
+<rect x="548" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/gc/MWCriticalSection_gc.c — matching</title></rect>
+<text x="8" y="376" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">Game code: 0.0% (0 / 2908 KB of .text; one square = 16 KB)</text>
+<rect x="8" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 1/182</title></rect>
+<rect x="28" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 2/182</title></rect>
+<rect x="48" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 3/182</title></rect>
+<rect x="68" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 4/182</title></rect>
+<rect x="88" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 5/182</title></rect>
+<rect x="108" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 6/182</title></rect>
+<rect x="128" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 7/182</title></rect>
+<rect x="148" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 8/182</title></rect>
+<rect x="168" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 9/182</title></rect>
+<rect x="188" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 10/182</title></rect>
+<rect x="208" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 11/182</title></rect>
+<rect x="228" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 12/182</title></rect>
+<rect x="248" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 13/182</title></rect>
+<rect x="268" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 14/182</title></rect>
+<rect x="288" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 15/182</title></rect>
+<rect x="308" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 16/182</title></rect>
+<rect x="328" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 17/182</title></rect>
+<rect x="348" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 18/182</title></rect>
+<rect x="368" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 19/182</title></rect>
+<rect x="388" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 20/182</title></rect>
+<rect x="408" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 21/182</title></rect>
+<rect x="428" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 22/182</title></rect>
+<rect x="448" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 23/182</title></rect>
+<rect x="468" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 24/182</title></rect>
+<rect x="488" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 25/182</title></rect>
+<rect x="508" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 26/182</title></rect>
+<rect x="528" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 27/182</title></rect>
+<rect x="548" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 28/182</title></rect>
+<rect x="568" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 29/182</title></rect>
+<rect x="588" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 30/182</title></rect>
+<rect x="608" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 31/182</title></rect>
+<rect x="628" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 32/182</title></rect>
+<rect x="648" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 33/182</title></rect>
+<rect x="668" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 34/182</title></rect>
+<rect x="688" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 35/182</title></rect>
+<rect x="708" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 36/182</title></rect>
+<rect x="728" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 37/182</title></rect>
+<rect x="748" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 38/182</title></rect>
+<rect x="768" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 39/182</title></rect>
+<rect x="788" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 40/182</title></rect>
+<rect x="808" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 41/182</title></rect>
+<rect x="828" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 42/182</title></rect>
+<rect x="848" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 43/182</title></rect>
+<rect x="868" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 44/182</title></rect>
+<rect x="888" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 45/182</title></rect>
+<rect x="908" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 46/182</title></rect>
+<rect x="928" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 47/182</title></rect>
+<rect x="948" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 48/182</title></rect>
+<rect x="8" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 49/182</title></rect>
+<rect x="28" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 50/182</title></rect>
+<rect x="48" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 51/182</title></rect>
+<rect x="68" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 52/182</title></rect>
+<rect x="88" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 53/182</title></rect>
+<rect x="108" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 54/182</title></rect>
+<rect x="128" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 55/182</title></rect>
+<rect x="148" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 56/182</title></rect>
+<rect x="168" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 57/182</title></rect>
+<rect x="188" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 58/182</title></rect>
+<rect x="208" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 59/182</title></rect>
+<rect x="228" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 60/182</title></rect>
+<rect x="248" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 61/182</title></rect>
+<rect x="268" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 62/182</title></rect>
+<rect x="288" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 63/182</title></rect>
+<rect x="308" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 64/182</title></rect>
+<rect x="328" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 65/182</title></rect>
+<rect x="348" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 66/182</title></rect>
+<rect x="368" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 67/182</title></rect>
+<rect x="388" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 68/182</title></rect>
+<rect x="408" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 69/182</title></rect>
+<rect x="428" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 70/182</title></rect>
+<rect x="448" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 71/182</title></rect>
+<rect x="468" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 72/182</title></rect>
+<rect x="488" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 73/182</title></rect>
+<rect x="508" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 74/182</title></rect>
+<rect x="528" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 75/182</title></rect>
+<rect x="548" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 76/182</title></rect>
+<rect x="568" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 77/182</title></rect>
+<rect x="588" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 78/182</title></rect>
+<rect x="608" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 79/182</title></rect>
+<rect x="628" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 80/182</title></rect>
+<rect x="648" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 81/182</title></rect>
+<rect x="668" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 82/182</title></rect>
+<rect x="688" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 83/182</title></rect>
+<rect x="708" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 84/182</title></rect>
+<rect x="728" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 85/182</title></rect>
+<rect x="748" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 86/182</title></rect>
+<rect x="768" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 87/182</title></rect>
+<rect x="788" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 88/182</title></rect>
+<rect x="808" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 89/182</title></rect>
+<rect x="828" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 90/182</title></rect>
+<rect x="848" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 91/182</title></rect>
+<rect x="868" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 92/182</title></rect>
+<rect x="888" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 93/182</title></rect>
+<rect x="908" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 94/182</title></rect>
+<rect x="928" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 95/182</title></rect>
+<rect x="948" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 96/182</title></rect>
+<rect x="8" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 97/182</title></rect>
+<rect x="28" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 98/182</title></rect>
+<rect x="48" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 99/182</title></rect>
+<rect x="68" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 100/182</title></rect>
+<rect x="88" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 101/182</title></rect>
+<rect x="108" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 102/182</title></rect>
+<rect x="128" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 103/182</title></rect>
+<rect x="148" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 104/182</title></rect>
+<rect x="168" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 105/182</title></rect>
+<rect x="188" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 106/182</title></rect>
+<rect x="208" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 107/182</title></rect>
+<rect x="228" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 108/182</title></rect>
+<rect x="248" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 109/182</title></rect>
+<rect x="268" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 110/182</title></rect>
+<rect x="288" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 111/182</title></rect>
+<rect x="308" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 112/182</title></rect>
+<rect x="328" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 113/182</title></rect>
+<rect x="348" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 114/182</title></rect>
+<rect x="368" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 115/182</title></rect>
+<rect x="388" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 116/182</title></rect>
+<rect x="408" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 117/182</title></rect>
+<rect x="428" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 118/182</title></rect>
+<rect x="448" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 119/182</title></rect>
+<rect x="468" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 120/182</title></rect>
+<rect x="488" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 121/182</title></rect>
+<rect x="508" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 122/182</title></rect>
+<rect x="528" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 123/182</title></rect>
+<rect x="548" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 124/182</title></rect>
+<rect x="568" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 125/182</title></rect>
+<rect x="588" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 126/182</title></rect>
+<rect x="608" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 127/182</title></rect>
+<rect x="628" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 128/182</title></rect>
+<rect x="648" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 129/182</title></rect>
+<rect x="668" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 130/182</title></rect>
+<rect x="688" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 131/182</title></rect>
+<rect x="708" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 132/182</title></rect>
+<rect x="728" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 133/182</title></rect>
+<rect x="748" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 134/182</title></rect>
+<rect x="768" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 135/182</title></rect>
+<rect x="788" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 136/182</title></rect>
+<rect x="808" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 137/182</title></rect>
+<rect x="828" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 138/182</title></rect>
+<rect x="848" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 139/182</title></rect>
+<rect x="868" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 140/182</title></rect>
+<rect x="888" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 141/182</title></rect>
+<rect x="908" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 142/182</title></rect>
+<rect x="928" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 143/182</title></rect>
+<rect x="948" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 144/182</title></rect>
+<rect x="8" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 145/182</title></rect>
+<rect x="28" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 146/182</title></rect>
+<rect x="48" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 147/182</title></rect>
+<rect x="68" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 148/182</title></rect>
+<rect x="88" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 149/182</title></rect>
+<rect x="108" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 150/182</title></rect>
+<rect x="128" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 151/182</title></rect>
+<rect x="148" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 152/182</title></rect>
+<rect x="168" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 153/182</title></rect>
+<rect x="188" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 154/182</title></rect>
+<rect x="208" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 155/182</title></rect>
+<rect x="228" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 156/182</title></rect>
+<rect x="248" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 157/182</title></rect>
+<rect x="268" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 158/182</title></rect>
+<rect x="288" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 159/182</title></rect>
+<rect x="308" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 160/182</title></rect>
+<rect x="328" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 161/182</title></rect>
+<rect x="348" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 162/182</title></rect>
+<rect x="368" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 163/182</title></rect>
+<rect x="388" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 164/182</title></rect>
+<rect x="408" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 165/182</title></rect>
+<rect x="428" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 166/182</title></rect>
+<rect x="448" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 167/182</title></rect>
+<rect x="468" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 168/182</title></rect>
+<rect x="488" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 169/182</title></rect>
+<rect x="508" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 170/182</title></rect>
+<rect x="528" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 171/182</title></rect>
+<rect x="548" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 172/182</title></rect>
+<rect x="568" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 173/182</title></rect>
+<rect x="588" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 174/182</title></rect>
+<rect x="608" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 175/182</title></rect>
+<rect x="628" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 176/182</title></rect>
+<rect x="648" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 177/182</title></rect>
+<rect x="668" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 178/182</title></rect>
+<rect x="688" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 179/182</title></rect>
+<rect x="708" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 180/182</title></rect>
+<rect x="728" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 181/182</title></rect>
+<rect x="748" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game .text block 182/182</title></rect>
+<rect x="8" y="473" width="12" height="12" rx="2" fill="#2ea043"/>
+<text x="26" y="484" font-family="sans-serif" font-size="12" font-weight="normal" fill="#8b949e">byte-identical C</text>
+<rect x="150" y="473" width="12" height="12" rx="2" fill="#30363d"/>
+<text x="168" y="484" font-family="sans-serif" font-size="12" font-weight="normal" fill="#8b949e">still assembly</text>
+</svg>
