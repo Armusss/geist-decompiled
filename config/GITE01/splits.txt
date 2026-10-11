@@ -171,10 +171,10 @@ MSL_C/MSL_Common_Embedded/Src/ansi_fp.c:
 	.text       start:0x802EE2C4 end:0x802EEEF4
 
 MSL_C/MSL_Common/Src/buffer_io.c:
-	.text       start:0x802EEEF4 end:0x802EF240
+	.text       start:0x802EEEF4 end:0x802EF248
 
 MSL_C/PPC_EABI/Src/critical_regions.gamecube.c:
-	.text       start:0x802EF240 end:0x802EF254
+	.text       start:0x802EF248 end:0x802EF254
 
 MSL_C/MSL_Common/Src/ctype.c:
 	.text       start:0x802EF254 end:0x802EF2C8
