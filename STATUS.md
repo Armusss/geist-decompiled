@@ -36,6 +36,18 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 6. When done (or blocked), send the Lead a short report: units matched, compiler/flags, anything odd,
    exact verify command + expected output. Then stop.
 
+## G2 — game code split into provisional units (Lead, 2026-10-11)
+
+**Result:** `Game Code: 0/192 files`, `SDK Code ... (199 / 202 files)`, DOL OK.
+- `tools/gen_game_splits.py` writes `build/tu_proposal.json` into splits.txt (.text only, address order
+  next to zlib) and into configure.py between `# ==== game units` markers (lib "game", GC/1.3.2,
+  `cflags_game` = cflags_base + `-lang=c++ -str reuse,pool,readonly`; `.c` files get `.c` names). Re-running
+  regenerates only the game units. 27 units carry assert-derived names (game/File.cpp, game/DataStream.cpp,
+  game/Script.c, game/VM.c, ...); the rest are `game/u_<address>.cpp`.
+- Boundaries are provisional: when matching a unit, confirm or move its edges (edit splits.txt by hand,
+  and stop regenerating once units are being matched).
+- Progress map (`tools/progress_svg.py`) now shows one square per game file.
+
 ## G1 — game compiler (Lead, 2026-10-11)
 
 - **Game code is NOT GC/2.6.** zlib (GC/2.6) is a prebuilt library; the game's own code matches only
