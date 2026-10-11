@@ -444,10 +444,7 @@ static void deallocate_from_var_pools(__mem_pool_obj* pool_obj, void* ptr) {
     }
 }
 
-static inline void FixSubBlock_construct(FixSubBlock* ths, FixBlock* b, FixSubBlock* next) {
-    ths->block_ = b;
-    ths->next_ = next;
-}
+#define FixSubBlock_construct(ths, b, next) ((ths)->block_ = (b), (ths)->next_ = (next))
 
 static void FixBlock_construct(FixBlock* ths, FixBlock* prev, FixBlock* next, unsigned long index,
                                FixSubBlock* chunk, unsigned long chunk_size) {
