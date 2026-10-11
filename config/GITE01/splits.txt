@@ -180,6 +180,7 @@ Runtime.PPCEABI.H/__va_arg.c:
 Runtime.PPCEABI.H/global_destructor_chain.c:
 	.text       start:0x802EAB5C end:0x802EABBC
 	.dtors      start:0x80341268 end:0x8034126C
+	.sbss       start:0x804D58B0 end:0x804D58B8
 
 Runtime.PPCEABI.H/NMWException.cp:
 	extab       start:0x80005600 end:0x80005690

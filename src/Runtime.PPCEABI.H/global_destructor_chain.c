@@ -20,7 +20,9 @@ void __destroy_global_chain(void) {
 }
 
 /* clang-format off */
-#pragma section ".dtors$10"
-__declspec(section ".dtors$10")
+// Unreferenced table entry: force it active so the linker keeps it.
+#pragma force_active on
+__declspec(section ".dtors")
 static void* const __destroy_global_chain_reference = __destroy_global_chain;
+#pragma force_active reset
 /* clang-format on */

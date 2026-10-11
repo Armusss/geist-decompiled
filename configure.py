@@ -597,7 +597,7 @@ config.libs = [
         "progress_category": "sdk",
         "objects": [
             Object(Matching, "Runtime.PPCEABI.H/__va_arg.c"),
-            Object(NonMatching, "Runtime.PPCEABI.H/global_destructor_chain.c"),
+            Object(Matching, "Runtime.PPCEABI.H/global_destructor_chain.c"),
             Object(NonMatching, "Runtime.PPCEABI.H/NMWException.cp", extra_cflags=['-Cpp_exceptions on']),
             Object(NonMatching, "Runtime.PPCEABI.H/ptmf.c"),
             Object(Matching, "Runtime.PPCEABI.H/runtime.c"),

@@ -8826,6 +8826,7 @@ __init_cpp_exceptions_reference = .ctors:0x80341200; // type:object size:0x4 sco
 _dtors = .dtors:0x80341260; // type:label scope:global data:4byte
 __destroy_global_chain_reference = .dtors:0x80341260; // type:object size:0x4 scope:global
 __fini_cpp_exceptions_reference = .dtors:0x80341264; // type:object size:0x4 scope:global
+__destroy_global_chain_reference = .dtors:0x80341268; // type:object size:0x4 scope:local
 lbl_80341280 = .rodata:0x80341280; // type:object size:0x220
 lbl_803414A0 = .rodata:0x803414A0; // type:object size:0xC data:4byte
 lbl_803414AC = .rodata:0x803414AC; // type:object size:0x7B data:string
