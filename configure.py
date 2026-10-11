@@ -665,7 +665,8 @@ config.libs = [
             Object(NonMatching, "game/u_801A6094.cpp"),  # pinned
             Object(NonMatching, "game/u_801AADA8.cpp"),  # pinned
             Object(NonMatching, "game/u_801AE50C.cpp"),  # pinned
-            Object(NonMatching, "game/u_801BEC4C.cpp"),  # known
+            Object(NonMatching, "game/VMem.cpp"),  # known start; end 0x801BF578 (helper-game-b)
+            Object(NonMatching, "game/u_801BF578.cpp"),  # split from VMem
             Object(NonMatching, "game/u_801D9A70.cpp"),  # guess
             Object(NonMatching, "game/u_801E0EDC.cpp"),  # guess
             Object(NonMatching, "game/u_801E241C.cpp"),  # pinned

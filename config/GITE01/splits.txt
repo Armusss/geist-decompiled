@@ -363,8 +363,11 @@ game/u_801AE50C.cpp:
 	.text       start:0x801AE50C end:0x801BEC4C
 	.ctors      start:0x8034122C end:0x80341230
 
-game/u_801BEC4C.cpp:
-	.text       start:0x801BEC4C end:0x801D9A70
+game/VMem.cpp:
+	.text       start:0x801BEC4C end:0x801BF578
+
+game/u_801BF578.cpp:
+	.text       start:0x801BF578 end:0x801D9A70
 
 game/u_801D9A70.cpp:
 	.text       start:0x801D9A70 end:0x801E0EDC
