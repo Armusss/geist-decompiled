@@ -638,7 +638,7 @@ config.libs = [
             Object(NonMatching, "game/u_8013CA38.cpp"),  # known
             Object(NonMatching, "game/u_80140A30.cpp"),  # guess
             Object(NonMatching, "game/u_80142E88.cpp"),  # guess
-            Object(NonMatching, "game/u_80150148.cpp"),  # known
+            Object(Matching, "game/Skybox.cpp"),  # known (helper-game-b)
             Object(NonMatching, "game/u_80150300.cpp"),  # guess
             Object(NonMatching, "game/u_80153C10.cpp"),  # guess
             Object(NonMatching, "game/u_80157730.cpp"),  # guess
