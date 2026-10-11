@@ -20,22 +20,18 @@ extern int __register_fragment(struct __eti_init_info* info, char* TOC);
 }
 #endif
 
-static int fragmentID = -2;
-
-extern void GetR2(char** R2) {
-	register char* temp;
-	asm {
-		mr temp, r2
-	}
-	*R2 = temp;
+// Geist's (older) runtime: GetR2 is a called asm function returning r2.
+static asm char* GetR2(void) {
+	nofralloc
+	mr r3, r2
+	blr
 }
 
-void __init_cpp_exceptions(void) {
-    char* R2;
+static int fragmentID = -2;
 
+void __init_cpp_exceptions(void) {
     if (fragmentID == -2) {
-        GetR2(&R2);
-        fragmentID = __register_fragment(_eti_init_info, R2);
+        fragmentID = __register_fragment(_eti_init_info, GetR2());
     }
 }
 
@@ -47,14 +43,14 @@ void __fini_cpp_exceptions(void) {
     }
 }
 
-#pragma section ".ctors$10"
-__declspec(section ".ctors$10")
+// The linker would dead-strip these unreferenced table entries otherwise.
+#pragma force_active on
+__declspec(section ".ctors")
 extern void* const __init_cpp_exceptions_reference = __init_cpp_exceptions;
 
-#pragma section ".dtors$10"
-__declspec(section ".dtors$10")
+__declspec(section ".dtors")
 extern void* const __destroy_global_chain_reference = __destroy_global_chain;
 
-#pragma section ".dtors$15"
-__declspec(section ".dtors$15")
+__declspec(section ".dtors")
 extern void* const __fini_cpp_exceptions_reference = __fini_cpp_exceptions;
+#pragma force_active reset
