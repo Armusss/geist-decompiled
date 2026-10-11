@@ -85,7 +85,7 @@ DSError TRKDoSupportMask(TRKBuffer*) {
 }
 
 DSError TRKDoReadMemory(TRKBuffer* buffer) {
-    u8 buf[0x820] ATTRIBUTE_ALIGN(32);
+    u8 buf[0x800]; // Geist (MetroTRK v2.0): plain buffer, no ARAM path
     size_t tempLength;
     int result;
     int replyErr;
@@ -106,12 +106,8 @@ DSError TRKDoReadMemory(TRKBuffer* buffer) {
 
     tempLength = length;
 
-    if (options & DSMSGMEMORY_Space_data) {
-        result = TRKTargetAccessARAM(buf, start, &tempLength, TRUE);
-    } else {
-        result = TRKTargetAccessMemory(buf, start, &tempLength,
-                                       options & DSMSGMEMORY_Userview ? 0 : 1, TRUE);
-    }
+    result = TRKTargetAccessMemory(buf, start, &tempLength,
+                                   options & DSMSGMEMORY_Userview ? 0 : 1, TRUE);
 
     TRKResetBuffer(buffer, 0);
 
@@ -123,11 +119,7 @@ DSError TRKDoReadMemory(TRKBuffer* buffer) {
         reply.commandID.b = DSMSG_ReplyACK;
         TRKAppendBuffer(buffer, &reply, sizeof(CommandReply));
 
-        if (options & 0x40) {
-            result = TRKAppendBuffer(buffer, buf + (start & 0x1F), tempLength);
-        } else {
-            result = TRKAppendBuffer(buffer, buf, tempLength);
-        }
+        result = TRKAppendBuffer(buffer, buf, tempLength);
     }
 
     if (result) {
@@ -158,7 +150,7 @@ DSError TRKDoReadMemory(TRKBuffer* buffer) {
 }
 
 DSError TRKDoWriteMemory(TRKBuffer* b) {
-    u8 buf[0x820] ATTRIBUTE_ALIGN(32);
+    u8 buf[0x800]; // Geist (MetroTRK v2.0): plain buffer, no ARAM path
     size_t tempLength;
     int options;
     int result;
@@ -180,14 +172,9 @@ DSError TRKDoWriteMemory(TRKBuffer* b) {
     tempLength = length;
 
     TRKSetBufferPosition(b, DSMSGMEMORY_Space_data);
-    if (options & DSMSGMEMORY_Space_data) {
-        TRKReadBuffer(b, buf + (start & 0x1f), tempLength);
-        result = TRKTargetAccessARAM(buf, start, &tempLength, FALSE);
-    } else {
-        TRKReadBuffer(b, buf, tempLength);
-        result = TRKTargetAccessMemory(buf, start, &tempLength,
-                                       options & DSMSGMEMORY_Userview ? 0 : 1, FALSE);
-    }
+    TRKReadBuffer(b, buf, tempLength);
+    result = TRKTargetAccessMemory(buf, start, &tempLength,
+                                   options & DSMSGMEMORY_Userview ? 0 : 1, FALSE);
 
     TRKResetBuffer(b, 0);
 

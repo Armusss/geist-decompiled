@@ -87,7 +87,7 @@ TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msgbuf.c:
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/serpoll.c:
 	.text       start:0x802E5590 end:0x802E5848
 	.rodata     start:0x8034DDF0 end:0x8034DF80
-	.bss        start:0x804A7070 end:0x804A7084
+	.bss        start:0x804A7070 end:0x804A7088
 	.sbss       start:0x804D5898 end:0x804D589C
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/usr_put.c:
@@ -95,11 +95,14 @@ TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/usr_put.c:
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/dispatch.c:
 	.text       start:0x802E58D4 end:0x802E5A4C
-	.rodata     start:0x8034DF80 end:0x8034DFBC
+	.rodata     start:0x8034DF80 end:0x8034DFC0
 	.data       start:0x803C6468 end:0x803C64D4
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msghndlr.c:
 	.text       start:0x802E5A4C end:0x802E6A1C
+	.rodata     start:0x8034DFC0 end:0x8034E1A8
+	.data       start:0x803C64D8 end:0x803C6510
+	.bss        start:0x804A7088 end:0x804A7090
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/support.c:
 	.text       start:0x802E6A1C end:0x802E7150
