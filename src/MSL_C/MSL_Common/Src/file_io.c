@@ -25,7 +25,8 @@ int fclose(FILE* file) {
 }
 
 int fflush(FILE* file) {
-    int pos;
+    long pos;
+    int ioresult;
 
     if (file == NULL) {
         return __flush_all();
@@ -52,13 +53,15 @@ int fflush(FILE* file) {
         return 0;
     }
 
-    if (file->file_mode.file_kind != __disk_file) {
-        pos = 0;
-    } else {
+    if (file->file_mode.file_kind == __disk_file) {
         pos = ftell(file);
+    } else {
+        pos = 0;
     }
 
-    if (__flush_buffer(file, 0) != 0) {
+    ioresult = __flush_buffer(file, 0);
+
+    if (ioresult) {
         file->file_state.error = 1;
         file->buffer_length = 0;
         return -1;
