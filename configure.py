@@ -594,6 +594,7 @@ config.libs = [
             Object(NonMatching, "game/u_8007EE68.cpp"),  # guess
             Object(NonMatching, "game/Script.c"),  # guess
             Object(NonMatching, "game/u_80085CDC.cpp"),  # guess
+            Object(Matching, "game/u_80085E50.cpp"),  # string table
             Object(NonMatching, "game/AppMain.c"),  # guess
             Object(NonMatching, "game/u_800886C8.cpp"),  # guess
             Object(NonMatching, "game/u_8008DCDC.cpp"),  # guess

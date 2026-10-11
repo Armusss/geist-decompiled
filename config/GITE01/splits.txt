@@ -81,10 +81,15 @@ game/Script.c:
 	.text       start:0x80083360 end:0x80085CDC
 
 game/u_80085CDC.cpp:
-	.text       start:0x80085CDC end:0x80086400
+	.text       start:0x80085CDC end:0x80085E50
+
+game/u_80085E50.cpp:
+	.text       start:0x80085E50 end:0x800866D8
+	.rodata     start:0x80343DC8 end:0x80343DE8
+	.sbss       start:0x804D46A8 end:0x804D46B0
 
 game/AppMain.c:
-	.text       start:0x80086400 end:0x800886C8
+	.text       start:0x800866D8 end:0x800886C8
 
 game/u_800886C8.cpp:
 	.text       start:0x800886C8 end:0x8008DCDC
