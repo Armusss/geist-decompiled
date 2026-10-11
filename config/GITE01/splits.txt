@@ -227,8 +227,11 @@ game/u_80142E88.cpp:
 	.text       start:0x80142E88 end:0x80150148
 	.ctors      start:0x8034121C end:0x80341220
 
-game/u_80150148.cpp:
+game/Skybox.cpp:
 	.text       start:0x80150148 end:0x80150300
+	.rodata     start:0x803463F8 end:0x80346400
+	.data       start:0x803A5458 end:0x803A5488
+	.sdata2     start:0x804D7C30 end:0x804D7C38
 
 game/u_80150300.cpp:
 	.text       start:0x80150300 end:0x80153C10
@@ -369,8 +372,11 @@ game/u_801AE50C.cpp:
 	.text       start:0x801AE50C end:0x801BEC4C
 	.ctors      start:0x8034122C end:0x80341230
 
-game/u_801BEC4C.cpp:
-	.text       start:0x801BEC4C end:0x801D9A70
+game/VMem.cpp:
+	.text       start:0x801BEC4C end:0x801BF578
+
+game/u_801BF578.cpp:
+	.text       start:0x801BF578 end:0x801D9A70
 
 game/u_801D9A70.cpp:
 	.text       start:0x801D9A70 end:0x801E0EDC
@@ -520,7 +526,7 @@ game/u_8025ECF8.cpp:
 	.text       start:0x8025ECF8 end:0x802665A8
 	.ctors      start:0x8034123C end:0x80341240
 
-game/u_802665A8.cpp:
+game/Thermostat.cpp:
 	.text       start:0x802665A8 end:0x80267558
 
 game/u_80267558.cpp:

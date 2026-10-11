@@ -638,7 +638,7 @@ config.libs = [
             Object(NonMatching, "game/u_8013CA38.cpp"),  # known
             Object(NonMatching, "game/u_80140A30.cpp"),  # guess
             Object(NonMatching, "game/u_80142E88.cpp"),  # guess
-            Object(NonMatching, "game/u_80150148.cpp"),  # known
+            Object(Matching, "game/Skybox.cpp"),  # known (helper-game-b)
             Object(NonMatching, "game/u_80150300.cpp"),  # guess
             Object(NonMatching, "game/u_80153C10.cpp"),  # guess
             Object(NonMatching, "game/u_80157730.cpp"),  # guess
@@ -666,7 +666,8 @@ config.libs = [
             Object(NonMatching, "game/u_801A6094.cpp"),  # pinned
             Object(NonMatching, "game/u_801AADA8.cpp"),  # pinned
             Object(NonMatching, "game/u_801AE50C.cpp"),  # pinned
-            Object(NonMatching, "game/u_801BEC4C.cpp"),  # known
+            Object(NonMatching, "game/VMem.cpp"),  # known start; end 0x801BF578 (helper-game-b)
+            Object(NonMatching, "game/u_801BF578.cpp"),  # split from VMem
             Object(NonMatching, "game/u_801D9A70.cpp"),  # guess
             Object(NonMatching, "game/u_801E0EDC.cpp"),  # guess
             Object(NonMatching, "game/u_801E241C.cpp"),  # pinned
@@ -715,7 +716,7 @@ config.libs = [
             Object(NonMatching, "game/u_8025951C.cpp"),  # guess
             Object(NonMatching, "game/u_80259AB0.cpp"),  # pinned
             Object(NonMatching, "game/u_8025ECF8.cpp"),  # pinned
-            Object(NonMatching, "game/u_802665A8.cpp"),  # known
+            Object(NonMatching, "game/Thermostat.cpp"),  # known (helper-game-b)
             Object(NonMatching, "game/u_80267558.cpp"),  # guess
             Object(NonMatching, "game/u_80268780.cpp"),  # guess
             Object(NonMatching, "game/u_8026A158.cpp"),  # guess
