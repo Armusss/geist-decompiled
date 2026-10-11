@@ -36,6 +36,23 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 6. When done (or blocked), send the Lead a short report: units matched, compiler/flags, anything odd,
    exact verify command + expected output. Then stop.
 
+## G0 progress — game file boundaries (Lead, 2026-10-11)
+
+- `tools/tu_mono.py`: each file's private data (`.sdata2` constants, `.rodata`, jump tables in `.data`) is
+  laid out in code order, so a boundary between two functions is only possible if everything private used
+  before it lies below everything used after it. Real ranges: `.rodata` 0x80341280-0x8034EE00, `.data` from
+  0x8034EE00, `.sdata2` 0x804D5E80-0x804DB338 (above that are weak merged constants such as sqrtf's
+  `_half`/`_three`). Addresses used by far-apart functions and 2 trend outliers are ignored.
+  Result: **2,414 allowed boundaries** (upper bound); largest forced-together span 130 KB (138 functions).
+  Writes `build/tu_mono.json`.
+- `tools/tu_pools.py`: **203 string pools** (lis/addi bases into pooled strings). All functions between a
+  pool's first and last user are one file. Of 193 gaps between consecutive pools, 37 have exactly one
+  allowed boundary (pinned), 21 have none: probably files with both a `.rodata` and a `.data` pool, so pools
+  must be paired before "different pool = different file" holds. Writes `build/tu_pools.json`.
+- No zero padding between game functions (4-byte alignment), so padding gives no boundary signal.
+- **Next:** pair `.rodata`/`.data` pools by order, add vtable/RTTI and assert-file-name anchors and the
+  17 `.ctors` initializers (each ends a C++ file), then emit a first full game split (asm units, DOL OK).
+
 ## Game code plan (Lead, 2026-10-11)
 
 **Size:** 7,163 functions, 2.9 MB of `.text` (0x80005800-0x802E4858, zlib already split out inside it).
