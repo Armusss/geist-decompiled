@@ -612,7 +612,6 @@ config.libs = [
             Object(NonMatching, "game/u_800DE0C4.cpp"),  # pinned
             Object(NonMatching, "game/u_800DEC54.cpp"),  # guess
             Object(NonMatching, "game/SAM.cpp"),  # guess
-            Object(NonMatching, "game/u_800E0B54.cpp"),  # split from asyncio
             Object(NonMatching, "game/u_800E0CB8.cpp"),  # Vec3 helpers
             Object(Matching, "game/asyncio.cpp"),  # guess
             Object(NonMatching, "game/u_800E1B5C.cpp"),  # guess

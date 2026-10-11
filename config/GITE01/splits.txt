@@ -141,10 +141,7 @@ game/u_800DEC54.cpp:
 	.text       start:0x800DEC54 end:0x800E051C
 
 game/SAM.cpp:
-	.text       start:0x800E051C end:0x800E0B54
-
-game/u_800E0B54.cpp:
-	.text       start:0x800E0B54 end:0x800E0CB8
+	.text       start:0x800E051C end:0x800E0CB8
 
 game/u_800E0CB8.cpp:
 	.text       start:0x800E0CB8 end:0x800E1144
