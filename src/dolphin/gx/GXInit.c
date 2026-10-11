@@ -31,7 +31,7 @@ GXData* const __GXData = &gxData;
 // these are supposed to be in-function static, but it messed up sbss order
 u32 resetFuncRegistered;
 u32 calledOnce;
-OSTime time;
+OSTime __GXInitTime; // originally a function-local static "time"; renamed so it does not clash with MSL time()
 u32 peCount;
 
 void* __memReg;
@@ -147,7 +147,7 @@ static int __GXShutdown(BOOL final) {
     if (!final) {
         if (!calledOnce) {
             peCount = __GXReadMEMCounterU32(0x28, 0x27);
-            time = OSGetTime();
+            __GXInitTime = OSGetTime();
             calledOnce = 1;
             return 0;
         }
@@ -155,13 +155,13 @@ static int __GXShutdown(BOOL final) {
         timeNew = OSGetTime();
         peCountNew = __GXReadMEMCounterU32(0x28, 0x27);
 
-        if (timeNew - time < 10) {
+        if (timeNew - __GXInitTime < 10) {
             return 0;
         }
 
         if (peCountNew != peCount) {
             peCount = peCountNew;
-            time = timeNew;
+            __GXInitTime = timeNew;
             return 0;
         }
 

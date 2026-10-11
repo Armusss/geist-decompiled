@@ -63,6 +63,333 @@ zlib/uncompr.c:
 	.text       start:0x8019FC84 end:0x8019FD58
 	.rodata     start:0x80348268 end:0x80348270
 
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mainloop.c:
+	.text       start:0x802E4858 end:0x802E4950
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/nubevent.c:
+	.text       start:0x802E4950 end:0x802E4B78
+	.bss        start:0x804A5690 end:0x804A56B8
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/nubinit.c:
+	.text       start:0x802E4B78 end:0x802E4D10
+	.rodata     start:0x8034DD78 end:0x8034DDA4
+	.bss        start:0x804A56B8 end:0x804A56BC
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msg.c:
+	.text       start:0x802E4D10 end:0x802E4D54
+	.rodata     start:0x8034DDA8 end:0x8034DDD0
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msgbuf.c:
+	.text       start:0x802E4D54 end:0x802E5590
+	.rodata     start:0x8034DDD0 end:0x8034DDF0
+	.bss        start:0x804A56C0 end:0x804A7070
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/serpoll.c:
+	.text       start:0x802E5590 end:0x802E5848
+	.rodata     start:0x8034DDF0 end:0x8034DF80
+	.bss        start:0x804A7070 end:0x804A7084
+	.sbss       start:0x804D5898 end:0x804D589C
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/usr_put.c:
+	.text       start:0x802E5848 end:0x802E58D4
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/dispatch.c:
+	.text       start:0x802E58D4 end:0x802E5A4C
+	.rodata     start:0x8034DF80 end:0x8034DFBC
+	.data       start:0x803C6468 end:0x803C64D4
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msghndlr.c:
+	.text       start:0x802E5A4C end:0x802E6A1C
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/support.c:
+	.text       start:0x802E6A1C end:0x802E7150
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mutex_TRK.c:
+	.text       start:0x802E7150 end:0x802E7168
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/notify.c:
+	.text       start:0x802E7168 end:0x802E7200
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/flush_cache.c:
+	.text       start:0x802E7200 end:0x802E7238
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mem_TRK.c:
+	.init       start:0x80003100 end:0x80003154
+	.text       start:0x802E7238 end:0x802E72F0
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/targimpl.c:
+	.text       start:0x802E72F0 end:0x802E8DB8
+	.rodata     start:0x8034E250 end:0x8034E2E8
+	.data       start:0x803C6510 end:0x803C6540
+	.bss        start:0x804A7090 end:0x804A7610
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/mpc_7xx_603e.c:
+	.text       start:0x802E8DE0 end:0x802E9150
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/dolphin_trk.c:
+	.init       start:0x80005088 end:0x800050B4
+	.text       start:0x802E9150 end:0x802E946C
+	.data       start:0x803C6540 end:0x803C657C
+	.bss        start:0x804A7610 end:0x804A7614
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/main_TRK.c:
+	.text       start:0x802E946C end:0x802E94C4
+	.rodata     start:0x8034E2E8 end:0x8034E2F8
+	.bss        start:0x804A7618 end:0x804A761C
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/dolphin_trk_glue.c:
+	.text       start:0x802E94C4 end:0x802E9A1C
+	.rodata     start:0x8034E2F8 end:0x8034E3FC
+	.data       start:0x803C6580 end:0x803C65A8
+	.bss        start:0x804A7620 end:0x804A7628
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/targcont.c:
+	.text       start:0x802E9A1C end:0x802E9A50
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/target_options.c:
+	.text       start:0x802E9A50 end:0x802E9A6C
+	.bss        start:0x804A7628 end:0x804A762C
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Export/mslsupp.c:
+	.text       start:0x802E9A6C end:0x802EA0AC
+
+TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/UDP_Stubs.c:
+	.text       start:0x802EA0AC end:0x802EA0F4
+
+TRK_MINNOW_DOLPHIN/gamedev/cust_connection/cc/exi2/GCN/EXI2_DDH_GCN/main.c:
+	.text       start:0x802EA0F4 end:0x802EA438
+	.rodata     start:0x8034E400 end:0x8034E4E0
+	.bss        start:0x804A7630 end:0x804A7E4C
+	.sbss       start:0x804D58A0 end:0x804D58A4
+
+TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/CircleBuffer.c:
+	.text       start:0x802EA438 end:0x802EA6A0
+
+TRK_MINNOW_DOLPHIN/gamedev/cust_connection/cc/exi2/GCN/EXI2_GDEV_GCN/main.c:
+	.text       start:0x802EA6A0 end:0x802EA9EC
+
+TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/MWTrace.c:
+	.text       start:0x802EA9EC end:0x802EAA3C
+
+TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/gc/MWCriticalSection_gc.c:
+	.text       start:0x802EAA3C end:0x802EAA94
+
+Runtime.PPCEABI.H/__va_arg.c:
+	.text       start:0x802EAA94 end:0x802EAB5C
+
+Runtime.PPCEABI.H/global_destructor_chain.c:
+	.text       start:0x802EAB5C end:0x802EABBC
+	.dtors      start:0x80341268 end:0x8034126C
+
+Runtime.PPCEABI.H/NMWException.cp:
+	extab       start:0x80005600 end:0x80005690
+	extabindex  start:0x80005720 end:0x80005780
+	.text       start:0x802EABBC end:0x802EB158
+
+Runtime.PPCEABI.H/ptmf.c:
+	extab       start:0x80005690 end:0x80005698
+	extabindex  start:0x80005780 end:0x8000578C
+	.text       start:0x802EB158 end:0x802EB178
+
+Runtime.PPCEABI.H/runtime.c:
+	.text       start:0x802EB178 end:0x802EB854
+
+Runtime.PPCEABI.H/__init_cpp_exceptions.cpp:
+	.text       start:0x802EB854 end:0x802EB8D0
+	.ctors      start:0x80341200 end:0x80341204
+	.dtors      start:0x80341260 end:0x80341268
+
+Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp:
+	extab       start:0x80005698 end:0x8000570C
+	extabindex  start:0x8000578C end:0x800057E0
+	.text       start:0x802EB8D0 end:0x802ECD08
+
+Runtime.PPCEABI.H/GCN_mem_alloc.c:
+	.text       start:0x802ECD08 end:0x802ECE78
+	.rodata     start:0x8034E690 end:0x8034E704
+
+MSL_C/MSL_Common/Src/abort_exit.c:
+	.text       start:0x802ECE78 end:0x802ECFD0
+
+MSL_C/MSL_Common/Src/alloc.c:
+	.text       start:0x802ECFD0 end:0x802EDF74
+
+MSL_C/MSL_Common/Src/ansi_files.c:
+	.text       start:0x802EDF74 end:0x802EE2C4
+
+MSL_C/MSL_Common_Embedded/Src/ansi_fp.c:
+	.text       start:0x802EE2C4 end:0x802EEEF4
+
+MSL_C/MSL_Common/Src/buffer_io.c:
+	.text       start:0x802EEEF4 end:0x802EF248
+
+MSL_C/PPC_EABI/Src/critical_regions.gamecube.c:
+	.text       start:0x802EF248 end:0x802EF254
+
+MSL_C/MSL_Common/Src/ctype.c:
+	.text       start:0x802EF254 end:0x802EF2C8
+
+MSL_C/MSL_Common/Src/direct_io.c:
+	.text       start:0x802EF2C8 end:0x802EFA44
+
+MSL_C/MSL_Common/Src/file_io.c:
+	.text       start:0x802EFA44 end:0x802EFF6C
+
+MSL_C/MSL_Common/Src/FILE_POS.c:
+	.text       start:0x802EFF6C end:0x802F02C0
+
+MSL_C/MSL_Common/Src/mbstring.c:
+	.text       start:0x802F02C0 end:0x802F0480
+
+MSL_C/MSL_Common/Src/mem.c:
+	.text       start:0x802F0480 end:0x802F06B8
+
+MSL_C/MSL_Common/Src/mem_funcs.c:
+	.text       start:0x802F06B8 end:0x802F09C8
+
+MSL_C/MSL_Common/Src/misc_io.c:
+	.text       start:0x802F09C8 end:0x802F09D8
+
+MSL_C/MSL_Common/Src/printf.c:
+	.text       start:0x802F09D8 end:0x802F2B5C
+
+MSL_C/MSL_Common/Src/scanf.c:
+	.text       start:0x802F2B5C end:0x802F2CF4
+
+MSL_C/MSL_Common/Src/rand.c:
+	.text       start:0x802F2CF4 end:0x802F2D20
+	.sdata      start:0x804D3E38 end:0x804D3E3C
+
+MSL_C/MSL_Common/Src/signal.c:
+	.text       start:0x802F2D20 end:0x802F2E08
+	.bss        start:0x804A87B8 end:0x804A87D0
+
+MSL_C/MSL_Common/Src/string.c:
+	.text       start:0x802F2E08 end:0x802F3320
+
+MSL_C/MSL_Common/Src/time.c:
+	.text       start:0x802F3320 end:0x802F3368
+
+MSL_C/MSL_Common/Src/wchar_io.c:
+	.text       start:0x802F3368 end:0x802F3418
+
+MSL_C/PPC_EABI/Src/time.gamecube.c:
+	.text       start:0x802F3418 end:0x802F3450
+
+MSL_C/PPC_EABI/Src/uart_console_io_gcn.c:
+	.text       start:0x802F3450 end:0x802F353C
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/e_acos.c:
+	.text       start:0x802F353C end:0x802F3778
+	.sdata2     start:0x804DB338 end:0x804DB3C0
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/e_atan2.c:
+	.text       start:0x802F3778 end:0x802F3A08
+	.sdata2     start:0x804DB3C0 end:0x804DB418
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/e_exp.c:
+	.text       start:0x802F3A08 end:0x802F3C2C
+	.rodata     start:0x8034E828 end:0x8034E858
+	.sdata2     start:0x804DB418 end:0x804DB490
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/e_fmod.c:
+	.text       start:0x802F3C2C end:0x802F3F68
+	.rodata     start:0x8034E858 end:0x8034E868
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/e_pow.c:
+	.text       start:0x802F3F68 end:0x802F4798
+	.rodata     start:0x8034E868 end:0x8034E898
+	.sdata2     start:0x804DB490 end:0x804DB5A0
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/e_rem_pio2.c:
+	.text       start:0x802F4798 end:0x802F4B38
+	.rodata     start:0x8034E898 end:0x8034EA20
+	.sdata2     start:0x804DB5A0 end:0x804DB5F8
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/k_cos.c:
+	.text       start:0x802F4BE4 end:0x802F4CD8
+	.sdata2     start:0x804DB5F8 end:0x804DB640
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/k_rem_pio2.c:
+	.text       start:0x802F4CD8 end:0x802F5B2C
+	.rodata     start:0x8034EA20 end:0x8034EA70
+	.sdata2     start:0x804DB640 end:0x804DB680
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/k_sin.c:
+	.text       start:0x802F5B2C end:0x802F5BCC
+	.sdata2     start:0x804DB680 end:0x804DB6B8
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/k_tan.c:
+	.text       start:0x802F5BCC end:0x802F5DE0
+	.rodata     start:0x8034EA70 end:0x8034EAD8
+	.sdata2     start:0x804DB6B8 end:0x804DB6F0
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_atan.c:
+	.text       start:0x802F5DE0 end:0x802F5FF8
+	.rodata     start:0x8034EAD8 end:0x8034EB70
+	.sdata2     start:0x804DB6F0 end:0x804DB718
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_copysign.c:
+	.text       start:0x802F5FF8 end:0x802F6020
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_cos.c:
+	.text       start:0x802F6020 end:0x802F60F4
+	.sdata2     start:0x804DB718 end:0x804DB720
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_floor.c:
+	.text       start:0x802F60F4 end:0x802F623C
+	.sdata2     start:0x804DB720 end:0x804DB730
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_frexp.c:
+	.text       start:0x802F623C end:0x802F62C8
+	.sdata2     start:0x804DB730 end:0x804DB738
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_ldexp.c:
+	.text       start:0x802F62C8 end:0x802F648C
+	.sdata2     start:0x804DB738 end:0x804DB760
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_modf.c:
+	.text       start:0x802F648C end:0x802F6588
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_sin.c:
+	.text       start:0x802F6588 end:0x802F6660
+	.sdata2     start:0x804DB760 end:0x804DB768
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/s_tan.c:
+	.text       start:0x802F6660 end:0x802F66D8
+	.sdata2     start:0x804DB768 end:0x804DB770
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/w_acos.c:
+	.text       start:0x802F66D8 end:0x802F66F8
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/w_atan2.c:
+	.text       start:0x802F66F8 end:0x802F6718
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/w_exp.c:
+	.text       start:0x802F6718 end:0x802F6738
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/w_fmod.c:
+	.text       start:0x802F6738 end:0x802F6758
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/w_pow.c:
+	.text       start:0x802F6758 end:0x802F6778
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/e_sqrt.c:
+	.text       start:0x802F6778 end:0x802F699C
+	.sdata2     start:0x804DB770 end:0x804DB778
+
+MSL_C/PPC_EABI/Src/math_ppc.c:
+	.text       start:0x802F699C end:0x802F6A2C
+
+MSL_C/MSL_Common/Src/math_api.c:
+	.text       start:0x802F6A2C end:0x802F6AAC
+
+MSL_C/MSL_Common_Embedded/Math/Double_precision/w_sqrt.c:
+	.text       start:0x802F6AAC end:0x802F6ACC
+
+MSL_C/MSL_Common/Src/extras.c:
+	.text       start:0x802F6ACC end:0x802F6B9C
+
 dolphin/ar/ar.c:
 	.text       start:0x802F6BA4 end:0x802F86EC
 	.data       start:0x803C6E38 end:0x803C6E7C
