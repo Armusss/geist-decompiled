@@ -256,6 +256,7 @@ MSL_C/MSL_Common/Src/FILE_POS.c:
 
 MSL_C/MSL_Common/Src/mbstring.c:
 	.text       start:0x802F02C0 end:0x802F0480
+	.sdata2     start:0x804DB328 end:0x804DB330
 
 MSL_C/MSL_Common/Src/mem.c:
 	.text       start:0x802F0480 end:0x802F06B8
