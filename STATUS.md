@@ -7,7 +7,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
 | Lead (main session) | `geist-matching` / `main` | SDK done (77/77 linked); now small unknown SDK units; **EXI2 debugger libs 0x8031DE10-0x8031EAF4** (low-level EXI2 driver + AMC EXI2 comm; taken out of helper-musyx's range; EXI2_* named on main), tail stubs 0x8033F5B8-0x80341200, merging | working |
-| helper-msl | `.claude/worktrees/optimistic-khayyam-7b9401` / `claude/optimistic-khayyam-7b9401` | **MSL_C + Runtime.PPCEABI.H + TRK_MINNOW_DOLPHIN**: `.text` from the first TRK/Runtime function (about 0x802E4800, find the exact start) up to 0x802F6B9C (`AMC_IsStub` and everything from 0x802F6BA4 is SDK, not yours) plus their data | working (Remote Control on) |
+| helper-msl | `.claude/worktrees/optimistic-khayyam-7b9401` / `claude/optimistic-khayyam-7b9401` | **MSL_C + Runtime.PPCEABI.H + TRK_MINNOW_DOLPHIN**: `.text` from the first TRK/Runtime function (about 0x802E4800, find the exact start) up to 0x802F6B9C (`AMC_IsStub` and everything from 0x802F6BA4 is SDK, not yours) plus their data | **done, merged** (62/88 units; report ~/geist-work/helper-msl/REPORT.md) |
 | helper-musyx | `.claude/worktrees/goofy-clarke-759020` / `claude/goofy-clarke-759020` | **MusyX 2.0.3 (GC/1.3.2)**: `.text` 0x8031EAF4-0x8033F990 (creverb.c ends at Hu_IsStub) plus their data. **zlib 1.1.4**: inflate is in game .text around 0x80197FD4-0x8019FC84 (inside auto unit 0x801920B8; copyright string 0x80347538), so split only the zlib functions and their data | **done, merged** (37/37 units; report ~/geist-work/helper-musyx/REPORT.md) |
 
 **Rules for helpers:**
@@ -35,6 +35,31 @@ Handoff file for the matching decompilation. Newest section first. See README.md
    reference repos; read them only. Record the compiler version and flags with evidence.
 6. When done (or blocked), send the Lead a short report: units matched, compiler/flags, anything odd,
    exact verify command + expected output. Then stop.
+
+## Chunk 9 — merged helper-msl: MSL_C / Runtime / TRK (2026-10-10)
+
+**Result after merge:** `SDK Code: 94.32% fuzzy, 92.52% matched, 89.34% linked (176 / 202 files)`, DOL OK.
+- All GC/2.6. TRK 24/28 (TP's cflags_trk; serpoll and DDH/GDEV main.c add `-sdata 8`). Runtime 2/8
+  (`-O4,p`; GCN_mem_alloc adds `-str reuse,nopool,readonly`). MSL_C 36/52: math with cflags_runtime;
+  common files use `-opt level=0,peephole,schedule` (strlen/rand/time only match with it); signal, time,
+  wchar_io and ansi_files also need `-use_lmw_stmw off`.
+- Geist's MSL common source is an older revision than TP's; the 16 left need hand reconstruction.
+- **Left (asm):** TRK msghndlr, support, mslsupp, EXI2_GDEV main.c; Runtime global_destructor_chain
+  (C strips the last .dtors entry 0x80341268), NMWException, ptmf, runtime, __init_cpp_exceptions,
+  Gecko_ExceptionPPC; 16 MSL_C common files; targsupp.s/exception.s not split; 0x802F4B38 (0xAC) unknown.
+- `-inline deferred` emits functions in reverse order, so check names of look-alike functions by call sites.
+  dtk's `AMGetZeroBuffer` 0x802E6964 is really `GetTRKConnected`.
+- .init: mem_TRK 0x80003100-0x80003154, dolphin_trk 0x80005088-0x800050B4.
+- Merge fix: GXInit's pseudo-global `time` renamed `__GXInitTime` (clashed with MSL `time()`).
+- The linker sometimes fails once after a config change and passes on a rerun.
+
+**Verify:**
+```sh
+cd ~/Documents/"Claude code"/geist-matching && export PATH=$HOME/.local/bin:$PATH
+python3 configure.py && rm -f build/GITE01/main.dol && ninja | grep -E "main.dol|SDK Code"
+# build/GITE01/main.dol: OK
+# SDK Code: 94.32% fuzzy, 92.52% matched, 89.34% linked (176 / 202 files)
+```
 
 ## Chunk 8 — merged helper-musyx: MusyX + zlib (2026-10-10)
 

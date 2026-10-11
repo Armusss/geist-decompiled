@@ -14,6 +14,10 @@ Template documentation is in [`docs/`](docs/).
   **no licence**, so keep this project private.
 - MusyX source in `src/musyx/` is adapted from [AxioDL/musyx](https://github.com/AxioDL/musyx)
   (MIT, (c) 2023 Axiomatic Data Laboratories; commit ec4697520f70), licence in `src/musyx/LICENSE`.
+- TRK_MINNOW_DOLPHIN, Runtime.PPCEABI.H and MSL_C math sources/headers are adapted from
+  [zeldaret/tp](https://github.com/zeldaret/tp) (commit c8fa8c9, `libs/TRK_MINNOW_DOLPHIN`,
+  `libs/PowerPC_EABI_Support`); Geist-specific edits: MetroTRK banner "v2.0", `__sys_alloc`, new rand.c,
+  time.c, time.gamecube.c.
 - zlib 1.1.4 in `src/zlib/` is from [madler/zlib](https://github.com/madler/zlib) tag v1.1.4 (zlib licence,
   `src/zlib/README.license`); K&R definitions converted to ANSI.
 
@@ -37,7 +41,8 @@ The baseline (all code still as split assembly) builds and verifies: `build/GITE
 
 ## State as of 2026-10-10
 See **STATUS.md** for the detailed handoff (compiler findings, SDK splits, next steps).
-- 77 Dolphin SDK, 26 MusyX and 11 zlib units build from C and match (DOL byte-identical).
+- 176 of 202 library units (Dolphin SDK 77/77, MusyX 26/26, zlib 11/11, MSL/Runtime/TRK 62/88) build from C
+  and match (DOL byte-identical). Game code not started.
 - dtk analysis found 8,706 functions in main.dol and split it into 70 units, all still assembly (0% matched).
 - `config/GITE01/symbols.txt` and `splits.txt` were auto-generated. There's no symbol map on the disc,
   so names are `fn_`/`lbl_` except for SDK/runtime functions dtk recognised by signature.
