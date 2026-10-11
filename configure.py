@@ -651,8 +651,8 @@ config.libs = [
             Object(NonMatching, "game/u_8016C244.cpp"),  # guess
             Object(NonMatching, "game/Msx.cpp"),  # guess
             Object(NonMatching, "game/u_80175D60.cpp"),  # known
-            Object(NonMatching, "game/DataStream.cpp"),  # guess
-            Object(NonMatching, "game/u_8017D6C4.cpp"),  # known
+            Object(Matching, "game/DataStream.cpp"),
+            Object(NonMatching, "game/u_8017D794.cpp"),  # known
             Object(NonMatching, "game/u_8018C358.cpp"),  # guess
             Object(NonMatching, "game/u_8018D2D4.cpp"),  # pinned
             Object(NonMatching, "game/u_8018FAE8.cpp"),  # guess
