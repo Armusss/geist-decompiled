@@ -620,7 +620,7 @@ config.libs = [
             Object(NonMatching, "MSL_C/MSL_Common_Embedded/Src/ansi_fp.c", cflags=cflags_msl),
             Object(Matching, "MSL_C/MSL_Common/Src/buffer_io.c", cflags=cflags_msl),
             Object(Matching, "MSL_C/PPC_EABI/Src/critical_regions.gamecube.c", cflags=cflags_msl),
-            Object(NonMatching, "MSL_C/MSL_Common/Src/ctype.c", cflags=cflags_msl),
+            Object(Matching, "MSL_C/MSL_Common/Src/ctype.c", extra_cflags=["-DMSL_USE_INLINES=1"], cflags=cflags_msl),
             Object(Matching, "MSL_C/MSL_Common/Src/direct_io.c", cflags=cflags_msl),
             Object(NonMatching, "MSL_C/MSL_Common/Src/file_io.c", cflags=cflags_msl),
             Object(NonMatching, "MSL_C/MSL_Common/Src/FILE_POS.c", cflags=cflags_msl),
