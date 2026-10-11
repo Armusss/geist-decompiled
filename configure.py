@@ -335,6 +335,7 @@ cflags_zlib = [
 cflags_game = [
     *cflags_base,
     "-lang=c++",
+    "-use_lmw_stmw on",
     "-str reuse,pool,readonly",
 ]
 
