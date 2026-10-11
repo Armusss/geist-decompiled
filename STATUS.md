@@ -2,13 +2,15 @@
 
 Handoff file for the matching decompilation. Newest section first. See README.md for setup/build.
 
-## Team board (Decomp Lead + helpers) — 2026-10-10
+## Team board (Decomp Lead + helpers) — game code, from 2026-10-11
 
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
-| Lead (main session) | `geist-matching` / `main` | SDK done (77/77 linked); now small unknown SDK units; **EXI2 debugger libs 0x8031DE10-0x8031EAF4** (low-level EXI2 driver + AMC EXI2 comm; taken out of helper-musyx's range; EXI2_* named on main), tail stubs 0x8033F5B8-0x80341200, merging | working |
-| helper-msl | `.claude/worktrees/optimistic-khayyam-7b9401` / `claude/optimistic-khayyam-7b9401` | **MSL_C + Runtime.PPCEABI.H + TRK_MINNOW_DOLPHIN**: `.text` from the first TRK/Runtime function (about 0x802E4800, find the exact start) up to 0x802F6B9C (`AMC_IsStub` and everything from 0x802F6BA4 is SDK, not yours) plus their data | **done, merged** (62/88 units; report ~/geist-work/helper-msl/REPORT.md) |
-| helper-musyx | `.claude/worktrees/goofy-clarke-759020` / `claude/goofy-clarke-759020` | **MusyX 2.0.3 (GC/1.3.2)**: `.text` 0x8031EAF4-0x8033F990 (creverb.c ends at Hu_IsStub) plus their data. **zlib 1.1.4**: inflate is in game .text around 0x80197FD4-0x8019FC84 (inside auto unit 0x801920B8; copyright string 0x80347538), so split only the zlib functions and their data | **done, merged** (37/37 units; report ~/geist-work/helper-musyx/REPORT.md) |
+| Lead (main session) | `geist-matching` / `main` | Game loader files: game/File.cpp, game/asyncio.cpp, game/Image.cpp, game/DataStream.cpp (+ Memory.cpp done); merging, boundaries, library leftovers | working |
+| helper-game-a | own worktree (branch reported by helper) | **Game units 0x80005800-0x80150000** except the Lead's files above | starting |
+| helper-game-b | own worktree (branch reported by helper) | **Game units 0x80150000-0x802E4858** except zlib (done), game/zutil.c (zlib, GC/2.6) and the Lead's files above | starting |
+
+Earlier helpers (2026-10-10): helper-msl (MSL/Runtime/TRK) and helper-musyx (MusyX/zlib), both done and merged.
 
 **Rules for helpers:**
 1. Work only in your own worktree and branch. Never edit `main`, never push, never touch `orig/`, game
@@ -33,7 +35,13 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 5. Prefer real library source you can reconstruct (MSL/TRK/Runtime from the CodeWarrior GC versions,
    MusyX from public decomps' structure, zlib 1.1.4 is public). Don't run scripts from cloned
    reference repos; read them only. Record the compiler version and flags with evidence.
-6. When done (or blocked), send the Lead a short report: units matched, compiler/flags, anything odd,
+6. **Game code specifics:** read "G3 — first game file" and "G1"/"G2" above first; `src/game/Memory.cpp` is the
+   worked example. Work file by file in address order inside your range. Fix a unit's boundaries in
+   splits.txt by hand when matching proves them wrong (only between units inside your range; if a boundary
+   with a neighbour outside your range must move, ask the Lead). Do NOT run `tools/gen_game_splits.py`.
+   You may give names to functions/objects outside your range only if they are still `fn_`/`lbl_`
+   placeholders (callees you need, with mangled names); list them in your report.
+7. When done (or blocked), send the Lead a short report: units matched, compiler/flags, anything odd,
    exact verify command + expected output. Then stop.
 
 ## G3 — first game file: Memory.cpp matched (Lead, 2026-10-11)
