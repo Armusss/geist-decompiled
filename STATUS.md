@@ -62,6 +62,11 @@ wrapper with "Out of Memory <file> <line>" reports, two scratch ring buffers (0x
 - Typical fixes: the order of declarations and temporaries decides registers; `if (x > 0) {...}` vs
   `if (x < 1)` changes the compare; early `return`s vs a result variable; ternaries in call arguments.
 - Tool: `~/geist-work/mwprobe/mdiff.py UNIT FUNC ADDR [SIZE]` diffs one function of a unit against the DOL.
+- **asyncio.cpp matched** (0x800E1144-0x800E1B5C; the provisional unit started too early: Vec3 helpers
+  0x800E0CB8-0x800E1144 and a ring copy at 0x800E0B54 are separate files, rumble code follows at 0x800E1B5C).
+  Buffered async DVD streams with zlib "BILZ" files. Lessons: **`-use_lmw_stmw on`** is required (now in
+  cflags_game); repeated blocks are usually **inline helper functions** (AsyncCheckHeader, AsyncQueueNext,
+  AsyncDumpBuffers): writing them out by hand gives different registers; `switch` vs if/else matters.
 
 ## G2 — game code split into provisional units (Lead, 2026-10-11)
 

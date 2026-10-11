@@ -186,41 +186,64 @@ int AsyncSeek(AsyncFile* f, int offset, int whence) {
     return 0;
 }
 
+inline void AsyncQueueNext(AsyncFile* f) {
+    int next = (f->readBuf + 1) % 4;
+    AsyncBuffer* buf;
+
+    f->idle = 1;
+    buf = &f->buf[next];
+    if (buf->ready == 0) {
+        buf->start = f->buf[f->readBuf].end;
+        buf->end = buf->start + 0x2000;
+        if (buf->end > f->size) {
+            buf->end = (f->size + 0x1F) & ~0x1F;
+            buf->last = 1;
+        }
+        if (buf->end - buf->start > 0) {
+            DVDReadAsyncPrio(&f->fi, buf->data, buf->end - buf->start, buf->start, AsyncReadCallback, 2);
+            f->readBuf = next;
+            f->idle = 0;
+        }
+    }
+}
+
+inline void AsyncDumpBuffers(AsyncFile* f) {
+    int i;
+
+    DebugPrintf("Stream buffer not queued\n\n");
+    DebugPrintf("    FileCursor %d\n", f->cursor);
+    DebugPrintf("    ReadBuffer %d\n", f->readBuf);
+    for (i = 0; i < 4; i++) {
+        DebugPrintf("    Buffer %d:  [%d - %d], Ready %d\n", i, f->buf[i].start, f->buf[i].end, f->buf[i].ready);
+    }
+}
+
 int AsyncRead(AsyncFile* f, void* dst, int size, int count, int noWait) {
-    int total = 0;
+    int b;
+    int total;
     int remaining;
+    int totalIn;
+    AsyncBuffer* buf;
+    int allocated;
     int avail;
     u8* src;
-    u32 b;
-    AsyncBuffer* buf;
-    int next;
-    int allocated;
     int err;
-    int totalIn;
-    int before;
+
+    remaining = size * count;
+    total = 0;
 
     if (f->cursor >= f->size) {
         return 0;
     }
 
-    b = 0;
-    if ((f->cursor < f->buf[0].start || f->cursor >= f->buf[0].end) &&
-        (b = 1, f->cursor < f->buf[1].start || f->cursor >= f->buf[1].end) &&
-        (b = 2, f->cursor < f->buf[2].start || f->cursor >= f->buf[2].end) &&
-        (b = 3, f->cursor < f->buf[3].start || f->cursor >= f->buf[3].end)) {
-        b = 4;
+    for (b = 0; b < 4; b++) {
+        if (f->buf[b].start <= f->cursor && f->buf[b].end > f->cursor) {
+            break;
+        }
     }
 
-    remaining = size * count;
-
     if (b == 4) {
-        int i;
-        DebugPrintf("Stream buffer not queued\n");
-        DebugPrintf("    FileCursor %d\n", f->cursor);
-        DebugPrintf("    ReadBuffer %d\n", f->readBuf);
-        for (i = 0; i < 4; i++) {
-            DebugPrintf("    Buffer %d:  [%d - %d], Ready %d\n", i, f->buf[i].start, f->buf[i].end, f->buf[i].ready);
-        }
+        AsyncDumpBuffers(f);
         exit(0);
         return 0;
     }
@@ -239,19 +262,9 @@ int AsyncRead(AsyncFile* f, void* dst, int size, int count, int noWait) {
         avail = buf->end - f->cursor;
         src = buf->data + (f->cursor - buf->start);
 
-        if (f->rawSize < 1) {
-            if (remaining < avail) {
-                avail = remaining;
-            }
-            if (dst != 0) {
-                memcpy(dst, src, avail);
-                dst = (u8*)dst + avail;
-            }
-            remaining -= avail;
-            f->cursor += avail;
-        } else {
-            allocated = dst == 0;
+        if (f->rawSize > 0) {
             totalIn = f->zs.total_in;
+            allocated = dst == 0;
             f->zs.next_in = src;
             f->zs.avail_in = avail;
             f->zs.avail_out = remaining;
@@ -263,12 +276,12 @@ int AsyncRead(AsyncFile* f, void* dst, int size, int count, int noWait) {
             }
 
             err = inflate(&f->zs, 2);
-            before = f->zs.total_in;
+            totalIn = f->zs.total_in - totalIn;
             if (err == 1) {
                 inflateEnd(&f->zs);
                 f->zs.opaque = 0;
             } else if (err != 0) {
-                DebugPrintf("Error %d in inflate (tot in : %d, tot out : %d\n", err, before, f->zs.total_out);
+                DebugPrintf("Error %d in inflate (tot in : %d, tot out : %d\n", err, f->zs.total_in, f->zs.total_out);
                 break;
             }
 
@@ -280,14 +293,23 @@ int AsyncRead(AsyncFile* f, void* dst, int size, int count, int noWait) {
                 MemFree(dst, "asyncio.cpp", 354);
             }
 
-            avail = remaining;
+            total += remaining;
             remaining = 0;
-            f->cursor += before - totalIn;
+            f->cursor += totalIn;
+        } else {
+            if (avail > remaining) {
+                avail = remaining;
+            }
+            if (dst != 0) {
+                memcpy(dst, src, avail);
+                dst = (u8*)dst + avail;
+            }
+            total += avail;
+            remaining -= avail;
+            f->cursor += avail;
         }
 
-        total += avail;
-
-        if (buf->end <= f->cursor) {
+        if (f->cursor >= buf->end) {
             buf->start = 0;
             buf->end = 0;
             buf->ready = 0;
@@ -299,27 +321,11 @@ int AsyncRead(AsyncFile* f, void* dst, int size, int count, int noWait) {
                 if (f->compressed != 0) {
                     buf->start = 0;
                 }
-                next = (f->readBuf + 1) % 4;
-                f->idle = 1;
-                buf = &f->buf[next];
-                if (buf->ready == 0) {
-                    buf->start = f->buf[f->readBuf].end;
-                    buf->end = buf->start + 0x2000;
-                    if (buf->end > f->size) {
-                        buf->end = (f->size + 0x1F) & ~0x1F;
-                        buf->last = 1;
-                    }
-                    if (buf->end - buf->start > 0) {
-                        DVDReadAsyncPrio(&f->fi, buf->data, buf->end - buf->start, buf->start,
-                                         AsyncReadCallback, 2);
-                        f->readBuf = next;
-                        f->idle = 0;
-                    }
-                }
+                AsyncQueueNext(f);
             }
         }
 
-        b = (b + 1) & 3;
+        b = (b + 1) % 4;
     }
 
     return total / size;
