@@ -36,6 +36,18 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 6. When done (or blocked), send the Lead a short report: units matched, compiler/flags, anything odd,
    exact verify command + expected output. Then stop.
 
+## G1 — game compiler (Lead, 2026-10-11)
+
+- **Game code is NOT GC/2.6.** zlib (GC/2.6) is a prebuilt library; the game's own code matches only
+  **GC/1.3 or GC/1.3.2** (working choice 1.3.2, the same as MusyX). Evidence (`tools/g1/`, probe with
+  `-lang=c++ -O4,p -inline auto -fp_contract on`):
+  - 0x8001734C plane-from-normal (`g1e.cpp`): matches with 1.2.5n/1.3/1.3.2 only (2.0+ hoist loads over stores).
+  - 0x8001598C frame-time from OSGetTick (`g1f.cpp`): matches with 1.3/1.3.2, not 1.2.5n.
+  - 0x800185F8 wrapper (`g1.cpp`): matches with all.
+  1.3 vs 1.3.2 and the `-use_lmw_stmw` / `-inline deferred` settings are not settled yet (no test function
+  tells them apart so far). C++ name mangling is used; `.c` files exist too (assert names).
+- `-fp_contract on` (fmadds) and `-O4,p` confirmed.
+
 ## G0 progress — game file boundaries (Lead, 2026-10-11)
 
 - `tools/tu_mono.py`: each file's private data (`.sdata2` constants, `.rodata`, jump tables in `.data`) is
