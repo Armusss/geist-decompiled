@@ -36,6 +36,29 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 6. When done (or blocked), send the Lead a short report: units matched, compiler/flags, anything odd,
    exact verify command + expected output. Then stop.
 
+## Game code plan (Lead, 2026-10-11)
+
+**Size:** 7,163 functions, 2.9 MB of `.text` (0x80005800-0x802E4858, zlib already split out inside it).
+Mixed C and C++ (assert strings name e.g. main.cpp, AppMain.c, Script.c, VM.c, FearActor.c, FearMap2.c,
+Turf.cpp, Cube.cpp, CubeTev.cpp, Image.cpp, File.cpp, DataStream.cpp, asyncio.cpp, Memory.cpp, Msx.cpp,
+Shadow2.cpp, SAM.cpp, Progress.cpp, MemCard.c, Store.c, Audio.c, Arena.c, ...). 17 static initializers in
+`.ctors` (each ends a C++ file). Compiler evidence from zlib (linked inside game code): GC/2.6, `-lang=c++`,
+`-O4,p -inline auto,deferred -use_lmw_stmw on -str pool,readonly`.
+
+**Phases:**
+- **G0 file boundaries:** `~/geist-work/game/tu_cluster.py` groups functions sharing private constants
+  (sdata2/rodata/data objects used only within a 64 KB window): 1,784 candidate boundaries (upper bound; many
+  functions have no private constants). Combine with string pools (one pool per file), `.ctors` entries,
+  jump tables, vtables/RTTI and assert file names to settle real files.
+- **G1 flags:** confirm GC/2.6 + the flags above on a few small game functions (C vs C++ files differ).
+- **G2 split all game code into asm units** with those boundaries (DOL must stay OK). Then units can be
+  matched independently, and helpers can own disjoint address ranges.
+- **G3 match,** starting with code the Rust port needs most: file/stream/asset loading (File.cpp,
+  DataStream.cpp, asyncio.cpp, Image.cpp, Memory.cpp, chunk loaders), then engine systems, then gameplay.
+- **Helpers:** worth it after G2 (two helpers on separate address ranges). Not before, because splitting
+  touches the whole splits/symbols files.
+- **Library leftovers (3):** file_io.c (fflush), Gecko_ExceptionPPC.cp, EXI2_GDEV main.c; revisit later.
+
 ## Chunk 12 — MSL_C common almost done (Lead, 2026-10-11)
 
 **Result:** `SDK Code: 98.70% fuzzy, 98.52% matched, 98.14% linked (199 / 202 files)`, DOL OK.
