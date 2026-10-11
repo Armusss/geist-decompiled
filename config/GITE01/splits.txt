@@ -183,14 +183,9 @@ Runtime.PPCEABI.H/global_destructor_chain.c:
 	.sbss       start:0x804D58B0 end:0x804D58B8
 
 Runtime.PPCEABI.H/NMWException.cp:
-	extab       start:0x80005600 end:0x80005690
-	extabindex  start:0x80005720 end:0x80005780
-	.text       start:0x802EABBC end:0x802EB158
-
-Runtime.PPCEABI.H/ptmf.c:
-	extab       start:0x80005690 end:0x80005698
-	extabindex  start:0x80005780 end:0x8000578C
-	.text       start:0x802EB158 end:0x802EB178
+	extab       start:0x80005600 end:0x80005698
+	extabindex  start:0x80005720 end:0x8000578C
+	.text       start:0x802EABBC end:0x802EB178
 
 Runtime.PPCEABI.H/runtime.c:
 	.text       start:0x802EB178 end:0x802EB854
