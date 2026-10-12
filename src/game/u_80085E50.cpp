@@ -10,7 +10,7 @@ extern unsigned char __upper_map[256];
 }
 
 void FileFlushBuffer(void* dst, int size);                 // 0x80007088
-extern "C" int fn_8001950C(int file, int (*cb)(void*, int), int arg);
+int FileAddHandler(int type, int (*cb)(void*, int, void*), void* arg); // File.cpp
 extern "C" void fn_8000F60C(void* p);
 extern "C" void fn_8000F874(void* p);
 extern "C" int fn_8007EB34(u32 table, u32 key);
@@ -163,7 +163,7 @@ void StrTableRelease(void) {
 int StrTableLoaded(void* data, int size);
 
 int StrTableLoad(void) {
-    fn_8001950C(0x10, StrTableLoaded, 0);
+    FileAddHandler(0x10, (int (*)(void*, int, void*))StrTableLoaded, 0);
     return 1;
 }
 
