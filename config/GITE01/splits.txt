@@ -26,7 +26,15 @@ game/Turf.cpp:
 	.text       start:0x80012E04 end:0x8001598C
 
 game/u_8001598C.cpp:
-	.text       start:0x8001598C end:0x800190D4
+	.text       start:0x8001598C end:0x80015A44
+	.sbss       start:0x804D4198 end:0x804D41A0
+	.sdata2     start:0x804D6030 end:0x804D6048
+
+game/u_80015A44.cpp:
+	.text       start:0x80015A44 end:0x80015B64
+
+game/u_80015B64.cpp:
+	.text       start:0x80015B64 end:0x800190D4
 
 game/File.cpp:
 	.text       start:0x800190D4 end:0x80019A04
@@ -50,8 +58,11 @@ game/u_8003B98C.cpp:
 game/u_8003CC90.cpp:
 	.text       start:0x8003CC90 end:0x800448D0
 
+game/u_800448D0.cpp:
+	.text       start:0x800448D0 end:0x800451D8
+
 game/Store.c:
-	.text       start:0x800448D0 end:0x8004572C
+	.text       start:0x800451D8 end:0x8004572C
 
 game/FearActor.c:
 	.text       start:0x8004572C end:0x80064FD4
@@ -70,13 +81,13 @@ game/u_8006C604.cpp:
 	.text       start:0x8006C604 end:0x800776FC
 
 game/u_800776FC.cpp:
-	.text       start:0x800776FC end:0x8007C5C8
+	.text       start:0x800776FC end:0x8007C868
 
 game/Arena.c:
-	.text       start:0x8007C5C8 end:0x8007CB14
+	.text       start:0x8007C868 end:0x8007CC04
 
 game/Audio.c:
-	.text       start:0x8007CB14 end:0x8007D7E8
+	.text       start:0x8007CC04 end:0x8007D7E8
 
 game/u_8007D7E8.cpp:
 	.text       start:0x8007D7E8 end:0x8007EE68
@@ -88,10 +99,15 @@ game/Script.c:
 	.text       start:0x80083360 end:0x80085CDC
 
 game/u_80085CDC.cpp:
-	.text       start:0x80085CDC end:0x80086400
+	.text       start:0x80085CDC end:0x80085E50
+
+game/u_80085E50.cpp:
+	.text       start:0x80085E50 end:0x800866D8
+	.rodata     start:0x80343DC8 end:0x80343DE8
+	.sbss       start:0x804D46A8 end:0x804D46B0
 
 game/AppMain.c:
-	.text       start:0x80086400 end:0x800886C8
+	.text       start:0x800866D8 end:0x800886C8
 
 game/u_800886C8.cpp:
 	.text       start:0x800886C8 end:0x8008DCDC
@@ -127,13 +143,13 @@ game/u_800BAA14.cpp:
 	.text       start:0x800BAA14 end:0x800C5028
 
 game/u_800C5028.cpp:
-	.text       start:0x800C5028 end:0x800D0224
+	.text       start:0x800C5028 end:0x800D0254
 
 game/Progress.cpp:
-	.text       start:0x800D0224 end:0x800D0BF4
+	.text       start:0x800D0254 end:0x800D0BB8
 
 game/u_800D0BF4.cpp:
-	.text       start:0x800D0BF4 end:0x800D32E8
+	.text       start:0x800D0BB8 end:0x800D32E8
 
 game/u_800D32E8.cpp:
 	.text       start:0x800D32E8 end:0x800DD92C
@@ -148,10 +164,7 @@ game/u_800DEC54.cpp:
 	.text       start:0x800DEC54 end:0x800E051C
 
 game/SAM.cpp:
-	.text       start:0x800E051C end:0x800E0B54
-
-game/u_800E0B54.cpp:
-	.text       start:0x800E0B54 end:0x800E0CB8
+	.text       start:0x800E051C end:0x800E0CB8
 
 game/u_800E0CB8.cpp:
 	.text       start:0x800E0CB8 end:0x800E1144
@@ -169,9 +182,17 @@ game/u_800E9418.cpp:
 game/u_800EB1B8.cpp:
 	.text       start:0x800EB1B8 end:0x800F0320
 
+game/u_800F0320.cpp:
+	.text       start:0x800F0320 end:0x800F0D24
+
 game/DeferPriority.cpp:
-	.text       start:0x800F0320 end:0x800F14A8
+	.text       start:0x800F0D24 end:0x800F14A8
 	.ctors      start:0x80341214 end:0x80341218
+	.rodata     start:0x803452E0 end:0x80345320
+	.data       start:0x8039CDB8 end:0x8039CDC8
+	.bss        start:0x80455A50 end:0x80455A80
+	.sdata      start:0x804D2C60 end:0x804D2C68
+	.sbss       start:0x804D4A50 end:0x804D4A60
 
 game/u_800F14A8.cpp:
 	.text       start:0x800F14A8 end:0x800F2B08
@@ -679,14 +700,22 @@ game/u_802DC82C.cpp:
 game/u_802DDEDC.cpp:
 	.text       start:0x802DDEDC end:0x802E2F08
 
-game/u_802E2F08.cpp:
+game/CollectionHost.cpp:
 	.text       start:0x802E2F08 end:0x802E32D0
+	.rodata     start:0x8034DC10 end:0x8034DC88
+	.data       start:0x803C6388 end:0x803C63B8
+	.sdata      start:0x804D3DC8 end:0x804D3DD0
+	.sdata2     start:0x804DB2E0 end:0x804DB2F0
 
-game/u_802E32D0.cpp:
-	.text       start:0x802E32D0 end:0x802E378C
+game/CollectionGhost.cpp:
+	.text       start:0x802E32D0 end:0x802E3674
+	.rodata     start:0x8034DC88 end:0x8034DD00
+	.data       start:0x803C63B8 end:0x803C63E8
+	.sdata      start:0x804D3DD0 end:0x804D3DD8
+	.sdata2     start:0x804DB2F0 end:0x804DB308
 
-game/u_802E378C.cpp:
-	.text       start:0x802E378C end:0x802E4858
+game/u_802E3674.cpp:
+	.text       start:0x802E3674 end:0x802E4858
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mainloop.c:
 	.text       start:0x802E4858 end:0x802E4950

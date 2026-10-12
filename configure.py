@@ -575,13 +575,16 @@ config.libs = [
             Object(NonMatching, "game/main.cpp"),  # guess
             Object(NonMatching, "game/u_8000F2F0.cpp"),  # guess
             Object(NonMatching, "game/Turf.cpp"),  # guess
-            Object(NonMatching, "game/u_8001598C.cpp"),
+            Object(Matching, "game/u_8001598C.cpp"),  # frame timer, hook stubs
+            Object(Matching, "game/u_80015A44.cpp"),  # path splitting
+            Object(NonMatching, "game/u_80015B64.cpp"),  # split from u_8001598C
             Object(Matching, "game/File.cpp"),
             Object(NonMatching, "game/DbRoom.c"),  # guess
             Object(NonMatching, "game/u_80022B10.cpp"),  # guess
             Object(NonMatching, "game/ModInfo.cpp"),  # guess
             Object(NonMatching, "game/u_8003B98C.cpp"),  # guess
             Object(NonMatching, "game/u_8003CC90.cpp"),  # guess
+            Object(NonMatching, "game/u_800448D0.cpp"),  # meshes, split from Store.c
             Object(NonMatching, "game/Store.c"),  # guess
             Object(NonMatching, "game/FearActor.c"),  # guess
             Object(NonMatching, "game/u_80064FD4.cpp"),  # guess
@@ -595,6 +598,7 @@ config.libs = [
             Object(NonMatching, "game/u_8007EE68.cpp"),  # guess
             Object(NonMatching, "game/Script.c"),  # guess
             Object(NonMatching, "game/u_80085CDC.cpp"),  # guess
+            Object(Matching, "game/u_80085E50.cpp"),  # string table
             Object(NonMatching, "game/AppMain.c"),  # guess
             Object(NonMatching, "game/u_800886C8.cpp"),  # guess
             Object(NonMatching, "game/u_8008DCDC.cpp"),  # guess
@@ -613,13 +617,13 @@ config.libs = [
             Object(NonMatching, "game/u_800DE0C4.cpp"),  # pinned
             Object(NonMatching, "game/u_800DEC54.cpp"),  # guess
             Object(NonMatching, "game/SAM.cpp"),  # guess
-            Object(NonMatching, "game/u_800E0B54.cpp"),  # split from asyncio
             Object(NonMatching, "game/u_800E0CB8.cpp"),  # Vec3 helpers
             Object(Matching, "game/asyncio.cpp"),  # guess
             Object(NonMatching, "game/u_800E1B5C.cpp"),  # guess
             Object(NonMatching, "game/u_800E9418.cpp"),  # guess
             Object(NonMatching, "game/u_800EB1B8.cpp"),  # guess
-            Object(NonMatching, "game/DeferPriority.cpp"),  # guess
+            Object(NonMatching, "game/u_800F0320.cpp"),  # split from DeferPriority.cpp
+            Object(Matching, "game/DeferPriority.cpp"),  # guess
             Object(NonMatching, "game/u_800F14A8.cpp"),  # known
             Object(Matching, "game/Image.cpp"),
             Object(NonMatching, "game/u_800F396C.cpp"),  # pinned
@@ -761,9 +765,9 @@ config.libs = [
             Object(NonMatching, "game/u_802DB9D0.cpp"),  # pinned
             Object(NonMatching, "game/u_802DC82C.cpp"),  # guess
             Object(NonMatching, "game/u_802DDEDC.cpp"),  # guess
-            Object(NonMatching, "game/u_802E2F08.cpp"),  # guess
-            Object(NonMatching, "game/u_802E32D0.cpp"),  # pinned
-            Object(NonMatching, "game/u_802E378C.cpp"),  # guess
+            Object(Matching, "game/CollectionHost.cpp"),
+            Object(Matching, "game/CollectionGhost.cpp"),
+            Object(NonMatching, "game/u_802E3674.cpp"),
         ],
     },
     # ==== end game units ====

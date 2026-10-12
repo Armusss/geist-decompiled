@@ -6,9 +6,9 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
-| Lead (main session) | `geist-matching` / `main` | Game loader files all done (Memory.cpp, asyncio.cpp, Image.cpp, DataStream.cpp, File.cpp); next: merging helper work, boundaries, library leftovers | paused (2026-10-11) |
+| Lead (main session) | `geist-matching` / `main` | Loader files done (Memory, asyncio, Image, DataStream, File). Now: merging helper work, and game units **0x802D0000-0x802E4858** from the top down | working |
 | helper-game-a | `.claude/worktrees/optimistic-khayyam-7b9401` / `claude/intelligent-babbage-a49862` | **Game units 0x80005800-0x80150000** except the Lead's files above | working (Remote Control on) |
-| helper-game-b | `.claude/worktrees/goofy-clarke-759020` / `claude/frosty-gauss-da470f` | **Game units 0x80150000-0x802E4858** except zlib (done), game/zutil.c (zlib, GC/2.6) and the Lead's files above | working (Remote Control on) |
+| helper-game-b | `.claude/worktrees/goofy-clarke-759020` / `claude/frosty-gauss-da470f` | **Game units 0x80150000-0x802D0000** (the Lead took 0x802D0000-0x802E4858 on 2026-10-11) except zlib (done), game/zutil.c (zlib, GC/2.6) and the Lead's files above | working (Remote Control on) |
 
 Earlier helpers (2026-10-10): helper-msl (MSL/Runtime/TRK) and helper-musyx (MusyX/zlib), both done and merged.
 
@@ -100,6 +100,15 @@ wrapper with "Out of Memory <file> <line>" reports, two scratch ring buffers (0x
   `~/geist-work/mwprobe/perm.py SRC FUNC ADDR SIZE` (declaration lines on stdin). Also new:
   `udiff.py SRC START END` (all functions of a unit) and `adiff.py MDIFF_OUT` (aligned diff that tolerates
   length differences).
+- **CollectionHost.cpp matched** (was u_802E2F08: .text 0x802E2F08-0x802E32D0, .rodata 0x8034DC10-88, .data
+  0x803C6388-B8, .sdata 0x804D3DC8-D0, .sdata2 0x804DB2E0-F0). Lessons: call arguments are evaluated **right
+  to left** (`sprintf(buf, fmt, F2(), G(), F1())` calls F1 first); message structs in different `case`s get
+  their own stack slots when declared at function scope (first declared = highest address); a variable used
+  in several cases cannot reuse a parameter's register, so give each case its own block-scoped variable.
+- **CollectionGhost.cpp matched** ("Collection Ghost Health", .text 0x802E32D0-0x802E3674; the two functions
+  at 0x802E3674/0x802E36A4 belong to the next file, which is now u_802E3674: its table at 0x803C63E8 lists them).
+  Lesson: calls nested in an argument list run before simple loads of the other arguments, rightmost call
+  first, so `F(G(p), H(&x), x)` calls H, then G, then loads x.
 
 ## G2 — game code split into provisional units (Lead, 2026-10-11)
 
