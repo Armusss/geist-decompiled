@@ -510,8 +510,11 @@ game/u_80248FC8.cpp:
 game/u_8024CAA0.cpp:
 	.text       start:0x8024CAA0 end:0x8024E374
 
-game/u_8024E374.cpp:
+game/Scannable.cpp:
 	.text       start:0x8024E374 end:0x8024E5D0
+	.rodata     start:0x8034A588 end:0x8034A5E0
+	.data       start:0x803BEB58 end:0x803BEB88
+	.sdata2     start:0x804D9D68 end:0x804D9D70
 
 game/u_8024E5D0.cpp:
 	.text       start:0x8024E5D0 end:0x80251CB8
