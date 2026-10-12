@@ -313,7 +313,7 @@ void* FileReadAll(const char* name, int* outSize, int progress) {
     return buf;
 }
 
-void* FileLoad(const char* name, int* outSize) {
+void* FileLoad(const char* name, int* outSize, int unused) {
     DVDFileInfo fi;
     int chunk;
     u8* buf;
