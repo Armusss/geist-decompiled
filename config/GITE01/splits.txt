@@ -31,7 +31,10 @@ game/u_8001598C.cpp:
 	.sdata2     start:0x804D6030 end:0x804D6048
 
 game/u_80015A44.cpp:
-	.text       start:0x80015A44 end:0x800190D4
+	.text       start:0x80015A44 end:0x80015B64
+
+game/u_80015B64.cpp:
+	.text       start:0x80015B64 end:0x800190D4
 
 game/File.cpp:
 	.text       start:0x800190D4 end:0x80019A04
