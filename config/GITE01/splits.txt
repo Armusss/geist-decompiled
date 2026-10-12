@@ -132,13 +132,13 @@ game/u_800BAA14.cpp:
 	.text       start:0x800BAA14 end:0x800C5028
 
 game/u_800C5028.cpp:
-	.text       start:0x800C5028 end:0x800D0224
+	.text       start:0x800C5028 end:0x800D0254
 
 game/Progress.cpp:
-	.text       start:0x800D0224 end:0x800D0BF4
+	.text       start:0x800D0254 end:0x800D0BB8
 
 game/u_800D0BF4.cpp:
-	.text       start:0x800D0BF4 end:0x800D32E8
+	.text       start:0x800D0BB8 end:0x800D32E8
 
 game/u_800D32E8.cpp:
 	.text       start:0x800D32E8 end:0x800DD92C
