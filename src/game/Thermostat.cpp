@@ -5,6 +5,8 @@
 //   rises while the player is in the right mode, drives an animation, and explodes past 0.7.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#pragma auto_inline off
+
 typedef unsigned short u16;
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
@@ -156,7 +158,6 @@ void Fn80211AA4(Actor* a, float dt);                     // 0x80211AA4
 extern BehState gThermoStates[8];
 extern ActorType gGaugeExplodeType;
 
-#pragma dont_inline on
 void ThermoCheck(Owner* o, Beh* b) {
     MsgResult res;
 
@@ -184,8 +185,6 @@ void ThermoCheck(Owner* o, Beh* b) {
         }
     }
 }
-
-#pragma dont_inline reset
 
 void ThermoUpdate2(Owner* o, Beh* b) {
     if (b) {
