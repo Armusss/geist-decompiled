@@ -696,11 +696,15 @@ game/CollectionHost.cpp:
 	.sdata      start:0x804D3DC8 end:0x804D3DD0
 	.sdata2     start:0x804DB2E0 end:0x804DB2F0
 
-game/u_802E32D0.cpp:
-	.text       start:0x802E32D0 end:0x802E378C
+game/CollectionGhost.cpp:
+	.text       start:0x802E32D0 end:0x802E3674
+	.rodata     start:0x8034DC88 end:0x8034DD00
+	.data       start:0x803C63B8 end:0x803C63E8
+	.sdata      start:0x804D3DD0 end:0x804D3DD8
+	.sdata2     start:0x804DB2F0 end:0x804DB308
 
-game/u_802E378C.cpp:
-	.text       start:0x802E378C end:0x802E4858
+game/u_802E3674.cpp:
+	.text       start:0x802E3674 end:0x802E4858
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mainloop.c:
 	.text       start:0x802E4858 end:0x802E4950

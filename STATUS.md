@@ -105,6 +105,10 @@ wrapper with "Out of Memory <file> <line>" reports, two scratch ring buffers (0x
   to left** (`sprintf(buf, fmt, F2(), G(), F1())` calls F1 first); message structs in different `case`s get
   their own stack slots when declared at function scope (first declared = highest address); a variable used
   in several cases cannot reuse a parameter's register, so give each case its own block-scoped variable.
+- **CollectionGhost.cpp matched** ("Collection Ghost Health", .text 0x802E32D0-0x802E3674; the two functions
+  at 0x802E3674/0x802E36A4 belong to the next file, which is now u_802E3674: its table at 0x803C63E8 lists them).
+  Lesson: calls nested in an argument list run before simple loads of the other arguments, rightmost call
+  first, so `F(G(p), H(&x), x)` calls H, then G, then loads x.
 
 ## G2 — game code split into provisional units (Lead, 2026-10-11)
 

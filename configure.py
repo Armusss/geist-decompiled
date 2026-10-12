@@ -764,8 +764,8 @@ config.libs = [
             Object(NonMatching, "game/u_802DC82C.cpp"),  # guess
             Object(NonMatching, "game/u_802DDEDC.cpp"),  # guess
             Object(Matching, "game/CollectionHost.cpp"),
-            Object(NonMatching, "game/u_802E32D0.cpp"),  # pinned
-            Object(NonMatching, "game/u_802E378C.cpp"),  # guess
+            Object(Matching, "game/CollectionGhost.cpp"),
+            Object(NonMatching, "game/u_802E3674.cpp"),
         ],
     },
     # ==== end game units ====
