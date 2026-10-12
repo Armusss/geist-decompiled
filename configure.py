@@ -767,7 +767,7 @@ config.libs = [
             Object(NonMatching, "game/u_802DDEDC.cpp"),  # guess
             Object(Matching, "game/CollectionHost.cpp"),
             Object(Matching, "game/CollectionGhost.cpp"),
-            Object(NonMatching, "game/u_802E3674.cpp"),
+            Object(NonMatching, "game/Credits.cpp"),
         ],
     },
     # ==== end game units ====
