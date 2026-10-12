@@ -109,6 +109,14 @@ wrapper with "Out of Memory <file> <line>" reports, two scratch ring buffers (0x
   at 0x802E3674/0x802E36A4 belong to the next file, which is now u_802E3674: its table at 0x803C63E8 lists them).
   Lesson: calls nested in an argument list run before simple loads of the other arguments, rightmost call
   first, so `F(G(p), H(&x), x)` calls H, then G, then loads x.
+- **Credits.cpp WIP 23/30** (was u_802E3674, 0x802E3674-0x802E4858 = end of game code; credits screen, tip
+  messages, "No Bot" behaviour; .data ends at 0x803C6468, the jump tables after it are MetroTRK's). Open
+  problem shared with helper-b: **`cmplwi r4,0` then parameter copies after the branch** (retail) vs our
+  `mr. r31,r4` with copies at entry. Not fixed by any compiler version 1.3-3.0a5, -O2/-O3/-O4,s, -opt
+  noschedule/nopropagation/nolifetimes/nodeadcode, inline bodies, block-scoped copies, early return, member
+  functions. Other lessons: a query whose String must die before later code goes in its own inline function;
+  `if (a == 0 || f() == -1) return 0; return 1;` gives retail's li 0/li 1 shape where `return a && f() != -1`
+  gives a bool (clrlwi); a hash written `h = h % 0xFFFFFFFF; return h;` keeps h in r3.
 
 ## G2 — game code split into provisional units (Lead, 2026-10-11)
 

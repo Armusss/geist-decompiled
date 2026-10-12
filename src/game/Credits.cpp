@@ -564,7 +564,7 @@ int NoBotMsg(Owner* o, Beh* b, int msg) {
             d->next = 7;
         }
         break;
-    case 0x1B838341:
+    case 0x1B83833F:
         d->flags |= 0x10;
         break;
     case 0x0020EE36:
