@@ -575,7 +575,9 @@ config.libs = [
             Object(NonMatching, "game/main.cpp"),  # guess
             Object(NonMatching, "game/u_8000F2F0.cpp"),  # guess
             Object(NonMatching, "game/Turf.cpp"),  # guess
-            Object(NonMatching, "game/u_8001598C.cpp"),
+            Object(Matching, "game/u_8001598C.cpp"),  # frame timer, hook stubs
+            Object(Matching, "game/u_80015A44.cpp"),  # path splitting
+            Object(NonMatching, "game/u_80015B64.cpp"),  # split from u_8001598C
             Object(Matching, "game/File.cpp"),
             Object(NonMatching, "game/DbRoom.c"),  # guess
             Object(NonMatching, "game/u_80022B10.cpp"),  # guess
@@ -595,6 +597,7 @@ config.libs = [
             Object(NonMatching, "game/u_8007EE68.cpp"),  # guess
             Object(NonMatching, "game/Script.c"),  # guess
             Object(NonMatching, "game/u_80085CDC.cpp"),  # guess
+            Object(Matching, "game/u_80085E50.cpp"),  # string table
             Object(NonMatching, "game/AppMain.c"),  # guess
             Object(NonMatching, "game/u_800886C8.cpp"),  # guess
             Object(NonMatching, "game/u_8008DCDC.cpp"),  # guess
@@ -613,7 +616,6 @@ config.libs = [
             Object(NonMatching, "game/u_800DE0C4.cpp"),  # pinned
             Object(NonMatching, "game/u_800DEC54.cpp"),  # guess
             Object(NonMatching, "game/SAM.cpp"),  # guess
-            Object(NonMatching, "game/u_800E0B54.cpp"),  # split from asyncio
             Object(NonMatching, "game/u_800E0CB8.cpp"),  # Vec3 helpers
             Object(Matching, "game/asyncio.cpp"),  # guess
             Object(NonMatching, "game/u_800E1B5C.cpp"),  # guess

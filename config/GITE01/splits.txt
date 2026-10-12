@@ -26,7 +26,15 @@ game/Turf.cpp:
 	.text       start:0x80012E04 end:0x8001598C
 
 game/u_8001598C.cpp:
-	.text       start:0x8001598C end:0x800190D4
+	.text       start:0x8001598C end:0x80015A44
+	.sbss       start:0x804D4198 end:0x804D41A0
+	.sdata2     start:0x804D6030 end:0x804D6048
+
+game/u_80015A44.cpp:
+	.text       start:0x80015A44 end:0x80015B64
+
+game/u_80015B64.cpp:
+	.text       start:0x80015B64 end:0x800190D4
 
 game/File.cpp:
 	.text       start:0x800190D4 end:0x80019A04
@@ -70,13 +78,13 @@ game/u_8006C604.cpp:
 	.text       start:0x8006C604 end:0x800776FC
 
 game/u_800776FC.cpp:
-	.text       start:0x800776FC end:0x8007C5C8
+	.text       start:0x800776FC end:0x8007C868
 
 game/Arena.c:
-	.text       start:0x8007C5C8 end:0x8007CB14
+	.text       start:0x8007C868 end:0x8007CC04
 
 game/Audio.c:
-	.text       start:0x8007CB14 end:0x8007D7E8
+	.text       start:0x8007CC04 end:0x8007D7E8
 
 game/u_8007D7E8.cpp:
 	.text       start:0x8007D7E8 end:0x8007EE68
@@ -88,10 +96,15 @@ game/Script.c:
 	.text       start:0x80083360 end:0x80085CDC
 
 game/u_80085CDC.cpp:
-	.text       start:0x80085CDC end:0x80086400
+	.text       start:0x80085CDC end:0x80085E50
+
+game/u_80085E50.cpp:
+	.text       start:0x80085E50 end:0x800866D8
+	.rodata     start:0x80343DC8 end:0x80343DE8
+	.sbss       start:0x804D46A8 end:0x804D46B0
 
 game/AppMain.c:
-	.text       start:0x80086400 end:0x800886C8
+	.text       start:0x800866D8 end:0x800886C8
 
 game/u_800886C8.cpp:
 	.text       start:0x800886C8 end:0x8008DCDC
@@ -127,13 +140,13 @@ game/u_800BAA14.cpp:
 	.text       start:0x800BAA14 end:0x800C5028
 
 game/u_800C5028.cpp:
-	.text       start:0x800C5028 end:0x800D0224
+	.text       start:0x800C5028 end:0x800D0254
 
 game/Progress.cpp:
-	.text       start:0x800D0224 end:0x800D0BF4
+	.text       start:0x800D0254 end:0x800D0BB8
 
 game/u_800D0BF4.cpp:
-	.text       start:0x800D0BF4 end:0x800D32E8
+	.text       start:0x800D0BB8 end:0x800D32E8
 
 game/u_800D32E8.cpp:
 	.text       start:0x800D32E8 end:0x800DD92C
@@ -148,10 +161,7 @@ game/u_800DEC54.cpp:
 	.text       start:0x800DEC54 end:0x800E051C
 
 game/SAM.cpp:
-	.text       start:0x800E051C end:0x800E0B54
-
-game/u_800E0B54.cpp:
-	.text       start:0x800E0B54 end:0x800E0CB8
+	.text       start:0x800E051C end:0x800E0CB8
 
 game/u_800E0CB8.cpp:
 	.text       start:0x800E0CB8 end:0x800E1144
