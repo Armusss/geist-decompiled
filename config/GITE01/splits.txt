@@ -58,8 +58,11 @@ game/u_8003B98C.cpp:
 game/u_8003CC90.cpp:
 	.text       start:0x8003CC90 end:0x800448D0
 
+game/u_800448D0.cpp:
+	.text       start:0x800448D0 end:0x800451D8
+
 game/Store.c:
-	.text       start:0x800448D0 end:0x8004572C
+	.text       start:0x800451D8 end:0x8004572C
 
 game/FearActor.c:
 	.text       start:0x8004572C end:0x80064FD4
