@@ -196,6 +196,9 @@ game/DeferPriority.cpp:
 
 game/u_800F14A8.cpp:
 	.text       start:0x800F14A8 end:0x800F2B08
+	.bss        start:0x80455A80 end:0x80457BD0
+	.sbss       start:0x804D4A60 end:0x804D4A68
+	.sdata2     start:0x804D7330 end:0x804D7348
 
 game/Image.cpp:
 	.text       start:0x800F2B08 end:0x800F396C

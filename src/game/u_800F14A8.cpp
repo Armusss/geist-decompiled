@@ -286,6 +286,18 @@ inline GraphLink* LinkAlloc(void) {
     return &sLinks[slot];
 }
 
+inline GraphNode* GraphNodeAt(GraphNode* list, int index) {
+    int i;
+    GraphNode* node;
+    node = list;
+    i = index;
+    while (i > 0 && node) {
+        node = node->next;
+        i--;
+    }
+    return node;
+}
+
 int GraphAddLink(u32 handle, int index, int target, int arg) {
     Graph* graph = GraphGet(handle);
     GraphNode* node;
@@ -298,11 +310,7 @@ int GraphAddLink(u32 handle, int index, int target, int arg) {
     if (graph->numNodes <= index || graph->numNodes <= target) {
         return 0;
     }
-    node = graph->nodes;
-    while (index > 0 && node) {
-        node = node->next;
-        index--;
-    }
+    node = GraphNodeAt(graph->nodes, index);
     if (node == 0) {
         return 0;
     }
@@ -436,17 +444,6 @@ inline SearchState* SearchNewState(SearchState* parent, GraphLink* link, int nod
     return &sSearchStates[slot];
 }
 
-inline GraphNode* GraphNodeAt(GraphNode* list, int index) {
-    int i;
-    GraphNode* node;
-    node = list;
-    i = index;
-    while (i > 0 && node) {
-        node = node->next;
-        i--;
-    }
-    return node;
-}
 
 inline GraphLink* GraphLinkAt(GraphLink* list, int index) {
     int i;
@@ -489,11 +486,11 @@ inline void SearchListRemove(SearchState** list, SearchState* state) {
 float SearchRun(Graph* graph, int start, int goal, void* ctx, SearchInsertFn insert, SearchCostFn cost,
                 SearchCostFn estimate, SearchGoalFn isGoal, int goalArg, GraphQuery* query) {
     int i;
-    float c;
+    GraphLink* link;
     float g;
+    float c;
     float h;
     SearchState* state;
-    GraphLink* link;
 
     if (graph == 0 || cost == 0 || insert == 0 || estimate == 0 || query == 0) {
         return 1e9f;

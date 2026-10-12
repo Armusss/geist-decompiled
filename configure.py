@@ -624,7 +624,7 @@ config.libs = [
             Object(NonMatching, "game/u_800EB1B8.cpp"),  # guess
             Object(NonMatching, "game/u_800F0320.cpp"),  # split from DeferPriority.cpp
             Object(Matching, "game/DeferPriority.cpp"),  # guess
-            Object(NonMatching, "game/u_800F14A8.cpp"),  # known
+            Object(Matching, "game/u_800F14A8.cpp"),  # known
             Object(Matching, "game/Image.cpp"),
             Object(NonMatching, "game/u_800F396C.cpp"),  # pinned
             Object(NonMatching, "game/u_800F73C8.cpp"),  # guess
