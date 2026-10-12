@@ -13,7 +13,7 @@ void FileFlushBuffer(void* dst, int size);                 // 0x80007088
 int FileAddHandler(int type, int (*cb)(void*, int, void*), void* arg); // File.cpp
 extern "C" void fn_8000F60C(void* p);
 extern "C" void fn_8000F874(void* p);
-extern "C" int fn_8007EB34(u32 table, u32 key);
+int AssetFind(u32 table, u32 key);  // 0x8007EB34
 
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
 
@@ -78,7 +78,7 @@ inline char* StrGetSkip(int index) {
 }
 
 inline char* StrFind(u32 key, u32* extra) {
-    int index = fn_8007EB34(0xBAA22E62, key);
+    int index = AssetFind(0xBAA22E62, key);
     if (index == -1) {
         return "ERROR - STRING NOT FOUND";
     }
@@ -130,7 +130,7 @@ char* StrFindKey(u32 key, u32* extra) { return StrFind(key, extra); }
 char* StrGetIndex(int index, u32* extra) { return StrGet(index, extra); }
 
 char* StrFindKeySkip(u32 key) {
-    int index = fn_8007EB34(0xBAA22E62, key);
+    int index = AssetFind(0xBAA22E62, key);
     if (index == -1) {
         return "ERROR - STRING NOT FOUND";
     }

@@ -646,7 +646,7 @@ config.libs = [
             Object(NonMatching, "game/u_80153C10.cpp"),  # guess
             Object(NonMatching, "game/u_80157730.cpp"),  # guess
             Object(NonMatching, "game/u_80160188.cpp"),  # guess
-            Object(NonMatching, "game/u_80160BB0.cpp"),  # guess
+            Object(NonMatching, "game/GrenadeFx.cpp"),  # starts 0x801608A4 (helper-game-b)
             Object(NonMatching, "game/u_80160DB0.cpp"),  # guess
             Object(NonMatching, "game/u_80161F40.cpp"),  # guess
             Object(NonMatching, "game/u_80161FF4.cpp"),  # guess
@@ -659,7 +659,7 @@ config.libs = [
             Object(NonMatching, "game/u_8018C358.cpp"),  # guess
             Object(NonMatching, "game/u_8018D2D4.cpp"),  # pinned
             Object(NonMatching, "game/u_8018FAE8.cpp"),  # guess
-            Object(NonMatching, "game/u_80191E2C.cpp"),  # guess
+            Object(Matching, "game/Repel.cpp"),  # starts 0x80191C6C (helper-game-b)
             Object(NonMatching, "game/u_801920B8.cpp"),  # known
             Object(NonMatching, "game/u_801965FC.cpp"),  # guess
             Object(NonMatching, "game/zutil.c"),  # known
@@ -697,7 +697,8 @@ config.libs = [
             Object(NonMatching, "game/u_80222C08.cpp"),  # guess
             Object(NonMatching, "game/u_80226DE8.cpp"),  # guess
             Object(NonMatching, "game/u_8022EEEC.cpp"),  # guess
-            Object(NonMatching, "game/u_80230224.cpp"),  # guess
+            Object(Matching, "game/PadRecord.cpp"),  # 0x802301E0 (helper-game-b)
+            Object(NonMatching, "game/u_8023040C.cpp"),  # split from u_80230224
             Object(NonMatching, "game/u_80230504.cpp"),  # guess
             Object(NonMatching, "game/u_80231550.cpp"),  # guess
             Object(NonMatching, "game/Corona.cpp"),  # guess
@@ -709,9 +710,8 @@ config.libs = [
             Object(NonMatching, "game/u_80244728.cpp"),  # pinned
             Object(NonMatching, "game/u_80247EB0.cpp"),  # guess
             Object(NonMatching, "game/u_80248FC8.cpp"),  # pinned
-            Object(NonMatching, "game/u_8024CA7C.cpp"),  # guess
             Object(NonMatching, "game/u_8024CAA0.cpp"),  # known
-            Object(NonMatching, "game/u_8024E374.cpp"),  # guess
+            Object(Matching, "game/Scannable.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_8024E5D0.cpp"),  # guess
             Object(NonMatching, "game/u_80251CB8.cpp"),  # pinned
             Object(NonMatching, "game/u_802541D4.cpp"),  # guess
@@ -740,7 +740,6 @@ config.libs = [
             Object(NonMatching, "game/u_8029C0AC.cpp"),  # guess
             Object(NonMatching, "game/u_8029E714.cpp"),  # pinned
             Object(NonMatching, "game/u_802A770C.cpp"),  # guess
-            Object(NonMatching, "game/u_802A9810.cpp"),  # guess
             Object(NonMatching, "game/u_802A9824.cpp"),  # known
             Object(NonMatching, "game/u_802AE27C.cpp"),  # pinned
             Object(NonMatching, "game/u_802B2680.cpp"),  # pinned
