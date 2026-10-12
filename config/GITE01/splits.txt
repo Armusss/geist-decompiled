@@ -468,10 +468,17 @@ game/u_80226DE8.cpp:
 	.text       start:0x80226DE8 end:0x8022EEEC
 
 game/u_8022EEEC.cpp:
-	.text       start:0x8022EEEC end:0x80230224
+	.text       start:0x8022EEEC end:0x802301E0
 
-game/u_80230224.cpp:
-	.text       start:0x80230224 end:0x80230504
+game/PadRecord.cpp:
+	.text       start:0x802301E0 end:0x8023040C
+	.rodata     start:0x80349DF0 end:0x80349EF8
+	.bss        start:0x8049F3D8 end:0x8049F410
+	.sdata      start:0x804D3478 end:0x804D3488
+	.sbss       start:0x804D5430 end:0x804D5440
+
+game/u_8023040C.cpp:
+	.text       start:0x8023040C end:0x80230504
 
 game/u_80230504.cpp:
 	.text       start:0x80230504 end:0x80231550
