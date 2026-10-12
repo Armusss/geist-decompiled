@@ -689,8 +689,12 @@ game/u_802DC82C.cpp:
 game/u_802DDEDC.cpp:
 	.text       start:0x802DDEDC end:0x802E2F08
 
-game/u_802E2F08.cpp:
+game/CollectionHost.cpp:
 	.text       start:0x802E2F08 end:0x802E32D0
+	.rodata     start:0x8034DC10 end:0x8034DC88
+	.data       start:0x803C6388 end:0x803C63B8
+	.sdata      start:0x804D3DC8 end:0x804D3DD0
+	.sdata2     start:0x804DB2E0 end:0x804DB2F0
 
 game/u_802E32D0.cpp:
 	.text       start:0x802E32D0 end:0x802E378C

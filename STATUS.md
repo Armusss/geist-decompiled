@@ -100,6 +100,11 @@ wrapper with "Out of Memory <file> <line>" reports, two scratch ring buffers (0x
   `~/geist-work/mwprobe/perm.py SRC FUNC ADDR SIZE` (declaration lines on stdin). Also new:
   `udiff.py SRC START END` (all functions of a unit) and `adiff.py MDIFF_OUT` (aligned diff that tolerates
   length differences).
+- **CollectionHost.cpp matched** (was u_802E2F08: .text 0x802E2F08-0x802E32D0, .rodata 0x8034DC10-88, .data
+  0x803C6388-B8, .sdata 0x804D3DC8-D0, .sdata2 0x804DB2E0-F0). Lessons: call arguments are evaluated **right
+  to left** (`sprintf(buf, fmt, F2(), G(), F1())` calls F1 first); message structs in different `case`s get
+  their own stack slots when declared at function scope (first declared = highest address); a variable used
+  in several cases cannot reuse a parameter's register, so give each case its own block-scoped variable.
 
 ## G2 — game code split into provisional units (Lead, 2026-10-11)
 
