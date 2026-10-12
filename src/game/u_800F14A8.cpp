@@ -247,8 +247,8 @@ int GraphFindBestLink(u32 handle, SearchCostFn score, void* ctx, int* outNode, i
     int bestTarget = -1;
     Graph* graph = GraphGet(handle);
     GraphNode* node;
-    GraphLink* link;
     int i;
+    GraphLink* link;
 
     if (graph == 0) {
         return 0;
@@ -436,22 +436,38 @@ inline SearchState* SearchNewState(SearchState* parent, GraphLink* link, int nod
     return &sSearchStates[slot];
 }
 
-inline GraphNode* GraphNodeAt(Graph* graph, int index) {
-    GraphNode* node = graph->nodes;
-    while (index > 0 && node) {
+inline GraphNode* GraphNodeAt(GraphNode* list, int index) {
+    int i;
+    GraphNode* node;
+    node = list;
+    i = index;
+    while (i > 0 && node) {
         node = node->next;
-        index--;
+        i--;
     }
     return node;
 }
 
-inline GraphLink* GraphLinkAt(GraphNode* node, int index) {
-    GraphLink* link = node->links;
-    while (index > 0 && link) {
+inline GraphLink* GraphLinkAt(GraphLink* list, int index) {
+    int i;
+    GraphLink* link;
+    link = list;
+    i = index;
+    while (i > 0 && link) {
         link = link->next;
-        index--;
+        i--;
     }
     return link;
+}
+
+inline int SearchOnPath(SearchState* state, int node) {
+    SearchState* p;
+    for (p = state; p; p = p->parent) {
+        if (p->node == node) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 inline void SearchListRemove(SearchState** list, SearchState* state) {
@@ -459,7 +475,7 @@ inline void SearchListRemove(SearchState** list, SearchState* state) {
 
     if (list && state) {
         if (*list == state) {
-            *list = state->next;
+            *list = (*list)->next;
         } else {
             for (p = (*list)->next; p != state && p; p = p->next) {
             }
@@ -474,6 +490,8 @@ float SearchRun(Graph* graph, int start, int goal, void* ctx, SearchInsertFn ins
                 SearchCostFn estimate, SearchGoalFn isGoal, int goalArg, GraphQuery* query) {
     int i;
     float c;
+    float g;
+    float h;
     SearchState* state;
     GraphLink* link;
 
@@ -507,47 +525,37 @@ float SearchRun(Graph* graph, int start, int goal, void* ctx, SearchInsertFn ins
     c = 0.0f;
     state = query->open;
     while (state && !isGoal(state->node, goalArg, state) && c != -1e9f) {
-        GraphNode* node = GraphNodeAt(graph, state->node);
+        GraphNode* node = GraphNodeAt(graph->nodes, state->node);
         if (node == 0) {
             ScratchAReset();
             return 1e9f;
         }
 
-        link = GraphLinkAt(node, state->linkIndex);
+        link = GraphLinkAt(node->links, state->linkIndex);
         while (state == query->open && link && c != -1e9f) {
             if (link->active) {
                 int target = link->target;
-                if (GraphNodeAt(graph, target)->active) {
-                    SearchState* p;
-                    int found;
-                    for (p = state; p; p = p->parent) {
-                        if (p->node == target) {
-                            found = 1;
-                            goto done;
-                        }
-                    }
-                    found = 0;
-                done:
-                    if (!found) {
-                        float h;
-                        float g;
+                if (GraphNodeAt(graph->nodes, target)->active && !SearchOnPath(state, target)) {
+                    c = cost(state->node, target, link->arg, ctx, state);
+                    if (c != -1e9f) {
                         SearchState* child;
-
-                        c = cost(state->node, target, link->arg, ctx, state);
-                        if (c == -1e9f) {
-                            continue;
-                        }
                         h = estimate(link->target, goal, link->arg, ctx, state);
                         g = state->cost + c;
                         child = SearchNewState(state, link, link->target, g, g + h);
                         if (child) {
                             insert(&query->open, child);
                         }
+                        state->linkIndex++;
+                        link = link->next;
                     }
+                } else {
+                    state->linkIndex++;
+                    link = link->next;
                 }
+            } else {
+                state->linkIndex++;
+                link = link->next;
             }
-            state->linkIndex++;
-            link = link->next;
         }
 
         if (link == 0) {
@@ -569,7 +577,11 @@ float SearchRun(Graph* graph, int start, int goal, void* ctx, SearchInsertFn ins
             for (i = depth; i >= 0; i--) {
                 if (state) {
                     query->path[i] = state->node;
-                    query->pathArgs[i] = state->link ? state->link->arg : 0;
+                    if (state->link) {
+                        query->pathArgs[i] = state->link->arg;
+                    } else {
+                        query->pathArgs[i] = 0;
+                    }
                     state = state->parent;
                 }
             }
