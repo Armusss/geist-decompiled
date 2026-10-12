@@ -13,8 +13,6 @@ size_t strlen(const char* s);
 int sprintf(char* s, const char* format, ...);
 
 // Callees in other files, not named yet.
-void* fn_80019838(const char* path, int* size, int arg); // load a whole file
-float fn_8001598C(void);                                 // frame time
 void fn_80005A64(float dt);
 void fn_800DCBB0(float dt);
 int fn_800059D0(int arg);
@@ -24,6 +22,8 @@ void fn_800448D0(void* mesh); // draw an indexed mesh
 }
 
 void MemFree(void* p, const char* file, int line);
+void* FileLoad(const char* name, int* outSize, int unused);
+float LoadingTime(void);
 void SystemPoll(void);
 void GfxFrameEnd(void);
 void GfxFrameSwap(void);
@@ -163,13 +163,13 @@ void LoadingClose(void) {
 void LoadingEnd(void) {
     if (gProgressActive) {
         while (gProgressActive) {
-            float dt = fn_8001598C();
+            float dt = LoadingTime();
             LoadingFrame(sProgress, dt);
             SystemPoll();
         }
     } else if (sSlots[4].valid) {
         while (fn_800059D0(20) != 1) {
-            float dt = fn_8001598C();
+            float dt = LoadingTime();
             LoadingFrame(sProgress, dt);
             SystemPoll();
         }
@@ -192,7 +192,7 @@ int LoadingActive(const char* name) {
 
     strcpy(path, name);
     sprintf(path + strlen(path) - 3, "LGC");
-    data = fn_80019838(path, &size, 0);
+    data = FileLoad(path, &size, 0);
     DCFlushRange(data, (size + 31) & ~31);
     if (data && size) {
         return LoadingSetFile((ProgressFile*)data);
