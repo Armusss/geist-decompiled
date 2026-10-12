@@ -6,7 +6,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
-| Lead (main session) | `geist-matching` / `main` | Game loader files: game/File.cpp, game/DataStream.cpp (Memory.cpp, asyncio.cpp, Image.cpp done); merging, boundaries, library leftovers | working |
+| Lead (main session) | `geist-matching` / `main` | Game loader files all done (Memory.cpp, asyncio.cpp, Image.cpp, DataStream.cpp, File.cpp); next: merging helper work, boundaries, library leftovers | paused (2026-10-11) |
 | helper-game-a | `.claude/worktrees/optimistic-khayyam-7b9401` / `claude/intelligent-babbage-a49862` | **Game units 0x80005800-0x80150000** except the Lead's files above | working (Remote Control on) |
 | helper-game-b | `.claude/worktrees/goofy-clarke-759020` / `claude/frosty-gauss-da470f` | **Game units 0x80150000-0x802E4858** except zlib (done), game/zutil.c (zlib, GC/2.6) and the Lead's files above | working (Remote Control on) |
 
@@ -78,6 +78,28 @@ wrapper with "Out of Memory <file> <line>" reports, two scratch ring buffers (0x
   GfxSetVtxDesc 0x80008DAC, GfxSetCullMode 0x80008B44, GfxFrameEnd/Swap/Begin 0x8000ADDC/0x8000A028/0x80009EE0,
   GfxSetMaterial 0x80112AB0, GfxResetTev 0x8010D130, GfxSetBlendMode 0x801D8A10; data gDVDMutex 0x803D7114,
   gWideScreen 0x804D4008.
+- **DataStream.cpp matched** (.text 0x8017BE38-0x8017D794: the provisional end 0x8017D6C4 was too early, the
+  StreamQueue dtor, the sMem array-dtor helper and the out-of-line VMem ctor follow `__sinit`; .rodata
+  0x80346EF0-40, .sdata 0x804D3008-10, .bss 0x80491880-0x80494A80, .sbss 0x804D5058-A8; next unit renamed
+  u_8017D794). Disc streaming: two request queues (binary trees by disc offset, flattened before reading), two
+  VMem pools, a 0x2000 bounce buffer. Lessons: **this file needs `#pragma auto_inline off`** (retail calls tiny
+  StreamFlushQueues instead of inlining it) while Memory.cpp needs auto-inlining (MemAlloc inlined into
+  MemInit), so keep `-inline auto` in cflags_game and use the pragma per file. Explicit `inline` recursive
+  functions are expanded 2-3 levels deep into themselves; a tiny `inline` callee defined first is inlined at
+  the top levels and called at the deepest one. Field reloads after a branch mean `volatile` (here the current
+  request pointer, sPendingBytes, sFileOpen). All the file's .bss is reached from one base register (the first
+  static), which confirms which statics belong to the file. A run of string literals in .rodata that nothing
+  references (POSSESS, GHOSTACTION, ...) repeats in several files: a header-defined static table.
+- **File.cpp matched** (.text 0x800190D4-0x80019A04; .rodata 0x80341E98-0x80341F30, .bss 0x803DAA88-0x803DAE88,
+  .sbss 0x804D41A0-B0, .sdata2 0x804D60A0-A8). The provisional unit started at 0x8001598C; everything before
+  0x800190D4 touches other data (sdata2 0x804D6030-609C, sbss 0x804D4198) and is now u_8001598C (still several
+  files: module hooks called from 0x80087BB0/0x80087FA8 tables etc.). OLC level loader: chunk handler table,
+  per-type disc offsets (ArchiveFindOffset), whole-file readers. Lessons: `x = f(); if (x != y)` vs
+  `if (f() != y)` swaps cmpw operands; error paths placed after the main path come from `if (ok) {...} else
+  {error}` shapes; declaration order decides callee-saved registers, so search it with
+  `~/geist-work/mwprobe/perm.py SRC FUNC ADDR SIZE` (declaration lines on stdin). Also new:
+  `udiff.py SRC START END` (all functions of a unit) and `adiff.py MDIFF_OUT` (aligned diff that tolerates
+  length differences).
 
 ## G2 — game code split into provisional units (Lead, 2026-10-11)
 

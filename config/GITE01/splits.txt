@@ -25,8 +25,15 @@ game/u_8000F2F0.cpp:
 game/Turf.cpp:
 	.text       start:0x80012E04 end:0x8001598C
 
+game/u_8001598C.cpp:
+	.text       start:0x8001598C end:0x800190D4
+
 game/File.cpp:
-	.text       start:0x8001598C end:0x80019A04
+	.text       start:0x800190D4 end:0x80019A04
+	.rodata     start:0x80341E98 end:0x80341F30
+	.bss        start:0x803DAA88 end:0x803DAE88
+	.sbss       start:0x804D41A0 end:0x804D41B0
+	.sdata2     start:0x804D60A0 end:0x804D60A8
 
 game/DbRoom.c:
 	.text       start:0x80019A04 end:0x80022B10
@@ -271,11 +278,15 @@ game/u_80175D60.cpp:
 	.text       start:0x80175D60 end:0x8017BE38
 
 game/DataStream.cpp:
-	.text       start:0x8017BE38 end:0x8017D6C4
+	.text       start:0x8017BE38 end:0x8017D794
 	.ctors      start:0x80341224 end:0x80341228
+	.rodata     start:0x80346EF0 end:0x80346F40
+	.bss        start:0x80491880 end:0x80494A80
+	.sdata      start:0x804D3008 end:0x804D3010
+	.sbss       start:0x804D5058 end:0x804D50A8
 
-game/u_8017D6C4.cpp:
-	.text       start:0x8017D6C4 end:0x8018C358
+game/u_8017D794.cpp:
+	.text       start:0x8017D794 end:0x8018C358
 
 game/u_8018C358.cpp:
 	.text       start:0x8018C358 end:0x8018D2D4

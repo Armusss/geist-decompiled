@@ -575,7 +575,8 @@ config.libs = [
             Object(NonMatching, "game/main.cpp"),  # guess
             Object(NonMatching, "game/u_8000F2F0.cpp"),  # guess
             Object(NonMatching, "game/Turf.cpp"),  # guess
-            Object(NonMatching, "game/File.cpp"),  # guess
+            Object(NonMatching, "game/u_8001598C.cpp"),
+            Object(Matching, "game/File.cpp"),
             Object(NonMatching, "game/DbRoom.c"),  # guess
             Object(NonMatching, "game/u_80022B10.cpp"),  # guess
             Object(NonMatching, "game/ModInfo.cpp"),  # guess
@@ -651,8 +652,8 @@ config.libs = [
             Object(NonMatching, "game/u_8016C244.cpp"),  # guess
             Object(NonMatching, "game/Msx.cpp"),  # guess
             Object(NonMatching, "game/u_80175D60.cpp"),  # known
-            Object(NonMatching, "game/DataStream.cpp"),  # guess
-            Object(NonMatching, "game/u_8017D6C4.cpp"),  # known
+            Object(Matching, "game/DataStream.cpp"),
+            Object(NonMatching, "game/u_8017D794.cpp"),  # known
             Object(NonMatching, "game/u_8018C358.cpp"),  # guess
             Object(NonMatching, "game/u_8018D2D4.cpp"),  # pinned
             Object(NonMatching, "game/u_8018FAE8.cpp"),  # guess
