@@ -58,8 +58,11 @@ game/u_8003B98C.cpp:
 game/u_8003CC90.cpp:
 	.text       start:0x8003CC90 end:0x800448D0
 
+game/u_800448D0.cpp:
+	.text       start:0x800448D0 end:0x800451D8
+
 game/Store.c:
-	.text       start:0x800448D0 end:0x8004572C
+	.text       start:0x800451D8 end:0x8004572C
 
 game/FearActor.c:
 	.text       start:0x8004572C end:0x80064FD4
@@ -179,9 +182,17 @@ game/u_800E9418.cpp:
 game/u_800EB1B8.cpp:
 	.text       start:0x800EB1B8 end:0x800F0320
 
+game/u_800F0320.cpp:
+	.text       start:0x800F0320 end:0x800F0D24
+
 game/DeferPriority.cpp:
-	.text       start:0x800F0320 end:0x800F14A8
+	.text       start:0x800F0D24 end:0x800F14A8
 	.ctors      start:0x80341214 end:0x80341218
+	.rodata     start:0x803452E0 end:0x80345320
+	.data       start:0x8039CDB8 end:0x8039CDC8
+	.bss        start:0x80455A50 end:0x80455A80
+	.sdata      start:0x804D2C60 end:0x804D2C68
+	.sbss       start:0x804D4A50 end:0x804D4A60
 
 game/u_800F14A8.cpp:
 	.text       start:0x800F14A8 end:0x800F2B08
