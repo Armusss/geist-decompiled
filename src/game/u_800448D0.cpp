@@ -8,13 +8,14 @@
 extern "C" {
 // Callees in other files, not named yet.
 int fn_8000FECC(int material);
-void fn_800F1138(int key, void* data, void (*draw)(void*), void* arg);
 int fn_801D89A4(int mode);
 void fn_800092CC(void);
 int fn_80010448(int material, int arg);
 void fn_80010330(int material, int arg);
 }
 
+struct Vec3;
+void DeferAdd(int priority, Vec3* pos, void (*draw)(void*), void* arg); // DeferPriority.cpp
 void* ScratchBAlloc(int size);
 void GfxSetVtxDesc(int desc);
 void GfxSetMaterial(void* material);
@@ -162,7 +163,7 @@ void MeshDeferPrim(MeshPrim* prim, MeshVertex* verts) {
         break;
     }
 
-    fn_800F1138(fn_8000FECC(prim->material), dv, (void (*)(void*))MeshDrawDeferred, copy);
+    DeferAdd(fn_8000FECC(prim->material), (Vec3*)dv, (void (*)(void*))MeshDrawDeferred, copy);
 }
 
 void MeshDrawDeferred(MeshPrim* prim) {
