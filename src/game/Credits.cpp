@@ -23,16 +23,18 @@ extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
 
 inline u32 StrHashKey(const char* s) {
-    u32 h = 0;
+    const char* p;
+    u32 h;
 
     if (s == 0) {
         return 0;
     }
-    while (*s != 0) {
-        h = h * 31 + (unsigned char)toupper(*s);
-        s++;
+    h = 0;
+    for (p = s; *p != 0; p++) {
+        h = h * 31 + (unsigned char)toupper(*p);
     }
-    return h % 0xFFFFFFFF;
+    h = h % 0xFFFFFFFF;
+    return h;
 }
 
 // Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
@@ -137,6 +139,15 @@ int sLetterbox;
 const char* sTipText;
 u32 sTipLength;
 
+inline int Query(int target, int msg, u32 hash) {
+    QueryMsg m;
+    m.hash = hash;
+    *(int*)&m.result = 0;
+    m.unk8 = 0;
+    SendMsg(target, msg, &m);
+    return *(int*)&m.result;
+}
+
 int CreditsMsg(void* s, int msg);
 void CreditsDraw(void* s, int pass);
 void CreditsUpdate(void);
@@ -223,11 +234,10 @@ void CreditsExit(void) {
 }
 
 void CreditsEnter(void) {
-    int i;
     CreditsData* d;
     CreditsData* p;
+    int i;
     char key[32];
-    QueryMsg m;
 
     d = &sCredits;
     p = d;
@@ -244,10 +254,7 @@ void CreditsEnter(void) {
 
     sCredits.scroll = 30;
     sCredits.unk7DC = 0;
-    m.hash = 0x640D1F4D;
-    *(int*)&m.result = 0;
-    m.unk8 = 0;
-    SendMsg(0x02000000, 0x41D, &m);
+    Query(0x02000000, 0x41D, 0x640D1F4D);
 
     Fn80140778();
     Fn8021E654(1);
@@ -256,14 +263,6 @@ void CreditsEnter(void) {
 
 void CreditsInit(void) { memset(&sCredits, 0, sizeof(CreditsData)); }
 
-inline int Query(int target, int msg, u32 hash) {
-    QueryMsg m;
-    m.hash = hash;
-    *(int*)&m.result = 0;
-    m.unk8 = 0;
-    SendMsg(target, msg, &m);
-    return *(int*)&m.result;
-}
 
 inline int TipShown(int r) {
     if (r == 0 || Fn800816B0() == -1) {
