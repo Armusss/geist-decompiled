@@ -404,26 +404,24 @@ int ShadowTransform(ShadowModelData* model, ShadowMesh* meshes, int id, LinkInfo
 }
 
 void ShadowFillTris(ShadowModelData* model, ShadowMesh* meshes, ShadowTri* out, int count) {
-    int base = 0;
     int n = 0;
+    int base = 0;
     int i;
     int j;
+    ShadowPrim* prim;
     int k;
 
-    for (i = 0; i < model->nMeshes; i++, meshes++) {
-        for (j = 0; j < meshes->nPrims; j++) {
-            ShadowPrim* prim = &meshes->prims[j];
-            int step = 1;
-            if (prim->flags & 1) {
-                step = 3;
-            }
+    for (i = 0; i < model->nMeshes; i++) {
+        for (j = 0; j < meshes[i].nPrims; j++) {
+            prim = &meshes[i].prims[j];
+            int step = prim->flags & 1 ? 3 : 1;
             for (k = 0; k < prim->count - 2; k += step) {
                 u8* p = &prim->dl[k * 13];
                 Vec3* a = &prim->pos[DL_INDEX(p, 0xC)];
                 Vec3* b = &prim->pos[DL_INDEX(p, 0x19)];
                 Vec3* c = &prim->pos[DL_INDEX(p, 0x26)];
                 if (!TriDegenerate(*a, *b, *c)) {
-                    if ((k & 1) & ~(step >> 1)) {
+                    if (~(step >> 1) & (k & 1)) {
                         out[n].v[0] = base + k + 2;
                         out[n].v[1] = base + k + 1;
                         out[n].v[2] = base + k;
