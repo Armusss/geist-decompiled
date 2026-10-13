@@ -684,7 +684,13 @@ game/u_8029E714.cpp:
 	.text       start:0x8029E714 end:0x802A770C
 
 game/u_802A770C.cpp:
-	.text       start:0x802A770C end:0x802A9824
+	.text       start:0x802A770C end:0x802A7E3C
+
+game/Fuel.cpp:
+	.text       start:0x802A7E3C end:0x802A815C
+
+game/u_802A815C.cpp:
+	.text       start:0x802A815C end:0x802A9824
 	.ctors      start:0x80341244 end:0x80341248
 
 game/u_802A9824.cpp:

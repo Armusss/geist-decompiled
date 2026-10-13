@@ -751,6 +751,8 @@ config.libs = [
             Object(NonMatching, "game/u_8029C0AC.cpp"),  # guess
             Object(NonMatching, "game/u_8029E714.cpp"),  # pinned
             Object(NonMatching, "game/u_802A770C.cpp"),  # guess
+            Object(NonMatching, "game/Fuel.cpp"),  # (helper-game-b)
+            Object(NonMatching, "game/u_802A815C.cpp"),  # split from u_802A770C
             Object(NonMatching, "game/u_802A9824.cpp"),  # known
             Object(NonMatching, "game/u_802AE27C.cpp"),  # pinned
             Object(NonMatching, "game/u_802B2680.cpp"),  # pinned
