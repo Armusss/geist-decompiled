@@ -44,16 +44,19 @@ Earlier helpers (2026-10-10): helper-msl (MSL/Runtime/TRK) and helper-musyx (Mus
 7. When done (or blocked), send the Lead a short report: units matched, compiler/flags, anything odd,
    exact verify command + expected output. Then stop.
 
-## G4 — game compiler is GC/2.0 (Lead, 2026-10-13)
+## G4 — game compiler: GC/1.3.2 default, GC/2.0 per unit (Lead, 2026-10-13)
 
-helper-a found two qsort comparators in u_8012071C (0x80120A78/0x80120A9C) that match only with GC/2.0 or 2.6:
-retail schedules lfs from parameter pointers above the `stwu`, which 1.3.2 never does. Test results:
-- with all game units on GC/2.0, main.dol is still OK and all 23 matched game files still match;
-- per-source `mtry.py` match counts under 1.3.2 vs 2.0 are identical for every game file, except u_8012071C
-  (6 vs 8 functions).
+The game was not built with one compiler for every file. Both of these are reproducible:
+- 0x8001734C plane-from-normal (`tools/g1/g1e.cpp`) matches only with 1.2.5n/1.3/1.3.2; 2.0 and 2.6 hoist
+  loads over stores and come out 8 bytes shorter (re-tested 2026-10-13).
+- The u_8012071C qsort comparators (0x80120A78/0x80120A9C) match only with GC/2.0 or 2.6: retail schedules
+  lfs from the parameter pointers above the `stwu`, which 1.3.2 never does.
 
-So the game block in configure.py now uses **GC/2.0**. GC/2.6 is still ruled out (plane/timing functions). The
-late parameter-copy pattern (see G3) is not fixed by 2.0 either.
+Rule: the game block stays **GC/1.3.2**. A unit may set `mw_version="GC/2.0"` on its Object only when 1.3.2
+cannot produce one of its functions and 2.0 matches the whole unit; record the evidence here. Currently:
+u_8012071C. (On 2026-10-13 the Lead briefly switched the whole game block to 2.0 after checking only the
+matched files. That missed the plane function above, so it was reverted.) GC/2.6 is still ruled out for game
+code; the late parameter-copy pattern (G3) is not fixed by 2.0.
 
 ## G3 — first game file: Memory.cpp matched (Lead, 2026-10-11)
 
