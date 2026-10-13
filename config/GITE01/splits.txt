@@ -156,6 +156,11 @@ game/u_800D32E8.cpp:
 
 game/u_800DD92C.cpp:
 	.text       start:0x800DD92C end:0x800DE0C4
+	.rodata     start:0x80344C98 end:0x80344D38
+	.data       start:0x8039C220 end:0x8039C368
+	.bss        start:0x80452810 end:0x80452830
+	.sbss       start:0x804D49A0 end:0x804D49B8
+	.sdata2     start:0x804D7138 end:0x804D7150
 
 game/u_800DE0C4.cpp:
 	.text       start:0x800DE0C4 end:0x800DED18

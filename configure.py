@@ -613,7 +613,7 @@ config.libs = [
             Object(NonMatching, "game/Progress.cpp"),  # guess
             Object(NonMatching, "game/u_800D0BF4.cpp"),  # guess
             Object(NonMatching, "game/u_800D32E8.cpp"),  # guess
-            Object(NonMatching, "game/u_800DD92C.cpp"),  # pinned
+            Object(Matching, "game/u_800DD92C.cpp"),  # NPC talk
             Object(NonMatching, "game/u_800DE0C4.cpp"),  # pinned
             Object(Matching, "game/u_800DED18.cpp"),  # level variables DB
             Object(Matching, "game/u_800DFE3C.cpp"),  # music streams, split from u_800DEC54
