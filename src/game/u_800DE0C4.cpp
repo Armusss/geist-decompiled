@@ -34,15 +34,19 @@ int StoreInit(int code);
 
 #define SAVE_VALID 0x80000000
 
+struct SaveBlocks {
+    int unk0;
+    int used;
+    int count;
+    u8 padC[4];
+    u8 data[0x100];
+};
+
 struct SaveSlot {
     char name[0x10];
     int bestLevel;
     u8 pad14[0xC];
-    int unk20;
-    int used;
-    int numBlocks;
-    u8 pad2C[4];
-    u8 blocks[0x100];
+    SaveBlocks blk;
 };
 
 struct SaveData {
@@ -73,7 +77,8 @@ struct SaveBlockMsg {
     int size;
     u8* buffer;
     int length;
-    int flag;
+    u32 flag;
+    u8 pad14[0xC];
 };
 
 struct SaveSendMsg {
@@ -162,9 +167,9 @@ const char* SaveGetSlotName(int slot) {
 void SaveResetOptions(void) { fn_800259C8(sSave.options, 0x40, 1); }
 
 int SaveCommand(int cmd, int arg) {
+    SaveMsg msgLoad;
     SaveMsg msgCheck;
     SaveMsg msgTitle;
-    SaveMsg msgLoad;
     SaveBlockMsg block;
 
     switch (cmd) {
@@ -214,6 +219,8 @@ int SaveCommand(int cmd, int arg) {
             int used;
             int i;
             u32* key;
+            SaveBlocks* blk;
+            u8* data;
 
             strcpy(slot->name, name);
             level = fn_8014FF10(slot->name);
@@ -221,16 +228,20 @@ int SaveCommand(int cmd, int arg) {
                 slot->bestLevel = level;
             }
             used = 0;
-            slot->numBlocks = 0;
-            slot->unk20 = 0;
-            slot->used = 0;
+            data = slot->blk.data;
+            slot->blk.count = used;
+            i = used;
+            blk = &slot->blk;
             key = sSaveKeys;
-            for (i = 0; i < 2; i++, key++) {
+            slot->blk.unk0 = used;
+            slot->blk.used = used;
+            for (; i < 2; i++, key++) {
                 int end = used + 8;
-                u32* entry = (u32*)(slot->blocks + used);
+                u32* entry;
 
-                block.buffer = slot->blocks + end;
+                block.buffer = data + end;
                 block.size = 0x100 - end;
+                entry = (u32*)(data + used);
                 block.length = 0;
                 block.flag = 1;
                 if (SendMsg(*key, 0x7100, &block) && block.flag && block.length) {
@@ -239,11 +250,11 @@ int SaveCommand(int cmd, int arg) {
                     entry[0] = *key;
                     if (end <= 0x100) {
                         used = end;
-                        slot->numBlocks++;
+                        blk->count++;
                     }
                 }
             }
-            slot->used = used;
+            blk->used = used;
         }
         StoreCardUnmount();
         sSave.flags |= SAVE_VALID;
@@ -372,8 +383,8 @@ void SaveRestoreBlocks(void) {
 
         offset = 0;
         i = offset;
-        hdr = &slot->unk20;
-        blocks = slot->blocks;
+        hdr = &slot->blk.unk0;
+        blocks = slot->blk.data;
         for (; i < hdr[2]; i++) {
             SaveSendMsg msg;
             u32* entry = (u32*)(blocks + offset);
