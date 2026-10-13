@@ -132,7 +132,7 @@ inline void StoreLoadBanner(u8* banner, u8* icons) {
     }
 }
 
-int StoreSave(int mode, int unused, int size, u32 flags, void* src) {
+int StoreSave(int mode, const char* name, int size, u32 flags, void* src) {
     int result = 0;
 
     fn_800ECB10(fn_80115A34(0, 1, 0));
@@ -169,7 +169,7 @@ int StoreSave(int mode, int unused, int size, u32 flags, void* src) {
     return result;
 }
 
-int StoreLoad(int mode, int unused, int size, u32 flags, void* dst) {
+int StoreLoad(int mode, const char* name, int size, u32 flags, void* dst) {
     int result = 0;
 
     fn_800ECB10(fn_80115A34(0, 1, 0));
@@ -190,7 +190,7 @@ int StoreLoad(int mode, int unused, int size, u32 flags, void* dst) {
     return result;
 }
 
-int StoreCheck(int mode, int unused, u32 flags) {
+int StoreCheck(int mode, const char* name, u32 flags) {
     fn_802E1BBC(&sCardWork, 1);
     switch (StoreCardWait(flags)) {
     case 1:
