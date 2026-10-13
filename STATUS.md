@@ -114,7 +114,9 @@ wrapper with "Out of Memory <file> <line>" reports, two scratch ring buffers (0x
   problem shared with helper-b: **`cmplwi r4,0` then parameter copies after the branch** (retail) vs our
   `mr. r31,r4` with copies at entry. Not fixed by any compiler version 1.3-3.0a5, -O2/-O3/-O4,s, -opt
   noschedule/nopropagation/nolifetimes/nodeadcode, inline bodies, block-scoped copies, early return, member
-  functions. Other lessons: a query whose String must die before later code goes in its own inline function;
+  functions, C mode, -g/-sym, -opt nocse/noloop/noalias, -inline deferred, compilers 1.0-1.2.5n (3.0a3 tests
+  first but still copies before the branch). It hits non-leaf `void f(Owner*, Beh*) { if (b) {...} }`
+  behaviour callbacks; the int-returning `if (!b) return 0;` ones fuse normally (`mr.`) and match. Other lessons: a query whose String must die before later code goes in its own inline function;
   `if (a == 0 || f() == -1) return 0; return 1;` gives retail's li 0/li 1 shape where `return a && f() != -1`
   gives a bool (clrlwi); a hash written `h = h % 0xFFFFFFFF; return h;` keeps h in r3.
 
