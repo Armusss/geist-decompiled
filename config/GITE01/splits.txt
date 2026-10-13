@@ -158,10 +158,13 @@ game/u_800DD92C.cpp:
 	.text       start:0x800DD92C end:0x800DE0C4
 
 game/u_800DE0C4.cpp:
-	.text       start:0x800DE0C4 end:0x800DEC54
+	.text       start:0x800DE0C4 end:0x800DED18
 
-game/u_800DEC54.cpp:
-	.text       start:0x800DEC54 end:0x800DFE3C
+game/u_800DED18.cpp:
+	.text       start:0x800DED18 end:0x800DFE3C
+	.rodata     start:0x80344D60 end:0x80344D68
+	.sbss       start:0x804D49C8 end:0x804D49E8
+	.sdata2     start:0x804D7160 end:0x804D7168
 
 game/u_800DFE3C.cpp:
 	.text       start:0x800DFE3C end:0x800E0554
