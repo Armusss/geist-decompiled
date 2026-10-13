@@ -6,7 +6,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
-| Lead (main session) | `geist-matching` / `main` | Loader files done (Memory, asyncio, Image, DataStream, File). Now: merging helper work, and game units **0x802D0000-0x802E4858** from the top down | working |
+| Lead (main session) | `geist-matching` / `main` | Coordinating: verifies and merges helper branches when they report; owns game units **0x802D0000-0x802E4858** (Credits.cpp WIP 23/30) and takes small files only | coordinating |
 | helper-game-a | `.claude/worktrees/optimistic-khayyam-7b9401` / `claude/intelligent-babbage-a49862` | **Game units 0x80005800-0x80150000** except the Lead's files above | working (Remote Control on) |
 | helper-game-b | `.claude/worktrees/goofy-clarke-759020` / `claude/frosty-gauss-da470f` | **Game units 0x80150000-0x802D0000** (the Lead took 0x802D0000-0x802E4858 on 2026-10-11) except zlib (done), game/zutil.c (zlib, GC/2.6) and the Lead's files above | working (Remote Control on) |
 
