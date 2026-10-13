@@ -292,7 +292,7 @@ inline u32 StoreReflect(u32 ref, char ch) {
     return value;
 }
 
-int StoreAramInit(void) {
+inline void StoreInitCrc(void) {
     u32 poly = 0x04C11DB7;
     int i;
     int j;
@@ -304,6 +304,10 @@ int StoreAramInit(void) {
         }
         sCrcTable[i] = StoreReflect(sCrcTable[i], 32);
     }
+}
+
+int StoreAramInit(void) {
+    StoreInitCrc();
     sAramBase = ARAlloc(0x4000);
     return 1;
 }
@@ -311,9 +315,10 @@ int StoreAramInit(void) {
 int StoreAramWrite(int size, u8* src) {
     u8 buffer[0x1000] ATTRIBUTE_ALIGN(32);
     ARQRequest request;
-    int left;
+    u8* p = src;
     u32 aram;
     int offset;
+    int left;
     int n;
 
     if (size >= 0x4000) {
@@ -334,7 +339,7 @@ int StoreAramWrite(int size, u8* src) {
             }
             DCInvalidateRange(buffer, 0x1000);
         }
-        memcpy(buffer + offset, src, n);
+        memcpy(buffer + offset, p, n);
         DCFlushRange(buffer, 0x1000);
         sAramBusy = 1;
         ARQPostRequest(&request, 1, ARQ_TYPE_MRAM_TO_ARAM, ARQ_PRIORITY_LOW, (u32)buffer, sAramBase + aram, 0x1000,
@@ -342,7 +347,7 @@ int StoreAramWrite(int size, u8* src) {
         while (sAramBusy) {
         }
         left -= n;
-        src += n;
+        p += n;
         offset = 0;
         aram += 0x1000;
     }
@@ -352,9 +357,10 @@ int StoreAramWrite(int size, u8* src) {
 int StoreAramRead(int size, u8* dst) {
     u8 buffer[0x1000] ATTRIBUTE_ALIGN(32);
     ARQRequest request;
-    int left;
+    u8* p = dst;
     u32 aram;
     int offset;
+    int left;
     int n;
 
     if (size >= 0x4000) {
@@ -375,9 +381,9 @@ int StoreAramRead(int size, u8* dst) {
         while (sAramBusy) {
         }
         DCInvalidateRange(buffer, 0x1000);
-        memcpy(dst, buffer + offset, n);
+        memcpy(p, buffer + offset, n);
         left -= n;
-        dst += n;
+        p += n;
         offset = 0;
         aram += 0x1000;
     }
