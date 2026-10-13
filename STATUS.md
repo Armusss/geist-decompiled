@@ -44,16 +44,34 @@ Earlier helpers (2026-10-10): helper-msl (MSL/Runtime/TRK) and helper-musyx (Mus
 7. When done (or blocked), send the Lead a short report: units matched, compiler/flags, anything odd,
    exact verify command + expected output. Then stop.
 
-## G4 — game compiler is GC/2.0 (Lead, 2026-10-13)
+## G4 — game compiler: GC/1.3.2 default, GC/2.0 per file on evidence (Lead, 2026-10-13; rule approved by the user)
 
-helper-a found two qsort comparators in u_8012071C (0x80120A78/0x80120A9C) that match only with GC/2.0 or 2.6:
-retail schedules lfs from parameter pointers above the `stwu`, which 1.3.2 never does. Test results:
-- with all game units on GC/2.0, main.dol is still OK and all 23 matched game files still match;
-- per-source `mtry.py` match counts under 1.3.2 vs 2.0 are identical for every game file, except u_8012071C
-  (6 vs 8 functions).
+Geist was not built with one compiler for every file. Retail game code has fingerprints of two generations:
+- **needs <= 1.3.2:** 0x8001734C plane-from-normal (`tools/g1/g1e.cpp`). Retail reloads n->y/n->z after the
+  store to out->x. Every 2.x compiler reuses the earlier loads, including 2.0 with -O2/-O3, -opt
+  nocse/nopropagation/noalias/nolifetimes/nodeadstore/noregpromotion.
+- **needs >= 2.0:** loads through parameter registers scheduled *before* the `stwu r1` prologue. GC/2.0
+  reproduces it on u_8012071C's qsort comparators (0x80120A78/0x80120A9C); 1.3.2 cannot. Control: 0 of ~1100
+  functions in the 1.2.5n Dolphin SDK and 1.3.2 MusyX units show it. `python3 tools/compiler_fingerprint.py`
+  lists the game functions with it (2026-10-13): u_8008DCDC, u_8009DE94, u_800D32E8, u_800E0CB8 (Vec3
+  helpers), u_8012071C, u_8016C244, Msx.cpp, u_80277600. (u_8009DE4C in the output is a stale asm file.)
+No single compiler version and flag set produces both, so the original build mixed compilers.
 
-So the game block in configure.py now uses **GC/2.0**. GC/2.6 is still ruled out (plane/timing functions). The
-late parameter-copy pattern (see G3) is not fixed by 2.0 either.
+**Rule (approved by the user):** the original main.dol is never changed. A compiler is never chosen just
+because it makes a function line up. Each file uses the compiler its retail code shows:
+1. The default for game files is **GC/1.3.2** (configure.py game block).
+2. A file may use `mw_version="GC/2.0"` on its Object only if
+   - its retail code has a fingerprint 1.3.2 cannot produce (today: the pre-stwu load from
+     tools/compiler_fingerprint.py; add new fingerprints here only with a control test like the one above);
+   - and GC/2.0 then matches the **whole** file.
+   Record each such file in the list below with its evidence.
+3. Never use 2.0 for a file that matches with 1.3.2, or for a function that is merely hard to match. Try
+   source shapes first.
+4. GC/2.6 stays ruled out for game code (it also fails the plane function, and nothing needs it over 2.0).
+
+Files on GC/2.0: **u_8012071C** (qsort comparators 0x80120A78/0x80120A9C, pre-stwu loads; 1.3.2 cannot).
+History: on 2026-10-13 the Lead briefly switched the whole game block to 2.0 after checking only matched
+files. That missed the plane function, so it was reverted.
 
 ## G3 — first game file: Memory.cpp matched (Lead, 2026-10-11)
 
