@@ -271,7 +271,16 @@ game/u_80153C10.cpp:
 	.text       start:0x80153C10 end:0x80157730
 
 game/u_80157730.cpp:
-	.text       start:0x80157730 end:0x80160188
+	.text       start:0x80157730 end:0x8015C080
+
+game/Hazard.cpp:
+	.text       start:0x8015C080 end:0x8015C4B0
+	.rodata     start:0x80346640 end:0x80346648
+	.data       start:0x803A7068 end:0x803A7098
+	.sdata2     start:0x804D7DD8 end:0x804D7DE0
+
+game/u_8015C4B0.cpp:
+	.text       start:0x8015C4B0 end:0x80160188
 
 game/u_80160188.cpp:
 	.text       start:0x80160188 end:0x801608A4
@@ -489,7 +498,16 @@ game/u_80222C08.cpp:
 	.text       start:0x80222C08 end:0x80226DE8
 
 game/u_80226DE8.cpp:
-	.text       start:0x80226DE8 end:0x8022EEEC
+	.text       start:0x80226DE8 end:0x8022EC64
+
+game/Streamer.cpp:
+	.text       start:0x8022EC64 end:0x8022ED88
+	.rodata     start:0x80349D78 end:0x80349D88
+	.data       start:0x803BD958 end:0x803BD988
+	.sdata2     start:0x804D9770 end:0x804D9788
+
+game/u_8022ED88.cpp:
+	.text       start:0x8022ED88 end:0x8022EEEC
 
 game/u_8022EEEC.cpp:
 	.text       start:0x8022EEEC end:0x802301E0
@@ -601,7 +619,16 @@ game/u_8028009C.cpp:
 	.ctors      start:0x80341240 end:0x80341244
 
 game/u_80285014.cpp:
-	.text       start:0x80285014 end:0x80286AF0
+	.text       start:0x80285014 end:0x80285670
+
+game/Mirror.cpp:
+	.text       start:0x80285670 end:0x80285ACC
+	.rodata     start:0x8034B260 end:0x8034B2B0
+	.data       start:0x803C0CE8 end:0x803C0D18
+	.sdata2     start:0x804DA460 end:0x804DA478
+
+game/u_80285ACC.cpp:
+	.text       start:0x80285ACC end:0x80286AF0
 
 game/VM.c:
 	.text       start:0x80286AF0 end:0x8028703C

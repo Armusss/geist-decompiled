@@ -6,7 +6,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
-| Lead (main session) | `geist-matching` / `main` | Loader files done (Memory, asyncio, Image, DataStream, File). Now: merging helper work, and game units **0x802D0000-0x802E4858** from the top down | working |
+| Lead (main session) | `geist-matching` / `main` | Coordinating: verifies and merges helper branches when they report; owns game units **0x802D0000-0x802E4858** (Credits.cpp WIP 23/30) and takes small files only | coordinating |
 | helper-game-a | `.claude/worktrees/optimistic-khayyam-7b9401` / `claude/intelligent-babbage-a49862` | **Game units 0x80005800-0x80150000** except the Lead's files above | working (Remote Control on) |
 | helper-game-b | `.claude/worktrees/goofy-clarke-759020` / `claude/frosty-gauss-da470f` | **Game units 0x80150000-0x802D0000** (the Lead took 0x802D0000-0x802E4858 on 2026-10-11) except zlib (done), game/zutil.c (zlib, GC/2.6) and the Lead's files above | working (Remote Control on) |
 
@@ -114,7 +114,9 @@ wrapper with "Out of Memory <file> <line>" reports, two scratch ring buffers (0x
   problem shared with helper-b: **`cmplwi r4,0` then parameter copies after the branch** (retail) vs our
   `mr. r31,r4` with copies at entry. Not fixed by any compiler version 1.3-3.0a5, -O2/-O3/-O4,s, -opt
   noschedule/nopropagation/nolifetimes/nodeadcode, inline bodies, block-scoped copies, early return, member
-  functions. Other lessons: a query whose String must die before later code goes in its own inline function;
+  functions, C mode, -g/-sym, -opt nocse/noloop/noalias, -inline deferred, compilers 1.0-1.2.5n (3.0a3 tests
+  first but still copies before the branch). It hits non-leaf `void f(Owner*, Beh*) { if (b) {...} }`
+  behaviour callbacks; the int-returning `if (!b) return 0;` ones fuse normally (`mr.`) and match. Other lessons: a query whose String must die before later code goes in its own inline function;
   `if (a == 0 || f() == -1) return 0; return 1;` gives retail's li 0/li 1 shape where `return a && f() != -1`
   gives a bool (clrlwi); a hash written `h = h % 0xFFFFFFFF; return h;` keeps h in r3.
 
