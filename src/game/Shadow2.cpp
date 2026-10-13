@@ -21,6 +21,8 @@ struct Vec3 {
     float x;
     float y;
     float z;
+    Vec3() {}
+    Vec3(const Vec3& v) : x(v.x), y(v.y), z(v.z) {}
 };
 
 struct Mtx34 {
@@ -259,48 +261,60 @@ int ShadowBuild(ShadowModel* sm, int id, ShadowModelData* model) {
     sm->edges = (ShadowTri*)MemAlloc(sm->nTris * sizeof(ShadowTri), "Shadow2.cpp", 0x59C);
     memset(sm->edges, 0, sm->nTris * sizeof(ShadowTri));
     ShadowFillTris(model, meshes, sm->edges, sm->nTris);
-    for (i = 0; i < 0xFE; i++) {
-        LinkInfoInit(&links[i]);
+    {
+        LinkInfo* l;
+        for (i = 0, l = links; i < 0xFE; i++, l++) {
+            LinkInfoInit(l);
+        }
     }
     sShadowVerts = (Vec3*)ScratchAAlloc(sm->nTris * 0x24);
     sm->nVerts = ShadowTransform(model, meshes, id, links, links, sShadowVerts);
-    for (i = 0; i < sm->nTris; i++) {
-        av[0] = sShadowVerts[sm->edges[i].v[0]];
-        av[1] = sShadowVerts[sm->edges[i].v[1]];
-        av[2] = sShadowVerts[sm->edges[i].v[2]];
-        for (j = i + 1; j < sm->nTris; j++) {
+    for (n = 0; n < sm->nTris; n++) {
+        av[0] = sShadowVerts[sm->edges[n].v[0]];
+        av[1] = sShadowVerts[sm->edges[n].v[1]];
+        av[2] = sShadowVerts[sm->edges[n].v[2]];
+        for (j = n + 1; j < sm->nTris; j++) {
             bv[0] = sShadowVerts[sm->edges[j].v[0]];
             bv[1] = sShadowVerts[sm->edges[j].v[1]];
             bv[2] = sShadowVerts[sm->edges[j].v[2]];
-            ShadowLink(&sm->edges[i], av, &sm->edges[j], bv);
+            ShadowLink(&sm->edges[n], av, &sm->edges[j], bv);
         }
     }
     DebugPrintf("Shadow Model ID %d: %d Faces, %d Verts (%d max)\n", id, sm->nTris, sm->nVerts, 0x800);
     return 1;
 }
 
-inline int ShadowSharedEdge(const Vec3& p0, const Vec3& p1, const Vec3* bv) {
-    if (VecEq(p0, bv[0])) {
-        if (VecEq(p1, bv[1])) {
+struct EdgeVec {
+    EdgeVec(const Vec3& v) : x(v.x), y(v.y), z(v.z) {}
+    float x;
+    float y;
+    float z;
+};
+
+inline bool EdgeEq(const EdgeVec& a, const Vec3& b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
+
+inline int ShadowSharedEdge(const EdgeVec& p0, const EdgeVec& p1, const Vec3* bv) {
+    if (EdgeEq(p0, bv[0])) {
+        if (EdgeEq(p1, bv[1])) {
             return 0;
         }
-        if (VecEq(p1, bv[2])) {
+        if (EdgeEq(p1, bv[2])) {
             return 2;
         }
     }
-    if (VecEq(p0, bv[1])) {
-        if (VecEq(p1, bv[0])) {
+    if (EdgeEq(p0, bv[1])) {
+        if (EdgeEq(p1, bv[0])) {
             return 0;
         }
-        if (VecEq(p1, bv[2])) {
+        if (EdgeEq(p1, bv[2])) {
             return 1;
         }
     }
-    if (VecEq(p0, bv[2])) {
-        if (VecEq(p1, bv[0])) {
+    if (EdgeEq(p0, bv[2])) {
+        if (EdgeEq(p1, bv[0])) {
             return 2;
         }
-        if (VecEq(p1, bv[1])) {
+        if (EdgeEq(p1, bv[1])) {
             return 1;
         }
     }
@@ -312,8 +326,8 @@ void ShadowLink(ShadowTri* a, Vec3* av, ShadowTri* b, Vec3* bv) {
 
     for (k = 0; k < 3; k++) {
         if (a->adj[k] == 0) {
-            Vec3 p0 = av[k];
-            Vec3 p1 = av[(k + 1) % 3];
+            EdgeVec p0 = av[k];
+            EdgeVec p1 = av[(k + 1) % 3];
             switch (ShadowSharedEdge(p0, p1, bv)) {
             case 0:
                 a->adj[k] = b;
