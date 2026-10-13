@@ -647,6 +647,8 @@ config.libs = [
             Object(NonMatching, "game/u_80150300.cpp"),  # guess
             Object(NonMatching, "game/u_80153C10.cpp"),  # guess
             Object(NonMatching, "game/u_80157730.cpp"),  # guess
+            Object(Matching, "game/Hazard.cpp"),  # (helper-game-b)
+            Object(NonMatching, "game/u_8015C4B0.cpp"),  # split from u_80157730
             Object(NonMatching, "game/u_80160188.cpp"),  # guess
             Object(NonMatching, "game/GrenadeFx.cpp"),  # starts 0x801608A4 (helper-game-b)
             Object(NonMatching, "game/u_80160DB0.cpp"),  # guess
@@ -698,6 +700,8 @@ config.libs = [
             Object(NonMatching, "game/u_80221100.cpp"),  # known
             Object(NonMatching, "game/u_80222C08.cpp"),  # guess
             Object(NonMatching, "game/u_80226DE8.cpp"),  # guess
+            Object(Matching, "game/Streamer.cpp"),  # (helper-game-b)
+            Object(NonMatching, "game/u_8022ED88.cpp"),  # split from u_80226DE8
             Object(NonMatching, "game/u_8022EEEC.cpp"),  # guess
             Object(Matching, "game/PadRecord.cpp"),  # 0x802301E0 (helper-game-b)
             Object(NonMatching, "game/u_8023040C.cpp"),  # split from u_80230224
