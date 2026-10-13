@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
-"""Draw docs/progress.svg: one square per translation unit, green when it is byte-matching C, grey when it is
-still assembly. Game code (not split into files yet) is drawn as one square per 16 KB of .text.
+"""Draw docs/progress.svg: one square per translation unit, green when it is verified byte-identical C,
+grey when it is still assembly.
 
-Usage: python3 tools/progress_svg.py   (run from the repo root after `python3 configure.py`)
-A unit counts as matched when configure.py marks it Matching: those are only committed while
-build/GITE01/main.dol still verifies byte-identical (SHA-1 in config/GITE01/build.sha1)."""
+Usage: python3 tools/progress_svg.py   (run from the repo root after `python3 configure.py && ninja`)
+A unit is drawn green only when all three hold:
+  1. configure.py marks it Matching;
+  2. build.ninja links main.elf from its compiled C object (build/GITE01/src/...), not from the original asm;
+  3. build/GITE01/main.dol has the SHA-1 in config/GITE01/build.sha1 (the original DOL).
+Together these prove the unit's C produces exactly the original bytes at its address. (objdiff's per-unit
+data percentages can read below 100% for such units because they count alignment padding and unnamed
+compiler symbols; the linked DOL is the authority.) If the DOL check fails, every square is drawn grey."""
+import hashlib
 import os
 import re
 import html
@@ -26,9 +32,35 @@ GREEN, GREY, BG, FG, MUTED = "#2ea043", "#30363d", "#0d1117", "#ffffff", "#8b949
 W, COLS, CELL, GAP = 1000, 48, 18, 2
 
 
+def dol_verified():
+    dol = os.path.join(ROOT, "build/GITE01/main.dol")
+    want = open(os.path.join(ROOT, "config/GITE01/build.sha1")).read().split()[0]
+    if not os.path.exists(dol):
+        return False, want
+    return hashlib.sha1(open(dol, "rb").read()).hexdigest() == want, want
+
+
+def linked_from_c():
+    lines = open(os.path.join(ROOT, "build.ninja")).read().split("\n")
+    i = next(k for k, l in enumerate(lines) if l.startswith("build build/GITE01/main.elf: link"))
+    buf = ""
+    while True:
+        buf += " " + lines[i].rstrip("$")
+        if not lines[i].endswith("$"):
+            break
+        i += 1
+    return {x for x in buf.split("|")[0].split() if x.startswith("build/GITE01/src/") and x.endswith(".o")}
+
+
 def units():
     cfg = open(os.path.join(ROOT, "configure.py")).read()
-    return [(m[2], m[1] == "Matching") for m in re.finditer(r'Object\((Matching|NonMatching|Equivalent), "([^"]+)"', cfg)]
+    ok, _ = dol_verified()
+    c_objs = linked_from_c()
+    out = []
+    for m in re.finditer(r'Object\((Matching|NonMatching|Equivalent), "([^"]+)"', cfg):
+        obj = "build/GITE01/src/" + os.path.splitext(m[2])[0] + ".o"
+        out.append((m[2], ok and m[1] == "Matching" and obj in c_objs))
+    return out
 
 
 def text_ranges():
@@ -84,6 +116,10 @@ def main():
     text(26, y, "byte-identical C", 12, MUTED)
     svg.append(f'<rect x="150" y="{y - 11}" width="12" height="12" rx="2" fill="{GREY}"/>')
     text(168, y, "still assembly", 12, MUTED)
+    ok, want = dol_verified()
+    text(300, y, (f"verified: built main.dol SHA-1 {want[:12]}… = original" if ok
+                  else "NOT verified: built main.dol does not match the original SHA-1"), 12,
+         GREEN if ok else "#f85149")
     y += 12
 
     out = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {y}" width="{W}" height="{y}">',
