@@ -116,11 +116,8 @@ game/u_8008DCDC.cpp:
 	.text       start:0x8008DCDC end:0x8009C74C
 	.ctors      start:0x80341208 end:0x8034120C
 
-game/u_8009C74C.cpp:
-	.text       start:0x8009C74C end:0x8009C87C
-
 game/Shadow2.cpp:
-	.text       start:0x8009C87C end:0x8009D710
+	.text       start:0x8009C74C end:0x8009D710
 	.ctors      start:0x8034120C end:0x80341210
 
 game/Memory.cpp:
