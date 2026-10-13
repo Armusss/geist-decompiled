@@ -292,8 +292,14 @@ game/Hazard.cpp:
 	.data       start:0x803A7068 end:0x803A7098
 	.sdata2     start:0x804D7DD8 end:0x804D7DE0
 
-game/u_8015C4B0.cpp:
-	.text       start:0x8015C4B0 end:0x80160188
+game/EvacPoint.cpp:
+	.text       start:0x8015C4B0 end:0x8015C79C
+	.rodata     start:0x80346648 end:0x80346658
+	.data       start:0x803A7098 end:0x803A70C8
+	.sdata2     start:0x804D7DE0 end:0x804D7DE8
+
+game/u_8015C79C.cpp:
+	.text       start:0x8015C79C end:0x80160188
 
 game/u_80160188.cpp:
 	.text       start:0x80160188 end:0x801608A4
