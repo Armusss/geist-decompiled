@@ -13,8 +13,6 @@ void* memcpy(void* dst, const void* src, u32 n);
 void* memset(void* dst, int val, u32 n);
 
 // Callees in other files, not named yet.
-struct SAMHookOwner;
-SAMHookOwner* fn_800F6D44(void);
 void fn_8016E20C(void);
 void fn_8016E270(void);
 void fn_8016E4C8(void);
@@ -28,12 +26,6 @@ u32 fn_80080E24(void* buffer, int size, int count, int arg);
 }
 
 void* MemAlloc(int size, const char* file, int line);
-
-struct SAMHookOwner {
-    u8 pad[0x90];
-    void (*hook)(void* arg);
-    void* hookArg;
-};
 
 struct SAMHeader {
     u32 a;
@@ -65,13 +57,6 @@ int SAMReadCallback(u8* data, int size);
 int SAMFillCallback(u8* left, u8* right, int size);
 
 inline void SAMCopyHeader(SAMHeader* dst, SAMHeader* src) { *dst = *src; }
-
-void SAMCallHook(void) {
-    SAMHookOwner* owner = fn_800F6D44();
-    if (owner->hook) {
-        owner->hook(owner->hookArg);
-    }
-}
 
 void SAMSetStartDelay(float delay) { sStartDelay = delay; }
 
