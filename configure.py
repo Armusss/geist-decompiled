@@ -635,8 +635,8 @@ config.libs = [
             Object(NonMatching, "game/u_80112308.cpp"),  # guess
             Object(NonMatching, "game/u_80116B28.cpp"),  # guess
             Object(NonMatching, "game/u_8011818C.cpp"),  # guess
-            Object(NonMatching, "game/u_8012071C.cpp"),  # guess
-            Object(NonMatching, "game/u_80120C80.cpp"),  # guess
+            Object(NonMatching, "game/u_8012071C.cpp"),  # stat table
+            Object(NonMatching, "game/u_80120D98.cpp"),  # guess
             Object(NonMatching, "game/u_80125DE4.cpp"),  # guess
             Object(NonMatching, "game/u_80127D80.cpp"),  # guess
             Object(NonMatching, "game/u_80136884.cpp"),  # guess

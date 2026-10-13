@@ -246,10 +246,10 @@ game/u_8011818C.cpp:
 	.text       start:0x8011818C end:0x8012071C
 
 game/u_8012071C.cpp:
-	.text       start:0x8012071C end:0x80120C80
+	.text       start:0x8012071C end:0x80120D98
 
-game/u_80120C80.cpp:
-	.text       start:0x80120C80 end:0x80125DE4
+game/u_80120D98.cpp:
+	.text       start:0x80120D98 end:0x80125DE4
 
 game/u_80125DE4.cpp:
 	.text       start:0x80125DE4 end:0x80127D80
