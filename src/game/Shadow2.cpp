@@ -101,7 +101,8 @@ struct ShadowLightPoint {
 };
 
 struct ShadowLightInfo {
-    u8 pad0[0x10];
+    int a;
+    u8 pad4[0xC];
     ShadowLightPoint points[6];
 };
 
