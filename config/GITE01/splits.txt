@@ -601,7 +601,16 @@ game/u_8028009C.cpp:
 	.ctors      start:0x80341240 end:0x80341244
 
 game/u_80285014.cpp:
-	.text       start:0x80285014 end:0x80286AF0
+	.text       start:0x80285014 end:0x80285670
+
+game/Mirror.cpp:
+	.text       start:0x80285670 end:0x80285ACC
+	.rodata     start:0x8034B260 end:0x8034B2B0
+	.data       start:0x803C0CE8 end:0x803C0D18
+	.sdata2     start:0x804DA460 end:0x804DA478
+
+game/u_80285ACC.cpp:
+	.text       start:0x80285ACC end:0x80286AF0
 
 game/VM.c:
 	.text       start:0x80286AF0 end:0x8028703C
