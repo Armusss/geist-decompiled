@@ -603,8 +603,11 @@ game/u_8025ECF8.cpp:
 game/Thermostat.cpp:
 	.text       start:0x802665A8 end:0x80267558
 
-game/u_80267558.cpp:
-	.text       start:0x80267558 end:0x80268780
+game/Retinal.cpp:
+	.text       start:0x80267558 end:0x80268528
+
+game/u_80268528.cpp:
+	.text       start:0x80268528 end:0x80268780
 
 game/u_80268780.cpp:
 	.text       start:0x80268780 end:0x8026A158

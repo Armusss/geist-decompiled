@@ -726,7 +726,8 @@ config.libs = [
             Object(NonMatching, "game/u_80259AB0.cpp"),  # pinned
             Object(NonMatching, "game/u_8025ECF8.cpp"),  # pinned
             Object(NonMatching, "game/Thermostat.cpp"),  # known (helper-game-b)
-            Object(NonMatching, "game/u_80267558.cpp"),  # guess
+            Object(NonMatching, "game/Retinal.cpp"),  # (helper-game-b)
+            Object(NonMatching, "game/u_80268528.cpp"),  # split from u_80267558
             Object(NonMatching, "game/u_80268780.cpp"),  # guess
             Object(NonMatching, "game/u_8026A158.cpp"),  # guess
             Object(NonMatching, "game/u_8026A37C.cpp"),  # guess
