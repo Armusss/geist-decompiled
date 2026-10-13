@@ -156,12 +156,20 @@ game/u_800D32E8.cpp:
 
 game/u_800DD92C.cpp:
 	.text       start:0x800DD92C end:0x800DE0C4
+	.rodata     start:0x80344C98 end:0x80344D38
+	.data       start:0x8039C220 end:0x8039C368
+	.bss        start:0x80452810 end:0x80452830
+	.sbss       start:0x804D49A0 end:0x804D49B8
+	.sdata2     start:0x804D7138 end:0x804D7150
 
 game/u_800DE0C4.cpp:
-	.text       start:0x800DE0C4 end:0x800DEC54
+	.text       start:0x800DE0C4 end:0x800DED18
 
-game/u_800DEC54.cpp:
-	.text       start:0x800DEC54 end:0x800DFE3C
+game/u_800DED18.cpp:
+	.text       start:0x800DED18 end:0x800DFE3C
+	.rodata     start:0x80344D60 end:0x80344D68
+	.sbss       start:0x804D49C8 end:0x804D49E8
+	.sdata2     start:0x804D7160 end:0x804D7168
 
 game/u_800DFE3C.cpp:
 	.text       start:0x800DFE3C end:0x800E0554
@@ -238,10 +246,10 @@ game/u_8011818C.cpp:
 	.text       start:0x8011818C end:0x8012071C
 
 game/u_8012071C.cpp:
-	.text       start:0x8012071C end:0x80120C80
+	.text       start:0x8012071C end:0x80120D98
 
-game/u_80120C80.cpp:
-	.text       start:0x80120C80 end:0x80125DE4
+game/u_80120D98.cpp:
+	.text       start:0x80120D98 end:0x80125DE4
 
 game/u_80125DE4.cpp:
 	.text       start:0x80125DE4 end:0x80127D80

@@ -613,9 +613,9 @@ config.libs = [
             Object(NonMatching, "game/Progress.cpp"),  # guess
             Object(NonMatching, "game/u_800D0BF4.cpp"),  # guess
             Object(NonMatching, "game/u_800D32E8.cpp"),  # guess
-            Object(NonMatching, "game/u_800DD92C.cpp"),  # pinned
+            Object(Matching, "game/u_800DD92C.cpp"),  # NPC talk
             Object(NonMatching, "game/u_800DE0C4.cpp"),  # pinned
-            Object(NonMatching, "game/u_800DEC54.cpp"),  # guess
+            Object(Matching, "game/u_800DED18.cpp"),  # level variables DB
             Object(Matching, "game/u_800DFE3C.cpp"),  # music streams, split from u_800DEC54
             Object(NonMatching, "game/SAM.cpp"),  # guess
             Object(NonMatching, "game/u_800E0CB8.cpp"),  # Vec3 helpers
@@ -635,8 +635,8 @@ config.libs = [
             Object(NonMatching, "game/u_80112308.cpp"),  # guess
             Object(NonMatching, "game/u_80116B28.cpp"),  # guess
             Object(NonMatching, "game/u_8011818C.cpp"),  # guess
-            Object(NonMatching, "game/u_8012071C.cpp"),  # guess
-            Object(NonMatching, "game/u_80120C80.cpp"),  # guess
+            Object(NonMatching, "game/u_8012071C.cpp"),  # stat table
+            Object(NonMatching, "game/u_80120D98.cpp"),  # guess
             Object(NonMatching, "game/u_80125DE4.cpp"),  # guess
             Object(NonMatching, "game/u_80127D80.cpp"),  # guess
             Object(NonMatching, "game/u_80136884.cpp"),  # guess

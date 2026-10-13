@@ -456,3 +456,11 @@ int SaveMsgHandler(int target, int msg, void* data) {
     }
     return 0;
 }
+
+void SaveGetOptions(int* dst, int n) {
+    int i;
+
+    for (i = 0; i < n; i++) {
+        dst[i] = ((int*)&sSave)[i + 11];
+    }
+}
