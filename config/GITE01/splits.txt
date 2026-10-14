@@ -90,7 +90,14 @@ game/Audio.c:
 	.text       start:0x8007CC04 end:0x8007DAC8
 
 game/u_8007DAC8.cpp:
-	.text       start:0x8007DAC8 end:0x8007EE68
+	.text       start:0x8007DAC8 end:0x8007E1E8
+	.data       start:0x80395258 end:0x80395278
+	.bss        start:0x80426B10 end:0x80427D10
+	.sbss       start:0x804D45E0 end:0x804D45E8
+	.sdata2     start:0x804D6788 end:0x804D6790
+
+game/u_8007E1E8.cpp:
+	.text       start:0x8007E1E8 end:0x8007EE68
 
 game/u_8007EE68.cpp:
 	.text       start:0x8007EE68 end:0x80083360
