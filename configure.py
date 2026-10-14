@@ -598,6 +598,8 @@ config.libs = [
             Object(Matching, "game/u_8007E1E8.cpp"),  # split-screen text helpers
             Object(Matching, "game/u_8007E8F8.cpp"),  # object lookup tables
             Object(NonMatching, "game/u_8007EE68.cpp"),  # guess
+            Object(NonMatching, "game/u_80080714.cpp"),  # ring-buffer queues
+            Object(NonMatching, "game/u_80080F88.cpp"),  # guess
             Object(NonMatching, "game/Script.c"),  # guess
             Object(Matching, "game/u_80085CDC.cpp"),  # guess
             Object(Matching, "game/u_80085E50.cpp"),  # string table

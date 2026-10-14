@@ -106,7 +106,13 @@ game/u_8007E8F8.cpp:
 	.sbss       start:0x804D45E8 end:0x804D45F8
 
 game/u_8007EE68.cpp:
-	.text       start:0x8007EE68 end:0x80083360
+	.text       start:0x8007EE68 end:0x80080714
+
+game/u_80080714.cpp:
+	.text       start:0x80080714 end:0x80080F88
+
+game/u_80080F88.cpp:
+	.text       start:0x80080F88 end:0x80083360
 
 game/Script.c:
 	.text       start:0x80083360 end:0x80085CDC
