@@ -76,6 +76,16 @@ NonMatching. Something else (flag or source shape) drives that scheduling. A fla
 when 2.0 actually reproduces it. helper-a also found that u_800E0CB8's sqrt body matches as statement asm
 on memory operands (`lfs; ps_rsqrte; ps_res; stfs`); CW's store/load forwarding gives retail's stfs/frsp.
 
+**Library leftovers (Lead, 2026-10-14):** 200/203 SDK files match. Remaining:
+- MSL file_io.c fflush: 1 diff. Retail saves r29 but never uses it, testing the `__flush_buffer` result
+  directly in r3 (`cmpwi r3,0`); ours keeps the copy (`mr. r29,r3`). Tried every 2.x/3.0 compiler and five
+  source shapes (direct test, `!= 0`, assignment in the if, a block-scoped temp, declaration order,
+  `register`). Probably a trait of the compiler build Metrowerks used for the prebuilt MSL. Parked.
+- EXI2 GDEV main.c gdev_cc_read: down from 45 to 2 diffs. Retail keeps `size`, the loop count and the
+  read count in three registers: the loop count is `u32` (the unsigned compare), and the loop uses the
+  first copy (`p1 = size; p2 = p1;`). The last 2 diffs are the order of the two `mr` copies. Parked.
+- Gecko_ExceptionPPC.cp: no source exists anywhere (Prime's is a 40-line stub). Not started.
+
 **zlib/zutil.c matched (Lead, 2026-10-14):** 0x8019FD58-0x8019FDD0 (zcfree, zcalloc), .rodata
 0x80348270-0x803482F8, .data 0x803AA950-0x803AA978 (z_errmsg); trees.c .data now ends 0x803AA950 (padding).
 It is zlib 1.1.4's zutil.c (from ~/geist-work/helper-musyx/refs) with calloc/free replaced by the game's
