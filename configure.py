@@ -588,7 +588,7 @@ config.libs = [
             Object(NonMatching, "game/Store.c"),  # guess
             Object(NonMatching, "game/FearActor.c"),  # guess
             Object(NonMatching, "game/u_80064FD4.cpp"),  # guess
-            Object(NonMatching, "game/u_80067FF8.cpp"),  # known
+            Object(Matching, "game/u_80067FF8.cpp"),  # known
             Object(NonMatching, "game/u_80068004.cpp"),  # guess
             Object(NonMatching, "game/u_8006C604.cpp"),  # guess
             Object(NonMatching, "game/u_800776FC.cpp"),  # guess
@@ -597,7 +597,7 @@ config.libs = [
             Object(NonMatching, "game/u_8007D7E8.cpp"),  # guess
             Object(NonMatching, "game/u_8007EE68.cpp"),  # guess
             Object(NonMatching, "game/Script.c"),  # guess
-            Object(NonMatching, "game/u_80085CDC.cpp"),  # guess
+            Object(Matching, "game/u_80085CDC.cpp"),  # guess
             Object(Matching, "game/u_80085E50.cpp"),  # string table
             Object(NonMatching, "game/AppMain.c"),  # guess
             Object(NonMatching, "game/u_800886C8.cpp"),  # guess
