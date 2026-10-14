@@ -402,14 +402,19 @@ zlib/infutil.c:
 zlib/trees.c:
 	.text       start:0x8019D3FC end:0x8019FC84
 	.rodata     start:0x80347838 end:0x80348268
-	.data       start:0x803AA910 end:0x803AA94C
+	.data       start:0x803AA910 end:0x803AA950
 
 zlib/uncompr.c:
 	.text       start:0x8019FC84 end:0x8019FD58
 	.rodata     start:0x80348268 end:0x80348270
 
-game/zutil.c:
-	.text       start:0x8019FD58 end:0x801A0F2C
+zlib/zutil.c:
+	.text       start:0x8019FD58 end:0x8019FDD0
+	.rodata     start:0x80348270 end:0x803482F8
+	.data       start:0x803AA950 end:0x803AA978
+
+game/u_8019FDD0.cpp:
+	.text       start:0x8019FDD0 end:0x801A0F2C
 
 game/u_801A0F2C.cpp:
 	.text       start:0x801A0F2C end:0x801A1D24
