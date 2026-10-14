@@ -667,7 +667,7 @@ config.libs = [
             Object(Matching, "game/Repel.cpp"),  # starts 0x80191C6C (helper-game-b)
             Object(NonMatching, "game/u_801920B8.cpp"),  # known
             Object(NonMatching, "game/u_801965FC.cpp"),  # guess
-            Object(NonMatching, "game/zutil.c"),  # known
+            Object(NonMatching, "game/u_8019FDD0.cpp"),  # rendering after zutil (mirror/reflection)
             Object(NonMatching, "game/u_801A0F2C.cpp"),  # guess
             Object(NonMatching, "game/u_801A1D24.cpp"),  # guess
             Object(NonMatching, "game/u_801A28A4.cpp"),  # pinned
@@ -949,6 +949,7 @@ config.libs = [
             Object(Matching, "zlib/infutil.c"),
             Object(Matching, "zlib/trees.c"),
             Object(Matching, "zlib/uncompr.c"),
+            Object(Matching, "zlib/zutil.c"),
         ],
     },
     # ==== end helper-musyx ====

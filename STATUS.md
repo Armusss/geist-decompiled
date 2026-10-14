@@ -8,7 +8,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 |---|---|---|---|
 | Lead (main session) | `geist-matching` / `main` | Coordinating: verifies and merges helper branches when they report; owns game units **0x802D0000-0x802E4858** (Credits.cpp WIP 23/30) and takes small files only | coordinating |
 | helper-game-a | `.claude/worktrees/optimistic-khayyam-7b9401` / `claude/intelligent-babbage-a49862` | **Game units 0x80005800-0x80150000** except the Lead's files above | working (Remote Control on) |
-| helper-game-b | `.claude/worktrees/goofy-clarke-759020` / `claude/frosty-gauss-da470f` | **Game units 0x80150000-0x802D0000** (the Lead took 0x802D0000-0x802E4858 on 2026-10-11) except zlib (done), game/zutil.c (zlib, GC/2.6) and the Lead's files above | working (Remote Control on) |
+| helper-game-b | `.claude/worktrees/goofy-clarke-759020` / `claude/frosty-gauss-da470f` | **Game units 0x80150000-0x802D0000** (the Lead took 0x802D0000-0x802E4858 on 2026-10-11) except zlib (done, including zutil.c) and the Lead's files above | working (Remote Control on) |
 
 Earlier helpers (2026-10-10): helper-msl (MSL/Runtime/TRK) and helper-musyx (MusyX/zlib), both done and merged.
 
@@ -68,6 +68,20 @@ because it makes a function line up. Each file uses the compiler its retail code
 3. Never use 2.0 for a file that matches with 1.3.2, or for a function that is merely hard to match. Try
    source shapes first.
 4. GC/2.6 stays ruled out for game code (it also fails the plane function, and nothing needs it over 2.0).
+
+**Fingerprint caveat (helper-a, 2026-10-14):** the pre-stwu load is necessary evidence but not sufficient.
+In u_800E0CB8 (Vec3 helpers) every compiler 1.3.2-2.7 puts stwu first, even a minimal zero-vector-test
+version. Those functions branch early, unlike the qsort comparators. So u_800E0CB8 stays on 1.3.2,
+NonMatching. Something else (flag or source shape) drives that scheduling. A flagged unit only moves to 2.0
+when 2.0 actually reproduces it. helper-a also found that u_800E0CB8's sqrt body matches as statement asm
+on memory operands (`lfs; ps_rsqrte; ps_res; stfs`); CW's store/load forwarding gives retail's stfs/frsp.
+
+**zlib/zutil.c matched (Lead, 2026-10-14):** 0x8019FD58-0x8019FDD0 (zcfree, zcalloc), .rodata
+0x80348270-0x803482F8, .data 0x803AA950-0x803AA978 (z_errmsg); trees.c .data now ends 0x803AA950 (padding).
+It is zlib 1.1.4's zutil.c (from ~/geist-work/helper-musyx/refs) with calloc/free replaced by the game's
+MemAlloc/MemFree (`__FILE__`, `__LINE__` 213/220) and K&R definitions made ANSI for the C++ build.
+zlibVersion/zError are dead-stripped. The rest of the old game/zutil.c unit (mirror/reflection rendering)
+is now game/u_8019FDD0.cpp.
 
 Files on GC/2.0: **u_8012071C** (qsort comparators 0x80120A78/0x80120A9C, pre-stwu loads; 1.3.2 cannot).
 History: on 2026-10-13 the Lead briefly switched the whole game block to 2.0 after checking only matched
