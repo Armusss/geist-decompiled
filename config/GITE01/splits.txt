@@ -87,10 +87,10 @@ game/Arena.c:
 	.text       start:0x8007C868 end:0x8007CC04
 
 game/Audio.c:
-	.text       start:0x8007CC04 end:0x8007D7E8
+	.text       start:0x8007CC04 end:0x8007DAC8
 
-game/u_8007D7E8.cpp:
-	.text       start:0x8007D7E8 end:0x8007EE68
+game/u_8007DAC8.cpp:
+	.text       start:0x8007DAC8 end:0x8007EE68
 
 game/u_8007EE68.cpp:
 	.text       start:0x8007EE68 end:0x80083360
