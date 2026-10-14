@@ -97,7 +97,12 @@ game/u_8007DAC8.cpp:
 	.sdata2     start:0x804D6788 end:0x804D6790
 
 game/u_8007E1E8.cpp:
-	.text       start:0x8007E1E8 end:0x8007EE68
+	.text       start:0x8007E1E8 end:0x8007E8F8
+
+game/u_8007E8F8.cpp:
+	.text       start:0x8007E8F8 end:0x8007EE68
+	.rodata     start:0x80343618 end:0x80343670
+	.sbss       start:0x804D45E8 end:0x804D45F8
 
 game/u_8007EE68.cpp:
 	.text       start:0x8007EE68 end:0x80083360
