@@ -194,10 +194,13 @@ game/u_800E9418.cpp:
 	.text       start:0x800E9418 end:0x800EB1B8
 
 game/u_800EB1B8.cpp:
-	.text       start:0x800EB1B8 end:0x800F0320
+	.text       start:0x800EB1B8 end:0x800F0374
 
-game/u_800F0320.cpp:
-	.text       start:0x800F0320 end:0x800F0D24
+game/SpiritGun.cpp:
+	.text       start:0x800F0374 end:0x800F0B10
+
+game/Homing.cpp:
+	.text       start:0x800F0B10 end:0x800F0D24
 
 game/DeferPriority.cpp:
 	.text       start:0x800F0D24 end:0x800F14A8
