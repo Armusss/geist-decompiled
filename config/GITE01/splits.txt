@@ -538,7 +538,7 @@ game/PadRecord.cpp:
 	.sdata      start:0x804D3478 end:0x804D3488
 	.sbss       start:0x804D5430 end:0x804D5440
 
-game/u_8023040C.cpp:
+game/ExtraData.cpp:
 	.text       start:0x8023040C end:0x80230504
 
 game/u_80230504.cpp:

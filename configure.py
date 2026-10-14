@@ -705,7 +705,7 @@ config.libs = [
             Object(NonMatching, "game/u_8022ED88.cpp"),  # split from u_80226DE8
             Object(NonMatching, "game/u_8022EEEC.cpp"),  # guess
             Object(Matching, "game/PadRecord.cpp"),  # 0x802301E0 (helper-game-b)
-            Object(NonMatching, "game/u_8023040C.cpp"),  # split from u_80230224
+            Object(Matching, "game/ExtraData.cpp"),  # split from u_80230224
             Object(NonMatching, "game/u_80230504.cpp"),  # guess
             Object(NonMatching, "game/u_80231550.cpp"),  # guess
             Object(NonMatching, "game/Corona.cpp"),  # guess
