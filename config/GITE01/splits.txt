@@ -98,6 +98,7 @@ game/u_8007DAC8.cpp:
 
 game/u_8007E1E8.cpp:
 	.text       start:0x8007E1E8 end:0x8007E8F8
+	.sdata2     start:0x804D6790 end:0x804D67B0
 
 game/u_8007E8F8.cpp:
 	.text       start:0x8007E8F8 end:0x8007EE68
