@@ -588,16 +588,20 @@ config.libs = [
             Object(NonMatching, "game/Store.c"),  # guess
             Object(NonMatching, "game/FearActor.c"),  # guess
             Object(NonMatching, "game/u_80064FD4.cpp"),  # guess
-            Object(NonMatching, "game/u_80067FF8.cpp"),  # known
+            Object(Matching, "game/u_80067FF8.cpp"),  # known
             Object(NonMatching, "game/u_80068004.cpp"),  # guess
             Object(NonMatching, "game/u_8006C604.cpp"),  # guess
             Object(NonMatching, "game/u_800776FC.cpp"),  # guess
             Object(NonMatching, "game/Arena.c"),  # guess
             Object(NonMatching, "game/Audio.c"),  # guess
-            Object(NonMatching, "game/u_8007D7E8.cpp"),  # guess
+            Object(Matching, "game/u_8007DAC8.cpp"),  # timers
+            Object(Matching, "game/u_8007E1E8.cpp"),  # split-screen text helpers
+            Object(Matching, "game/u_8007E8F8.cpp"),  # object lookup tables
             Object(NonMatching, "game/u_8007EE68.cpp"),  # guess
+            Object(NonMatching, "game/u_80080714.cpp"),  # ring-buffer queues
+            Object(NonMatching, "game/u_80080F88.cpp"),  # guess
             Object(NonMatching, "game/Script.c"),  # guess
-            Object(NonMatching, "game/u_80085CDC.cpp"),  # guess
+            Object(Matching, "game/u_80085CDC.cpp"),  # guess
             Object(Matching, "game/u_80085E50.cpp"),  # string table
             Object(NonMatching, "game/AppMain.c"),  # guess
             Object(NonMatching, "game/u_800886C8.cpp"),  # guess
@@ -622,7 +626,8 @@ config.libs = [
             Object(NonMatching, "game/u_800E1B5C.cpp"),  # guess
             Object(NonMatching, "game/u_800E9418.cpp"),  # guess
             Object(NonMatching, "game/u_800EB1B8.cpp"),  # guess
-            Object(NonMatching, "game/u_800F0320.cpp"),  # split from DeferPriority.cpp
+            Object(NonMatching, "game/SpiritGun.cpp"),  # "SpiritGun" effect type
+            Object(NonMatching, "game/Homing.cpp"),  # "Homing" effect type
             Object(Matching, "game/DeferPriority.cpp"),  # guess
             Object(Matching, "game/u_800F14A8.cpp"),  # known
             Object(Matching, "game/Image.cpp"),
@@ -832,7 +837,7 @@ config.libs = [
             Object(Matching, "Runtime.PPCEABI.H/NMWException.cp", extra_cflags=['-Cpp_exceptions on']),
             Object(Matching, "Runtime.PPCEABI.H/runtime.c"),
             Object(Matching, "Runtime.PPCEABI.H/__init_cpp_exceptions.cpp"),
-            Object(NonMatching, "Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp", extra_cflags=['-Cpp_exceptions on']),
+            Object(Matching, "Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp", extra_cflags=['-Cpp_exceptions on', '-RTTI on', '-str nopool'], extab_padding=[0x02, 0x55]),
             Object(Matching, "Runtime.PPCEABI.H/GCN_mem_alloc.c", extra_cflags=['-str reuse,nopool,readonly']),
         ],
     },

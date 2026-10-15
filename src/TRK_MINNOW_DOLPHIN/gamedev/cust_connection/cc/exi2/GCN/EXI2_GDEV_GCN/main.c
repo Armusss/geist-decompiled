@@ -45,9 +45,9 @@ int gdev_cc_close() {
 
 int gdev_cc_read(u8* data, int size) {
     u8 buff[GDEV_BUF_SIZE];
-    int p1;
-    u32 retval;
+    u32 p1;
     int p2;
+    u32 retval;
     int poll;
     retval = 0;
     if (!gIsInitialized) {
@@ -57,12 +57,12 @@ int gdev_cc_read(u8* data, int size) {
     TRACE(1, "Expected packet size : 0x%08x (%ld)\n", size, size);
 
     p1 = size;
-    p2 = size;
-    while ((u32)CBGetBytesAvailableForRead(&gRecvCB) < p2) {
+    p2 = p1;
+    while ((u32)CBGetBytesAvailableForRead(&gRecvCB) < p1) {
         retval = 0;
         poll = DBQueryData();
         if (poll != 0) {
-            retval = DBRead(buff, p2);
+            retval = DBRead(buff, p1);
             if (retval == 0) {
                 CircleBufferWriteBytes(&gRecvCB, buff, poll);
             }
@@ -70,7 +70,7 @@ int gdev_cc_read(u8* data, int size) {
     }
 
     if (retval == 0) {
-        CircleBufferReadBytes(&gRecvCB, data, p1);
+        CircleBufferReadBytes(&gRecvCB, data, p2);
     } else {
         TRACE(8, "cc_read : error reading bytes from EXI2 %ld\n", retval);
     }
