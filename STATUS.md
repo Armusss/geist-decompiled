@@ -110,7 +110,8 @@ game code, but a separate GC/2.6 build) **must** be C++. Its deflateCopy uses an
 `internal_state::operator=` (`__as__14internal_stateFRC14internal_state`) that is in retail, and
 deflate/inftrees/trees/infblock compile differently as C. Switching game `.c` units to C also needs the
 shared functions they call (SendMsg, MemAlloc/MemFree, FxStart, FileFlushBuffer, Music*) to get C
-linkage. That renames those symbols in symbols.txt and every C++ caller. Waiting on the user's decision.
+linkage. That renames those symbols in symbols.txt and every C++ caller. **User decision (2026-10-14): keep `.c`
+files on C++ until a file shows code only C can produce; then switch that file to C.**
 
 **zlib/zutil.c matched (Lead, 2026-10-14):** 0x8019FD58-0x8019FDD0 (zcfree, zcalloc), .rodata
 0x80348270-0x803482F8, .data 0x803AA950-0x803AA978 (z_errmsg); trees.c .data now ends 0x803AA950 (padding).
