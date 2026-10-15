@@ -837,7 +837,7 @@ config.libs = [
             Object(Matching, "Runtime.PPCEABI.H/NMWException.cp", extra_cflags=['-Cpp_exceptions on']),
             Object(Matching, "Runtime.PPCEABI.H/runtime.c"),
             Object(Matching, "Runtime.PPCEABI.H/__init_cpp_exceptions.cpp"),
-            Object(NonMatching, "Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp", extra_cflags=['-Cpp_exceptions on']),
+            Object(Matching, "Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp", extra_cflags=['-Cpp_exceptions on', '-RTTI on', '-str nopool'], extab_padding=[0x02, 0x55]),
             Object(Matching, "Runtime.PPCEABI.H/GCN_mem_alloc.c", extra_cflags=['-str reuse,nopool,readonly']),
         ],
     },

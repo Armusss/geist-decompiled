@@ -970,6 +970,10 @@ Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp:
 	extab       start:0x80005698 end:0x8000570C
 	extabindex  start:0x8000578C end:0x800057E0
 	.text       start:0x802EB8D0 end:0x802ECD08
+	.rodata     start:0x8034E5F8 end:0x8034E690
+	.data       start:0x803C65B8 end:0x803C66A0
+	.bss        start:0x804A8370 end:0x804A837C
+	.sdata      start:0x804D3E20 end:0x804D3E30
 
 Runtime.PPCEABI.H/GCN_mem_alloc.c:
 	.text       start:0x802ECD08 end:0x802ECE78
