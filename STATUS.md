@@ -27,6 +27,10 @@ merges it.
 Borrowed code that workers report goes into the README credits.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_80285014 4/6 (failed twice, ds-1 on V4 Pro then on Flash): ToolMsg 0x80285140 at 9 diffs, ToolCreate
+  0x80285564 at 11. Partial source is in main.
+- u_802A770C 4/6 (failed twice, ds-3): HostTypeUpdate 0x802A7B9C at 4 diffs, HostAction 0x802A770C at 71.
+  Partial source is in main.
 - Audio.c AudioMsgHandler (helper-a): matches only when a 3-argument call is made to a function that another
   site calls with 4 (r6 left unset). That's an unprototyped C call, so it's a candidate C-only fingerprint
   under the user's rule.
