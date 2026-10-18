@@ -7,12 +7,19 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
-| ds-1 (DeepSeek worker) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_8022ED88 (3 fns), u_80285014 (6 fns) | running |
-| ds-2 (DeepSeek worker) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80161F40 (1 fn; rodata 0x803467B0-F8 split by the Lead) | running |
-| ds-3 (DeepSeek worker) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_802A770C (6 fns; rodata 0x8034B8E8-0x8034B938 split by the Lead) | running |
+| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_80285014: continue at 4/6 (ToolMsg, ToolCreate left) | running |
+| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80160188 (5 fns; Lead split rodata 0x803466F8-80 and sbss 0x804D4EB8-C0) | running |
+| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_802A770C: continue at 4/6 (HostTypeUpdate, HostAction left) | running |
 
-Workers are headless Claude Code on deepseek-v4-pro (`~/.local/bin/claude-deepseek`, `DEEPSEEK_WORKER=<name>`),
-at most 3 at once. They have read-only Ghidra, WebSearch and WebFetch only (no REA, no Dolphin, no memory). Each gets
+Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
+They are started with `~/geist-work/ds/run_worker.sh NAME [MAX_TURNS]` (allowlist + 150-turn cap), at most 3 at once.
+You can watch one live with `python3 ~/geist-work/ds/ds_watch.py NAME -f`.
+**Round 1 (2026-10-18, V4 Pro, no turn cap):** about $6 for three workers, roughly 300-400 turns each.
+- ds-1: u_8022ED88 matched and merged; u_80285014 reached 4/6.
+- ds-2: u_80161F40 was byte-identical, but only through a hand-built string blob and mangled-name calls. Rejected;
+  the Lead rewrote it as real source (the behaviour registry).
+- ds-3: u_802A770C reached 4/6.
+Lesson: do data splits before handing out a unit, and reject hacks. They have read-only Ghidra, WebSearch and WebFetch only (no REA, no Dolphin, no memory). Each gets
 a self-contained prompt from `~/geist-work/ds/task_template.md`, with the rules, commands and a skip-and-hand-off
 rule. Their results are in `~/geist-work/ds/<name>/worker-result.json`. A worker never commits; the Lead audits
 each result (rebuild, DOL SHA-1 = build.sha1, unit Matching and linked from its own src object), then commits and
