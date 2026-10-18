@@ -2,6 +2,9 @@
 // When a host looks into it, a scan line sweeps the screen (two 2D overlays drawn by the trigger
 // callback), then it reports the result to the scanner and plays "retpart1/2/3" effects.
 // Names are descriptive guesses; the code is matched against the retail DOL.
+// TODO: the file goes on past 0x80268528. The "HERMIT SPIT" behaviour (descriptor 0x803C0208, functions
+// from 0x80268528) and "crapElectricity" are in this file's string pool, and .sdata2 stays contiguous
+// through fn_80269A88. The next file's pool (0x8034ADD8) is first used at 0x8026A158.
 
 typedef unsigned long u32;
 typedef unsigned char u8;
