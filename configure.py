@@ -658,7 +658,7 @@ config.libs = [
             Object(NonMatching, "game/u_80160188.cpp"),  # guess
             Object(NonMatching, "game/GrenadeFx.cpp"),  # starts 0x801608A4 (helper-game-b)
             Object(NonMatching, "game/u_80160DB0.cpp"),  # guess
-            Object(NonMatching, "game/u_80161F40.cpp"),  # guess
+            Object(Matching, "game/u_80161F40.cpp"),  # behaviour registry
             Object(NonMatching, "game/u_80161FF4.cpp"),  # guess
             Object(NonMatching, "game/u_8016A774.cpp"),  # pinned
             Object(NonMatching, "game/u_8016C244.cpp"),  # guess

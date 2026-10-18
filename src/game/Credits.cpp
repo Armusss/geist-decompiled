@@ -531,7 +531,7 @@ void NoBotState0Enter(Owner* o, Beh* b) {
     }
 }
 
-int NoBotQuery(void) { return 0; }
+int NoBotQuery(Owner* o, Beh* b) { return 0; }
 
 int NoBotMsg(Owner* o, Beh* b, int msg) {
     NoBotData* d;
