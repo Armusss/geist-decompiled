@@ -326,6 +326,8 @@ game/u_8015C79C.cpp:
 
 game/u_80160188.cpp:
 	.text       start:0x80160188 end:0x801608A4
+	.rodata     start:0x803466F8 end:0x80346780
+	.sbss       start:0x804D4EB8 end:0x804D4EC0
 
 game/GrenadeFx.cpp:
 	.text       start:0x801608A4 end:0x80160DB0
