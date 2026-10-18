@@ -34,8 +34,12 @@ Borrowed code that workers report goes into the README credits.
   - LaserScope 3/4
   - Retinal 5/8 (the file extends to about 0x8026A0BC; boundary work)
   - Fuel 2/3
-  - SAM, Store, Progress, Shadow2 and Arena: 1-3 functions short each
-- Unstarted lead from helper-a: a camera module inside u_800F73C8.
+  - SAM 12/13 (SAMReadCallback), Store.c 13/15 (StoreSave/StoreInit icon loop), Progress 6/7, Shadow2 10/12,
+    u_800448D0 5/8, Arena 2/5, u_800DE0C4 14/16
+  - Detail from helper-a's final report: LevelSelect has 4 diffs (loop counter r19 vs r29); ProgressiveSelect has 7;
+    QueueForEach has 15 and QueuePush has 6; HomingMsg's frame is also 32 bytes too small (Vec3 temporaries)
+- Unstarted lead from helper-a: a camera module inside u_800F73C8 (0x800F9458-0x800FA004: 16 cameras of 0x124
+  bytes at 0x8045C770, a shake table at 0x8039CF58). It needs a boundary split first (Lead), then it can go to a worker.
 
 Matching tricks from both helpers: `docs/matching-tricks.md`.
 
