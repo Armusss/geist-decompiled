@@ -1,0 +1,50 @@
+# Game-code matching tricks (CodeWarrior GC/1.3.2, cflags_game)
+
+Collected by helper-game-a and helper-game-b (2026-10-11 to 10-15). Try these first on stuck diffs.
+Tools named here live in ~/geist-work/ (helper-game-a/var2.py + cdiff.py brute-force declaration orders
+without touching src; helper-game-b/stackperm.py brute-forces stack slot orders).
+
+## helper-game-b
+
+Geist game-code matching (CodeWarrior GC/1.3.2, cflags_game). Non-obvious source shapes that reproduced retail:
+- Actor files: descriptor {0, name, msg, update, init, 0, destroy, ...} in .data; msg handlers take 4 args (actor, msg, data, arg).
+- Each actor file's string pool starts with the header table "POSSESS..SCAN"; recreate with an unused `static const char* sActionNames[]`.
+- Name hash: inline with seed param `StrHash(s, h)` and index loop `for (i=0; s[i]; i++) h = h*31 + (u8)toupper(s[i])` gives the retail two-pointer loop; `h %= 0xFFFFFFFF; return h;` vs `return h % ...` changes the result register.
+- Inline message-case helpers returning int (result in r0, then `mr r3,r0`); a single-case `switch` gives `cmpw; beq; b`.
+- `cond ? 1 : 0` gives neg/or/srwi; `(int)(x >> 24) == 2` for cmpwi.
+- String class: Buffer base (virtual dtor 0x8028B9C0 out of line), String : Buffer; String wrapped as first member of a struct inside a msg gives the retail double null-check in the inlined dtor.
+- Locals in different case blocks share stack slots; retail often declares msg structs at function scope (set frame size accordingly).
+- `a + (b->size | 0) + 32` keeps the a + (b+32) add order (CW otherwise reassociates).
+- Stack slots of aggregate locals depend on declaration order in a non-obvious way; ~/geist-work/helper-game-b/stackperm.py brute-forces orders (and object sizes, from gaps) to hit retail offsets.
+- Reusing a variable (`bone *= 28`) or splitting a call result into a temp (`int name = f(); g(name)`) fixes register choices.
+- Unsolved pattern: `cmplwi r4,0` then parameter copies inside the if (instead of `mr.`).
+
+
+## helper-game-a
+
+Learned while matching game code 0x80005800-0x80150000 (helper-game-a, 2026-10-11/12):
+- A file's static arrays are addressed from one anchor symbol (asm shows `lbl_X+0x28C`): write separate `static` arrays, not one struct.
+- Volatile/callee register ranking changes with: copying a param into a local declared first (`u8* p = data; int n = size;`), declaring a loop var in its own `else` block (`int j`), or moving a loop into an `inline` helper (CRC table builder).
+- Inline walk helpers matched only as `{ int i; T* n; n = list; i = index; while (...) }`.
+- Retail repeated tails come from nested if/else with a copy of the tail in each branch, not `continue`.
+- Single-case `switch` gives `cmpw; beq; b` (used for TPL format checks).
+- Brute force declaration orders: ~/geist-work/helper-game-a/var2.py + cdiff.py (compile-only, never touches src; safe in background). mwprobe/var.py-style runners that write src get clobbered by their final restore.
+- When renaming symbols from `objdump -t`, sort by offset first; scrambled names showed up as "dead-stripped" DOL size mismatches.
+- Callee-saved ranking off in a caller of an out-param inline: wrap the lookup and type check in a second inline (`return VarFloat(0, GameEvent(..), var)`), declaring `def` before `obj`.
+- `return group->objs[i].values[x]` swapped regs; `VarObj* obj = &group->objs[i]; return obj->values[x];` matched.
+- Switch on the assignment (`switch (sMode = mode)`) gave the unfolded `li r0,0; cmpwi r0,1` after inlining a constant.
+- A second loop over the same range needed its own counter variable (`m`), not a reused `j`.
+- Retail reloading globals just stored (no forwarding): read them with `*(T* volatile*)&g`. Declaring the globals volatile instead reorders stores in other functions.
+- cdiff/var2 show sda21 relocs as `0(0)`, so they can't see WHICH global is accessed. Always confirm with the DOL check (or `objdump -dr` relocs).
+- Flat `a*16 + b*16 + c*4` matched; parenthesizing let CW fold the sizeof terms differently.
+- Random-range floats `lo + (hi-lo)*rand()/32767` whose loads come after the rand() call matched as `inline float Lerp(float lo, float hi, float t) { float d = hi - lo; return lo + d * t; }`, called with rand last (args are evaluated right to left). A macro or plain inline hoisted the loads into f29-f31.
+- MSL string hash: reuse StrHash from CollectionGhost.cpp. When a `li rX,0` null result shares a register with the hash, use the `if (s == 0) h = 0; else { h = key; ... }` form.
+- ps_rsqrte/ps_res sqrt with retail `stfs x,0xc / frsp / stfs y,0x8`: statement asm on MEMORY operands (`lfs f0,x; ps_rsqrte f0,f0; ps_res f0,f0; stfs f0,y`); CW forwards the store/load. Register-qualified asm vars give no stack traffic.
+- A loop that matched only inside an inline helper (`StrUpper(dst, src)`) after declaration orders failed; LogoShow-style repeated wait loops must reuse the function's `i` (an inline helper adds a new counter register).
+- An aggregate literal declared inside a loop (`Vec3 pos = {0,0,0};`) gives retail's per-iteration lwz copy from .rodata; a file-scope const struct gets hoisted lfs.
+- Pre-stwu param loads (G4 2.0 fingerprint) did NOT reproduce on 2.0 for branchy functions (u_800E0CB8), only on branch-free ones.
+- Field loads in the wrong order before an inlined call: CW evaluates call arguments right to left, so permute the inline helper's PARAMETER order (brute force 5! with var2) until the loads line up.
+- Index vs i*size offset register swap (`lhax rX,base,off`) or a loop counter/pointer swap: move that code into an inline helper that takes the index as a parameter (TimerFire(int i), TimerReset()). This fixed what declaration orders couldn't.
+- Store forms: `sTimers[i].x = ...` vs `Timer* t = &sTimers[i]; t->x = ...` changes which register holds the element address.
+- Calls to a function with fewer args than another call site (r6 left unset) = unprototyped C call; C++ can't produce it (Audio.c, asked the Lead).
+

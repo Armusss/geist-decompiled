@@ -335,6 +335,7 @@ game/u_80160DB0.cpp:
 
 game/u_80161F40.cpp:
 	.text       start:0x80161F40 end:0x80161FF4
+	.rodata     start:0x803467B0 end:0x803467F8
 
 game/u_80161FF4.cpp:
 	.text       start:0x80161FF4 end:0x8016A774
@@ -719,6 +720,7 @@ game/u_8029E714.cpp:
 
 game/u_802A770C.cpp:
 	.text       start:0x802A770C end:0x802A7E3C
+	.rodata     start:0x8034B8E8 end:0x8034B938
 
 game/Fuel.cpp:
 	.text       start:0x802A7E3C end:0x802A815C

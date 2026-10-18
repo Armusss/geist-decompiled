@@ -2,15 +2,46 @@
 
 Handoff file for the matching decompilation. Newest section first. See README.md for setup/build.
 
-## Team board (Decomp Lead + helpers) — game code, from 2026-10-11
+## Team board (Decomp Lead + DeepSeek workers) — game code, from 2026-10-18
 
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
-| Lead (main session) | `geist-matching` / `main` | Coordinating: verifies and merges helper branches when they report; owns game units **0x802D0000-0x802E4858** (Credits.cpp WIP 23/30) and takes small files only | coordinating |
-| helper-game-a | `.claude/worktrees/optimistic-khayyam-7b9401` / `claude/intelligent-babbage-a49862` | **Game units 0x80005800-0x80150000** except the Lead's files above | working (Remote Control on) |
-| helper-game-b | `.claude/worktrees/goofy-clarke-759020` / `claude/frosty-gauss-da470f` | **Game units 0x80150000-0x802D0000** (the Lead took 0x802D0000-0x802E4858 on 2026-10-11) except zlib (done, including zutil.c) and the Lead's files above | working (Remote Control on) |
+| Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
+| ds-1 (DeepSeek worker) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_8022ED88 (3 fns), u_80285014 (6 fns) | running |
+| ds-2 (DeepSeek worker) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80161F40 (1 fn; rodata 0x803467B0-F8 split by the Lead) | running |
+| ds-3 (DeepSeek worker) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_802A770C (6 fns; rodata 0x8034B8E8-0x8034B938 split by the Lead) | running |
 
-Earlier helpers (2026-10-10): helper-msl (MSL/Runtime/TRK) and helper-musyx (MusyX/zlib), both done and merged.
+Workers are headless Claude Code on deepseek-v4-pro (`~/.local/bin/claude-deepseek`, `DEEPSEEK_WORKER=<name>`),
+at most 3 at once. They have read-only Ghidra, WebSearch and WebFetch only (no REA, no Dolphin, no memory). Each gets
+a self-contained prompt from `~/geist-work/ds/task_template.md`, with the rules, commands and a skip-and-hand-off
+rule. Their results are in `~/geist-work/ds/<name>/worker-result.json`. A worker never commits; the Lead audits
+each result (rebuild, DOL SHA-1 = build.sha1, unit Matching and linked from its own src object), then commits and
+merges it.
+Borrowed code that workers report goes into the README credits.
+
+**Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- Audio.c AudioMsgHandler (helper-a): matches only when a 3-argument call is made to a function that another
+  site calls with 4 (r6 left unset). That's an unprototyped C call, so it's a candidate C-only fingerprint
+  under the user's rule.
+- Earlier helper leftovers (from helper-game-a and helper-game-b, both archived 2026-10-18):
+  - main.cpp 9/11 (LevelSelect, ProgressiveSelect)
+  - SpiritGun 5/6, Homing 1/2 (type-name hash register swap)
+  - u_80080714 9/11 (QueueForEach, QueuePush)
+  - u_800E0CB8 0/5 (pre-stwu loads; no compiler reproduces them)
+  - VMem 8/9 (Init)
+  - Thermostat 15/20 (late param-copy pattern)
+  - GrenadeFx 6/7
+  - LaserScope 3/4
+  - Retinal 5/8 (the file extends to about 0x8026A0BC; boundary work)
+  - Fuel 2/3
+  - SAM, Store, Progress, Shadow2 and Arena: 1-3 functions short each
+- Unstarted lead from helper-a: a camera module inside u_800F73C8.
+
+Matching tricks from both helpers: `docs/matching-tricks.md`.
+
+Earlier helpers: helper-msl (MSL/Runtime/TRK) and helper-musyx (MusyX/zlib), both done and merged (2026-10-10); helper-game-a
+(0x80005800-0x80150000) and helper-game-b (0x80150000-0x802D0000), wound down and archived 2026-10-18, all work merged.
+The rules below were written for those helpers; workers get the same rules in their task prompt.
 
 **Rules for helpers:**
 1. Work only in your own worktree and branch. Never edit `main`, never push, never touch `orig/`, game
