@@ -165,11 +165,11 @@ void VFree(void* p);                                           // 0x8009DA3C
 
 extern "C" {
 int fn_8008EA9C(int anim, int a);
-void fn_8008F230(float f, int anim, int a, int b);
+void fn_8008F230(int anim, float f, int a, int b);
 void fn_8008F378(int anim);
 void fn_8008F4E8(int anim, int a);
 void fn_8008F4EC(int anim, int a);
-void fn_80090974(float f, int anim, int a, int h, int b, int (*cb)(int, Actor*), Actor* owner);
+void fn_80090974(int anim, int a, int h, float f, int b, int (*cb)(int, Actor*), Actor* owner);
 void fn_800913EC(int anim, float scale, Vec3* out);
 int fn_800A1BC8(int a, int b, u32 type, int c, int d);
 void fn_800A0168(Mtx34* out, Mtx34* in);
@@ -180,7 +180,7 @@ int fn_800CDD10();
 int fn_80158AFC(int owner, void* data);
 int fn_800AFD20(Actor* a);
 int fn_8003A1F0(int a, void* bones, int b);
-void fn_8003F15C(float f, int a, int b, int c, void* d, int e);
+void fn_8003F15C(int a, int b, int c, float f, void* d, int e);
 String fn_800225C8(const String& a, const String& b);
 void fn_8028C188(Buffer* b, char* data, int len);
 }
@@ -200,6 +200,15 @@ HostActionType gHostActionType[] = {
     { 0x3333CFE5, HostActionEnter, HostActionSetState, HostActionGetState, HostActionEvent, "" },
 };
 
+// Poses the actor's model from its animation into the message buffer.
+inline void HostPose(Actor* actor, HostMsg* d) {
+    int owner = fn_800AFD20(actor);
+    int anim = ModelAnimate(actor->model, 0, 0);
+    anim = fn_8003A1F0(owner, actor->bones, anim);
+    fn_8003F15C(owner, anim, actor->boneCount, 1.0f, &d->result.mData, 0);
+    actor->f13C = 0.0f;
+}
+
 int HostActionMsg(int msg, void* data) {
     HostMsg* d = (HostMsg*)data;
     int anim;
@@ -215,22 +224,14 @@ int HostActionMsg(int msg, void* data) {
         if (fn_80158AFC(OwnerId((Owner*)actor), d)) {
             return 1;
         }
-        owner = fn_800AFD20(actor);
-        anim = ModelAnimate(actor->model, 0, 0);
-        anim = fn_8003A1F0(owner, actor->bones, anim);
-        fn_8003F15C(1.0f, owner, anim, actor->boneCount, &d->result.mData, 0);
-        actor->f13C = 0.0f;
+        HostPose(actor, d);
         return 1;
     case 0x7300:
         actor = d->actor;
         if (!actor) {
             return 1;
         }
-        owner = fn_800AFD20(actor);
-        anim = ModelAnimate(actor->model, 0, 0);
-        anim = fn_8003A1F0(owner, actor->bones, anim);
-        fn_8003F15C(1.0f, owner, anim, actor->boneCount, &d->result.mData, 0);
-        actor->f13C = 0.0f;
+        HostPose(actor, d);
         return 1;
     case 0x41E: {
         Beh* b = d->actor->beh;
@@ -297,10 +298,12 @@ int HostActionEvent(int msg, Actor* actor) {
     if (!actor) {
         return 0;
     }
-    if (msg == 0x1B83833F) {
+    switch (msg) {
+    case 0x1B83833F: {
         Beh* b = actor->beh;
         gHostActionType[b->state].setState(actor, b->next);
         gHostActionType[b->next].enter(actor);
+    }
     }
     return 1;
 }
@@ -320,10 +323,12 @@ int HostActionGetState(Actor* actor) {
 }
 
 static inline void ResetAction(Actor* actor) {
+    Beh* b;
+
     if (!actor) {
         return;
     }
-    Beh* b = actor->beh;
+    b = actor->beh;
     b->f18 = 0.0f;
     b->f1C = 0.0f;
     b->f20 = 0.0f;
@@ -334,26 +339,25 @@ static inline void ResetAction(Actor* actor) {
         fn_8008F378(actor->anim);
         fn_8008F4EC(actor->anim, 0);
     }
-    int h = fn_800A1BC8(actor->data->i14, actor->data->i1C, gHostActionType[b->state].type, 0, 0);
-    b->anim = h;
-    fn_80090974(1.0f, actor->anim, 0, h, 9, gHostActionType[b->state].event, actor);
-    if (!HasCondition(actor->conditions, 0xE)) {
-        if (b->prevAnim == b->anim) {
-            fn_8008F230(0.0f, actor->anim, 0, 0);
-        } else {
-            fn_8008F230(150.0f, actor->anim, 0, 1);
-        }
-    } else {
-        fn_8008F230(0.0f, actor->anim, 0, 0);
+    b->anim = fn_800A1BC8(actor->data->i14, actor->data->i1C, gHostActionType[b->state].type, 0, 0);
+    fn_80090974(actor->anim, 0, b->anim, 1.0f, 9, gHostActionType[b->state].event, actor);
+    if (HasCondition(actor->conditions, 0xE)) {
+        fn_8008F230(actor->anim, 0.0f, 0, 0);
         fn_800A7A54(actor->conditions, 0xE, 0);
+    } else if (b->prevAnim == b->anim) {
+        fn_8008F230(actor->anim, 0.0f, 0, 0);
+    } else {
+        fn_8008F230(actor->anim, 150.0f, 0, 1);
     }
 }
 
 int HostActionEnter(Actor* actor) {
+    Beh* b;
+
     if (!actor) {
         return 0;
     }
-    Beh* b = actor->beh;
+    b = actor->beh;
     b->state = 0;
     b->next = 0;
     b->prevAnim = b->anim;
@@ -362,7 +366,8 @@ int HostActionEnter(Actor* actor) {
 }
 
 static inline float ClampMotion(float value, float limit) {
-    return value < -limit ? -limit : (value > limit ? limit : value);
+    float lo = -limit;
+    return value < lo ? lo : (value > limit ? limit : value);
 }
 
 static inline float TurnRate(Actor* actor) {
@@ -371,8 +376,8 @@ static inline float TurnRate(Actor* actor) {
 
 void HostActionAnimate(Actor* actor) {
     PlaceF place;
-    Mtx34 matrix;
     Mtx34 motion;
+    Mtx34 matrix;
     Vec3 rot;
     Vec3 delta;
 
@@ -388,9 +393,12 @@ void HostActionAnimate(Actor* actor) {
             actor->f8C = 200.0f + (t + ((Bone*)actor->bones)->z);
         }
         actor->i2C = (int)actor->f8C;
-        ((Bone*)actor->bones)->x = 0.0f;
-        ((Bone*)actor->bones)->y = 0.0f;
-        ((Bone*)actor->bones)->z = 0.0f;
+        {
+            Bone* bone = (Bone*)actor->bones;
+            bone->x = 0.0f;
+            bone->y = 0.0f;
+            bone->z = 0.0f;
+        }
         if (HasCondition(actor->conditions, 0)) {
             b->f18 += delta.x;
             b->f1C += delta.y;
@@ -440,12 +448,14 @@ void HostActionAnimate(Actor* actor) {
                 BoneGetMatrix((Mtx34*)&place, actor->bones);
                 MtxGetEuler(&actor->euler, (Mtx34*)&place);
                 PlacementToMatrix((Mtx34*)actor, &place);
-                actor->f84 = ((Bone*)actor->bones)->x;
-                actor->f88 = ((Bone*)actor->bones)->y;
-                actor->f8C = ((Bone*)actor->bones)->z;
-                actor->i24 = (int)((Bone*)actor->bones)->x;
-                actor->i28 = (int)((Bone*)actor->bones)->y;
-                actor->i2C = (int)((Bone*)actor->bones)->z;
+                Bone* bone = (Bone*)actor->bones;
+                actor->f84 = bone->x;
+                actor->f88 = bone->y;
+                actor->f8C = bone->z;
+                bone = (Bone*)actor->bones;
+                actor->i24 = (int)bone->x;
+                actor->i28 = (int)bone->y;
+                actor->i2C = (int)bone->z;
             } else {
                 Vec3Set(&rot, actor->euler.z, 0.0f, 0.0f);
                 EulerNormalize(&rot, &rot);
@@ -464,9 +474,12 @@ void HostActionAnimate(Actor* actor) {
             ((Bone*)actor->bones)->z = 0.0f;
         }
         actor->i2C = (int)actor->f8C;
-        ((Bone*)actor->bones)->x = 0.0f;
-        ((Bone*)actor->bones)->y = 0.0f;
-        ((Bone*)actor->bones)->z = 0.0f;
+        {
+            Bone* bone = (Bone*)actor->bones;
+            bone->x = 0.0f;
+            bone->y = 0.0f;
+            bone->z = 0.0f;
+        }
         ActorGetMatrix(&matrix, actor);
         fn_800A0168(&matrix, &matrix);
         fn_800A0030(&delta, &matrix, &delta);
