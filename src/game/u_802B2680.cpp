@@ -366,7 +366,8 @@ int HostActionEnter(Actor* actor) {
 }
 
 static inline float ClampMotion(float value, float limit) {
-    return value < -limit ? -limit : (value > limit ? limit : value);
+    float lo = -limit;
+    return value < lo ? lo : (value > limit ? limit : value);
 }
 
 static inline float TurnRate(Actor* actor) {
@@ -375,8 +376,8 @@ static inline float TurnRate(Actor* actor) {
 
 void HostActionAnimate(Actor* actor) {
     PlaceF place;
-    Mtx34 matrix;
     Mtx34 motion;
+    Mtx34 matrix;
     Vec3 rot;
     Vec3 delta;
 
@@ -392,9 +393,12 @@ void HostActionAnimate(Actor* actor) {
             actor->f8C = 200.0f + (t + ((Bone*)actor->bones)->z);
         }
         actor->i2C = (int)actor->f8C;
-        ((Bone*)actor->bones)->x = 0.0f;
-        ((Bone*)actor->bones)->y = 0.0f;
-        ((Bone*)actor->bones)->z = 0.0f;
+        {
+            Bone* bone = (Bone*)actor->bones;
+            bone->x = 0.0f;
+            bone->y = 0.0f;
+            bone->z = 0.0f;
+        }
         if (HasCondition(actor->conditions, 0)) {
             b->f18 += delta.x;
             b->f1C += delta.y;
@@ -444,12 +448,14 @@ void HostActionAnimate(Actor* actor) {
                 BoneGetMatrix((Mtx34*)&place, actor->bones);
                 MtxGetEuler(&actor->euler, (Mtx34*)&place);
                 PlacementToMatrix((Mtx34*)actor, &place);
-                actor->f84 = ((Bone*)actor->bones)->x;
-                actor->f88 = ((Bone*)actor->bones)->y;
-                actor->f8C = ((Bone*)actor->bones)->z;
-                actor->i24 = (int)((Bone*)actor->bones)->x;
-                actor->i28 = (int)((Bone*)actor->bones)->y;
-                actor->i2C = (int)((Bone*)actor->bones)->z;
+                Bone* bone = (Bone*)actor->bones;
+                actor->f84 = bone->x;
+                actor->f88 = bone->y;
+                actor->f8C = bone->z;
+                bone = (Bone*)actor->bones;
+                actor->i24 = (int)bone->x;
+                actor->i28 = (int)bone->y;
+                actor->i2C = (int)bone->z;
             } else {
                 Vec3Set(&rot, actor->euler.z, 0.0f, 0.0f);
                 EulerNormalize(&rot, &rot);
@@ -468,9 +474,12 @@ void HostActionAnimate(Actor* actor) {
             ((Bone*)actor->bones)->z = 0.0f;
         }
         actor->i2C = (int)actor->f8C;
-        ((Bone*)actor->bones)->x = 0.0f;
-        ((Bone*)actor->bones)->y = 0.0f;
-        ((Bone*)actor->bones)->z = 0.0f;
+        {
+            Bone* bone = (Bone*)actor->bones;
+            bone->x = 0.0f;
+            bone->y = 0.0f;
+            bone->z = 0.0f;
+        }
         ActorGetMatrix(&matrix, actor);
         fn_800A0168(&matrix, &matrix);
         fn_800A0030(&delta, &matrix, &delta);
