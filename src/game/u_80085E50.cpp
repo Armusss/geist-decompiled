@@ -9,7 +9,7 @@ extern "C" {
 extern unsigned char __upper_map[256];
 }
 
-void FileFlushBuffer(void* dst, int size);                 // 0x80007088
+extern "C" void FileFlushBuffer(void* dst, int size);                 // 0x80007088
 int FileAddHandler(int type, int (*cb)(void*, int, void*), void* arg); // File.cpp
 extern "C" void fn_8000F60C(void* p);
 extern "C" void fn_8000F874(void* p);

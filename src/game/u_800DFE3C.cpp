@@ -63,7 +63,7 @@ inline void MusicInitSlots(void) {
     }
 }
 
-void MusicGetVolume(float* left, float* right) {
+extern "C" void MusicGetVolume(float* left, float* right) {
     if (left) {
         *left = sMusicVolumeL;
     }
@@ -72,7 +72,7 @@ void MusicGetVolume(float* left, float* right) {
     }
 }
 
-void MusicSetVolume(float left, float right) {
+extern "C" void MusicSetVolume(float left, float right) {
     sMusicVolumeL = MIN(1.0f, MAX(0.0f, left));
     sMusicVolumeR = MIN(1.0f, MAX(0.0f, right));
     fn_800F6CFC(70.0f * sMusicVolumeL, 70.0f * sMusicVolumeR);
@@ -92,15 +92,15 @@ inline void MusicApplyMode(int mode) {
     }
 }
 
-void MusicSetMode(int mode) { MusicApplyMode(mode); }
+extern "C" void MusicSetMode(int mode) { MusicApplyMode(mode); }
 
-void MusicPause(void) {
+extern "C" void MusicPause(void) {
     if (sMusicState == 2) {
         MusicSetState(1);
     }
 }
 
-void MusicResume(void) {
+extern "C" void MusicResume(void) {
     if (sMusicState == 1) {
         u32 status = fn_800F6D4C();
         while (status - 3 <= 1) {
@@ -111,17 +111,17 @@ void MusicResume(void) {
     }
 }
 
-void MusicStop(void) { MusicSetState(0); }
+extern "C" void MusicStop(void) { MusicSetState(0); }
 
-void MusicHold(void) { MusicSetState(1); }
+extern "C" void MusicHold(void) { MusicSetState(1); }
 
-void MusicReset(void) {
+extern "C" void MusicReset(void) {
     MusicSetState(0);
     MusicInitSlots();
     fn_800F6F3C(0);
 }
 
-int MusicFree(int handle) {
+extern "C" int MusicFree(int handle) {
     MusicSlot* slot = (MusicSlot*)~handle;
 
     if (fn_800F6FFC(slot) == 0) {
@@ -135,7 +135,7 @@ int MusicFree(int handle) {
 
 void MusicDone(void);
 
-int MusicPlay(const char* name, void (*done)(void*), void* arg) {
+extern "C" int MusicPlay(const char* name, void (*done)(void*), void* arg) {
     char ext[0x100];
     char base[0x100];
     char dir[0x100];
@@ -160,13 +160,13 @@ int MusicPlay(const char* name, void (*done)(void*), void* arg) {
     return result;
 }
 
-void MusicShutdown(void) {
+extern "C" void MusicShutdown(void) {
     MusicSetState(0);
     MusicInitSlots();
     fn_800F6F3C(0);
 }
 
-void MusicInit(void) {
+extern "C" void MusicInit(void) {
     int left;
     int right;
 

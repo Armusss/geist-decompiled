@@ -70,7 +70,7 @@ void MemNop(void) {}
 
 void MemSetCallback(void* cb) { sMemCallback = cb; }
 
-void MemFree(void* p, const char* file, int line) {
+extern "C" void MemFree(void* p, const char* file, int line) {
     OSLockMutex(&gHeapMutex);
     OSFreeToHeap(__OSCurrHeap, p);
     OSUnlockMutex(&gHeapMutex);
@@ -82,7 +82,7 @@ void MemOutOfMemory(void) {
     FatalError("Out of Memory\n");
 }
 
-void* MemAlloc(int size, const char* file, int line) {
+extern "C" void* MemAlloc(int size, const char* file, int line) {
     void* p;
     char msg[64];
 

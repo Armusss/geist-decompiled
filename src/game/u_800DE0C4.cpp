@@ -25,7 +25,7 @@ extern int lbl_804D5828;
 extern int lbl_804D5860;
 }
 
-int SendMsg(int target, int msg, void* data);
+extern "C" int SendMsg(int target, int msg, void* data);
 void HudMessage(int id, const char* text, float r, float g, float b);
 int StoreSave(int mode, const char* name, int size, u32 flags, void* src);
 int StoreLoad(int mode, const char* name, int size, u32 flags, void* dst);

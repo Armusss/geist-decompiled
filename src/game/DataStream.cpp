@@ -12,8 +12,8 @@
 
 #include <string.h>
 
-void* MemAlloc(int size, const char* file, int line);
-void MemFree(void* p, const char* file, int line);
+extern "C" void* MemAlloc(int size, const char* file, int line);
+extern "C" void MemFree(void* p, const char* file, int line);
 void* VAlloc(int size);
 void VFree(void* p);
 void FatalError(const char* message);

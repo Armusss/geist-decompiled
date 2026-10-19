@@ -98,7 +98,7 @@ struct CreditsData {
     int top;
 };
 
-int SendMsg(int to, int msg, void* data);                 // 0x800265D4
+extern "C" int SendMsg(int to, int msg, void* data);                 // 0x800265D4
 int AssetFind(u32 table, u32 key);                        // 0x8007EB34
 const char* StrFindKey(u32 key, u32* len);                // 0x80086234
 const char* StrGetIndex(int index, u32* len);             // 0x800862F0
@@ -277,7 +277,7 @@ void CreditsTipDraw(void) {
     r = Query(0x4B000000, 0x41E, 0xC6D2473B);
 
     if (TipShown(r) && (int)sTipLength > 0) {
-        TextSetRect(gTipX + (320 - gTipWidth / 2), gTipX + gTipWidth / 2 + 320, gTipBottom - gTipTop, gTipBottom, 0,
+        TextSetRect(320 - gTipWidth / 2 + gTipX, 320 + gTipWidth / 2 + gTipX, gTipBottom - gTipTop, gTipBottom, 0,
                     sTipLength - 1, 0, 0);
         TextSetStyle(255, 255, 255, 255, gTipStyle, 0, 0, 0, 0, 0, gTipStyle2, 0);
         TextSetFlags(1, 0);

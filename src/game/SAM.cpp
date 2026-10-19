@@ -25,7 +25,7 @@ void fn_80080A34(u32 stream, int count, int (*cb)(u8*, int), int arg);
 u32 fn_80080E24(void* buffer, int size, int count, int arg);
 }
 
-void* MemAlloc(int size, const char* file, int line);
+extern "C" void* MemAlloc(int size, const char* file, int line);
 
 struct SAMHeader {
     u32 a;

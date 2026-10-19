@@ -128,7 +128,7 @@ extern "C" void* memset(void* dst, int val, unsigned long n);
 void* VAlloc(int size);
 void VFree(void* p);
 int ActorDefaultMsg(Actor* actor, int msg, void* data, int arg); // 0x800E4C64
-int SendMsg(int target, int msg, void* data);            // 0x800265D4
+extern "C" int SendMsg(int target, int msg, void* data);            // 0x800265D4
 int HasCondition(void* list, int id);                    // 0x800A7AC4
 int BehTarget(Beh* b);                                   // 0x8016334C
 float OwnerValue(Owner* o, void* target);                // 0x800AA050

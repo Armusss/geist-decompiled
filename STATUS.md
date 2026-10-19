@@ -10,6 +10,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_802B2680 (10 fns; Lead split rodata/data/sdata2) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_802D439C (4 fns; Lead split rodata/data/sdata/sdata2) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_801A1D24 retry (3/7 after run 1) | running |
+| opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Opus queue register patterns, brute force allowed: lazy type-name hash (ToolCreate, SpiritGunCreate, HomingMsg, DashOnEvent), parameter-last rotation (HostAction, WeaponMsg), then late param copy. Brief: `~/geist-work/ds/opus-1.task.md` | running |
 
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
 They are started with `~/geist-work/ds/run_worker.sh NAME [MAX_TURNS]` (allowlist + 150-turn cap), at most 3 at once.
@@ -19,7 +20,10 @@ You can watch one live with `python3 ~/geist-work/ds/ds_watch.py NAME -f`.
 - ds-2: u_80161F40 was byte-identical, but only through a hand-built string blob and mangled-name calls. Rejected;
   the Lead rewrote it as real source (the behaviour registry).
 - ds-3: u_802A770C reached 4/6.
-Lesson: do data splits before handing out a unit, and reject hacks. They have read-only Ghidra, WebSearch and WebFetch only (no REA, no Dolphin, no memory). Each gets
+Lesson: do data splits before handing out a unit, and reject hacks.
+**From 2026-10-18 the workers triage first:** draft every function, then skip register-only diffs at once and
+anything stuck after 8 tries. Those go to the Opus agent, which may brute-force source shapes (never compilers
+or flags). Its results get the same audit. They have read-only Ghidra, WebSearch and WebFetch only (no REA, no Dolphin, no memory). Each gets
 a self-contained prompt from `~/geist-work/ds/task_template.md`, with the rules, commands and a skip-and-hand-off
 rule. Their results are in `~/geist-work/ds/<name>/worker-result.json`. A worker never commits; the Lead audits
 each result (rebuild, DOL SHA-1 = build.sha1, unit Matching and linked from its own src object), then commits and
@@ -27,6 +31,22 @@ merges it.
 Borrowed code that workers report goes into the README credits.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_801A1D24 5/7 (pickup actor, ds-3, 2 runs). Both leftovers are **register-only**:
+  - PickupLoad 0x801A1D24 (8 diffs): tag/string/end pointers rotate, ours r8/r6/r7 vs retail r6/r7/r8.
+  - PickupScanMsg 0x801A24BC (29 diffs).
+  Partial source in main; notes in `~/geist-work/ds/ds-3/worker-notes.md`.
+- u_802D439C 2/4 (ghost gun, ds-2; both leftovers are **register-only**):
+  - GhostGunUpdate 0x802D443C: 113 diffs. Same instruction multiset as retail; a/r29-r30 roles swap and the
+    store schedule follows.
+  - GhostGunDraw 0x802D4B78: 72 diffs. A 4-register rotation, plus retail coalesces `fade = alpha = 0`
+    (`mr r27,r28`), so ours is 4 bytes longer.
+- u_802B2680 6/10 (host-action actor, ds-1 run 1 with the old prompt):
+  - Left: HostActionMsg 0x802B2680, HostActionEvent, HostActionEnter, HostActionAnimate (0x6CC).
+  - **Boundary:** the descriptor at 0x803C42A0 points at HostActionFree 0x802B33F0 (in this unit) and at
+    0x802B3430..0x802B36B4 (in u_802B3430). The two units are probably one file; the Lead fixes that.
+- **Boundary:** u_8022ED88 (Matching) and u_8022EEEC are probably one file. The "Ghost Bee" descriptor
+  0x803BD988 uses SpinInit/SpinDestroy, SpinSetup is at 0x8022FF6C, and there is one string pool,
+  0x80349D88-0x80349DF0.
 - u_80243B0C 1/4 (Dash actor; failed twice, ds-1 on Flash). DashSendAnim matches; the rest is open:
 
   | Function | Address | Diffs | What's left |
@@ -195,6 +215,22 @@ It is zlib 1.1.4's zutil.c (from ~/geist-work/helper-musyx/refs) with calloc/fre
 MemAlloc/MemFree (`__FILE__`, `__LINE__` 213/220) and K&R definitions made ANSI for the C++ build.
 zlibVersion/zError are dead-stripped. The rest of the old game/zutil.c unit (mirror/reflection rendering)
 is now game/u_8019FDD0.cpp.
+
+**Files compiled as C (`cflags_game_c`, `-lang=c`; same compiler GC/1.3.2):**
+- **Audio.c** (2026-10-18, user approved).
+  - Evidence: AudioMsgHandler calls fn_80084540 with 3 arguments (r6 left unset), and SoundSetMsg calls it with 4,
+    in the same file. Only an unprototyped C call does both; in C++ it would take a function-pointer cast.
+  - The whole file (15/15) matches as C.
+  - Counter-evidence, recorded honestly: CodeWarrior lays out .sbss in reverse declaration order in C and in
+    forward order in C++. Retail's layout matches C++ with the natural order, or C with the 12 small statics
+    declared in reverse. Declaration order is free source shape, so this decides nothing.
+  - The shared functions it calls or defines now have **C linkage** everywhere: extern "C" in 37 game files and
+    zutil.c, and plain names in symbols.txt. That covers SendMsg, MemAlloc, MemFree, FileFlushBuffer, FxStart,
+    Music* (12), Fn8007CEA4 and Audio's own functions.
+  - `~/geist-work/ds/lead/clinkage.py NAME...` applies extern "C" across src/game when another .c file needs it.
+  - Data splits added: .rodata 0x80343610-18, .bss 0x80426910-0x80426B10, .sbss 0x804D45B0-E0,
+    .sdata2 0x804D6770-88. MusicFadeTo is a static helper defined before AudioUpdate, so its 0.0f/1.0f come
+    first in .sdata2; the linker strips its unused copy.
 
 Files on GC/2.0: **u_8012071C** (qsort comparators 0x80120A78/0x80120A9C, pre-stwu loads; 1.3.2 cannot).
 History: on 2026-10-13 the Lead briefly switched the whole game block to 2.0 after checking only matched

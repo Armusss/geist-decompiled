@@ -340,6 +340,9 @@ cflags_game = [
     "-i include/libc",
 ]
 
+# Game files that were compiled as C (evidence per file, STATUS.md G4): same flags with -lang=c.
+cflags_game_c = [f if f != "-lang=c++" else "-lang=c" for f in cflags_game]
+
 # REL flags
 cflags_rel = [
     *cflags_base,
@@ -593,7 +596,7 @@ config.libs = [
             Object(NonMatching, "game/u_8006C604.cpp"),  # guess
             Object(NonMatching, "game/u_800776FC.cpp"),  # guess
             Object(NonMatching, "game/Arena.c"),  # guess
-            Object(NonMatching, "game/Audio.c"),  # guess
+            Object(Matching, "game/Audio.c", cflags=cflags_game_c),  # C: unprototyped 3/4-arg calls (STATUS G4)
             Object(Matching, "game/u_8007DAC8.cpp"),  # timers
             Object(Matching, "game/u_8007E1E8.cpp"),  # split-screen text helpers
             Object(Matching, "game/u_8007E8F8.cpp"),  # object lookup tables

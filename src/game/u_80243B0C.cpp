@@ -158,11 +158,11 @@ struct PlaceMsg {
     int unk8;
 };
 
-int SendMsg(int to, int msg, void* data);                 // 0x800265D4
+extern "C" int SendMsg(int to, int msg, void* data);                 // 0x800265D4
 int ActorPlayAnim(int actor, u32 anim, int arg);          // 0x800C5654
 int PlayerInHost(Actor* player);                          // 0x80049750
 void* FxFind(const char* name);                           // 0x80170834
-void FxStart(void* fx, int a, int b);                     // 0x8016F390
+extern "C" void FxStart(void* fx, int a, int b);                     // 0x8016F390
 int ActorAim(int* out, Actor* a, int index);              // 0x8009F700
 int AssetFind(u32 table, u32 key);                        // 0x8007EB34
 

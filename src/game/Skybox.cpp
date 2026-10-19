@@ -47,9 +47,9 @@ struct SoundMsg {
 int ActorTypeRegister(ActorType* type);                  // 0x800C83F0
 int ActorDefaultMsg(Actor* actor, int msg, void* data, int arg); // 0x800E4C64
 void ActorFn80022D98(Actor* actor, int arg);             // 0x80022D98
-int SendMsg(int target, int msg, void* data);            // 0x800265D4
+extern "C" int SendMsg(int target, int msg, void* data);            // 0x800265D4
 void ActorFn8002378C(Actor* actor, int a, int b, int c, int d, int e, int f); // 0x8002378C
-void Fn8007CEA4(void* p);                                 // 0x8007CEA4
+extern "C" void Fn8007CEA4(void* p);                                 // 0x8007CEA4
 
 int SkyboxMsg(Actor* actor, int msg, void* data, int arg);
 int SkyboxSpawn(Actor* actor);

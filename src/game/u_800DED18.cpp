@@ -7,7 +7,7 @@
 typedef unsigned long u32;
 typedef unsigned char u8;
 
-void FileFlushBuffer(void* dst, int size);
+extern "C" void FileFlushBuffer(void* dst, int size);
 int FileAddHandler(int type, int (*handler)(void*, int, void*), void* arg);
 int GameEvent(int event, int arg);
 

@@ -113,7 +113,7 @@ struct LinkMsg {
     char info[0x30];
 };
 
-int SendMsg(int target, int msg, void* data);            // 0x800265D4
+extern "C" int SendMsg(int target, int msg, void* data);            // 0x800265D4
 void* VAlloc(int size);
 extern "C" void* memset(void* dst, int val, unsigned long n);
 void PossessableDestroy(Actor* a);                       // 0x8020D4E0

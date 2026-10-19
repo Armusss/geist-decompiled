@@ -156,10 +156,10 @@ void ActorUpdate(Actor* a, float dt);                     // 0x800E48A0
 int ActorInitBase(Actor* a);                              // 0x800E6444
 int ActorPlayAnim(int handle, u32 anim, int arg);         // 0x800C5654
 int ActorAnimState(int handle, u32 anim);                 // 0x800C5028
-int SendMsg(int target, int msg, void* data);             // 0x800265D4
+extern "C" int SendMsg(int target, int msg, void* data);             // 0x800265D4
 int AssetFind(u32 bank, u32 name);                        // 0x8007EB34
 void* FxFind(const char* name);                           // 0x80170834
-void FxStart(void* fx, int a, int b);                     // 0x8016F390
+extern "C" void FxStart(void* fx, int a, int b);                     // 0x8016F390
 void ModelLoadIds(short* ids, int count);                 // 0x8003D84C
 void ModelFreeIds(short* ids, int count);                 // 0x8003D66C
 extern "C" void fn_8000F874(int tex);                    // texture acquire

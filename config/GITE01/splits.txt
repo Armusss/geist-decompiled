@@ -88,6 +88,10 @@ game/Arena.c:
 
 game/Audio.c:
 	.text       start:0x8007CC04 end:0x8007DAC8
+	.rodata     start:0x80343610 end:0x80343618
+	.bss        start:0x80426910 end:0x80426B10
+	.sbss       start:0x804D45B0 end:0x804D45E0
+	.sdata2     start:0x804D6770 end:0x804D6788
 
 game/u_8007DAC8.cpp:
 	.text       start:0x8007DAC8 end:0x8007E1E8
@@ -609,6 +613,10 @@ game/u_80244728.cpp:
 
 game/u_80247EB0.cpp:
 	.text       start:0x80247EB0 end:0x80248FC8
+	.rodata     start:0x8034A3D0 end:0x8034A450
+	.data       start:0x803BE7A0 end:0x803BE7D0
+	.sdata      start:0x804D3588 end:0x804D3590
+	.sdata2     start:0x804D9BA8 end:0x804D9C00
 
 game/u_80248FC8.cpp:
 	.text       start:0x80248FC8 end:0x8024CAA0
@@ -762,15 +770,24 @@ game/u_802B7120.cpp:
 
 game/u_802B9088.cpp:
 	.text       start:0x802B9088 end:0x802BA078
+	.rodata     start:0x8034BCC8 end:0x8034BD28
+	.data       start:0x803C4A20 end:0x803C4A40
+	.sdata2     start:0x804DAC70 end:0x804DACA8
 
 game/u_802BA078.cpp:
 	.text       start:0x802BA078 end:0x802BB1F4
+	.rodata     start:0x8034BD28 end:0x8034BD80
+	.data       start:0x803C4A40 end:0x803C4A70
+	.sdata2     start:0x804DACA8 end:0x804DACE0
 
 game/u_802BB1F4.cpp:
 	.text       start:0x802BB1F4 end:0x802BF114
 
 game/u_802BF114.cpp:
 	.text       start:0x802BF114 end:0x802C01E8
+	.rodata     start:0x8034BDF8 end:0x8034BE48
+	.data       start:0x803C4CB0 end:0x803C4CE0
+	.sdata2     start:0x804DAD40 end:0x804DAD78
 
 game/u_802C01E8.cpp:
 	.text       start:0x802C01E8 end:0x802C30A4

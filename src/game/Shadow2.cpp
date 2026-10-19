@@ -43,8 +43,8 @@ struct LinkInfo {
     u8 pad[0x30];
 };
 
-void* MemAlloc(int size, const char* file, int line);
-void MemFree(void* p, const char* file, int line);
+extern "C" void* MemAlloc(int size, const char* file, int line);
+extern "C" void MemFree(void* p, const char* file, int line);
 void* ScratchAAlloc(int size);
 void VFree(void* p);
 void LinkInfoInit(void* info);

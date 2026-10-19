@@ -20,7 +20,7 @@ int fn_800F8A30(int a);
 }
 
 void Fn800F7F5C(int emitter, int id, int msg, int arg, void* info, float dt);
-void FxStart(void* fx, int a, int b);
+extern "C" void FxStart(void* fx, int a, int b);
 void* VAlloc(int size);
 void VFree(void* p);
 void Fn800F840C(int emitter, int a, int b);

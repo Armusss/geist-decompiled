@@ -91,12 +91,12 @@ void fn_80048BA8(Actor* a, void* buf, int mode);
 void fn_8006D288(Actor* a, int state);
 }
 
-int SendMsg(int to, int msg, void* data);                 // 0x800265D4
+extern "C" int SendMsg(int to, int msg, void* data);                 // 0x800265D4
 int Fn800F7DEC(int a, int b, int c, int d, void* e);      // 0x800F7DEC
 void Fn800F7F5C(int a, int b, int c, int d, void* e, float f); // 0x800F7F5C
 int ActorPlayAnim(int actor, u32 anim, int arg);          // 0x800C5654
 void* FxFind(const char* name);                           // 0x80170834
-void FxStart(void* fx, int a, int b);                     // 0x8016F390
+extern "C" void FxStart(void* fx, int a, int b);                     // 0x8016F390
 int AssetFind(u32 table, u32 key);                        // 0x8007EB34
 
 int gHostSounds[16];

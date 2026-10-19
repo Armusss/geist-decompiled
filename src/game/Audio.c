@@ -3,19 +3,31 @@
 //   the level's sound table (loaded through a file handler) and driven by messages 0x2400-0x241B.
 // - Two tables of 16 fades ramp a sound's volume (or a second parameter) toward a target over time.
 // - The audio object (id 0x23) handles effect/music messages 0x2400-0x241A and fades the music volume.
-// Compiled as C++ like the rest of the game.
+// Compiled as C (-lang=c), unlike the C++ game files: AudioMsgHandler calls fn_80084540 with 3 arguments
+// (r6 left unset) while SoundSetMsg calls it with 4. Only an unprototyped C call produces both in one file,
+// and the whole file matches as C (STATUS.md G4). Functions it shares with C++ files have C linkage.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <dolphin/types.h>
+typedef struct AudioMsg AudioMsg;
+typedef struct Fade Fade;
+typedef struct NotifyMsg NotifyMsg;
+typedef struct SetMsg SetMsg;
+typedef struct SoundDef SoundDef;
+typedef struct SoundFile SoundFile;
+typedef struct SoundMsg SoundMsg;
+typedef struct SoundSet SoundSet;
+typedef struct SoundSlot SoundSlot;
+typedef struct Vec3 Vec3;
 
-extern "C" {
+
 // Callees in other files, not named yet.
 void fn_8016EEF4(int handle);                // stop a sound
 void fn_8016EDD8(int handle, int* pos);      // move a sound
 int fn_8016F120(int id, int* pos);           // start a positional sound
 void fn_8016F018(int handle, int volume);
 void fn_8016F010(int handle, int value);
-int fn_80084540(int to, int msg, void* data, int* result);
+int fn_80084540();  /* no prototype: called with 3 and 4 arguments */
 int fn_800C5210(int to, int msg, void* data);
 void fn_80026680(int type, void* func, int arg);
 void fn_80026660(int type, void* func, int arg);
@@ -31,7 +43,6 @@ void fn_8016F4DC(int a, int b);
 void fn_8016EA98(int a);
 void fn_8016E910(int a, int b);
 void fn_8016E768(int a, float b);
-}
 
 int SendMsg(int to, int msg, void* data);
 void* MemAlloc(int size, const char* file, int line);
@@ -116,18 +127,19 @@ struct SoundFile {
 static Fade sFadesA[16];
 static Fade sFadesB[16];
 
-SoundDef* sSoundDefs;
-SoundSet* sSoundSets;
-int sSoundSetCount;
-static int sFadeCountA;
-static int sFadeCountB;
-static int sMusicFading;
-static float sMusicFrom;
-static float sMusicTo;
-static float sMusicStep;
-static int sMusicTarget;
-static void (*sMusicDone)(void* user);
+/* Declared in this order: in C, CodeWarrior lays out .sbss in reverse declaration order. */
 static void* sMusicUser;
+static void (*sMusicDone)(void* user);
+static int sMusicTarget;
+static float sMusicStep;
+static float sMusicTo;
+static float sMusicFrom;
+static int sMusicFading;
+static int sFadeCountB;
+static int sFadeCountA;
+int sSoundSetCount;
+SoundSet* sSoundSets;
+SoundDef* sSoundDefs;
 
 void SoundSetStopAll(SoundSet* set) {
     int i;
@@ -214,6 +226,21 @@ void MusicNotify(void* user) {
 }
 
 void AudioNop(void) {}
+
+/* Starts a music volume fade, or sets the volume at once when time <= 0. Defined before AudioUpdate:
+   its 0.0f/1.0f come first in .sdata2 (static functions are compiled where they are defined). */
+static void MusicFadeTo(float vol, float time, void (*done)(void*), void* user) {
+    if (time <= 0.0f) {
+        MusicSetVolume(vol, vol);
+    } else {
+        sMusicFading = 1;
+        MusicGetVolume(&sMusicFrom, 0);
+        sMusicTo = MIN(1.0f, MAX(0.0f, vol));
+        sMusicStep = (sMusicTo - sMusicFrom) / time;
+        sMusicDone = done;
+        sMusicUser = user;
+    }
+}
 
 void AudioUpdate(float dt) {
     int i;
@@ -338,7 +365,7 @@ int AudioInit(void) {
 }
 
 int AudioMsgHandler(int id, int msg, AudioMsg* data) {
-    if (!fn_80084540((id & 0xFFFFFF) | 0x23000000, msg, data, 0)) {
+    if (!fn_80084540((id & 0xFFFFFF) | 0x23000000, msg, data)) {
         switch (msg) {
         case 0x2400:
             if (data->c) {
@@ -393,16 +420,7 @@ int AudioMsgHandler(int id, int msg, AudioMsg* data) {
             time = *(float*)&data->b;
             user = data->d;
             vol = *(float*)&data->a;
-            if (time <= 0.0f) {
-                MusicSetVolume(vol, vol);
-            } else {
-                sMusicFading = 1;
-                MusicGetVolume(&sMusicFrom, 0);
-                sMusicTo = MIN(1.0f, MAX(0.0f, vol));
-                sMusicStep = (sMusicTo - sMusicFrom) / time;
-                sMusicDone = done;
-                sMusicUser = user;
-            }
+            MusicFadeTo(vol, time, done, user);
             return 1;
         }
         case 0x2410:
