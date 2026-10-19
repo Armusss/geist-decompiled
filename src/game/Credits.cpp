@@ -277,7 +277,7 @@ void CreditsTipDraw(void) {
     r = Query(0x4B000000, 0x41E, 0xC6D2473B);
 
     if (TipShown(r) && (int)sTipLength > 0) {
-        TextSetRect(gTipX + (320 - gTipWidth / 2), gTipX + gTipWidth / 2 + 320, gTipBottom - gTipTop, gTipBottom, 0,
+        TextSetRect(320 - gTipWidth / 2 + gTipX, 320 + gTipWidth / 2 + gTipX, gTipBottom - gTipTop, gTipBottom, 0,
                     sTipLength - 1, 0, 0);
         TextSetStyle(255, 255, 255, 255, gTipStyle, 0, 0, 0, 0, 0, gTipStyle2, 0);
         TextSetFlags(1, 0);
