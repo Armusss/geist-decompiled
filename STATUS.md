@@ -68,8 +68,22 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
   worker with the new hard rule (source written within 15 turns).
 - u_802BF114 9/11 (ride action 2, ds-2): RideAction2Update (23 diffs, r30/r31 swap) and RideAction2Animate
   (33 diffs, FP register renumbering). Both are register-only and were sent to opus-1 with their u_802BA078 siblings.
-- u_802B9088 5/11 (ride actor, ds-1 2 runs): RideMsg, RideUpdate, RideInit, RideState1Update, RideState0Update,
-  RideTick are left. Notes in `~/geist-work/ds/ds-1.notes.u_802B9088.md`. u_802BA078 8/11 (ride action):
+- **u_802B2680 Matching** (opus-1 batch 3). Shapes that worked:
+  - single-case switches;
+  - a bone pointer taken into a local and re-taken at a later use;
+  - extern prototypes with the float argument in the 4th position. fn_8003F15C is declared that way in
+    u_802B2680/u_802D439C, but with the float last in u_80085CDC. Both link, since floats go in FPRs either way,
+    but the declarations should be reconciled.
+- u_802B9088 5/11 (ride actor):
+
+  | Function | Diffs | What's left |
+  |---|---|---|
+  | RideUpdate | 5 | switch case-block order |
+  | RideInit | 5 | the same switch |
+  | RideState0Update | 2 | cond register r0 vs r4 |
+  | RideState1Update | 2 | same |
+  | RideTick | 287 | many small diffs |
+  | RideMsg | 235 | String stack slots reversed | Notes in `~/geist-work/ds/ds-1.notes.u_802B9088.md`. u_802BA078 8/11 (ride action):
   RideActionMsg, RideActionUpdate, RideActionAnimate (sent to opus-1).
 - u_801A1D24 5/7 (pickup actor, ds-3, 2 runs). Both leftovers are **register-only**:
   - PickupLoad 0x801A1D24 (8 diffs): tag/string/end pointers rotate, ours r8/r6/r7 vs retail r6/r7/r8.

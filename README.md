@@ -49,7 +49,7 @@ The baseline (all code still as split assembly) builds and verifies: `build/GITE
 ## State as of 2026-10-10
 See **STATUS.md** for the detailed handoff (compiler findings, SDK splits, next steps).
 - 199 of 202 library units (Dolphin SDK 77/77, MusyX 26/26, zlib 11/11, MSL/Runtime/TRK 85/88) build from C
-  and match (DOL byte-identical). Game code (GC/1.3.x, C++) is split into about 195 provisional units (boundaries are corrected as files get matched); 39 are matched so far, each verified byte-identical in the linked DOL (see the progress map).
+  and match (DOL byte-identical). Game code (GC/1.3.x, C++) is split into about 195 provisional units (boundaries are corrected as files get matched); 40 are matched so far, each verified byte-identical in the linked DOL (see the progress map).
 - dtk analysis found 8,706 functions in main.dol and split it into 70 units, all still assembly (0% matched).
 - `config/GITE01/symbols.txt` and `splits.txt` were auto-generated. There's no symbol map on the disc,
   so names are `fn_`/`lbl_` except for SDK/runtime functions dtk recognised by signature.
