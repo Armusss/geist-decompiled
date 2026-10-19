@@ -276,7 +276,7 @@ void GrenadeDestroy(Actor* actor);
 void GrenadeUpdate(Actor* actor, float dt);
 int GrenadeInit(Actor* actor);
 int GrenadeMsg(Actor* actor, int msg, void* data, int arg);
-int GrenadeCommand(GrenadeMsgData* data, int arg);
+int GrenadeCommand(GrenadeMsgData* data);
 void GrenadeDetonate(Actor* actor, int target);
 
 ActorType gGrenadeType = { 0, "Grenade", GrenadeMsg, GrenadeUpdate, GrenadeInit, 0, GrenadeDestroy };
@@ -652,7 +652,7 @@ int GrenadeMsg(Actor* actor, int msg, void* data_, int arg) {
         break;
     }
     case 0x41D:
-        result = GrenadeCommand(data, 0);
+        result = GrenadeCommand(data);
         break;
     case 0x7404: {
         int r;
@@ -688,11 +688,9 @@ int GrenadeMsg(Actor* actor, int msg, void* data_, int arg) {
     return PossessableMsg(actor, msg, data_, arg);
 }
 
-int GrenadeCommand(GrenadeMsgData* data, int arg) {
+int GrenadeCommand(GrenadeMsgData* data) {
     Actor* actor = data->actor;
     GrenadeData* info = actor->data;
-
-    (void)arg;
 
     switch (data->unk4) {
     case 0xDCC384C1:
