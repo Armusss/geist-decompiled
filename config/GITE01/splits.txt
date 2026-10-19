@@ -660,6 +660,9 @@ game/u_8025643C.cpp:
 
 game/LaserScope.cpp:
 	.text       start:0x8025951C end:0x80259AB0
+	.rodata     start:0x8034AA88 end:0x8034AAF0
+	.data       start:0x803BF7D0 end:0x803BF800
+	.sdata2     start:0x804D9EE0 end:0x804D9F00
 
 game/u_80259AB0.cpp:
 	.text       start:0x80259AB0 end:0x8025ECF8
@@ -772,6 +775,9 @@ game/u_802A770C.cpp:
 
 game/Fuel.cpp:
 	.text       start:0x802A7E3C end:0x802A815C
+	.rodata     start:0x8034B940 end:0x8034B990
+	.data       start:0x803C4088 end:0x803C40B8
+	.sdata2     start:0x804DA910 end:0x804DA918
 
 game/u_802A815C.cpp:
 	.text       start:0x802A815C end:0x802A9824

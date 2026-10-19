@@ -55,11 +55,11 @@ struct QueryMsg {
 
 struct ItemType {
     const char* name;
-    int unk4[7];
-    int (*msg)(int item, int msg, u32 owner, void* data);
-    u32 (*id)(void);
-    void (*update)(void);
-    int unk2C;
+    int unk4[6];
+    int (*msg)(int item, int msg, u32 owner, void* data);   // 0x1C
+    u32 (*id)(void);                                         // 0x20
+    void (*update)(void);                                    // 0x24
+    int unk28[2];
 };
 
 struct SpawnMsg {

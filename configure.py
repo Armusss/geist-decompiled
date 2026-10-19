@@ -730,7 +730,7 @@ config.libs = [
             Object(NonMatching, "game/u_80251CB8.cpp"),  # pinned
             Object(NonMatching, "game/u_802541D4.cpp"),  # guess
             Object(NonMatching, "game/u_8025643C.cpp"),  # guess
-            Object(NonMatching, "game/LaserScope.cpp"),  # (helper-game-b)
+            Object(Matching, "game/LaserScope.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_80259AB0.cpp"),  # pinned
             Object(NonMatching, "game/u_8025ECF8.cpp"),  # pinned
             Object(Matching, "game/ThermoBeh.cpp"),  # thermostat behaviour (split from Thermostat.cpp)
@@ -760,7 +760,7 @@ config.libs = [
             Object(NonMatching, "game/u_8029C0AC.cpp"),  # guess
             Object(NonMatching, "game/u_8029E714.cpp"),  # pinned
             Object(Matching, "game/u_802A770C.cpp"),  # host types
-            Object(NonMatching, "game/Fuel.cpp"),  # (helper-game-b)
+            Object(Matching, "game/Fuel.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_802A815C.cpp"),  # split from u_802A770C
             Object(NonMatching, "game/u_802A9824.cpp"),  # known
             Object(NonMatching, "game/u_802AE27C.cpp"),  # pinned
