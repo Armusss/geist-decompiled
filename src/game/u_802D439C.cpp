@@ -149,7 +149,7 @@ void fn_80211638(float life, float a, float b, float c, Particle* part,
                  Vec3* pos, Vec3* dir, int d, int e);
 void fn_80210D80(void* particles, int stride, int count, int tex, int unk,
                  const float* tbl1, const float* tbl2);
-void fn_8003F15C(int bone, Mtx34* mtx, float f, int a, int b, int c);
+void fn_8003F15C(int bone, Mtx34* mtx, int a, float f, int b, int c);
 int fn_8001F928(Actor* actor, int* coords, u32 flags,
                 int (*cb)(HitResult*, void*), void* query);
 int fn_80049940(void);
@@ -376,7 +376,7 @@ void GhostGunDraw(Params* p, Actor* a) {
     }
 
     ActorGetMatrix(&mtx, a);
-    fn_8003F15C(a->bone, &mtx, 1.0f, 1, 0, 0);
+    fn_8003F15C(a->bone, &mtx, 1, 1.0f, 0, 0);
     fn_80210D80(d, 0x44, 20, sTextureA, 0, sParticleTable, sColorTable);
 
     d->trailIndex = 0;
