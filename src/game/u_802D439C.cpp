@@ -195,8 +195,9 @@ void GhostGunDestroy(Params* p, Actor* a) {
     a->data = 0;
 }
 
-int GhostGunUpdate(Params* p, Actor* a, float dt) {
+int GhostGunUpdate(void* pp, Actor* a, float dt) {
     EffectData* d = (EffectData*)a->data;
+    Params* p = (Params*)pp;
     HitResult hit;
     Msg msg;
     Mtx34 mtx;
@@ -207,6 +208,7 @@ int GhostGunUpdate(Params* p, Actor* a, float dt) {
 
     (void)p;
     query.result = &hit;
+    query.type = a->unkCC;
 
     coords[0] = (int)a->target.x;
     coords[1] = (int)a->target.y;
@@ -215,7 +217,6 @@ int GhostGunUpdate(Params* p, Actor* a, float dt) {
     coords[4] = (int)a->pos.y;
     coords[5] = (int)a->pos.z;
 
-    query.type = a->unkCC;
 
     fn_800E1098(2000.0f, &spawn, &a->dir);
     spawn.x += a->pos.x;
