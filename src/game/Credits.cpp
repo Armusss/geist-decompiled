@@ -435,6 +435,18 @@ void NoBotState6Update(void* owner, void* beh) {
     }
 }
 
+// Sends a query and reports whether it was delivered; the answer comes back through out.
+inline int QuerySend(int* out, int target, u32 hash) {
+    QueryMsg m;
+    int sent;
+    m.hash = hash;
+    *(int*)&m.result = 0;
+    m.unk8 = 0;
+    sent = SendMsg(target, 0x41E, &m);
+    *out = *(int*)&m.result;
+    return sent;
+}
+
 void NoBotState4Update(void* owner, void* beh) {
     if (beh) {
         Owner* o = (Owner*)owner;
@@ -447,16 +459,8 @@ void NoBotState4Update(void* owner, void* beh) {
         if ((d->flags & 1) && (d->flags & 0x10)) {
             switch (Fn800F7DEC(o->unk8EC, o->unk8F0, 0x0020EE36, OwnerId(o), 0)) {
             case 0xC0BECF7E: {
-                QueryMsg m;
-                int sent;
                 int r;
-                int target = o->target;
-                m.hash = 0xBDC9494E;
-                *(int*)&m.result = 0;
-                m.unk8 = 0;
-                sent = SendMsg(target, 0x41E, &m);
-                r = *(int*)&m.result;
-                if (sent == 0 || r != 0) {
+                if (QuerySend(&r, o->target, 0xBDC9494E) == 0 || r != 0) {
                     d->next = 6;
                 }
                 break;
