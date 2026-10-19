@@ -369,8 +369,6 @@ void GhostGunDraw(Params* p, Actor* a) {
     Mtx34 mtx;
     Vec3 prev;
     Vec3 cur;
-    int fade;
-    int alpha;
 
     if (a->bone == -1) {
         return;
@@ -382,8 +380,6 @@ void GhostGunDraw(Params* p, Actor* a) {
 
     d->trailIndex = 0;
     prev = a->pos;
-    alpha = 0;
-    fade = 0;
     for (int i = 0; i < 3; i++) {
         int j = d->trailIndex - i;
 
@@ -392,13 +388,11 @@ void GhostGunDraw(Params* p, Actor* a) {
         }
 
         cur = d->trail[j];
-        fn_8013B6F8((float)(9 - alpha), sTextureB, 0);
+        fn_8013B6F8((float)(9 - i * 2), sTextureB, 0);
         fn_8013B608(&cur, &prev, 0xB4, 0x50, 0x82,
                     (u8)(0xC8 - 0x28 * (i + 1)), 0xB4, 0x50, 0x82,
-                    (u8)(0xC8 - fade));
+                    (u8)(0xC8 - i * 0x28));
         fn_8013B5D4();
         prev = cur;
-        fade += 0x28;
-        alpha += 2;
     }
 }
