@@ -171,13 +171,13 @@ void fn_8016D864(float* out, void* in);                // 0x8016D864
 int fn_8008EA9C(int a, int b);                         // 0x8008EA9C
 Actor* fn_800C7E80(void* desc);                        // 0x800C7E80
 void* fn_8028B3BC(Vector* vec, char* end, int size);   // 0x8028B3BC
+void* memset(void* dst, int val, unsigned long n);     // 0x800050B4
+int rand(void);                                        // 0x802F2CFC
 }
 
 void TrailDestroy(int trail);                                      // 0x801DE904
 void VFree(void* p);                                               // 0x8009DA3C
-void* VAlloc(int size);                                            // 0x8009D95C
-void* memset(void* dst, int val, unsigned long n);
-int rand(void);
+void* VAlloc(int size);                                            // 0x8009DA68
 void Vec3Set(Vec3* v, float x, float y, float z);                  // 0x8016BBD0
 int AssetFind(u32 table, u32 key);                                 // 0x8007EB34
 int TrailCreate(TrailDesc* desc);                                  // 0x801DEA28
@@ -194,20 +194,22 @@ extern "C" int SendMsg(int to, int msg, void* data);               // 0x800265D4
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
-    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN", "",
 };
 
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
 
-inline u32 StrHash(const char* s, u32 h) {
+inline u32 StrHash(const char* s) {
     int i;
+    u32 h = 0;
 
     if (s == 0) {
         return 0;
     }
     for (i = 0; s[i] != 0; i++) {
-        h = h * 31 + (unsigned char)toupper(s[i]);
+        h *= 31;
+        h += (unsigned char)toupper(s[i]);
     }
     return h % 0xFFFFFFFF;
 }
@@ -512,23 +514,7 @@ void SwarmUpdate(Actor* a, float dt) {
     {
         Actor* player = GetPlayer();
 
-        if (PlayerInHost(player) && (((Player*)player)->state->flags >> 24) != 1) {
-            SwarmData* w = (SwarmData*)a->data;
-
-            if (!(w->flags & 2)) {
-                if (w->flags & 1) {
-                    HideMsg m;
-                    char* q = w->children.data;
-
-                    m.hide = 0;
-                    while (q != w->children.data + w->children.size) {
-                        SendMsg((*(Actor**)q)->handle, 0xC00, &m);
-                        q += 4;
-                    }
-                }
-                w->flags |= 2;
-            }
-        } else {
+        if (!PlayerInHost(player) || (((Player*)player)->state->flags >> 24) == 1) {
             SwarmData* w = (SwarmData*)a->data;
 
             if (w->flags & 2) {
@@ -544,18 +530,36 @@ void SwarmUpdate(Actor* a, float dt) {
                 }
                 w->flags &= ~2;
             }
+        } else {
+            SwarmData* w = (SwarmData*)a->data;
+
+            if (!(w->flags & 2)) {
+                if (w->flags & 1) {
+                    HideMsg m;
+                    char* q = w->children.data;
+
+                    m.hide = 0;
+                    while (q != w->children.data + w->children.size) {
+                        SendMsg((*(Actor**)q)->handle, 0xC00, &m);
+                        q += 4;
+                    }
+                }
+                w->flags |= 2;
+            }
         }
     }
 }
 
 void SwarmDestroy(Actor* a) {
+    Actor* child;
     SwarmData* d = (SwarmData*)a->data;
+    SpinData* cd;
 
     if (d) {
         if ((d->children.size >> 2) != 0) {
-            do {
-                Actor* child = *(Actor**)d->children.data;
-                SpinData* cd = (SpinData*)child->data;
+            while ((d->children.size >> 2) != 0) {
+                child = *(Actor**)d->children.data;
+                cd = (SpinData*)child->data;
 
                 if (cd) {
                     TrailDestroy(cd->trail[0]);
@@ -565,7 +569,7 @@ void SwarmDestroy(Actor* a) {
                     child->data = 0;
                 }
                 ActorRender(child);
-            } while ((d->children.size >> 2) != 0);
+            }
             d->flags &= ~1;
             d->flags &= ~2;
         }
@@ -575,11 +579,11 @@ void SwarmDestroy(Actor* a) {
 }
 
 int SwarmInit(Actor* a) {
+    float px, py, pz;
+    int i;
     SwarmData* d;
     Vec3 euler;
     SpawnDesc spawn;
-    float px, py, pz;
-    int i;
 
     if (!ActorInitBase(a)) {
         return 0;
@@ -604,9 +608,12 @@ int SwarmInit(Actor* a) {
     px = (float)a->x;
     py = (float)a->y;
     pz = (float)a->z;
+    d = (SwarmData*)a->data;
 
     memset(&spawn, 0, sizeof(spawn));
     spawn.f1C = a->info->fA4;
+    {
+    Vector* children = &d->children;
     for (i = 0; i < 10; i++) {
         Vec3Set(&euler, 360.0f * ((float)rand() / 32767.0f), 20.0f * ((float)rand() / 32767.0f) - 10.0f, 0.0f);
         fn_8016D4EC(&spawn.pos, &euler);
@@ -614,7 +621,7 @@ int SwarmInit(Actor* a) {
         spawn.pos.x += px;
         spawn.pos.y += py;
         spawn.pos.z += pz;
-        spawn.hash = StrHash("Ghost Bee", 0);
+        spawn.hash = StrHash("Ghost Bee");
 
         {
             Actor* child = fn_800C7E80(&spawn);
@@ -622,8 +629,9 @@ int SwarmInit(Actor* a) {
             if (!child) {
                 break;
             }
-            *(Actor**)fn_8028B3BC(&d->children, d->children.data + d->children.size, 4) = child;
+            *(Actor**)fn_8028B3BC(children, children->data + children->size, 4) = child;
         }
+    }
     }
     d->flags |= 1;
     d->flags &= ~2;
@@ -631,22 +639,23 @@ int SwarmInit(Actor* a) {
 }
 
 int SpinSetup(Actor* a) {
-    SpinData* d = (SpinData*)a->data;
+    TrailDesc desc;
     AnimMsg m;
     CountMsg s;
-    TrailDesc desc;
+    SpinData* d;
 
-    if (!d) {
+    if (a->data == 0) {
         d = (SpinData*)VAlloc(0x28);
         a->data = d;
         memset(d, 0, 0x28);
         d->trail[0] = -1;
         d->trail[1] = -1;
         d->trail[2] = -1;
+    } else {
+        d = (SpinData*)a->data;
     }
     a->flags |= 0x20000;
-    d->speed = 1.0f;
-    d->vel.x = 0.0f;
+    d->vel.x = 1.0f;
     d->vel.y = 0.0f;
     d->vel.z = 0.0f;
     d->dir.x = 0.0f;
@@ -655,14 +664,15 @@ int SpinSetup(Actor* a) {
 
     memset(&m, 0, sizeof(m));
     memset(&s, 0, sizeof(s));
-    m.asset = a->info->f80;
     m.anim = "SPIN";
+    m.asset = a->info->f80;
     m.time = 300;
     SendMsg(0x3F000000, 0x6300, &m);
     s.asset = m.asset;
     s.count = 1;
     SendMsg(0x3F000000, 0x6303, &s);
 
+    m.anim = "SPIN";
     m.asset = a->info->f84;
     m.time = -400;
     SendMsg(0x3F000000, 0x6300, &m);

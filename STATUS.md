@@ -58,6 +58,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_8022ED88 5/7 (Ghost Bee spin actors, ds-1 2 runs): SwarmUpdate, SwarmInit are left. Notes: `~/geist-work/ds/ds-1.notes.u_8022ED88.md`.
 - u_80230504 4/7 (extra trail, ds-2 2 runs):
   - ExtraTrailApply 0x80230504 (386 diffs): retail saves f28-f31 (frame 0xB0), ours only f30/f31 (0x90). The
     velocity normalize is probably an inline helper.
