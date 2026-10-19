@@ -29,6 +29,11 @@ Borrowed code that workers report goes into the README credits.
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
 - u_80285014 4/6 (failed twice, ds-1 on V4 Pro then on Flash): ToolMsg 0x80285140 at 9 diffs, ToolCreate
   0x80285564 at 11. Partial source is in main.
+  - ToolCreate is the **lazy type-name hash** pattern, also open in SpiritGun and Homing. Retail keeps the
+    name pointer in r4 and the hash in r6; ours swaps them.
+  - Lead 2026-10-18 tried 9 StrHash shapes (index vs pointer walk, if/else with a shared h, a seed parameter,
+    while loop, Credits' StrHashKey) and 4 EffectTypeHash wrappers (a local h, a local name, void, `!hash`).
+    The count stayed at 11 for all of them, so the cause is outside the helper.
 - **u_802A770C 5/6** and **u_80160188 4/5** hit the same open pattern, the **"parameter-last register
   rotation"**. HostAction (0x802A770C, 61 diffs) and WeaponMsg (0x80160188, 60 diffs) are sibling message
   handlers `(int action, Actor* a)` that make two Query calls. Every opcode, offset and branch matches; only
