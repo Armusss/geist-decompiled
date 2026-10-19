@@ -362,7 +362,7 @@ int CreditsTipVisible(void) {
 struct Owner;
 struct Beh;
 
-typedef void (*BehStateFunc)(Owner* o, Beh* b);
+typedef void (*BehStateFunc)(void* owner, void* beh);
 
 struct BehState {
     BehStateFunc enter;
@@ -413,8 +413,10 @@ void VFree(void* p);
 
 extern BehState gNoBotStates[8];
 
-void NoBotState7Update(Owner* o, Beh* b) {
-    if (b) {
+void NoBotState7Update(void* owner, void* beh) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
         NoBotData* d = b->data;
         if ((d->flags & 0x20) && (d->flags & 0x10)) {
             d->next = 0;
@@ -422,8 +424,10 @@ void NoBotState7Update(Owner* o, Beh* b) {
     }
 }
 
-void NoBotState6Update(Owner* o, Beh* b) {
-    if (b) {
+void NoBotState6Update(void* owner, void* beh) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
         NoBotData* d = b->data;
         if ((d->flags & 0x20) && (d->flags & 0x10)) {
             d->next = 0;
@@ -431,8 +435,10 @@ void NoBotState6Update(Owner* o, Beh* b) {
     }
 }
 
-void NoBotState4Update(Owner* o, Beh* b) {
-    if (b) {
+void NoBotState4Update(void* owner, void* beh) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
         NoBotData* d = b->data;
         BehUpdate(o, b);
         Fn8016295C(o, b);
@@ -468,8 +474,10 @@ void NoBotState4Update(Owner* o, Beh* b) {
     }
 }
 
-void NoBotState0Update(Owner* o, Beh* b) {
-    if (b) {
+void NoBotState0Update(void* owner, void* beh) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
         BehUpdate(o, b);
         Fn8016295C(o, b);
         b->flags &= ~2;
@@ -477,40 +485,48 @@ void NoBotState0Update(Owner* o, Beh* b) {
     }
 }
 
-void NoBotState7Exit(Owner* o, Beh* b) {}
+void NoBotState7Exit(void* owner, void* beh) {}
 
-void NoBotState6Exit(Owner* o, Beh* b) {}
+void NoBotState6Exit(void* owner, void* beh) {}
 
-void NoBotState4Exit(Owner* o, Beh* b) {
+void NoBotState4Exit(void* owner, void* beh) {
     char buf[96];
 
-    if (b) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
         NoBotData* d = b->data;
         Fn800F7F5C(o->unk8EC, o->unk8F0, 0x0D19E338, OwnerId(o), buf, o->speed);
         d->next = 0;
     }
 }
 
-void NoBotState0Exit(Owner* o, Beh* b) {}
+void NoBotState0Exit(void* owner, void* beh) {}
 
-void NoBotState7Enter(Owner* o, Beh* b) {
-    if (b) {
+void NoBotState7Enter(void* owner, void* beh) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
         b->data->flags = 0;
         BehDone(b);
     }
 }
 
-void NoBotState6Enter(Owner* o, Beh* b) {
-    if (b) {
+void NoBotState6Enter(void* owner, void* beh) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
         b->data->flags = 0;
         BehDone(b);
     }
 }
 
-void NoBotState4Enter(Owner* o, Beh* b) {
+void NoBotState4Enter(void* owner, void* beh) {
     char buf[96];
 
-    if (b) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
         b->data->flags = 0;
         BehDone(b);
         if (Fn800F7DEC(o->unk8EC, o->unk8F0, 0x96224FCC, OwnerId(o), 0) == 0x04A3E183) {
@@ -521,8 +537,10 @@ void NoBotState4Enter(Owner* o, Beh* b) {
     }
 }
 
-void NoBotState0Enter(Owner* o, Beh* b) {
-    if (b) {
+void NoBotState0Enter(void* owner, void* beh) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
         b->data->flags = 0;
         BehDone(b);
         if (Fn800F7DEC(o->unk8EC, o->unk8F0, 0xE6B71BCC, OwnerId(o), 0) == 0x04A3E183) {
@@ -531,16 +549,20 @@ void NoBotState0Enter(Owner* o, Beh* b) {
     }
 }
 
-int NoBotQuery(Owner* o, Beh* b) { return 0; }
+int NoBotQuery(void* owner, void* beh) { return 0; }
 
-int NoBotMsg(Owner* o, Beh* b, int msg) {
+int NoBotMsg(void* owner, void* beh, int msg) {
+    Owner* o;
+    Beh* b;
     NoBotData* d;
     char buf[96];
 
-    if (!b) {
+    if (!beh) {
         return 0;
     }
 
+    o = (Owner*)owner;
+    b = (Beh*)beh;
     d = b->data;
     switch (msg) {
     case 0:
@@ -589,13 +611,17 @@ int NoBotMsg(Owner* o, Beh* b, int msg) {
     return 1;
 }
 
-int NoBotUpdate(Owner* o, Beh* b) {
+int NoBotUpdate(void* owner, void* beh) {
+    Owner* o;
+    Beh* b;
     NoBotData* d;
 
-    if (!b) {
+    if (!beh) {
         return 0;
     }
 
+    o = (Owner*)owner;
+    b = (Beh*)beh;
     d = b->data;
     if (HasCondition(o->conditions, 9) || HasCondition(o->conditions, 10) || HasCondition(o->conditions, 11)) {
         d->flags = 0;
@@ -608,36 +634,42 @@ int NoBotUpdate(Owner* o, Beh* b) {
     } else {
         d->timer = d->timer + (u16)o->speed;
         if (gNoBotStates[d->state].update) {
-            gNoBotStates[d->state].update(o, b);
+            gNoBotStates[d->state].update(owner, beh);
         }
         if (d->next != d->state) {
             if (gNoBotStates[d->state].exit) {
-                gNoBotStates[d->state].exit(o, b);
+                gNoBotStates[d->state].exit(owner, beh);
             }
             d->state = d->next;
             b->state = d->next;
             if (gNoBotStates[d->state].enter) {
-                gNoBotStates[d->state].enter(o, b);
+                gNoBotStates[d->state].enter(owner, beh);
             }
         }
     }
     return 1;
 }
 
-int NoBotFree(Owner* o, Beh* b) {
-    if (!b) {
+int NoBotFree(void* owner, void* beh) {
+    Beh* b;
+
+    if (!beh) {
         return 0;
     }
+    b = (Beh*)beh;
     VFree(b->data);
     return 1;
 }
 
-int NoBotInit(Owner* o, Beh* b) {
+int NoBotInit(void* owner, void* beh) {
+    Beh* b;
     NoBotData* d;
 
-    if (!b) {
+    if (!beh) {
         return 0;
     }
+
+    b = (Beh*)beh;
 
     d = (NoBotData*)VAlloc(sizeof(NoBotData));
     if (d == 0) {
@@ -652,7 +684,7 @@ int NoBotInit(Owner* o, Beh* b) {
     d->flags = 0;
     d->timer = 0.0f;
     if (gNoBotStates[d->state].enter) {
-        gNoBotStates[d->state].enter(o, b);
+        gNoBotStates[d->state].enter(owner, beh);
     }
     return 1;
 }

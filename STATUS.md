@@ -30,6 +30,25 @@ each result (rebuild, DOL SHA-1 = build.sha1, unit Matching and linked from its 
 merges it.
 Borrowed code that workers report goes into the README credits.
 
+**Late parameter copy and parameter-last rotation: solved (2026-10-18/19, opus-1 + Lead).**
+CW 1.3.2's callee-saved ranking (rank 1 gets r31), worked out by opus-1:
+1. values produced inside an inline (its locals and its return value);
+2. the caller's locals, in declaration order;
+3. the parameters, last parameter first.
+A local that is only a same-type copy of a parameter is merged into it and keeps the parameter's rank.
+
+Retail's behaviour and message callbacks take **`void*` parameters** and cast them to typed locals, inside
+`if (beh) {...}` or after `if (!beh) return 0;`. Calls through state tables pass `(owner, beh)` straight on.
+Queries use out-parameter inlines: `Query(&r, ...)`.
+- `~/geist-work/ds/lead/voidify.py FILE REGEX` rewrites callbacks into this form.
+- Results:
+  - Credits.cpp 29/30 (NoBotState4Update left).
+  - Thermostat.cpp 20/20 code. It isn't Matching yet: retail .sdata2 holds two 0.0 constants (0x804DA0B0 and
+    0x804DA0B8, with an unused word between them) where ours has one. Its tables are now defined before the
+    functions, so the jump table (0x803C0180) comes after them, as in retail.
+  - u_802A770C, u_80160188, PickupLoad (u_801A1D24): Matching.
+- The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
+
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
 - u_801A1D24 5/7 (pickup actor, ds-3, 2 runs). Both leftovers are **register-only**:
   - PickupLoad 0x801A1D24 (8 diffs): tag/string/end pointers rotate, ours r8/r6/r7 vs retail r6/r7/r8.

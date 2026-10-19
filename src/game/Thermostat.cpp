@@ -17,7 +17,7 @@ static const char* sActionNames[] = {
 struct Owner;
 struct Beh;
 
-typedef void (*BehStateFunc)(Owner* o, Beh* b);
+typedef void (*BehStateFunc)(void* owner, void* beh);
 typedef void (*BehCallback)(Owner* o, Beh* b, int arg);
 
 struct BehState {
@@ -155,8 +155,34 @@ void Fn8006CD84(Player* p, int a, float f);              // 0x8006CD84
 void ActorPlayAnim(int handle, unsigned long anim, int handle2); // 0x800C5654
 void Fn80211AA4(Actor* a, float dt);                     // 0x80211AA4
 
-extern BehState gThermoStates[8];
-extern ActorType gGaugeExplodeType;
+
+void ThermoEnter0(void* owner, void* beh);
+void ThermoExit0(void* owner, void* beh);
+void ThermoUpdate0(void* owner, void* beh);
+void ThermoEnter1(void* owner, void* beh);
+void ThermoExit1(void* owner, void* beh);
+void ThermoUpdate1(void* owner, void* beh);
+void ThermoEnter2(void* owner, void* beh);
+void ThermoExit2(void* owner, void* beh);
+void ThermoUpdate2(void* owner, void* beh);
+int GaugeMsg(Actor* a, int msg, void* data, int arg);
+void GaugeUpdate(Actor* a, float dt);
+int GaugeInit(Actor* a);
+void GaugeDestroy(Actor* a);
+
+BehState gThermoStates[8] = {
+    { ThermoEnter0, ThermoExit0, ThermoUpdate0 },
+    { 0, 0, 0 },
+    { 0, 0, 0 },
+    { 0, 0, 0 },
+    { ThermoEnter1, ThermoExit1, ThermoUpdate1 },
+    { ThermoEnter2, ThermoExit2, ThermoUpdate2 },
+    { 0, 0, 0 },
+    { 0, 0, 0 },
+};
+
+ActorType gThermostatType = { 0, "Thermostat Model", GaugeMsg, GaugeUpdate, GaugeInit, 0, GaugeDestroy };
+ActorType gGaugeExplodeType = { 0, "Gauge Explode", GaugeMsg, GaugeUpdate, GaugeInit, 0, GaugeDestroy };
 
 void ThermoCheck(Owner* o, Beh* b) {
     MsgResult res;
@@ -186,35 +212,43 @@ void ThermoCheck(Owner* o, Beh* b) {
     }
 }
 
-void ThermoUpdate2(Owner* o, Beh* b) {
-    if (b) {
+void ThermoUpdate2(void* owner, void* beh) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
         BehUpdate(o, b);
         ThermoCheck(o, b);
     }
 }
 
-void ThermoUpdate1(Owner* o, Beh* b) {
-    if (b) {
+void ThermoUpdate1(void* owner, void* beh) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
         BehUpdate(o, b);
         ThermoCheck(o, b);
     }
 }
 
-void ThermoUpdate0(Owner* o, Beh* b) {
-    if (b) {
+void ThermoUpdate0(void* owner, void* beh) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
         BehUpdate(o, b);
         ThermoCheck(o, b);
     }
 }
 
-void ThermoExit2(Owner* o, Beh* b) {}
+void ThermoExit2(void* owner, void* beh) {}
 
-void ThermoExit1(Owner* o, Beh* b) {}
+void ThermoExit1(void* owner, void* beh) {}
 
-void ThermoExit0(Owner* o, Beh* b) {}
+void ThermoExit0(void* owner, void* beh) {}
 
-void ThermoEnter2(Owner* o, Beh* b) {
-    if (b) {
+void ThermoEnter2(void* owner, void* beh) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
         ThermoState* st = b->data;
         st->next = 0;
         st->unkC = 0;
@@ -222,16 +256,20 @@ void ThermoEnter2(Owner* o, Beh* b) {
     }
 }
 
-void ThermoEnter1(Owner* o, Beh* b) {
-    if (b) {
+void ThermoEnter1(void* owner, void* beh) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
         ThermoState* st = b->data;
         st->unkC = 0;
         BehDone(b);
     }
 }
 
-void ThermoEnter0(Owner* o, Beh* b) {
-    if (b) {
+void ThermoEnter0(void* owner, void* beh) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
         ThermoState* st = b->data;
         st->unkC = 0;
         st->next = 0;
@@ -240,7 +278,7 @@ void ThermoEnter0(Owner* o, Beh* b) {
     }
 }
 
-int ThermoBehFn5(Owner* o, Beh* b) { return 0; }
+int ThermoBehFn5(void* owner, void* beh) { return 0; }
 
 inline void ThermoChangeState(Owner* o, ThermoState* st) {
     if (gThermoStates[st->cur].exit) gThermoStates[st->cur].exit(o, &o->beh);
@@ -250,10 +288,14 @@ inline void ThermoChangeState(Owner* o, ThermoState* st) {
     if (gThermoStates[st->cur].enter) gThermoStates[st->cur].enter(o, &o->beh);
 }
 
-int ThermoBehMsg(Owner* o, Beh* b, int msg) {
+int ThermoBehMsg(void* owner, void* beh, int msg) {
+    Owner* o;
+    Beh* b;
     ThermoState* st;
 
-    if (b == 0) return 0;
+    if (beh == 0) return 0;
+    o = (Owner*)owner;
+    b = (Beh*)beh;
 
     st = b->data;
     switch (msg) {
@@ -300,10 +342,14 @@ int ThermoBehMsg(Owner* o, Beh* b, int msg) {
     return 1;
 }
 
-int ThermoBehUpdate(Owner* o, Beh* b) {
+int ThermoBehUpdate(void* owner, void* beh) {
+    Owner* o;
+    Beh* b;
     ThermoState* st;
 
-    if (b == 0) return 0;
+    if (beh == 0) return 0;
+    o = (Owner*)owner;
+    b = (Beh*)beh;
 
     st = b->data;
     if (HasCondition(o->conditions, 9) || HasCondition(o->conditions, 10) || HasCondition(o->conditions, 11)) {
@@ -311,21 +357,29 @@ int ThermoBehUpdate(Owner* o, Beh* b) {
         BehReset(b);
         BehDone(b);
     } else if (gThermoStates[st->cur].update) {
-        gThermoStates[st->cur].update(o, b);
+        gThermoStates[st->cur].update(owner, beh);
     }
     return 1;
 }
 
-int ThermoBehDestroy(Owner* o, Beh* b) {
-    if (b == 0) return 0;
+int ThermoBehDestroy(void* owner, void* beh) {
+    Owner* o;
+    Beh* b;
+    if (beh == 0) return 0;
+    o = (Owner*)owner;
+    b = (Beh*)beh;
     VFree(b->data);
     return 1;
 }
 
-int ThermoBehInit(Owner* o, Beh* b) {
+int ThermoBehInit(void* owner, void* beh) {
+    Owner* o;
+    Beh* b;
     ThermoState* st;
 
-    if (b == 0) return 0;
+    if (beh == 0) return 0;
+    o = (Owner*)owner;
+    b = (Beh*)beh;
     if (o == 0) return 0;
 
     st = (ThermoState*)VAlloc(sizeof(ThermoState));
@@ -344,7 +398,7 @@ int ThermoBehInit(Owner* o, Beh* b) {
     if (st->sound == -1 || !Fn800F840C(o->beh.unk58, st->sound, 1)) {
         st->sound = -1;
     }
-    if (gThermoStates[st->cur].enter) gThermoStates[st->cur].enter(o, b);
+    if (gThermoStates[st->cur].enter) gThermoStates[st->cur].enter(owner, beh);
     return 1;
 }
 
@@ -509,16 +563,3 @@ void GaugeTick(Actor* a, float dt) {
     }
 }
 
-BehState gThermoStates[8] = {
-    { ThermoEnter0, ThermoExit0, ThermoUpdate0 },
-    { 0, 0, 0 },
-    { 0, 0, 0 },
-    { 0, 0, 0 },
-    { ThermoEnter1, ThermoExit1, ThermoUpdate1 },
-    { ThermoEnter2, ThermoExit2, ThermoUpdate2 },
-    { 0, 0, 0 },
-    { 0, 0, 0 },
-};
-
-ActorType gThermostatType = { 0, "Thermostat Model", GaugeMsg, GaugeUpdate, GaugeInit, 0, GaugeDestroy };
-ActorType gGaugeExplodeType = { 0, "Gauge Explode", GaugeMsg, GaugeUpdate, GaugeInit, 0, GaugeDestroy };
