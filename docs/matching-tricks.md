@@ -48,3 +48,14 @@ Learned while matching game code 0x80005800-0x80150000 (helper-game-a, 2026-10-1
 - Store forms: `sTimers[i].x = ...` vs `Timer* t = &sTimers[i]; t->x = ...` changes which register holds the element address.
 - Calls to a function with fewer args than another call site (r6 left unset) = unprototyped C call; C++ can't produce it (Audio.c, asked the Lead).
 
+
+## DeepSeek workers (2026-10-18)
+- "[INVENT]"-style string hashes in pickup code need a one-argument `StrHash(s)` with a local `h = 0`. That gives
+  the null path and the loop path their own `li 0`. The two-argument (seeded) form merges them and makes the
+  function 4 bytes short (u_801A1D24, ds-3).
+- Spin angles handled by the 0x8009F190/0x8009F028 helpers are 12-bit fixed point. Use an IVec3 and
+  `angle.z += (int)dt` (an integer add on the raw word), not floats (u_801A1D24 PickupUpdate).
+- Address-taken result vectors (`float r[3]`) and function-scope message structs set the stack layout. Declaring a
+  struct in a block instead of at function scope moves it to a different slot (u_80243B0C DashAim).
+- Direct expressions like `gTable[w->state].fn(w)` vs `T* n = &gTable[w->state]; n->fn(w)` pick different
+  addressing modes. Try both (u_80160188, ds-2).
