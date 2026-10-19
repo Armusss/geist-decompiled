@@ -187,6 +187,19 @@ void DashSendAnim(Actor* a, int arg);
 int DashUpdate(Actor* a);
 int DashAim(Actor* a, Actor* target);
 
+// Tells the animator the anim finished (0 if it has no handle).
+inline int AnimNotify(int to, int handle, u32 key) {
+    MsgC14 q;
+
+    if (to == -1) {
+        return 0;
+    }
+    q.handle = handle;
+    q.key = key;
+    q.unk4 = 0;
+    return SendMsg(to, 0xC14, &q);
+}
+
 int DashOnEvent(int event, Actor* a) {
     MsgC06 m;
 
@@ -202,23 +215,7 @@ int DashOnEvent(int event, Actor* a) {
         if (an != 0) {
             u32 h = StrHash("Done", a->unk1D9C);
 
-            int ok = ActorPlayAnim(an->handle, h, a->handle);
-
-            if (ok == 0) {
-                int handle = a->handle;
-
-                if (an->handle == -1) {
-                    ok = 0;
-                } else {
-                    MsgC14 q;
-
-                    q.handle = handle;
-                    q.key = h;
-                    q.unk4 = 0;
-                    ok = SendMsg(an->handle, 0xC14, &q);
-                }
-            }
-            if (ok != 0) {
+            if (ActorPlayAnim(an->handle, h, a->handle) != 0 || AnimNotify(an->handle, a->handle, h) != 0) {
                 if (a->unk1DA0 != 0) {
                     fn_8006D174(&a->unk7A4);
                     fn_80090634(a->unk7C, 0, 0, 0);
