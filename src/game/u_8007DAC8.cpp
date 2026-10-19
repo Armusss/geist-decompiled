@@ -10,7 +10,7 @@ float fn_802A2080(void);  // time scale
 void fn_80026660(int type, void* func, int arg);
 }
 
-int SendMsg(int to, int msg, void* data);
+extern "C" int SendMsg(int to, int msg, void* data);
 
 typedef float (*TimerFunc)(void* user, int arg);
 

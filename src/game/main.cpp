@@ -72,7 +72,7 @@ struct TPLPalette;
 void DebugPrintf(const char* format, ...);
 void ScreenPrintf(const char* format, ...);
 void MemPrintStatus(void);
-void MemFree(void* p, const char* file, int line);
+extern "C" void MemFree(void* p, const char* file, int line);
 void* FileLoad(const char* name, int* outSize, int unused);
 float LoadingTime(void);
 void SystemPoll(void);

@@ -9,8 +9,8 @@
 #include <dolphin/dvd.h>
 #include <string.h>
 
-void* MemAlloc(int size, const char* file, int line);
-void MemFree(void* p, const char* file, int line);
+extern "C" void* MemAlloc(int size, const char* file, int line);
+extern "C" void MemFree(void* p, const char* file, int line);
 void* VAlloc(int size);
 void VFree(void* p);
 void* ScratchAAlloc(int size);
@@ -19,7 +19,7 @@ void DebugPrintf(const char* format, ...);
 void SystemIdle(void);
 void SystemPoll(void);
 int FileReadSync(void* file, void* dst, int size, int offset);
-void FileFlushBuffer(void* dst, int size);
+extern "C" void FileFlushBuffer(void* dst, int size);
 void* StreamAlloc(int size);
 void StreamFree(void* p);
 void StreamInit(void);

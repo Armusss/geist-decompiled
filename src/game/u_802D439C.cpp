@@ -166,7 +166,7 @@ void* VAlloc(int size);
 void VFree(void* ptr);
 void* AssetFind(u32 a, u32 b);
 void* FxFind(const char* name);
-void FxStart(void* fx, int a, int b);
+extern "C" void FxStart(void* fx, int a, int b);
 void ActorGetMatrix(Mtx34* mtx, Actor* actor);
 void BoneGetMatrix(Mtx34* mtx, void* quat);
 

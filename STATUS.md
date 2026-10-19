@@ -206,6 +206,22 @@ MemAlloc/MemFree (`__FILE__`, `__LINE__` 213/220) and K&R definitions made ANSI 
 zlibVersion/zError are dead-stripped. The rest of the old game/zutil.c unit (mirror/reflection rendering)
 is now game/u_8019FDD0.cpp.
 
+**Files compiled as C (`cflags_game_c`, `-lang=c`; same compiler GC/1.3.2):**
+- **Audio.c** (2026-10-18, user approved).
+  - Evidence: AudioMsgHandler calls fn_80084540 with 3 arguments (r6 left unset), and SoundSetMsg calls it with 4,
+    in the same file. Only an unprototyped C call does both; in C++ it would take a function-pointer cast.
+  - The whole file (15/15) matches as C.
+  - Counter-evidence, recorded honestly: CodeWarrior lays out .sbss in reverse declaration order in C and in
+    forward order in C++. Retail's layout matches C++ with the natural order, or C with the 12 small statics
+    declared in reverse. Declaration order is free source shape, so this decides nothing.
+  - The shared functions it calls or defines now have **C linkage** everywhere: extern "C" in 37 game files and
+    zutil.c, and plain names in symbols.txt. That covers SendMsg, MemAlloc, MemFree, FileFlushBuffer, FxStart,
+    Music* (12), Fn8007CEA4 and Audio's own functions.
+  - `~/geist-work/ds/lead/clinkage.py NAME...` applies extern "C" across src/game when another .c file needs it.
+  - Data splits added: .rodata 0x80343610-18, .bss 0x80426910-0x80426B10, .sbss 0x804D45B0-E0,
+    .sdata2 0x804D6770-88. MusicFadeTo is a static helper defined before AudioUpdate, so its 0.0f/1.0f come
+    first in .sdata2; the linker strips its unused copy.
+
 Files on GC/2.0: **u_8012071C** (qsort comparators 0x80120A78/0x80120A9C, pre-stwu loads; 1.3.2 cannot).
 History: on 2026-10-13 the Lead briefly switched the whole game block to 2.0 after checking only matched
 files. That missed the plane function, so it was reverted.

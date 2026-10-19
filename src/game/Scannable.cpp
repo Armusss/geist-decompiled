@@ -78,7 +78,7 @@ int ActorDefaultMsg(Actor* actor, int msg, void* data, int arg); // 0x800E4C64
 int ActorInitBase(Actor* a);                              // 0x800E6444
 int ActorIsActive(Actor* a);                              // 0x80022D80
 int ActorPlayAnim(int handle, u32 anim, int arg);         // 0x800C5654
-int SendMsg(int target, int msg, void* data);             // 0x800265D4
+extern "C" int SendMsg(int target, int msg, void* data);             // 0x800265D4
 int AssetFind(u32 bank, u32 name);                        // 0x8007EB34
 
 int ScannableMsg(Actor* a, int msg, void* data, int arg);

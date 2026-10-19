@@ -203,7 +203,7 @@ void ActorFn80022D98(Actor* a, int b);                       // 0x80022D98
 int ActorFn80022FD8(Actor* a);                               // 0x80022FD8
 void* PoolAlloc(void* pool, int size, void* used, int count); // 0x800249A8
 void PoolFree(void* p, void* pool, int size, void* used);    // 0x80024978
-int SendMsg(int target, int msg, void* data);                // 0x800265D4
+extern "C" int SendMsg(int target, int msg, void* data);                // 0x800265D4
 int AssetFind(u32 bank, u32 key);                            // 0x8007EB34
 void ActorGetMatrix(Mtx34* m, Actor* a);                     // 0x8009ED70
 void PlacementToMatrix(Mtx34* m, PlaceF* p);                 // 0x8009EF04

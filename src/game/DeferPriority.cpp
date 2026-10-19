@@ -3,8 +3,8 @@
 // distance from the eye point; lists are flushed back to front. Nodes come from a pool of 0x2000.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
-void* MemAlloc(int size, const char* file, int line);
-void MemFree(void* p, const char* file, int line);
+extern "C" void* MemAlloc(int size, const char* file, int line);
+extern "C" void MemFree(void* p, const char* file, int line);
 void DebugPrintf(const char* format, ...);
 
 extern "C" {

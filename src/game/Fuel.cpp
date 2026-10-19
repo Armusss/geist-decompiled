@@ -76,7 +76,7 @@ struct OwnerInfo {
     int fuelAsset;
 };
 
-int SendMsg(int target, int msg, void* data);            // 0x800265D4
+extern "C" int SendMsg(int target, int msg, void* data);            // 0x800265D4
 int AssetFind(u32 bank, u32 name);                        // 0x8007EB34
 void MtxSetEuler(Mtx34* m, Vec3* rot);                    // 0x8009FAC0
 void Fn80175D60(u32 owner);                               // 0x80175D60

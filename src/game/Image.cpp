@@ -51,8 +51,8 @@ struct ImageInfo {
 };
 
 int FileReadSync(void* file, void* dst, int size, int offset);   // 0x80007BC0
-void* MemAlloc(int size, const char* file, int line);
-void MemFree(void* p, const char* file, int line);
+extern "C" void* MemAlloc(int size, const char* file, int line);
+extern "C" void MemFree(void* p, const char* file, int line);
 
 void GfxLoadTexObj(GXTexObj* obj, int map);   // 0x8000F944
 void GfxSetVtxDesc(int desc);                 // 0x80008DAC

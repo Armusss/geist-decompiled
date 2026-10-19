@@ -98,7 +98,7 @@ struct CreditsData {
     int top;
 };
 
-int SendMsg(int to, int msg, void* data);                 // 0x800265D4
+extern "C" int SendMsg(int to, int msg, void* data);                 // 0x800265D4
 int AssetFind(u32 table, u32 key);                        // 0x8007EB34
 const char* StrFindKey(u32 key, u32* len);                // 0x80086234
 const char* StrGetIndex(int index, u32* len);             // 0x800862F0

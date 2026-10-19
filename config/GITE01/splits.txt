@@ -88,6 +88,10 @@ game/Arena.c:
 
 game/Audio.c:
 	.text       start:0x8007CC04 end:0x8007DAC8
+	.rodata     start:0x80343610 end:0x80343618
+	.bss        start:0x80426910 end:0x80426B10
+	.sbss       start:0x804D45B0 end:0x804D45E0
+	.sdata2     start:0x804D6770 end:0x804D6788
 
 game/u_8007DAC8.cpp:
 	.text       start:0x8007DAC8 end:0x8007E1E8

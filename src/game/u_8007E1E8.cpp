@@ -18,7 +18,7 @@ void fn_800A0030(Vec3* out, void* cam, Vec3* in); // into camera space
 float fn_800097B4(void);                     // projection scale
 }
 
-int SendMsg(int to, int msg, void* data);
+extern "C" int SendMsg(int to, int msg, void* data);
 void TextSetSize(int size);
 void TextSetBox(int left, int right, int top, int bottom);
 void TextSetMode(int mode);

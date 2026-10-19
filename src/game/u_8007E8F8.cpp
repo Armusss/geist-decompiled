@@ -13,7 +13,7 @@ void fn_80026660(int type, void* func, int arg);
 }
 
 void FileAddHandler(int type, int (*func)(void*, int, void*), void* user);
-void FileFlushBuffer(void* p, int size);
+extern "C" void FileFlushBuffer(void* p, int size);
 void FatalError(const char* message);
 void* VAlloc(int size);
 void VFree(void* p);

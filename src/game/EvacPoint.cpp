@@ -109,7 +109,7 @@ struct Actor {
     int unk110;
 };
 
-int SendMsg(int target, int msg, void* data);            // 0x800265D4
+extern "C" int SendMsg(int target, int msg, void* data);            // 0x800265D4
 int AssetFind(u32 bank, u32 name);                        // 0x8007EB34
 void MtxSetEuler(Mtx34* m, Vec3* rot);                    // 0x8009FAC0
 void ActorFn8002378C(Actor* actor, int a, int b, int c, int d, int e, int f); // 0x8002378C

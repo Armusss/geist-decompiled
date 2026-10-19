@@ -19,12 +19,12 @@ void fn_800F825C(int emitter, int id, int count);
 }
 
 void Fn800F7F5C(int emitter, int id, int msg, int arg, void* info, float dt);
-void FxStart(void* fx, int a, int b);
+extern "C" void FxStart(void* fx, int a, int b);
 void* VAlloc(int size);
 void VFree(void* p);
 void Fn800F840C(int emitter, int a, int b);
 void Fn80175D60(unsigned long arg);
-int SendMsg(int target, int msg, void* data);
+extern "C" int SendMsg(int target, int msg, void* data);
 void ModelLoadIds(short* ids, int count);
 void ModelFreeIds(short* ids, int count);
 

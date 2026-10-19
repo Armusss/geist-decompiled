@@ -100,7 +100,7 @@ struct InitMsg {
 int ActorDefaultMsg(Actor* actor, int msg, void* data, int arg); // 0x800E4C64
 void ActorUpdate(Actor* a, float dt);                     // 0x800E48A0
 int ActorInitBase(Actor* a);                              // 0x800E6444
-int SendMsg(int to, int msg, void* data);                 // 0x800265D4
+extern "C" int SendMsg(int to, int msg, void* data);                 // 0x800265D4
 Actor* GetPlayer(void);                                   // 0x80049948
 int ActorPlayAnim(int actor, u32 anim, int arg);          // 0x800C5654
 int AssetFind(u32 table, u32 key);                        // 0x8007EB34
@@ -110,7 +110,7 @@ int PlayerHud(Actor* player);                             // 0x80049928
 void HudMessageN(int hud, const char* text, u32 len, float a, float b, float c, float d); // 0x800FE884
 void SoundPlay(u32 id);                                   // 0x8018FA30
 void* FxFind(const char* name);                           // 0x80170834
-void FxStart(void* fx, int a, int b);                     // 0x8016F390
+extern "C" void FxStart(void* fx, int a, int b);                     // 0x8016F390
 int GameEvent(int event, int arg);                        // 0x8007EA84
 void Fn80281424(void);                                    // 0x80281424
 float Fn802811A4(void);                                   // 0x802811A4

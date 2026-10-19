@@ -47,11 +47,11 @@ int inflate(z_stream* strm, int flush);
 int inflateEnd(z_stream* strm);
 }
 
-void* MemAlloc(int size, const char* file, int line);
-void MemFree(void* p, const char* file, int line);
+extern "C" void* MemAlloc(int size, const char* file, int line);
+extern "C" void MemFree(void* p, const char* file, int line);
 void DebugPrintf(const char* format, ...);
 int FileReadSync(void* file, void* dst, int size, int offset);   // 0x80007BC0
-void FileFlushBuffer(void* dst, int size);                       // 0x80007088
+extern "C" void FileFlushBuffer(void* dst, int size);                       // 0x80007088
 void SystemIdle(void);                                            // 0x80007EC0
 void SystemPoll(void);                                            // 0x8000AA20
 

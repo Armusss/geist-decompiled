@@ -17,7 +17,7 @@ void fn_800C5E00(int a, int b, int c, int d, int e);
 void fn_80186A88(int owner, void* info, int arg, int a, int b, float f);
 }
 
-int SendMsg(int to, int msg, void* data);
+extern "C" int SendMsg(int to, int msg, void* data);
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {

@@ -21,7 +21,7 @@ void fn_80008D10(void);
 void fn_800448D0(void* mesh); // draw an indexed mesh
 }
 
-void MemFree(void* p, const char* file, int line);
+extern "C" void MemFree(void* p, const char* file, int line);
 void* FileLoad(const char* name, int* outSize, int unused);
 float LoadingTime(void);
 void SystemPoll(void);

@@ -92,11 +92,11 @@ struct TriggerMsg {
 };
 
 int ActorDefaultMsg(Actor* actor, int msg, void* data, int arg); // 0x800E4C64
-int SendMsg(int target, int msg, void* data);            // 0x800265D4
+extern "C" int SendMsg(int target, int msg, void* data);            // 0x800265D4
 int AssetFind(u32 bank, u32 name);                        // 0x8007EB34
 void MtxSetEuler(Mtx34* m, Vec3* rot);                    // 0x8009FAC0
 void ActorFn8002378C(Actor* actor, int a, int b, int c, int d, int e, int f); // 0x8002378C
-void Fn8007CEA4(void* p);                                 // 0x8007CEA4
+extern "C" void Fn8007CEA4(void* p);                                 // 0x8007CEA4
 void HazardSetActive(int hazard, int on);                 // 0x80122448
 void HazardMove(int hazard, Vec3* pos);                   // 0x801223E4
 void PlacementToMatrix(Mtx34* m, PlaceF* p);           // 0x8009EF04
