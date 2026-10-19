@@ -8,6 +8,8 @@ typedef unsigned long u32;
 typedef signed short s16;
 typedef unsigned char u8;
 
+int Rand(void);                                       // 0x8000DDD0 (main.cpp)
+
 extern "C" {
 int rand(void);
 
@@ -15,7 +17,6 @@ int rand(void);
 struct TalkActor* fn_800A3990(void* owner);
 int fn_800A7B78(void* state, int flag);
 void fn_8016EEF4(int sound);
-int fn_8000DDD0(void);
 int fn_8016F120(int sound, void* pos);
 }
 
@@ -133,7 +134,7 @@ int TalkPlay(void* owner, int kind) {
     }
     if (kind == 8) {
         fn_8016EEF4(actor->sound);
-        index = sTalkKinds[kind].start + fn_8000DDD0() % sTalkKinds[kind].count;
+        index = sTalkKinds[kind].start + Rand() % sTalkKinds[kind].count;
         key = sTalkKinds[kind].key;
         if (index > sTalkKinds[kind].start) {
             key = StrHash(" 1", key);
@@ -154,7 +155,7 @@ int TalkPlay(void* owner, int kind) {
         return 0;
     }
     index = -1;
-    offset = fn_8000DDD0() % sTalkKinds[kind].count;
+    offset = Rand() % sTalkKinds[kind].count;
     for (i = 0; i < sTalkKinds[kind].count; i++) {
         int slot = sTalkKinds[kind].start + (i + offset) % sTalkKinds[kind].count;
         if (sTalkTimers[actor->talker * sTalkCount + slot] <= 0.0f) {
