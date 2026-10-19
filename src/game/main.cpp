@@ -4,6 +4,9 @@
 // the next level name, which is looked up in "00Index.TXT". A debug level-select menu lists the index.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+// Declared before the SDK headers so it keeps C linkage (dolphin/types.h pulls in stdio.h).
+extern "C" int sprintf(char* s, const char* format, ...);
+
 #include <dolphin/gx.h>
 #include <dolphin/os.h>
 #include <dolphin/vi.h>
@@ -11,7 +14,6 @@
 extern "C" {
 char* strcpy(char* dst, const char* src);
 int strcmp(const char* a, const char* b);
-int sprintf(char* s, const char* format, ...);
 double tan(double x);
 int rand(void);
 void srand(unsigned int seed);
@@ -40,11 +42,9 @@ void fn_8000B000(void);
 void fn_80006558(int arg);
 void fn_8013C7D4(void* a, void* b, int c, int d, int e, int f, int g, int h, int i, int j, int k);
 void fn_8013C76C(void* a, void* pos);
-void fn_8013C6F0(void);
 void fn_8013BF58(int a, float b);
 void fn_8013BA9C(void* a, int r, int g, int b, int alpha);
 void fn_8013BA70(void);
-void fn_8013C6C4(void);
 int fn_800DC95C(int pad, int button);
 void fn_800DE2F8(int command, int arg);
 void fn_800087D8(int a, int b, int c);
@@ -69,6 +69,8 @@ void fn_800880D0(void);
 struct ImageInfo;
 struct TPLPalette;
 
+void Draw2DBegin(void);                                // 0x8013C6F0
+void Draw2DEnd(void);                                  // 0x8013C6C4
 void DebugPrintf(const char* format, ...);
 void ScreenPrintf(const char* format, ...);
 void MemPrintStatus(void);
@@ -330,10 +332,10 @@ inline void StrUpper(char* dst, const char* src) {
 const char* LevelSelect(const char* name, char** names, char** titles, char** paths, int count) {
     int sel = 0;
     int slot = 0;
-    int i;
-    int j;
     u32 time;
     char* path;
+    int j;
+    int i;
     u8 obj[0x24];
     u8 view[0x180];
 
@@ -386,11 +388,11 @@ const char* LevelSelect(const char* name, char** names, char** titles, char** pa
         pos.x = x;
         pos.y = y;
         fn_8013C76C(obj, &pos);
-        fn_8013C6F0();
+        Draw2DBegin();
         fn_8013BF58(-3, 5.0f);
         fn_8013BA9C(obj, 255, 255, 255, 255);
         fn_8013BA70();
-        fn_8013C6C4();
+        Draw2DEnd();
         GfxFrameBegin();
         if (fn_800DC95C(0, 0x13) != -1) {
             (*sCheckpoint)--;
@@ -604,12 +606,16 @@ void LogoShow(int arg) {
     fn_8000ADD0(3);
 }
 
+// Boot-time queries used by the progressive-scan prompt.
+inline int HasDigitalTV() { return VIGetDTVStatus(); }
+inline int ResetStage() { return sResetCode & 0x7FFFFFFF; }
+
 int ProgressiveSelect(void) {
     u32 mode = OSGetProgressiveMode();
     int digital;
 
     sProgressive = 0;
-    digital = VIGetDTVStatus();
+    digital = HasDigitalTV();
     DebugPrintf("hasDigital==%d\n", digital);
     if (digital == 0) {
         DebugPrintf("No digital, stay in interlace\n");
@@ -618,7 +624,7 @@ int ProgressiveSelect(void) {
     }
     fn_80005A64(16.66f);
     if (sResetCode & 0x80000000) {
-        int stage = sResetCode & 0x7FFFFFFF;
+        int stage = ResetStage();
         DebugPrintf("Restart==TRUE, stage=%d\n", stage);
         if (stage >= 2) {
             DebugPrintf("Keeping saved progressive setting==%d\n", mode);

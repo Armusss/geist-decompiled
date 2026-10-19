@@ -243,8 +243,11 @@ int LoadingSetFile(ProgressFile* file) {
                 }
             }
 
-            for (j = 0; j < 32; j++) {
-                LoadingDraw(sProgress, 0.0f, j * 8);
+            {
+                int alpha;
+                for (j = 0, alpha = 0; j < 32; j++, alpha += 8) {
+                    LoadingDraw(sProgress, 0.0f, alpha);
+                }
             }
             LoadingDraw(sProgress, 0.0f, 0xFF);
             return 1;
