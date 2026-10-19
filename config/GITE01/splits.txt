@@ -515,6 +515,10 @@ game/u_801F7F48.cpp:
 
 game/u_801FC634.cpp:
 	.text       start:0x801FC634 end:0x801FD994
+	.rodata     start:0x803492B0 end:0x803492C0
+	.data       start:0x803B9E88 end:0x803B9EB0
+	.bss        start:0x8049D280 end:0x8049D2B0
+	.sdata2     start:0x804D9110 end:0x804D9178
 
 game/FearMap2.c:
 	.text       start:0x801FD994 end:0x80202AB8
@@ -727,6 +731,10 @@ game/u_8028A77C.cpp:
 
 game/u_8028C54C.cpp:
 	.text       start:0x8028C54C end:0x8028DA1C
+	.rodata     start:0x8034B520 end:0x8034B580
+	.data       start:0x803C2A48 end:0x803C2A78
+	.sdata      start:0x804D37E0 end:0x804D37E8
+	.sdata2     start:0x804DA578 end:0x804DA5A0
 
 game/u_8028DA1C.cpp:
 	.text       start:0x8028DA1C end:0x80290C58
@@ -836,6 +844,11 @@ game/u_802DB9D0.cpp:
 
 game/u_802DC82C.cpp:
 	.text       start:0x802DC82C end:0x802DDEDC
+	.rodata     start:0x8034C498 end:0x8034C5A0
+	.bss        start:0x804A4A58 end:0x804A4A88
+	.sdata      start:0x804D3D80 end:0x804D3D84
+	.sbss       start:0x804D5810 end:0x804D5828
+	.sdata2     start:0x804DB210 end:0x804DB298
 
 game/u_802DDEDC.cpp:
 	.text       start:0x802DDEDC end:0x802E2F08
