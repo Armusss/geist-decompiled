@@ -62,7 +62,7 @@ struct Actor;
 // Per-host-type behaviour table (25 entries at 0x803C3980).
 struct HostType {
     void (*enter)(Actor* actor);   // 0x00
-    void (*update)(Actor* actor);  // 0x04
+    void (*update)(Actor* actor, int arg);  // 0x04
     void (*msg)(Actor* actor);     // 0x08
     u32 actions[14];               // 0x0C
     void* name;                    // 0x44
@@ -78,7 +78,7 @@ struct Actor {
     int nextType;         // 0x7A8
     char pad7AC[8];
     u32 flags;            // 0x7B4
-    char pad7B8[0x744];
+    char pad7B8[0xD44];
     float speed;          // 0x14FC
     char pad1500[0x804];
     char buf[96];         // 0x1D04
@@ -101,13 +101,13 @@ int AssetFind(u32 table, u32 key);                        // 0x8007EB34
 
 int gHostSounds[16];
 
-static inline int QueryValue(int target, u32 hash) {
-    QueryMsg q;
-    *(int*)&q.result = 0;
-    q.hash = hash;
-    q.unk8 = 0;
-    SendMsg(target, 0x41E, &q);
-    return *(int*)&q.result;
+inline int Query(int target, int msg, u32 hash) {
+    QueryMsg m;
+    m.hash = hash;
+    *(int*)&m.result = 0;
+    m.unk8 = 0;
+    SendMsg(target, msg, &m);
+    return *(int*)&m.result;
 }
 
 int HostAction(int action, Actor* actor) {
@@ -117,55 +117,54 @@ int HostAction(int action, Actor* actor) {
     if (fn_800C5210(actor->handle, 0xc06, &q0) == 1) {
         return 0;
     }
-    Actor* self = actor;
-    int r1 = QueryValue(self->handle, 0x2DA8293C);
-    int r2 = QueryValue(self->handle, 0xDFF3097A);
+    int r1 = Query(actor->handle, 0x41E, 0x2DA8293C);
+    int r2 = Query(actor->handle, 0x41E, 0xDFF3097A);
 
     switch (action) {
     case 0x1B83833F:
-        if (self->type == 5) {
-            int r = Fn800F7DEC(r1, r2, 0x0020EE36, fn_800498D0(self), 0);
+        if (actor->type == 5) {
+            int r = Fn800F7DEC(r1, r2, 0x0020EE36, fn_800498D0(actor), 0);
             if (r == 0xC0BECF7E || r == 0x11D2C025) {
-                ActorPlayAnim(self->handle, 0xA7D124DE, self->handle);
+                ActorPlayAnim(actor->handle, 0xA7D124DE, actor->handle);
                 FxStart(FxFind("gun_empty"), 0, 0);
             }
-            fn_8006D288(self, self->nextType);
-        } else if (self->type == 8) {
-            int r = Fn800F7DEC(r1, r2, 0xF829DB93, fn_800498D0(self), 0);
+            fn_8006D288(actor, actor->nextType);
+        } else if (actor->type == 8) {
+            int r = Fn800F7DEC(r1, r2, 0xF829DB93, fn_800498D0(actor), 0);
             if (r == 0xC0BECF7E || r == 0x11D2C025) {
                 FxStart(FxFind("gun_empty"), 0, 0);
             }
-            fn_8006D288(self, self->nextType);
-        } else if (self->type == 13) {
-            self->flags |= 0x20000;
+            fn_8006D288(actor, actor->nextType);
+        } else if (actor->type == 13) {
+            actor->flags |= 0x20000;
         } else {
-            fn_8006D288(self, self->nextType);
+            fn_8006D288(actor, actor->nextType);
         }
         break;
     case 0x0020EE36:
-        if (Fn800F7DEC(r1, r2, 0x0020EE36, fn_800498D0(self), 0) == 0x04A3E183) {
-            fn_80048BA8(self, self->buf, 1);
-            Fn800F7F5C(r1, r2, action, fn_800498D0(self), self->buf, self->speed);
+        if (Fn800F7DEC(r1, r2, 0x0020EE36, fn_800498D0(actor), 0) == 0x04A3E183) {
+            fn_80048BA8(actor, actor->buf, 1);
+            Fn800F7F5C(r1, r2, action, fn_800498D0(actor), actor->buf, actor->speed);
         }
         break;
     case 0xF829DB93:
-        fn_80048BA8(self, self->buf, 0);
-        Fn800F7F5C(r1, r2, action, fn_800498D0(self), self->buf, self->speed);
+        fn_80048BA8(actor, actor->buf, 0);
+        Fn800F7F5C(r1, r2, action, fn_800498D0(actor), actor->buf, actor->speed);
         break;
     case 0x9791AF51:
     case 0x96224FCC:
     case 0x0D19E338:
     case 0x42E50A3D:
-        fn_80048BA8(self, self->buf, 1);
-        Fn800F7F5C(r1, r2, action, fn_800498D0(self), self->buf, self->speed);
+        fn_80048BA8(actor, actor->buf, 1);
+        Fn800F7F5C(r1, r2, action, fn_800498D0(actor), actor->buf, actor->speed);
         break;
     case 0xE6B71BCC:
-        fn_80048BA8(self, self->buf, 1);
-        Fn800F7F5C(r1, r2, action, fn_800498D0(self), self->buf, self->speed);
+        fn_80048BA8(actor, actor->buf, 1);
+        Fn800F7F5C(r1, r2, action, fn_800498D0(actor), actor->buf, actor->speed);
         break;
     case 0x968CBE3D:
-        fn_80048BA8(self, self->buf, 1);
-        Fn800F7F5C(r1, r2, action, fn_800498D0(self), self->buf, self->speed);
+        fn_80048BA8(actor, actor->buf, 1);
+        Fn800F7F5C(r1, r2, action, fn_800498D0(actor), actor->buf, actor->speed);
         break;
     }
     return 0;
@@ -181,9 +180,9 @@ void HostTypeMsg(Actor* actor) {
     }
 }
 
-void HostTypeUpdate(Actor* actor) {
+void HostTypeUpdate(Actor* actor, int arg) {
     if (gHostTypes[actor->type].update) {
-        gHostTypes[actor->type].update(actor);
+        gHostTypes[actor->type].update(actor, arg);
     }
 }
 
