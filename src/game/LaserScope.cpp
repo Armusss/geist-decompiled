@@ -120,7 +120,7 @@ void PossessableDestroy(Actor* a);                       // 0x8020D4E0
 int PossessableInit(Actor* a);                           // 0x8020D554
 void PossessableUpdate(Actor* a, float dt);              // 0x8020D6C0
 int PossessableMsg(Actor* a, int msg, void* data, int arg); // 0x8020D738
-Player* PlayerGetPossessor(void);                        // 0x80049888
+Player* PlayerGetPossessor(int handle);                  // 0x80049888 (player whose handle matches)
 void CameraSetFov(int camera, float fov);                // 0x800F95A0
 void LinkInfoInit(void* info);                           // 0x800A0328
 
@@ -150,7 +150,7 @@ void LaserUpdate(Actor* a, float dt) {
         break;
     case 1:
         if ((int)(d->flags >> 24) == 2) {
-            Player* p = PlayerGetPossessor();
+            Player* p = PlayerGetPossessor(d->flags);
             if (p && d->owner) {
                 if (p->zoomPressed == 1) {
                     if (50.0f == d->zoomTarget) {
