@@ -50,6 +50,9 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_802B9088 5/11 (ride actor, ds-1 2 runs): RideMsg, RideUpdate, RideInit, RideState1Update, RideState0Update,
+  RideTick are left. Notes in `~/geist-work/ds/ds-1.notes.u_802B9088.md`. u_802BA078 8/11 (ride action):
+  RideActionMsg, RideActionUpdate, RideActionAnimate (sent to opus-1).
 - u_801A1D24 5/7 (pickup actor, ds-3, 2 runs). Both leftovers are **register-only**:
   - PickupLoad 0x801A1D24 (8 diffs): tag/string/end pointers rotate, ours r8/r6/r7 vs retail r6/r7/r8.
   - PickupScanMsg 0x801A24BC (29 diffs).
