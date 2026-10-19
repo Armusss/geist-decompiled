@@ -770,15 +770,24 @@ game/u_802B7120.cpp:
 
 game/u_802B9088.cpp:
 	.text       start:0x802B9088 end:0x802BA078
+	.rodata     start:0x8034BCC8 end:0x8034BD28
+	.data       start:0x803C4A20 end:0x803C4A40
+	.sdata2     start:0x804DAC70 end:0x804DACA8
 
 game/u_802BA078.cpp:
 	.text       start:0x802BA078 end:0x802BB1F4
+	.rodata     start:0x8034BD28 end:0x8034BD80
+	.data       start:0x803C4A40 end:0x803C4A70
+	.sdata2     start:0x804DACA8 end:0x804DACE0
 
 game/u_802BB1F4.cpp:
 	.text       start:0x802BB1F4 end:0x802BF114
 
 game/u_802BF114.cpp:
 	.text       start:0x802BF114 end:0x802C01E8
+	.rodata     start:0x8034BDF8 end:0x8034BE48
+	.data       start:0x803C4CB0 end:0x803C4CE0
+	.sdata2     start:0x804DAD40 end:0x804DAD78
 
 game/u_802C01E8.cpp:
 	.text       start:0x802C01E8 end:0x802C30A4
