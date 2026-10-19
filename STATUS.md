@@ -27,6 +27,15 @@ merges it.
 Borrowed code that workers report goes into the README credits.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_80243B0C 1/4 (Dash actor; failed twice, ds-1 on Flash). DashSendAnim matches; the rest is open:
+
+  | Function | Address | Diffs | What's left |
+  |---|---|---|---|
+  | DashOnEvent | 0x80243B0C | 21 | Register pair around an inlined StrHash (Animator* r29 / hash r31 in retail); possibly the lazy-hash pattern again |
+  | DashUpdate | 0x80243DC8 | 323 | Stack slots: frame 0xF0 vs 0x100 |
+  | DashAim | 0x802443C0 | 214 | Callee-saved roles and fctiwz temp slots |
+
+  The partial source is in main, and ds-1's notes are in `~/geist-work/ds/ds-1/worker-notes.md`.
 - u_80285014 4/6 (failed twice, ds-1 on V4 Pro then on Flash): ToolMsg 0x80285140 at 9 diffs, ToolCreate
   0x80285564 at 11. Partial source is in main.
   - ToolCreate is the **lazy type-name hash** pattern, also open in SpiritGun and Homing. Retail keeps the
