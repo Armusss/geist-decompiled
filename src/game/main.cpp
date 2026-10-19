@@ -121,10 +121,11 @@ static char sLevelUpper[0x40];
 static char sLevelPath[0x100];
 static char sLevelName[0x90];
 
-int sProgressive;
-static void (*sTickHook)(int code);
-static u32 sTickStart;
-static u32 sTickTime;
+// Defined with Cube's data (their .sbss sits inside Cube's block, 0x804D4014 and 0x804D40C8-0x804D40D4).
+extern int sProgressive;
+extern void (*sTickHook)(int code);
+extern u32 sTickStart;
+extern u32 sTickTime;
 u32 sResetCode;
 int* sCheckpoint;
 const char* (*sAppMain)(const char* level, int* arg);

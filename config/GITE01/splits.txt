@@ -18,6 +18,11 @@ game/Cube.cpp:
 
 game/main.cpp:
 	.text       start:0x8000DC24 end:0x8000F2F0
+	.rodata     start:0x80341B00 end:0x80341DDC
+	.bss        start:0x803DA750 end:0x803DA920
+	.sdata      start:0x804D2590 end:0x804D25C8
+	.sbss       start:0x804D4120 end:0x804D4130
+	.sdata2     start:0x804D5F88 end:0x804D6000
 
 game/u_8000F2F0.cpp:
 	.text       start:0x8000F2F0 end:0x80012E04

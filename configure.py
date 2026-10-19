@@ -575,7 +575,7 @@ config.libs = [
         "progress_category": "game",
         "objects": [
             Object(NonMatching, "game/Cube.cpp"),  # start
-            Object(NonMatching, "game/main.cpp"),  # guess
+            Object(Matching, "game/main.cpp"),  # guess
             Object(NonMatching, "game/u_8000F2F0.cpp"),  # guess
             Object(NonMatching, "game/Turf.cpp"),  # guess
             Object(Matching, "game/u_8001598C.cpp"),  # frame timer, hook stubs
