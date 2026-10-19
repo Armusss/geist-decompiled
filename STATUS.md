@@ -44,9 +44,11 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - `~/geist-work/ds/lead/voidify.py FILE REGEX` rewrites callbacks into this form.
 - Results:
   - Credits.cpp 29/30 (NoBotState4Update left).
-  - Thermostat.cpp 20/20 code. It isn't Matching yet: retail .sdata2 holds two 0.0 constants (0x804DA0B0 and
-    0x804DA0B8, with an unused word between them) where ours has one. Its tables are now defined before the
-    functions, so the jump table (0x803C0180) comes after them, as in retail.
+  - Thermostat was **two files**, now both Matching:
+    - **ThermoBeh.cpp**: 0x802665A8-0x80266FAC, .data gThermoStates, .sdata2 0x804DA0A8-B8.
+    - **Thermostat.cpp**: the gauge actor, 0x80266FAC-0x80267558, its pool, types + jump table, .sdata2 0x804DA0B8-D8.
+    - Clue: two 0.0 constants with a 4-byte alignment gap between them. A file never holds the same constant twice,
+      so a repeated constant marks the boundary between two files.
   - u_802A770C, u_80160188, PickupLoad (u_801A1D24): Matching.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 

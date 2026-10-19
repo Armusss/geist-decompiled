@@ -664,8 +664,16 @@ game/u_8025ECF8.cpp:
 	.text       start:0x8025ECF8 end:0x802665A8
 	.ctors      start:0x8034123C end:0x80341240
 
+game/ThermoBeh.cpp:
+	.text       start:0x802665A8 end:0x80266FAC
+	.data       start:0x803C00C0 end:0x803C0120
+	.sdata2     start:0x804DA0A8 end:0x804DA0B8
+
 game/Thermostat.cpp:
-	.text       start:0x802665A8 end:0x80267558
+	.text       start:0x80266FAC end:0x80267558
+	.rodata     start:0x8034AC38 end:0x8034ACA0
+	.data       start:0x803C0120 end:0x803C01D8
+	.sdata2     start:0x804DA0B8 end:0x804DA0D8
 
 game/Retinal.cpp:
 	.text       start:0x80267558 end:0x80268528
