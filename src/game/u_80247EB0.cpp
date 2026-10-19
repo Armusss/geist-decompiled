@@ -297,14 +297,14 @@ int GrenadeThrow(int a, Vec3* pos, Vec3* rot, int duration, float power) {
 }
 
 int GrenadeSpawn(int target, Vec3* pos, Vec3* rot, int duration, float power) {
-    Vec3 v;
     Vec3 zero;
+    Vec3 v;
     GrenadeHitMsg msg;
-    Mtx34 m;
-    TrailDesc trail;
     SpawnDesc desc;
-    Actor* actor;
+    TrailDesc trail;
+    Mtx34 m;
     GrenadeData* data;
+    Actor* actor;
 
     memset(&desc, 0, sizeof(desc));
     desc.unk28 = -1;
@@ -336,7 +336,6 @@ int GrenadeSpawn(int target, Vec3* pos, Vec3* rot, int duration, float power) {
     trail.owner = -1;
     trail.asset = 0;
     trail.segments = 500;
-    trail.width = 30.0f;
     trail.unk14 = 0.0f;
     trail.unk20 = 1.0f;
     trail.unk24 = 0.0f;
@@ -347,6 +346,7 @@ int GrenadeSpawn(int target, Vec3* pos, Vec3* rot, int duration, float power) {
     trail.color[1] = 125;
     trail.color[2] = 125;
     trail.owner = actor->handle;
+    trail.width = 30.0f;
     trail.asset = AssetFind(0xF1754BF2, 0x3BB8992E);
     data->trail = TrailCreate(&trail);
 
@@ -372,43 +372,28 @@ void GrenadeDestroy(Actor* actor) {
 
 void GrenadeUpdate(Actor* actor, float dt) {
     GrenadeData* data = actor->data;
-    Vec3 v;
-    Vec4 color;
-    Vec3 rot;
-    Vec3 pos;
-    IVec3 delta;
-    Vec3 fpos;
-    MsgResult res;
-    MsgResult gres;
-    Mtx34 m;
-    TrailDesc x;
     PlaceF xform;
+    TrailDesc x;
+    Mtx34 m;
+    MsgResult gres;
+    MsgResult res;
+    Vec3 fpos;
+    IVec3 delta;
+    Vec3 pos;
+    Vec3 rot;
+    Vec4 color;
+    Vec3 v;
     EmitterDesc ed;
 
-    if (data->flags & 0x80000000) {
-        if (data->flags & 0x20000000) {
-            ActorRender(actor);
-            return;
-        }
-        if (data->life == 0.0f) {
-            fn_800C7B78(actor);
-        } else if (data->flags & 0x10000000) {
-            data->life -= dt;
-            if (data->life < 0.0f) {
-                data->life = 0.0f;
-            }
-        }
-        PossessableUpdate(actor, dt);
-        return;
-    }
+    if (!(data->flags & 0x80000000)) {
 
     if (data->flags & 0x40000000) {
-        if (!fn_80158BE0() && (actor->flags4C & 4) && Fn800816B0() < 0) {
+        if (!fn_80158BE0() && (actor->flags4C & 4) && Fn800816B0() <= -1) {
             data->fuse -= dt;
         }
         if (data->fuse <= 0.0f) {
             int handle = data->handle;
-            if (handle != -1 && ((u32)handle >> 24) == 2) {
+            if (handle != -1 && (int)((u32)handle >> 24) == 2) {
                 Ghost* ghost;
                 SendMsg(handle, 0x400, &gres);
                 ghost = (Ghost*)gres.p;
@@ -542,6 +527,20 @@ void GrenadeUpdate(Actor* actor, float dt) {
     if (data->fx != -1) {
         fn_8016EDD8(data->fx, &actor->place.pos);
     }
+    } else {
+        if (data->flags & 0x20000000) {
+            ActorRender(actor);
+            return;
+        }
+        if (data->life == 0.0f) {
+            fn_800C7B78(actor);
+        } else if (data->flags & 0x10000000) {
+            data->life -= dt;
+            if (data->life < 0.0f) {
+                data->life = 0.0f;
+            }
+        }
+    }
     PossessableUpdate(actor, dt);
 }
 
@@ -573,78 +572,54 @@ int GrenadeInit(Actor* actor) {
 }
 
 int GrenadeMsg(Actor* actor, int msg, void* data_, int arg) {
-    GrenadeMsgData* data = (GrenadeMsgData*)data_;
-    Actor* self = data->actor;
+    Actor* self = *(Actor**)data_;
     GrenadeData* info = self->data;
+    GrenadeMsgData* data = (GrenadeMsgData*)data_;
     int result = 0;
 
     switch (msg) {
-    case 3:
-    case 4:
-        return 0;
-    case 0x407:
-        if (((u32)data->unk8 >> 24) == 2 || ((u32)data->unk8 >> 24) == 1) {
-            if (data->unk14 == 0xB9FC42F5) {
+    case 0x407: {
+        int r;
+        if ((int)((u32)data->unk8 >> 24) != 2
+            && (int)((u32)data->unk8 >> 24) != 1) {
+            r = 1;
+        } else {
+            switch (data->unk14) {
+            case (int)0xB9FC42F5:
                 info->timer = 0.0f;
+                break;
             }
             if (!(info->flags & 0x80000000) && info->timer <= 0.0f) {
                 GrenadeDetonate(self, data->unk8);
             }
+            r = 1;
         }
-        result = 1;
+        result = r;
         break;
-    case 0x41D:
-        result = GrenadeCommand(data, 0);
-        break;
+    }
     case 0x40A:
-        if (fn_80049940() || info->target == data->unk4) {
+        if (fn_80049940() || info->target == ((GrenadeMsgData*)data_)->unk4) {
             result = -999999;
         } else {
             result = 0;
         }
         break;
-    case 0x7404:
-        result = 0;
-        if (!(info->flags & 0x80000000)) {
-            switch (data->unk8) {
-            case 1:
-                fn_8016F120(sGrenadeHitFx, &self->place.pos);
-                break;
-            case 2:
-                if (info->fx == -1) {
-                    info->fx = fn_8016F120(sGrenadeRollFx, &self->place.pos);
-                }
-                break;
-            }
-        }
-        break;
-    case 0xC14:
+    case 0xC14: {
+        int r;
         switch (data->unkC) {
-        case 0x237655D3:
-            if (self->effect == 0) {
-                Vec3 zero;
-                zero.x = 0.0f;
-                zero.y = 0.0f;
-                zero.z = 0.0f;
-                self->effect = (void*)fn_801D92F0(25.0f, 25.0f, 25.0f, self, 0x922B5BCD, 0x04B8D9AB, &zero, 0);
-            }
-            result = 0;
-            break;
-        case 0xCF0164E2:
+        case 0xCF0164E2: {
+            int target = data->unk8;
             if (!(info->flags & 0x80000000)) {
                 info->flags |= 0x40000000;
                 info->fuse = 0.0f;
-                info->target = data->unk8;
+                info->target = target;
             }
-            result = 1;
+            r = 1;
             break;
+        }
         case 0x672F35C2:
             fn_801D55CC(self->effect);
             self->effect = 0;
-            if (info->fx != -1) {
-                fn_8016EEF4(info->fx);
-                info->fx = -1;
-            }
             if (info->trail != -1) {
                 TrailDestroy(info->trail);
                 info->trail = -1;
@@ -657,18 +632,54 @@ int GrenadeMsg(Actor* actor, int msg, void* data_, int arg) {
                 fn_80027690(info->blast);
                 info->blast = -1;
             }
-            result = 0;
+            r = 0;
+            break;
+        case 0x237655D3:
+            if (self->effect == 0) {
+                Vec3 zero;
+                zero.x = 0.0f;
+                zero.y = 0.0f;
+                zero.z = 0.0f;
+                self->effect = (void*)fn_801D92F0(25.0f, 25.0f, 25.0f, self, 0x922B5BCD, 0x04B8D9AB, &zero, 0);
+            }
+            r = 0;
             break;
         default:
-            result = 0;
+            r = 0;
             break;
         }
-        break;
-    default:
+        result = r;
         break;
     }
+    case 0x41D:
+        result = GrenadeCommand(data, 0);
+        break;
+    case 0x7404: {
+        int r;
+        if (info->flags & 0x80000000) {
+            r = 0;
+        } else {
+            switch (data->unk8) {
+            case 1:
+                fn_8016F120(sGrenadeHitFx, &self->place.pos);
+                break;
+            case 2:
+                if (info->fx == -1) {
+                    info->fx = fn_8016F120(sGrenadeRollFx, &self->place.pos);
+                }
+                break;
+            }
+            r = 0;
+        }
+        result = r;
+        break;
+    }
+    case 3:
+    case 4:
+        return 0;
+    }
 
-    if (result == 0xFFFFBDC1) {
+    if (result == -999999) {
         return 0;
     }
     if (result) {

@@ -58,6 +58,12 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_80247EB0 7/10 (Grenade, ds-3, 2 runs):
+  - GrenadeSpawn: 4 diffs, register-only.
+  - GrenadeUpdate and GrenadeMsg: not attempted by the worker.
+  - Notes: `~/geist-work/ds/ds-3.notes.u_80247EB0.md`.
+- u_8021427C 10/14 (ghost action, ds-2 run 1): UpdateGhostAction, SetupGhostAction, UpdateGhostActionIdle,
+  GhostActionSetActive are left. Notes: `~/geist-work/ds/ds-2.notes.u_8021427C.md`.
 - u_80230504 (7 fns): ds-1 run 1 wasted all 150 turns on /tmp experiments without writing the source. Re-queue it for a
   worker with the new hard rule (source written within 15 turns).
 - u_802BF114 9/11 (ride action 2, ds-2): RideAction2Update (23 diffs, r30/r31 swap) and RideAction2Animate
