@@ -759,7 +759,7 @@ config.libs = [
             Object(NonMatching, "game/u_80294548.cpp"),  # guess
             Object(NonMatching, "game/u_8029C0AC.cpp"),  # guess
             Object(NonMatching, "game/u_8029E714.cpp"),  # pinned
-            Object(NonMatching, "game/u_802A770C.cpp"),  # guess
+            Object(Matching, "game/u_802A770C.cpp"),  # host types
             Object(NonMatching, "game/Fuel.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_802A815C.cpp"),  # split from u_802A770C
             Object(NonMatching, "game/u_802A9824.cpp"),  # known

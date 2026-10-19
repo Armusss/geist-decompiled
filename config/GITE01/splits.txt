@@ -738,7 +738,8 @@ game/u_8029E714.cpp:
 
 game/u_802A770C.cpp:
 	.text       start:0x802A770C end:0x802A7E3C
-	.rodata     start:0x8034B8E8 end:0x8034B938
+	.rodata     start:0x8034B8E8 end:0x8034B940
+	.bss        start:0x804A4710 end:0x804A4750
 
 game/Fuel.cpp:
 	.text       start:0x802A7E3C end:0x802A815C
