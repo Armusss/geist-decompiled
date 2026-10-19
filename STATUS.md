@@ -29,8 +29,24 @@ Borrowed code that workers report goes into the README credits.
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
 - u_80285014 4/6 (failed twice, ds-1 on V4 Pro then on Flash): ToolMsg 0x80285140 at 9 diffs, ToolCreate
   0x80285564 at 11. Partial source is in main.
-- u_802A770C 4/6 (failed twice, ds-3): HostTypeUpdate 0x802A7B9C at 4 diffs, HostAction 0x802A770C at 71.
-  Partial source is in main.
+- **u_802A770C 5/6** and **u_80160188 4/5** hit the same open pattern, the **"parameter-last register
+  rotation"**. HostAction (0x802A770C, 61 diffs) and WeaponMsg (0x80160188, 60 diffs) are sibling message
+  handlers `(int action, Actor* a)` that make two Query calls. Every opcode, offset and branch matches; only
+  the callee-saved registers rotate:
+
+  | | actor/weapon | query 1 | query 2 | action |
+  |---|---|---|---|---|
+  | retail | r31 | r30 | r29 | r28 |
+  | ours | r29 | r31 | r30 | r28 |
+
+  Tried with no effect:
+  - local declaration orders, split declarations, perm.py;
+  - a parameter copy at the top, middle or end;
+  - all 6 Query parameter orders;
+  - the switch body as an inline helper with params (actor, r1, r2, action);
+  - a reference parameter, a void* alias, a const pointer.
+
+  The Lead fixed HostTypeUpdate (it takes a second argument) and the Actor padding. Partial sources are in main.
 - Audio.c AudioMsgHandler (helper-a): matches only when a 3-argument call is made to a function that another
   site calls with 4 (r6 left unset). That's an unprototyped C call, so it's a candidate C-only fingerprint
   under the user's rule.
