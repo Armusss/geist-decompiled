@@ -7,14 +7,15 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
-| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_802B2680 (10 fns; Lead split rodata/data/sdata2) | running |
-| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_802D439C (4 fns; Lead split rodata/data/sdata/sdata2) | running |
-| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_801A1D24 retry (3/7 after run 1) | running |
-| opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Opus queue register patterns, brute force allowed: lazy type-name hash (ToolCreate, SpiritGunCreate, HomingMsg, DashOnEvent), parameter-last rotation (HostAction, WeaponMsg), then late param copy. Brief: `~/geist-work/ds/opus-1.task.md` | running |
+| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_80230504 (7 fns) | running |
+| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_802BF114 (11 fns) | running |
+| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_80247EB0 (Grenade, 10 fns) | running |
+| opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Batch 2: GhostGunUpdate/Draw, PickupScanMsg, DashOnEvent/Aim/Update, RideAction*, NoBotState4Update (ranking rule). Lazy type-name hash parked | running |
 
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
 They are started with `~/geist-work/ds/run_worker.sh NAME [MAX_TURNS]` (allowlist + 150-turn cap), at most 3 at once.
-You can watch one live with `python3 ~/geist-work/ds/ds_watch.py NAME -f`.
+You can watch one live with `python3 ~/geist-work/ds/ds_watch.py NAME -f`; `ds-stop` stops all DeepSeek workers. Before
+every merge commit, `~/geist-work/ds/lead/audit.sh [UNITS]` must print AUDIT OK.
 **Round 1 (2026-10-18, V4 Pro, no turn cap):** about $6 for three workers, roughly 300-400 turns each.
 - ds-1: u_8022ED88 matched and merged; u_80285014 reached 4/6.
 - ds-2: u_80161F40 was byte-identical, but only through a hand-built string blob and mangled-name calls. Rejected;
