@@ -59,3 +59,19 @@ Learned while matching game code 0x80005800-0x80150000 (helper-game-a, 2026-10-1
   struct in a block instead of at function scope moves it to a different slot (u_80243B0C DashAim).
 - Direct expressions like `gTable[w->state].fn(w)` vs `T* n = &gTable[w->state]; n->fn(w)` pick different
   addressing modes. Try both (u_80160188, ds-2).
+
+## opus-1 (2026-10-18): register ranking of parameters, locals and inline values
+CW 1.3.2 colours callee-saved registers in a rank order (first ranked gets r31). Observed ranks:
+values produced inside an inline (its locals and its return value) rank first, then the caller's
+locals in declaration order, then the parameters (last parameter first). A local that is just a copy
+of a parameter of the same type is merged into the parameter and keeps the parameter's rank.
+- A pointer parameter that retail keeps in r31 ahead of the locals: declare the parameter `void*` and
+  cast it to a typed local (`int F(int action, void* p) { Actor* actor = (Actor*)p; ...`). The cast
+  makes a real local that ranks with the locals (HostAction, WeaponMsg, Credits NoBotUpdate/State0Update).
+- An inline's returned value (`int r1 = Query(...)`) outranks everything. If retail ranks it after a
+  local, return it through an out pointer instead: `Query(&r1, ...)` (HostAction, WeaponMsg).
+- The reverse: a plain caller local that retail ranks first can come from an inline's return value
+  (PickupLoad: `tag = (u32*)StreamTake(s, 4)`, a helper that advances the stream).
+- Still unsolved: the lazy type-name hash (ToolCreate etc.). Retail ranks the hash after the name
+  pointer in ~76 single-pointer hash loops; 1.3.2 ranks it first in every StrHash/toupper/wrapper
+  shape tried (about 1000 variants).

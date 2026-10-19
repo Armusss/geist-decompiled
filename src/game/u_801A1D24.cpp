@@ -225,6 +225,15 @@ static HostData sHostPool[0x40];
 static int sHostUsed[4];
 
 // 0x801A1D24: unpack the pickup state from a save-game stream.
+// Takes n bytes off the front of a load stream and returns where they were.
+inline void* StreamTake(HostStream* s, int n) {
+    void* p = s->ptr;
+    s->count += n;
+    s->remain -= n;
+    s->ptr += n;
+    return p;
+}
+
 void PickupLoad(HostStream* s) {
     HostData* d;
     u32* tag;
@@ -236,10 +245,7 @@ void PickupLoad(HostStream* s) {
         if (s->count < 4) {
             ok = 0;
         } else {
-            tag = (u32*)s->ptr;
-            s->count += 4;
-            s->remain -= 4;
-            s->ptr += 4;
+            tag = (u32*)StreamTake(s, 4);
             hash = StrHash("[INVENT]");
             if (*tag == hash) {
                 ok = 1;

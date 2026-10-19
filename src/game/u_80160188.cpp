@@ -104,17 +104,20 @@ void fn_8006D288(Weapon* w, int a);                       // 0x8006D288
 static int sNodeIndex;
 static char sNodeIndexInit;
 
-inline int Query(int target, int msg, u32 hash) {
+// Out-parameter form: a returned value outranks the weapon pointer in register allocation.
+inline void Query(int* out, int target, int msg, u32 hash) {
     QueryMsg m;
 
     m.hash = hash;
     *(int*)&m.result = 0;
     m.unk8 = 0;
     SendMsg(target, msg, &m);
-    return *(int*)&m.result;
+    *out = *(int*)&m.result;
 }
 
-int WeaponMsg(int msg, Weapon* w) {
+// Message-handler style: the weapon arrives as void* and is cast to a local (retail keeps it in r31).
+int WeaponMsg(int msg, void* p) {
+    Weapon* w = (Weapon*)p;
     NodeQuery nq;
 
     nq.target = w->target;
@@ -123,8 +126,10 @@ int WeaponMsg(int msg, Weapon* w) {
         return 0;
     }
 
-    int a = Query(w->target, 0x41E, 0x2DA8293C);
-    int b = Query(w->target, 0x41E, 0xDFF3097A);
+    int a;
+    int b;
+    Query(&a, w->target, 0x41E, 0x2DA8293C);
+    Query(&b, w->target, 0x41E, 0xDFF3097A);
 
     if (!sNodeIndexInit) {
         sNodeIndex = 0;

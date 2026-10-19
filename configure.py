@@ -658,7 +658,7 @@ config.libs = [
             Object(Matching, "game/Hazard.cpp"),  # (helper-game-b)
             Object(Matching, "game/EvacPoint.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_8015C79C.cpp"),  # split from u_80157730
-            Object(NonMatching, "game/u_80160188.cpp"),  # guess
+            Object(Matching, "game/u_80160188.cpp"),  # guess
             Object(NonMatching, "game/GrenadeFx.cpp"),  # starts 0x801608A4 (helper-game-b)
             Object(NonMatching, "game/u_80160DB0.cpp"),  # guess
             Object(Matching, "game/u_80161F40.cpp"),  # behaviour registry

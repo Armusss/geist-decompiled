@@ -101,24 +101,30 @@ int AssetFind(u32 table, u32 key);                        // 0x8007EB34
 
 int gHostSounds[16];
 
-inline int Query(int target, int msg, u32 hash) {
+// Out-parameter form (not a return value): with a returned value the two results outrank the actor
+// in register allocation (they took r31/r30, retail keeps the actor in r31).
+inline void Query(int* out, int target, int msg, u32 hash) {
     QueryMsg m;
     m.hash = hash;
     *(int*)&m.result = 0;
     m.unk8 = 0;
     SendMsg(target, msg, &m);
-    return *(int*)&m.result;
+    *out = *(int*)&m.result;
 }
 
-int HostAction(int action, Actor* actor) {
+// Message-handler style: the actor arrives as void* and is cast to a local (retail ranks it first).
+int HostAction(int action, void* p) {
+    Actor* actor = (Actor*)p;
     MsgQuery q0;
     q0.result = actor->handle;
     q0.hash = action;
     if (fn_800C5210(actor->handle, 0xc06, &q0) == 1) {
         return 0;
     }
-    int r1 = Query(actor->handle, 0x41E, 0x2DA8293C);
-    int r2 = Query(actor->handle, 0x41E, 0xDFF3097A);
+    int r1;
+    int r2;
+    Query(&r1, actor->handle, 0x41E, 0x2DA8293C);
+    Query(&r2, actor->handle, 0x41E, 0xDFF3097A);
 
     switch (action) {
     case 0x1B83833F:
