@@ -259,7 +259,7 @@ int RideMsg(int msg, void* data);
 int RideUpdate(void* p);
 void RideFree(Actor* actor);
 void RideInit(void* p);
-int RideTick(Actor* actor);
+int RideTick(void* p);
 int RideState0Enter(Actor* actor);
 int RideState0Check(Actor* actor);
 int RideState0Update(void* p);
@@ -542,14 +542,13 @@ int RideState0Enter(Actor* actor) {
     return 1;
 }
 
-int RideTick(Actor* actor) {
+int RideTick(void* p) {
+    Actor* actor;
     RideState* st;
-    RideData* data;
     Vec3 v;
     Vec3 rot;
     Vec3 va;
     Vec3 vb;
-    Vec3 d;
     float f31;
     float f30;
     float f29;
@@ -561,19 +560,16 @@ int RideTick(Actor* actor) {
     int state;
     Target* target;
 
-    if (actor == 0) {
+    if (p == 0) {
         return 0;
     }
+    actor = (Actor*)p;
     st = &actor->st;
-    data = actor->data;
-    if (actor->st.i20 != 0 && fn_800A7B78(st, 0x16) && data->hash != 0x8FA05C1A) {
-        fn_800A794C(st, &v);
-        st->f40 = fn_800AA9FC(actor, &v);
-        if (st->f40 < -60.0f) {
-            st->f40 = -60.0f;
-        } else if (st->f40 > 60.0f) {
-            st->f40 = 60.0f;
-        }
+    if (st->i20 != 0 && fn_800A7B78(st, 0x16) && actor->data->hash != 0x8FA05C1A) {
+        Vec3 dir;
+        fn_800A794C(st, &dir);
+        st->f40 = fn_800AA9FC(actor, &dir);
+        st->f40 = st->f40 < -60.0f ? -60.0f : (st->f40 > 60.0f ? 60.0f : st->f40);
     } else {
         st->f40 = 0.0f;
     }
@@ -592,17 +588,17 @@ int RideTick(Actor* actor) {
             st->pos.x = v.x - f31;
             st->pos.y = v.y - f30;
             st->pos.z = v.z - f29;
-            st->f3C = *(float*)((char*)data + st->i18 * 4 + 0xF4);
-            st->f38 = data->fF0;
-            st->f1C = *(float*)((char*)data + st->i18 * 4 + 0xE4);
+            st->f3C = *(float*)((char*)actor->data + st->i18 * 4 + 0xF4);
+            st->f38 = actor->data->fF0;
+            st->f1C = *(float*)((char*)actor->data + st->i18 * 4 + 0xE4);
         } else {
             st->i18 = actor->i218;
             st->pos.x = 0.0f;
             st->pos.y = 0.0f;
             st->pos.z = 0.0f;
-            st->f3C = data->fF4;
-            st->f38 = data->fE4;
-            st->f1C = data->fE4;
+            st->f3C = actor->data->fF4;
+            st->f38 = actor->data->fE4;
+            st->f1C = actor->data->fE4;
             fn_800A7B08(st, 4, 1);
         }
         if (fn_800A7B78(st, 4)) {
@@ -625,7 +621,7 @@ int RideTick(Actor* actor) {
         if (dot > 0.95f) {
             thr = (actor->v240.x * actor->v240.x + actor->v240.y * actor->v240.y +
                    actor->v240.z * actor->v240.z) /
-                  (2.0f * data->fF8);
+                  (2.0f * actor->data->fF8);
             thr = thr * thr;
         } else {
             thr = 16384.0f;
@@ -640,7 +636,7 @@ int RideTick(Actor* actor) {
                 actor->i220 = 0;
                 actor->pTarget = 0;
                 st->i18 = 1;
-                st->f3C = data->fF8;
+                st->f3C = actor->data->fF8;
                 ActorPlayAnim(actor->i224, actor->i228, OwnerId(actor));
             } else {
                 actor->i220 = 0;
@@ -650,6 +646,7 @@ int RideTick(Actor* actor) {
         return 1;
     }
     if (state == 3) {
+        Vec3 d;
         d.z = actor->f234 - actor->v24C.z;
         d.x = actor->f22C - actor->v24C.x;
         if (fabs(d.z) < 1.1920929e-7f && fabs(d.x) < 1.1920929e-7f) {
@@ -659,9 +656,9 @@ int RideTick(Actor* actor) {
             st->i18 = actor->i218;
             Vec3Set(&st->rot, d.z, d.x, 0.0f);
             EulerNormalize(&st->rot, &st->rot);
-            st->f3C = data->fF4;
-            st->f38 = data->fE4;
-            st->f1C = data->fE4;
+            st->f3C = actor->data->fF4;
+            st->f38 = actor->data->fE4;
+            st->f1C = actor->data->fE4;
         }
         return 1;
     }
