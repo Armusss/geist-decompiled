@@ -192,7 +192,7 @@ void fn_8028BF80(String* s, const char* format, ...);
 }
 
 int RideActionMsg(int msg, void* data);
-int RideActionUpdate(Actor* actor);
+int RideActionUpdate(void* p);
 void RideActionDestroy(Actor* actor);
 void RideActionInit(int unused, Actor* actor);
 int RideActionEvent(int msg, Actor* actor);
@@ -234,7 +234,8 @@ int RideActionMsg(int msg, void* data) {
     return 0;
 }
 
-int RideActionUpdate(Actor* actor) {
+int RideActionUpdate(void* p) {
+    Actor* actor = (Actor*)p;
     Beh* b;
     int state;
 
@@ -377,7 +378,8 @@ int RideActionEnter0(Actor* actor) {
 }
 
 static inline float ClampMotion(float value, float limit) {
-    return value < -limit ? -limit : (value > limit ? limit : value);
+    float lo = -limit;
+    return value < lo ? lo : (value > limit ? limit : value);
 }
 
 static inline float TurnRate(Actor* actor) {
@@ -443,14 +445,14 @@ void RideActionAnimate(Actor* actor) {
             float tilt = actor->f27C;
             MtxSetEuler(&motion, &actor->euler);
             fn_800A025C(&axis, &motion, 0);
-            float value = (axis.x * actor->f240 + axis.y * actor->f244 + axis.z * actor->f248
+            float value = axis.x * actor->f240 + axis.y * actor->f244 + axis.z * actor->f248
                 + (axis.x * (actor->f240 - b->lastX) + axis.y * (actor->f244 - b->lastY)
-                   + axis.z * (actor->f248 - b->lastZ)) / (0.00025f * actor->f138))
-                / (4.0f * actor->data->f100 + actor->data->fF0);
-            float target = 50.0f * value;
-            float base = target - actor->euler.y;
-            float scaled = 1.5f * base;
-            float error = scaled - b->roll;
+                   + axis.z * (actor->f248 - b->lastZ)) / (0.00025f * actor->f138);
+            value /= (4.0f * actor->data->f100 + actor->data->fF0);
+            value = 50.0f * value;
+            value = value - actor->euler.y;
+            value = 1.5f * value;
+            float error = value - b->roll;
             float amount = 2.0f * __fabsf(error);
             if (error > 1.1920929e-07f) {
                 b->roll += amount * actor->f138 / 1000.0f;
