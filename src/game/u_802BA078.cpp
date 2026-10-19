@@ -212,17 +212,17 @@ int RideActionMsg(int msg, void* data) {
     RideMsg* d = (RideMsg*)data;
 
     switch (msg) {
-    case 0xA:
-        return 1;
     case 0x41E: {
         Beh* b = d->actor->beh;
         switch (d->hash) {
         case 0xAD8576FA: {
             String roll;
-            String name(gRideActionType[b->state].name);
-            String newline("\n");
-            const String& text = fn_800225C8(name, newline);
-            fn_8028C188(&d->result, text.mData, text.mLength);
+            {
+                String name(gRideActionType[b->state].name);
+                String newline("\n");
+                const String& text = fn_800225C8(name, newline);
+                fn_8028C188(&d->result, text.mData, text.mLength);
+            }
             fn_8028BF80(&roll, "RollRate: %f\n", b->roll);
             fn_8028C188(&d->result, roll.mData, roll.mLength);
             return 0;
@@ -230,6 +230,8 @@ int RideActionMsg(int msg, void* data) {
         }
         return 0;
     }
+    case 0xA:
+        return 1;
     }
     return 0;
 }
