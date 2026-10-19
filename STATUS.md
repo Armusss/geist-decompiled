@@ -7,7 +7,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
-| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_80230504 (7 fns) | running |
+| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_8022ED88 merged Spin unit (add the 4 ex-u_8022EEEC functions + Swarm descriptor) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_8021427C (14 fns) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_80247EB0 retry (7/10 after run 1) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Batch 2: GhostGunUpdate/Draw, PickupScanMsg, DashOnEvent/Aim/Update, RideAction*, NoBotState4Update (ranking rule). Lazy type-name hash parked | running |
@@ -58,6 +58,8 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_80230504 (7 fns): ds-1 run 1 wasted all 150 turns on /tmp experiments without writing the source. Re-queue it for a
+  worker with the new hard rule (source written within 15 turns).
 - u_802BF114 9/11 (ride action 2, ds-2): RideAction2Update (23 diffs, r30/r31 swap) and RideAction2Animate
   (33 diffs, FP register renumbering). Both are register-only and were sent to opus-1 with their u_802BA078 siblings.
 - u_802B9088 5/11 (ride actor, ds-1 2 runs): RideMsg, RideUpdate, RideInit, RideState1Update, RideState0Update,
