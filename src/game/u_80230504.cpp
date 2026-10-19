@@ -49,9 +49,9 @@ struct ExtraRecord {
 
 struct ExtraHolder {
     u32 handle;        // 0x00
-    u32 model;         // 0x04
+    int model;         // 0x04
     void* actor;       // 0x08
-    u32 hash;          // 0x0C
+    int hash;          // 0x0C
     char* name;        // 0x10
     float life;        // 0x14
     int state;         // 0x18
@@ -70,7 +70,8 @@ struct ExtraMsg {
 };
 
 struct ActorMsg {
-    void* actor; // 0x00
+    void* actor;      // 0x00
+    char pad04[0x1C]; // generic message payload
 };
 
 struct ExtraList {
@@ -84,6 +85,9 @@ struct PlaceF;
 // The holder list, shared with the neighbouring file that owns its class.
 ExtraList* lbl_804D5440;
 int lbl_804D5444;
+extern float lbl_804D3488;
+extern int lbl_804D348C;
+extern float lbl_804D3490;
 
 extern "C" int SendMsg(int to, int msg, void* data);
 extern "C" void* memcpy(void* dst, const void* src, u32 n);
@@ -142,7 +146,7 @@ inline void ExtraListRemove(ExtraHolder* e) {
     ExtraHolder** p = (ExtraHolder**)lbl_804D5440->data;
     ExtraHolder** end = (ExtraHolder**)((char*)p + lbl_804D5440->size);
     for (; p != end; p++) {
-        if (*p == e) {
+        if (e == *p) {
             fn_8028B35C(lbl_804D5440, p, 4);
             break;
         }
@@ -178,7 +182,18 @@ inline void ExtraTrailStop(ExtraHolder* e) {
         e->state = 2;
         ExtraListRemove(e);
     }
-    e->state = 2;
+}
+
+// Ages one buffered sample; clears it once it is too old.
+inline void ExtraTrailRecTick(ExtraRecord* r, float dt, int* any) {
+    if (r->time >= 0 && r->time < 100) {
+        r->time += (int)dt;
+        if (r->time > 4) {
+            r->time = -1;
+        } else {
+            *any = 1;
+        }
+    }
 }
 
 // Switches the trail on.
@@ -204,7 +219,7 @@ void ExtraTrailApply(ExtraHolder* e, ExtraMsg* m) {
     if (!e) {
         return;
     }
-    if (fabs(m->dt) < 1.1920929e-7f) {
+    if (fabsf(m->dt) < 1.1920929e-7f) {
         return;
     }
     switch (m->type) {
@@ -216,14 +231,14 @@ void ExtraTrailApply(ExtraHolder* e, ExtraMsg* m) {
         return;
     case 0xB9FC42F5:
     case 0x6A5089FD:
-        life = 1500.0f;
-        kind = 3;
-        scale = 48.0f;
+        life = lbl_804D3488;
         bright = true;
+        kind = lbl_804D348C;
+        scale = 48.0f;
         break;
     default:
     case 0x75715902:
-        life = 300.0f;
+        life = lbl_804D3490;
         kind = lbl_804D5444;
         scale = 18.0f;
         break;
@@ -247,7 +262,7 @@ void ExtraTrailApply(ExtraHolder* e, ExtraMsg* m) {
     vel.y = (float)m->vel.y;
     vel.z = (float)m->vel.z;
     life *= m->dt;
-    if (fabs(vel.x) > 1.1920929e-7f || fabs(vel.y) > 1.1920929e-7f || fabs(vel.z) > 1.1920929e-7f) {
+    if (fabsf(vel.x) > 1.1920929e-7f || fabsf(vel.y) > 1.1920929e-7f || fabsf(vel.z) > 1.1920929e-7f) {
         float d = 1.0f / sqrtf(vel.x * vel.x + vel.y * vel.y + vel.z * vel.z);
         vel.x *= d;
         vel.y *= d;
@@ -347,26 +362,10 @@ int ExtraTrailUpdate(ExtraHolder* e, float dt) {
     if (!e->actor) {
         r = e->recs;
         if (r) {
-            n = (int)dt;
             any = 0;
             for (i = 0; i < 2; i++) {
-                if (r[0].time >= 0 && r[0].time < 100) {
-                    r[0].time += n;
-                    if (r[0].time > 4) {
-                        r[0].time = -1;
-                    } else {
-                        any = 1;
-                    }
-                }
-                if (r[1].time >= 0 && r[1].time < 100) {
-                    r[1].time += n;
-                    if (r[1].time > 4) {
-                        r[1].time = -1;
-                    } else {
-                        any = 1;
-                    }
-                }
-                r += 2;
+                ExtraTrailRecTick(r++, dt, &any);
+                ExtraTrailRecTick(r++, dt, &any);
             }
             if (!any) {
                 VFree(e->recs);
@@ -396,16 +395,14 @@ int ExtraTrailUpdate(ExtraHolder* e, float dt) {
     fn_80039958(e->model, anim, anim, ((Actor*)msg.actor)->f3C, ((Actor*)msg.actor)->f40);
     if (fn_801E10D8(e->actor)) {
         ExtraTrailStop(e);
+        e->state = 2;
         return 0;
     }
     return 1;
 }
 
 void ExtraTrailHide(ExtraHolder* e, int hide) {
-    if (!e) {
-        return;
-    }
-    if (!e->actor) {
+    if (!e || !e->actor) {
         return;
     }
     if (hide) {
@@ -464,9 +461,8 @@ void ExtraTrailAttach(ExtraHolder* e) {
     if (e->hash == 0) {
         e->hash = StrHash("RD_HUMAN_MALE_TYPE1");
     }
-    p = (ExtraHolder**)lbl_804D5440->data;
-    end = (ExtraHolder**)((char*)p + lbl_804D5440->size);
-    for (; p != end; p++) {
+    end = (ExtraHolder**)((char*)lbl_804D5440->data + lbl_804D5440->size);
+    for (p = (ExtraHolder**)lbl_804D5440->data; p != end; p++) {
         other = *p;
         if (other->actor && other->model == e->model) {
             return;
@@ -486,20 +482,20 @@ void ExtraTrailAttach(ExtraHolder* e) {
         total = 0;
         kind = lbl_804D5444;
         scale = 18.0f;
-        for (i = 0; i < 4; i++) {
-            r = &e->recs[i];
+        r = e->recs;
+        for (i = 0; i < 4; i++, r++) {
             if (r->time < 0 || r->time >= 100) {
                 continue;
             }
-            pos.x += r->pos.x;
-            pos.y += r->pos.y;
-            pos.z += r->pos.z;
             vel.x += r->vel.x;
             vel.y += r->vel.y;
             vel.z += r->vel.z;
+            pos.x += r->pos.x;
+            pos.y += r->pos.y;
+            pos.z += r->pos.z;
             total += r->count;
             if (r->flag) {
-                kind = 3;
+                kind = lbl_804D348C;
                 scale = 48.0f;
             }
         }
@@ -515,9 +511,8 @@ void ExtraTrailAttach(ExtraHolder* e) {
     }
     if ((lbl_804D5440->size >> 2) >= 8) {
         best = -1.0f;
-        p = (ExtraHolder**)lbl_804D5440->data;
-        end = (ExtraHolder**)((char*)p + lbl_804D5440->size);
-        for (; p != end; p++) {
+        end = (ExtraHolder**)((char*)lbl_804D5440->data + lbl_804D5440->size);
+        for (p = (ExtraHolder**)lbl_804D5440->data; p != end; p++) {
             other = *p;
             if (other->life > best) {
                 victim = p;

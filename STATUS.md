@@ -58,14 +58,18 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_80230504 4/7 (extra trail, ds-2 2 runs):
+  - ExtraTrailApply 0x80230504 (386 diffs): retail saves f28-f31 (frame 0xB0), ours only f30/f31 (0x90). The
+    velocity normalize is probably an inline helper.
+  - ExtraTrailUpdate (177): a 2-iteration loop.
+  - ExtraTrailAttach.
+  - Notes: `~/geist-work/ds/ds-2.notes.u_80230504.md`.
 - u_80247EB0 7/10 (Grenade, ds-3, 2 runs):
   - GrenadeSpawn: 4 diffs, register-only.
   - GrenadeUpdate and GrenadeMsg: not attempted by the worker.
   - Notes: `~/geist-work/ds/ds-3.notes.u_80247EB0.md`.
 - u_8021427C 10/14 (ghost action, ds-2 run 1): UpdateGhostAction, SetupGhostAction, UpdateGhostActionIdle,
   GhostActionSetActive are left. Notes: `~/geist-work/ds/ds-2.notes.u_8021427C.md`.
-- u_80230504 (7 fns): ds-1 run 1 wasted all 150 turns on /tmp experiments without writing the source. Re-queue it for a
-  worker with the new hard rule (source written within 15 turns).
 - u_802BF114 9/11 (ride action 2, ds-2): RideAction2Update (23 diffs, r30/r31 swap) and RideAction2Animate
   (33 diffs, FP register renumbering). Both are register-only and were sent to opus-1 with their u_802BA078 siblings.
 - **u_802B2680 Matching** (opus-1 batch 3). Shapes that worked:
