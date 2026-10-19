@@ -307,8 +307,8 @@ int GrenadeSpawn(int target, Vec3* pos, Vec3* rot, int duration, float power) {
     Actor* actor;
 
     memset(&desc, 0, sizeof(desc));
-    desc.unk28 = -1;
     desc.type = 0x3BB8992E;
+    desc.unk28 = -1;
     desc.pos = *pos;
     fn_8016D68C(&desc.rot, rot);
     actor = fn_800C7E80(&desc);
