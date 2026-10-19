@@ -1,4 +1,5 @@
-// u_8022ED88.cpp: the "Spin" actor type (0x8022ED88-0x8022EEEC).
+// u_8022ED88.cpp: the "Ghost Bee" / "Ghost Bee Swarm" spin actors (0x8022ED88-0x802301E0; merged with the former
+// u_8022EEEC: one string pool and two descriptors at 0x803BD988/0x803BD9B8).
 // It spins its model and emits three motion trails (the "SPIN" effect). Its messages answer a query
 // key; the rest of the actor (update, setup) lives in the next file.
 // Names are descriptive guesses; the code is matched against the retail DOL.

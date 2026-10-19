@@ -76,9 +76,9 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
   - Left: HostActionMsg 0x802B2680, HostActionEvent, HostActionEnter, HostActionAnimate (0x6CC).
   - **Boundary:** the descriptor at 0x803C42A0 points at HostActionFree 0x802B33F0 (in this unit) and at
     0x802B3430..0x802B36B4 (in u_802B3430). The two units are probably one file; the Lead fixes that.
-- **Boundary:** u_8022ED88 (Matching) and u_8022EEEC are probably one file. The "Ghost Bee" descriptor
-  0x803BD988 uses SpinInit/SpinDestroy, SpinSetup is at 0x8022FF6C, and there is one string pool,
-  0x80349D88-0x80349DF0.
+- **Done:** u_8022ED88 and u_8022EEEC merged into u_8022ED88.cpp (0x8022ED88-0x802301E0). It has one pool
+  (0x80349D88-F0) and two descriptors (Ghost Bee 0x803BD988, Ghost Bee Swarm 0x803BD9B8). It is 3/7 and NonMatching
+  until a worker does the four ex-u_8022EEEC functions.
 - u_80243B0C 1/4 (Dash actor; failed twice, ds-1 on Flash). DashSendAnim matches; the rest is open:
 
   | Function | Address | Diffs | What's left |

@@ -573,10 +573,10 @@ game/Streamer.cpp:
 	.sdata2     start:0x804D9770 end:0x804D9788
 
 game/u_8022ED88.cpp:
-	.text       start:0x8022ED88 end:0x8022EEEC
-
-game/u_8022EEEC.cpp:
-	.text       start:0x8022EEEC end:0x802301E0
+	.text       start:0x8022ED88 end:0x802301E0
+	.rodata     start:0x80349D88 end:0x80349DF0
+	.data       start:0x803BD988 end:0x803BD9E8
+	.sdata2     start:0x804D9788 end:0x804D9810
 
 game/PadRecord.cpp:
 	.text       start:0x802301E0 end:0x8023040C
