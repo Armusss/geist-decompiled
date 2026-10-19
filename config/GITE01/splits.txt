@@ -545,6 +545,9 @@ game/linkObjSys.c:
 
 game/u_8021427C.cpp:
 	.text       start:0x8021427C end:0x802154B0
+	.rodata     start:0x803498D8 end:0x80349958
+	.sdata      start:0x804D3418 end:0x804D3430
+	.sdata2     start:0x804D94B8 end:0x804D94D8
 
 game/u_802154B0.cpp:
 	.text       start:0x802154B0 end:0x80221100
