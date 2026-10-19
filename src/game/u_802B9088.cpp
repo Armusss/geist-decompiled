@@ -141,7 +141,7 @@ struct Actor {
 struct RideType {
     int (*enter)(Actor* actor);     // 0x0
     int (*check)(Actor* actor);     // 0x4
-    int (*update)(Actor* actor);    // 0x8
+    int (*update)(void* actor);     // 0x8
     const char* name;               // 0xC
 };
 
@@ -256,16 +256,16 @@ void fn_8028C188(Buffer* b, char* data, int len);      // 0x8028C188
 void fn_8028BF80(String* s, const char* format, ...);  // 0x8028BF80
 
 int RideMsg(int msg, void* data);
-int RideUpdate(Actor* actor);
+int RideUpdate(void* p);
 void RideFree(Actor* actor);
-void RideInit(Actor* actor);
+void RideInit(void* p);
 int RideTick(Actor* actor);
 int RideState0Enter(Actor* actor);
 int RideState0Check(Actor* actor);
-int RideState0Update(Actor* actor);
+int RideState0Update(void* p);
 int RideState1Enter(Actor* actor);
 int RideState1Check(Actor* actor);
-int RideState1Update(Actor* actor);
+int RideState1Update(void* p);
 
 RideType gRideTypes[] = {
     { RideState0Enter, RideState0Check, RideState0Update, "" },
@@ -277,8 +277,6 @@ RideType gRideTypes[] = {
 static inline int RideBehavior(Actor* actor) {
     u32* p;
     int t;
-    int s;
-    int r = 0;
 
     if (actor == 0 || actor->beh == 0) {
         return 0;
@@ -287,17 +285,15 @@ static inline int RideBehavior(Actor* actor) {
     if (p != 0) {
         t = p[0x38 / 4] >> 24;
         if (t == 0x13 || t == 2) {
-            s = fn_800A7A3C(&actor->st);
+            int s = fn_800A7A3C(&actor->st);
             if (s == 1) {
-                r = 0;
+                return 0;
             } else if (s == 2) {
-                r = 1;
-            } else {
-                r = 0;
+                return 1;
             }
         }
     }
-    return r;
+    return 0;
 }
 
 int RideMsg(int msg, void* data) {
@@ -409,7 +405,8 @@ int RideMsg(int msg, void* data) {
     return 0;
 }
 
-int RideUpdate(Actor* actor) {
+int RideUpdate(void* p) {
+    Actor* actor = (Actor*)p;
     Msg400 m;
     Beh* beh = actor->beh;
     int idx;
@@ -452,7 +449,8 @@ void RideFree(Actor* actor) {
     actor->beh = 0;
 }
 
-void RideInit(Actor* actor) {
+void RideInit(void* p) {
+    Actor* actor = (Actor*)p;
     Beh* b = (Beh*)VAlloc(0x14);
 
     if (b == 0) {
@@ -479,7 +477,8 @@ int RideState1Check(Actor* actor) {
     return 1;
 }
 
-int RideState1Update(Actor* actor) {
+int RideState1Update(void* p) {
+    Actor* actor = (Actor*)p;
     Beh* beh = actor->beh;
     int state = fn_800B26B8(actor);
     int r;
@@ -511,7 +510,8 @@ int RideState0Check(Actor* actor) {
     return 1;
 }
 
-int RideState0Update(Actor* actor) {
+int RideState0Update(void* p) {
+    Actor* actor = (Actor*)p;
     Beh* beh = actor->beh;
     int state = fn_800B26B8(actor);
     int r;
