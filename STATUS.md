@@ -8,8 +8,8 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_80230504 (7 fns) | running |
-| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_802BF114 (11 fns) | running |
-| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_80247EB0 (Grenade, 10 fns) | running |
+| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_8021427C (14 fns) | running |
+| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_80247EB0 retry (7/10 after run 1) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Batch 2: GhostGunUpdate/Draw, PickupScanMsg, DashOnEvent/Aim/Update, RideAction*, NoBotState4Update (ranking rule). Lazy type-name hash parked | running |
 
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
@@ -51,6 +51,8 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_802BF114 9/11 (ride action 2, ds-2): RideAction2Update (23 diffs, r30/r31 swap) and RideAction2Animate
+  (33 diffs, FP register renumbering). Both are register-only and were sent to opus-1 with their u_802BA078 siblings.
 - u_802B9088 5/11 (ride actor, ds-1 2 runs): RideMsg, RideUpdate, RideInit, RideState1Update, RideState0Update,
   RideTick are left. Notes in `~/geist-work/ds/ds-1.notes.u_802B9088.md`. u_802BA078 8/11 (ride action):
   RideActionMsg, RideActionUpdate, RideActionAnimate (sent to opus-1).
