@@ -382,8 +382,8 @@ void GhostGunDraw(Params* p, Actor* a) {
 
     d->trailIndex = 0;
     prev = a->pos;
-    fade = 0;
     alpha = 0;
+    fade = 0;
     for (int i = 0; i < 3; i++) {
         int j = d->trailIndex - i;
 

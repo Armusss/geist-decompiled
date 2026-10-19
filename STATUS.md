@@ -35,8 +35,18 @@ Borrowed code that workers report goes into the README credits.
   - PickupLoad 0x801A1D24 (8 diffs): tag/string/end pointers rotate, ours r8/r6/r7 vs retail r6/r7/r8.
   - PickupScanMsg 0x801A24BC (29 diffs).
   Partial source in main; notes in `~/geist-work/ds/ds-3/worker-notes.md`.
-- u_802D439C 2/4 (ghost gun, ds-2 run 1): GhostGunUpdate (113 diffs) and GhostGunDraw (73), not yet
-  triaged. The next ds run uses the triage rule.
+- u_802D439C 2/4 (ghost gun, ds-2; both leftovers are **register-only**):
+  - GhostGunUpdate 0x802D443C: 113 diffs. Same instruction multiset as retail; a/r29-r30 roles swap and the
+    store schedule follows.
+  - GhostGunDraw 0x802D4B78: 72 diffs. A 4-register rotation, plus retail coalesces `fade = alpha = 0`
+    (`mr r27,r28`), so ours is 4 bytes longer.
+- u_802B2680 6/10 (host-action actor, ds-1 run 1 with the old prompt):
+  - Left: HostActionMsg 0x802B2680, HostActionEvent, HostActionEnter, HostActionAnimate (0x6CC).
+  - **Boundary:** the descriptor at 0x803C42A0 points at HostActionFree 0x802B33F0 (in this unit) and at
+    0x802B3430..0x802B36B4 (in u_802B3430). The two units are probably one file; the Lead fixes that.
+- **Boundary:** u_8022ED88 (Matching) and u_8022EEEC are probably one file. The "Ghost Bee" descriptor
+  0x803BD988 uses SpinInit/SpinDestroy, SpinSetup is at 0x8022FF6C, and there is one string pool,
+  0x80349D88-0x80349DF0.
 - u_80243B0C 1/4 (Dash actor; failed twice, ds-1 on Flash). DashSendAnim matches; the rest is open:
 
   | Function | Address | Diffs | What's left |
