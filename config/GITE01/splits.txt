@@ -583,6 +583,10 @@ game/ExtraData.cpp:
 
 game/u_80230504.cpp:
 	.text       start:0x80230504 end:0x80231550
+	.rodata     start:0x80349EF8 end:0x80349FB8
+	.sdata      start:0x804D3488 end:0x804D3498
+	.sbss       start:0x804D5440 end:0x804D5448
+	.sdata2     start:0x804D9810 end:0x804D9838
 
 game/u_80231550.cpp:
 	.text       start:0x80231550 end:0x80234AD8
