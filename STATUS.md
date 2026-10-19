@@ -43,7 +43,12 @@ Retail's behaviour and message callbacks take **`void*` parameters** and cast th
 Queries use out-parameter inlines: `Query(&r, ...)`.
 - `~/geist-work/ds/lead/voidify.py FILE REGEX` rewrites callbacks into this form.
 - Results:
-  - Credits.cpp 29/30 (NoBotState4Update left).
+  - Credits was **three files**, all Matching (NoBotState4Update solved by opus-1 with an inline QuerySend):
+    - **Credits.cpp**: 0x802E3674-0x802E3AE4, the string pool, gCreditsScreen, sCredits, 3 .sdata words.
+    - **CreditsTip.cpp**: 0x802E3AE4-0x802E3EF8, the gTip* .sdata, .sbss, its own 0.0f.
+    - **NoBot.cpp**: 0x802E3EF8-0x802E4858, gNoBotStates, its own 0.0f and the conversion double.
+    - Clues: the same constant twice in .sdata2, and zero words in .sdata, which are file-boundary padding.
+      CW puts `= 0` globals in .sbss and merges named float constants with literals (tested), so neither explains them.
   - Thermostat was **two files**, now both Matching:
     - **ThermoBeh.cpp**: 0x802665A8-0x80266FAC, .data gThermoStates, .sdata2 0x804DA0A8-B8.
     - **Thermostat.cpp**: the gauge actor, 0x80266FAC-0x80267558, its pool, types + jump table, .sdata2 0x804DA0B8-D8.

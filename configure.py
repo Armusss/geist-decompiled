@@ -788,7 +788,9 @@ config.libs = [
             Object(NonMatching, "game/u_802DDEDC.cpp"),  # guess
             Object(Matching, "game/CollectionHost.cpp"),
             Object(Matching, "game/CollectionGhost.cpp"),
-            Object(NonMatching, "game/Credits.cpp"),
+            Object(Matching, "game/Credits.cpp"),  # credits screen
+            Object(Matching, "game/CreditsTip.cpp"),  # tip messages (split from Credits.cpp)
+            Object(Matching, "game/NoBot.cpp"),  # "No Bot" behaviour (split from Credits.cpp)
         ],
     },
     # ==== end game units ====

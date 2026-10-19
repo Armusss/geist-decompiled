@@ -876,13 +876,22 @@ game/CollectionGhost.cpp:
 	.sdata2     start:0x804DB2F0 end:0x804DB308
 
 game/Credits.cpp:
-	.text       start:0x802E3674 end:0x802E4858
+	.text       start:0x802E3674 end:0x802E3AE4
 	.rodata     start:0x8034DD00 end:0x8034DD78
-	.data       start:0x803C63E8 end:0x803C6468
+	.data       start:0x803C63E8 end:0x803C6408
 	.bss        start:0x804A4EA8 end:0x804A5690
-	.sdata      start:0x804D3DD8 end:0x804D3E08
+	.sdata      start:0x804D3DD8 end:0x804D3DE8
+
+game/CreditsTip.cpp:
+	.text       start:0x802E3AE4 end:0x802E3EF8
+	.sdata      start:0x804D3DE8 end:0x804D3E08
 	.sbss       start:0x804D5880 end:0x804D5898
-	.sdata2     start:0x804DB308 end:0x804DB320
+	.sdata2     start:0x804DB308 end:0x804DB310
+
+game/NoBot.cpp:
+	.text       start:0x802E3EF8 end:0x802E4858
+	.data       start:0x803C6408 end:0x803C6468
+	.sdata2     start:0x804DB310 end:0x804DB320
 
 TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mainloop.c:
 	.text       start:0x802E4858 end:0x802E4950
