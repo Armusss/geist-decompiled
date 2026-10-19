@@ -10,6 +10,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_802B2680 (10 fns; Lead split rodata/data/sdata2) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_802D439C (4 fns; Lead split rodata/data/sdata/sdata2) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_801A1D24 retry (3/7 after run 1) | running |
+| opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Opus queue register patterns, brute force allowed: lazy type-name hash (ToolCreate, SpiritGunCreate, HomingMsg, DashOnEvent), parameter-last rotation (HostAction, WeaponMsg), then late param copy. Brief: `~/geist-work/ds/opus-1.task.md` | running |
 
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
 They are started with `~/geist-work/ds/run_worker.sh NAME [MAX_TURNS]` (allowlist + 150-turn cap), at most 3 at once.
@@ -19,7 +20,10 @@ You can watch one live with `python3 ~/geist-work/ds/ds_watch.py NAME -f`.
 - ds-2: u_80161F40 was byte-identical, but only through a hand-built string blob and mangled-name calls. Rejected;
   the Lead rewrote it as real source (the behaviour registry).
 - ds-3: u_802A770C reached 4/6.
-Lesson: do data splits before handing out a unit, and reject hacks. They have read-only Ghidra, WebSearch and WebFetch only (no REA, no Dolphin, no memory). Each gets
+Lesson: do data splits before handing out a unit, and reject hacks.
+**From 2026-10-18 the workers triage first:** draft every function, then skip register-only diffs at once and
+anything stuck after 8 tries. Those go to the Opus agent, which may brute-force source shapes (never compilers
+or flags). Its results get the same audit. They have read-only Ghidra, WebSearch and WebFetch only (no REA, no Dolphin, no memory). Each gets
 a self-contained prompt from `~/geist-work/ds/task_template.md`, with the rules, commands and a skip-and-hand-off
 rule. Their results are in `~/geist-work/ds/<name>/worker-result.json`. A worker never commits; the Lead audits
 each result (rebuild, DOL SHA-1 = build.sha1, unit Matching and linked from its own src object), then commits and
