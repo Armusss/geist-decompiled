@@ -131,11 +131,8 @@ static inline int FuelPickup(u32 owner, void* data) {
             m.pos.z = 0.0f;
             SendMsg(*((int**)data)[1], 0x415, &m);
         }
-        {
-            int ghost = *((int**)data)[1];
-            if (ghost) {
-                SendQuery(ghost, 0x7A281983, 1);
-            }
+        if (*((int**)data)[1]) {
+            SendQuery(*((int**)data)[1], 0x7A281983, 1);
         }
     }
     return 1;
@@ -143,9 +140,8 @@ static inline int FuelPickup(u32 owner, void* data) {
 
 static inline int FuelDrop(void* data) {
     if (data) {
-        int ghost = *((int**)data)[1];
-        if (ghost) {
-            SendQuery(ghost, 0x7A281983, 0);
+        if (*((int**)data)[1]) {
+            SendQuery(*((int**)data)[1], 0x7A281983, 0);
             SendQuery(*((int**)data)[1], 0x00210E6C, 1);
             *((int**)data)[1] = -1;
         }
