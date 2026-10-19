@@ -571,6 +571,13 @@ int GhostActionIsActive(void) {
 }
 
 // Activate or deactivate the action, freeing the roll object's buffers on activation.
+// Frees the roll's recorded buffers.
+inline void RollFreeAll(RollData* p) {
+    for (int i = 0; i < p->unk50; i++) {
+        VFree(p->unk00[i]);
+    }
+}
+
 void GhostActionSetActive(int arg) {
     if (lbl_804D345C == -1) {
         return;
@@ -581,9 +588,7 @@ void GhostActionSetActive(int arg) {
         RollData* p = lbl_8049EE58[lbl_804D345C];
 
         if (p->unkB4 != 0) {
-            for (int i = 0; i < p->unk50; i++) {
-                VFree(p->unk00[i]);
-            }
+            RollFreeAll(p);
             p->unk50 = 0;
             p->unk80 = 0;
             p->unk88 = 0;
