@@ -291,6 +291,11 @@ is now game/u_8019FDD0.cpp.
     .sdata2 0x804D6770-88. MusicFadeTo is a static helper defined before AudioUpdate, so its 0.0f/1.0f come
     first in .sdata2; the linker strips its unused copy.
 
+- **Store.c stays C++** (checked 2026-10-20). opus-1 reported 15/15 as C, but its test compiled a file that still had
+  an `extern "C" {` block, which is an error in C mode, and so it compared a stale object. Converted properly (`~/geist-work/ds/lead/c_ify.py`)
+  and compiled as C, it gets StoreSave 144, StoreLoad 30 and StoreInit 88 diffs, all functions shorter than retail.
+  As C++ those are 12, 0 and 7. No C-only evidence.
+
 Files on GC/2.0: **u_8012071C** (qsort comparators 0x80120A78/0x80120A9C, pre-stwu loads; 1.3.2 cannot).
 History: on 2026-10-13 the Lead briefly switched the whole game block to 2.0 after checking only matched
 files. That missed the plane function, so it was reverted.
