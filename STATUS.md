@@ -7,9 +7,9 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
-| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_801FC634 run 2 (4/9 after run 1) | running |
-| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_8007EE68 run 2 (10/14 after run 1) | running |
-| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_802766F0 (21 fns, draft pass first) | running |
+| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_8018D2D4 (10 fns, draft pass first) | running |
+| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80285ACC (draft pass first) | running |
+| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_80140A30 (12 fns, draft pass first) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | **Paused** until the DeepSeek workers have drafted every untouched unit (user plan, 2026-10-20); then the Opus queue below | paused |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
@@ -59,6 +59,9 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_801A0F2C 20/23 (mirror object, ds-3 1 run): MirrorObjRegister (24, actor/objId r30/r29 swap), MirrorObjState5Update and State4Update (7 each, f1/f2 swap) left; all register-only.
+- u_80160DB0 16/22 (pickup behaviour, ds-1 2 runs + Lead void* fix): PickupBehMsgId, PickupBehGivePickup, PickupBehState7/6/5/4Update, PickupBehMsg (177), PickupBehUpdate (119) left.
+- u_8016A774 6/17 (SLT loader, ds-2 2 runs): SltLoad, SltUpdate, SltEffectUpdate, SltCreate, SltLoadData not attempted much; SltMsgHandler, SltUnload, SltRelease, SltFileHandler, SltInit, SltDrawEntry register/scheduling-only. Notes in the file header comments.
 - u_802766F0 19/21 (matrix solver, ds-3 2 runs): SolverInvertSymmetric 0x8027678C (182), SolverCholeskyFactor left.
 - u_8007EE68 11/14 (font, ds-2 2 runs): fn_8007F0D4, FontCreate, FontRender are left. Notes: `~/geist-work/ds/ds-2.notes.u_8007EE68.md`.
 - u_801FC634 4/9 (Fear rivet/region item, ds-1 2 runs): FearRivetSpawn, FearRivetUpdate, FearRivetDraw, FearRegionSetup, FearObjRelease are left (the big msg handler 0xB9C is among them). Notes: `~/geist-work/ds/ds-1.notes.u_801FC634.md`.
