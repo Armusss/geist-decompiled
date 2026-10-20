@@ -206,6 +206,15 @@ struct MsgC14 {
     int unk0C;          // 0x0C
 };
 
+// Payload of the 0x40B ride request.
+struct Msg40B {
+    int unk0;           // 0x00
+    int unk4;           // 0x04
+    int unk8;           // 0x08
+    int unk0C;          // 0x0C
+    int unk10;          // 0x10
+};
+
 extern "C" {
 int SendMsg(int target, int msg, void* data);                // 0x800265D4
 int rand(void);
@@ -267,16 +276,16 @@ int Fn800F7DEC(int a, int b, int c, int d, void* e);         // 0x800F7DEC
 static int sAsset[2] = { -1, 0 };
 
 int HostRideAMsg(int msg, void* data);
-int HostRideAUpdate(Actor* actor);
+int HostRideAUpdate(void* p);
 void HostRideAFree(Actor* actor);
 void HostRideAInit(void* p);
 int HostRideAState2Update(Actor* actor);
 int HostRideAState2Leave(Actor* actor);
 int HostRideAState2Enter(Actor* actor);
 int HostRideAState1Update(void* p);
-int HostRideAState1Leave(Actor* actor);
+int HostRideAState1Leave(void* p);
 int HostRideAState1Enter(Actor* actor);
-int HostRideAState0Update(Actor* actor);
+int HostRideAState0Update(void* p);
 int HostRideAState0Leave(Actor* actor);
 int HostRideAState0Enter(Actor* actor);
 int HostRideAMsgSet(void* data);
@@ -284,8 +293,8 @@ int HostRideAMsgQuery(void* data);
 int HostRideABehavior(void* data);
 
 static RideType gRideTypes[3] = {
-    { HostRideAState0Enter, HostRideAState0Leave, HostRideAState0Update, "" },
-    { HostRideAState1Enter, HostRideAState1Leave, (int (*)(Actor*))HostRideAState1Update, "" },
+    { HostRideAState0Enter, HostRideAState0Leave, (int (*)(Actor*))HostRideAState0Update, "" },
+    { HostRideAState1Enter, (int (*)(Actor*))HostRideAState1Leave, (int (*)(Actor*))HostRideAState1Update, "" },
     { HostRideAState2Enter, HostRideAState2Leave, HostRideAState2Update, "" },
 };
 
@@ -333,9 +342,10 @@ int HostRideAMsg(int msg, void* data) {
         return HostRideAMsgQuery(data);
     case 0x407: {
         Msg40A* m = (Msg40A*)data;
+        RideData* b;
         Actor* a = (Actor*)m->actor;
         ActorC4* c4 = a->pC4;
-        RideData* b = a->beh;
+        b = a->beh;
 
         if (c4->type == 0x12EC1 || c4->type == 0x906E8474) {
             if (!fn_800A7B78(&a->st, 0x28)) {
@@ -364,9 +374,10 @@ int HostRideAMsg(int msg, void* data) {
 }
 
 // 0x801F69F4: per-frame update.
-int HostRideAUpdate(Actor* a) {
-    RideData* b = a->beh;
+int HostRideAUpdate(void* p) {
     int next;
+    Actor* a = (Actor*)p;
+    RideData* b = a->beh;
 
     if (HasCondition(&a->st, 0xA) || HasCondition(&a->st, 0xB)) {
         fn_80162658(a, a->unk894);
@@ -499,7 +510,8 @@ int HostRideAState2Enter(Actor* a) {
 }
 
 // 0x801F6F04: state 1 leave.
-int HostRideAState1Leave(Actor* a) {
+int HostRideAState1Leave(void* p) {
+    Actor* a = (Actor*)p;
     RideData* b = a->beh;
 
     b->f0 = 3500.0f * (rand() / 32767.0f) + 1500.0f;
@@ -530,62 +542,60 @@ int HostRideAState1Update(void* p) {
     Actor* a = (Actor*)p;
     RideData* b = a->beh;
     int phase = fn_800B26B8(a);
+    Target* t;
+    Target* target;
 
-    if (phase == 4) {
-        return 0;
-    }
-    if (fn_800B1EF4(a, phase) == 0) {
-        Target* target;
-
-        fn_800B261C(a, phase, &target);
-        fn_800B22F8(a, phase);
-        if (target == 0 || fn_800B22F8(a, phase) > 1) {
-            return 0;
-        }
-        fn_800B2418(a, phase, 15000.0f);
-        fn_800B1F20(a, phase);
-        fn_800B1AB8(a, phase, -1.0f, 1);
-        fn_800B261C(a, phase, &target);
-        fn_800A78A0(&a->st, target);
-        if (target != 0) {
-            fn_800C9FC0(a, target->id, 10000.0f);
-        }
-    } else {
-        fn_800B2418(a, phase, 15000.0f);
-    }
-    {
-        Target* t = fn_800A7A18(&a->st);
-
-        if (t == 0) {
-            return 0;
-        }
-        if (!fn_8029B140(a, 0x73B1E248)) {
-            return 0;
-        }
-        if (!HasCondition(&a->st, 8)) {
-            if (!fn_800A8CDC(a, t, 0.8f)) {
+    if (phase != 4) {
+        if (fn_800B1EF4(a, phase) == 0) {
+            fn_800B261C(a, phase, &t);
+            fn_800B22F8(a, phase);
+            if (t == 0 || fn_800B22F8(a, phase) > 1) {
                 return 0;
             }
+            fn_800B2418(a, phase, 15000.0f);
+            fn_800B1F20(a, phase);
+            fn_800B1AB8(a, phase, -1.0f, 1);
+            fn_800B261C(a, phase, &target);
+            fn_800A78A0(&a->st, target);
+            if (target != 0) {
+                fn_800C9FC0(a, target->id, 10000.0f);
+            }
+        } else {
+            fn_800B2418(a, phase, 15000.0f);
         }
-        if (Fn800F7DEC(a->i8EC, a->i8F0, 0x20EE36, a->id, 0) == 0xC0BECF7E) {
+    } else {
+        return 0;
+    }
+    t = fn_800A7A18(&a->st);
+    if (t == 0) {
+        return 0;
+    }
+    if (!fn_8029B140(a, 0x73B1E248)) {
+        return 0;
+    }
+    if (!HasCondition(&a->st, 8)) {
+        if (!fn_800A8CDC(a, t, 0.8f)) {
             return 0;
         }
-        fn_800C9ED0(a);
-        if (fabs(fn_800AA6C4(t, &a->f84)) < 5.0f) {
-            b->f0 = (b->f0 >= 800.0f) ? 800.0f : b->f0;
+    }
+    if (Fn800F7DEC(a->i8EC, a->i8F0, 0x20EE36, a->id, 0) == 0xC0BECF7E) {
+        return 0;
+    }
+    fn_800C9ED0(a);
+    if (fabsf(fn_800AA6C4(t, &a->f84)) < 5.0f) {
+        b->f0 = (b->f0 < 800.0f) ? b->f0 : 800.0f;
+    }
+    if (!fn_800A7B78(&a->st, 0x28)) {
+        if (!fn_800B7098(a->i608, a->id, t->id, 1) && a->id != -1) {
+            MsgC14 r;
+            r.unk8 = a->id;
+            r.unk0C = 0x93F5146E;
+            r.unk4 = 0;
+            SendMsg(a->id, 0xC14, &r);
         }
-        if (!fn_800A7B78(&a->st, 0x28)) {
-            if (!fn_800B7098(a->i608, a->id, t->id, 1) && a->id != -1) {
-                MsgC14 r;
-                r.unk8 = a->id;
-                r.unk0C = 0x93F5146E;
-                r.unk4 = 0;
-                SendMsg(a->id, 0xC14, &r);
-            }
-        }
-        if (fn_80162940(a->unk894, 1) && fn_80162940(a->unk894, 4)) {
-            fn_80162610(a, a->unk894, 1);
-        }
+    }
+    if (fn_80162940(a->unk894, 1) && fn_80162940(a->unk894, 4)) {
+        fn_80162610(a, a->unk894, 1);
     }
     b->f0 = b->f0 - a->f138;
     if (b->f0 <= 0.0f) {
@@ -620,16 +630,14 @@ int HostRideAState0Leave(Actor* a) {
 }
 
 // 0x801F7448: state 0 update.
-int HostRideAState0Update(Actor* a) {
+int HostRideAState0Update(void* p) {
+    Actor* a = (Actor*)p;
     RideData* b = a->beh;
     int phase = fn_800B26B8(a);
+    int v1[3];
+    int v2[3];
 
-    if (phase == 4 || fn_800B22F8(a, phase) > 1) {
-        b->f0 = 0.0f;
-        if (fn_800A7A3C(&a->st) != 1) {
-            fn_800A7028(&a->st);
-        }
-    } else {
+    if (phase != 4 && fn_800B22F8(a, phase) <= 1) {
         Target* target = 0;
 
         fn_800B261C(a, phase, &target);
@@ -645,6 +653,11 @@ int HostRideAState0Update(Actor* a) {
                 return 1;
             }
         }
+    } else {
+        b->f0 = 0.0f;
+        if (fn_800A7A3C(&a->st) != 1) {
+            fn_800A7028(&a->st);
+        }
     }
     if (!fn_800A7B78(&a->st, 0x28)) {
         Target* t = fn_800A7A18(&a->st);
@@ -659,10 +672,10 @@ int HostRideAState0Update(Actor* a) {
             }
         }
         if (a->i908 == 0x8CD18EE1) {
-            Actor* p = GetPlayer();
+            Actor* pl = GetPlayer();
 
-            if (p != 0) {
-                if (OwnerValue((Owner*)a, p) > a->f5D8) {
+            if (pl != 0) {
+                if (OwnerValue((Owner*)a, pl) > a->f5D8) {
                     Target* info;
 
                     if (a->i5E8 == -1 || (info = OwnerGetInfo(a->i5E8)) == 0) {
@@ -674,12 +687,9 @@ int HostRideAState0Update(Actor* a) {
                             SendMsg(a->id, 0xC14, &r);
                         }
                     } else {
-                        int v1[3];
-                        int v2[3];
-
-                        v1[0] = info->x - p->x;
-                        v1[1] = info->y - p->y;
-                        v1[2] = info->z - p->z;
+                        v1[0] = info->x - pl->x;
+                        v1[1] = info->y - pl->y;
+                        v1[2] = info->z - pl->z;
                         v2[0] = info->x - a->x;
                         v2[1] = info->y - a->y;
                         v2[2] = info->z - a->z;
@@ -827,82 +837,71 @@ int HostRideABehavior(void* data) {
     if (fn_800A7B78(&a->st, 0xB)) {
         return 1;
     }
-    if (a->f904 <= 0.0f) {
-        return 0;
-    }
-    if (HasCondition(&a->st, 0xA)) {
-        return 0;
-    }
-    if (!(q.flags & 2)) {
-        return 0;
-    }
-    if (m->unk08 == 0x3CA34BD6) {
-        if (fn_800A7B78(&a->st, 0x20)) {
-            if (GetPlayer() == 0) {
-                return 0;
+    if (a->f904 > 0.0f && !HasCondition(&a->st, 0xA) && (q.flags & 2)) {
+        if (m->unk08 == 0x3CA34BD6) {
+            if (fn_800A7B78(&a->st, 0x20)) {
+                if (GetPlayer() == 0) {
+                    return 0;
+                }
+                if (HasCondition(&a->st, 0xB)) {
+                    return 0;
+                }
+                {
+                    Msg40B r;
+
+                    r.unk4 = 0;
+                    r.unk0C = -1;
+                    m->unk0C = 0x272CAC;
+                    r.unk8 = m->unk0C;
+                    SendMsg(m->unk04, 0x40B, &r);
+                }
+                return 1;
+            } else {
+                m->unk0C = 0x1379C466;
+                return 1;
             }
-            if (HasCondition(&a->st, 0xB)) {
-                return 0;
+        } else if (m->unk08 == 0x7C44EC3D) {
+            if (fn_80049940()) {
+                m->unk0C = 0xA53F7E23;
+                return 1;
             }
             {
-                MsgC14 r;
+                int phase = fn_800B26B8(a);
+                Actor* p = GetPlayer();
 
-                r.unk4 = 0;
-                r.unk0C = -1;
-                m->unk0C = 0x272CAC;
-                r.unk8 = m->unk0C;
-                SendMsg(m->unk04, 0x40B, &r);
+                if (p == 0) {
+                    return 0;
+                }
+                if (phase != 4 && fn_800B22F8(a, phase) <= 1) {
+                    return 0;
+                }
+                if (p->p26E4 != 0 && (int)((u32)p->p26E4->id >> 24) == 1) {
+                    return 0;
+                }
+                if (*(u32*)p->pHost[PlayerInHost(p)] == 0x04624485 ||
+                    *(u32*)p->pHost[PlayerInHost(p)] == 0x13C05 ||
+                    *(u32*)p->pHost[PlayerInHost(p)] == 0xE0AB9B4F ||
+                    *(u32*)p->pHost[PlayerInHost(p)] == 0xFFF5) {
+                    return 0;
+                }
+                if (HasCondition(&a->st, 0xB)) {
+                    return 0;
+                }
+                if (fn_800A7B78(&a->st, 0x1E)) {
+                    return 0;
+                }
+                if (b->state == 0) {
+                    Msg40B r;
+
+                    r.unk4 = 0;
+                    r.unk0C = -1;
+                    m->unk0C = 0x272CAC;
+                    r.unk8 = m->unk0C;
+                    SendMsg(m->unk04, 0x40B, &r);
+                    return 1;
+                }
             }
-            return 1;
-        } else {
-            m->unk0C = 0x1379C466;
-            return 1;
         }
     }
-    if (m->unk08 != 0x7C44EC3D) {
-        return 0;
-    }
-    if (fn_80049940()) {
-        m->unk0C = 0xA53F7E23;
-        return 1;
-    }
-    {
-        int phase = fn_800B26B8(a);
-        Actor* p = GetPlayer();
-
-        if (p == 0) {
-            return 0;
-        }
-        if (phase != 4 && fn_800B22F8(a, phase) <= 1) {
-            return 0;
-        }
-        if (p->p26E4 != 0 && (p->p26E4->id >> 24) == 1) {
-            return 0;
-        }
-        if (*(u32*)p->pHost[PlayerInHost(p)] == 0x04624485 ||
-            *(u32*)p->pHost[PlayerInHost(p)] == 0x13C05 ||
-            *(u32*)p->pHost[PlayerInHost(p)] == 0xE0AB9B4F ||
-            *(u32*)p->pHost[PlayerInHost(p)] == 0xFFF5) {
-            return 0;
-        }
-        if (HasCondition(&a->st, 0xB)) {
-            return 0;
-        }
-        if (fn_800A7B78(&a->st, 0x1E)) {
-            return 0;
-        }
-        if (b->state != 0) {
-            return 0;
-        }
-        {
-            MsgC14 r;
-
-            r.unk4 = 0;
-            r.unk0C = -1;
-            m->unk0C = 0x272CAC;
-            r.unk8 = m->unk0C;
-            SendMsg(m->unk04, 0x40B, &r);
-        }
-        return 1;
-    }
+    return 0;
 }
