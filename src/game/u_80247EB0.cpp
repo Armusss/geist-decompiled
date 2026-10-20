@@ -540,7 +540,7 @@ void GrenadeUpdate(Actor* actor, float dt) {
             ActorRender(actor);
             return;
         }
-        if (data->life != 0.0f) {
+        if (data->life) {
             if (data->flags & 0x10000000) {
                 data->life -= dt;
                 if (data->life < 0.0f) {
