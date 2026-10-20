@@ -68,6 +68,12 @@ int PickupBehUpdate(void* owner, void* beh);
 int PickupBehMsg(void* owner, void* beh, int msg);
 int PickupBehQuery(void* owner, void* beh);
 
+int MirrorObjInit(void* owner, void* beh);  // u_801A0F2C.cpp
+int MirrorObjDestroy(void* owner, void* beh);
+int MirrorObjUpdate(void* owner, void* beh);
+int MirrorObjMsg(void* owner, void* beh, int msg);
+int MirrorObjQuery(void* owner, void* beh);
+
 // Behaviour callbacks in other files, not named yet.
 extern "C" {
 int fn_80178470(void* owner, void* beh);
@@ -80,11 +86,6 @@ int fn_8017AE50(void* owner, void* beh);
 int fn_8017AD38(void* owner, void* beh);
 int fn_8017AB18(void* owner, void* beh, int msg);
 int fn_8017AB10(void* owner, void* beh);
-int fn_801A1C3C(void* owner, void* beh);
-int fn_801A1BE0(void* owner, void* beh);
-int fn_801A1A3C(void* owner, void* beh);
-int fn_801A17D4(void* owner, void* beh, int msg);
-int fn_801A17CC(void* owner, void* beh);
 int fn_801791B0(void* owner, void* beh);
 int fn_80179154(void* owner, void* beh);
 int fn_80178FA0(void* owner, void* beh);
@@ -137,7 +138,7 @@ BehType gBehTypes[] = {
     { 0x0000FE93, PickupBehInit, PickupBehFree, PickupBehUpdate, PickupBehMsg, PickupBehQuery, "" },
     { 0x7990FA64, fn_80178470, fn_80178414, fn_80178270, fn_80177F80, fn_80177F78, "" },
     { 0x806190E8, fn_8017AEAC, fn_8017AE50, fn_8017AD38, fn_8017AB18, fn_8017AB10, "" },
-    { 0x00013DC9, fn_801A1C3C, fn_801A1BE0, fn_801A1A3C, fn_801A17D4, fn_801A17CC, "" },
+    { 0x00013DC9, MirrorObjInit, MirrorObjDestroy, MirrorObjUpdate, MirrorObjMsg, MirrorObjQuery, "" },
     { 0xA602A7E6, fn_801791B0, fn_80179154, fn_80178FA0, fn_80178D54, fn_80178D4C, "" },
     { 0x5FC4CF74, fn_801777E8, fn_801777B0, fn_80177694, fn_8017744C, fn_80177444, "" },
     { 0x002E3FB5, fn_801CF57C, fn_801CF520, fn_801CF3A4, fn_801CF108, fn_801CF100, "" },
