@@ -58,6 +58,8 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_802DC82C 6/12 (host actor with emitters, "host_die", ds-3 2 runs): HostCreateEmitters, HostUpdate, HostAction,
+  HostDie, HostDeathCallback, HostReset are left. Notes: `~/geist-work/ds/ds-3.notes.u_802DC82C.md`.
 - u_802D77AC 12/14 and u_8028C54C 12/14 (two sibling "host ride" units, ds-1/ds-2): HostRideMsg in both, plus
   HostRideTick (u_802D77AC) and HostRideUpdate (u_8028C54C). One fix may cover both.
 - u_8022ED88 5/7 (Ghost Bee spin actors, ds-1 2 runs): SwarmUpdate, SwarmInit are left. Notes: `~/geist-work/ds/ds-1.notes.u_8022ED88.md`.
