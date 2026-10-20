@@ -62,13 +62,14 @@ int ThermoBehUpdate(void* owner, void* beh);
 int ThermoBehMsg(void* owner, void* beh, int msg);
 int ThermoBehFn5(void* owner, void* beh);
 
+int PickupBehInit(void* owner, void* beh);  // u_80160DB0.cpp
+int PickupBehFree(void* owner, void* beh);
+int PickupBehUpdate(void* owner, void* beh);
+int PickupBehMsg(void* owner, void* beh, int msg);
+int PickupBehQuery(void* owner, void* beh);
+
 // Behaviour callbacks in other files, not named yet.
 extern "C" {
-int fn_80161E84(void* owner, void* beh);
-int fn_80161E28(void* owner, void* beh);
-int fn_80161C44(void* owner, void* beh);
-int fn_8016189C(void* owner, void* beh, int msg);
-int fn_80161894(void* owner, void* beh);
 int fn_80178470(void* owner, void* beh);
 int fn_80178414(void* owner, void* beh);
 int fn_80178270(void* owner, void* beh);
@@ -133,7 +134,7 @@ int fn_802D3A50(void* owner, void* beh);
 
 BehType gBehTypes[] = {
     { 0x0024BD87, 0, 0, 0, 0, 0, "" },
-    { 0x0000FE93, fn_80161E84, fn_80161E28, fn_80161C44, fn_8016189C, fn_80161894, "" },
+    { 0x0000FE93, PickupBehInit, PickupBehFree, PickupBehUpdate, PickupBehMsg, PickupBehQuery, "" },
     { 0x7990FA64, fn_80178470, fn_80178414, fn_80178270, fn_80177F80, fn_80177F78, "" },
     { 0x806190E8, fn_8017AEAC, fn_8017AE50, fn_8017AD38, fn_8017AB18, fn_8017AB10, "" },
     { 0x00013DC9, fn_801A1C3C, fn_801A1BE0, fn_801A1A3C, fn_801A17D4, fn_801A17CC, "" },
