@@ -121,6 +121,14 @@ struct SpawnDesc {
 };
 
 // Trail description passed to TrailCreate (0x3C bytes).
+// Blast description (0x40 bytes); set up but not used here.
+struct BlastDesc {
+    int unk0;
+    int owner;
+    int asset;
+    int unkC[13];
+};
+
 struct TrailDesc {
     int unk0;               // 0x00
     int owner;              // 0x04
@@ -373,7 +381,7 @@ void GrenadeDestroy(Actor* actor) {
 void GrenadeUpdate(Actor* actor, float dt) {
     GrenadeData* data = actor->data;
     PlaceF xform;
-    TrailDesc x;
+    BlastDesc x;
     Mtx34 m;
     MsgResult gres;
     MsgResult res;
@@ -443,16 +451,14 @@ void GrenadeUpdate(Actor* actor, float dt) {
             fn_801D55CC(actor->effect);
             actor->effect = 0;
 
+            pos.x = (float)actor->place.pos.x;
+            pos.y = (float)actor->place.pos.y;
+            pos.z = (float)actor->place.pos.z;
             memset(&x, 0, sizeof(x));
-            x.owner = actor->handle;
-            x.asset = -1;
 
             fn_8016D6A8(&rot);
             rot.x = 180.0f;
             memset(&ed, 0, sizeof(ed));
-            pos.x = (float)actor->place.pos.x;
-            pos.y = (float)actor->place.pos.y;
-            pos.z = (float)actor->place.pos.z;
             ed.pos = pos;
             EulerNormalize(&rot, &rot);
             MtxSetEuler(&m, &rot);
@@ -461,9 +467,20 @@ void GrenadeUpdate(Actor* actor, float dt) {
             ed.unk1C = 1;
             ed.unk20 = 2;
             ed.unk24 = 1.0f;
-            ed.unk28 = 1;
             ed.texture = AssetFind(0xF2E2BEB8, 0xF4D23CAF);
+            ed.unk28 = 1;
             ed.unk30 = 0xFF;
+            ed.unkD4 = -1;
+            ed.unkD8 = -1;
+            ed.unkDC = 0;
+            ed.unkE0 = actor->handle;
+            ed.unkE4 = -1;
+            x.owner = actor->handle;
+            x.asset = -1;
+            ed.color[0] = 255;
+            ed.color[1] = 255;
+            ed.color[2] = 255;
+            ed.color[3] = 255;
             ed.unk6C = 0.0f;
             ed.unk70 = 0.0f;
             ed.unk74 = 1.0f;
@@ -488,15 +505,6 @@ void GrenadeUpdate(Actor* actor, float dt) {
             ed.unkC0 = 0.0f;
             ed.unkC4 = 0.0f;
             ed.unkC8 = 3.0f;
-            ed.color[0] = 255;
-            ed.color[1] = 255;
-            ed.color[2] = 255;
-            ed.color[3] = 255;
-            ed.unkD4 = -1;
-            ed.unkD8 = -1;
-            ed.unkDC = 0;
-            ed.unkE0 = actor->handle;
-            ed.unkE4 = -1;
             data->emitter = EmitterCreate(&ed);
             fn_800D3430(data->emitter, 1);
 
@@ -532,13 +540,15 @@ void GrenadeUpdate(Actor* actor, float dt) {
             ActorRender(actor);
             return;
         }
-        if (data->life == 0.0f) {
-            fn_800C7B78(actor);
-        } else if (data->flags & 0x10000000) {
-            data->life -= dt;
-            if (data->life < 0.0f) {
-                data->life = 0.0f;
+        if (data->life != 0.0f) {
+            if (data->flags & 0x10000000) {
+                data->life -= dt;
+                if (data->life < 0.0f) {
+                    data->life = 0.0f;
+                }
             }
+        } else {
+            fn_800C7B78(actor);
         }
     }
     PossessableUpdate(actor, dt);
