@@ -10,7 +10,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_801F1798 (15 fns) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_801F676C (16 fns) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_8019FDD0 (7 fns, no own data) | running |
-| opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Batch 7: whole units u_801FC634 and VM.c from scratch | running |
+| opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | **Paused 2026-10-20 (user decision)**: batches 7-8 gave little for the Pro usage. Queue kept below; resume later in bulk. Batch-8 notes: VM.c VMAllocPages 5/VMFlushOnePage 6; HostRideMsg/BMsg need a real rewrite (4 bytes short); HostRideBUpdate 37 | paused |
 
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
 They are started with `~/geist-work/ds/run_worker.sh NAME [MAX_TURNS]` (allowlist + 150-turn cap), at most 3 at once.
