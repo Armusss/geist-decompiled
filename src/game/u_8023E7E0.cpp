@@ -10,9 +10,8 @@ typedef unsigned long u32;
 typedef unsigned char u8;
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
-static const char* sActionNames[] = {
-    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
-};
+static const char sActionNames[] =
+    "POSSESS\0GHOSTACTION\0SLIP\0HIJACK\0HOSTACTION\0EXCHANGE\0H_HIJACK\0TALK\0SCAN\0";
 
 // Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
 class Buffer {
@@ -182,10 +181,10 @@ void VFree(void* p);                                         // 0x8009DA3C
 
 // Cached asset handle and the ride-time constants (0x804D34E0..0x804D34F8).
 int gHostRideDAsset = -1;
-static int sRideTimeLo = 1000;
-static int sRideTimeHi = 3000;
-static int sRideThresh = 2800;
-static int sRideAccum = 2000;
+int sRideTimeLo = 1000;
+int sRideTimeHi = 3000;
+int sRideThresh = 2800;
+int sRideAccum = 2000;
 
 // Scratch word kept across the init call (0x804D5498).
 u32 sRidePrevValue[2];
@@ -236,39 +235,6 @@ int HostRideDMsg(int msg, int* data) {
         m->unk1C = 0;
         return 1;
     }
-    case 0x41D: {
-        Msg41D* m = (Msg41D*)data;
-
-        if (fn_80019F88(data, a) != 0) {
-            return 1;
-        }
-        key = data[1];
-        b = a->beh;
-        switch (key) {
-        case 0x54170CB7:
-            b->i10 = data[3];
-            return 1;
-        case 0x3C8D5C5D:
-            b->iC = data[3];
-            return 1;
-        case 0x7F0191AA:
-            if (data[3] == 0) {
-                if (b->state == 0 && gHostRideDTypes[b->state].check(a)) {
-                    b->timer = 0.0f;
-                    gHostRideDTypes[b->state + 1].enter(a);
-                }
-            } else {
-                fn_800A7028(a->st);
-                a->state220 = 0;
-                if (b->state != 0 && gHostRideDTypes[b->state].check(a)) {
-                    b->timer = 0.0f;
-                    gHostRideDTypes[1].enter(a);
-                }
-            }
-            return 1;
-        }
-        return 0;
-    }
     case 0x41E: {
         Msg41E* m = (Msg41E*)data;
 
@@ -278,9 +244,8 @@ int HostRideDMsg(int msg, int* data) {
             ((Msg41ETime*)data)->value = (float)a->i2C - 500.0f;
             return 1;
         case 0xAD8576FA: {
-            String name(gHostRideDTypes[b->state].name);
-            String newline("\n");
-            const String& text = fn_800225C8(name, newline);
+            const String& text = fn_800225C8(
+                String(gHostRideDTypes[b->state].name), String(sActionNames + 0x48));
 
             fn_8028C188(&m->result, text.mData, text.mLength);
             return 0;
@@ -288,15 +253,50 @@ int HostRideDMsg(int msg, int* data) {
         }
         return 0;
     }
-    case 0xC14:
-        if (data[3] != 0x37BD5BDD) {
-            return 0;
+    case 0x41D: {
+        Msg41D* m = (Msg41D*)data;
+
+        if (fn_80019F88(data, a) != 0) {
+            return 1;
         }
-        fn_8029B070(a, 0xC1F6F975);
-        return 1;
+        key = data[1];
+        b = a->beh;
+        switch (key) {
+        case 0x7F0191AA:
+            if (data[3] != 0) {
+                fn_800A7028(a->st);
+                a->state220 = 0;
+                if (b->state != 0 && gHostRideDTypes[b->state].check(a)) {
+                    b->timer = 0.0f;
+                    gHostRideDTypes[0].enter(a);
+                }
+            } else {
+                if (b->state == 0 && gHostRideDTypes[b->state].check(a)) {
+                    b->timer = 0.0f;
+                    gHostRideDTypes[1].enter(a);
+                }
+            }
+            return 1;
+        case 0x54170CB7:
+            b->i10 = data[3];
+            return 1;
+        case 0x3C8D5C5D:
+            b->iC = data[3];
+            return 1;
+        }
+        return 0;
+    }
     case 3:
+        return 0xFFF0BDC1;
     case 4:
         return 0xFFF0BDC1;
+    case 0xC14:
+        switch (data[3]) {
+        case 0x37BD5BDD:
+            fn_8029B070(a, 0xC1F6F975);
+            return 1;
+        }
+        return 0;
     }
     return 0;
 }
@@ -372,10 +372,15 @@ void HostRideDInit(void* owner) {
 // 0x8023EE8C: state 4 update.
 int HostRideDState4Update(void* owner) {
     Actor* a = (Actor*)owner;
-    Beh* b = a->beh;
-    int kind = fn_800B26B8(a);
+    Beh* b;
+    int kind;
     void* target;
 
+    if (a == 0) {
+        return 0;
+    }
+    b = a->beh;
+    kind = fn_800B26B8(a);
     if (a->state220 == 2) {
         if (OwnerValue((Owner*)a, a->target) <= (float)a->c4->fC8 &&
             fn_800A8CDC(a, a->target, 1.0f) != 0) {
@@ -448,20 +453,21 @@ int HostRideDState3Update(void* owner) {
         fn_800A7028(a->st);
         target = 0;
     }
-    v = OwnerValue((Owner*)a, target);
-    if (target == 0) {
-        return 0;
-    }
-    if (v > (float)b->i10) {
-        b->f14 += a->dt;
-        if (b->f14 > (float)sRideAccum) {
-            return 0;
+    if (target != 0) {
+        v = OwnerValue((Owner*)a, target);
+        if (v > (float)b->i10) {
+            b->f14 += a->dt;
+            if (b->f14 > (float)sRideAccum) {
+                return 0;
+            }
+        } else {
+            b->f14 = 0.0f;
+            if (v < (float)sRideThresh) {
+                return 2;
+            }
         }
     } else {
-        b->f14 = 0.0f;
-        if (v < (float)sRideThresh) {
-            return 2;
-        }
+        return 0;
     }
     if (b->timer > b->f4 && target != 0 && fn_800A8CDC(a, target, 1.0f) != 0) {
         return 2;
@@ -480,7 +486,7 @@ int HostRideDState3Enter(void* owner) {
     a->i288 = 0;
     fn_800A7A54(a->st, 0x13, 1);
     fn_800A7B08(a->st, 4, 1);
-    b->f4 = (float)(sRideTimeHi - sRideTimeLo) * ((float)rand() / 32767.0f) + (float)sRideTimeLo;
+    b->f4 = ((float)rand() / 32767.0f) * (float)(sRideTimeHi - sRideTimeLo) + (float)sRideTimeLo;
     kind = fn_800B26B8(a);
     if (kind != 4) {
         void* target;
@@ -514,23 +520,25 @@ int HostRideDState2Update(void* owner) {
     void* target;
     float v;
 
-    if (kind >= 4) {
+    if (kind < 4) {
+        if (fn_800B1EF4(a, kind) == 0) {
+            fn_800B1F20(a, kind);
+            fn_800B1AB8(a, kind, -1.0f, 1);
+        }
+        if (fn_800B2454(a, kind) == 0) {
+            fn_800B2418(a, kind, 8000.0f);
+        }
+        fn_800B261C(a, kind, &target);
+        if (target != 0) {
+            fn_800A78A0(a->st, target);
+        } else {
+            fn_800A7028(a->st);
+            return 3;
+        }
+    } else {
         fn_800A7028(a->st);
         return 3;
     }
-    if (fn_800B1EF4(a, kind) == 0) {
-        fn_800B1F20(a, kind);
-        fn_800B1AB8(a, kind, -1.0f, 1);
-    }
-    if (fn_800B2454(a, kind) == 0) {
-        fn_800B2418(a, kind, 8000.0f);
-    }
-    fn_800B261C(a, kind, &target);
-    if (target == 0) {
-        fn_800A7028(a->st);
-        return 3;
-    }
-    fn_800A78A0(a->st, target);
     v = OwnerValue((Owner*)a, target);
     if (v <= (float)a->c4->fC8 && v <= (float)b->i10 && fn_800A8CDC(a, target, 0.8f) != 0) {
         b->f4 = 0.0f;
