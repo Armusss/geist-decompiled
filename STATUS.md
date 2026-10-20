@@ -59,6 +59,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_802766F0 19/21 (matrix solver, ds-3 2 runs): SolverInvertSymmetric 0x8027678C (182), SolverCholeskyFactor left.
 - u_8007EE68 11/14 (font, ds-2 2 runs): fn_8007F0D4, FontCreate, FontRender are left. Notes: `~/geist-work/ds/ds-2.notes.u_8007EE68.md`.
 - u_801FC634 4/9 (Fear rivet/region item, ds-1 2 runs): FearRivetSpawn, FearRivetUpdate, FearRivetDraw, FearRegionSetup, FearObjRelease are left (the big msg handler 0xB9C is among them). Notes: `~/geist-work/ds/ds-1.notes.u_801FC634.md`.
 - u_8023E7E0 15/19 (host ride D, ds-3 2 runs): HostRideDMsg, HostRideDState3Enter, HostRideDState2Update, HostRideDState2Enter are left.

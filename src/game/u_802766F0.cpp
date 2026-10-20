@@ -69,15 +69,16 @@ static inline float SqrtF(float x) {
     static const double _three = 3.0;
 
     if (x > 0.0f) {
-        double guess = __frsqrte((double)x);
-        guess = _half * guess * (_three - guess * guess * x);
-        guess = _half * guess * (_three - guess * guess * x);
-        guess = _half * guess * (_three - guess * guess * x);
-        x = (float)(x * guess);
+        double dmag = (double)x;
+        double guess = __frsqrte(dmag);
+        guess = _half * guess * (_three - guess * guess * dmag);
+        guess = _half * guess * (_three - guess * guess * dmag);
+        guess = _half * guess * (_three - guess * guess * dmag);
+        return (float)(dmag * guess);
     } else if (x < 0.0) {
-        x = *(float*)__float_nan;
+        return *(float*)__float_nan;
     } else if (FpClassifyF(x) == 1) {
-        x = *(float*)__float_nan;
+        return *(float*)__float_nan;
     }
     return x;
 }
@@ -101,20 +102,22 @@ int SolverIsPositiveDefinite(const float* src, int n) {
 // Inverts a symmetric positive definite matrix through its Cholesky factor.
 // dst is column-major with a padded stride of n4 floats.
 int SolverInvertSymmetric(const float* src, float* dst, int n) {
-    int n4 = n;
+    float* mat;
+    float* y;
     int i;
     int k;
     int j;
+    int n4 = n;
 
     if (1 < n) {
         n4 = ((n - 1) | 3) + 1;
     }
     u32 sp = (u32)__alloca(n4 * n * 4 + 0xF);
-    float* mat = (float*)(((sp - 1) | 0xF) + 1);
+    mat = (float*)(((sp - 1) | 0xF) + 1);
 
     memcpy(mat, src, n4 * n * 4);
     sp = (u32)__alloca(n * 4 + 0xF);
-    float* y = (float*)(((sp - 1) | 0xF) + 1);
+    y = (float*)(((sp - 1) | 0xF) + 1);
     if (SolverCholeskyFactor(mat, n) == 0) {
         return 0;
     }
@@ -170,7 +173,7 @@ int SolverCholeskyFactor(float* a, int n) {
     int n4 = n;
     int i;
     int j;
-    int k;
+    float* row = a;
 
     if (1 < n) {
         n4 = ((n - 1) | 3) + 1;
@@ -178,8 +181,7 @@ int SolverCholeskyFactor(float* a, int n) {
     u32 sp = (u32)__alloca(n * 4 + 0xF);
     float* inv = (float*)(((sp - 1) | 0xF) + 1);
     for (i = 0; i < n; i++) {
-        float* row = a + i * n4;
-        float* rp = row;
+        float* rp = a + i * n4;
         float* col = a;
         float d;
 
@@ -213,6 +215,7 @@ int SolverCholeskyFactor(float* a, int n) {
         }
         *rp = SqrtF(d);
         inv[i] = 1.0f / *rp;
+        row += n4;
     }
     return 1;
 }
