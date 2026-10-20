@@ -116,6 +116,11 @@ game/u_8007E8F8.cpp:
 
 game/u_8007EE68.cpp:
 	.text       start:0x8007EE68 end:0x80080714
+	.data       start:0x80397E8C end:0x80398148
+	.bss        start:0x80427D10 end:0x8042D890
+	.sdata      start:0x804D29B0 end:0x804D29C0
+	.sbss       start:0x804D45F8 end:0x804D4610
+	.sdata2     start:0x804D67B0 end:0x804D6818
 
 game/u_80080714.cpp:
 	.text       start:0x80080714 end:0x80080F88
@@ -716,6 +721,9 @@ game/u_8026C200.cpp:
 
 game/u_802766F0.cpp:
 	.text       start:0x802766F0 end:0x80277600
+	.rodata     start:0x8034AE78 end:0x8034AE90
+	.sbss       start:0x804D5530 end:0x804D5548
+	.sdata2     start:0x804DA2C0 end:0x804DA2F8
 
 game/u_80277600.cpp:
 	.text       start:0x80277600 end:0x8027D3EC
