@@ -131,6 +131,8 @@ int* sCheckpoint;
 const char* (*sAppMain)(const char* level, int* arg);
 void (*sAppInit)(void);
 
+static const GXColor sProgressiveColor = {200, 200, 200, 255};
+
 void TickTimer(int code) {
     if ((u16)code == 0xABC) {
         sTickStart = OSGetTick();
@@ -380,8 +382,7 @@ const char* LevelSelect(const char* name, char** names, char** titles, char** pa
         GfxFrameEnd();
         GfxFrameSwap();
         time += (int)dt;
-        t = (float)time / 50.0f;
-        a = 0.75 + 0.25f * fn_800A1418(t);
+        a = 0.75 + 0.25f * fn_800A1418(t = (float)time / 50.0f);
         b = 0.75 + 0.25f * fn_800A1394(t);
         x = 25.0f * (a * fn_800A1418((float)time / 5.0f)) + 580.0f;
         y = 25.0f * (b * fn_800A1394((float)time / 7.0f)) + 60.0f;
@@ -636,7 +637,7 @@ int ProgressiveSelect(void) {
     DebugPrintf(" Showing progressive select screen\n");
     if (VIGetTvFormat() == VI_NTSC && digital && (mode == 1 || fn_800059D0(0x13))) {
         int choice = 1;
-        GXColor color = {200, 200, 200, 255};
+        GXColor color = sProgressiveColor;
         float timer = 10000.0f;
         float timer2;
 
