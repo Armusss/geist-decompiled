@@ -155,6 +155,12 @@ int lbl_804D3D70 = 500;
 int lbl_804D3D74 = 2000;
 unsigned long long lbl_804D3D78 = 80000;
 
+// Uniform random value in [lo, hi] (lo/hi are integer tuning constants).
+inline float HostBehLerp(int lo, int hi, float t) {
+    float d = hi - lo;
+    return lo + d * t;
+}
+
 typedef int (*HostBehFunc)(Actor*);
 
 // One entry of the host behaviour dispatch table (0x10 bytes).
@@ -199,18 +205,6 @@ int HostBehMsg(int msg, void* data) {
         HostBehState* beh = actor->beh;
 
         switch (m->cmd) {
-        case 0x607EED34: {
-            if (actor->f904 <= (float)actor->counter->count * lbl_804D3D4C) {
-                if (actor->f904 <= (float)actor->counter->count * lbl_804D3D64) {
-                    *(int*)&m->result = lbl_804D3D78;
-                } else {
-                    *(int*)&m->result = lbl_804D3D60;
-                }
-            } else {
-                *(int*)&m->result = lbl_804D3D48;
-            }
-            return 1;
-        }
         case 0xAD8576FA: {
             String name(lbl_803C57B0[beh->state].name);
             String newline("\n");
@@ -218,6 +212,16 @@ int HostBehMsg(int msg, void* data) {
 
             fn_8028C188(&m->result, text.mData, text.mLength);
             return 0;
+        }
+        case 0x607EED34: {
+            if (actor->f904 > (float)actor->counter->count * lbl_804D3D4C) {
+                *(int*)&m->result = lbl_804D3D48;
+            } else if (actor->f904 > (float)actor->counter->count * lbl_804D3D64) {
+                *(int*)&m->result = lbl_804D3D60;
+            } else {
+                *(int*)&m->result = lbl_804D3D78;
+            }
+            return 1;
         }
         }
         return 0;
@@ -310,17 +314,11 @@ int HostBehState3Update(Actor* actor) {
     if (beh->f08 <= 0.0f && fn_80162940(actor->unk894, 1) && fn_80162940(actor->unk894, 4)) {
         fn_80162610(actor, actor->unk894, 1);
         if (actor->f904 > (float)actor->counter->count * lbl_804D3D4C) {
-            int r = rand();
-            beh->f08 = (float)(lbl_804D3D44 - lbl_804D3D40) * ((float)r / 32767.0f) +
-                       (float)lbl_804D3D40;
+            beh->f08 = HostBehLerp(lbl_804D3D40, lbl_804D3D44, (float)rand() / 32767.0f);
         } else if (actor->f904 > (float)actor->counter->count * lbl_804D3D64) {
-            int r = rand();
-            beh->f08 = (float)(lbl_804D3D5C - lbl_804D3D58) * ((float)r / 32767.0f) +
-                       (float)lbl_804D3D58;
+            beh->f08 = HostBehLerp(lbl_804D3D58, lbl_804D3D5C, (float)rand() / 32767.0f);
         } else {
-            int r = rand();
-            beh->f08 = (float)(lbl_804D3D74 - lbl_804D3D70) * ((float)r / 32767.0f) +
-                       (float)lbl_804D3D70;
+            beh->f08 = HostBehLerp(lbl_804D3D70, lbl_804D3D74, (float)rand() / 32767.0f);
         }
     }
     return beh->state;
@@ -348,17 +346,11 @@ int HostBehState3Enter(Actor* actor) {
     actor->i288 = 0;
     beh->f04 = (float)lbl_804D3D30;
     if (actor->f904 > (float)actor->counter->count * lbl_804D3D4C) {
-        int r = rand();
-        beh->f08 = (float)(lbl_804D3D44 - lbl_804D3D40) * ((float)r / 32767.0f) +
-                   (float)lbl_804D3D40;
+        beh->f08 = HostBehLerp(lbl_804D3D40, lbl_804D3D44, (float)rand() / 32767.0f);
     } else if (actor->f904 > (float)actor->counter->count * lbl_804D3D64) {
-        int r = rand();
-        beh->f08 = (float)(lbl_804D3D5C - lbl_804D3D58) * ((float)r / 32767.0f) +
-                   (float)lbl_804D3D58;
+        beh->f08 = HostBehLerp(lbl_804D3D58, lbl_804D3D5C, (float)rand() / 32767.0f);
     } else {
-        int r = rand();
-        beh->f08 = (float)(lbl_804D3D74 - lbl_804D3D70) * ((float)r / 32767.0f) +
-                   (float)lbl_804D3D70;
+        beh->f08 = HostBehLerp(lbl_804D3D70, lbl_804D3D74, (float)rand() / 32767.0f);
     }
     beh->f08 += (float)lbl_804D3D34;
     fn_800A7A54(&actor->st, 0x2E, 1);
@@ -438,17 +430,11 @@ int HostBehState1Enter(Actor* actor) {
     beh->state = 1;
     actor->i288 = 0;
     if (actor->f904 > (float)actor->counter->count * lbl_804D3D4C) {
-        int r = rand();
-        beh->f04 = (float)(lbl_804D3D3C - lbl_804D3D38) * ((float)r / 32767.0f) +
-                   (float)lbl_804D3D38;
+        beh->f04 = HostBehLerp(lbl_804D3D38, lbl_804D3D3C, (float)rand() / 32767.0f);
     } else if (actor->f904 > (float)actor->counter->count * lbl_804D3D64) {
-        int r = rand();
-        beh->f04 = (float)(lbl_804D3D54 - lbl_804D3D50) * ((float)r / 32767.0f) +
-                   (float)lbl_804D3D50;
+        beh->f04 = HostBehLerp(lbl_804D3D50, lbl_804D3D54, (float)rand() / 32767.0f);
     } else {
-        int r = rand();
-        beh->f04 = (float)(lbl_804D3D6C - lbl_804D3D68) * ((float)r / 32767.0f) +
-                   (float)lbl_804D3D68;
+        beh->f04 = HostBehLerp(lbl_804D3D68, lbl_804D3D6C, (float)rand() / 32767.0f);
     }
     fn_800A7B08(&actor->st, 4, 1);
     fn_800BBCA8(actor);
