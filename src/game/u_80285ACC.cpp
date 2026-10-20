@@ -44,6 +44,9 @@ struct EffectType {
     int unk2C;
 };
 
+inline float Min(float a, float b) { return a < b ? a : b; }
+inline float Max(float a, float b) { return a > b ? a : b; }
+
 inline u32 EffectTypeHash(EffectType* type) {
     if (type->hash == 0) {
         type->hash = StrHash(type->name);
@@ -85,7 +88,14 @@ struct TargetPos {
 struct TargetMsg {
     void* target;
     int arg;
+    int unk08[7];
 };
+
+inline void TargetToPos(float* pos, TargetPos* t) {
+    pos[0] = (float)t->x;
+    pos[1] = (float)t->y;
+    pos[2] = (float)t->z;
+}
 
 struct Actor {
     u8 pad0[0x184];
@@ -165,6 +175,10 @@ void DogMeleeReset(EffectObj* obj) {
 
 void DogMeleeUpdate(EffectObj* obj, float dt) {
     DogBeh* b = (DogBeh*)obj->data;
+    float pos[3];
+    TargetMsg q;
+    TargetPos* t;
+    float pct;
 
     if (b == 0) {
         return;
@@ -173,31 +187,29 @@ void DogMeleeUpdate(EffectObj* obj, float dt) {
     case 1:
         if (b->timer < 1500.0f) {
             b->timer += dt;
-            if (b->timer > 1500.0f) {
-                b->timer = 1500.0f;
-            }
+            b->timer = Min(b->timer, 1500.0f);
         }
         break;
     case 2: {
-        TargetMsg q;
-        TargetPos* t;
-        float pos[3];
-        float pct;
-
-        q.target = 0;
         q.arg = b->arg;
+        q.target = 0;
         SendMsg(b->arg, 0x400, &q);
         t = (TargetPos*)q.target;
-        pos[0] = (float)t->x;
-        pos[1] = (float)t->y;
-        pos[2] = (float)t->z;
-        pct = b->timer / 1500.0f;
-        if (pct < 0.0f) {
-            pct = 0.0f;
+        TargetToPos(pos, t);
+        pct = 0.0f;
+        {
+            float rate = b->timer / 1500.0f;
+            if (rate > pct) {
+                pct = rate;
+            }
         }
-        fn_80122108(t, b->arg, pos, 0xB3082735, 1.0f, 1500.0f, 1000.0f * pct, 1000.0f * pct,
-                    0.75f, 0.4f, 1.0f, b->arg);
+        fn_80122108(q.target, q.arg, pos, 0xB3082735, 1.0f, 1000.0f, 1000.0f * pct,
+                    1000.0f * pct, 0.75f, 0.4f, 1.0f, q.arg);
     } break;
+    case 0:
+    case 3:
+    default:
+        break;
     }
 }
 
@@ -241,57 +253,54 @@ int DogMeleeMsg(EffectObj* obj, int msg, int arg, void* data, float dt) {
     DogBeh* b = (DogBeh*)obj->data;
     DogDef* def;
     int r;
+    int pos1[3];
+    int pos2[3];
+    int pos3[3];
+    int pos4[3];
+    int pos5[3];
 
+    def = b->def;
     b->arg = arg;
     r = Fn80175D60(b->arg);
-    def = b->def;
 
     switch (msg) {
+    case 0x1B83833F:
+        b->state = 0;
+        return 1;
+    case 0x96224FCC: {
+        float* m;
+        int fx;
+
+        if (b->fx1 != -1) {
+            fn_8016EEF4(b->fx1);
+            b->fx1 = -1;
+        }
+        m = &b->msg.x;
+        if (m) {
+            pos5[0] = (int)b->msg.x;
+            pos5[1] = (int)b->msg.y;
+            pos5[2] = (int)b->msg.z;
+            fx = (int)fn_8016F120(def->fx1, pos5);
+            fn_8016F118(fx, 0, 100000);
+        } else {
+            fx = (int)FxStart(def->fx1, 0, 0);
+        }
+        b->fx1 = fx;
+        b->state = 3;
+    }
+        return 1;
     case 0x0020EE36:
         if (data) {
             memcpy(&b->msg, data, 0x60);
         }
         return 1;
-    case 0x0B59E861:
-        if (r == 0) {
-            PlayerGetPossessor(arg);
-        }
-        return 1;
-    case 0x0D19E338:
-        fn_8016EEF4(b->fx1);
-        b->fx1 = -1;
-        b->state = 0;
-        return 1;
-    case 0x141109BD:
-        return 1;
-    case 0x1B83833F:
-        b->state = 0;
-        return 1;
-    case 0x238E87F4:
-        fn_8016EEF4(b->fx2);
-        b->fx2 = -1;
-        b->state = 0;
-        return 1;
-    case 0x24725EAA:
-        if (data) {
-            memcpy(&b->msg, data, 0x60);
-        }
-        if (b->fx3 != -1) {
-            int pos[3];
-            pos[0] = (int)b->msg.x;
-            pos[1] = (int)b->msg.y;
-            pos[2] = (int)b->msg.z;
-            fn_8016EDD8(b->fx3, pos);
-        }
-        return 1;
     case 0x315A1A7F:
         if (b->state == 3) {
             if (b->fx1 != -1) {
-                int pos[3];
-                pos[0] = (int)b->msg.x;
-                pos[1] = (int)b->msg.y;
-                pos[2] = (int)b->msg.z;
-                fn_8016EDD8(b->fx1, pos);
+                pos1[0] = (int)b->msg.x;
+                pos1[1] = (int)b->msg.y;
+                pos1[2] = (int)b->msg.z;
+                fn_8016EDD8(b->fx1, pos1);
             }
             fn_800B4C50(&b->msg.x, b->arg, 101.0f, 8000.0f, 3, 0x12);
         } else if (b->state == 0 && b->fx1 != -1) {
@@ -299,27 +308,19 @@ int DogMeleeMsg(EffectObj* obj, int msg, int arg, void* data, float dt) {
             b->fx1 = -1;
         }
         return 1;
-    case 0x42E50A3D:
-        if (b->state != 1) {
-            b->state = 1;
-            b->timer = 0.0f;
-        }
-        {
-            int pos[3];
-            pos[0] = (int)b->msg.x;
-            pos[1] = (int)b->msg.y;
-            pos[2] = (int)b->msg.z;
-            b->fx3 = (int)fn_8016F120(def->fx3, pos);
-        }
+    case 0x0D19E338:
+        fn_8016EEF4(b->fx1);
+        b->fx1 = -1;
+        b->state = 0;
         return 1;
     case 0x4E424290: {
-        DogMsgBlock* m;
+        float* m;
 
         if (b->fx2 != -1) {
             fn_8016EEF4(b->fx2);
             b->fx2 = -1;
         }
-        m = &b->msg;
+        m = &b->msg.x;
         if (m) {
             b->fx2 = (int)fn_8016F25C(def->fx2, m, DogMeleeFxNotify, &b->fx2);
             fn_8016F118(b->fx2, 0, 100000);
@@ -329,14 +330,18 @@ int DogMeleeMsg(EffectObj* obj, int msg, int arg, void* data, float dt) {
         b->state = 4;
     }
         return 1;
+    case 0x953D50F2:
+        if (data) {
+            memcpy(&b->msg, data, 0x60);
+        }
+        return 1;
     case 0x7D38803B:
         if (b->state == 4) {
             if (b->fx2 != -1) {
-                int pos[3];
-                pos[0] = (int)b->msg.x;
-                pos[1] = (int)b->msg.y;
-                pos[2] = (int)b->msg.z;
-                fn_8016EDD8(b->fx2, pos);
+                pos2[0] = (int)b->msg.x;
+                pos2[1] = (int)b->msg.y;
+                pos2[2] = (int)b->msg.z;
+                fn_8016EDD8(b->fx2, pos2);
             }
             ActorPlayAnim(b->arg, 0x8B390117, b->arg);
             fn_800B4C50(&b->msg.x, b->arg, 101.0f, 8000.0f, 2, 0x12);
@@ -345,52 +350,54 @@ int DogMeleeMsg(EffectObj* obj, int msg, int arg, void* data, float dt) {
             b->fx2 = -1;
         }
         return 1;
-    case 0x8FDD7599:
+    case 0x238E87F4:
+        fn_8016EEF4(b->fx2);
+        b->fx2 = -1;
+        b->state = 0;
         return 1;
-    case 0x953D50F2:
+    case 0x42E50A3D:
+        if (b->state != 1) {
+            b->state = 1;
+            b->timer = 0.0f;
+        }
+        {
+            pos3[0] = (int)b->msg.x;
+            pos3[1] = (int)b->msg.y;
+            pos3[2] = (int)b->msg.z;
+            b->fx3 = (int)fn_8016F120(def->fx3, pos3);
+        }
+        return 1;
+    case 0x24725EAA:
         if (data) {
             memcpy(&b->msg, data, 0x60);
         }
-        return 1;
-    case 0x96224FCC: {
-        DogMsgBlock* m;
-        int fx;
-
-        if (b->fx1 != -1) {
-            fn_8016EEF4(b->fx1);
-            b->fx1 = -1;
+        if (b->fx3 != -1) {
+            pos4[0] = (int)b->msg.x;
+            pos4[1] = (int)b->msg.y;
+            pos4[2] = (int)b->msg.z;
+            fn_8016EDD8(b->fx3, pos4);
         }
-        m = &b->msg;
-        if (m) {
-            int pos[3];
-            pos[0] = (int)m->x;
-            pos[1] = (int)m->y;
-            pos[2] = (int)m->z;
-            fx = (int)fn_8016F120(def->fx1, pos);
-            fn_8016F118(fx, 0, 100000);
-        } else {
-            fx = (int)FxStart(def->fx1, 0, 0);
-        }
-        b->fx1 = fx;
-        b->state = 3;
-    }
         return 1;
-    case 0x968CBE3D:
+    case 0xF829DB93:
+        b->state = 0;
+        b->timer = 0.0f;
         return 1;
     case 0x9791AF51:
         fn_8016EEF4(b->fx3);
         b->fx3 = -1;
         b->state = 2;
         return 1;
+    case 0x0B59E861:
+        if (r == 0) {
+            PlayerGetPossessor(arg);
+        }
+        return 1;
+    case 0x141109BD:
+    case 0x8FDD7599:
+    case 0x968CBE3D:
     case 0xBC78F550:
-        return 1;
     case 0xE452286F:
-        return 1;
     case 0xE6B71BCC:
-        return 1;
-    case 0xF829DB93:
-        b->state = 0;
-        b->timer = 0.0f;
         return 1;
     }
     return 0;
@@ -568,7 +575,7 @@ extern "C" void fn_80286980(void) {
 }
 
 extern "C" void* fn_802869DC(u32 size) {
-    u8* p = lbl_804D5680;
+    void* p = lbl_804D5680;
 
     VMAllocPages(p, size);
     lbl_804D5680 += size;
