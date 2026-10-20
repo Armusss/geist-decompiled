@@ -10,7 +10,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_801FC634 run 2 (4/9 after run 1) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_8007EE68 run 2 (10/14 after run 1) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_802766F0 (21 fns, draft pass first) | running |
-| opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | **Paused 2026-10-20 (user decision)**: batches 7-8 gave little for the Pro usage. Queue kept below; resume later in bulk. Batch-8 notes: VM.c VMAllocPages 5/VMFlushOnePage 6; HostRideMsg/BMsg need a real rewrite (4 bytes short); HostRideBUpdate 37 | paused |
+| opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | **Paused** until the DeepSeek workers have drafted every untouched unit (user plan, 2026-10-20); then the Opus queue below | paused |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
