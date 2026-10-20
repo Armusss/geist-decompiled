@@ -475,6 +475,9 @@ game/u_8019FDD0.cpp:
 
 game/u_801A0F2C.cpp:
 	.text       start:0x801A0F2C end:0x801A1D24
+	.rodata     start:0x803482F8 end:0x80348330
+	.data       start:0x803AA978 end:0x803AA9D8
+	.sdata2     start:0x804D86D0 end:0x804D86F8
 
 game/u_801A1D24.cpp:
 	.text       start:0x801A1D24 end:0x801A28A4
