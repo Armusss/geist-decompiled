@@ -134,13 +134,12 @@ struct Actor {
     float f904;                         // 0x904
     int unk908;                         // 0x908
     char pad90C[0x1DB8];
-    HostEntry** hosts;                  // 0x26C4
-    char pad26C8[0x1C];
+    HostEntry* hosts[8];                // 0x26C4
     Target* unk26E4;                    // 0x26E4
 };
 
 // One entry of the ride dispatch table (0x10 bytes).
-typedef int (*HostRideCFunc)(Actor* actor);
+typedef int (*HostRideCFunc)(void* actor);
 
 struct HostRideCType {
     HostRideCFunc enter;    // 0x0
@@ -187,13 +186,14 @@ struct Msg40B {
     int unk4;       // 0x04
     u32 anim;       // 0x08
     int arg;        // 0x0C
+    int unk10;      // 0x10
 };
 
 struct Msg41D {
     Actor* actor;   // 0x00
     u32 cmd;        // 0x04
     int unk08;      // 0x08
-    u32 arg;        // 0x0C
+    int arg;        // 0x0C
 };
 
 struct Msg41E {
@@ -216,7 +216,7 @@ void* VAlloc(int size);                             // 0x8009DA68
 void VFree(void* p);                                // 0x8009DA3C
 int HasCondition(void* conditions, int which);      // 0x800A7AC4
 int AssetFind(u32 bank, u32 name);                  // 0x8007EB34
-int OwnerValue(Owner* o, void* value);              // 0x800AA050
+float OwnerValue(Owner* o, void* value);            // 0x800AA050
 Target* OwnerGetInfo(u32 handle);                   // 0x8002394C
 int PlayerInHost(Actor* player);                    // 0x80049750
 Actor* GetPlayer(void);                             // 0x80049948
@@ -261,17 +261,17 @@ int fn_8029B3B0(Actor* actor, int key);                 // 0x8029B3B0
 }
 
 int HostRideCMsg(int msg, void* data);
-int HostRideCTick(Actor* actor);
+int HostRideCTick(void* owner);
 void HostRideCFree(Actor* actor);
-void HostRideCInit(Actor* actor);
+void HostRideCInit(void* owner);
 int HostRideCState2Update(Actor* actor);
 int HostRideCState2Exit(Actor* actor);
 int HostRideCState2Enter(Actor* actor);
-int HostRideCState1Exit(Actor* actor);
-int HostRideCState1Update(Actor* actor);
+int HostRideCState1Exit(void* owner);
+int HostRideCState1Update(void* owner);
 int HostRideCState1Enter(Actor* actor);
 int HostRideCState0Check(Actor* actor);
-int HostRideCState0Update(Actor* actor);
+int HostRideCState0Update(void* owner);
 int HostRideCState0Enter(Actor* actor);
 int HostRideCHandle41D(void* data);
 int HostRideCHandle40A(void* data);
@@ -280,9 +280,9 @@ int HostRideCHandle40A(void* data);
 int gHostRideCAsset[2] = { -1, 0 };
 
 HostRideCType gHostRideCTypes[] = {
-    { HostRideCState0Enter, HostRideCState0Check, HostRideCState0Update, "" },
-    { HostRideCState1Enter, HostRideCState1Exit, HostRideCState1Update, "" },
-    { HostRideCState2Enter, HostRideCState2Exit, HostRideCState2Update, "" },
+    { (HostRideCFunc)HostRideCState0Enter, (HostRideCFunc)HostRideCState0Check, HostRideCState0Update, "" },
+    { (HostRideCFunc)HostRideCState1Enter, HostRideCState1Exit, HostRideCState1Update, "" },
+    { (HostRideCFunc)HostRideCState2Enter, (HostRideCFunc)HostRideCState2Exit, (HostRideCFunc)HostRideCState2Update, "" },
 };
 
 int HostRideCMsg(int msg, void* data) {
@@ -303,8 +303,10 @@ int HostRideCMsg(int msg, void* data) {
         return HostRideCHandle40A(data);
     case 0x409: {
         Msg409* m = (Msg409*)data;
+        Beh* b;
         Actor* a = m->actor;
-        Beh* b = a->beh;
+
+        b = a->beh;
 
         if (ActorPlayAnim(OwnerId((Owner*)a), m->arg, m->anim) != 0) {
             return 1;
@@ -344,9 +346,11 @@ int HostRideCMsg(int msg, void* data) {
         return HostRideCHandle41D(data);
     case 0x407: {
         Msg407* m = (Msg407*)data;
+        Beh* b;
         Actor* a = m->actor;
-        Beh* b = a->beh;
         int type = a->unkC4->type;
+
+        b = a->beh;
 
         if ((type == 0x12EC1 || type == 0x906E8474) &&
             fn_800A7B78(&a->st, 0x28) == 0 &&
@@ -356,9 +360,9 @@ int HostRideCMsg(int msg, void* data) {
             a->id != -1) {
             MsgC14 q;
 
-            q.unk4 = 0;
             q.handle = a->id;
             q.key = 0x93F5146E;
+            q.unk4 = 0;
             SendMsg(a->id, 0xC14, &q);
         }
         if (b->state == 1 && (float)rand() / 32767.0f > a->f5B4) {
@@ -370,9 +374,13 @@ int HostRideCMsg(int msg, void* data) {
     return 0;
 }
 
-int HostRideCTick(Actor* o) {
-    Beh* b = o->beh;
+int HostRideCTick(void* owner) {
     int next;
+    Actor* o;
+    Beh* b;
+
+    o = (Actor*)owner;
+    b = o->beh;
 
     if (HasCondition(&o->st, 0xA) || HasCondition(&o->st, 0xB)) {
         fn_80162658(o, &o->unk894);
@@ -398,7 +406,8 @@ void HostRideCFree(Actor* o) {
     o->beh = 0;
 }
 
-void HostRideCInit(Actor* o) {
+void HostRideCInit(void* owner) {
+    Actor* o = (Actor*)owner;
     Beh* b;
 
     b = (Beh*)VAlloc(8);
@@ -416,8 +425,10 @@ void HostRideCInit(Actor* o) {
 }
 
 int HostRideCState2Update(Actor* o) {
+    Target* target;
     Beh* b = o->beh;
-    Target* target = fn_800A7A18(&o->st);
+
+    target = fn_800A7A18(&o->st);
 
     if (target == 0 || (int)((u32)target->id >> 24) != 2) {
         MsgC14 m;
@@ -425,9 +436,9 @@ int HostRideCState2Update(Actor* o) {
         Actor* p = GetPlayer();
 
         if (p->id != -1) {
-            m.unk4 = 0;
             m.handle = id;
             m.key = 0xAF699ED0;
+            m.unk4 = 0;
             SendMsg(p->id, 0xC14, &m);
         }
         b->flags |= 2;
@@ -474,9 +485,12 @@ int HostRideCState2Enter(Actor* o) {
     return 1;
 }
 
-int HostRideCState1Exit(Actor* o) {
-    Beh* b = o->beh;
+int HostRideCState1Exit(void* owner) {
+    Actor* o;
+    Beh* b;
 
+    o = (Actor*)owner;
+    b = o->beh;
     b->timer = 1500.0f * ((float)rand() / 32767.0f) + 1500.0f;
     fn_800A7B08(&o->st, 0x16, 0);
     fn_8029B070(o, 0x73B1E248);
@@ -488,45 +502,46 @@ int HostRideCState1Exit(Actor* o) {
             o->id != -1) {
             MsgC14 m;
 
-            m.unk4 = 0;
             m.handle = o->id;
             m.key = 0x93F5146E;
+            m.unk4 = 0;
             SendMsg(o->id, 0xC14, &m);
         }
     }
     return 1;
 }
 
-int HostRideCState1Update(Actor* o) {
+int HostRideCState1Update(void* owner) {
+    Actor* o = (Actor*)owner;
     Beh* b = o->beh;
     int kind;
     void* target;
 
     kind = fn_800B26B8(o);
-    if (kind == 4) {
-        return 0;
-    }
-    if (fn_800B1EF4(o, kind) != 0) {
-        fn_800B2418(o, kind, 15000.0f);
-    } else {
-        target = 0;
-        fn_800B261C(o, kind, &target);
-        fn_800B22F8(o, kind);
-        if (target == 0 || fn_800B22F8(o, kind) > 1) {
-            return 0;
-        }
-        fn_800B2418(o, kind, 15000.0f);
-        fn_800B1F20(o, kind);
-        fn_800B1AB8(o, kind, -1.0f, 1);
-        {
-            void* t;
-
-            fn_800B261C(o, kind, &t);
-            fn_800A78A0(&o->st, t);
-            if (t != 0) {
-                fn_800C9FC0(o, ((Target*)t)->id, 10000.0f);
+    if (kind != 4) {
+        if (fn_800B1EF4(o, kind) == 0) {
+            fn_800B261C(o, kind, &target);
+            fn_800B22F8(o, kind);
+            if (target == 0 || fn_800B22F8(o, kind) > 1) {
+                return 0;
             }
+            fn_800B2418(o, kind, 15000.0f);
+            fn_800B1F20(o, kind);
+            fn_800B1AB8(o, kind, -1.0f, 1);
+            {
+                void* t;
+
+                fn_800B261C(o, kind, &t);
+                fn_800A78A0(&o->st, t);
+                if (t != 0) {
+                    fn_800C9FC0(o, ((Target*)t)->id, 10000.0f);
+                }
+            }
+        } else {
+            fn_800B2418(o, kind, 15000.0f);
         }
+    } else {
+        return 0;
     }
     target = fn_800A7A18(&o->st);
     if (target == 0) {
@@ -538,7 +553,7 @@ int HostRideCState1Update(Actor* o) {
     if (!HasCondition(&o->st, 8) && fn_800A8CDC(o, target, 0.0f) == 0) {
         return 0;
     }
-    if (Fn800F7DEC(o->unk894.f58, o->unk894.f5C, 0x20EE36, o->id, 0) == 0xC0BDCF7E) {
+    if (Fn800F7DEC(o->unk894.f58, o->unk894.f5C, 0x20EE36, o->id, 0) == 0xC0BECF7E) {
         return 0;
     }
     fn_800C9ED0(o);
@@ -547,9 +562,9 @@ int HostRideCState1Update(Actor* o) {
         o->id != -1) {
         MsgC14 m;
 
-        m.unk4 = 0;
         m.handle = o->id;
         m.key = 0x93F5146E;
+        m.unk4 = 0;
         SendMsg(o->id, 0xC14, &m);
     }
     if (fn_80162940(&o->unk894, 1) && fn_80162940(&o->unk894, 4)) {
@@ -586,12 +601,16 @@ int HostRideCState0Check(Actor* o) {
     return 1;
 }
 
-int HostRideCState0Update(Actor* o) {
+int HostRideCState0Update(void* owner) {
+    Actor* o = (Actor*)owner;
+    int ret;
     Beh* b = o->beh;
-    int ret = b->state;
     int kind;
     void* target;
+    int a[3];
+    int c[3];
 
+    ret = b->state;
     kind = fn_800B26B8(o);
     if (kind != 4 && fn_800B22F8(o, kind) <= 1) {
         target = 0;
@@ -619,74 +638,59 @@ int HostRideCState0Update(Actor* o) {
             fn_800A7A54(&o->st, 0x1A, 0);
         }
     }
-    if (fn_800A7B78(&o->st, 0x28) != 0) {
-        return ret;
-    }
-    target = fn_800A7A18(&o->st);
-    if (target != 0 && fn_800B7098(o->unk608, o->id, ((Target*)target)->id, 1) == 0 &&
-        o->id != -1) {
-        MsgC14 m;
-
-        m.unk4 = 0;
-        m.handle = o->id;
-        m.key = 0x93F5146E;
-        SendMsg(o->id, 0xC14, &m);
-        ret = 0;
-    }
-    if (o->unk908 != 0x8CD18EE1) {
-        return ret;
-    }
-    {
-        Actor* player = GetPlayer();
-
-        if (player == 0) {
-            return ret;
-        }
-        if (!(OwnerValue((Owner*)o, player) > o->f5D8)) {
-            return ret;
-        }
-        {
-            Target* info = 0;
-            int a[3];
-            int c[3];
-            int d1;
-            int d2;
-
-            if (o->unk5E8 != -1) {
-                info = OwnerGetInfo(o->unk5E8);
-            }
-            if (info == 0) {
-                if (o->id != -1) {
-                    MsgC14 m;
-
-                    m.unk4 = 0;
-                    m.handle = o->id;
-                    m.key = 0x93F5146E;
-                    SendMsg(o->id, 0xC14, &m);
-                }
-                ret = 0;
-                return ret;
-            }
-            c[0] = info->x - o->x;
-            c[1] = info->y - o->y;
-            c[2] = info->z - o->z;
-            a[0] = info->x - player->x;
-            a[1] = info->y - player->y;
-            a[2] = info->z - player->z;
-            d1 = fn_800E0DBC(c);
-            d2 = fn_800E0DBC(a);
-            if (d2 >= d1) {
-                return ret;
-            }
+    if (fn_800A7B78(&o->st, 0x28) == 0) {
+        Target* t = fn_800A7A18(&o->st);
+        if (t != 0 && fn_800B7098(o->unk608, o->id, t->id, 1) == 0) {
             if (o->id != -1) {
                 MsgC14 m;
 
-                m.unk4 = 0;
                 m.handle = o->id;
                 m.key = 0x93F5146E;
+                m.unk4 = 0;
                 SendMsg(o->id, 0xC14, &m);
             }
             ret = 0;
+        }
+        if (o->unk908 == 0x8CD18EE1) {
+            Actor* player = GetPlayer();
+
+            if (player != 0 && OwnerValue((Owner*)o, player) > o->f5D8) {
+                Target* info;
+                int d1;
+                int d2;
+
+                if (o->unk5E8 == -1 || (info = OwnerGetInfo(o->unk5E8)) == 0) {
+                    if (o->id != -1) {
+                        MsgC14 m;
+
+                        m.handle = o->id;
+                        m.key = 0x93F5146E;
+                        m.unk4 = 0;
+                        SendMsg(o->id, 0xC14, &m);
+                    }
+                    ret = 0;
+                } else {
+                    a[0] = info->x - player->x;
+                    a[1] = info->y - player->y;
+                    a[2] = info->z - player->z;
+                    c[0] = info->x - o->x;
+                    c[1] = info->y - o->y;
+                    c[2] = info->z - o->z;
+                    d1 = fn_800E0DBC(c);
+                    d2 = fn_800E0DBC(a);
+                    if (d2 < d1) {
+                        if (o->id != -1) {
+                            MsgC14 m;
+
+                            m.handle = o->id;
+                            m.key = 0x93F5146E;
+                            m.unk4 = 0;
+                            SendMsg(o->id, 0xC14, &m);
+                        }
+                        ret = 0;
+                    }
+                }
+            }
         }
     }
     return ret;
@@ -712,9 +716,9 @@ int HostRideCHandle41D(void* data) {
     b = o->beh;
     switch (m->cmd) {
     case 0x63F94A69:
-        if (m->arg != (u32)-1) {
+        if (m->arg != -1) {
             o->unk17C = 2;
-            o->unk184 = (int)m->arg;
+            o->unk184 = m->arg;
             o->f174 = 3.4028235e38f;
             o->flags16C |= 2;
             o->flags16C |= 1;
@@ -738,13 +742,6 @@ int HostRideCHandle41D(void* data) {
             fn_800A7A54(&o->st, 0x1A, 0);
         }
         return 1;
-    case 0xF1C3E114:
-        if (m->arg != 0) {
-            b->flags &= ~2;
-        } else {
-            b->flags |= 4;
-        }
-        return 1;
     case 0x7A1C0EF3:
         if (m->arg != 0) {
             b->flags |= 1;
@@ -755,6 +752,13 @@ int HostRideCHandle41D(void* data) {
         } else {
             b->flags &= ~1;
             fn_800A7A54(&o->st, 0x1A, 0);
+        }
+        return 1;
+    case 0xF1C3E114:
+        if (m->arg != 0) {
+            b->flags &= ~4;
+        } else {
+            b->flags |= 4;
         }
         return 1;
     }
@@ -769,9 +773,9 @@ int HostRideCHandle40A(void* data) {
     int kind;
     Actor* player;
 
-    q.actor = o;
+    q.actor = m->actor;
     q.ownerId = OwnerId((Owner*)o);
-    o->msgFn(0x400, &q);
+    m->actor->msgFn(0x400, &q);
     if (ActorPlayAnim(OwnerId((Owner*)o), StrHash("QUERY", m->anim), m->unk04) != 0) {
         m->result = 0;
         return 1;
@@ -779,74 +783,71 @@ int HostRideCHandle40A(void* data) {
     if (fn_800A7B78(&o->st, 0xB) != 0) {
         return 1;
     }
-    if (!(o->f904 > 0.0f)) {
-        return 0;
-    }
-    if (HasCondition(&o->st, 0xA) != 0) {
-        return 0;
-    }
-    if (!(q.flags & 2)) {
-        return 0;
-    }
-    if (m->anim == 0x3CA34BD6) {
-        if (fn_800A7B78(&o->st, 0x20) != 0) {
-            Msg40B mm;
+    if (o->f904 > 0.0f) {
+        if (HasCondition(&o->st, 0xA) == 0) {
+            if (q.flags & 2) {
+                if (m->anim == 0x3CA34BD6) {
+                    if (fn_800A7B78(&o->st, 0x20) != 0) {
+                        Msg40B mm;
 
-            if (GetPlayer() == 0) {
-                return 0;
-            }
-            if (HasCondition(&o->st, 0xB) != 0) {
-                return 0;
-            }
-            m->result = 0x272CAC;
-            mm.unk4 = 0;
-            mm.anim = (u32)m->result;
-            mm.arg = -1;
-            SendMsg(m->unk04, 0x40B, &mm);
-            return 1;
-        }
-        m->result = 0x1379C466;
-        return 1;
-    }
-    if (m->anim == 0x7C44EC3D) {
-        Msg40B mm;
+                        if (GetPlayer() == 0) {
+                            return 0;
+                        }
+                        if (HasCondition(&o->st, 0xB) != 0) {
+                            return 0;
+                        }
+                        mm.unk4 = 0;
+                        mm.arg = -1;
+                        m->result = 0x272CAC;
+                        mm.anim = (u32)m->result;
+                        SendMsg(m->unk04, 0x40B, &mm);
+                        return 1;
+                    } else {
+                        m->result = 0x1379C466;
+                        return 1;
+                    }
+                } else if (m->anim == 0x7C44EC3D) {
+                    Msg40B mm;
 
-        if (fn_80049940() != 0) {
-            m->result = 0xA53F7E23;
-            return 1;
+                    if (fn_80049940() != 0) {
+                        m->result = 0xA53F7E23;
+                        return 1;
+                    }
+                    kind = fn_800B26B8(o);
+                    player = GetPlayer();
+                    if (player == 0) {
+                        return 0;
+                    }
+                    if (kind != 4 && fn_800B22F8(o, kind) <= 1) {
+                        return 0;
+                    }
+                    if (player->unk26E4 != 0 &&
+                        (int)((u32)player->unk26E4->id >> 24) == 1) {
+                        return 0;
+                    }
+                    if (player->hosts[PlayerInHost(player)]->kind == 0x4624485 ||
+                        player->hosts[PlayerInHost(player)]->kind == 0x13C05 ||
+                        player->hosts[PlayerInHost(player)]->kind == 0xE0AB9B4F ||
+                        player->hosts[PlayerInHost(player)]->kind == 0xFFF5) {
+                        return 0;
+                    }
+                    if (HasCondition(&o->st, 0xB) != 0) {
+                        return 0;
+                    }
+                    if (fn_800A7B78(&o->st, 0x1E) != 0) {
+                        return 0;
+                    }
+                    if (b->state == 0) {
+                        mm.unk4 = 0;
+                        mm.arg = -1;
+                        m->result = 0x272CAC;
+                        mm.anim = (u32)m->result;
+                        SendMsg(m->unk04, 0x40B, &mm);
+                        return 1;
+                    }
+                }
+            }
         }
-        kind = fn_800B26B8(o);
-        player = GetPlayer();
-        if (player == 0) {
-            return 0;
-        }
-        if (kind != 4 && fn_800B22F8(o, kind) <= 1) {
-            return 0;
-        }
-        if (player->unk26E4 != 0 && ((u32)player->unk26E4->id >> 24) == 1) {
-            return 0;
-        }
-        if (player->hosts[PlayerInHost(player)]->kind == 0x4624485 ||
-            player->hosts[PlayerInHost(player)]->kind == 0x13C05 ||
-            player->hosts[PlayerInHost(player)]->kind == 0xE0AB9B4F ||
-            player->hosts[PlayerInHost(player)]->kind == 0xFFF5) {
-            return 0;
-        }
-        if (HasCondition(&o->st, 0xB) != 0) {
-            return 0;
-        }
-        if (fn_800A7B78(&o->st, 0x1E) != 0) {
-            return 0;
-        }
-        if (b->state != 0) {
-            return 0;
-        }
-        m->result = 0x272CAC;
-        mm.unk4 = 0;
-        mm.anim = (u32)m->result;
-        mm.arg = -1;
-        SendMsg(m->unk04, 0x40B, &mm);
-        return 1;
     }
     return 0;
 }
