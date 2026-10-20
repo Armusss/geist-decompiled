@@ -263,6 +263,45 @@ FontNode* sFreeNode;
 FontQueue* sQueue;
 FontNode* sNode;
 
+inline void SetNode(int op, int x) {
+    sNode->op = op;
+    sNode->x.i = x;
+}
+
+inline void SetNode(int op, int x, int y) {
+    sNode->op = op;
+    sNode->x.i = x;
+    sNode->y.i = y;
+}
+
+inline void SetNodeFloat(int op, float x) {
+    sNode->op = op;
+    sNode->x.f = x;
+}
+
+inline void SetNodeColor(int op, int r, int g, int b) {
+    sNode->op = op;
+    sNode->r = r;
+    sNode->g = g;
+    sNode->b = b;
+}
+
+inline void SetNodeColorScaled(int op, u8 r, u8 g, u8 b) {
+    sNode->op = op;
+    sNode->r = (u8)(r * sRedScale);
+    sNode->g = (u8)(g * sGreenScale);
+    sNode->b = (u8)(b * sBlueScale);
+}
+
+inline void SetNodeText(int op, float y, float x, int r, int g, int b) {
+    sNode->op = op;
+    sNode->y.f = y;
+    sNode->x.f = x;
+    sNode->r = r;
+    sNode->g = g;
+    sNode->b = b;
+}
+
 void fn_8007EE68(void) {}
 
 void fn_8007EE6C(int index, int a, int b, int c, int d, int e) {
@@ -373,16 +412,13 @@ int FontRun(Font* f, float dt);
 
 void fn_8007F0D4(float dt) {
     FontNode* n;
+    FontNode* prev;
     int i;
 
-    {
-        FontNode* p = sNodes;
-        FontNode* prev = 0;
-        for (i = 0; i < 32; i++) {
-            p->next = prev;
-            prev = p;
-            p++;
-        }
+    prev = 0;
+    for (i = 0; i < 32; i++) {
+        sNodes[i].next = prev;
+        prev = &sNodes[i];
     }
     sFreeNode = 0;
     sQueue = 0;
@@ -391,10 +427,11 @@ void fn_8007F0D4(float dt) {
         sQueues[i].head = 0;
         sQueues[i].tail = 0;
     }
-    sFreeNode = &sNodes[31];
+    sFreeNode = prev;
 
     i = sFontList;
     while (i != -1) {
+        int next = sFonts[i].next;
         sQueue = &sQueues[sFonts[i].layer];
         if (sFreeNode != 0) {
             n = sFreeNode;
@@ -407,18 +444,18 @@ void fn_8007F0D4(float dt) {
                 sQueue->head = n;
                 sQueue->tail = n;
             }
-            sNode = n;
         } else {
-            sNode = 0;
+            n = 0;
         }
-        if (sNode != 0) {
-            sNode->op = 9;
+        sNode = n;
+        if (n != 0) {
+            n->op = 9;
             sNode->id = sFonts[i].id;
             if (FontRun(&sFonts[i], dt) == 0) {
                 FontRelease(i);
             }
         }
-        i = sFonts[i].next;
+        i = next;
     }
 }
 
@@ -553,18 +590,17 @@ int FontCreate(FontDesc* d, FontCallback cb, void* cbdata) {
 
 int FontRun(Font* s, float dt) {
     FontInst* inst;
+    FontInst* dst;
     FontInst* lo;
     FontInst* hi;
-    FontInst* dst;
     int flag;
     int diff;
     float fdiff;
-    float rem;
 
+    inst = &s->code[s->pc];
     if (s->code == 0) {
         return 0;
     }
-    inst = &s->code[s->pc];
     switch (inst->op) {
     case 0:
         s->pc = inst->a;
@@ -574,12 +610,77 @@ int FontRun(Font* s, float dt) {
             s->cb(0, 0, s->cbData);
         }
         return 0;
+    case 8:
+        dst = &s->code[inst->a];
+        lo = &s->code[s->pc + 1];
+        hi = &s->code[s->pc + 2];
+        fdiff = hi->time - lo->time;
+        if (fdiff != 0.0f) {
+            dst->time = lo->time + (float)(Rand() % (int)fdiff);
+        }
+        diff = hi->a - lo->a;
+        if (diff != 0) {
+            dst->a = lo->a + Rand() % diff;
+        }
+        diff = hi->b - lo->b;
+        if (diff != 0) {
+            dst->b = lo->b + Rand() % diff;
+        }
+        diff = hi->c - lo->c;
+        if (diff != 0) {
+            dst->c = lo->c + Rand() % diff;
+        }
+        diff = hi->d - lo->d;
+        if (diff != 0) {
+            dst->d = lo->d + Rand() % diff;
+        }
+        diff = hi->e - lo->e;
+        if (diff != 0) {
+            dst->e = lo->e + Rand() % diff;
+        }
+        s->pc += 3;
+        return FontRun(s, dt);
+    case 5:
+        dst = &s->code[inst->a];
+        lo = &s->code[s->pc + 1];
+        dst->time = lo->time;
+        dst->a = lo->a;
+        dst->b = lo->b;
+        dst->c = lo->c;
+        dst->d = lo->d;
+        dst->e = lo->e;
+        s->pc += 2;
+        return FontRun(s, dt);
+    case 11:
+        dst = &s->code[inst->a];
+        lo = &s->code[s->pc + 1];
+        if (lo->time != 0.0f) {
+            dst->time = s->scale * lo->time;
+        }
+        if (lo->a != 0) {
+            dst->a = s->p18 * lo->a;
+        }
+        if (lo->b != 0) {
+            dst->b = s->p1C * lo->b;
+        }
+        if (lo->c != 0) {
+            dst->c = s->p20 * lo->c;
+        }
+        if (lo->d != 0) {
+            dst->d = s->p24 * lo->d;
+        }
+        if (lo->e != 0) {
+            dst->e = s->p28 * lo->e;
+        }
+        s->pc += 2;
+        return FontRun(s, dt);
     case 2:
         lo = &s->code[s->pc - 1];
         hi = &s->code[s->pc + 1];
         flag = 0;
         if (hi->a == -1) {
-            lo->a = (lo->a + inst->a) & 0xFFF;
+            lo->a += inst->a;
+            lo->a &= 0xFFF;
         } else {
             lo->a += inst->a;
             if (inst->a < 0) {
@@ -593,7 +694,8 @@ int FontRun(Font* s, float dt) {
             }
         }
         if (hi->b == -1) {
-            lo->b = (lo->b + inst->b) & 0xFFF;
+            lo->b += inst->b;
+            lo->b &= 0xFFF;
         } else {
             lo->b += inst->b;
             if (inst->b < 0) {
@@ -651,164 +753,66 @@ int FontRun(Font* s, float dt) {
             s->pc++;
             return FontRun(s, dt);
         }
-        sNode->op = 0;
-        sNode->x.i = inst->a;
-        break;
-    case 5:
-        dst = &s->code[inst->a];
-        dst->time = s->code[s->pc + 1].time;
-        dst->a = s->code[s->pc + 1].a;
-        dst->b = s->code[s->pc + 1].b;
-        dst->c = s->code[s->pc + 1].c;
-        dst->d = s->code[s->pc + 1].d;
-        dst->e = s->code[s->pc + 1].e;
-        s->pc += 2;
-        return FontRun(s, dt);
-    case 8:
-        dst = &s->code[inst->a];
-        lo = &s->code[s->pc + 1];
-        hi = &s->code[s->pc + 2];
-        fdiff = hi->time - lo->time;
-        if (fdiff != 0.0f) {
-            dst->time = lo->time + (float)(Rand() % (int)fdiff);
-        }
-        diff = hi->a - lo->a;
-        if (diff != 0) {
-            dst->a = lo->a + Rand() % diff;
-        }
-        diff = hi->b - lo->b;
-        if (diff != 0) {
-            dst->b = lo->b + Rand() % diff;
-        }
-        diff = hi->c - lo->c;
-        if (diff != 0) {
-            dst->c = lo->c + Rand() % diff;
-        }
-        diff = hi->d - lo->d;
-        if (diff != 0) {
-            dst->d = lo->d + Rand() % diff;
-        }
-        diff = hi->e - lo->e;
-        if (diff != 0) {
-            dst->e = lo->e + Rand() % diff;
-        }
-        s->pc += 3;
-        return FontRun(s, dt);
-    case 11:
-        dst = &s->code[inst->a];
-        lo = &s->code[s->pc + 1];
-        if (lo->time != 0.0f) {
-            dst->time = s->scale * lo->time;
-        }
-        if (lo->a != 0) {
-            dst->a = s->p18 * lo->a;
-        }
-        if (lo->b != 0) {
-            dst->b = s->p1C * lo->b;
-        }
-        if (lo->c != 0) {
-            dst->c = s->p20 * lo->c;
-        }
-        if (lo->d != 0) {
-            dst->d = s->p24 * lo->d;
-        }
-        if (lo->e != 0) {
-            dst->e = s->p28 * lo->e;
-        }
-        s->pc += 2;
-        return FontRun(s, dt);
+        // fall through
     case 20:
-        sNode->op = 0;
-        sNode->x.i = inst->a;
-        break;
-    case 21:
-        sNode->op = 1;
-        sNode->x.i = inst->a;
-        sNode->y.i = inst->b;
-        break;
-    case 22:
-        sNode->op = 2;
-        sNode->x.f = (float)inst->a / 4096.0f;
-        break;
-    case 23:
-        sNode->op = 3;
-        sNode->r = (u8)((u8)inst->c * sRedScale);
-        sNode->g = (u8)((u8)inst->d * sGreenScale);
-        sNode->b = (u8)((u8)inst->e * sBlueScale);
-        break;
-    case 24:
-        sNode->op = 4;
-        sNode->r = inst->c;
-        sNode->g = inst->d;
-        sNode->b = inst->e;
-        break;
-    case 25:
-        sNode->op = 5;
-        sNode->r = inst->c;
-        sNode->g = inst->d;
-        sNode->b = inst->e;
-        break;
-    case 26:
-        sNode->op = 6;
-        sNode->x.f = (float)inst->a / 4096.0f;
-        break;
-    case 27:
-        sNode->op = 7;
-        sNode->x.i = inst->a;
-        break;
-    case 28:
-        sNode->op = 8;
-        sNode->x.i = inst->a;
-        break;
-    case 29:
-        sNode->op = 2;
-        sNode->x.f = (float)inst->b * ((float)fn_800A1624(inst->a) / 4096.0f) / 4096.0f;
-        break;
-    case 30:
-        sNode->op = 0x0A;
-        sNode->r = inst->c;
-        sNode->g = inst->d;
-        sNode->b = inst->e;
-        break;
-    case 31:
-        sNode->op = 0x0B;
-        sNode->y.f = (float)inst->a / 4096.0f;
-        sNode->x.f = (float)inst->b / 4096.0f;
-        sNode->r = inst->c;
-        sNode->g = inst->d;
-        sNode->b = inst->e;
+        SetNode(0, inst->a);
         break;
     case 32:
-        sNode->op = 0x0C;
-        sNode->x.i = inst->a;
-        sNode->y.i = inst->b;
+        SetNode(0x0C, inst->a, inst->b);
+        break;
+    case 21:
+        SetNode(1, inst->a, inst->b);
+        break;
+    case 22:
+        SetNodeFloat(2, (float)inst->a / 4096.0f);
+        break;
+    case 31:
+        SetNodeText(0x0B, (float)inst->a / 4096.0f, (float)inst->b / 4096.0f,
+                    inst->c, inst->d, inst->e);
+        break;
+    case 29:
+        SetNodeFloat(2, (float)inst->b *
+                            ((float)fn_800A1624(inst->a) / 4096.0f) / 4096.0f);
+        break;
+    case 23:
+        SetNodeColorScaled(3, inst->c, inst->d, inst->e);
         break;
     case 33:
-        sNode->op = 0x0D;
-        sNode->r = inst->c;
-        sNode->g = inst->d;
-        sNode->b = inst->e;
+        SetNodeColor(0x0D, inst->c, inst->d, inst->e);
+        break;
+    case 24:
+        SetNodeColor(4, inst->c, inst->d, inst->e);
         break;
     case 34:
-        sNode->op = 0x0E;
-        sNode->r = inst->c;
-        sNode->g = inst->d;
-        sNode->b = inst->e;
+        SetNodeColor(0x0E, inst->c, inst->d, inst->e);
         break;
     case 35:
-        sNode->op = 0x0F;
-        sNode->x.i = inst->a;
-        sNode->y.i = inst->b;
+        SetNode(0x0F, inst->a, inst->b);
+        break;
+    case 30:
+        SetNodeColor(0x0A, inst->c, inst->d, inst->e);
+        break;
+    case 25:
+        SetNodeColor(5, inst->c, inst->d, inst->e);
+        break;
+    case 26:
+        SetNodeFloat(6, (float)inst->a / 4096.0f);
+        break;
+    case 27:
+        SetNode(7, inst->a);
+        break;
+    case 28:
+        SetNode(8, inst->a);
         break;
     }
 
     inst->time -= dt;
     if (inst->time < 0.0f) {
-        rem = -inst->time;
+        dt = -inst->time;
         inst->time = 0.0f;
         s->pc++;
-        if (rem >= 1.1920929e-07f) {
-            return FontRun(s, rem);
+        if (dt >= 1.1920929e-07f) {
+            return FontRun(s, dt);
         }
     }
     return 1;
@@ -833,6 +837,11 @@ void FontRender(int id) {
             continue;
         }
         switch (node->op) {
+        case 12:
+            fn_800980F8(0, (float)node->y.i / 2048.0f);
+            fn_80094E20(0.1f * ((float)node->x.i / 22.0f), 0.0f,
+                        (float)node->y.i / 4096.0f);
+            break;
         case 0:
             fn_80098FB4(node->x.i, 0);
             break;
@@ -842,41 +851,17 @@ void FontRender(int id) {
         case 2:
             fn_800988A8(0, node->x.f);
             break;
-        case 3:
-            fn_8009851C(node->r, node->g, node->b);
-            break;
-        case 4:
-            fn_800983FC(node->r, node->g, node->b);
-            break;
-        case 5:
-            fn_80098244(node->r, node->g, node->b);
-            break;
-        case 6:
-            fn_80096D5C(node->x.f);
-            break;
-        case 7:
-            fn_800967B8(node->x.i);
-            break;
-        case 8:
-            fn_80096584(node->x.i);
-            break;
-        case 10:
-            fn_8009851C(node->r, node->g, node->b);
-            fn_800983FC(node->r, node->g, node->b);
-            break;
         case 11:
             v.x = ((float)node->r - 127.0f) / 255.0f;
             v.y = ((float)node->g - 127.0f) / 255.0f;
             v.z = ((float)node->b - 127.0f) / 255.0f;
             fn_8009877C(&v, 0, node->y.f, node->x.f);
             break;
-        case 12:
-            fn_800980F8(0, (float)node->y.i / 2048.0f);
-            fn_80094E20(0.1f * ((float)node->x.i / 22.0f), 0.0f,
-                        (float)node->y.i / 4096.0f);
+        case 3:
+            fn_8009851C(node->r, node->g, node->b);
             break;
-        case 13:
-            fn_80096B30(node->r, node->g, node->b);
+        case 4:
+            fn_800983FC(node->r, node->g, node->b);
             break;
         case 14:
             cr = fn_800A1394(90.0f * node->r / 255.0f);
@@ -903,6 +888,25 @@ void FontRender(int id) {
                 t = 0.008 * frac;
                 fn_80094E20(t, t, 1.0f);
             }
+            break;
+        case 13:
+            fn_80096B30(node->r, node->g, node->b);
+            break;
+        case 5:
+            fn_80098244(node->r, node->g, node->b);
+            break;
+        case 6:
+            fn_80096D5C(node->x.f);
+            break;
+        case 7:
+            fn_800967B8(node->x.i);
+            break;
+        case 8:
+            fn_80096584(node->x.i);
+            break;
+        case 10:
+            fn_8009851C(node->r, node->g, node->b);
+            fn_800983FC(node->r, node->g, node->b);
             break;
         }
     }
