@@ -70,8 +70,9 @@ float lbl_804D3088;
 int lbl_804D4084;
 int lbl_804D2568;
 int lbl_804D256C;
-ReflectState lbl_80495CE8;
-Vec3 lbl_80495D78;      // aliases lbl_80495CE8.target
+extern ReflectState lbl_80495CE8;
+extern ReflectEntry lbl_80495D84[8];
+extern Vec3 lbl_80495D78;
 Mtx34 lbl_80449068;
 
 int SendMsg(int to, int msg, void* data);
@@ -139,10 +140,8 @@ void ReflectSetupTexMtx(int id) {
     int i;
 
     for (i = 0; i < lbl_804D514C; i++) {
-        ReflectEntry* entry = &lbl_80495CE8.entries[i];
-
-        if (entry->id == id && entry->active) {
-            GXLoadTexMtxImm(&entry->texMtx, 0x1E, 0);
+        if (id == lbl_80495D84[i].id && lbl_80495D84[i].active) {
+            GXLoadTexMtxImm(&lbl_80495D84[i].texMtx, 0x1E, 0);
             GXSetNumTexGens(1);
             GXSetTexCoordGen2(0, 0, 0, 0x1E, 0, 0x7D);
             fn_8010F7EC();
@@ -150,28 +149,22 @@ void ReflectSetupTexMtx(int id) {
                 int pos[3];
                 int end[3];
 
-                pos[0] = entry->actor->matrix[9];
-                pos[1] = entry->actor->matrix[10];
-                pos[2] = entry->actor->matrix[11];
-                end[0] = pos[0] + entry->actor->matrix[0] / 64;
-                end[1] = pos[1] + entry->actor->matrix[1] / 64;
-                end[2] = pos[2] + entry->actor->matrix[2] / 64;
+                pos[0] = lbl_80495D84[i].actor->matrix[9];
+                pos[1] = lbl_80495D84[i].actor->matrix[10];
+                pos[2] = lbl_80495D84[i].actor->matrix[11];
+                end[0] = pos[0] + lbl_80495D84[i].actor->matrix[0] / 64;
+                end[1] = pos[1] + lbl_80495D84[i].actor->matrix[1] / 64;
+                end[2] = pos[2] + lbl_80495D84[i].actor->matrix[2] / 64;
                 fn_80009170(pos, end, 255, 0, 0);
 
-                pos[0] = entry->actor->matrix[9];
-                pos[1] = entry->actor->matrix[10];
-                pos[2] = entry->actor->matrix[11];
-                end[0] = pos[0] + entry->actor->matrix[3] / 64;
-                end[1] = pos[1] + entry->actor->matrix[4] / 64;
-                end[2] = pos[2] + entry->actor->matrix[5] / 64;
+                end[0] = lbl_80495D84[i].actor->matrix[9] + lbl_80495D84[i].actor->matrix[3] / 64;
+                end[1] = lbl_80495D84[i].actor->matrix[10] + lbl_80495D84[i].actor->matrix[4] / 64;
+                end[2] = lbl_80495D84[i].actor->matrix[11] + lbl_80495D84[i].actor->matrix[5] / 64;
                 fn_80009170(pos, end, 255, 255, 0);
 
-                pos[0] = entry->actor->matrix[9];
-                pos[1] = entry->actor->matrix[10];
-                pos[2] = entry->actor->matrix[11];
-                end[0] = pos[0] + entry->actor->matrix[6] / 64;
-                end[1] = pos[1] + entry->actor->matrix[7] / 64;
-                end[2] = pos[2] + entry->actor->matrix[8] / 64;
+                end[0] = lbl_80495D84[i].actor->matrix[9] + lbl_80495D84[i].actor->matrix[6] / 64;
+                end[1] = lbl_80495D84[i].actor->matrix[10] + lbl_80495D84[i].actor->matrix[7] / 64;
+                end[2] = lbl_80495D84[i].actor->matrix[11] + lbl_80495D84[i].actor->matrix[8] / 64;
                 fn_80009170(pos, end, 0, 0, 255);
             }
             break;
@@ -188,7 +181,7 @@ void ReflectEnd(void) {
     lbl_804D4084 = 0;
     GfxSetCullMode(1);
 
-    switch (lbl_80495CE8.entries[lbl_804D308C].actor->flag35) {
+    switch (lbl_80495D84[lbl_804D308C].actor->flag35) {
     case 1:
         if (lbl_804D3088 != 0.0f) {
             fn_8009863C((float)(lbl_804D5160 * 3), 0);
@@ -196,7 +189,7 @@ void ReflectEnd(void) {
         break;
     }
 
-    tex = fn_8000F990(lbl_80495CE8.entries[lbl_804D308C].id);
+    tex = fn_8000F990(lbl_80495D84[lbl_804D308C].id);
     if (tex) {
         fn_80115F28(2);
         GXSetTexCopySrc(0, 0, 480, 336);
@@ -212,9 +205,9 @@ void ReflectEnd(void) {
     lbl_804D256C = lbl_804D5154;
     fn_80009E44(0, 0);
 
-    if (lbl_80495CE8.entries[lbl_804D308C].msgTarget != -1) {
+    if (lbl_80495D84[lbl_804D308C].msgTarget != -1) {
         msg.unk4 = 0;
-        SendMsg(lbl_80495CE8.entries[lbl_804D308C].msgTarget, 0xC00, &msg);
+        SendMsg(lbl_80495D84[lbl_804D308C].msgTarget, 0xC00, &msg);
     }
 
     fn_800C6664(lbl_804D5148);
@@ -229,8 +222,8 @@ int ReflectRender(int index) {
     ReflectEntry* entry;
     void* tex;
 
-    tex = fn_8000F990(lbl_80495CE8.entries[index].id);
     entry = &lbl_80495CE8.entries[index];
+    tex = fn_8000F990(entry->id);
     if (!entry->active || tex == 0) {
         lbl_804D308C = -1;
         return 0;
@@ -262,11 +255,37 @@ int ReflectRender(int index) {
         PSMTXReflect(&refl, &pos, &n);
         PSMTXConcat(&refl, &m180, &m180);
 
-        lbl_80495CE8.view = m180;
+        lbl_80495CE8.view.m[0][0] = m180.m[0][0];
+        lbl_80495CE8.view.m[0][1] = m180.m[0][1];
+        lbl_80495CE8.view.m[0][2] = m180.m[0][2];
+        lbl_80495CE8.view.m[1][0] = m180.m[1][0];
+        lbl_80495CE8.view.m[1][1] = m180.m[1][1];
+        lbl_80495CE8.view.m[1][2] = m180.m[1][2];
+        lbl_80495CE8.view.m[2][0] = m180.m[2][0];
+        lbl_80495CE8.view.m[2][1] = m180.m[2][1];
+        lbl_80495CE8.view.m[2][2] = m180.m[2][2];
+        lbl_80495CE8.view.m[0][3] = m180.m[0][3];
+        lbl_80495CE8.view.m[1][3] = m180.m[1][3];
+        lbl_80495CE8.view.m[2][3] = m180.m[2][3];
         fn_800A0168(&lbl_80495CE8.view, &lbl_80495CE8.view);
         fn_800C5E74(0);
         fn_800C6834(lbl_804D5148);
         fn_800C5E9C(0);
+
+        m180.m[0][0] = entry->actor->matrix[0] * 0.000244140625f * -1.0f;
+        m180.m[0][1] = entry->actor->matrix[3] * 0.000244140625f * -1.0f;
+        m180.m[0][2] = entry->actor->matrix[6] * 0.000244140625f * -1.0f;
+        m180.m[0][3] = entry->actor->matrix[9];
+        m180.m[1][0] = entry->actor->matrix[1] * 0.000244140625f;
+        m180.m[1][1] = entry->actor->matrix[4] * 0.000244140625f;
+        m180.m[1][2] = entry->actor->matrix[7] * 0.000244140625f;
+        m180.m[1][3] = entry->actor->matrix[10];
+        m180.m[2][0] = entry->actor->matrix[2] * 0.000244140625f;
+        m180.m[2][1] = entry->actor->matrix[5] * 0.000244140625f;
+        m180.m[2][2] = entry->actor->matrix[8] * 0.000244140625f;
+        m180.m[2][3] = entry->actor->matrix[11];
+        fn_800091D4(&m180, &m180, &tmp, 1);
+        fn_80009848(-lbl_804D5158, &entry->texMtx, &m180);
 
         if (entry->actor2 != 0) {
             Mtx34 m1;
@@ -303,7 +322,18 @@ int ReflectRender(int index) {
             PSMTXReflect(&refl, &pos, &n);
             PSMTXConcat(&refl, &m180, &m180);
 
-            lbl_80495CE8.view = m180;
+            lbl_80495CE8.view.m[0][0] = m180.m[0][0];
+            lbl_80495CE8.view.m[0][1] = m180.m[0][1];
+            lbl_80495CE8.view.m[0][2] = m180.m[0][2];
+            lbl_80495CE8.view.m[1][0] = m180.m[1][0];
+            lbl_80495CE8.view.m[1][1] = m180.m[1][1];
+            lbl_80495CE8.view.m[1][2] = m180.m[1][2];
+            lbl_80495CE8.view.m[2][0] = m180.m[2][0];
+            lbl_80495CE8.view.m[2][1] = m180.m[2][1];
+            lbl_80495CE8.view.m[2][2] = m180.m[2][2];
+            lbl_80495CE8.view.m[0][3] = m180.m[0][3];
+            lbl_80495CE8.view.m[1][3] = m180.m[1][3];
+            lbl_80495CE8.view.m[2][3] = m180.m[2][3];
             fn_800A0168(&lbl_80495CE8.view, &lbl_80495CE8.view);
             fn_800C5E9C(0);
 
@@ -377,14 +407,13 @@ int ReflectRender(int index) {
 }
 
 int ReflectUpdateCamera(void) {
+    ReflectState* state = &lbl_80495CE8;
+    Camera* cam;
     int changed;
     int i;
     char buf[0x70];
 
     if (lbl_804D514C != 0) {
-        ReflectState* state = &lbl_80495CE8;
-        Camera* cam;
-
         changed = 0;
         cam = (Camera*)fn_800C5DD8();
         state->view = cam->view;
@@ -395,14 +424,12 @@ int ReflectUpdateCamera(void) {
         state->cam = *(Mtx34*)fn_800C6448();
 
         for (i = 0; i < lbl_804D514C; i++) {
-            ReflectEntry* entry = &state->entries[i];
-
-            if (entry->lastValue != entry->actor->unk48) {
-                entry->lastValue = entry->actor->unk48;
+            if (state->entries[i].lastValue != state->entries[i].actor->unk48) {
+                state->entries[i].lastValue = state->entries[i].actor->unk48;
                 changed = 1;
-                entry->active = 1;
+                state->entries[i].active = 1;
             } else {
-                entry->active = 0;
+                state->entries[i].active = 0;
             }
         }
         if (!changed) {

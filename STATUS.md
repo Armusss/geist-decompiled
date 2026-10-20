@@ -58,6 +58,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_8019FDD0 4/7 (mirror reflection, ds-3 2 runs): ReflectEnd, ReflectRender, ReflectUpdateCamera are left. Notes: `~/geist-work/ds/ds-3.notes.u_8019FDD0.md`.
 - u_801F676C 15/16 (host ride A, ds-2 2 runs): HostRideABehavior 0x801F7BA8 is left (12 diffs).
   - At entry, retail loads `m->actor` into r3, uses it (`a->beh`, the store into q, the OwnerId argument), and
     only then copies it to r31. Ours loads straight into r31. This is the same "load then late copy" pattern as
