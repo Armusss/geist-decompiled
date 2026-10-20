@@ -140,7 +140,8 @@ struct SpawnInfo {
 struct SpawnDesc {
     Vec3 pos;         // 0x00
     Vec3 vec;         // 0x0C
-    char pad18[0x34];  // 0x18
+    Vec3 offset;      // 0x18
+    char pad24[0x28];  // 0x24
 };
 
 struct Query400 {
@@ -361,7 +362,6 @@ int FearRivetMsg(FearRivet* self, u32 msg, u32 id, SpawnInfo* info) {
 void FearRivetSpawn(u32 id, int mode, SpawnInfo* info, int arg) {
     Actor* actor = info->actor;
     SpawnDesc desc;
-    Vec3 pos;
     Vec3 tmp;
     Vec3 v;
     int n;
@@ -373,7 +373,7 @@ void FearRivetSpawn(u32 id, int mode, SpawnInfo* info, int arg) {
     }
 
     memset(&desc, 0, sizeof(desc));
-    fn_800E1098(&pos, &actor->vec3C, info->time);
+    fn_800E1098(&desc.offset, &actor->vec3C, info->time);
     desc.pos.x = actor->posX;
     desc.pos.y = actor->posY;
     desc.pos.z = actor->posZ;
@@ -388,9 +388,9 @@ void FearRivetSpawn(u32 id, int mode, SpawnInfo* info, int arg) {
         SendMsg((void*)id, 0x400, &q);
         t = q.actor;
         vel = fn_800772E0(t);
-        pos.x += vel->x * 1000.0f;
-        pos.y += vel->y * 1000.0f;
-        pos.z += vel->z * 1000.0f;
+        desc.offset.x += vel->x * 1000.0f;
+        desc.offset.y += vel->y * 1000.0f;
+        desc.offset.z += vel->z * 1000.0f;
         if (t->unk1C6C == 0) {
             fn_800C5E00(t->unk248, 1, info->unk0C, info->unk10, 0);
         } else {
@@ -416,8 +416,8 @@ void FearRivetSpawn(u32 id, int mode, SpawnInfo* info, int arg) {
     } else {
         v.x -= a2;
     }
-    fn_8016D4EC(&pos, &v);
-    fn_800E1098(&pos, &pos, info->time);
+    fn_8016D4EC(&desc.offset, &v);
+    fn_800E1098(&desc.offset, &desc.offset, info->time);
     fn_80186A88(arg, &desc, id, actor->unk48, 0, actor->unk4C);
 }
 
@@ -680,12 +680,11 @@ int FearRivetUpdate(FearRivet* self, Actor* actor) {
 // 0x801FD5E8
 
 void FearRivetDraw(FearRivet* self, Actor* actor) {
-    Vec3 pos;
+    Vec3 pos = sFearRivetOffset;
     Vec3 p;
     Mtx34 mtx;
     int alpha;
 
-    pos = sFearRivetOffset;
     ActorGetMatrix(&mtx, actor);
     fn_800A0100(&mtx);
     fn_800A0094(&p, &pos);
@@ -772,7 +771,9 @@ void FearObjRelease(int idx) {
     if (lbl_804D52E8 & bit) {
         if (lbl_804D3378 != -1) {
             fn_8003D710(lbl_804D3378);
-            for (i = 0, off = 0; i < lbl_804D5310; off += 8, i++) {
+            i = 0;
+            off = i;
+            for (; i < lbl_804D5310; off += 8, i++) {
                 FearObjEntry* e = (FearObjEntry*)((char*)lbl_804D530C + off);
 
                 if (e->count != 0) {
