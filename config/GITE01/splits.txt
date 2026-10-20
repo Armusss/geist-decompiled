@@ -303,6 +303,11 @@ game/u_8013CA38.cpp:
 
 game/u_80140A30.cpp:
 	.text       start:0x80140A30 end:0x80142E88
+	.rodata     start:0x803460B8 end:0x80346180
+	.data       start:0x803A41C0 end:0x803A4338
+	.bss        start:0x8046D608 end:0x8046D668
+	.sbss       start:0x804D4D48 end:0x804D4D78
+	.sdata2     start:0x804D7BA0 end:0x804D7BD0
 
 game/u_80142E88.cpp:
 	.text       start:0x80142E88 end:0x80150148
