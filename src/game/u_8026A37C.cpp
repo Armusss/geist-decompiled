@@ -3,6 +3,8 @@
 // library that dispatches collision queries between geometry types.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#pragma auto_inline off
+
 typedef unsigned long u32;
 typedef signed long s32;
 
@@ -208,18 +210,59 @@ int GeomRegisterClass(UserGeomClass* cls)
     return type;
 }
 
+// The geometry-pair dispatcher, inlined into the callers below.
+inline int GeomCollide(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
+{
+    ColliderFn fn;
+    int rc;
+    int i;
+    int g1;
+    int g2;
+    ColliderEntry* entry;
+
+    if (o1 == o2) {
+        return 0;
+    }
+    if (o1->body == o2->body && o1->body != 0) {
+        return 0;
+    }
+
+    g1 = o1->type;
+    g2 = o2->type;
+    entry = &gColliders[g1][g2];
+    rc = 0;
+
+    fn = entry->fn;
+    if (fn != 0) {
+        if (entry->swap != 0) {
+            rc = fn(o2, o1, flags, contact, skip);
+            for (i = 0; i < rc; i++) {
+                ContactGeom* c = (ContactGeom*)((char*)contact + skip * i);
+                Geom* tmp;
+
+                c->normal[0] = -c->normal[0];
+                c->normal[1] = -c->normal[1];
+                c->normal[2] = -c->normal[2];
+                tmp = c->g1;
+                c->g1 = c->g2;
+                c->g2 = tmp;
+            }
+        } else {
+            rc = fn(o1, o2, flags, contact, skip);
+        }
+    }
+    return rc;
+}
+
 // 0x8026A53C
 int UserGeomCollide(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
 {
     int g1 = o1->type;
     int g2 = o2->type;
-    ColliderFn fn;
+    ColliderFn fn = gUserGeomClasses[g1 - 0xb].getCollider(g2);
     int swap = 0;
-    int result;
-    int i;
 
-    fn = gUserGeomClasses[g1 - 0xb].getCollider(g2);
-    if (fn == 0 && g2 > 10 && g2 < 0xf) {
+    if (fn == 0 && g2 >= 0xb && g2 <= 0xe) {
         fn = gUserGeomClasses[g2 - 0xb].getCollider(g1);
         swap = 1;
     }
@@ -227,43 +270,16 @@ int UserGeomCollide(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int ski
     gColliders[g1][g2].swap = swap;
     gColliders[g2][g1].fn = fn;
     gColliders[g2][g1].swap = !swap;
-    if (o1 == o2) {
-        result = 0;
-    } else if (o1->body == o2->body && o1->body != 0) {
-        result = 0;
-    } else {
-        result = 0;
-        fn = gColliders[g1][g2].fn;
-        if (fn != 0) {
-            if (gColliders[g1][g2].swap == 0) {
-                result = fn(o1, o2, flags, contact, skip);
-            } else {
-                result = fn(o2, o1, flags, contact, skip);
-                for (i = 0; i < result; i++) {
-                    ContactGeom* c = (ContactGeom*)((char*)contact + i * skip);
-                    Geom* tmp;
-
-                    c->normal[0] = -c->normal[0];
-                    c->normal[1] = -c->normal[1];
-                    c->normal[2] = -c->normal[2];
-                    tmp = c->g1;
-                    c->g1 = c->g2;
-                    c->g2 = tmp;
-                }
-            }
-        }
-    }
-    return result;
+    return GeomCollide(o1, o2, flags, contact, skip);
 }
 
 // 0x8026A948
 int GeomUserTest(Geom* g)
 {
     UserGeomClass* cls = &gUserGeomClasses[g->type - 0xb];
-    int (*test)(Geom*) = cls->test;
 
-    if (test != 0) {
-        return test(g);
+    if (cls->test != 0) {
+        return cls->test(g);
     }
     return 1;
 }
@@ -515,8 +531,7 @@ void GeomSetGFlags(Geom* g, int flags)
 void GeomDestroyGeom(Geom* g)
 {
     if (g != 0) {
-        Geom* (*fn)(Geom*, short) = g->vtbl->destroy;
-        fn(g, 1);
+        g->vtbl->destroy(g, 1);
     }
 }
 
@@ -606,10 +621,11 @@ Geom* GeomInit(Geom* g, Space* space, int isPlaceable)
 int GeomCollideDispatch(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
 {
     ColliderFn fn;
-    int result = 0;
+    int rc;
     int i;
     int g1;
     int g2;
+    ColliderEntry* entry;
 
     if (o1 == o2) {
         return 0;
@@ -618,21 +634,17 @@ int GeomCollideDispatch(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int
         return 0;
     }
 
-    {
-        ColliderEntry* entry;
+    g1 = o1->type;
+    g2 = o2->type;
+    entry = &gColliders[g1][g2];
+    rc = 0;
 
-        g1 = o1->type;
-        g2 = o2->type;
-        entry = &gColliders[g1][g2];
-
-        fn = entry->fn;
-        if (fn == 0) {
-            return result;
-        }
+    fn = entry->fn;
+    if (fn != 0) {
         if (entry->swap != 0) {
-            result = fn(o2, o1, flags, contact, skip);
-            for (i = 0; i < result; i++) {
-                ContactGeom* c = (ContactGeom*)((char*)contact + i * skip);
+            rc = fn(o2, o1, flags, contact, skip);
+            for (i = 0; i < rc; i++) {
+                ContactGeom* c = (ContactGeom*)((char*)contact + skip * i);
                 Geom* tmp;
 
                 c->normal[0] = -c->normal[0];
@@ -643,10 +655,10 @@ int GeomCollideDispatch(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int
                 c->g2 = tmp;
             }
         } else {
-            result = fn(o1, o2, flags, contact, skip);
+            rc = fn(o1, o2, flags, contact, skip);
         }
     }
-    return result;
+    return rc;
 }
 
 // 0x8026B40C
@@ -658,7 +670,7 @@ void CollisionInit(void)
     if (lbl_804D5518 == 0) {
         lbl_804D5518 = 1;
         memset(gColliders, 0, 0x708);
-        for (i = 8; i < 0xb; i++) {
+        for (i = 8; i <= 10; i++) {
             for (j = 0; j < GEOM_CLASSES; j++) {
                 if (gColliders[i][j].fn == 0) {
                     gColliders[i][j].fn = DefaultCollider;
@@ -805,41 +817,8 @@ void SpaceCollideCallback(void* arg, Geom* o1, Geom* o2)
     CollideData* data = (CollideData*)arg;
 
     if ((data->count & 0xffff) != 0) {
-        int flags = data->count;
-        ContactGeom* contact = data->contact;
-        int skip = data->skip;
-        int g1 = o1->type;
-        int g2 = o2->type;
-        ColliderFn fn;
-        int result;
-        int i;
+        int result = GeomCollide(o1, o2, data->count, data->contact, data->skip);
 
-        if (o1 == o2) {
-            result = 0;
-        } else if (o1->body == o2->body && o1->body != 0) {
-            result = 0;
-        } else {
-            result = 0;
-            fn = gColliders[g1][g2].fn;
-            if (fn != 0) {
-                if (gColliders[g1][g2].swap == 0) {
-                    result = fn(o1, o2, flags, contact, skip);
-                } else {
-                    result = fn(o2, o1, flags, contact, skip);
-                    for (i = 0; i < result; i++) {
-                        ContactGeom* c = (ContactGeom*)((char*)contact + i * skip);
-                        Geom* tmp;
-
-                        c->normal[0] = -c->normal[0];
-                        c->normal[1] = -c->normal[1];
-                        c->normal[2] = -c->normal[2];
-                        tmp = c->g1;
-                        c->g1 = c->g2;
-                        c->g2 = tmp;
-                    }
-                }
-            }
-        }
         data->contact = (ContactGeom*)((char*)data->contact + data->skip * result);
         data->count -= result;
     }
@@ -852,18 +831,18 @@ Geom* SpaceDestroy(Space* s, short del)
         s->vtbl = &lbl_803C0434;
         if (s != 0) {
             s->vtbl = &lbl_803C0464;
-            if (s->dirty == 0) {
+            if (s->dirty != 0) {
                 Geom* g = s->firstGeom;
                 while (g != 0) {
                     Geom* next = (Geom*)g->nextInSpace;
-                    ((SpaceVtbl*)s->vtbl)->removeGeom(s, g);
+                    GeomDestroyGeom(g);
                     g = next;
                 }
             } else {
                 Geom* g = s->firstGeom;
                 while (g != 0) {
                     Geom* next = (Geom*)g->nextInSpace;
-                    GeomDestroyGeom(g);
+                    ((SpaceVtbl*)s->vtbl)->removeGeom(s, g);
                     g = next;
                 }
             }
@@ -924,13 +903,13 @@ void SpaceCollidePair(Geom* g1, Geom* g2, void* data, SpaceCallback callback)
 // 0x8026C11C
 void SpaceCollideSelf(Geom* s, void* data, SpaceCallback callback)
 {
-    ((SpaceVtbl*)s->vtbl)->collideSpace(s, data, callback);
+    s->vtbl->collideSpace(s, data, callback);
 }
 
 // 0x8026C148
 int SpaceGetNumGeoms(Geom* s)
 {
-    return ((SpaceVtbl*)s->vtbl)->getNumGeoms(s);
+    return s->vtbl->getNumGeoms(s);
 }
 
 // 0x8026C174
@@ -942,13 +921,13 @@ int SpaceGetCount(Space* s)
 // 0x8026C17C
 void SpaceRemoveGeom(Space* s, Geom* g)
 {
-    ((SpaceVtbl*)s->vtbl)->removeGeom(s, g);
+    s->vtbl->removeGeom(s, g);
 }
 
 // 0x8026C1A8
 void SpaceAddGeom(Space* s, Geom* g, int arg)
 {
-    ((SpaceVtbl*)s->vtbl)->addGeom(s, g, arg);
+    s->vtbl->addGeom(s, g, arg);
 }
 
 // 0x8026C1D4
