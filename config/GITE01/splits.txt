@@ -40,6 +40,8 @@ game/u_80015A44.cpp:
 
 game/u_80015B64.cpp:
 	.text       start:0x80015B64 end:0x800190D4
+	.bss        start:0x803DAA70 end:0x803DAA88
+	.sdata2     start:0x804D6048 end:0x804D60A0
 
 game/File.cpp:
 	.text       start:0x800190D4 end:0x80019A04

@@ -8,7 +8,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_80157730 run 2 (27/67 after run 1) | running |
-| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80022B10 run 3 (23/57 after run 2) | running |
+| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80015B64 (36 fns, skeleton draft first) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_80150300 run 2 (44/60 after run 1) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | **Paused** until the DeepSeek workers have drafted every untouched unit (user plan, 2026-10-20); then the Opus queue below | paused |
 
@@ -59,6 +59,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_80022B10 27/57 (actor support: links, bitsets, debug draw, CRC32, pools; ds-2 3 runs; file-level auto_inline off on evidence): 30 functions left.
 - u_8026A37C 30/41 (ODE collision kernel, ds-1 2 runs; file-level auto_inline off on evidence): six 2-diff vtable wrappers (GeomGetAabb, GeomDestroyGeom, SpaceCollideSelf, SpaceGetNumGeoms, SpaceRemoveGeom, SpaceAddGeom: retail loads the vtbl straight into r12) and SpaceDestroy (2), GeomUserTest (7), GeomRegisterClass (25), SpaceCollidePair (24), CollisionInit (201) left. Public ODE source (collision_kernel.cpp) may help as reference.
 - u_800E9418 17/19 (gun actor, ds-1 2 runs): GunUpdateState3 (4, f0/f1 swap on max of two fabsf; tried 6 shapes) and GunNodeFn1 (4, table base r4 vs retail r5; local node pointer makes it 6) left.
 - u_8016C244 9/18 (collectible + IVec3 helpers, ds-2 2 runs): CollectUpdate (17), CollectEnter (17), CollectMsg (205), CollectInit (16), VecSwapXY/VecSwapXY2 (4 each), FixedToRad (25), RadToFixed (11), VecToAngles (9) left.
