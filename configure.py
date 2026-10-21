@@ -677,7 +677,7 @@ config.libs = [
             Object(NonMatching, "game/u_801965FC.cpp"),  # guess
             Object(NonMatching, "game/u_8019FDD0.cpp"),  # rendering after zutil (mirror/reflection)
             Object(NonMatching, "game/u_801A0F2C.cpp"),  # guess
-            Object(NonMatching, "game/u_801A1D24.cpp"),  # guess
+            Object(Matching, "game/u_801A1D24.cpp"),  # guess
             Object(NonMatching, "game/u_801A28A4.cpp"),  # pinned
             Object(NonMatching, "game/u_801A6094.cpp"),  # pinned
             Object(NonMatching, "game/u_801AADA8.cpp"),  # pinned

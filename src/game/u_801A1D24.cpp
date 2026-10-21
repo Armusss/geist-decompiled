@@ -11,9 +11,6 @@ static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
 };
 
-// Referenced by the actor type descriptor in the retail data section.
-static const char* sActorName[] = { "Pickup" };
-
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
 
@@ -224,6 +221,29 @@ extern "C" void* memcpy(void* dst, const void* src, u32 n);
 static HostData sHostPool[0x40];
 static int sHostUsed[4];
 
+void PickupLoad(HostStream* s);
+void PickupSave(HostStream* s);
+void PickupUpdate(Actor* a, float dt);
+int PickupMsg(Actor* a, int msg, void* data, int arg);
+int PickupInit(Actor* a);
+void PickupDestroy(Actor* a);
+
+// The actor type descriptor (0x803AA9D8).
+struct ActorType {
+    int unk0;
+    const char* name;
+    ActorMsgFunc msg;
+    void (*update)(Actor* a, float dt);
+    int (*init)(Actor* a);
+    void* unk14;
+    void (*destroy)(Actor* a);
+    void (*save)(HostStream* s);
+    void (*load)(HostStream* s);
+    void* unk24[3];
+};
+
+ActorType gPickupType = { 0, "Pickup", PickupMsg, PickupUpdate, PickupInit, 0, PickupDestroy, PickupSave, PickupLoad };
+
 // 0x801A1D24: unpack the pickup state from a save-game stream.
 // Takes n bytes off the front of a load stream and returns where they were.
 inline void* StreamTake(HostStream* s, int n) {
@@ -422,11 +442,42 @@ int PickupMsg(Actor* a, int msg, void* data, int arg) {
 
 // 0x801A24BC: global handler for message 0x1502 (the ghost scanning for a pickup).
 // Scans the live host slots for a pickup matching m and activates it.
+static inline int HostSetup(Actor* a) {
+    HostData* h;
+
+    if (a->data == 0) {
+        if (!ActorInitBase(a)) {
+            return 0;
+        }
+        h = (HostData*)PoolAlloc(sHostPool, 0x30, sHostUsed, 0x40);
+        if (h == 0) {
+            return 0;
+        }
+        a->data = h;
+    } else {
+        h = (HostData*)a->data;
+        ActorFn80022D98(a, 1);
+        fn_800902F0(a->unk110);
+    }
+    h->x = (int)a->info->unk30;
+    h->unk0 = a->info->unk18;
+    h->y = (int)a->info->unk34;
+    h->unk4 = a->info->unk1C;
+    h->z = (int)a->info->unk38;
+    h->unk8 = a->info->unk20;
+    h->unk28 = 0;
+    h->handle = a->handle;
+    if (a->info->key == 0x6C345908) {
+        h->unk18 = 1;
+        h->timerMax = 1000.0f * a->info->unk3C;
+    }
+    return 1;
+}
+
 static inline int PickupScan(PickupScanData* m) {
     HostData* d;
     int i;
     Actor* target;
-    HostData* h;
 
     for (i = 0; i < 0x40; i++) {
         Vec3 v;
@@ -440,34 +491,7 @@ static inline int PickupScan(PickupScanData* m) {
             if (target != 0) {
                 d = target->data;
                 if (ActorFn80022FD8(target) && d->unk0 == m->id) {
-                    h = (HostData*)target->data;
-                    do {
-                        if (h == 0) {
-                            if (!ActorInitBase(target)) {
-                                break;
-                            }
-                            h = (HostData*)PoolAlloc(sHostPool, 0x30, sHostUsed, 0x40);
-                            if (h == 0) {
-                                break;
-                            }
-                            target->data = h;
-                        } else {
-                            ActorFn80022D98(target, 1);
-                            fn_800902F0(target->unk110);
-                        }
-                        h->x = (int)target->info->unk30;
-                        h->unk0 = target->info->unk18;
-                        h->y = (int)target->info->unk34;
-                        h->unk4 = target->info->unk1C;
-                        h->z = (int)target->info->unk38;
-                        h->unk8 = target->info->unk20;
-                        h->unk28 = 0;
-                        h->handle = target->handle;
-                        if (target->info->key == 0x6C345908) {
-                            h->unk18 = 1;
-                            h->timerMax = 1000.0f * target->info->unk3C;
-                        }
-                    } while (0);
+                    HostSetup(target);
                     {
                         PlaceF pl;
                         d->unk28 = 1;

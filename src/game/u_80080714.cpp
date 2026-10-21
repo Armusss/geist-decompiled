@@ -75,7 +75,6 @@ int QueueForEach(u32 q, void* user, int (*func)(void* elem, void* user), u32 fla
     int r;
     u8* e;
     int i;
-    int n;
 
     if (!QueueValid(q)) {
         return -1;
@@ -106,15 +105,16 @@ int QueueForEach(u32 q, void* user, int (*func)(void* elem, void* user), u32 fla
         }
     } else {
         r = 0;
-        e = sQueues[q].write - sQueues[q].size;
-        n = sQueues[q].capacity - sQueues[q].free;
+        e = sQueues[q].write;
+        e -= sQueues[q].size;
+        i = sQueues[q].capacity - sQueues[q].free;
         if (e < sQueues[q].begin) {
             e = sQueues[q].end - sQueues[q].size;
         }
-        while (n > 0 && r == 0) {
+        while (i > 0 && r == 0) {
             r = func(e, user);
             if (r == 0) {
-                n--;
+                i--;
                 e -= sQueues[q].size;
                 if (e < sQueues[q].begin) {
                     e = sQueues[q].end - sQueues[q].size;
@@ -122,7 +122,7 @@ int QueueForEach(u32 q, void* user, int (*func)(void* elem, void* user), u32 fla
             }
         }
         if (r) {
-            return n;
+            return i;
         }
     }
     return -1;

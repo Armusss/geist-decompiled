@@ -239,10 +239,7 @@ int ToolMsg(EffectObj* obj, int msg, int arg, void* data, float dt) {
         if (m == 0) {
             return 0;
         }
-        n = def->unk8 - n;
-        if (m < n) {
-            n = m;
-        }
+        n = (m < def->unk8 - n) ? m : def->unk8 - n;
         {
             QueryMsg q;
             q.hash = 0x5A32795A;
