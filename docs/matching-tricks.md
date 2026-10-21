@@ -75,3 +75,12 @@ of a parameter of the same type is merged into the parameter and keeps the param
 - Still unsolved: the lazy type-name hash (ToolCreate etc.). Retail ranks the hash after the name
   pointer in ~76 single-pointer hash loops; 1.3.2 ranks it first in every StrHash/toupper/wrapper
   shape tried (about 1000 variants).
+
+## Loop counter vs. pointer walker register swap: move the loop into an inline helper
+When retail keeps a loop's counter and its pointer walker in each other's registers (or adds/drops a
+`mr` copy of the base), moving the loop into a small `static inline` helper that takes the array and the
+count as parameters often fixes it, because inline-produced values rank first for callee-saved registers.
+Fixed GrenadeRemoveAll (`EmitterSlotsClear(gGrenadeEmitters, 8)`) and the scan loop of PickupScanMsg.
+Related: an `inline float fabsf(float x) { return __fabsf(x); }` wrapper ranks float registers differently
+from a direct `__fabsf` call (RideActionAnimate), and a `struct { float v[4]; }` copies word-wise with
+`lwzu` where four named floats copy with `lfs` (GrenadeUpdate).
