@@ -722,7 +722,7 @@ config.libs = [
             Object(NonMatching, "game/u_8023FA5C.cpp"),  # guess
             Object(NonMatching, "game/u_80243B0C.cpp"),  # guess
             Object(NonMatching, "game/u_80244728.cpp"),  # pinned
-            Object(NonMatching, "game/u_80247EB0.cpp"),  # guess
+            Object(Matching, "game/u_80247EB0.cpp"),  # guess
             Object(NonMatching, "game/u_80248FC8.cpp"),  # pinned
             Object(NonMatching, "game/u_8024CAA0.cpp"),  # known
             Object(Matching, "game/Scannable.cpp"),  # (helper-game-b)

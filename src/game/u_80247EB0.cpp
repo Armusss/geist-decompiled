@@ -10,7 +10,7 @@ struct Vec3 {
 };
 
 struct Vec4 {
-    float x, y, z, w;
+    float v[4];
 };
 
 struct Mtx33 {
@@ -227,20 +227,15 @@ void fn_8016D68C(Vec3* dst, Vec3* src);                         // 0x8016D68C
 Actor* fn_800C7E80(void* desc);                                 // 0x800C7E80
 int fn_801D92F0(float, float, float, Actor*, u32, u32, Vec3*, int); // 0x801D92F0
 void fn_800A025C(Vec3* out, Mtx34* m, int a);                   // 0x800A025C
-void fn_80022B1C(Actor* actor, int a);                          // 0x80022B1C
 int fn_80158BE0(void);                                          // 0x80158BE0
-int fn_8007EF48(int a, int b, const char* text, int c, int d, int e, int f, int g, int h,
-                Ghost* ghost);                                  // 0x8007EF48
 void fn_800B4C50(Vec3* pos, int handle, float a, float b, int c, int d); // 0x800B4C50
 void fn_801D513C(void* effect, void* out);                       // 0x801D513C
-int fn_80022B10(Actor* actor);                                  // 0x80022B10
 void fn_80027690(int hud);                                      // 0x80027690
 int fn_800E0DBC(IVec3* v);                                      // 0x800E0DBC
 void fn_801D55CC(void* effect);                                 // 0x801D55CC
 void fn_8016D6A8(Vec3* v);                                      // 0x8016D6A8
 void fn_800D3430(int emitter, int a);                           // 0x800D3430
-int fn_80027A58(int type, Vec3* pos, Vec4* color, int a, int b, float z); // 0x80027A58
-void fn_8016D278(Vec3* out, IVec3* in);                         // 0x8016D278
+int fn_80027A58(int type, Vec3* pos, Vec4* color, int a, int b); // 0x80027A58
 void fn_8009F028(Actor* actor, Vec3* v);                        // 0x8009F028
 void fn_8016EEF4(int fx);                                       // 0x8016EEF4
 int fn_8016F120(int fx, IVec3* pos);                            // 0x8016F120
@@ -262,7 +257,12 @@ void EulerNormalize(Vec3* in, Vec3* out);                        // 0x8016D55C
 void BoneSetMatrix(void* bone, Mtx34* m);                        // 0x800A0AC4
 void ActorGetMatrix(Mtx34* m, Actor* a);                         // 0x8009ED70
 void ActorRender(Actor* a);                                      // 0x800C7CE8
-void GhostNotify(int* ghost, int a, int b);                      // 0x800C75A8
+void GhostNotify(void* ghost, int a, int b);                     // 0x80154594
+void ActorRefreshHostState(Actor* actor, int a);                // 0x80022B1C
+int ActorVisibleFlag(Actor* actor);                              // 0x80022B10
+void VecToAngles(IVec3* out, IVec3* in);                         // 0x8016D278
+int fn_8007EF48(int a, int b, const char* text, int c, int d, int e, int f, int g, int h,
+                int ghost);                                      // 0x8007EF48
 void FontRelease(int font);                                      // 0x8007C8A4
 float VarFindFloat(u32 a, u32 b, u32 key);                       // 0x800E4FC8
 void* VAlloc(int size);                                          // 0x8007D4E0
@@ -374,7 +374,7 @@ int GrenadeSpawn(int target, Vec3* pos, Vec3* rot, int duration, float power) {
 }
 
 void GrenadeDestroy(Actor* actor) {
-    fn_80022B1C(actor, -1);
+    ActorRefreshHostState(actor, -1);
     PossessableDestroy(actor);
 }
 
@@ -409,7 +409,7 @@ void GrenadeUpdate(Actor* actor, float dt) {
                     FontRelease(ghost->font);
                     ghost->font = -1;
                 }
-                ghost->font = fn_8007EF48(ghost->unk248, 1, "White Out", 0, 0, 60, 60, 60, 0, ghost);
+                ghost->font = fn_8007EF48(ghost->unk248, 1, "White Out", 0, 0, 60, 60, 60, 0, (int)ghost);
                 ghost->timer = 60.0f;
                 GhostNotify(&ghost->notify, 0, 1);
             }
@@ -425,7 +425,7 @@ void GrenadeUpdate(Actor* actor, float dt) {
 
     if (actor->effect != 0) {
         fn_801D513C(actor->effect, &xform);
-        if (fn_80022B10(actor) == 0) {
+        if (ActorVisibleFlag(actor) == 0) {
             data->flags |= 0x80000000;
             if (data->trail != -1) {
                 TrailDestroy(data->trail);
@@ -445,7 +445,6 @@ void GrenadeUpdate(Actor* actor, float dt) {
         delta.y = data->unk48.y - actor->place.pos.y;
         delta.z = data->unk48.z - actor->place.pos.z;
         if (fn_800E0DBC(&delta) == 0) {
-            float z;
             Actor* hit;
 
             fn_801D55CC(actor->effect);
@@ -509,16 +508,15 @@ void GrenadeUpdate(Actor* actor, float dt) {
             fn_800D3430(data->emitter, 1);
 
             color = sBlastColor;
-            z = pos.z;
             pos.z += 5.0f;
-            data->blast = fn_80027A58(1, &pos, &color, 0x96, 9, z);
+            data->blast = fn_80027A58(1, &pos, &color, 0x96, 9);
 
             if (SendMsg(data->target, 0x400, &res) && res.p != 0) {
                 hit = (Actor*)res.p;
                 delta.x = hit->place.pos.x - actor->place.pos.x;
                 delta.y = hit->place.pos.y - actor->place.pos.y;
                 delta.z = hit->place.pos.z - actor->place.pos.z;
-                fn_8016D278(&v, &delta);
+                VecToAngles((IVec3*)&v, &delta);
                 fn_8009F028(actor, &v);
             }
             actor->place.pos.x = (int)xform.pos.x;
@@ -577,7 +575,7 @@ int GrenadeInit(Actor* actor) {
     sGrenadeRollFx = (int)FxFind("GrenadeRoll");
     data->flags |= 0x10000000;
     data->flags &= ~8;
-    fn_80022B1C(actor, 1);
+    ActorRefreshHostState(actor, 1);
     return 1;
 }
 
