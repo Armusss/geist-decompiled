@@ -17,6 +17,14 @@ struct Actor;
 struct Mtx34;
 struct Vec3;
 
+// From a shared header: names of the ghost actions (the table itself is unused here), and the
+// save-file prompt text, which is referenced only through a pointer table in .sdata.
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+static const char* sSaveFileMessage =
+    "NO GEIST SAVE FILE FOUND.  A NEW\nGEIST SAVE FILE WILL NOW BE CREATED.\n                  OK";
+
 // --- engine functions with C++ linkage (mangled names in symbols.txt) ---
 int ReflectUpdateCamera();
 int ReflectRender(int);
@@ -350,9 +358,10 @@ struct FocusFx {
     void* obj;      // 0x1C
 };
 
-extern FxPoolEntry lbl_8046DDE8[4];
-extern FxPoolEntry lbl_8046DE38[4];
-extern FocusFx lbl_8046DE88[4];
+// Defined here: the compiler lays the three pools out contiguously and addresses them from one base.
+FxPoolEntry lbl_8046DDE8[4];
+FxPoolEntry lbl_8046DE38[4];
+FocusFx lbl_8046DE88[4];
 
 extern FxPoolEntry* lbl_804D4E34;
 extern FxPoolEntry* lbl_804D4E44;
@@ -458,13 +467,13 @@ extern f32 lbl_804D7DC0;
 extern f64 lbl_804D7DC8;
 extern f32 lbl_804D7DD0;
 
-extern u32 lbl_803A59C8;
-extern u32 lbl_803A6FA8;
-extern u32 lbl_803A6FC8;
-extern u32 lbl_803A6FE8;
-extern u32 lbl_803A7008;
-extern u32 lbl_803A7028;
-extern u32 lbl_803A7048;
+extern u32 lbl_803A59C8[];
+extern u32 lbl_803A6FA8[8];
+extern u32 lbl_803A6FC8[8];
+extern u32 lbl_803A6FE8[8];
+extern u32 lbl_803A7008[8];
+extern u32 lbl_803A7028[8];
+extern u32 lbl_803A7048[8];
 
 // Resizable pointer array used by the effect pools.
 class ResArray {
@@ -998,23 +1007,23 @@ void fn_8015860C() {
     fn_802A214C();
     fn_802A8204();
     fn_802CECE8();
+    lbl_804D4E34 = 0;
     for (i = 0; i < 4; i++) {
         lbl_8046DDE8[i].state = 0;
         lbl_8046DDE8[i].objA = 0;
         lbl_8046DDE8[i].objB = 0;
     }
+    lbl_804D4E44 = 0;
     for (i = 0; i < 4; i++) {
         lbl_8046DE38[i].state = 0;
         lbl_8046DE38[i].objA = 0;
         lbl_8046DE38[i].objB = 0;
     }
-    lbl_804D4E34 = 0;
-    lbl_804D4E44 = 0;
+    lbl_804D4E48 = 0;
     for (i = 0; i < 4; i++) {
         lbl_8046DE88[i].state = 0;
         lbl_8046DE88[i].obj = 0;
     }
-    lbl_804D4E48 = 0;
     fn_801FE068();
     fn_80217AFC();
 }
@@ -1022,10 +1031,18 @@ void fn_8015860C() {
 // 0x80158744: check for a save file and create one if needed.
 void fn_80158744() {
     lbl_804D49C4 = fn_80045524(0x420, 1, 0x38);
-    if (lbl_804D49C4 == 1) {
+    switch (lbl_804D49C4) {
+    case 0:
+        break;
+    case 1:
         fn_80158834();
-    } else if (lbl_804D49C4 > 0 && lbl_804D49C4 < 3 && (fn_800DE2F8(7, 0x30), lbl_804D49C4 == 1)) {
-        fn_80158834();
+        break;
+    case 2:
+        fn_800DE2F8(7, 0x30);
+        if (lbl_804D49C4 == 1) {
+            fn_80158834();
+        }
+        break;
     }
     fn_8027E8F8();
 }
@@ -1033,10 +1050,18 @@ void fn_80158744() {
 // 0x801587B8: the same check with a caller-supplied mode.
 void fn_801587B8(int mode) {
     lbl_804D49C4 = fn_80045524(0x420, 1, mode | 8);
-    if (lbl_804D49C4 == 1) {
+    switch (lbl_804D49C4) {
+    case 0:
+        break;
+    case 1:
         fn_80158834();
-    } else if (lbl_804D49C4 > 0 && lbl_804D49C4 < 3 && (fn_800DE2F8(7, mode), lbl_804D49C4 == 1)) {
-        fn_80158834();
+        break;
+    case 2:
+        fn_800DE2F8(7, mode);
+        if (lbl_804D49C4 == 1) {
+            fn_80158834();
+        }
+        break;
     }
 }
 
@@ -1091,9 +1116,9 @@ void fn_80158990(int player, int obj) {
         return;
     }
     lbl_804D4E48->state = 1;
-    lbl_804D4E48->timer = lbl_804D7CF8;
+    lbl_804D4E48->timer = 0.0f;
     lbl_804D4E48->obj = (void*)obj;
-    lbl_804D4E48->textAlpha = lbl_804D7CF0;
+    lbl_804D4E48->textAlpha = 255.0f;
     if (lbl_804D4E48->sndA != -1) {
         lbl_804D4E48->sndA = fn_8007EF48(player, 1, "Lighten Loop", 0, 0, 0, 0, 0, 0, 0);
     }
@@ -1112,10 +1137,8 @@ void fn_80158AAC(int player, int a, int b) {
     if (lbl_804D4E44->state != 0) {
         return;
     }
-    int s = 1;
-    f32 t = lbl_804D7CF8;
-    lbl_804D4E44->state = s;
-    lbl_804D4E44->timer = t;
+    lbl_804D4E44->state = 1;
+    lbl_804D4E44->timer = 0.0f;
     lbl_804D4E44->objA = (void*)a;
     lbl_804D4E44->objB = (void*)b;
 }
@@ -1157,25 +1180,23 @@ void fn_80158B90(int player, int a, int b) {
         return;
     }
     lbl_804D4E34->state = 1;
-    lbl_804D4E34->timer = lbl_804D7CF8;
+    lbl_804D4E34->timer = 0.0f;
     lbl_804D4E34->objA = (void*)a;
     lbl_804D4E34->objB = (void*)b;
 }
 
 // 0x80158BE0: is any player HUD effect running?
 int fn_80158BE0() {
-    FxPoolEntry* p = lbl_8046DDE8;
-
-    if ((p++)->state != 0) {
+    if (lbl_8046DDE8[0].state != 0) {
         return 1;
     }
-    if ((p++)->state != 0) {
+    if (lbl_8046DDE8[1].state != 0) {
         return 1;
     }
-    if ((p++)->state != 0) {
+    if (lbl_8046DDE8[2].state != 0) {
         return 1;
     }
-    if (p->state != 0) {
+    if (lbl_8046DDE8[3].state != 0) {
         return 1;
     }
     return 0;
@@ -1228,10 +1249,10 @@ void fn_801590A4() {
 void fn_801592E8() {
     u16 list[14];
     u8* rec;
-    int i;
+    u32 i;
     int j;
 
-    rec = (u8*)&lbl_803A59C8;
+    rec = (u8*)lbl_803A59C8;
     for (i = 0; i < 8; i++) {
         *(s32*)(rec + 8) = (s32)fn_8007EB34(0x92234D44, *(u32*)(rec + 4));
         *(u16*)(rec + 0xe) = 0;
@@ -1241,17 +1262,17 @@ void fn_801592E8() {
             for (j = 0; j < *(u16*)(rec + 0xc); j++) {
                 *(s32*)(part + 0x98) = (s32)fn_8007EB34(0xF2E2BEB8, *(u32*)(part + 0x94));
                 {
-                    s16 total = *(s16*)(rec + 0xe);
+                    u16 total = *(u16*)(rec + 0xe);
                     s32 count = *(s32*)(part + 0x14);
                     s32 hash = *(s32*)(part + 0x98);
                     part += 0x88;
                     *out = (u16)hash;
                     out++;
-                    *(s16*)(rec + 0xe) = total + (s16)count;
+                    *(u16*)(rec + 0xe) = total + (u16)count;
                 }
             }
         }
-        fn_8000F738(list);
+        TextureLoad((short*)list, *(u16*)(rec + 0xc));
         rec += 0x2bc;
     }
     fn_80233B60();
