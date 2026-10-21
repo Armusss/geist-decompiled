@@ -421,77 +421,76 @@ int PickupMsg(Actor* a, int msg, void* data, int arg) {
 }
 
 // 0x801A24BC: global handler for message 0x1502 (the ghost scanning for a pickup).
-int PickupScanMsg(int value, int msg, void* data) {
+// Scans the live host slots for a pickup matching m and activates it.
+static inline int PickupScan(PickupScanData* m) {
+    HostData* d;
     int i;
-    PickupScanData* m = (PickupScanData*)data;
+    Actor* target;
+    HostData* h;
 
-    switch (msg) {
-    case 0x1502:
-        for (i = 0; i < 0x40; i++) {
+    for (i = 0; i < 0x40; i++) {
         Vec3 v;
         InspectMsg find;
-        HostData* d;
-        Actor* target;
 
         if (!(sHostUsed[i / 32] & (1 << (i & 31)))) {
             continue;
         }
-        if (!SendMsg(sHostPool[i].handle, 0x400, &find)) {
-            continue;
-        }
-        target = find.actor;
-        if (target == 0) {
-            continue;
-        }
-        d = target->data;
-        if (!ActorFn80022FD8(target)) {
-            continue;
-        }
-        if (d->unk0 != m->id) {
-            continue;
-        }
-        HostData* h = (HostData*)target->data;
-        do {
-            if (h == 0) {
-                if (!ActorInitBase(target)) {
-                    break;
+        if (SendMsg(sHostPool[i].handle, 0x400, &find)) {
+            target = find.actor;
+            if (target != 0) {
+                d = target->data;
+                if (ActorFn80022FD8(target) && d->unk0 == m->id) {
+                    h = (HostData*)target->data;
+                    do {
+                        if (h == 0) {
+                            if (!ActorInitBase(target)) {
+                                break;
+                            }
+                            h = (HostData*)PoolAlloc(sHostPool, 0x30, sHostUsed, 0x40);
+                            if (h == 0) {
+                                break;
+                            }
+                            target->data = h;
+                        } else {
+                            ActorFn80022D98(target, 1);
+                            fn_800902F0(target->unk110);
+                        }
+                        h->x = (int)target->info->unk30;
+                        h->unk0 = target->info->unk18;
+                        h->y = (int)target->info->unk34;
+                        h->unk4 = target->info->unk1C;
+                        h->z = (int)target->info->unk38;
+                        h->unk8 = target->info->unk20;
+                        h->unk28 = 0;
+                        h->handle = target->handle;
+                        if (target->info->key == 0x6C345908) {
+                            h->unk18 = 1;
+                            h->timerMax = 1000.0f * target->info->unk3C;
+                        }
+                    } while (0);
+                    {
+                        PlaceF pl;
+                        d->unk28 = 1;
+                        Vec3Set(&v, 0.0f, 45.0f, 0.0f);
+                        MtxSetEuler((Mtx34*)&pl.rot, &v);
+                        pl.pos = m->pos;
+                        PlacementToMatrix((Mtx34*)&target->place, &pl);
+                        ActorSetPlacement(target, &pl);
+                        target->unk118 = pl.pos.z;
+                        ActorPlayAnim(target->handle, 0x8B3A294E, target->handle);
+                    }
+                    return 1;
                 }
-                h = (HostData*)PoolAlloc(sHostPool, 0x30, sHostUsed, 0x40);
-                if (h == 0) {
-                    break;
-                }
-                target->data = h;
-            } else {
-                ActorFn80022D98(target, 1);
-                fn_800902F0(target->unk110);
             }
-            h->x = (int)target->info->unk30;
-            h->unk0 = target->info->unk18;
-            h->y = (int)target->info->unk34;
-            h->unk4 = target->info->unk1C;
-            h->z = (int)target->info->unk38;
-            h->unk8 = target->info->unk20;
-            h->unk28 = 0;
-            h->handle = target->handle;
-            if (target->info->key == 0x6C345908) {
-                h->unk18 = 1;
-                h->timerMax = 1000.0f * target->info->unk3C;
-            }
-        } while (0);
-        {
-            PlaceF pl;
-            d->unk28 = 1;
-            Vec3Set(&v, 0.0f, 45.0f, 0.0f);
-            MtxSetEuler((Mtx34*)&pl.rot, &v);
-            pl.pos = m->pos;
-            PlacementToMatrix((Mtx34*)&target->place, &pl);
-            ActorSetPlacement(target, &pl);
-            target->unk118 = pl.pos.z;
-            ActorPlayAnim(target->handle, 0x8B3A294E, target->handle);
         }
-        return 1;
-        }
-        return 0;
+    }
+    return 0;
+}
+
+int PickupScanMsg(int value, int msg, void* data) {
+    switch (msg) {
+    case 0x1502:
+        return PickupScan((PickupScanData*)data);
     }
     return 0;
 }

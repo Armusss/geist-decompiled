@@ -186,6 +186,7 @@ int fn_8008E964(int anim);
 int fn_8008E7D0(int anim);
 float fn_800CC2D0(Actor* a, int b, int c, int d);
 float __fabsf(float f);
+inline float fabsf(float x) { return __fabsf(x); }
 String fn_800225C8(const String& a, const String& b);
 void fn_8028C188(Buffer* b, char* data, int len);
 void fn_8028BF80(String* s, const char* format, ...);
@@ -451,15 +452,16 @@ void RideActionAnimate(Actor* actor) {
                 + (axis.x * (actor->f240 - b->lastX) + axis.y * (actor->f244 - b->lastY)
                    + axis.z * (actor->f248 - b->lastZ)) / (0.00025f * actor->f138);
             value /= (4.0f * actor->data->f100 + actor->data->fF0);
-            value = 50.0f * value;
-            value = value - actor->euler.y;
-            value = 1.5f * value;
+            float target = 50.0f * value;
+            float diff = target - actor->euler.y;
+            value = 1.5f * diff;
+            float dt = actor->f138;
             float error = value - b->roll;
-            float amount = 2.0f * __fabsf(error);
+            float amount = 2.0f * fabsf(error);
             if (error > 1.1920929e-07f) {
-                b->roll += amount * actor->f138 / 1000.0f;
+                b->roll += amount * dt / 1000.0f;
             } else if (error < -1.1920929e-07f) {
-                b->roll += -amount * actor->f138 / 1000.0f;
+                b->roll += -amount * dt / 1000.0f;
             }
             if (turn > 1.1920929e-07f) {
                 float rate = TurnRate(actor);

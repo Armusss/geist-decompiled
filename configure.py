@@ -659,7 +659,7 @@ config.libs = [
             Object(Matching, "game/EvacPoint.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_8015C79C.cpp"),  # split from u_80157730
             Object(Matching, "game/u_80160188.cpp"),  # guess
-            Object(NonMatching, "game/GrenadeFx.cpp"),  # starts 0x801608A4 (helper-game-b)
+            Object(Matching, "game/GrenadeFx.cpp"),  # starts 0x801608A4 (helper-game-b)
             Object(NonMatching, "game/u_80160DB0.cpp"),  # guess
             Object(Matching, "game/u_80161F40.cpp"),  # behaviour registry
             Object(NonMatching, "game/u_80161FF4.cpp"),  # guess
@@ -722,7 +722,7 @@ config.libs = [
             Object(NonMatching, "game/u_8023FA5C.cpp"),  # guess
             Object(NonMatching, "game/u_80243B0C.cpp"),  # guess
             Object(NonMatching, "game/u_80244728.cpp"),  # pinned
-            Object(NonMatching, "game/u_80247EB0.cpp"),  # guess
+            Object(Matching, "game/u_80247EB0.cpp"),  # guess
             Object(NonMatching, "game/u_80248FC8.cpp"),  # pinned
             Object(NonMatching, "game/u_8024CAA0.cpp"),  # known
             Object(Matching, "game/Scannable.cpp"),  # (helper-game-b)
@@ -769,9 +769,9 @@ config.libs = [
             Object(NonMatching, "game/u_802B4600.cpp"),  # pinned
             Object(NonMatching, "game/u_802B7120.cpp"),  # pinned
             Object(NonMatching, "game/u_802B9088.cpp"),  # guess
-            Object(NonMatching, "game/u_802BA078.cpp"),  # pinned
+            Object(Matching, "game/u_802BA078.cpp"),  # pinned
             Object(NonMatching, "game/u_802BB1F4.cpp"),  # guess
-            Object(NonMatching, "game/u_802BF114.cpp"),  # pinned
+            Object(Matching, "game/u_802BF114.cpp"),  # pinned
             Object(NonMatching, "game/u_802C01E8.cpp"),  # guess
             Object(NonMatching, "game/u_802C30A4.cpp"),  # guess
             Object(NonMatching, "game/u_802C8900.cpp"),  # guess

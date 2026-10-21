@@ -281,21 +281,21 @@ int GhostGunUpdate(void* pp, Actor* a, float dt) {
                 }
             }
 
-            msg.obj = hit.obj;
             msg.actor = a;
-            msg.actorCC = a->unkCC;
             msg.damage = dmg;
             msg.unk14 = p->unk1C;
-            msg.pos = hit.pos;
-            msg.normal = hit.unk3C;
+            msg.unk4C = p->unk18;
             msg.dir.x = (int)a->dir.x;
+            msg.actorCC = a->unkCC;
             msg.dir.y = (int)a->dir.y;
             msg.dir.z = (int)a->dir.z;
-            msg.unk3C = hit.unk10;
-            msg.unk40 = hit.unk18;
-            msg.unk44 = hit.unk14;
+            msg.pos = hit.pos;
             msg.unk48 = hit.unk0C;
-            msg.unk4C = p->unk18;
+            msg.unk44 = hit.unk14;
+            msg.normal = hit.unk3C;
+            msg.unk40 = hit.unk18;
+            msg.unk3C = hit.unk10;
+            msg.obj = hit.obj;
             hit.obj->handler(0x407, &msg);
 
             if ((int)(hit.obj->model >> 24) == 0x1A) {

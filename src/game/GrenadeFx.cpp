@@ -89,17 +89,22 @@ void GrenadeLoadSounds(void) {
     gGrenadeSounds[15] = AssetFind(0xF1754BF2, 0x044FFEBA);
 }
 
-void GrenadeRemoveAll(void) {
+// Destroys every live emitter in a slot table.
+static inline void EmitterSlotsClear(EmitterSlot* slots, int count) {
     int i;
 
-    for (i = 0; i < 8; i++) {
-        EmitterSlot* s = &gGrenadeEmitters[i];
+    for (i = 0; i < count; i++) {
+        EmitterSlot* s = &slots[i];
         if (s->active) {
             EmitterDestroy(s->handle);
             s->handle = -1;
             s->active = 0;
         }
     }
+}
+
+void GrenadeRemoveAll(void) {
+    EmitterSlotsClear(gGrenadeEmitters, 8);
 }
 
 void GrenadeNop(void) {}
