@@ -39,7 +39,8 @@ inline int VecNonZero(const Vec3* v) {
 }
 
 inline float VecNormalize(Vec3* v) {
-    double x, y, z, len, inv;
+    double x, y, z, len;
+    float inv;
 
     if (VecNonZero(v) == 0) {
         v->x = 0.0f;
@@ -57,11 +58,11 @@ inline float VecNormalize(Vec3* v) {
 
         len = xx + yy + zz;
     }
-    inv = __frsqrte(len);
+    inv = __frsqrte((float)len);
     v->x = (float)(x * inv);
     v->y = (float)(y * inv);
     v->z = (float)(z * inv);
-    return __fres(len);
+    return __fres(inv);
 }
 
 // Transforms a point into the space of mtx and checks it against the 6 bounds words (min xyz,
@@ -75,7 +76,7 @@ s32 ViewFrustumBoxTest(IVec3* bounds, void* mtx, IVec3* point) {
     local[2] = point->z - *(int*)((u8*)mtx + 0x2C);
     fn_8009F44C(local, mtx, local);
     diff = (local[0] - bounds[0].x) | (local[1] - bounds[0].y) | (local[2] - bounds[0].z) |
-           (local[0] - bounds[1].x) | (local[1] - bounds[1].y) | (local[2] - bounds[1].z);
+           (bounds[1].x - local[0]) | (bounds[1].y - local[1]) | (bounds[1].z - local[2]);
     return (u8)((u32)__cntlzw(diff >> 31) >> 5);
 }
 
@@ -85,12 +86,12 @@ u32 ViewFrustumClassifyPoints(const int* planes, const Vec3* pts, u32* out, int 
     u32 any = 0;
 
     while (count > 0) {
-        const float* p = (const float*)planes + 4 + first * 4;
+        const float* p = (const float*)planes + first * 4;
         int i;
 
         *out = 0;
         for (i = first; i < planes[0]; i++, p += 4) {
-            float d = p[0] * pts->x + p[1] * pts->y + p[2] * pts->z + p[3];
+            float d = p[4] * pts->x + p[5] * pts->y + p[6] * pts->z + p[7];
             int side;
             u32 v;
 
@@ -115,17 +116,33 @@ u32 ViewFrustumClassifyPoints(const int* planes, const Vec3* pts, u32* out, int 
 // Tests the 8 faces of an octahedron built from the 6 vertex values in src against the volume's
 // planes. Returns -1 if some plane set accepts all 8 faces, otherwise a "no plane touched" flag.
 u32 ViewFrustumTestOctahedron(const int* planes, const int* src) {
-    int v[24] = {
-        src[0], src[1], src[2],
-        src[3], src[1], src[2],
-        src[3], src[4], src[2],
-        src[0], src[4], src[2],
-        src[0], src[1], src[5],
-        src[3], src[1], src[5],
-        src[3], src[4], src[5],
-        src[0], src[4], src[5],
-    };
+    int v[24];
     const float* p = (const float*)planes + planes[0] * 4;
+
+    v[0] = src[0];
+    v[1] = src[1];
+    v[2] = src[2];
+    v[3] = src[3];
+    v[4] = src[1];
+    v[5] = src[2];
+    v[6] = src[3];
+    v[7] = src[4];
+    v[8] = src[2];
+    v[9] = src[0];
+    v[10] = src[4];
+    v[11] = src[2];
+    v[12] = src[0];
+    v[13] = src[1];
+    v[14] = src[5];
+    v[15] = src[3];
+    v[16] = src[1];
+    v[17] = src[5];
+    v[18] = src[3];
+    v[19] = src[4];
+    v[20] = src[5];
+    v[21] = src[0];
+    v[22] = src[4];
+    v[23] = src[5];
     u32 any = 0;
     int n = planes[0];
 
@@ -164,9 +181,9 @@ u32 ViewFrustumTestOctahedron(const int* planes, const int* src) {
 inline void FrustumPlane(float* out, const Vec3* eye, const Vec3* a, const Vec3* b) {
     Vec3 n;
 
-    n.x = (b->y - eye->y) * (a->z - eye->z) - (b->z - eye->z) * (a->y - eye->y);
-    n.y = (b->z - eye->z) * (a->x - eye->x) - (b->x - eye->x) * (a->z - eye->z);
-    n.z = (b->x - eye->x) * (a->y - eye->y) - (b->y - eye->y) * (a->x - eye->x);
+    n.x = (a->y - eye->y) * (b->z - eye->z) - (a->z - eye->z) * (b->y - eye->y);
+    n.y = (a->z - eye->z) * (b->x - eye->x) - (a->x - eye->x) * (b->z - eye->z);
+    n.z = (a->x - eye->x) * (b->y - eye->y) - (a->y - eye->y) * (b->x - eye->x);
     VecNormalize(&n);
     out[0] = n.x;
     out[1] = n.y;
@@ -292,10 +309,12 @@ float fn_8001715C(float angle);
 // Applies the power-of-two gain pair to the angle noise (both exponents are zero here).
 float fn_80017084(float angle) {
     double e = (double)(u32)0;
-    float a = (float)pow(2.0, e);
-    float b = (float)pow(0.5, e);
+    double a = pow(2.0, e);
+    double b = pow(0.5, e);
+    float r = 0.0f;
 
-    return b * fn_8001715C(angle * a);
+    r += (float)b * fn_8001715C(angle * (float)a);
+    return r;
 }
 
 // Smooth (raised-cosine) interpolation of hashed values around the integer part of angle.
@@ -313,9 +332,7 @@ float fn_8001715C(float angle) {
 
 // Stores a plane (normal n, offset d = -n.p) at out.
 void ViewPlaneFromNormal(float* out, const Vec3* n, const Vec3* p) {
-    float d;
-
-    d = n->y * p->y + n->x * p->x + n->z * p->z;
+    float d = n->x * p->x + n->y * p->y + n->z * p->z;
     out[0] = n->x;
     out[1] = n->y;
     out[2] = n->z;
@@ -325,17 +342,33 @@ void ViewPlaneFromNormal(float* out, const Vec3* n, const Vec3* p) {
 // Transforms the 8 corners of the octahedron given by 6 vertex values into world space and
 // returns the min/max bounding box of the result (min xyz, max xyz).
 int* ViewOctahedronBounds(int* verts, const void* mtx) {
-    IVec3 pts[8] = {
-        {verts[0], verts[1], verts[2]},
-        {verts[3], verts[1], verts[2]},
-        {verts[3], verts[4], verts[2]},
-        {verts[0], verts[4], verts[2]},
-        {verts[0], verts[1], verts[5]},
-        {verts[3], verts[1], verts[5]},
-        {verts[3], verts[4], verts[5]},
-        {verts[0], verts[4], verts[5]},
-    };
+    IVec3 pts[8];
     int i;
+
+    pts[0].x = verts[0];
+    pts[0].y = verts[1];
+    pts[0].z = verts[2];
+    pts[1].x = verts[3];
+    pts[1].y = verts[1];
+    pts[1].z = verts[2];
+    pts[2].x = verts[3];
+    pts[2].y = verts[4];
+    pts[2].z = verts[2];
+    pts[3].x = verts[0];
+    pts[3].y = verts[4];
+    pts[3].z = verts[2];
+    pts[4].x = verts[0];
+    pts[4].y = verts[1];
+    pts[4].z = verts[5];
+    pts[5].x = verts[3];
+    pts[5].y = verts[1];
+    pts[5].z = verts[5];
+    pts[6].x = verts[3];
+    pts[6].y = verts[4];
+    pts[6].z = verts[5];
+    pts[7].x = verts[0];
+    pts[7].y = verts[4];
+    pts[7].z = verts[5];
 
     fn_8009F5B0(mtx);
     fn_8009F50C(&pts[0].x, &pts[0].x);
@@ -354,24 +387,12 @@ int* ViewOctahedronBounds(int* verts, const void* mtx) {
         pts[i].x += *(int*)((u8*)mtx + 0x24);
         pts[i].y += *(int*)((u8*)mtx + 0x28);
         pts[i].z += *(int*)((u8*)mtx + 0x2C);
-        if (lbl_803DAA70[0] > pts[i].x) {
-            lbl_803DAA70[0] = pts[i].x;
-        }
-        if (lbl_803DAA70[1] > pts[i].y) {
-            lbl_803DAA70[1] = pts[i].y;
-        }
-        if (lbl_803DAA70[2] > pts[i].z) {
-            lbl_803DAA70[2] = pts[i].z;
-        }
-        if (pts[i].x > lbl_803DAA70[3]) {
-            lbl_803DAA70[3] = pts[i].x;
-        }
-        if (pts[i].y > lbl_803DAA70[4]) {
-            lbl_803DAA70[4] = pts[i].y;
-        }
-        if (pts[i].z > lbl_803DAA70[5]) {
-            lbl_803DAA70[5] = pts[i].z;
-        }
+        lbl_803DAA70[0] = (pts[i].x < lbl_803DAA70[0]) ? pts[i].x : lbl_803DAA70[0];
+        lbl_803DAA70[1] = (pts[i].y < lbl_803DAA70[1]) ? pts[i].y : lbl_803DAA70[1];
+        lbl_803DAA70[2] = (pts[i].z < lbl_803DAA70[2]) ? pts[i].z : lbl_803DAA70[2];
+        lbl_803DAA70[3] = (pts[i].x > lbl_803DAA70[3]) ? pts[i].x : lbl_803DAA70[3];
+        lbl_803DAA70[4] = (pts[i].y > lbl_803DAA70[4]) ? pts[i].y : lbl_803DAA70[4];
+        lbl_803DAA70[5] = (pts[i].z > lbl_803DAA70[5]) ? pts[i].z : lbl_803DAA70[5];
     }
     return lbl_803DAA70;
 }
@@ -601,47 +622,84 @@ int ModelBoneHitTest(int model, char* shapes, int a, int b) {
     return found;
 }
 
+// Candidate/selected hit record shared by the nearest-hit and sweep searches.
+struct BoneHitResult {
+    Vec3 pos;
+    Vec3 normal;
+    int flags;
+    int unk0;
+    int unk1;
+    int bone;
+};
+
 // Finds the closest bone hit. The two out vectors receive the hit position and normal,
 // outBone the bone index, shape the shape data and model the hit model.
 int ModelBoneHitNearest(int a, int b, int model, int shapes, int* outBone, Vec3* outPos,
                         Vec3* outNormal, unsigned int* shape) {
-    int count = ModelBoneCount(model);
-    Vec3* pos = (Vec3*)ModelBonePositions(model);
-    unsigned short* nodes = (unsigned short*)fn_80037B6C(model);
-    Vec3 local;
-    int bestFound = 0;
-    int bestBone = 0;
-    float bestDist = 1.0f;
+    BoneHitResult best;
+    BoneHitResult cand;
+    float dist;
+    Vec3 p;
+    unsigned short model16 = (unsigned short)model;
+    unsigned short* nodeBase;
+    unsigned short* nodes;
+    Vec3* pos;
+    int count;
+    float bestDist = 3.4e38f;
+    int found = 0;
     int i;
 
     fn_80008E34(9);
+    count = ModelBoneCount(model);
+    pos = (Vec3*)ModelBonePositions(model);
+    nodeBase = (unsigned short*)fn_80037B6C(model);
+    nodes = nodeBase;
     for (i = 0; i < count; i++) {
         int flags = fn_80037230(model, *nodes);
         int hit;
 
-        if ((flags & 0x1000) == 0) {
-            Vec3 p;
-            int idx;
-            float dist;
-            int o1, o2;
-
-            Vec3Copy(&p, pos);
-            hit = fn_800331F8(a, b, &p, shapes, &o1, &o2, &dist);
-            if (hit != 0) {
-                bestFound = 1;
-                bestBone = i;
-                if (dist < bestDist) {
-                    bestDist = dist;
-                    *outBone = i;
-                }
+        if (flags & 0x1000) {
+            goto next;
+        }
+        if ((flags & 0x800) && !(*shape & 0x800)) {
+            goto next;
+        }
+        if ((flags & 0x2000) && (*shape & 0x2000)) {
+            goto next;
+        }
+        if ((flags & 0x8000) && (*shape & 0x8000)) {
+            goto next;
+        }
+        if ((flags & 0x200) && (*shape & 0x200)) {
+            goto next;
+        }
+        if (fn_80038230(model, *nodes) == 0) {
+            goto next;
+        }
+        Vec3Copy(&p, pos);
+        cand.flags = flags;
+        hit = fn_800331F8(a, b, &p, shapes, (int*)&cand.pos, (int*)&cand.normal, &dist);
+        if (hit != 0) {
+            found = 1;
+            cand.bone = i;
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = cand;
             }
         }
+    next:
         nodes++;
         pos++;
         shapes += 0x30;
     }
+    if (found) {
+        *outBone = best.bone;
+        *outPos = best.pos;
+        *outNormal = best.normal;
+        *shape = fn_80037230(model16, nodeBase[best.bone]);
+    }
     fn_80008DFC(9);
-    return bestFound;
+    return found;
 }
 
 // Tests the model's bones against the shape list and returns the closest hit.
