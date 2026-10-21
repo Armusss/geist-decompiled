@@ -103,3 +103,7 @@ hoisted zero; isolated probes give li/li in a plain function and li/mr in an `in
 Side effect: an inline's locals take callee-saved registers in reverse declaration order, so permute the
 declarations after wrapping code in an inline. SaveRestoreBlocks matched this way
 (`static inline void SaveSendBlocks(SaveSlot*)`, `int* hdr; u8* blocks; int i; int offset;`, `offset = 0; i = 0;`).
+- Refinement (opus-1 scan): a plain `for (i = 0; ...) a[i]` loop inside an inline already gives `li i,0;
+  mr off,i` (the compiler-made offset copies i); use plain indexing in the inline, not an explicit offset.
+- Outside inlines the opposite ranking holds: declaring `int i;` before `int words` matched seven Bitset
+  helpers in u_80022B10.
