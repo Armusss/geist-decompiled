@@ -82,6 +82,12 @@ game/FearActor.c:
 game/u_80064FD4.cpp:
 	.text       start:0x80064FD4 end:0x80067FF8
 	.ctors      start:0x80341204 end:0x80341208
+	.rodata     start:0x80342C08 end:0x80342C80
+	.data       start:0x80394158 end:0x80394168
+	.bss        start:0x80420038 end:0x80420048
+	.sdata      start:0x804D2818 end:0x804D2880
+	.sbss       start:0x804D44B0 end:0x804D44F0
+	.sdata2     start:0x804D6428 end:0x804D64F0
 
 game/u_80067FF8.cpp:
 	.text       start:0x80067FF8 end:0x80068004
