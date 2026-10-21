@@ -57,7 +57,7 @@ void* fn_80024834(void* list, int size, void* mask, int count); // 0x80024834
 void fn_80024794(void* obj, void* list, void* mask, int count);  // 0x80024794
 int AssetFind(u32 a, u32 b);                                    // 0x8007EB34
 extern "C" int rand(void);                                      // 0x802F2CFC
-void fn_800A1394(float x);                                      // 0x800A1394
+float fn_800A1394(float x);                                     // 0x800A1394
 float fn_800A1418(float x);                                     // 0x800A1418
 void* fn_8016F120(void* fx, int* pos);                          // 0x8016F120
 void* FxFind(const char* name);                                 // 0x80170834
@@ -65,7 +65,7 @@ float fn_80100EB0(float f, void* a, void* b, void* c, void* d, void* out); // 0x
 void fn_8013A3D4(void);                                         // 0x8013A3D4
 void fn_8013A834(void* pos, float a, float b, u8 r, u8 g, u8 b2, u8 al); // 0x8013A834
 void fn_8013AC68(int asset, int mode);                          // 0x8013AC68
-void fn_8013B208(void* obj, int r, int g, int b, int a);        // 0x8013B208
+void fn_8013B208(void* obj, u8 r, u8 g, u8 b, u8 a);            // 0x8013B208
 void fn_8013B5D4(void);                                         // 0x8013B5D4
 void fn_8013B6F8(float f, int a, int b);                        // 0x8013B6F8
 void fn_8013C76C(void* obj, void* pos);                         // 0x8013C76C
@@ -74,7 +74,7 @@ void fn_8013C7D4(void* obj, void* dst, int n, int, int, int, int, int, int, int,
 void DrawFlush(void);                                           // 0x8013C030
 void DrawVertex(u8, u8, u8, u8, float, float, float, float);    // 0x8013C034
 void DrawSetTexture(int tex);                                   // 0x8013C074
-void fn_8013C0F4(int tex, int, int, int, u8, float, float, float, float, float, float, float, float); // 0x8013C0F4
+void fn_8013C0F4(int tex, u8, u8, u8, u8, float, float, float, float, float, float, float, float); // 0x8013C0F4
 void Draw2DEnd(void);                                           // 0x8013C6C4
 void Draw2DBegin(void);                                         // 0x8013C6F0
 
@@ -104,40 +104,37 @@ int GhostShotSpawn(float a, float b, float c, int d, Vec3* p5, Vec3* p6, int sta
 // 0x8018D2D4
 void GhostShotDrawAll(void) {
     int i;
-    GhostShot** pp;
 
-    i = 0;
-    pp = sShots;
-    for (; i < 64; i++, pp++) {
+    for (i = 0; i < 64; i++) {
         if (sShotActive[i / 32] & (1 << (i & 31))) {
             int col;
 
-            fn_8013B6F8((float)(*pp)->i4c0, -4, 0);
-            if ((*pp)->c47c.x == 0.0f) {
+            fn_8013B6F8((float)sShots[i]->i4c0, -4, 0);
+            if (sShots[i]->c47c.x == 0.0f) {
                 col = 0xaa;
             } else {
                 col = 0xff;
             }
-            fn_8013B208((*pp), col, col, col, col);
-            if ((*pp)->i4d0 != 0) {
-                fn_8013B208((*pp), col, col, col, col);
+            fn_8013B208(sShots[i], col, col, col, col);
+            if (sShots[i]->i4d0 != 0) {
+                fn_8013B208(sShots[i], col, col, col, col);
             }
             fn_8013B5D4();
-            fn_8013B6F8((float)(*pp)->i4c4, -4, 0);
-            fn_8013B208((*pp)->unk204, col, col, col, col);
+            fn_8013B6F8((float)sShots[i]->i4c4, -4, 0);
+            fn_8013B208(sShots[i]->unk204, col, col, col, col);
             fn_8013B5D4();
 
             {
-                GhostShot* o = (*pp);
+                GhostShot* o = sShots[i];
                 Vec3 pos;
                 float alpha;
 
                 fn_80100EB0(o->f4a8, &o->v408, &o->v414, &o->v420, &o->v438, &pos);
                 if (o->count == 0) {
-                    if (o->i4d0 == 0) {
-                        alpha = 112.5f;
-                    } else {
+                    if (o->i4d0 != 0) {
                         alpha = 300.0f;
+                    } else {
+                        alpha = 112.5f;
                     }
                 } else if (o->count <= 20) {
                     alpha = 112.5f + 375.0f * (float)o->count / 20.0f;
@@ -173,11 +170,9 @@ void GhostShotDrawAll(void) {
                 }
                 fn_8013A3D4();
                 fn_8013AC68(o->asset, 0);
-                if (o->count > 0) {
-                    if (i % 3 == 0) {
-                        fn_8013A834(&pos, alpha * 0.5f, 0.0f, col, col, col, col / 2);
-                    }
-                } else {
+                if (o->count > 0 && i % 3 == 0) {
+                    fn_8013A834(&pos, alpha * 0.5f, 0.0f, col, col, col, col / 2);
+                } else if (o->count == 0) {
                     fn_8013A834(&pos, alpha * 0.5f, 0.0f, col, col, col, col);
                 }
                 fn_8013A3D4();
@@ -510,31 +505,44 @@ int GhostShotSpawn(float a, float b, float c, int d, Vec3* p5, Vec3* p6, int sta
 }
 
 // 0x8018F56C
-void GhostShotDrawBeam(int tex, float t, float x0, float y0, float x1, float y1,
-                       int a4, int a5, int a6, int a7, int r, int g, int b, u8 al) {
-    Vec3 unused;
+void GhostShotDrawBeam(int tex, float t, float v0, float v1, float u0, float u1,
+                       int x, int y, int w, int h, u8 r, u8 g, u8 b, u8 al) {
+    float fx = (float)x;
+    float fy = (float)y;
+    float fw = (float)w;
+    float fh = (float)h;
     float ang = 360.0f - 360.0f * t;
-    float sx = (float)a4;
-    float sy = (float)a5;
-    float ex = (float)a6;
-    float ey = (float)a7;
-    float sinv;
-    float cosv;
+    float sn = fn_800A1418(ang);
+    float cs = fn_800A1394(ang);
+    float hw = fw * 0.5f;
+    float hh = fh * 0.5f;
+    float oV1 = hh - (1.0f - v1) * fh;
+    float oV0 = hh - (1.0f - v0) * fh;
+    float oU0 = hw - (1.0f - u0) * fw;
+    float nV1 = -oV1;
+    float nU0 = -oU0;
+    float oU1 = hw - (1.0f - u1) * fw;
+    float tu0 = 1.0f - u0;
+    float tv0 = 1.0f - v0;
 
-    (void)unused;
-    fn_800A1418(ang);
-    (void)fn_800A1394(ang);
-    sinv = 0.0f;
-    cosv = 0.0f;
-    (void)sx;
-    (void)sy;
-    (void)ex;
-    (void)ey;
-    (void)sinv;
-    (void)cosv;
     Draw2DBegin();
     DrawSetTexture(tex);
-    DrawVertex(r, g, b, al, 0.0f, 0.0f, 0.0f, 0.0f);
+    DrawVertex(r, g, b, al,
+               fx + 1.33f * (oV0 * cs - nU0 * sn) / gAspectScale,
+               fy + nU0 * cs + oV0 * sn,
+               tu0, tv0);
+    DrawVertex(r, g, b, al,
+               fx + 1.33f * (nV1 * cs - nU0 * sn) / gAspectScale,
+               fy + nU0 * cs + nV1 * sn,
+               tu0, v1);
+    DrawVertex(r, g, b, al,
+               fx + 1.33f * (nV1 * cs - oU1 * sn) / gAspectScale,
+               fy + oU1 * cs + nV1 * sn,
+               u1, v1);
+    DrawVertex(r, g, b, al,
+               fx + 1.33f * (oV0 * cs - oU1 * sn) / gAspectScale,
+               fy + oU1 * cs + oV0 * sn,
+               u1, tv0);
     DrawFlush();
     Draw2DEnd();
 }
@@ -543,21 +551,14 @@ void GhostShotDrawBeam(int tex, float t, float x0, float y0, float x1, float y1,
 void GhostShotDrawSprite(int tex, int x, int y, int w, int h,
                          u8 r, u8 g, u8 b, u8 a,
                          float u0, float v0, float u1, float v1) {
-    float a0 = 1.0f - u1;
-    float a1 = 1.0f - v1;
-    float b0 = 1.0f - v0;
-    float b1 = 1.0f - u0;
-    float dx0 = 1.33f * ((float)w * 0.5f - a0 * (float)w) / gAspectScale;
-    float dx1 = 1.33f * ((float)w * 0.5f - a1 * (float)w) / gAspectScale;
-    float dy0 = (float)h * 0.5f - b0 * (float)h;
-    float dy1 = (float)h * 0.5f - b1 * (float)h;
-    float x0 = (float)x - dx0;
-    float y0 = (float)y - dy0;
-    float x1 = (float)x + dx1;
-    float y1 = (float)y + dy1;
-
     Draw2DBegin();
-    fn_8013C0F4(tex, r, g, b, a, x0, y0, x1, y1, a0, b1, v1, v0);
+
+    float x0 = (float)x - 1.33f * ((float)w * 0.5f - (1.0f - u1) * (float)w) / gAspectScale;
+    float x1 = (float)x + 1.33f * ((float)w * 0.5f - (1.0f - v1) * (float)w) / gAspectScale;
+    float y0 = (float)y - ((float)h * 0.5f - (1.0f - v0) * (float)h);
+    float y1 = (float)y + ((float)h * 0.5f - (1.0f - u0) * (float)h);
+
+    fn_8013C0F4(tex, r, g, b, a, x0, y0, x1, y1, 1.0f - u1, 1.0f - u0, v1, v0);
     Draw2DEnd();
 }
 
