@@ -8,7 +8,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_80080F88 (22 fns, skeleton draft first) | running |
-| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80015B64 run 2 (20/36 after run 1) | running |
+| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_800FDDE4 (26 fns, chunked draft first) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_800D0BF4 (31 fns, chunked draft first) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | **Paused** until the DeepSeek workers have drafted every untouched unit (user plan, 2026-10-20); then the Opus queue below | paused |
 
@@ -59,6 +59,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_80015B64 21/36 (view frustum, bezier, model bone hit tests; ds-2 2 runs): 15 left; close: ModelBoneNodeChain (8), ViewFrustumBoxTest (20).
 - u_80064FD4 11/17 (player movement/pose, ds-3 2 runs): PlayerPoseUpdate (0xEA4 bytes, still an empty body), PlayerGroundMove (459), PlayerModelUpdate (445), PlayerAirMove (360), PlayerStepMove (198), Pose48Copy (9) left.
 - u_80157730 43/67 (ds-1 3 runs): 24 left; close ones fn_80159A4C, fn_8015A97C, fn_8015BFD8 (4 each), fn_80158BE0 (8), fn_8015A10C (11); biggest fn_8015779C (599).
 - u_80150300 46/60 (possession host-type tables, ds-3 2 runs): HostTypeEnter0A (2), HostTypeUpdateG (3), HostTypeUpdateI (6), HostTypeUpdateH (9) are close; PossessHostMsg (86), HostTypeInit (150), HostTypeMsgA/B, HostTypeTrails, HostTypeUpdateF/J/K, HostTypeEnter0B left.
