@@ -9,6 +9,7 @@ typedef unsigned long u32;
 extern "C" {
 int SendMsg(int target, int msg, void* data);                 // 0x800265D4
 void* memset(void* dst, int val, unsigned long n);
+double sqrt(double x);
 }
 
 int PlayerTeam(int player);                                   // 0x800FD68C
@@ -144,8 +145,7 @@ struct HuntScreen {
     char pad20[4];
     u32 handles[8];     // 0x24
     char pad44[0xA4];
-    int unkE8;          // 0xE8
-    char padEC[0x3C];
+    int unkE8[0x10];    // 0xE8
     u32 teamMask;       // 0x128
 };
 
@@ -177,21 +177,21 @@ static HuntEntry sEntries[9] = {
 struct HuntScreenType {
     const char* name;
     void (*init)(void);
-    void (*enter)(void*);
-    void (*exit)(void*);
-    void (*update)(void*, float);
-    void (*draw)(void*, int);
+    void (*enter)(HuntScreen*);
+    void (*exit)(HuntScreen*);
+    void (*update)(HuntScreen*, float);
+    void (*draw)(HuntScreen*, int);
     int (*msg)(void*, int, int*);
-    void (*reset)(void*);
+    void (*reset)(HuntScreen*);
 };
 
 int HuntBotMsg(void* owner, int msg, int* data);
-void HuntBotDraw(void* screen, int pass);
-void HuntBotUpdate(void* screen, float dt);
-void HuntBotExit(void* screen);
-void HuntBotEnter(void* screen);
+void HuntBotDraw(HuntScreen* screen, int pass);
+void HuntBotUpdate(HuntScreen* screen, float dt);
+void HuntBotExit(HuntScreen* screen);
+void HuntBotEnter(HuntScreen* screen);
 void HuntBotInit(void);
-void HuntBotReset(void* screen);
+void HuntBotReset(HuntScreen* screen);
 int HuntBotPick(void* obj, int* out, float radius);
 void HuntBotSetFlag(int i);
 u32 HuntBotPickable(u32 handle);
@@ -280,9 +280,7 @@ int HuntBotMsg(void* owner, int msg, int* data) {
     return 0;
 }
 
-void HuntBotDraw(void* screenp, int pass) {
-    HuntScreen* screen = (HuntScreen*)screenp;
-
+void HuntBotDraw(HuntScreen* screen, int pass) {
     if (!lbl_804D4D48) {
         return;
     }
@@ -437,15 +435,16 @@ void HuntBotDraw(void* screenp, int pass) {
     }
 }
 
-void HuntBotUpdate(void* screenp, float dt) {
-    HuntScreen* screen = (HuntScreen*)screenp;
-
+void HuntBotUpdate(HuntScreen* screen, float dt) {
     if (!lbl_804D4D48) {
         return;
     }
 
     lbl_804D4D4C += dt;
     switch (lbl_8046D5B8.state) {
+    default:
+        lbl_8046D5B8.state = 2;
+        break;
     case 0: {
         float t = lbl_8046D5B8.timer - dt;
         lbl_8046D5B8.timer = t;
@@ -463,8 +462,8 @@ void HuntBotUpdate(void* screenp, float dt) {
             lbl_8046D5B8.timer = 0.0f;
             lbl_8046D5B8.state = 2;
             for (i = 0; i < screen->count; i++) {
-                u32 h = screen->handles[i];
-                if ((int)(h >> 24) == 2) {
+                int type = (int)(screen->handles[i] >> 24);
+                if (type == 2) {
                     struct {
                         int unk0;
                         int unk4;
@@ -472,15 +471,15 @@ void HuntBotUpdate(void* screenp, float dt) {
                     } m;
                     m.unk4 = 0;
                     m.unk8 = 0x01000002;
-                    SendMsg(h, 0x40D, &m);
-                } else if ((int)(h >> 24) == 0x13) {
+                    SendMsg(screen->handles[i], 0x40D, &m);
+                } else if (type == 0x13) {
                     struct {
                         int unk0;
                         int unk4;
                     } m;
-                    fn_800A3990(h);
+                    fn_800A3990(screen->handles[i]);
                     m.unk4 = 1;
-                    SendMsg(h, 0xC00, &m);
+                    SendMsg(screen->handles[i], 0xC00, &m);
                 }
             }
         }
@@ -494,13 +493,13 @@ void HuntBotUpdate(void* screenp, float dt) {
         int hosts;
         float threshold;
         for (i = 0; i < screen->count; i++) {
-            u32 h = screen->handles[i];
-            if ((int)(h >> 24) == 2 && *((int*)OwnerGetInfo(h) + 0x358 / 4) == 1 && h != 0xFFFFFFFF) {
+            if ((int)(screen->handles[i] >> 24) == 2 &&
+                *((int*)OwnerGetInfo(screen->handles[i]) + 0x358 / 4) == 1 && (int)screen->handles[i] != -1) {
                 C14Msg m;
-                m.index = 1;
                 m.handle = 0x4B000000;
                 m.key = 0xF8639C97;
-                SendMsg(h, 0xC14, &m);
+                m.index = 1;
+                SendMsg(screen->handles[i], 0xC14, &m);
             }
         }
         if (lbl_803A4028.enabled != 0) {
@@ -515,9 +514,8 @@ void HuntBotUpdate(void* screenp, float dt) {
         seen = 0;
         hosts = 0;
         for (i = 0; i < screen->count; i++) {
-            int team = PlayerTeam(i);
-            if ((int)fn_80120C14(0xE2D6A9C0, 1, team) > 0) {
-                if (screen->unkE8 != 0) {
+            if ((int)fn_80120C14(0xE2D6A9C0, 1, PlayerTeam(i)) > 0) {
+                if (screen->unkE8[i] != 0) {
                     seen |= 1;
                 } else {
                     seen |= 2;
@@ -560,10 +558,9 @@ void HuntBotUpdate(void* screenp, float dt) {
         }
         if (redraw == 1) {
             for (i = 0; i < screen->count; i++) {
-                u32 h;
-                QueryMsg q;
                 fn_80101F00(i);
-                h = screen->handles[i];
+                u32 h = screen->handles[i];
+                QueryMsg q;
                 q.hash = 0x640D1F4D;
                 *(int*)&q.result = 0;
                 q.unk8 = 0;
@@ -585,38 +582,46 @@ void HuntBotUpdate(void* screenp, float dt) {
     case 3:
         HuntBotReset(screen);
         break;
-    default:
-        lbl_8046D5B8.state = 2;
-        break;
     }
 }
 
-void HuntBotExit(void* screenp) {
-    HuntScreen* screen = (HuntScreen*)screenp;
+void HuntBotExit(HuntScreen* screen) {
     int i;
 
+    if (!lbl_804D4D48) {
+        return;
+    }
     lbl_804D4D48 = 0;
     for (i = 0; i < screen->count; i++) {
-        u32 h = screen->handles[i];
         int r;
-        QueryValue(h, 0x00E321FA, &r);
+        QueryValue(screen->handles[i], 0x00E321FA, &r);
         if (r != -1) {
-            int buf[11];
+            int buf[8];
             SendMsg(r, 0x400, buf);
             fn_800A31A0(buf[0]);
-            SendQuery(h, 0x00E321FA, -1);
+            SendQuery(screen->handles[i], 0x00E321FA, -1);
         }
     }
-    for (i = 0; i < 16; i++) {
-        sFlagC[i] = 0;
+    for (i = 0; i < 6; i++) {
+        if (sFlagC[i] == 1) {
+            sFlagC[i] = 0;
+        }
+        if (sFlagB[i] == 1) {
+            sFlagB[i] = 0;
+        }
     }
-    for (i = 0; i < 8; i++) {
-        sFlagB[i] = 0;
+    if (lbl_804D4D64 == 1) {
+        lbl_804D4D64 = 0;
     }
-    lbl_804D4D64 = 0;
-    lbl_804D4D68 = 0;
-    lbl_804D4D5C = 0;
-    lbl_804D4D60 = 0;
+    if (lbl_804D4D68 == 1) {
+        lbl_804D4D68 = 0;
+    }
+    if (lbl_804D4D5C == 1) {
+        lbl_804D4D5C = 0;
+    }
+    if (lbl_804D4D60 == 1) {
+        lbl_804D4D60 = 0;
+    }
     Fn80140778();
     fn_801408C8();
 }
@@ -686,12 +691,12 @@ void HuntBotEnter(void* screenp) {
             SendQuery(h, 0x00E321FA, -1);
             if ((int)(h >> 24) == 0x13) {
                 int obj = (int)fn_800A3990(h);
-                p = (screen->unkE8 == 1) ? (void*)&b : (void*)&a;
+                p = (screen->unkE8[0] == 1) ? (void*)&b : (void*)&a;
                 *(int*)(*(int*)(obj + 0xC8) + 0xC) = GameEvent(-1, (int)p);
             } else if ((int)(h >> 24) == 2) {
                 int buf[8];
                 SendMsg(h, 0x400, buf);
-                p = (screen->unkE8 == 1) ? (void*)&b : (void*)&a;
+                p = (screen->unkE8[0] == 1) ? (void*)&b : (void*)&a;
                 SendQuery(h, 0x7C18FE9E, (int)p);
             }
         }
@@ -714,8 +719,7 @@ void HuntBotInit(void) {
     sFlagA[7] = 0;
 }
 
-void HuntBotReset(void* screenp) {
-    HuntScreen* screen = (HuntScreen*)screenp;
+void HuntBotReset(HuntScreen* screen) {
     int i;
 
     lbl_804D4D54 = 0;
@@ -747,30 +751,42 @@ void HuntBotReset(void* screenp) {
 }
 
 int HuntBotPick(void* obj, int* out, float radius) {
-    float best;
     int i;
-    int found;
+    float best;
+    float ox, oy, oz;
 
     if (!obj || !out) {
-        return 0;
+        return radius;
     }
+    ox = (float)*(int*)((char*)obj + 0x24);
+    oy = (float)*(int*)((char*)obj + 0x28);
+    oz = (float)*(int*)((char*)obj + 0x2C);
     best = radius * radius;
-    found = 0;
-    for (i = 0; i < 16; i++) {
-        u32 h = sSlots[i];
-        float v[8];
-        int j;
-        SendMsg(h, 0x400, v);
-        for (j = 0; j < 3; j++) {
-            float d = ((float*)obj)[j] - v[j];
-            if (d * d < best) {
-                best = d * d;
-                out[0] = j;
-                found = 1;
-            }
+    for (i = 0; i < lbl_804D4D74; i++) {
+        int buf[8];
+        char* p;
+        float dx, dy, dz;
+        float d;
+        SendMsg(sSlots[i], 0x400, buf);
+        p = (char*)buf[0];
+        dx = (float)*(int*)(p + 0x24) - ox;
+        dy = (float)*(int*)(p + 0x28) - oy;
+        dz = (float)*(int*)(p + 0x2C) - oz;
+        d = dx * dx + dy * dy + dz * dz;
+        if (d < best) {
+            best = d;
+            out[0] = (int)dx;
+            out[1] = (int)dy;
+            out[2] = (int)dz;
         }
     }
-    return found ? (int)best : 0;
+    {
+        int d = (int)best;
+        if (d > 0) {
+            return (int)(float)sqrt((double)d);
+        }
+    }
+    return 0;
 }
 
 void HuntBotSetFlag(int i) {
@@ -778,8 +794,8 @@ void HuntBotSetFlag(int i) {
 }
 
 u32 HuntBotPickable(u32 handle) {
-    u32 obj;
     int player = HandleToPlayer(handle);
+    u32 obj;
     if (player == -1) {
         obj = 0;
         switch (handle >> 24) {
