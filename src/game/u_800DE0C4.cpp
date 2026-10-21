@@ -166,16 +166,53 @@ const char* SaveGetSlotName(int slot) {
 
 void SaveResetOptions(void) { fn_800259C8(sSave.options, 0x40, 1); }
 
+static inline void SaveCollectBlocks(SaveSlot* slot) {
+    SaveBlockMsg block;
+    u32* entry;
+    int i;
+    int used;
+    int end;
+    u32* key;
+    u8* data;
+    SaveBlocks* blk;
+
+    used = 0;
+    data = slot->blk.data;
+    slot->blk.count = used;
+    i = used;
+    blk = &slot->blk;
+    key = sSaveKeys;
+    slot->blk.unk0 = used;
+    slot->blk.used = used;
+    for (; i < 2; i++, key++) {
+        end = used + 8;
+        block.buffer = data + end;
+        block.size = 0x100 - end;
+        entry = (u32*)(data + used);
+        block.length = 0;
+        block.flag = 1;
+        if (SendMsg(*key, 0x7100, &block) && block.flag && block.length) {
+            end += block.length;
+            entry[1] = block.length;
+            entry[0] = *key;
+            if (end <= 0x100) {
+                used = end;
+                blk->count++;
+            }
+        }
+    }
+    blk->used = used;
+}
+
 int SaveCommand(int cmd, int arg) {
     SaveMsg msgLoad;
-    SaveMsg msgCheck;
     SaveMsg msgTitle;
-    SaveBlockMsg block;
+    SaveMsg msgCheck;
 
     switch (cmd) {
     case 1: {
-        char* name;
         int* hdr;
+        char* name;
 
         if ((const char*)arg == 0) {
             name = 0;
@@ -216,45 +253,13 @@ int SaveCommand(int cmd, int arg) {
         if (sSaveSlot >= 0 && name) {
             SaveSlot* slot = &sSave.slots[sSaveSlot];
             int level;
-            int used;
-            int i;
-            u32* key;
-            SaveBlocks* blk;
-            u8* data;
 
             strcpy(slot->name, name);
             level = fn_8014FF10(slot->name);
             if (level > slot->bestLevel) {
                 slot->bestLevel = level;
             }
-            used = 0;
-            data = slot->blk.data;
-            slot->blk.count = used;
-            i = used;
-            blk = &slot->blk;
-            key = sSaveKeys;
-            slot->blk.unk0 = used;
-            slot->blk.used = used;
-            for (; i < 2; i++, key++) {
-                int end = used + 8;
-                u32* entry;
-
-                block.buffer = data + end;
-                block.size = 0x100 - end;
-                entry = (u32*)(data + used);
-                block.length = 0;
-                block.flag = 1;
-                if (SendMsg(*key, 0x7100, &block) && block.flag && block.length) {
-                    end += block.length;
-                    entry[1] = block.length;
-                    entry[0] = *key;
-                    if (end <= 0x100) {
-                        used = end;
-                        blk->count++;
-                    }
-                }
-            }
-            blk->used = used;
+            SaveCollectBlocks(slot);
         }
         StoreCardUnmount();
         sSave.flags |= SAVE_VALID;
@@ -286,7 +291,7 @@ int SaveCommand(int cmd, int arg) {
     case 14:
         return SaveTryWrite(2, &sSave, 0);
     case 7: {
-        int flags = arg;
+        long flags = arg;
         int mode = 2;
         if (flags == 1) {
             mode = 1;
@@ -373,27 +378,30 @@ int SaveCommand(int cmd, int arg) {
 
 void SaveClearBusy(void) { sSaveBusy = 0; }
 
+static inline void SaveSendBlocks(SaveSlot* slot) {
+    int* hdr;
+    u8* blocks;
+    int i;
+    int offset;
+
+    offset = 0;
+    i = 0;
+    hdr = &slot->blk.unk0;
+    blocks = slot->blk.data;
+    for (; i < hdr[2]; i++) {
+        SaveSendMsg msg;
+        u32* entry = (u32*)(blocks + offset);
+        offset += 8;
+        msg.data = blocks + offset;
+        msg.length = entry[1];
+        offset += entry[1];
+        SendMsg(entry[0], 0x7101, &msg);
+    }
+}
+
 void SaveRestoreBlocks(void) {
     if (sSaveBusy && sSaveSlot >= 0) {
-        SaveSlot* slot = &sSave.slots[sSaveSlot];
-        int offset;
-        int i;
-        u8* blocks;
-        int* hdr;
-
-        offset = 0;
-        i = offset;
-        hdr = &slot->blk.unk0;
-        blocks = slot->blk.data;
-        for (; i < hdr[2]; i++) {
-            SaveSendMsg msg;
-            u32* entry = (u32*)(blocks + offset);
-            offset += 8;
-            msg.data = blocks + offset;
-            msg.length = entry[1];
-            offset += entry[1];
-            SendMsg(entry[0], 0x7101, &msg);
-        }
+        SaveSendBlocks(&sSave.slots[sSaveSlot]);
     }
 }
 
