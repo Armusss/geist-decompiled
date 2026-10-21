@@ -7,7 +7,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
-| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_8026A37C run 2 (26/41 after run 1) | running |
+| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_80157730 (67 fns, skeleton draft first) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80022B10 run 2 (13/57 after run 1) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_80150300 (60 fns, draft pass first) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | **Paused** until the DeepSeek workers have drafted every untouched unit (user plan, 2026-10-20); then the Opus queue below | paused |
@@ -59,6 +59,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_8026A37C 30/41 (ODE collision kernel, ds-1 2 runs; file-level auto_inline off on evidence): six 2-diff vtable wrappers (GeomGetAabb, GeomDestroyGeom, SpaceCollideSelf, SpaceGetNumGeoms, SpaceRemoveGeom, SpaceAddGeom: retail loads the vtbl straight into r12) and SpaceDestroy (2), GeomUserTest (7), GeomRegisterClass (25), SpaceCollidePair (24), CollisionInit (201) left. Public ODE source (collision_kernel.cpp) may help as reference.
 - u_800E9418 17/19 (gun actor, ds-1 2 runs): GunUpdateState3 (4, f0/f1 swap on max of two fabsf; tried 6 shapes) and GunNodeFn1 (4, table base r4 vs retail r5; local node pointer makes it 6) left.
 - u_8016C244 9/18 (collectible + IVec3 helpers, ds-2 2 runs): CollectUpdate (17), CollectEnter (17), CollectMsg (205), CollectInit (16), VecSwapXY/VecSwapXY2 (4 each), FixedToRad (25), RadToFixed (11), VecToAngles (9) left.
 - u_80140A30 1/12 (Fear hunt screen, ds-3 2 runs): everything except one; HuntBotDraw (446), HuntBotReset (425), HuntBotScore (303), HuntBotEnter (226) are the big ones.
