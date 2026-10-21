@@ -34,7 +34,7 @@ int fn_800059D0(int a);                                                 // 0x800
 void fn_800070C0(void* p);                                              // 0x800070C0
 void fn_80007118(void* p);                                              // 0x80007118
 void fn_80026660(int msg, int (*handler)(int, int, void*), int arg);    // 0x80026660
-void fn_8003BA70(int id, u32 arg);                                      // 0x8003BA70
+void fn_8003BA70(s16 id, u32 arg);                                      // 0x8003BA70
 void fn_8003C308(int id);                                               // 0x8003C308
 int fn_8003C38C(int id, char* name, u32 bind, int count, void* subs, u32 arg, int unk); // 0x8003C38C
 int fn_8003C48C(char* name, u32 bind, int count, void* subs, u32 arg, int flags, int id); // 0x8003C48C
@@ -43,7 +43,7 @@ void fn_80081D0C(char* name, int a, int b, int c);                      // 0x800
 int fn_80082874(int id, u32 handle, u32 key);                           // 0x80082874
 void fn_800D3430(int handle, int a);                                    // 0x800D3430
 void fn_800E0554(float a);                                              // 0x800E0554
-void fn_800E05A4(int id, u32 arg);                                      // 0x800E05A4
+void fn_800E05A4(s16 id, u32 arg);                                      // 0x800E05A4
 void fn_800E05A8(int id);                                               // 0x800E05A8
 int fn_800E05E0(int id, u32 handle, u32 flags);                         // 0x800E05E0
 int fn_802810BC(u32 key);                                               // 0x802810BC
@@ -211,6 +211,81 @@ void SltAssetInit(void);
 void SltEffectCleanup(void);
 
 // 0x8016A774
+static inline int SltFindEntry(SltGroup* grp, u32 key) {
+    int i;
+
+    for (i = 0; i < grp->file->count; i++) {
+        if (grp->entries[i].key == key) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static inline void SltUnloadEach(void) {
+    SltIdMsg unload;
+    int i;
+
+    i = 0;
+    unload.unk0 = 0;
+    for (; i < 2; i++) {
+        if (sLoadedMask & (1 << i)) {
+            unload.id = sSlots[i].handle;
+            SltUnload(&unload);
+        }
+    }
+}
+
+static inline int SltQueryRumble(SltLoadMsg* m) {
+    int found;
+    int i;
+
+    found = 0;
+    if (m == 0) {
+        return found;
+    }
+    for (i = 0; i < 2; i++) {
+        if (sSlots[i].ptr != 0) {
+            for (int j = 0; j < sSlots[i].ptr->count; j++) {
+                if (sSlots[i].ptr->subs[j].type == 'R') {
+                    found = 1;
+                }
+            }
+        }
+        if (found == 1) {
+            break;
+        }
+    }
+    if (found == 0) {
+        m->id = 0xFFFFFFFF;
+    } else {
+        m->id = Fn800816B0();
+        m->key = sSlots[i].unk14;
+    }
+    return 1;
+}
+
+static inline int SltFadeOut(SltLoadMsg* m) {
+    u32 arg = m->key;
+    u32 id = m->id;
+
+    if (id != 0xFFFFFFFF) {
+        int slot = (id >> 16) & 0xF;
+        if (slot < 0 || slot >= 2) {
+            DebugPrintf("SLTFadeOut: Warning - invalid sltId\n");
+            return 0;
+        }
+        if ((id >> 20) != sSlots[slot].stamp) {
+            DebugPrintf("SLTFadeOut: Warning - invalid timestamp\n");
+            return 0;
+        }
+        id = sSlots[slot].id;
+    }
+    fn_8003BA70(id, arg);
+    fn_800E05A4(id, arg);
+    return 1;
+}
+
 int SltMsgHandler(int actor, int msg, void* data) {
     int result = 1;
 
@@ -221,72 +296,18 @@ int SltMsgHandler(int actor, int msg, void* data) {
     case 0x3007:
         result = SltUnload((SltIdMsg*)data);
         break;
-    case 0x3008: {
-        SltIdMsg unload;
-        int i = 0;
-        unload.unk0 = 0;
-        for (; i < 2; i++) {
-            if (sLoadedMask & (1 << i)) {
-                unload.id = sSlots[i].handle;
-                SltUnload(&unload);
-            }
-        }
+    case 0x3008:
+        SltUnloadEach();
         break;
-    }
     case 0x3009:
         result = SltLoad((SltLoadMsg*)data);
         break;
-    case 0x300A: {
-        SltLoadMsg* m = (SltLoadMsg*)data;
-        int found = 0;
-        if (data != 0) {
-            int i;
-            for (i = 0; i < 2; i++) {
-                if (sSlots[i].ptr != 0) {
-                    for (int j = 0; j < sSlots[i].ptr->count; j++) {
-                        if (sSlots[i].ptr->subs[j].type == 'R') {
-                            found = 1;
-                        }
-                    }
-                }
-                if (found == 1) {
-                    break;
-                }
-            }
-            if (found == 0) {
-                m->id = 0xFFFFFFFF;
-            } else {
-                m->id = Fn800816B0();
-                m->key = sSlots[i].unk14;
-            }
-            found = 1;
-        }
-        result = found;
+    case 0x300A:
+        result = SltQueryRumble((SltLoadMsg*)data);
         break;
-    }
-    case 0x300C: {
-        SltLoadMsg* m = (SltLoadMsg*)data;
-        u32 id = m->id;
-        u32 arg = m->key;
-        if (id != 0xFFFFFFFF) {
-            int slot = (id >> 16) & 0xF;
-            if (slot < 0 || slot >= 2) {
-                DebugPrintf("SLTFadeOut: Warning - invalid sltId\n");
-                result = 0;
-                break;
-            }
-            if ((id >> 20) != sSlots[slot].stamp) {
-                DebugPrintf("SLTFadeOut: Warning - invalid timestamp\n");
-                result = 0;
-                break;
-            }
-            id = sSlots[slot].id;
-        }
-        fn_8003BA70((s16)id, arg);
-        fn_800E05A4((s16)id, arg);
-        result = 1;
+    case 0x300C:
+        result = SltFadeOut((SltLoadMsg*)data);
         break;
-    }
     default:
         result = 0;
         break;
@@ -548,10 +569,8 @@ int SltLoad(SltLoadMsg* msg) {
         return 0;
     }
 
-    u32 id = msg->id;
-    int slot = (id >> 16) & 0xF;
-    u32 stamp = id >> 20;
-    if (stamp != sSlots[slot].stamp) {
+    int slot = (msg->id >> 16) & 0xF;
+    if ((msg->id >> 20) != sSlots[slot].stamp) {
         return 0;
     }
 
@@ -559,16 +578,7 @@ int SltLoad(SltLoadMsg* msg) {
         if (!sGroups[g].valid) {
             continue;
         }
-        int index = 0;
-        while (index < sGroups[g].file->count) {
-            if (sGroups[g].entries[index].key == msg->key) {
-                break;
-            }
-            index++;
-        }
-        if (index == sGroups[g].file->count) {
-            index = -1;
-        }
+        int index = SltFindEntry(&sGroups[g], msg->key);
         if (index == -1) {
             continue;
         }

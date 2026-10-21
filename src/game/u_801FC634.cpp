@@ -286,17 +286,18 @@ unsigned long Fn80175D60(unsigned long id);
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
 
 inline u32 StrHash(const char* s) {
+    const char* p;
     u32 h;
-    int i;
 
     if (s == 0) {
         return 0;
     }
     h = 0;
-    for (i = 0; s[i] != 0; i++) {
-        h = h * 31 + (unsigned char)toupper(s[i]);
+    for (p = s; *p != 0; p++) {
+        h = h * 31 + (unsigned char)toupper(*p);
     }
-    return h % 0xFFFFFFFF;
+    h = h % 0xFFFFFFFF;
+    return h;
 }
 
 inline int VecNonZero(Vec3* v) {
@@ -714,6 +715,16 @@ void FearObjAdd(void* obj) {
 // ---------------------------------------------------------------------------------------------
 // 0x801FD748
 
+static inline void FearRegionCount(int id) {
+    int i;
+
+    for (i = 0; i < lbl_804D5310; i++) {
+        if (fn_8001A14C(lbl_804D530C[i].obj, id)) {
+            lbl_804D530C[i].count++;
+        }
+    }
+}
+
 void FearRegionSetup(int unused, Actor* actor) {
     int found;
     int id;
@@ -722,7 +733,6 @@ void FearRegionSetup(int unused, Actor* actor) {
     char* name;
     int n;
     u16* ids;
-    int i;
 
     ActorGetMatrix(&gFearMtx, actor);
     id = fn_8001A1B4((int*)&gFearMtx.m[9]);
@@ -740,11 +750,7 @@ void FearRegionSetup(int unused, Actor* actor) {
             if ((lbl_803B9FB8[found / 32] & bit) == 0) {
                 lbl_803B9FB8[found / 32] |= bit;
                 if (id != 0) {
-                    for (i = 0; i < lbl_804D5310; i++) {
-                        if (fn_8001A14C(lbl_804D530C[i].obj, id)) {
-                            lbl_804D530C[i].count++;
-                        }
-                    }
+                    FearRegionCount(id);
                 }
                 ModelNodeSetup(lbl_8049D2B0[0], asset, 1, 0);
             }
@@ -763,26 +769,24 @@ done:
 // ---------------------------------------------------------------------------------------------
 // 0x801FD8F0
 
-void FearObjRelease(int idx) {
+static inline void FearObjReleaseBit(u32 bit) {
     int i;
-    int off;
-    u32 bit = 1 << idx;
 
     if (lbl_804D52E8 & bit) {
         if (lbl_804D3378 != -1) {
             fn_8003D710(lbl_804D3378);
-            i = 0;
-            off = i;
-            for (; i < lbl_804D5310; off += 8, i++) {
-                FearObjEntry* e = (FearObjEntry*)((char*)lbl_804D530C + off);
-
-                if (e->count != 0) {
-                    fn_8003D710(*(int*)((char*)e->obj + 0x90));
+            for (i = 0; i < lbl_804D5310; i++) {
+                if (lbl_804D530C[i].count != 0) {
+                    fn_8003D710(*(int*)((char*)lbl_804D530C[i].obj + 0x90));
                 }
             }
         }
         lbl_804D52E8 &= ~bit;
     }
+}
+
+void FearObjRelease(int idx) {
+    FearObjReleaseBit(1 << idx);
 }
 
 // ---------------------------------------------------------------------------------------------

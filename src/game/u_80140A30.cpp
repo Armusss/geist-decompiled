@@ -602,7 +602,7 @@ void HuntBotExit(HuntScreen* screen) {
             SendQuery(screen->handles[i], 0x00E321FA, -1);
         }
     }
-    for (i = 0; i < 6; i++) {
+    for (i = 0; i < 8; i++) {
         if (sFlagC[i] == 1) {
             sFlagC[i] = 0;
         }

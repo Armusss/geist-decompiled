@@ -839,15 +839,21 @@ int BitsetEqual(u32* a, u32* b, int n) {
 }
 
 void BitsetNot(u32* dst, u32* src, int n) {
+    int i;
     int words = (n + 31) / 32;
-    for (int i = 0; i < words; i++)
+    for (i = 0; i < words; i++)
         dst[i] = ~src[i];
 }
 
+static inline void BitsetZero(u32* p, int nbits) {
+    int i;
+    int words = (nbits + 31) / 32;
+    for (i = 0; i < words; i++)
+        p[i] = 0;
+}
+
 void BitsetFromIndices(u32* bits, int n, const s32* idx, int count) {
-    int words = (n + 31) / 32;
-    for (int i = 0; i < words; i++)
-        bits[i] = 0;
+    BitsetZero(bits, n);
     for (int i = 0; i < count; i++) {
         s32 v = idx[i];
         bits[v / 32] |= 1u << (v & 31);
@@ -877,36 +883,39 @@ s32 BitsetToIndices(s32* out, int max, u32* bits, int n) {
 }
 
 u32 BitsetAndAcc(u32* dst, u32* a, u32* b, int n) {
+    int i;
     u32 acc = 0;
     int words = (n + 31) / 32;
     if (dst) {
-        for (int i = 0; i < words; i++) {
+        for (i = 0; i < words; i++) {
             dst[i] = a[i] & b[i];
             acc |= dst[i];
         }
     } else {
-        for (int i = 0; i < words; i++)
+        for (i = 0; i < words; i++)
             acc |= a[i] & b[i];
     }
     return acc;
 }
 
 void BitsetOr(u32* dst, u32* a, u32* b, int n) {
+    int i;
     int words = (n + 31) / 32;
-    for (int i = 0; i < words; i++)
+    for (i = 0; i < words; i++)
         dst[i] = a[i] | b[i];
 }
 
 u32 BitsetXorAcc(u32* dst, u32* a, u32* b, int n) {
+    int i;
     u32 acc = 0;
     int words = (n + 31) / 32;
     if (dst) {
-        for (int i = 0; i < words; i++) {
+        for (i = 0; i < words; i++) {
             dst[i] = a[i] ^ b[i];
             acc |= dst[i];
         }
     } else {
-        for (int i = 0; i < words; i++)
+        for (i = 0; i < words; i++)
             acc |= a[i] ^ b[i];
     }
     return acc;
@@ -925,15 +934,17 @@ void BitsetNandClear(u32* a, u32* b, int n) {
 
 void BitsetClear(void* bitsv, int nbits) {
     u32* p = (u32*)bitsv;
+    int i;
     int words = (nbits + 31) / 32;
-    for (int i = 0; i < words; i++)
+    for (i = 0; i < words; i++)
         p[i] = 0;
 }
 
 void BitsetSetAll(void* bitsv, int nbits) {
+    int i;
     u32* p = (u32*)bitsv;
     int words = (nbits + 31) / 32;
-    for (int i = 0; i < words; i++)
+    for (i = 0; i < words; i++)
         p[i] = 0xffffffff;
 }
 
@@ -1059,8 +1070,9 @@ void BitClear(u32* bits, int idx) {
 void BitsetCopy(void* dstv, void* srcv, int n) {
     u32* dst = (u32*)dstv;
     u32* src = (u32*)srcv;
+    int i;
     int words = (n + 31) / 32;
-    for (int i = 0; i < words; i++)
+    for (i = 0; i < words; i++)
         dst[i] = src[i];
 }
 
