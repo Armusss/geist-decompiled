@@ -59,6 +59,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- Lead, 2026-10-21 (two-left pass): Progress LoadingSetFile (1 diff: retail li/li for j and alpha, ours mr; 15 shapes/types + all 720 local orders: no change); Store StoreSave/StoreInit share the StoreLoadBanner inline swap (dst/i/offset ranking; 24 decl orders, 7 loop shapes: no change); QueueForEach/QueuePush register-only. Fixed two wrong manglings (LoadingActive takes const char*, HostRideAState1Leave void*): Progress and u_801F676C are now one function left each.
 - Lead, 2026-10-21 (one-function-left pass): SpiritGunCreate (11, lazy hash; 7 more EffectTypeHash shapes incl. hash inlined by hand: no change), VMem::Init (9, size/zero r3-r4 swap in the inlined VMemList ctor; 7 shapes), StatGetDebug (6, format-string vs table address scheduling; 4 shapes), SAMReadCallback (9, r28/r29 swap between the header pointer and an sdata address; all 24 decl orders): all register/scheduling only. Variant runner: ~/geist-work/ds/lead/var/try.py.
 - u_80015B64 21/36 (view frustum, bezier, model bone hit tests; ds-2 2 runs): 15 left; close: ModelBoneNodeChain (8), ViewFrustumBoxTest (20).
 - u_80064FD4 11/17 (player movement/pose, ds-3 2 runs): PlayerPoseUpdate (0xEA4 bytes, still an empty body), PlayerGroundMove (459), PlayerModelUpdate (445), PlayerAirMove (360), PlayerStepMove (198), Pose48Copy (9) left.
