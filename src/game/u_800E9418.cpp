@@ -197,6 +197,16 @@ inline void Query(int* out, int target, int msg, u32 hash) {
     *out = *(int*)&m.result;
 }
 
+// Same message, no answer expected: the receiver overwrites the preset value.
+inline void SendNodeMsg(int target, int msg, u32 hash, int value) {
+    QueryMsg m;
+
+    m.hash = hash;
+    *(int*)&m.result = value;
+    m.unk8 = 0;
+    SendMsg(target, msg, &m);
+}
+
 // Frame update for the state-3 node.
 void GunUpdateState3(Actor* a, float dt) {
     int q1;
@@ -436,13 +446,14 @@ void GunInitState0(Actor* a) {
 
     int anim;
     HostData* n = (HostData*)a->hosts[host];
+    int i14 = n->i14;
     if (a->flags & 0x80000) {
         anim = n->i24;
     } else {
         anim = n->i1C;
     }
 
-    a->unkF0 = fn_800A1BC8(n->i14, anim, sGunNodes[0].unk0C[0], a->unk7D4, 0);
+    a->unkF0 = fn_800A1BC8(i14, anim, sGunNodes[0].unk0C[0], a->unk7D4, 0);
     if (a->unkF0 == -1) {
         a->unk7D4 = 0;
         a->unkF0 = fn_800A1BC8(((HostData*)a->hosts[host])->i14, anim, sGunNodes[0].unk0C[0],
@@ -521,11 +532,7 @@ int GunCheckState8(Actor* a) {
     Query(&q1, a->target, 0x41E, 0x2DA8293C);
     Query(&q2, a->target, 0x41E, 0xDFF3097A);
 
-    if (a->unk318 < 1) {
-        if (a->state == 8) {
-            fn_8006D184(a, 3);
-        }
-    } else {
+    if (a->unk318 >= 1) {
         if (a->state == 1) {
             fn_8006D184(a, 2);
             return 1;
@@ -534,16 +541,24 @@ int GunCheckState8(Actor* a) {
         int r = Fn800F7DEC(q1, q2, 0xF829DB93, fn_800498D0(a), 0);
 
         switch (r) {
+        case 0x04A3E183:
+            if (a->state != 8) {
+                fn_8006D184(a, 8);
+                return 1;
+            }
+            break;
         case 0xC0BECF7E:
             if (Fn800F7DEC(q1, q2, 0x968CBE3D, fn_800498D0(a), 0) == 0x04A3E183) {
                 fn_8006D184(a, 0xB);
                 return 1;
             }
             break;
-        case 0x04A3E183:
-            if (a->state != 8) {
-                fn_8006D184(a, 8);
-                return 1;
+        case 0x11D2C025:
+            if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
+                SendNodeMsg(a->target, 0x41D, 0x7FFCFD4F, 0x91A0CEF7);
+            }
+            if (a->state == 8) {
+                fn_8006D184(a, 3);
             }
             break;
         case 0x3DA260F7:
@@ -551,19 +566,10 @@ int GunCheckState8(Actor* a) {
                 fn_8006D184(a, 3);
             }
             break;
-        case 0x11D2C025:
-            if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
-                QueryMsg m;
-
-                m.hash = 0x7FFCFD4F;
-                *(int*)&m.result = 0x91A0CEF7;
-                m.unk8 = 0;
-                SendMsg(a->target, 0x41D, &m);
-            }
-            if (a->state == 8) {
-                fn_8006D184(a, 3);
-            }
-            break;
+        }
+    } else {
+        if (a->state == 8) {
+            fn_8006D184(a, 3);
         }
     }
     return 0;
@@ -577,11 +583,7 @@ int GunCheckState5(Actor* a) {
     Query(&q1, a->target, 0x41E, 0x2DA8293C);
     Query(&q2, a->target, 0x41E, 0xDFF3097A);
 
-    if (a->unk314 < 1) {
-        if (a->state == 5) {
-            fn_8006D184(a, 3);
-        }
-    } else {
+    if (a->unk314 >= 1) {
         if (a->state == 1) {
             fn_8006D184(a, 2);
             return 1;
@@ -590,33 +592,32 @@ int GunCheckState5(Actor* a) {
         int r = Fn800F7DEC(q1, q2, 0x20EE36, fn_800498D0(a), 0);
 
         switch (r) {
+        case 0x04A3E183:
+            fn_8006D184(a, 5);
+            return 1;
         case 0xC0BECF7E:
             if (Fn800F7DEC(q1, q2, 0xE6B71BCC, fn_800498D0(a), 0) == 0x04A3E183) {
                 fn_8006D184(a, 10);
                 return 1;
             }
             break;
-        case 0x04A3E183:
-            fn_8006D184(a, 5);
-            return 1;
+        case 0x11D2C025:
+            if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
+                SendNodeMsg(a->target, 0x41D, 0x7FFCFD4F, 0x91A0CEF7);
+            }
+            if (a->state == 5) {
+                fn_8006D184(a, 3);
+            }
+            break;
         case 0x3DA260F7:
             if (a->state == 5) {
                 fn_8006D184(a, 3);
             }
             break;
-        case 0x11D2C025:
-            if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
-                QueryMsg m;
-
-                m.hash = 0x7FFCFD4F;
-                *(int*)&m.result = 0x91A0CEF7;
-                m.unk8 = 0;
-                SendMsg(a->target, 0x41D, &m);
-            }
-            if (a->state == 5) {
-                fn_8006D184(a, 3);
-            }
-            break;
+        }
+    } else {
+        if (a->state == 5) {
+            fn_8006D184(a, 3);
         }
     }
     return 0;
@@ -639,11 +640,6 @@ int GunMsg(int msg, void* data) {
     Query(&q2, a->target, 0x41E, 0xDFF3097A);
 
     switch (msg) {
-    case 0xF829DB93:
-        fn_80048BA8(a, a->buf, 0);
-        a->unk1D54 = a->unk800;
-        Fn800F7F5C(q1, q2, msg, fn_800498D0(a), a->buf, a->unk14FC);
-        break;
     case 0x1B83833F:
         if (a->state == 5) {
             int r = Fn800F7DEC(q1, q2, 0x20EE36, fn_800498D0(a), 0);
@@ -686,6 +682,11 @@ int GunMsg(int msg, void* data) {
         if (q2 == (int)Fn800F8A98(0x04C4EEE3)) {
             return 1;
         }
+        break;
+    case 0xF829DB93:
+        fn_80048BA8(a, a->buf, 0);
+        a->unk1D54 = a->unk800;
+        Fn800F7F5C(q1, q2, msg, fn_800498D0(a), a->buf, a->unk14FC);
         break;
     case 0x9791AF51:
     case 0x96224FCC:
