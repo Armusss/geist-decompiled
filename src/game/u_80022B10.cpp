@@ -67,11 +67,11 @@ int ActorPlayAnim(u32 id, u32 anim, u32 arg);
 
 // ---------------------------------------------------------------------------
 
-extern "C" u32 fn_80022B10(Actor* a) {
+u32 ActorVisibleFlag(Actor* a) {
     return a->flags & 0x80;
 }
 
-extern "C" int fn_80022B1C(Actor* a, int host) {
+int ActorRefreshHostState(Actor* a, int host) {
     s32 type = a->id >> 24;
     if (type == 1 || type == 2 || type == 0x13 || type == 0x14 ||
         type == 6 || type == 9 || type == 0xa || type == 0xc || type == 8) {
@@ -144,29 +144,29 @@ int ActorIsActive(Actor* a) {
 
 int ActorFn80022D98(Actor* a, int arg) {
     a->flags &= ~0x101c;
-    if (arg == 0)
-        return 1;
-    u32 type = a->id >> 24;
-    u32 bits = 0;
-    if (a->ptr40 != 0) {
-        if (type == 1 || type == 2 || type == 0x13 || type == 9 || type == 0xa)
-            bits |= 8;
+    if (arg != 0) {
+        s32 type = a->id >> 24;
+        u32 bits = 0;
+        if (a->ptr40 != 0) {
+            if (type == 1 || type == 2 || type == 0x13 || type == 9 || type == 0xa)
+                bits |= 8;
+        }
+        if (type == 1 || type == 2 || type == 0x13 || type == 0x14 ||
+            type == 6 || type == 9 || type == 0x4a ||
+            type == 0x57 || type == 0x58 || type == 0x5a || type == 0x5b)
+            bits |= 4;
+        if (a->ptr40 != 0) {
+            if (type == 1 || type == 2 || type == 0x13 || type == 0xa || type == 9)
+                bits |= 0x10;
+        }
+        if (type == 0x13)
+            bits |= 0x1000;
+        a->flags |= bits;
     }
-    if (type == 1 || type == 2 || type == 0x13 || type == 0x14 ||
-        type == 6 || type == 9 || type == 0x4a ||
-        type == 0x57 || type == 0x58 || type == 0x5a || type == 0x5b)
-        bits |= 4;
-    if (a->ptr40 != 0) {
-        if (type == 1 || type == 2 || type == 0x13 || type == 0xa || type == 9)
-            bits |= 0x10;
-    }
-    if (type == 0x13)
-        bits |= 0x1000;
-    a->flags |= bits;
     return 1;
 }
 
-extern "C" void fn_80025774(void* bits, int nbits);
+void BitsetClear(void* bits, int nbits);
 
 inline void FillOwnerBits(u32* bits, Actor* a) {
     if ((s32)(a->id >> 24) == 0xc)
@@ -177,19 +177,19 @@ inline void FillOwnerBits(u32* bits, Actor* a) {
     }
 }
 
-extern "C" void fn_800231E8(Actor* a);
-extern "C" int fn_800234B0(Actor* a);
+void ActorDetachOwnerObjects(Actor* a);
+int ActorAttachOwnerObjects(Actor* a);
 
-extern "C" int fn_80022E8C(Actor* a) {
+int ActorRelinkOwners(Actor* a) {
     if (a->model == 0)
         return 0;
     u32 before[32];
     u32 after[32];
-    fn_80025774(before, 0x400);
+    BitsetClear(before, 0x400);
     FillOwnerBits(before, a);
-    fn_800231E8(a);
-    fn_800234B0(a);
-    fn_80025774(after, 0x400);
+    ActorDetachOwnerObjects(a);
+    ActorAttachOwnerObjects(a);
+    BitsetClear(after, 0x400);
     FillOwnerBits(after, a);
     fn_8001CAAC(before, after, 0x400, a);
     return 1;
@@ -199,13 +199,13 @@ int ActorFn80022FD8(Actor* a) {
     return a->objIndex != -1;
 }
 
-extern "C" void fn_80022FF0(Actor* a) {
+void ActorUnlinkOwnerObjects(Actor* a) {
     u32 bits[32];
     u32 empty[32];
-    fn_80025774(bits, 0x400);
+    BitsetClear(bits, 0x400);
     FillOwnerBits(bits, a);
-    fn_800231E8(a);
-    fn_80025774(empty, 0x400);
+    ActorDetachOwnerObjects(a);
+    BitsetClear(empty, 0x400);
     fn_8001CAAC(bits, empty, 0x400, a);
     a->flags &= ~0x80;
 }
@@ -216,29 +216,30 @@ inline s32& OwnerHead(Owner* o, int layer) {
     return o->head[layer];
 }
 
-extern "C" int fn_800230C0(Actor* a, int layer) {
-    if (layer < 0 || layer >= 3)
-        return 0;
-    a->layer = (s8)layer;
-    if (!fn_800234B0(a))
-        return 0;
-    u32 empty[32];
-    u32 bits[32];
-    fn_80025774(empty, 0x400);
-    fn_80025774(bits, 0x400);
-    FillOwnerBits(bits, a);
-    fn_8001CAAC(empty, bits, 0x400, a);
-    return 1;
+int ActorSetOwnerLayer(Actor* a, int layer) {
+    if (layer >= 0 && layer < 3) {
+        a->layer = (s8)layer;
+        if (ActorAttachOwnerObjects(a)) {
+            u32 empty[32];
+            u32 bits[32];
+            BitsetClear(empty, 0x400);
+            BitsetClear(bits, 0x400);
+            FillOwnerBits(bits, a);
+            fn_8001CAAC(empty, bits, 0x400, a);
+            return 1;
+        }
+    }
+    return 0;
 }
 
-extern "C" void fn_800234AC() {
+void ActorNoOp234AC() {
 }
 
-extern "C" int fn_800234B0(Actor* a) {
+int ActorAttachOwnerObjects(Actor* a) {
     if (a == 0 || a->model == 0)
         return 0;
     if (a->objIndex != -1)
-        fn_80022FF0(a);
+        ActorUnlinkOwnerObjects(a);
     a->objIndex = -1;
     a->objIndex2 = -1;
     int base = (int)a->model;
@@ -299,15 +300,15 @@ extern "C" int fn_800234B0(Actor* a) {
     return 1;
 }
 
-extern "C" int fn_800230C0(Actor* a, int layer);
+int ActorSetOwnerLayer(Actor* a, int layer);
 
 int ActorFn800231A8(Actor* a) {
     if ((s32)(a->id >> 24) == 0xc)
-        return fn_800230C0(a, 1);
-    return fn_800230C0(a, 0);
+        return ActorSetOwnerLayer(a,1);
+    return ActorSetOwnerLayer(a,0);
 }
 
-extern "C" void fn_800231E8(Actor* a) {
+void ActorDetachOwnerObjects(Actor* a) {
     s32 i = a->objIndex;
     if (i >= 0 && i < 0x1600) {
         while (i != -1) {
@@ -382,10 +383,11 @@ struct Vec3 {
 };
 
 extern "C" void memset(void*, int, u32);
+extern "C" void* memcpy(void*, const void*, u32);
 extern "C" int SendMsg(int to, int msg, void* data);
 extern "C" void fn_8009F76C(void*);
 extern "C" int fn_800090BC(Vec3*, Vec3*, u8, u8, u8);
-extern "C" void fn_80023EE4(Vec3*, void*, int, int, int);
+void DebugDrawBoneBox(Vec3*, void*, int, int, int);
 extern "C" void* fn_80037B6C(int);
 extern "C" u32 fn_80037230(int, u16);
 Vec3* ModelBonePositions(int);
@@ -406,19 +408,22 @@ int ActorFn8002378C(Actor* a, int id, int mtx, int msgFn, int model,
     a->objIndex2 = -1;
     a->flags = 0;
     ActorFn80022D98(a, 1);
-    return fn_80022B1C(a, -1);
+    return ActorRefreshHostState(a, -1);
 }
 
-extern "C" int fn_80023884() {
+int ActorReturnOne() {
     return 1;
 }
 
-extern "C" f32 fn_8002388C(const f32* a, const f32* b, const f32* dir,
+f32 DistPointLineSq(const f32* a, const f32* b, const f32* dir,
                            f32* tOut, f32* pOut) {
-    f32 dx = a[0] - b[0];
     f32 dy = a[1] - b[1];
+    f32 dx = a[0] - b[0];
     f32 dz = a[2] - b[2];
-    f32 den = dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2];
+    f32 dir0sq = dir[0] * dir[0];
+    f32 dir1sq = dir[1] * dir[1];
+    f32 dir2sq = dir[2] * dir[2];
+    f32 den = dir0sq + dir1sq + dir2sq;
     f32 num = dir[0] * dx + dir[1] * dy + dir[2] * dz;
     f32 t = num / den;
     f32 px = dir[0] * t;
@@ -427,6 +432,9 @@ extern "C" f32 fn_8002388C(const f32* a, const f32* b, const f32* dir,
     px += b[0];
     py += b[1];
     pz += b[2];
+    f32 ex = a[0] - px;
+    f32 ey = a[1] - py;
+    f32 ez = a[2] - pz;
     if (tOut)
         *tOut = t;
     if (pOut) {
@@ -434,9 +442,6 @@ extern "C" f32 fn_8002388C(const f32* a, const f32* b, const f32* dir,
         pOut[1] = py;
         pOut[2] = pz;
     }
-    f32 ex = a[0] - px;
-    f32 ey = a[1] - py;
-    f32 ez = a[2] - pz;
     return ey * ey + ex * ex + ez * ez;
 }
 
@@ -447,7 +452,7 @@ u32 OwnerGetInfo(u32 owner) {
     return info[0];
 }
 
-extern "C" void fn_80023980(int model, int count, u8* colors, int filter) {
+void DebugDrawModelBones(int model, int count, u8* colors, int filter) {
     Vec3* pos = ModelBonePositions(model);
     u16* idx = (u16*)fn_80037B6C(model);
     for (int i = 0; i < count; i++, pos++, idx++, colors += 0x30) {
@@ -457,42 +462,45 @@ extern "C" void fn_80023980(int model, int count, u8* colors, int filter) {
         Vec3Copy(&v, pos);
         u32 f = fn_80037230(model, *idx);
         if (f & 0x1000)
-            fn_80023EE4(&v, colors, 0xff, 0xff, 0);
+            DebugDrawBoneBox(&v, colors, 0xff, 0xff, 0);
         else if (f & 0x800)
-            fn_80023EE4(&v, colors, 0, 0xff, 0);
+            DebugDrawBoneBox(&v, colors, 0, 0xff, 0);
         else if (f & 0x2000)
-            fn_80023EE4(&v, colors, 0, 0, 0xff);
+            DebugDrawBoneBox(&v, colors, 0, 0, 0xff);
         else
-            fn_80023EE4(&v, colors, 0xff, 0xff, 0xff);
+            DebugDrawBoneBox(&v, colors, 0xff, 0xff, 0xff);
     }
 }
 
 extern "C" const float lbl_80342208[54];
 extern "C" const s32 lbl_803422E0[96];
 
-extern "C" void fn_80023A9C(int cr, int cg, int cb, f32 cx, f32 cy, f32 cz,
+void DebugDrawSphereWire(int cr, int cg, int cb, f32 cx, f32 cy, f32 cz,
                             f32 rad) {
     Vec3 v[20];
+    Vec3* p = v;
     const f32* src = lbl_80342208;
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 5; j++) {
-            v[i * 5 + j].x = cx + rad * (0.01f * src[j * 3 + 0]);
-            v[i * 5 + j].y = cy + rad * (0.01f * src[j * 3 + 1]);
-            v[i * 5 + j].z = cz + rad * (0.01f * src[j * 3 + 2]);
+            p[j].x = cx + rad * (0.01f * src[j * 3 + 0]);
+            p[j].y = cy + rad * (0.01f * src[j * 3 + 1]);
+            p[j].z = cz + rad * (0.01f * src[j * 3 + 2]);
         }
         src += 15;
+        p += 5;
     }
-    for (int i = 0; i < 32; i++) {
-        int a = lbl_803422E0[i * 3 + 0];
-        int b = lbl_803422E0[i * 3 + 1];
-        int c = lbl_803422E0[i * 3 + 2];
+    const s32* tri = lbl_803422E0;
+    for (int i = 0; i < 32; i++, tri += 3) {
+        int a = tri[0];
+        int b = tri[1];
+        int c = tri[2];
         fn_800090BC(&v[a], &v[b], (u8)cr, (u8)cg, (u8)cb);
         fn_800090BC(&v[b], &v[c], (u8)cr, (u8)cg, (u8)cb);
         fn_800090BC(&v[c], &v[a], (u8)cr, (u8)cg, (u8)cb);
     }
 }
 
-extern "C" int fn_80022B1C(Actor* a, int host);
+int ActorRefreshHostState(Actor* a, int host);
 
 struct DbgVertex {
     Vec3 p;
@@ -522,37 +530,37 @@ extern "C" void fn_800A0094(Vec3*, Vec3*);
 
 void DebugDrawSphere(int r, int g, int b, int a, f32 cx, f32 cy, f32 cz,
                      f32 rad) {
+    DbgTri tris[32];
     DbgVertex verts[20];
     const f32* src = lbl_80342208;
     for (int i = 0; i < 20; i++) {
+        verts[i].r = (u8)r;
+        verts[i].g = (u8)g;
+        verts[i].b = (u8)b;
+        verts[i].a = (u8)a;
         verts[i].p.x = cx + rad * (0.01f * src[i * 3 + 0]);
         verts[i].p.y = cy + rad * (0.01f * src[i * 3 + 1]);
         verts[i].p.z = cz + rad * (0.01f * src[i * 3 + 2]);
         verts[i].zero0 = 0.0f;
         verts[i].zero1 = 0.0f;
-        verts[i].r = (u8)r;
-        verts[i].g = (u8)g;
-        verts[i].b = (u8)b;
-        verts[i].a = (u8)a;
     }
-    DbgTri tris[32];
     for (int i = 0; i < 32; i++) {
-        tris[i].type = -3;
         tris[i].unk = 0;
+        tris[i].type = -3;
         tris[i].i0 = (u16)lbl_803422E0[i * 3 + 0];
         tris[i].i1 = (u16)lbl_803422E0[i * 3 + 1];
         tris[i].i2 = (u16)lbl_803422E0[i * 3 + 2];
     }
     DbgList list;
-    list.field0 = 0;
-    list.verts = verts;
     list.tris = tris;
-    list.nverts = 20;
     list.ntris = 32;
+    list.verts = verts;
+    list.nverts = 20;
+    list.field0 = 0;
     fn_80044948(&list);
 }
 
-extern "C" void fn_80023EE4(Vec3* p, void* bonep, int cr, int cg, int cb) {
+void DebugDrawBoneBox(Vec3* p, void* bonep, int cr, int cg, int cb) {
     u8* bone = (u8*)bonep;
     Vec3 v[8];
     v[0].x = p[0].x;
@@ -642,7 +650,7 @@ inline void DrawAxis(Vec3* p, void* a, int axis, f32 s, Vec3* start, int cr,
     fn_800090BC(start, &end, (u8)cr, (u8)cg, (u8)cb);
 }
 
-extern "C" void fn_80024128(Vec3* p, void* a, f32 s) {
+void DebugDrawAxes(Vec3* p, void* a, f32 s) {
     Vec3 start = *p;
     DrawAxis(p, a, 0, s, &start, 255, 0, 0);
     DrawAxis(p, a, 1, s, &start, 0, 255, 0);
@@ -668,7 +676,7 @@ u8 lbl_803DD598[0x400];
 Skin lbl_803DD998;
 s32 lbl_804D2658[2] = {1, 0};
 
-extern "C" Skin* fn_8002431C(Skin* src, int r, int g, int b, f32 t) {
+Skin* SkinBlendTint(Skin* src, int r, int g, int b, f32 t) {
     if (!src)
         return 0;
     t = fn_800A1394(90.0f * t);
@@ -687,19 +695,19 @@ extern "C" Skin* fn_8002431C(Skin* src, int r, int g, int b, f32 t) {
     return d;
 }
 
-extern "C" void fn_80024514() {}
-extern "C" void fn_80024518() {}
+void ActorNoOp24514() {}
+void ActorNoOp24518() {}
 
-extern "C" int fn_80025EB8(void*, int, int*);
-extern "C" int fn_80025DE4(int, int, int*);
-extern "C" int fn_800261B4(int*);
+int AuxMsgHandler32(void*, int, int*);
+int AuxMsgHandler6300(int, int, int*);
+int AuxAimAngle(int*);
 
-extern "C" void fn_8002451C() {
-    fn_80026660(0x32, (void*)fn_80025EB8, 0);
-    fn_80026660(0x3f, (void*)fn_80025DE4, 0);
+void RegisterAuxMsgHandlers() {
+    fn_80026660(0x32, (void*)AuxMsgHandler32, 0);
+    fn_80026660(0x3f, (void*)AuxMsgHandler6300, 0);
 }
 
-extern "C" u32 fn_80024560(u8* data, int len) {
+u32 Crc32Compute(u8* data, int len) {
     if (lbl_804D2658[0] != 0) {
         for (u32 i = 0; i < 256; i++) {
             u32 c = i;
@@ -716,10 +724,10 @@ extern "C" u32 fn_80024560(u8* data, int len) {
         data++;
         len--;
     }
-    return crc ^ -1;
+    return crc ^ 0xFFFFFFFF;
 }
 
-extern "C" void fn_80024794(void* p, void** list, u32* bits, int count) {
+void ListRemoveFree(void* p, void** list, u32* bits, int count) {
     if (!p)
         return;
     if (list) {
@@ -757,7 +765,7 @@ done:
     return found;
 }
 
-extern "C" void* fn_80024834(void** arr, int size, u32* bits, int max) {
+void* ListAlloc(void** arr, int size, u32* bits, int max) {
     if (arr) {
         s32 words = max / 32 + (max % 32 != 0);
         s32 found;
@@ -809,15 +817,20 @@ void* PoolAlloc(void* pool, int stride, void* bitsv,
     return (u8*)pool + idx * stride;
 }
 
-extern "C" int fn_80024A94(u32* a, u32* b, int n) {
+int BitsetSubset(u32* a, u32* b, int n) {
     int words = (n + 31) / 32;
-    for (int i = 0; i < words; i++)
-        if ((a[i] | b[i]) != a[i])
+    u32* pa = a;
+    u32* pb = b;
+    for (int i = 0; i < words; i++) {
+        if ((*pa | *pb) != *pa)
             return 0;
+        pa++;
+        pb++;
+    }
     return 1;
 }
 
-extern "C" int fn_80024AD8(u32* a, u32* b, int n) {
+int BitsetEqual(u32* a, u32* b, int n) {
     int words = (n + 31) / 32;
     for (int i = 0; i < words; i++)
         if (a[i] != b[i])
@@ -825,13 +838,13 @@ extern "C" int fn_80024AD8(u32* a, u32* b, int n) {
     return 1;
 }
 
-extern "C" void fn_80024B18(u32* dst, u32* src, int n) {
+void BitsetNot(u32* dst, u32* src, int n) {
     int words = (n + 31) / 32;
     for (int i = 0; i < words; i++)
         dst[i] = ~src[i];
 }
 
-extern "C" void fn_80024BFC(u32* bits, int n, const s32* idx, int count) {
+void BitsetFromIndices(u32* bits, int n, const s32* idx, int count) {
     int words = (n + 31) / 32;
     for (int i = 0; i < words; i++)
         bits[i] = 0;
@@ -841,7 +854,7 @@ extern "C" void fn_80024BFC(u32* bits, int n, const s32* idx, int count) {
     }
 }
 
-extern "C" s32 fn_80024E64(s32* out, int max, u32* bits, int n) {
+s32 BitsetToIndices(s32* out, int max, u32* bits, int n) {
     s32 count = 0;
     s32 base = 0;
     int words = (n + 31) / 32;
@@ -863,7 +876,7 @@ extern "C" s32 fn_80024E64(s32* out, int max, u32* bits, int n) {
     return count;
 }
 
-extern "C" u32 fn_80024FBC(u32* dst, u32* a, u32* b, int n) {
+u32 BitsetAndAcc(u32* dst, u32* a, u32* b, int n) {
     u32 acc = 0;
     int words = (n + 31) / 32;
     if (dst) {
@@ -878,13 +891,13 @@ extern "C" u32 fn_80024FBC(u32* dst, u32* a, u32* b, int n) {
     return acc;
 }
 
-extern "C" void fn_80025240(u32* dst, u32* a, u32* b, int n) {
+void BitsetOr(u32* dst, u32* a, u32* b, int n) {
     int words = (n + 31) / 32;
     for (int i = 0; i < words; i++)
         dst[i] = a[i] | b[i];
 }
 
-extern "C" u32 fn_80025358(u32* dst, u32* a, u32* b, int n) {
+u32 BitsetXorAcc(u32* dst, u32* a, u32* b, int n) {
     u32 acc = 0;
     int words = (n + 31) / 32;
     if (dst) {
@@ -899,7 +912,7 @@ extern "C" u32 fn_80025358(u32* dst, u32* a, u32* b, int n) {
     return acc;
 }
 
-extern "C" void fn_800255DC(u32* a, u32* b, int n) {
+void BitsetNandClear(u32* a, u32* b, int n) {
     int words = (n + 31) / 32;
     for (int i = 0; i < words; i++) {
         u32 av = a[i];
@@ -910,21 +923,21 @@ extern "C" void fn_800255DC(u32* a, u32* b, int n) {
     }
 }
 
-extern "C" void fn_80025774(void* bitsv, int nbits) {
+void BitsetClear(void* bitsv, int nbits) {
     u32* p = (u32*)bitsv;
     int words = (nbits + 31) / 32;
     for (int i = 0; i < words; i++)
         p[i] = 0;
 }
 
-extern "C" void fn_80025808(void* bitsv, int nbits) {
+void BitsetSetAll(void* bitsv, int nbits) {
     u32* p = (u32*)bitsv;
     int words = (nbits + 31) / 32;
     for (int i = 0; i < words; i++)
         p[i] = 0xffffffff;
 }
 
-extern "C" void fn_8002589C(u32* bits, int n, s32* out, int count) {
+void BitsetAllocIndices(u32* bits, int n, s32* out, int count) {
     int words = (n - 1) / 32 + 1;
     s32 base = 0;
     for (int i = 0; i < words; i++, bits++, base += 32) {
@@ -944,7 +957,7 @@ extern "C" void fn_8002589C(u32* bits, int n, s32* out, int count) {
     }
 }
 
-extern "C" s32 fn_800259C8(u32* bits, int n, int flag) {
+s32 BitsetCount(u32* bits, int n, int flag) {
     int words = (n + 31) / 32;
     int remaining = n;
     s32 count = 0;
@@ -960,12 +973,12 @@ extern "C" s32 fn_800259C8(u32* bits, int n, int flag) {
     return flag ? count : n - count;
 }
 
-extern "C" s32 fn_80025B0C(u32* bits, int n, int flag) {
+s32 BitFind(u32* bits, int n, int flag) {
     if (flag)
         flag = 1;
     int words = n / 32 + 1;
     for (int i = 0; i < words; i++) {
-        u32 w = bits[i];
+        s32 w = bits[i];
         if (flag != 1 || w == 0) {
             if (w == 0xffffffff)
                 continue;
@@ -982,7 +995,7 @@ extern "C" s32 fn_80025B0C(u32* bits, int n, int flag) {
     return -1;
 }
 
-extern "C" s32 fn_80025BA8(u32* bits, int words, int n) {
+s32 BitsetFirstSet(u32* bits, int words, int n) {
     int i, j;
     s32 w;
     for (i = 0; i < words; i++) {
@@ -1001,7 +1014,7 @@ extern "C" s32 fn_80025BA8(u32* bits, int words, int n) {
     return -1;
 }
 
-extern "C" s32 fn_80025C14(u32* bits, int words, int n) {
+s32 BitsetFirstClear(u32* bits, int words, int n) {
     int i, j;
     u32 w;
     for (i = 0; i < words; i++) {
@@ -1020,7 +1033,7 @@ extern "C" s32 fn_80025C14(u32* bits, int words, int n) {
     return -1;
 }
 
-extern "C" void fn_80025C84(u32* bits, int idx) {
+void BitToggle(u32* bits, int idx) {
     int word = idx / 32;
     u32 m = 1u << (idx & 31);
     if (bits[word] & m)
@@ -1029,7 +1042,7 @@ extern "C" void fn_80025C84(u32* bits, int idx) {
         bits[word] |= m;
 }
 
-extern "C" int fn_80025CC0(u32* bits, int idx) {
+int BitTestAndClear(u32* bits, int idx) {
     int word = idx / 32;
     u32 m = 1u << (idx & 31);
     if (bits[word] & m) {
@@ -1039,11 +1052,11 @@ extern "C" int fn_80025CC0(u32* bits, int idx) {
     return 0;
 }
 
-extern "C" void fn_80025CFC(u32* bits, int idx) {
+void BitClear(u32* bits, int idx) {
     bits[idx / 32] &= ~(1u << (idx & 31));
 }
 
-extern "C" void fn_80025D24(void* dstv, void* srcv, int n) {
+void BitsetCopy(void* dstv, void* srcv, int n) {
     u32* dst = (u32*)dstv;
     u32* src = (u32*)srcv;
     int words = (n + 31) / 32;
@@ -1051,7 +1064,7 @@ extern "C" void fn_80025D24(void* dstv, void* srcv, int n) {
         dst[i] = src[i];
 }
 
-extern "C" int fn_80025DE4(int unused, int msg, int* a) {
+int AuxMsgHandler6300(int unused, int msg, int* a) {
     switch (msg) {
     case 0x6300:
         fn_80088C10(a[1], a[2], a[4], a[5], a[6], a[8], a[9], a[10]);
@@ -1083,7 +1096,7 @@ struct Buf402 {
     s32 px, py, pz;  // 0x34
 };
 
-extern "C" int fn_80025EB8(void* self, int msg, int* arg) {
+int AuxMsgHandler32(void* self, int msg, int* arg) {
     switch (msg) {
     case 0x4000: {
         int lo = arg[1];
@@ -1117,7 +1130,7 @@ extern "C" int fn_80025EB8(void* self, int msg, int* arg) {
         return 1;
     }
     case 0x4004:
-        return fn_800261B4(arg);
+        return AuxAimAngle(arg);
     case 0x4005:
         switch (arg[1]) {
         case 0x140b8:
@@ -1183,7 +1196,7 @@ inline f32 NormVec(Vec3& v) {
     return __fres(len);
 }
 
-extern "C" int fn_800261B4(int* arg) {
+int AuxAimAngle(int* arg) {
     Buf402 a, b;
     a.f0 = 0;
     a.f4 = 0;
@@ -1194,7 +1207,7 @@ extern "C" int fn_800261B4(int* arg) {
     if (!SendMsg(arg[2], 0x402, &b))
         return 0;
     int aim[3];
-    ActorAim(aim, (Actor*)((u8*)&a + 0x10), 1);
+    ActorAim(aim, (Actor*)a.actor, 1);
     Vec3 v1;
     v1.x = (f32)aim[0];
     v1.y = (f32)aim[1];
@@ -1218,7 +1231,7 @@ extern "C" int fn_800261B4(int* arg) {
 
 u32 lbl_804D427C;
 
-extern "C" int fn_80026500(u32 mask) {
+int SelectionSetTest(u32 mask) {
     if (lbl_804D427C == 0)
         return 1;
     return (lbl_804D427C & mask) != 0;
@@ -1237,7 +1250,7 @@ struct SelSetTable {
 
 extern SelSetTable* lbl_804D4278;
 
-extern "C" void fn_80026528(char* name) {
+void SelectionSetAdd(char* name) {
     for (s32 i = 0; i != lbl_804D4278->count; i++) {
         if (stricmp(lbl_804D4278->entries[i].name, name) == 0) {
             lbl_804D427C |= 1u << i;

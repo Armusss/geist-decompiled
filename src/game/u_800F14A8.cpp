@@ -9,11 +9,9 @@ typedef unsigned long u32;
 void ScratchAReset(void);
 void* ScratchAAlloc(int size);
 
-extern "C" {
-// Bit sets (code in another file, not named yet).
-int fn_80025C14(u32* bits, int words, int max); // allocate a free bit, -1 if none
-void fn_80025CFC(u32* bits, int index);         // free a bit
-}
+// Bit sets (u_80022B10.cpp).
+int BitsetFirstClear(u32* bits, int words, int max); // allocate a free bit, -1 if none
+void BitClear(u32* bits, int index);                 // free a bit
 
 struct GraphLink {
     int active;
@@ -280,7 +278,7 @@ int GraphFindBestLink(u32 handle, SearchCostFn score, void* ctx, int* outNode, i
 }
 
 inline GraphLink* LinkAlloc(void) {
-    int slot = fn_80025C14(sLinkBits, 9, 256);
+    int slot = BitsetFirstClear(sLinkBits, 9, 256);
     BitSet(sLinkBits, slot);
     sLinks[slot].active = 1;
     return &sLinks[slot];
@@ -344,7 +342,7 @@ int GraphAllocNodes(u32 handle, int count) {
         return 0;
     }
 
-    slot = fn_80025C14(sNodeBits, 9, 256);
+    slot = BitsetFirstClear(sNodeBits, 9, 256);
     if (slot == -1) {
         return 0;
     }
@@ -356,7 +354,7 @@ int GraphAllocNodes(u32 handle, int count) {
     BitSet(sNodeBits, slot);
 
     while (graph->numNodes < count) {
-        slot = fn_80025C14(sNodeBits, 9, 256);
+        slot = BitsetFirstClear(sNodeBits, 9, 256);
         if (slot == -1) {
             break;
         }
@@ -371,7 +369,7 @@ int GraphAllocNodes(u32 handle, int count) {
 
     if (graph->numNodes != count) {
         for (next = graph->nodes; next != node; next = next->next) {
-            fn_80025CFC(sNodeBits, next - sNodes);
+            BitClear(sNodeBits, next - sNodes);
         }
         return 0;
     }
@@ -398,18 +396,18 @@ int GraphDestroy(u32 handle) {
     node = sGraphs[index].nodes;
     while (node) {
         for (link = node->links; link; link = link->next) {
-            fn_80025CFC(sLinkBits, link - sLinks);
+            BitClear(sLinkBits, link - sLinks);
         }
         index = node - sNodes;
         node = node->next;
-        fn_80025CFC(sNodeBits, index);
+        BitClear(sNodeBits, index);
     }
-    fn_80025CFC(sGraphBits, handle & 0xFFFFFF);
+    BitClear(sGraphBits, handle & 0xFFFFFF);
     return 1;
 }
 
 u32 GraphCreate(void) {
-    int slot = fn_80025C14(sGraphBits, 1, 16);
+    int slot = BitsetFirstClear(sGraphBits, 1, 16);
 
     BitSet(sGraphBits, slot);
     sGraphs[slot].numNodes = 0;
@@ -418,7 +416,7 @@ u32 GraphCreate(void) {
 }
 
 inline SearchState* SearchNewState(SearchState* parent, GraphLink* link, int node, float cost, float estimate) {
-    int slot = fn_80025C14(sSearchBits, 17, 0x200);
+    int slot = BitsetFirstClear(sSearchBits, 17, 0x200);
 
     if (slot == -1) {
         return 0;
@@ -437,7 +435,7 @@ inline SearchState* SearchNewState(SearchState* parent, GraphLink* link, int nod
     } else {
         sSearchStates[slot].depth = parent->depth + 1;
         if (sSearchStates[slot].depth > 16) {
-            fn_80025CFC(sSearchBits, slot);
+            BitClear(sSearchBits, slot);
             return 0;
         }
     }
