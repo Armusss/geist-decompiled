@@ -50,7 +50,7 @@ struct Actor {
     IVec3 pos;                      // 0x024
     int (*handler)(int, void*);     // 0x030
     char pad34[4];                  // 0x034
-    u32 handle;                     // 0x038
+    int handle;                     // 0x038
     char pad3C[0x48];               // 0x03C
     char f84[0x18];                 // 0x084
     char pad9C[0x28];               // 0x09C
@@ -239,10 +239,10 @@ inline int Query(int target, int msg, u32 hash) {
 
 // 0x8016C244: per-frame update.
 int CollectUpdate(void* p) {
-    float scale, unk1, unk2;
-    IVec3 ang, vec;
-    Vec3 pos, out;
     Mtx34 mtx;
+    Vec3 out, pos;
+    IVec3 vec, ang;
+    float unk2, unk1, scale;
     Actor* o;
     Beh* st;
 
@@ -252,36 +252,43 @@ int CollectUpdate(void* p) {
     o = (Actor*)p;
     st = o->beh;
     st->timer -= o->f138;
-    if (HasCondition(o->cond, 0xB)) {
-        return 0;
-    }
-    if (fn_80117FB4(o) == 0) {
-        return 1;
-    }
-    if (st->id == 0x3147A953) {
-        return 1;
-    }
-    if (st->id == (int)0xACBFC0A8) {
-        return 1;
-    }
-    if (o->f2d0 == -1) {
-        pos.x = (float)o->pos.x;
-        pos.y = (float)o->pos.y;
-        pos.z = (float)o->pos.z;
-        fn_8009F63C(&mtx, o);
-        fn_8016D430(&ang, (int)(11.377778f * (float)(rand() % 360)), 0, 0);
-        fn_8016D330(&vec, &ang);
-        fn_800E0E9C(&vec, &vec, (rand() % 10 + 1) * 500);
-        fn_8009F44C(&vec, &mtx, &vec);
-        out.x = (float)(o->pos.x + vec.x);
-        out.y = (float)(o->pos.y + vec.y);
-        out.z = (float)(o->pos.z + vec.z);
-        if (fn_800BB218(o, o->f2c4, &pos, &out, o, &scale, &unk1, &unk2, o->f900)) {
-            out.x = pos.x + (float)vec.x * scale;
-            out.y = pos.y + (float)vec.y * scale;
-            out.z = pos.z + (float)vec.z * scale;
+    if (!HasCondition(o->cond, 0xB)) {
+        if (fn_80117FB4(o) == 0) {
+            return 1;
         }
-        st->pos = out;
+        switch (st->id) {
+        case 0x3147A953:
+            return 1;
+        case (int)0xACBEC0A8:
+            return 1;
+        }
+        if (o->f2d0 == -1) {
+            pos.x = (float)o->pos.x;
+            pos.y = (float)o->pos.y;
+            pos.z = (float)o->pos.z;
+            fn_8009F63C(&mtx, o);
+            fn_8016D430(&ang, (int)(11.377778f * (float)(rand() % 360)), 0, 0);
+            fn_8016D330(&vec, &ang);
+            fn_800E0E9C(&vec, &vec, (rand() % 10 + 1) * 500);
+            fn_8009F44C(&vec, &mtx, &vec);
+            int iy = o->pos.y + vec.y;
+            int iz = o->pos.z + vec.z;
+            int ix = o->pos.x + vec.x;
+
+            out.x = (float)ix;
+            out.y = (float)iy;
+            out.z = (float)iz;
+            if (fn_800BB218(o, o->f2c4, &pos, &out, o, &scale, &unk1, &unk2, o->f900)) {
+                float sx = (float)vec.x * scale;
+                float sy = (float)vec.y * scale;
+                float sz = (float)vec.z * scale;
+
+                out.x = pos.x + sx;
+                out.y = pos.y + sy;
+                out.z = pos.z + sz;
+            }
+            st->pos = out;
+        }
     }
     return 0;
 }
@@ -293,11 +300,10 @@ int CollectDone(void* p) {
 
 // 0x8016C57C: spawn the collect point at a random point around the owner.
 int CollectEnter(void* p) {
-    float scale, unk1, unk2;
-    float radius;
-    IVec3 ang, vec;
-    Vec3 pos, out;
     Mtx34 mtx;
+    Vec3 out, pos;
+    IVec3 vec, ang;
+    float radius, unk2, unk1, scale;
     Actor* o;
     Beh* st;
 
@@ -316,13 +322,23 @@ int CollectEnter(void* p) {
     fn_8016D330(&vec, &ang);
     fn_800E0E9C(&vec, &vec, (rand() % 10 + 1) * 500);
     fn_8009F44C(&vec, &mtx, &vec);
-    out.x = (float)(o->pos.x + vec.x);
-    out.y = (float)(o->pos.y + vec.y);
-    out.z = (float)(o->pos.z + vec.z);
+    {
+        int iy = o->pos.y + vec.y;
+        int iz = o->pos.z + vec.z;
+        int ix = o->pos.x + vec.x;
+
+        out.x = (float)ix;
+        out.y = (float)iy;
+        out.z = (float)iz;
+    }
     if (fn_800BB218(o, o->f2c4, &pos, &out, o, &scale, &unk1, &unk2, o->f900)) {
-        out.x = pos.x + (float)vec.x * scale;
-        out.y = pos.y + (float)vec.y * scale;
-        out.z = pos.z + (float)vec.z * scale;
+        float sx = (float)vec.x * scale;
+        float sy = (float)vec.y * scale;
+        float sz = (float)vec.z * scale;
+
+        out.x = pos.x + sx;
+        out.y = pos.y + sy;
+        out.z = pos.z + sz;
     }
     st->pos = out;
     radius = 300.0f;
@@ -344,9 +360,11 @@ int CollectSetId(int id, void* p) {
 
 // 0x8016C89C: message handler.
 int CollectMsg(int msg, void* p) {
-    Actor* o = *(Actor**)p;
-    Msg* m = (Msg*)p;
+    Actor* o;
+    Msg* m;
 
+    o = *(Actor**)p;
+    m = (Msg*)p;
     if (o->obj->msg != 0 && o->obj->msg(msg, p)) {
         return 1;
     }
@@ -429,23 +447,26 @@ int CollectMsg(int msg, void* p) {
 }
 
 // 0x8016CBEC: per-frame tick; runs the behaviour-table hooks and the pickup check.
-int CollectTick(Actor* o) {
+int CollectTick(void* p) {
+    Actor* o;
     Beh* st;
 
+    o = (Actor*)p;
     if (o == 0) {
         return 0;
     }
     st = o->beh;
     if (st->state == -1) {
-        st->state = 0;
+        st->state = (o == 0) ? 0 : 0;
         gCollectBehTypes[st->state].enter(o);
     }
     fn_800B42E0(o->f84, o->handle, 101.0f, 3, 0x82);
     ZoneUpdate(&o->obj->zone, &o->pos);
     st->unk18 = (st->unk18 == 0);
     if (gCollectBehTypes[st->state].update(o) != 0) {
+        int idx = (o == 0) ? 0 : 0;
         if (gCollectBehTypes[st->state].done(o) != 0) {
-            gCollectBehTypes[st->state].enter(o);
+            gCollectBehTypes[idx].enter(o);
         }
     }
     if (st->timer <= 0.0f) {
@@ -457,16 +478,22 @@ int CollectTick(Actor* o) {
 }
 
 // 0x8016CD84: spatial-query callback; decides whether "o" may be collected by "a".
-int CollectCheck(Actor* a, Actor* o) {
+int CollectCheck(void* p0, void* p1) {
+    Actor* o;
+    Actor* a;
+    Beh* st;
     Msg q;
 
+    o = (Actor*)p1;
+    a = (Actor*)p0;
+    st = o->beh;
     q.obj = a;
     q.id = -1;
     a->handler(0x400, &q);
     if (q.unkC == 0) {
         return 0;
     }
-    if (o->beh->timer < 0.0f) {
+    if (st->timer < 0.0f) {
         return 0;
     }
     if (a->handle == o->handle) {
@@ -484,7 +511,7 @@ int CollectCheck(Actor* a, Actor* o) {
         }
         break;
     default:
-        return 1;
+        goto success;
     }
     if (fn_801BD694(a) && !fn_80116E08(a)) {
         return 0;
@@ -504,9 +531,10 @@ int CollectCheck(Actor* a, Actor* o) {
         if (fn_8001F928(o, coords, 0x12000000, CollectMatch, a) == 0) {
             fn_80120C80(1.0f, 0x7BFB940D, 0, HandleToPlayer(a->handle));
             FxStart(FxFind("collect_point"), 0, 0);
-            o->beh->timer = -1.0f;
+            st->timer = -1.0f;
         }
     }
+success:
     return 1;
 }
 
@@ -531,8 +559,8 @@ void CollectRelease(Actor* o) {
 
 // 0x8016CFDC: create callback.
 void CollectInit(Actor* o) {
-    int found;
     Beh* st;
+    int found;
 
     if (o == 0) {
         return;
@@ -568,15 +596,21 @@ void CollectInit(Actor* o) {
 
 // 0x8016D170: swap x and y (used by the ghost action code).
 void VecSwapXY(IVec3* out, IVec3* in) {
-    out->x = in->y;
-    out->y = in->x;
+    int y = in->y;
+    int x = in->x;
+
+    out->x = y;
+    out->y = x;
     out->z = in->z;
 }
 
 // 0x8016D18C: swap x and y (second copy used by the angle helpers).
 void VecSwapXY2(IVec3* out, IVec3* in) {
-    out->x = in->y;
-    out->y = in->x;
+    int y = in->y;
+    int x = in->x;
+
+    out->x = y;
+    out->y = x;
     out->z = in->z;
 }
 
