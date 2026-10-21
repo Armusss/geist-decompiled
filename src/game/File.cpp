@@ -29,7 +29,7 @@ f32 LoadingTime(void);                                   // 0x8001598C
 void LevelLoadNames(const char* name, int* a, char* b, char* c, char* d); // 0x80015A44
 void LoadingTick(void);                                  // 0x80006D1C
 void LoadingSetProgress(f32 progress, f32 time);         // 0x800D049C
-int LoadingActive(void);                                 // 0x800D0510
+int LoadingActive(const char* name);                     // 0x800D0510 (Progress.cpp)
 void LoadingEnd(void);                                   // 0x800D0380
 void LoadingClose(void);                                 // 0x800D0254
 void LevelSetSky(char* name);                            // 0x8016E760
@@ -142,7 +142,7 @@ int FileLoadOLC(const char* name) {
     int i;
     int j;
 
-    progress = LoadingActive();
+    progress = LoadingActive(name);
     if (gPresetVMemBlock != 0) {
         DebugPrintf("Loading OLC into ARAM\n");
         sOlcData = FileReadAll(name, &remaining, progress);
