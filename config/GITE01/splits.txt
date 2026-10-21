@@ -53,6 +53,11 @@ game/DbRoom.c:
 
 game/u_80022B10.cpp:
 	.text       start:0x80022B10 end:0x800265C8
+	.rodata     start:0x80342208 end:0x80342480
+	.data       start:0x80393DA0 end:0x80393DC0
+	.bss        start:0x803DD598 end:0x803DDB98
+	.sdata      start:0x804D2658 end:0x804D2660
+	.sdata2     start:0x804D60E8 end:0x804D6118
 
 game/ModInfo.cpp:
 	.text       start:0x800265C8 end:0x8003B98C
@@ -324,6 +329,11 @@ game/Skybox.cpp:
 
 game/u_80150300.cpp:
 	.text       start:0x80150300 end:0x80153C10
+	.rodata     start:0x80346400 end:0x80346450
+	.data       start:0x803A5488 end:0x803A5968
+	.bss        start:0x8046DDA8 end:0x8046DDE8
+	.sdata      start:0x804D2F10 end:0x804D2F18
+	.sdata2     start:0x804D7C38 end:0x804D7CA0
 
 game/u_80153C10.cpp:
 	.text       start:0x80153C10 end:0x80157730
@@ -742,6 +752,9 @@ game/u_8026A158.cpp:
 
 game/u_8026A37C.cpp:
 	.text       start:0x8026A37C end:0x8026C200
+	.rodata     start:0x8034ADF0 end:0x8034AE38
+	.data       start:0x803C0390 end:0x803C03B8
+	.bss        start:0x804A2A70 end:0x804A31C8
 
 game/u_8026C200.cpp:
 	.text       start:0x8026C200 end:0x802766F0

@@ -7,9 +7,9 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
-| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_800E9418 run 2 (13/19 after run 1) | running |
-| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_8016C244 run 2 (7/18 after run 1) | running |
-| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_80140A30 run 2 (1/12 after the draft) | running |
+| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_8026A37C (41 fns, draft pass first) | running |
+| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80022B10 (57 fns, draft pass first) | running |
+| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_80150300 (60 fns, draft pass first) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | **Paused** until the DeepSeek workers have drafted every untouched unit (user plan, 2026-10-20); then the Opus queue below | paused |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
@@ -59,6 +59,9 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_800E9418 17/19 (gun actor, ds-1 2 runs): GunUpdateState3 (4, f0/f1 swap on max of two fabsf; tried 6 shapes) and GunNodeFn1 (4, table base r4 vs retail r5; local node pointer makes it 6) left.
+- u_8016C244 9/18 (collectible + IVec3 helpers, ds-2 2 runs): CollectUpdate (17), CollectEnter (17), CollectMsg (205), CollectInit (16), VecSwapXY/VecSwapXY2 (4 each), FixedToRad (25), RadToFixed (11), VecToAngles (9) left.
+- u_80140A30 1/12 (Fear hunt screen, ds-3 2 runs): everything except one; HuntBotDraw (446), HuntBotReset (425), HuntBotScore (303), HuntBotEnter (226) are the big ones.
 - u_8018D2D4 6/10 (ghost shot, ds-1 2 runs): GhostShotUpdateAll (0x1304 bytes, 1210), GhostShotDrawAll (60), GhostShotDrawBeam (189), GhostShotDrawSprite (105) left.
 - u_80285ACC 14/19 (dog melee + VM pages, ds-2 2 runs): DogMeleeUpdate (47), DogMeleeMsg (285), DogMeleeCreate (15, lazy type-hash swap), VMAllocPage (87), fn_80286980 (6) left.
 - u_801A0F2C 20/23 (mirror object, ds-3 1 run): MirrorObjRegister (24, actor/objId r30/r29 swap), MirrorObjState5Update and State4Update (7 each, f1/f2 swap) left; all register-only.
