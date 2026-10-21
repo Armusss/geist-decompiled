@@ -93,3 +93,13 @@ from a direct `__fabsf` call (RideActionAnimate), and a `struct { float v[4]; }`
 - Actor units whose split lists only .text may need their type descriptor in a `.data` split before they
   link as Matching (u_801A1D24's gPickupType).
 - Variant runners: wibo's file names are case-insensitive, so never use variant names that differ only in case.
+
+## The zero-copy idiom (`li rA,0; mr rB,rA`): solved by opus-1, 2026-10-21
+CW 1.3.2 merges zero-initialised locals into a register that already holds zero (`li rA,0; mr rB,rA`) only
+when those locals belong to an **inline**; a caller's own locals always get separate `li` instructions,
+however they are written. So retail li/mr means both zero-initialised locals live in an inline helper.
+Evidence: FileReadStream (an inline in File.cpp, `void* buf = 0; u32 size = 0;`) and GrenadeRemoveAll's
+hoisted zero; isolated probes give li/li in a plain function and li/mr in an `inline`.
+Side effect: an inline's locals take callee-saved registers in reverse declaration order, so permute the
+declarations after wrapping code in an inline. SaveRestoreBlocks matched this way
+(`static inline void SaveSendBlocks(SaveSlot*)`, `int* hdr; u8* blocks; int i; int offset;`, `offset = 0; i = 0;`).

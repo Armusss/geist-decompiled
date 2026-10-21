@@ -10,7 +10,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | stopped (DeepSeek credit out); u_80080F88 merged at 6/22 | stopped |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | stopped (credit out); u_800FDDE4 draft in worktree, 20 stubs left, 1/26 | stopped |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | stopped (credit out); u_800D0BF4 draft in worktree, 13 stubs left, 7/30 | stopped |
-| opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Zero-copy idiom: SaveRestoreBlocks, SaveCommand (u_800DE0C4), LoadingSetFile (Progress) | running |
+| opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Done: zero-copy idiom solved (SaveRestoreBlocks matched; SaveCommand 32) | done |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
@@ -59,6 +59,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- opus-1, zero-copy pass: SaveCommand 32 diffs, register-only (arg/name r30 vs retail r28, slot r24 vs r27; loop region now exact); Progress LoadingSetFile 1 (wrapping the fade loop in an inline gives the li/mr copy but in r29/r28 instead of r27/r26; something in the image loop decides). Scripts: ~/geist-work/ds/opus-1-tools/o3/.
 - opus-1, 2026-10-21 (two-left batch): GhostGunUpdate 9 (scheduling: retail stores msg.actor/actorCC before the param loads); ToolCreate 11 (lazy hash, ~35 more shapes; same idiom unmatched in Homing, SpiritGun, u_80230504, u_802B9088, u_80285ACC); QueuePush 6 (n/src r28/r30; retail ranks src > i > n); StoreSave/StoreInit 7 each (dst vs i*8 offset r27/r29; retail increments i before the offset); SaveRestoreBlocks 1 and SaveCommand 159 share one idiom: retail copies a zero through a register (li r31,0; mr r30,r31) where ours constant-folds. Tooling: wibo is case-insensitive, so variant names differing only in case overwrite each other's .o (older mixed-case variant results may be wrong).
 - opus-1, 2026-10-21: u_801A1D24 PickupScanMsg 14 diffs (host block pointer h shares r31 with i; retail ranks h between d and target), u_802D439C GhostGunUpdate 21 (0x407 hit-message field load/store scheduling; idea: build it through an inline with by-value args). New trick: moving a loop into an inline helper fixed the loop counter vs. pointer walker swap (GrenadeRemoveAll, PickupScanMsg).
 - Lead, 2026-10-21 (two-left pass): Progress LoadingSetFile (1 diff: retail li/li for j and alpha, ours mr; 15 shapes/types + all 720 local orders: no change); Store StoreSave/StoreInit share the StoreLoadBanner inline swap (dst/i/offset ranking; 24 decl orders, 7 loop shapes: no change); QueueForEach/QueuePush register-only. Fixed two wrong manglings (LoadingActive takes const char*, HostRideAState1Leave void*): Progress and u_801F676C are now one function left each.
