@@ -2,6 +2,7 @@
 // debug drawing, sphere meshes, CRC32 and allocation pools.
 // Unit u_80022B10 (.text 0x80022B10-0x800265C8).
 
+#pragma auto_inline off
 
 typedef unsigned char u8;
 typedef signed char s8;
