@@ -282,14 +282,14 @@ int GhostGunUpdate(void* pp, Actor* a, float dt) {
             }
 
             msg.actor = a;
-            msg.actorCC = a->unkCC;
-            msg.unk14 = p->unk1C;
             msg.damage = dmg;
+            msg.unk14 = p->unk1C;
             msg.unk4C = p->unk18;
             msg.dir.x = (int)a->dir.x;
+            msg.actorCC = a->unkCC;
             msg.dir.y = (int)a->dir.y;
-            msg.pos = hit.pos;
             msg.dir.z = (int)a->dir.z;
+            msg.pos = hit.pos;
             msg.unk48 = hit.unk0C;
             msg.unk44 = hit.unk14;
             msg.normal = hit.unk3C;
