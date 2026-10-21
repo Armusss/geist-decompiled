@@ -211,6 +211,17 @@ void SltAssetInit(void);
 void SltEffectCleanup(void);
 
 // 0x8016A774
+static inline int SltFindEntry(SltGroup* grp, u32 key) {
+    int i;
+
+    for (i = 0; i < grp->file->count; i++) {
+        if (grp->entries[i].key == key) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 int SltMsgHandler(int actor, int msg, void* data) {
     int result = 1;
 
@@ -548,10 +559,8 @@ int SltLoad(SltLoadMsg* msg) {
         return 0;
     }
 
-    u32 id = msg->id;
-    int slot = (id >> 16) & 0xF;
-    u32 stamp = id >> 20;
-    if (stamp != sSlots[slot].stamp) {
+    int slot = (msg->id >> 16) & 0xF;
+    if ((msg->id >> 20) != sSlots[slot].stamp) {
         return 0;
     }
 
@@ -559,16 +568,7 @@ int SltLoad(SltLoadMsg* msg) {
         if (!sGroups[g].valid) {
             continue;
         }
-        int index = 0;
-        while (index < sGroups[g].file->count) {
-            if (sGroups[g].entries[index].key == msg->key) {
-                break;
-            }
-            index++;
-        }
-        if (index == sGroups[g].file->count) {
-            index = -1;
-        }
+        int index = SltFindEntry(&sGroups[g], msg->key);
         if (index == -1) {
             continue;
         }
