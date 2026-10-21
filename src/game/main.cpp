@@ -34,7 +34,6 @@ void fn_80170AA4(void);
 void fn_8000B604(int arg);
 void fn_80115EE0(void);
 void fn_80288C9C(void);
-void fn_800E0808(void);
 void fn_80088574(void);
 void fn_80170B14(int arg);
 void fn_8000879C(const char* name);
@@ -46,7 +45,6 @@ void fn_8013BF58(int a, float b);
 void fn_8013BA9C(void* a, int r, int g, int b, int alpha);
 void fn_8013BA70(void);
 int fn_800DC95C(int pad, int button);
-void fn_800DE2F8(int command, int arg);
 void fn_800087D8(int a, int b, int c);
 int fn_800087C8(int arg);
 void* fn_802869DC(int size);
@@ -65,6 +63,9 @@ float fn_800A1394(float x);
 const char* fn_80086B9C(const char* level, int* arg);
 void fn_800880D0(void);
 }
+
+void SAMAllocBuffers(void);                 // SAM.cpp
+int SaveCommand(int command, int arg);      // u_800DE0C4.cpp
 
 struct ImageInfo;
 struct TPLPalette;
@@ -246,7 +247,7 @@ int main(int argc, char** argv) {
     }
     fn_80115EE0();
     fn_80288C9C();
-    fn_800E0808();
+    SAMAllocBuffers();
     sAppInit();
     fn_80088574();
     if (restart) {
@@ -433,10 +434,10 @@ const char* LevelSelect(const char* name, char** names, char** titles, char** pa
     GfxFrameSwap();
     GfxFrameBegin();
     if (slot < 3) {
-        fn_800DE2F8(4, slot);
-        fn_800DE2F8(11, slot);
+        SaveCommand(4, slot);
+        SaveCommand(11, slot);
     } else {
-        fn_800DE2F8(4, -1);
+        SaveCommand(4, -1);
     }
     return paths[sel];
 }

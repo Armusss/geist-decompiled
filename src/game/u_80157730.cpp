@@ -148,7 +148,7 @@ void fn_800C5E5C();
 void fn_800C5E9C(int);
 int fn_800C6448();
 void fn_800DE0C4(f64);
-int fn_800DE2F8(int, int);
+int SaveCommand(int, int);
 void fn_800DE9D8();
 void fn_800EBBB8(f64, int, int);
 void fn_800EC614(int, int, int, int);
@@ -1004,8 +1004,8 @@ void fn_801584F8() {
     fn_8013ECCC();
     fn_802177F4();
     r = fn_802A1D04();
-    if (r == 0 && (r = fn_800DE2F8(5, 0)) >= 0 && (r = fn_800DE2F8(9, r)) != 0) {
-        fn_800DE2F8(3, 1);
+    if (r == 0 && (r = SaveCommand(5, 0)) >= 0 && (r = SaveCommand(9, r)) != 0) {
+        SaveCommand(3, 1);
     }
     fn_800DE9D8();
     fn_800C5654(0x2000000, 0x5d46c0a8, 0x2000000);
@@ -1073,7 +1073,7 @@ void fn_80158744() {
         fn_80158834();
         break;
     case 2:
-        fn_800DE2F8(7, 0x30);
+        SaveCommand(7, 0x30);
         if (lbl_804D49C4 == 1) {
             fn_80158834();
         }
@@ -1092,7 +1092,7 @@ void fn_801587B8(int mode) {
         fn_80158834();
         break;
     case 2:
-        fn_800DE2F8(7, mode);
+        SaveCommand(7, mode);
         if (lbl_804D49C4 == 1) {
             fn_80158834();
         }
@@ -1136,8 +1136,8 @@ void fn_80158834() {
     } while (r2 != 1);
     fn_800EC614(0x32, 0x96, 0x21c, 0x7d);
     fn_800ECB18();
-    fn_800DE2F8(1, 0);
-    r = fn_800DE2F8(6, 0);
+    SaveCommand(1, 0);
+    r = SaveCommand(6, 0);
     lbl_804D49C4 = (r == 1) ? 2 : 0;
 }
 
