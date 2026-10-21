@@ -45,6 +45,8 @@ struct Actor {
 struct Msg {
     Actor* actor;
     s32 arg;
+    s32 arg2;
+    s32 arg3;
 };
 
 extern "C" {
@@ -70,14 +72,14 @@ extern "C" u32 fn_80022B10(Actor* a) {
 }
 
 extern "C" int fn_80022B1C(Actor* a, int host) {
-    u32 type = a->id >> 24;
+    s32 type = a->id >> 24;
     if (type == 1 || type == 2 || type == 0x13 || type == 0x14 ||
         type == 6 || type == 9 || type == 0xa || type == 0xc || type == 8) {
-        bool found = false;
+        int found = 0;
         for (s32 i = a->objIndex; i != -1; i = lbl_804D41EC[i].next) {
             s32 o = lbl_804D41EC[i].owner;
             if (lbl_803DCF7C[o / 32] & (1 << (o & 31))) {
-                found = true;
+                found = 1;
                 break;
             }
         }
@@ -227,6 +229,9 @@ extern "C" int fn_800230C0(Actor* a, int layer) {
     FillOwnerBits(bits, a);
     fn_8001CAAC(empty, bits, 0x400, a);
     return 1;
+}
+
+extern "C" void fn_800234AC() {
 }
 
 extern "C" int fn_800234B0(Actor* a) {
@@ -389,7 +394,7 @@ void Vec3Copy(Vec3*, Vec3*);
 int ActorFn8002378C(Actor* a, int id, int mtx, int msgFn, int model,
                                int ptr40, int p6) {
     memset(a, 0, 0x50);
-    if (mtx != 0)
+    if ((u32)mtx != 0)
         *(Mtx34*)a = *(Mtx34*)mtx;
     else
         fn_8009F76C(a);
@@ -414,11 +419,14 @@ extern "C" f32 fn_8002388C(const f32* a, const f32* b, const f32* dir,
     f32 dy = a[1] - b[1];
     f32 dz = a[2] - b[2];
     f32 den = dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2];
-    f32 num = dir[1] * dy + dir[0] * dx + dir[2] * dz;
+    f32 num = dir[0] * dx + dir[1] * dy + dir[2] * dz;
     f32 t = num / den;
-    f32 px = dir[0] * t + b[0];
-    f32 py = dir[1] * t + b[1];
-    f32 pz = dir[2] * t + b[2];
+    f32 px = dir[0] * t;
+    f32 py = dir[1] * t;
+    f32 pz = dir[2] * t;
+    px += b[0];
+    py += b[1];
+    pz += b[2];
     if (tOut)
         *tOut = t;
     if (pOut) {
@@ -658,7 +666,7 @@ struct Skin {
 
 u8 lbl_803DD598[0x400];
 Skin lbl_803DD998;
-u32 lbl_804D2658[2] = {1, 0};
+s32 lbl_804D2658[2] = {1, 0};
 
 extern "C" Skin* fn_8002431C(Skin* src, int r, int g, int b, f32 t) {
     if (!src)
@@ -702,48 +710,32 @@ extern "C" u32 fn_80024560(u8* data, int len) {
         lbl_804D2658[0] = 0;
     }
     u32 crc = 0xffffffff;
-    for (int i = 0; i < len; i++) {
-        u32 b = (u32)(f32)data[i];
+    while (len != 0) {
+        s32 b = (s32)(f32)*data;
         crc = (crc >> 8) ^ ((u32*)lbl_803DD598)[(crc ^ b) & 0xff];
+        data++;
+        len--;
     }
-    return crc ^ 0xffffffff;
+    return crc ^ -1;
 }
 
 extern "C" void fn_80024794(void* p, void** list, u32* bits, int count) {
     if (!p)
         return;
-    if (!list) {
-        VFree(p);
-        return;
-    }
-    for (int i = 0; i < count; i++) {
-        if (list[i] == p) {
-            bits[i / 32] &= ~(1u << (i % 32));
-            VFree(p);
-            list[i] = 0;
+    if (list) {
+        for (int i = 0; i < count; i++) {
+            if (list[i] == p) {
+                bits[i / 32] &= ~(1u << (i & 31));
+                VFree(p);
+                list[i] = 0;
+            }
         }
+    } else {
+        VFree(p);
     }
 }
 
 inline s32 FindFreeBit(u32* bits, s32 max) {
-    s32 words = (max + 31) >> 5;
-    for (s32 i = 0; i < words; i++) {
-        u32 w = bits[i];
-        if (w == 0xffffffff)
-            continue;
-        for (s32 j = 0; j < 32; j++) {
-            if (!(w & (1u << j))) {
-                s32 idx = j + (i << 5);
-                return idx < max ? idx : -1;
-            }
-        }
-    }
-    return -1;
-}
-
-extern "C" void* fn_80024834(void** arr, int size, u32* bits, int max) {
-    if (!arr)
-        return VAlloc(size);
     s32 words = max / 32 + (max % 32 != 0);
     s32 found = -1;
     for (s32 i = 0; i < words; i++) {
@@ -753,27 +745,57 @@ extern "C" void* fn_80024834(void** arr, int size, u32* bits, int max) {
         for (s32 j = 0; j < 32; j++) {
             if (!(w & (1u << j))) {
                 s32 idx = j + (i << 5);
-                found = idx < max ? idx : -1;
-                break;
+                if (idx < max)
+                    found = idx;
+                else
+                    found = -1;
+                goto done;
             }
         }
-        if (found != -1)
-            break;
     }
-    if (found == -1)
+done:
+    return found;
+}
+
+extern "C" void* fn_80024834(void** arr, int size, u32* bits, int max) {
+    if (arr) {
+        s32 words = max / 32 + (max % 32 != 0);
+        s32 found;
+        u32* p = bits;
+        for (s32 i = 0; i < words; i++, p++) {
+            u32 w = *p;
+            if (w == 0xffffffff)
+                continue;
+            for (s32 j = 0; j < 32; j++) {
+                if (!(w & (1u << j))) {
+                    s32 idx = j + (i << 5);
+                    if (idx < max)
+                        found = idx;
+                    else
+                        found = -1;
+                    goto done;
+                }
+            }
+        }
+        found = -1;
+    done:
+        if (found == -1)
+            return 0;
+        arr[found] = VAlloc(size);
+        if (arr[found]) {
+            bits[found / 32] |= 1u << (found & 31);
+            return arr[found];
+        }
         return 0;
-    arr[found] = VAlloc(size);
-    if (!arr[found])
-        return 0;
-    bits[found / 32] |= 1u << (found % 32);
-    return arr[found];
+    }
+    return VAlloc(size);
 }
 
 int PoolFree(void* base, void* ptr, int stride,
                                   void* bitsv) {
     u32* bits = (u32*)bitsv;
     int idx = ((u8*)base - (u8*)ptr) / stride;
-    bits[idx / 32] &= ~(1u << (idx % 32));
+    bits[idx / 32] &= ~(1u << (idx & 31));
     return 1;
 }
 
@@ -783,12 +805,12 @@ void* PoolAlloc(void* pool, int stride, void* bitsv,
     s32 idx = FindFreeBit(bits, max);
     if (idx == -1)
         return 0;
-    bits[idx / 32] |= 1u << (idx % 32);
+    bits[idx / 32] |= 1u << (idx & 31);
     return (u8*)pool + idx * stride;
 }
 
 extern "C" int fn_80024A94(u32* a, u32* b, int n) {
-    int words = (n + 31) >> 5;
+    int words = (n + 31) / 32;
     for (int i = 0; i < words; i++)
         if ((a[i] | b[i]) != a[i])
             return 0;
@@ -796,7 +818,7 @@ extern "C" int fn_80024A94(u32* a, u32* b, int n) {
 }
 
 extern "C" int fn_80024AD8(u32* a, u32* b, int n) {
-    int words = (n + 31) >> 5;
+    int words = (n + 31) / 32;
     for (int i = 0; i < words; i++)
         if (a[i] != b[i])
             return 0;
@@ -804,36 +826,38 @@ extern "C" int fn_80024AD8(u32* a, u32* b, int n) {
 }
 
 extern "C" void fn_80024B18(u32* dst, u32* src, int n) {
-    int words = (n + 31) >> 5;
+    int words = (n + 31) / 32;
     for (int i = 0; i < words; i++)
         dst[i] = ~src[i];
 }
 
 extern "C" void fn_80024BFC(u32* bits, int n, const s32* idx, int count) {
-    int words = (n + 31) >> 5;
+    int words = (n + 31) / 32;
     for (int i = 0; i < words; i++)
         bits[i] = 0;
     for (int i = 0; i < count; i++) {
         s32 v = idx[i];
-        bits[v / 32] |= 1u << (v % 32);
+        bits[v / 32] |= 1u << (v & 31);
     }
 }
 
 extern "C" s32 fn_80024E64(s32* out, int max, u32* bits, int n) {
-    int words = (n + 31) >> 5;
     s32 count = 0;
     s32 base = 0;
+    int words = (n + 31) / 32;
     for (int i = 0; i < words; i++) {
-        u32 w = bits[i];
-        if (w != 0) {
+        if (*bits) {
+            s32 idx = base;
             for (int j = 0; j < 32; j++) {
-                if (w & (1u << j)) {
-                    out[count] = base + j;
+                if (*bits & (1u << j)) {
+                    out[count] = idx;
                     if (++count >= max)
                         return count;
                 }
+                idx++;
             }
         }
+        bits++;
         base += 32;
     }
     return count;
@@ -841,7 +865,7 @@ extern "C" s32 fn_80024E64(s32* out, int max, u32* bits, int n) {
 
 extern "C" u32 fn_80024FBC(u32* dst, u32* a, u32* b, int n) {
     u32 acc = 0;
-    int words = (n + 31) >> 5;
+    int words = (n + 31) / 32;
     if (dst) {
         for (int i = 0; i < words; i++) {
             dst[i] = a[i] & b[i];
@@ -855,14 +879,14 @@ extern "C" u32 fn_80024FBC(u32* dst, u32* a, u32* b, int n) {
 }
 
 extern "C" void fn_80025240(u32* dst, u32* a, u32* b, int n) {
-    int words = (n + 31) >> 5;
+    int words = (n + 31) / 32;
     for (int i = 0; i < words; i++)
         dst[i] = a[i] | b[i];
 }
 
 extern "C" u32 fn_80025358(u32* dst, u32* a, u32* b, int n) {
     u32 acc = 0;
-    int words = (n + 31) >> 5;
+    int words = (n + 31) / 32;
     if (dst) {
         for (int i = 0; i < words; i++) {
             dst[i] = a[i] ^ b[i];
@@ -876,55 +900,58 @@ extern "C" u32 fn_80025358(u32* dst, u32* a, u32* b, int n) {
 }
 
 extern "C" void fn_800255DC(u32* a, u32* b, int n) {
-    int words = (n + 31) >> 5;
+    int words = (n + 31) / 32;
     for (int i = 0; i < words; i++) {
         u32 av = a[i];
         u32 bv = b[i];
-        a[i] = av & ~bv;
-        b[i] = bv & ~av;
+        u32 t = ~(av & bv);
+        a[i] = av & t;
+        b[i] = bv & t;
     }
 }
 
 extern "C" void fn_80025774(void* bitsv, int nbits) {
     u32* p = (u32*)bitsv;
-    int words = (nbits + 31) >> 5;
+    int words = (nbits + 31) / 32;
     for (int i = 0; i < words; i++)
         p[i] = 0;
 }
 
 extern "C" void fn_80025808(void* bitsv, int nbits) {
     u32* p = (u32*)bitsv;
-    int words = (nbits + 31) >> 5;
+    int words = (nbits + 31) / 32;
     for (int i = 0; i < words; i++)
         p[i] = 0xffffffff;
 }
 
 extern "C" void fn_8002589C(u32* bits, int n, s32* out, int count) {
     int words = (n - 1) / 32 + 1;
-    int k = 0;
-    for (int i = 0; i < words; i++) {
-        u32 w = bits[i];
+    s32 base = 0;
+    for (int i = 0; i < words; i++, bits++, base += 32) {
+        u32 w = *bits;
         if (w == 0xffffffff)
             continue;
+        s32 idx = base;
         for (int j = 0; j < 32; j++) {
             if (!(w & (1u << j))) {
-                bits[i] |= 1u << j;
-                out[k++] = i * 32 + j;
+                *bits |= 1u << j;
+                *out++ = idx;
                 if (--count == 0)
                     return;
             }
+            idx++;
         }
     }
 }
 
 extern "C" s32 fn_800259C8(u32* bits, int n, int flag) {
-    s32 count = 0;
-    int words = (n + 31) >> 5;
+    int words = (n + 31) / 32;
     int remaining = n;
+    s32 count = 0;
     for (int i = 0; i < words; i++) {
         int nb = remaining < 32 ? remaining : 32;
         u32 w = bits[i];
-        if (w != 0 && nb > 0) {
+        if (w != 0) {
             for (int j = 0; j < nb; j++)
                 count += (w >> j) & 1;
         }
@@ -934,14 +961,15 @@ extern "C" s32 fn_800259C8(u32* bits, int n, int flag) {
 }
 
 extern "C" s32 fn_80025B0C(u32* bits, int n, int flag) {
-    flag = flag ? 1 : 0;
+    if (flag)
+        flag = 1;
     int words = n / 32 + 1;
     for (int i = 0; i < words; i++) {
         u32 w = bits[i];
-        if (flag == 1 && w == 0)
-            continue;
-        if (w == 0xffffffff)
-            continue;
+        if (flag != 1 || w == 0) {
+            if (w == 0xffffffff)
+                continue;
+        }
         for (int j = 0; j < 32; j++) {
             if ((s32)(w & (1u << j)) == flag) {
                 s32 idx = i * 32 + j;
@@ -956,7 +984,7 @@ extern "C" s32 fn_80025B0C(u32* bits, int n, int flag) {
 
 extern "C" s32 fn_80025BA8(u32* bits, int words, int n) {
     int i, j;
-    u32 w;
+    s32 w;
     for (i = 0; i < words; i++) {
         w = bits[i];
         if (w != 0) {
@@ -993,30 +1021,32 @@ extern "C" s32 fn_80025C14(u32* bits, int words, int n) {
 }
 
 extern "C" void fn_80025C84(u32* bits, int idx) {
-    u32 m = 1u << (idx % 32);
-    if (bits[idx / 32] & m)
-        bits[idx / 32] &= ~m;
+    int word = idx / 32;
+    u32 m = 1u << (idx & 31);
+    if (bits[word] & m)
+        bits[word] &= ~m;
     else
-        bits[idx / 32] |= m;
+        bits[word] |= m;
 }
 
 extern "C" int fn_80025CC0(u32* bits, int idx) {
-    u32 m = 1u << (idx % 32);
-    if (bits[idx / 32] & m) {
-        bits[idx / 32] &= ~m;
+    int word = idx / 32;
+    u32 m = 1u << (idx & 31);
+    if (bits[word] & m) {
+        bits[word] &= ~m;
         return 1;
     }
     return 0;
 }
 
 extern "C" void fn_80025CFC(u32* bits, int idx) {
-    bits[idx / 32] &= ~(1u << (idx % 32));
+    bits[idx / 32] &= ~(1u << (idx & 31));
 }
 
 extern "C" void fn_80025D24(void* dstv, void* srcv, int n) {
     u32* dst = (u32*)dstv;
     u32* src = (u32*)srcv;
-    int words = (n + 31) >> 5;
+    int words = (n + 31) / 32;
     for (int i = 0; i < words; i++)
         dst[i] = src[i];
 }
@@ -1025,21 +1055,23 @@ extern "C" int fn_80025DE4(int unused, int msg, int* a) {
     switch (msg) {
     case 0x6300:
         fn_80088C10(a[1], a[2], a[4], a[5], a[6], a[8], a[9], a[10]);
-        return 1;
+        break;
     case 0x6301:
         fn_80088BA0(a[1], a[4], a[5], a[6], a[8], a[9], a[10]);
-        return 1;
+        break;
     case 0x6302:
         fn_80088FB0(a[1], a[2]);
-        return 1;
+        break;
     case 0x6303:
         fn_80088F0C(a[1], a[2]);
-        return 1;
+        break;
     case 0x6304:
         fn_80088E68(a[1], a[2]);
-        return 1;
+        break;
+    default:
+        return 0;
     }
-    return 0;
+    return 1;
 }
 
 struct Buf402 {
@@ -1206,9 +1238,8 @@ struct SelSetTable {
 extern SelSetTable* lbl_804D4278;
 
 extern "C" void fn_80026528(char* name) {
-    SelSetTable* t = lbl_804D4278;
-    for (s32 i = 0; i != t->count; i++) {
-        if (!stricmp(t->entries[i].name, name)) {
+    for (s32 i = 0; i != lbl_804D4278->count; i++) {
+        if (stricmp(lbl_804D4278->entries[i].name, name) == 0) {
             lbl_804D427C |= 1u << i;
             return;
         }
