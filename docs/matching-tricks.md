@@ -84,3 +84,12 @@ Fixed GrenadeRemoveAll (`EmitterSlotsClear(gGrenadeEmitters, 8)`) and the scan l
 Related: an `inline float fabsf(float x) { return __fabsf(x); }` wrapper ranks float registers differently
 from a direct `__fabsf` call (RideActionAnimate), and a `struct { float v[4]; }` copies word-wise with
 `lwzu` where four named floats copy with `lfs` (GrenadeUpdate).
+
+## More register fixes from opus-1 (2026-10-21)
+- A block moved into its own `static inline` helper fixed a register again (PickupScanMsg: the host setup
+  became `HostSetup(target)`).
+- A ternary min `n = (m < k - n) ? m : k - n;` instead of an if-min fixed a register reuse (ToolMsg).
+- Reusing an existing counter instead of a new local fixed one (QueueForEach: `e = q.write; e -= q.size;`).
+- Actor units whose split lists only .text may need their type descriptor in a `.data` split before they
+  link as Matching (u_801A1D24's gPickupType).
+- Variant runners: wibo's file names are case-insensitive, so never use variant names that differ only in case.
