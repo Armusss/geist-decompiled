@@ -185,17 +185,10 @@ void GeomDelete(Geom* g);
 void SpaceSetFields(Space* s, int a, int b);
 
 // 0x8026A37C
-int GeomRegisterClass(UserGeomClass* cls)
+static inline void GeomSetUserColliders(int type)
 {
-    int type;
     int i;
 
-    if (lbl_804D551C >= 4) {
-        fn_802734DC(0, sTooManyUserClasses);
-    }
-    type = lbl_804D551C + 0xb;
-    gUserGeomClasses[lbl_804D551C] = *cls;
-    CollisionInit();
     for (i = 0; i < GEOM_CLASSES; i++) {
         if (gColliders[type][i].fn == 0) {
             gColliders[type][i].fn = UserGeomCollide;
@@ -206,6 +199,19 @@ int GeomRegisterClass(UserGeomClass* cls)
             gColliders[i][type].swap = 1;
         }
     }
+}
+
+int GeomRegisterClass(UserGeomClass* cls)
+{
+    int type;
+
+    if (lbl_804D551C >= 4) {
+        fn_802734DC(0, sTooManyUserClasses);
+    }
+    gUserGeomClasses[lbl_804D551C] = *cls;
+    type = lbl_804D551C + 0xb;
+    CollisionInit();
+    GeomSetUserColliders(type);
     lbl_804D551C += 1;
     return type;
 }
