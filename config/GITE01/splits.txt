@@ -293,7 +293,7 @@ game/u_800FDDE4.cpp:
 	.data       start:0x8039EA28 end:0x8039EA48
 	.bss        start:0x8045D9F0 end:0x8045E768
 	.sdata      start:0x804D2D8C end:0x804D2D90
-	.sbss       start:0x804D4BD8 end:0x804D4C05
+	.sbss       start:0x804D4BD8 end:0x804D4C08
 	.sdata2     start:0x804D7500 end:0x804D7548
 
 game/u_80100EB0.cpp:
