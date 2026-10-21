@@ -7,7 +7,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
-| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_80157730 run 3 (40/67 after run 2) | running |
+| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_80080F88 (22 fns, skeleton draft first) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80015B64 (36 fns, skeleton draft first) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_80064FD4 (17 fns, skeleton draft first) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | **Paused** until the DeepSeek workers have drafted every untouched unit (user plan, 2026-10-20); then the Opus queue below | paused |
@@ -59,6 +59,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_80157730 43/67 (ds-1 3 runs): 24 left; close ones fn_80159A4C, fn_8015A97C, fn_8015BFD8 (4 each), fn_80158BE0 (8), fn_8015A10C (11); biggest fn_8015779C (599).
 - u_80150300 46/60 (possession host-type tables, ds-3 2 runs): HostTypeEnter0A (2), HostTypeUpdateG (3), HostTypeUpdateI (6), HostTypeUpdateH (9) are close; PossessHostMsg (86), HostTypeInit (150), HostTypeMsgA/B, HostTypeTrails, HostTypeUpdateF/J/K, HostTypeEnter0B left.
 - u_80022B10 27/57 (actor support: links, bitsets, debug draw, CRC32, pools; ds-2 3 runs; file-level auto_inline off on evidence): 30 functions left.
 - u_8026A37C 30/41 (ODE collision kernel, ds-1 2 runs; file-level auto_inline off on evidence): six 2-diff vtable wrappers (GeomGetAabb, GeomDestroyGeom, SpaceCollideSelf, SpaceGetNumGeoms, SpaceRemoveGeom, SpaceAddGeom: retail loads the vtbl straight into r12) and SpaceDestroy (2), GeomUserTest (7), GeomRegisterClass (25), SpaceCollidePair (24), CollisionInit (201) left. Public ODE source (collision_kernel.cpp) may help as reference.

@@ -140,6 +140,11 @@ game/u_80080714.cpp:
 
 game/u_80080F88.cpp:
 	.text       start:0x80080F88 end:0x80083360
+	.rodata     start:0x80343858 end:0x803438F8
+	.bss        start:0x8042DA90 end:0x8043CAF0
+	.sdata      start:0x804D29C0 end:0x804D29D8
+	.sbss       start:0x804D4618 end:0x804D4670
+	.sdata2     start:0x804D6818 end:0x804D6834
 
 game/Script.c:
 	.text       start:0x80083360 end:0x80085CDC
