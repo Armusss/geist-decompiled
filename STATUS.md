@@ -8,7 +8,7 @@ Handoff file for the matching decompilation. Newest section first. See README.md
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_8026A37C run 2 (26/41 after run 1) | running |
-| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80022B10 (57 fns, draft pass first) | running |
+| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80022B10 run 2 (13/57 after run 1) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_80150300 (60 fns, draft pass first) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | **Paused** until the DeepSeek workers have drafted every untouched unit (user plan, 2026-10-20); then the Opus queue below | paused |
 
