@@ -261,7 +261,7 @@ int HostTypeEnter1E(Actor* a);                          // 0x801520DC
 int HostTypeEnter12(Actor* a);                          // 0x8015213C
 int HostTypeEnter11(Actor* a);                          // 0x8015219C
 int HostTypeEnter0C(Actor* a);                          // 0x801521F8
-int HostTypeEnter0B(Actor* a);                          // 0x801522AC
+int HostTypeEnter0B(void* p);                           // 0x801522AC
 int HostTypeEnter0A(Actor* a);                          // 0x801523D8
 int HostTypeEnter27(Actor* a);                          // 0x80152488
 int HostTypeEnter1A(Actor* a);                          // 0x801524E0
@@ -280,44 +280,42 @@ int HostTypeEnter00(Actor* a);                          // 0x80152938
 int PossessHostMsg(int msg, void* data) {
     MsgHdr* m = (MsgHdr*)data;
     Actor* a = m->actor;
+    HostState* s = a->state;
 
-    if (msg == 0xC06) {
-        switch (m->cmd) {
-        case 0x46341C3A:
-        case 0x239807:
-        case 0x4A5C9FC:
-            fn_800CB8BC(a, a->iC4, a->state->unk2C, a->i26C);
-            break;
-        }
-    } else if (msg < 0xC06) {
-        if (msg == 0x41E) {
-            Msg41E* q = (Msg41E*)data;
-
-            if (q->cmd == 0xAD8576FA) {
-                String name(lbl_803A5488[a->state->index].sep);
-                String sep("");
-                String text = fn_800225C8(name, sep);
-
-                fn_8028C188(&q->result, text.mData, text.mLength);
-                return 0;
-            }
-            return 0;
-        }
-    } else if (msg == 0x3300) {
+    switch (msg) {
+    case 0x3300:
         if (a == 0) {
             return 1;
         }
-        if (fn_80116E08(a) != 0) {
+        if (fn_80116E08(a)) {
             return 0;
         }
         return 1;
+    case 0xC06:
+        if (m->cmd == 0x46341C3A || m->cmd == 0x239807 || m->cmd == 0x4A5C9FC) {
+            fn_800CB8BC(a, a->iC4, s->unk2C, a->i26C);
+        }
+        return 0;
+    case 0x41E: {
+        Msg41E* q = (Msg41E*)data;
+
+        if (q->cmd == 0xAD8576FA) {
+            String name(lbl_803A5488[s->index].sep);
+            String sep("");
+            const String& text = fn_800225C8(name, sep);
+
+            fn_8028C188(&q->result, text.mData, text.mLength);
+            return 0;
+        }
+        return 0;
+    }
     }
     return 0;
 }
 
 int PossessHostUpdate(Actor* a) {
-    HostState* s;
     int next;
+    HostState* s;
     int ok;
 
     if (a == 0) {
@@ -607,9 +605,9 @@ int HostTypeUpdateD(Actor* a) {
     fn_80152990(a);
     if (HasCondition(&a->i270, 9) != 0 && HasCondition(&a->i270, 10) == 0 &&
         HasCondition(&a->i270, 11) == 0) {
-        return s->index;
+        return 0xB;
     }
-    return 0xB;
+    return s->index;
 }
 
 int HostTypeUpdateE(Actor* a) {
@@ -624,6 +622,11 @@ int HostTypeUpdateE(Actor* a) {
     return s->sub;
 }
 
+// Index of a host-type record row: 13 sub-states per host, plus an offset.
+static inline int SeqIndex(int row, int base, int off) {
+    return row * 13 + base + off;
+}
+
 int HostTypeUpdateF(Actor* a) {
     HostState* s;
     int iVar1;
@@ -635,39 +638,39 @@ int HostTypeUpdateF(Actor* a) {
     s = a->state;
     fn_80152990(a);
     iVar1 = HasCondition(&a->i270, 9);
-    if ((iVar1 == 0 || HasCondition(&a->i270, 10) != 0) || HasCondition(&a->i270, 11) != 0) {
-        iVar1 = HasCondition(&a->i270, 4);
-        if ((iVar1 != 0) && HasCondition(&a->i270, 9) == 0 &&
-            (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
-            fn_800A7A54(&a->i270, 4, 0);
-            return 10;
-        }
-        iVar1 = fn_800A82D0(a, a->pos);
-        if (iVar1 == 3) {
-            iVar1 = 0;
-        }
+    if (iVar1 != 0 && HasCondition(&a->i270, 10) == 0 &&
+        HasCondition(&a->i270, 11) == 0) {
+        return 0xB;
+    }
+    iVar1 = HasCondition(&a->i270, 4);
+    if ((iVar1 != 0) && HasCondition(&a->i270, 9) == 0 &&
+        (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
+        fn_800A7A54(&a->i270, 4, 0);
+        return 10;
+    }
+    iVar1 = fn_800A82D0(a, a->pos);
+    if (iVar1 == 3) {
+        iVar1 = 0;
+    }
+    iVar2 = fn_8016325C(a->obj894);
+    if (iVar2 == 4 || fn_8016325C(a->obj894) == 5) {
+        iVar1 = a->i288 * 13 + iVar1 + 3;
+    } else {
         iVar2 = fn_8016325C(a->obj894);
-        if (iVar2 == 4 || fn_8016325C(a->obj894) == 5) {
-            iVar1 = a->i288 * 13 + iVar1 + 3;
+        if (iVar2 == 6 || fn_8016325C(a->obj894) == 7) {
+            iVar1 = a->i288 * 13 + iVar1 + 6;
         } else {
-            iVar2 = fn_8016325C(a->obj894);
-            if (iVar2 == 6 || fn_8016325C(a->obj894) == 7) {
-                iVar1 = a->i288 * 13 + iVar1 + 6;
-            } else {
-                iVar2 = a->i26C;
-                if (s->unk38 == iVar2) {
-                    if (s->unk34 == iVar1) {
-                        iVar1 = s->index;
-                    } else {
-                        iVar1 = iVar1 + iVar2 * 13;
-                    }
+            iVar2 = a->i26C;
+            if (s->unk38 == iVar2) {
+                if (s->unk34 == iVar1) {
+                    iVar1 = s->index;
                 } else {
                     iVar1 = iVar1 + iVar2 * 13;
                 }
+            } else {
+                iVar1 = iVar1 + iVar2 * 13;
             }
         }
-    } else {
-        iVar1 = 0xB;
     }
     return iVar1;
 }
@@ -687,26 +690,23 @@ int HostTypeUpdateG(Actor* a) {
     }
     fn_80152990(a);
     iVar2 = HasCondition(&a->i270, 9);
-    if ((iVar2 == 0 || HasCondition(&a->i270, 10) != 0) || HasCondition(&a->i270, 11) != 0) {
-        iVar2 = HasCondition(&a->i270, 4);
-        if ((iVar2 != 0) && HasCondition(&a->i270, 9) == 0 &&
-            (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
-            fn_800A7A54(&a->i270, 4, 0);
-            return 10;
-        }
-        if (1.0f <= fabsf(a->f284)) {
-            if (a->i288 == 0) {
-                iVar1 = s->index;
-            } else {
-                iVar1 = a->i26C * 13 + 9;
-            }
-        } else {
-            iVar1 = s->sub + a->i26C * 13 + iVar1;
-        }
-    } else {
-        iVar1 = 0xB;
+    if (iVar2 != 0 && HasCondition(&a->i270, 10) == 0 &&
+        HasCondition(&a->i270, 11) == 0) {
+        return 0xB;
     }
-    return iVar1;
+    iVar2 = HasCondition(&a->i270, 4);
+    if ((iVar2 != 0) && HasCondition(&a->i270, 9) == 0 &&
+        (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
+        fn_800A7A54(&a->i270, 4, 0);
+        return 10;
+    }
+    if (fabsf(a->f284) < 1.0f) {
+        return a->i26C * 13 + iVar1 + s->sub;
+    }
+    if (a->i288 != 0) {
+        return a->i26C * 13 + 9;
+    }
+    return s->index;
 }
 
 int HostTypeUpdateH(Actor* a) {
@@ -724,35 +724,37 @@ int HostTypeUpdateH(Actor* a) {
         iVar1 = 0;
     }
     iVar2 = HasCondition(&a->i270, 9);
-    if ((iVar2 == 0 || HasCondition(&a->i270, 10) != 0) || HasCondition(&a->i270, 11) != 0) {
-        iVar2 = HasCondition(&a->i270, 4);
-        if ((iVar2 != 0) && HasCondition(&a->i270, 9) == 0 &&
-            (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
-            fn_800A7A54(&a->i270, 4, 0);
-            return 10;
-        }
-        iVar2 = a->i26C;
-        if (s->unk38 == iVar2) {
-            if (s->unk34 == iVar1) {
-                iVar2 = fn_8016325C(a->obj894);
-                if (iVar2 == 6 || fn_8016325C(a->obj894) == 7) {
-                    iVar1 = a->i288 * 13 + iVar1 + 6;
-                } else {
-                    iVar2 = fn_8016325C(a->obj894);
-                    if (iVar2 == 0) {
-                        iVar1 = iVar1 + a->i288 * 13;
-                    } else {
-                        iVar1 = s->index;
-                    }
-                }
-            } else {
-                iVar1 = iVar2 * 13 + iVar1 + 3;
-            }
-        } else {
-            iVar1 = iVar2 * 13 + iVar1 + 3;
-        }
+    if (iVar2 != 0 && HasCondition(&a->i270, 10) == 0 &&
+        HasCondition(&a->i270, 11) == 0) {
+        return 0xB;
+    }
+    iVar2 = HasCondition(&a->i270, 4);
+    if ((iVar2 != 0) && HasCondition(&a->i270, 9) == 0 &&
+        (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
+        fn_800A7A54(&a->i270, 4, 0);
+        return 10;
+    }
+    iVar2 = a->i26C;
+    if (s->unk38 != iVar2) {
+        iVar1 += iVar2 * 13;
+        return iVar1 + 3;
     } else {
-        iVar1 = 0xB;
+        if (s->unk34 != iVar1) {
+            iVar1 += iVar2 * 13;
+            return iVar1 + 3;
+        } else {
+            iVar2 = fn_8016325C(a->obj894);
+            if (iVar2 == 6 || fn_8016325C(a->obj894) == 7) {
+                return iVar1 + a->i288 * 13 + 6;
+            } else {
+                iVar2 = fn_8016325C(a->obj894);
+                if (iVar2 == 0) {
+                    return iVar1 + a->i288 * 13;
+                } else {
+                    iVar1 = s->index;
+                }
+            }
+        }
     }
     return iVar1;
 }
@@ -773,38 +775,38 @@ int HostTypeUpdateI(Actor* a) {
     }
     fn_80152990(a);
     iVar3 = HasCondition(&a->i270, 9);
-    if ((iVar3 == 0 || HasCondition(&a->i270, 10) != 0) || HasCondition(&a->i270, 11) != 0) {
-        iVar3 = HasCondition(&a->i270, 4);
-        if ((iVar3 != 0) && HasCondition(&a->i270, 9) == 0 &&
-            (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
-            fn_800A7A54(&a->i270, 4, 0);
-            return 10;
-        }
-        if (s->unk38 == a->i26C) {
+    if (iVar3 != 0 && HasCondition(&a->i270, 10) == 0 &&
+        HasCondition(&a->i270, 11) == 0) {
+        return 0xB;
+    }
+    iVar3 = HasCondition(&a->i270, 4);
+    if ((iVar3 != 0) && HasCondition(&a->i270, 9) == 0 &&
+        (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
+        fn_800A7A54(&a->i270, 4, 0);
+        return 10;
+    }
+    if (s->unk38 != a->i26C) {
+        return iVar2 + a->i26C * 13 + 3;
+    } else {
+        iVar3 = fn_8016325C(a->obj894);
+        if (iVar3 == 6 || fn_8016325C(a->obj894) == 7) {
+            return a->i288 * 13 + iVar2 + 6;
+        } else {
             iVar3 = fn_8016325C(a->obj894);
-            if (iVar3 == 6 || fn_8016325C(a->obj894) == 7) {
-                iVar2 = a->i288 * 13 + iVar2 + 6;
+            if (iVar3 == 0) {
+                return iVar2 + a->i288 * 13;
             } else {
-                iVar3 = fn_8016325C(a->obj894);
-                if (iVar3 == 0) {
-                    iVar2 = iVar2 + a->i288 * 13;
+                f = a->f284;
+                if (f < 0.0f) {
+                    f = -f;
+                }
+                if (f > 35.0f) {
+                    return 9;
                 } else {
-                    f = a->f284;
-                    if (f < 0.0f) {
-                        f = -f;
-                    }
-                    if (f <= 35.0f) {
-                        iVar2 = s->index;
-                    } else {
-                        iVar2 = 9;
-                    }
+                    return s->index;
                 }
             }
-        } else {
-            iVar2 = a->i26C * 13 + iVar2 + 3;
         }
-    } else {
-        iVar2 = 0xB;
     }
     return iVar2;
 }
@@ -821,40 +823,40 @@ int HostTypeUpdateJ(Actor* a) {
     s = a->state;
     fn_80152990(a);
     iVar2 = HasCondition(&a->i270, 9);
-    if ((iVar2 == 0 || HasCondition(&a->i270, 10) != 0) || HasCondition(&a->i270, 11) != 0) {
-        iVar2 = HasCondition(&a->i270, 4);
-        if ((iVar2 != 0) && HasCondition(&a->i270, 9) == 0 &&
-            (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
-            fn_800A7A54(&a->i270, 4, 0);
-            return 10;
-        }
-        iVar2 = fn_800A82D0(a, a->pos);
-        if (iVar2 == 3) {
-            iVar2 = 0;
-        }
+    if (iVar2 != 0 && HasCondition(&a->i270, 10) == 0 &&
+        HasCondition(&a->i270, 11) == 0) {
+        return 0xB;
+    }
+    iVar2 = HasCondition(&a->i270, 4);
+    if ((iVar2 != 0) && HasCondition(&a->i270, 9) == 0 &&
+        (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
+        fn_800A7A54(&a->i270, 4, 0);
+        return 10;
+    }
+    iVar2 = fn_800A82D0(a, a->pos);
+    if (iVar2 == 3) {
+        iVar2 = 0;
+    }
+    iVar3 = fn_8016325C(a->obj894);
+    if (iVar3 == 4 || fn_8016325C(a->obj894) == 5) {
+        return a->i288 * 13 + iVar2 + 3;
+    } else {
         iVar3 = fn_8016325C(a->obj894);
-        if (iVar3 == 4 || fn_8016325C(a->obj894) == 5) {
-            iVar2 = a->i288 * 13 + iVar2 + 3;
+        if (iVar3 == 6 || fn_8016325C(a->obj894) == 7) {
+            return a->i288 * 13 + iVar2 + 6;
+        } else if (s->unk38 != a->i26C) {
+            return iVar2 + a->i26C * 13;
         } else {
-            iVar3 = fn_8016325C(a->obj894);
-            if (iVar3 == 6 || fn_8016325C(a->obj894) == 7) {
-                iVar2 = a->i288 * 13 + iVar2 + 6;
-            } else if (s->unk38 == a->i26C) {
-                f = a->f284;
-                if (f < 0.0f) {
-                    f = -f;
-                }
-                if (f <= 35.0f) {
-                    iVar2 = s->index;
-                } else {
-                    iVar2 = 9;
-                }
+            f = a->f284;
+            if (f < 0.0f) {
+                f = -f;
+            }
+            if (f > 35.0f) {
+                return 9;
             } else {
-                iVar2 = iVar2 + a->i26C * 13;
+                return s->index;
             }
         }
-    } else {
-        iVar2 = 0xB;
     }
     return iVar2;
 }
@@ -1110,10 +1112,25 @@ int HostTypeEnter0C(Actor* a) {
     return 1;
 }
 
-int HostTypeEnter0B(Actor* a) {
+// Bone index used for a host's possession effect.
+static inline int HostBoneIndex(Actor* a) {
+    int n = a->i214;
+
+    if (n == -1) {
+        return 8;
+    }
+    n = fn_80018814(a->iCC, ModelBoneName(a->iCC), lbl_8046DDA8, 0x10);
+    if (n == -1) {
+        return 8;
+    }
+    return n;
+}
+
+int HostTypeEnter0B(void* p) {
     HostState* s;
     MsgC14 msg;
     int id;
+    Actor* a = (Actor*)p;
 
     if (a == 0) {
         return 0;
@@ -1125,24 +1142,14 @@ int HostTypeEnter0B(Actor* a) {
     s->unk34 = 0;
     fn_800A7A54(&a->i270, 0, 1);
     if (a->p5F0 == 0 || fn_80212730(a->i38) != -1) {
-        int n;
-        if (a->i214 == -1) {
-            n = 8;
-        } else {
-            int bone = ModelBoneName(a->iCC);
-            n = fn_80018814(a->iCC, bone, lbl_8046DDA8, 0x10);
-            if (n == -1) {
-                n = 8;
-            }
-        }
-        fn_801537E8(a, n);
+        fn_801537E8(a, HostBoneIndex(a));
     }
     id = OwnerId(a);
     int obj = OwnerId(a);
     if (obj != -1) {
-        msg.unk04 = 0;
         msg.unk08 = id;
         msg.hash = 0x274B01CB;
+        msg.unk04 = 0;
         SendMsg(obj, 0xC14, &msg);
     }
     TalkPlay(OwnerId(a), 8);
@@ -1151,7 +1158,6 @@ int HostTypeEnter0B(Actor* a) {
 
 int HostTypeEnter0A(Actor* a) {
     HostState* s;
-    int n;
 
     if (a == 0) {
         return 0;
@@ -1162,16 +1168,7 @@ int HostTypeEnter0A(Actor* a) {
     s->f20 = 1500.0f;
     s->unk38 = 0;
     s->unk34 = 0;
-    if (a->i214 == -1) {
-        n = 8;
-    } else {
-        int bone = ModelBoneName(a->iCC);
-        n = fn_80018814(a->iCC, bone, lbl_8046DDA8, 0x10);
-        if (n == -1) {
-            n = 8;
-        }
-    }
-    fn_801537E8(a, n);
+    fn_801537E8(a, HostBoneIndex(a));
     return 1;
 }
 
