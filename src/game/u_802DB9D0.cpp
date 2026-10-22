@@ -105,10 +105,11 @@ void VFree(void* p);                                // 0x8009DA3C
 int AssetFind(u32 table, u32 key);                  // 0x8007EB34
 void TextureLoad(s16* ids, int count);              // 0x8000F738
 
+int HasCondition(void* conditions, int which);      // 0x800A7AC4
+
 extern "C" {
 int rand(void);
 int SendMsg(int to, int msg, void* data);           // 0x800265D4
-int HasCondition(void* conditions, int which);      // 0x800A7AC4
 void fn_8000F550(s16* ids, int count);              // 0x8000F550
 int fn_801625C8(Actor* actor, void* cond, int msg, void* data);  // 0x801625C8
 void fn_80162610(Actor* actor, void* cond, int value);           // 0x80162610
@@ -153,7 +154,7 @@ int lbl_804D3D68 = 3500;
 int lbl_804D3D6C = 4200;
 int lbl_804D3D70 = 500;
 int lbl_804D3D74 = 2000;
-unsigned long long lbl_804D3D78 = 80000;
+int lbl_804D3D78 = 80000;
 
 // Uniform random value in [lo, hi] (lo/hi are integer tuning constants).
 inline float HostBehLerp(int lo, int hi, float t) {
@@ -195,37 +196,44 @@ HostBehType lbl_803C57B0[] = {
     { HostBehState3Enter, HostBehState3Check, HostBehState3Update, "" },
 };
 
+static inline void HostBehStateName(Buffer* out, const char* s) {
+    String name(s);
+    String newline("\n");
+    const String& text = fn_800225C8(name, newline);
+
+    fn_8028C188(out, text.mData, text.mLength);
+}
+
+static inline int HostBehQuery(void* data) {
+    Actor* actor = *(Actor**)data;
+    Msg41E* m = (Msg41E*)data;
+    HostBehState* beh = actor->beh;
+
+    switch (m->cmd) {
+    case 0xAD8576FA:
+        HostBehStateName(&m->result, lbl_803C57B0[beh->state].name);
+        return 0;
+    case 0x607EED34: {
+        if (actor->f904 > (float)actor->counter->count * lbl_804D3D4C) {
+            *(int*)&m->result = lbl_804D3D48;
+        } else if (actor->f904 > (float)actor->counter->count * lbl_804D3D64) {
+            *(int*)&m->result = lbl_804D3D60;
+        } else {
+            *(int*)&m->result = lbl_804D3D78;
+        }
+        return 1;
+    }
+    }
+    return 0;
+}
+
 // Message handler (registered in the component descriptor at 0x803AA...).
 int HostBehMsg(int msg, void* data) {
     Actor* actor = *(Actor**)data;
 
     switch (msg) {
-    case 0x41E: {
-        Msg41E* m = (Msg41E*)data;
-        HostBehState* beh = actor->beh;
-
-        switch (m->cmd) {
-        case 0xAD8576FA: {
-            String name(lbl_803C57B0[beh->state].name);
-            String newline("\n");
-            const String& text = fn_800225C8(name, newline);
-
-            fn_8028C188(&m->result, text.mData, text.mLength);
-            return 0;
-        }
-        case 0x607EED34: {
-            if (actor->f904 > (float)actor->counter->count * lbl_804D3D4C) {
-                *(int*)&m->result = lbl_804D3D48;
-            } else if (actor->f904 > (float)actor->counter->count * lbl_804D3D64) {
-                *(int*)&m->result = lbl_804D3D60;
-            } else {
-                *(int*)&m->result = lbl_804D3D78;
-            }
-            return 1;
-        }
-        }
-        return 0;
-    }
+    case 0x41E:
+        return HostBehQuery(data);
     case 6: {
         s16 ids[2];
 
