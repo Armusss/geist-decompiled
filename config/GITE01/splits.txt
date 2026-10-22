@@ -257,9 +257,15 @@ game/u_800EB1B8.cpp:
 
 game/SpiritGun.cpp:
 	.text       start:0x800F0374 end:0x800F0B10
+	.rodata     start:0x80345238 end:0x80345290
+	.data       start:0x8039CD58 end:0x8039CD88
+	.sdata2     start:0x804D7310 end:0x804D7328
 
 game/Homing.cpp:
 	.text       start:0x800F0B10 end:0x800F0D24
+	.rodata     start:0x80345290 end:0x803452E0
+	.data       start:0x8039CD88 end:0x8039CDB8
+	.sdata2     start:0x804D7328 end:0x804D7330
 
 game/DeferPriority.cpp:
 	.text       start:0x800F0D24 end:0x800F14A8
