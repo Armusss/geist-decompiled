@@ -565,7 +565,7 @@ int HostRideDState2Update(void* owner) {
 // 0x8023F638: state 2 enter.
 int HostRideDState2Enter(void* owner) {
     Actor* a = (Actor*)owner;
-    Beh* b = ((Actor*)owner)->beh;
+    Beh* b = a->beh;
     void* target;
     int kind;
 

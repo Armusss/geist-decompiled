@@ -101,121 +101,78 @@ int SolverIsPositiveDefinite(const float* src, int n) {
 
 // Inverts a symmetric positive definite matrix through its Cholesky factor.
 // dst is column-major with a padded stride of n4 floats.
-int SolverInvertSymmetric(const float* src, float* dst, int n) {
-    float* mat;
-    float* y;
-    int i;
-    int k;
-    int j;
-    int n4 = n;
+static inline void SolverSolveCholesky(const float* L, float* b, int n) {
+    int i, k, nskip;
+    float sum, *y;
 
-    if (1 < n) {
-        n4 = ((n - 1) | 3) + 1;
+    nskip = (n > 1) ? (((n - 1) | 3) + 1) : n;
+    y = (float*)((((u32)__alloca(n * sizeof(float) + 15)) - 1 | 15) + 1);
+    for (i = 0; i < n; i++) {
+        sum = 0;
+        for (k = 0; k < i; k++) sum += L[i * nskip + k] * y[k];
+        y[i] = (b[i] - sum) / L[i * nskip + i];
     }
-    u32 sp = (u32)__alloca(n4 * n * 4 + 0xF);
-    mat = (float*)(((sp - 1) | 0xF) + 1);
-
-    memcpy(mat, src, n4 * n * 4);
-    sp = (u32)__alloca(n * 4 + 0xF);
-    y = (float*)(((sp - 1) | 0xF) + 1);
-    if (SolverCholeskyFactor(mat, n) == 0) {
-        return 0;
+    for (i = n - 1; i >= 0; i--) {
+        sum = 0;
+        for (k = i + 1; k < n; k++) sum += L[k * nskip + i] * b[k];
+        b[i] = (y[i] - sum) / L[i * nskip + i];
     }
-    {
-        int count = n * n4;
-        float* dp = dst;
+}
 
-        while (count > 0) {
-            *dp++ = 0.0f;
-            count--;
-        }
+static inline void SolverSetZero(float* a, int n) {
+    while (n > 0) {
+        *(a++) = 0;
+        n--;
     }
-    for (k = 0; k < n; k++) {
-        float sum;
+}
 
-        for (i = 0; i < n; i++) {
-            y[i] = 0.0f;
-        }
-        y[k] = 1.0f;
-        int stride = n;
+int SolverInvertSymmetric(const float* A, float* Ainv, int n) {
+    int i, j, nskip;
+    float *L, *x;
 
-        if (1 < stride) {
-            stride = ((n - 1) | 3) + 1;
-        }
-        sp = (u32)__alloca(n * 4 + 0xF);
-        float* tmp = (float*)(((sp - 1) | 0xF) + 1);
-        // Forward substitution: solve L * tmp = e(k).
-        for (i = 0; i < n; i++) {
-            sum = 0.0f;
-            for (j = 0; j < i; j++) {
-                sum += tmp[j] * mat[i * stride + j];
-            }
-            tmp[i] = (y[i] - sum) / mat[i * stride + i];
-        }
-        // Back substitution: solve L' * y = tmp.
-        for (i = n - 1; i >= 0; i--) {
-            sum = 0.0f;
-            for (j = i + 1; j < n; j++) {
-                sum += y[j] * mat[j * stride + i];
-            }
-            y[i] = (tmp[i] - sum) / mat[i * stride + i];
-        }
-        for (i = 0; i < n; i++) {
-            dst[k + i * n4] = y[i];
-        }
+    nskip = (n > 1) ? (((n - 1) | 3) + 1) : n;
+    L = (float*)((((u32)__alloca(nskip * n * sizeof(float) + 15)) - 1 | 15) + 1);
+    memcpy(L, A, nskip * n * sizeof(float));
+    x = (float*)((((u32)__alloca(n * sizeof(float) + 15)) - 1 | 15) + 1);
+    if (SolverCholeskyFactor(L, n) == 0) return 0;
+    SolverSetZero(Ainv, n * nskip);
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) x[j] = 0;
+        x[i] = 1;
+        SolverSolveCholesky(L, x, n);
+        for (j = 0; j < n; j++) Ainv[j * nskip + i] = x[j];
     }
     return 1;
 }
 
 // In-place Cholesky factorisation (lower triangle only). Returns 0 when the
 // matrix is not positive definite.
-int SolverCholeskyFactor(float* a, int n) {
-    int n4 = n;
-    int i;
-    int j;
-    float* row = a;
+int SolverCholeskyFactor(float* A, int n) {
+    int i, j, k, nskip;
+    float sum, *a, *b, *aa, *bb, *cc, *recip;
 
-    if (1 < n) {
-        n4 = ((n - 1) | 3) + 1;
-    }
-    u32 sp = (u32)__alloca(n * 4 + 0xF);
-    float* inv = (float*)(((sp - 1) | 0xF) + 1);
+    nskip = (n > 1) ? (((n - 1) | 3) + 1) : n;
+    recip = (float*)((((u32)__alloca(n * sizeof(float) + 15)) - 1 | 15) + 1);
+    aa = A;
     for (i = 0; i < n; i++) {
-        float* rp = a + i * n4;
-        float* col = a;
-        float d;
-
+        bb = A;
+        cc = A + i * nskip;
         for (j = 0; j < i; j++) {
-            float sum = *rp;
-            float* p = row;
-            float* q = col;
-            int count = j;
-
-            while (count != 0) {
-                sum -= *p++ * *q++;
-                count--;
-            }
-            *rp = sum * inv[j];
-            rp++;
-            col += n4;
+            sum = *cc;
+            a = aa;
+            b = bb;
+            for (k = j; k; k--) sum -= (*(a++)) * (*(b++));
+            *cc = sum * recip[j];
+            bb += nskip;
+            cc++;
         }
-        d = *rp;
-        {
-            float* p = row;
-            int count = i;
-
-            while (count != 0) {
-                d -= *p * *p;
-                p++;
-                count--;
-            }
-        }
-        if (d <= 0.0f) {
-            return 0;
-        }
-        *rp = SqrtF(d);
-        inv[i] = 1.0f / *rp;
-        row += n4;
+        sum = *cc;
+        a = aa;
+        for (k = i; k; k--, a++) sum -= (*a) * (*a);
+        if (sum <= 0.0f) return 0;
+        *cc = SqrtF(sum);
+        recip[i] = 1.0f / *cc;
+        aa += nskip;
     }
     return 1;
 }
@@ -268,9 +225,14 @@ void SolverSetAllocCallback(AllocCallback fn) {
 }
 
 // Random integer in [0, range), from a linear congruential generator.
-int SolverRandRange(int range) {
-    sRandState = sRandState * 0x19660D + 0x3C6EF35F;
-    return (int)(((double)range / 4294967296.0) * (double)sRandState);
+static inline u32 SolverRand() {
+    sRandState = (1664525L * sRandState + 1013904223L) & 0xffffffff;
+    return sRandState;
+}
+
+int SolverRandRange(int n) {
+    double a = double(n) / 4294967296.0;
+    return (int)(double(SolverRand()) * a);
 }
 
 // Carves size bytes out of the arena's current block, 16-byte aligned.

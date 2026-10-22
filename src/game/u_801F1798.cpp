@@ -31,8 +31,8 @@ inline u32 StrHash(const char* s, u32 h) {
 class Buffer {
 public:
     Buffer();                                  // 0x8028BA9C
-    ~Buffer();                                 // 0x8028B9C0
-    void Release(char* p);
+    virtual ~Buffer();                         // 0x8028B9C0
+    virtual void Release(char* p);
 
     char* mData;
     int mLength;
@@ -44,6 +44,7 @@ class String : public Buffer {
 public:
     String();                                  // 0x8028C500
     String(const char* s);                     // 0x8028C400
+    ~String() {}
     virtual void Release(char* p);
 };
 
@@ -285,6 +286,14 @@ HostRideCType gHostRideCTypes[] = {
     { (HostRideCFunc)HostRideCState2Enter, (HostRideCFunc)HostRideCState2Exit, (HostRideCFunc)HostRideCState2Update, "" },
 };
 
+static inline void HostRideCStateName(Buffer* out, const char* s) {
+    String name(s);
+    String newline("\n");
+    const String& text = fn_800225C8(name, newline);
+
+    fn_8028C188(out, text.mData, text.mLength);
+}
+
 int HostRideCMsg(int msg, void* data) {
     switch (msg) {
     case 0x400: {
@@ -329,16 +338,11 @@ int HostRideCMsg(int msg, void* data) {
 
         switch (m->cmd) {
         case 0x832DF50A:
-            m->result.mData = (char*)gHostRideCAsset[0];
+            *(int*)&m->result = (int)gHostRideCAsset[0];
             return 1;
-        case 0xAD8576FA: {
-            String name(gHostRideCTypes[b->state].name);
-            String newline("\n");
-            const String& text = fn_800225C8(name, newline);
-
-            fn_8028C188(&m->result, text.mData, text.mLength);
+        case 0xAD8576FA:
+            HostRideCStateName(&m->result, gHostRideCTypes[b->state].name);
             return 0;
-        }
         }
         return 0;
     }
@@ -447,12 +451,14 @@ int HostRideCState2Update(Actor* o) {
     if (!(b->flags & 2)) {
         MsgC14 m;
         int r;
+        int id;
 
         b->flags |= 2;
         r = ActorPlayAnim(o->id, 0xDC35206A, target->id);
+        id = o->id;
         if (target->id != -1) {
             m.unk4 = r;
-            m.handle = o->id;
+            m.handle = id;
             m.key = 0xAF699ED0;
             SendMsg(target->id, 0xC14, &m);
         }

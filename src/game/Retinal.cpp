@@ -69,12 +69,14 @@ struct RetinalDef {
     int model;
 };
 
+struct RetinalModel {
+    int id;
+    char pad4[4];
+};
+
 struct RetinalInfo {
     char pad0[8];
-    int model1;
-    char padC[4];
-    int model2;
-    char pad14[4];
+    RetinalModel models[2];  // 0x08
     int sound;
     char pad1C[0x64];
     int flashTexture;
@@ -360,15 +362,13 @@ int RetinalPrecache(void* data) {
     }
     if (actor->info) {
         short* p = &ids[n];
-        int id = actor->info->model1;
-        if (id >= 0) {
-            *p++ = id;
-            n++;
-        }
-        id = actor->info->model2;
-        if (id >= 0) {
-            *p = id;
-            n++;
+        int k;
+        for (k = 0; k < 2; k++) {
+            int id = actor->info->models[k].id;
+            if (id >= 0) {
+                *p++ = id;
+                n++;
+            }
         }
     }
 
