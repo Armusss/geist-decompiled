@@ -12,7 +12,6 @@ extern "C" {
 int fn_800F7D28(int emitter, int id);
 void* fn_8016F120(void* fx, int* pos);
 void fn_8016F118(void* handle, int a, int b);
-void fn_80175D60(int arg);
 void fn_800F86A0(int emitter);
 void* fn_800EB21C(int id);
 int fn_800F80DC(int a);
@@ -24,6 +23,7 @@ extern "C" void FxStart(void* fx, int a, int b);
 void* VAlloc(int size);
 void VFree(void* p);
 void Fn800F840C(int emitter, int a, int b);
+void Fn80175D60(unsigned long arg);
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
@@ -41,7 +41,8 @@ inline u32 StrHash(const char* s) {
         int i;
         h = 0;
         for (i = 0; s[i] != 0; i++) {
-            h = h * 31 + (unsigned char)toupper(s[i]);
+            h *= 31;
+            h += (unsigned char)toupper(s[i]);
         }
         h %= 0xFFFFFFFF;
     }
@@ -70,7 +71,8 @@ struct EffectType {
 
 inline u32 EffectTypeHash(EffectType* type) {
     if (type->hash == 0) {
-        type->hash = StrHash(type->name);
+        const char* name = type->name;
+        type->hash = StrHash(name);
     }
     return type->hash;
 }
@@ -241,7 +243,7 @@ int SpiritGunMsg(EffectObj* obj, int msg, int arg, void* data, float dt) {
     SpiritGun* s = (SpiritGun*)obj->data;
     SpiritGunDef* def = s->def;
 
-    fn_80175D60(arg);
+    Fn80175D60(arg);
     s->arg = arg;
     switch (msg) {
     case 0xF829DB93:
@@ -289,9 +291,10 @@ void SpiritGunDestroy(EffectObj* obj) {
 }
 
 void* SpiritGunCreate(int a, int id) {
+    EffectType* type = &gSpiritGunType;
     SpiritGun* s;
 
-    EffectTypeHash(&gSpiritGunType);
+    EffectTypeHash(type);
     s = (SpiritGun*)VAlloc(sizeof(SpiritGun));
     memset(s, 0, sizeof(SpiritGun));
     if (s == 0) {

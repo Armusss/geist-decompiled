@@ -38,7 +38,8 @@ inline u32 StrHash(const char* s) {
         u32 h = 0;
         int i;
         for (i = 0; s[i] != 0; i++) {
-            h = h * 31 + (unsigned char)toupper(s[i]);
+            h *= 31;
+            h += (unsigned char)toupper(s[i]);
         }
         h %= 0xFFFFFFFF;
         return h;
@@ -67,7 +68,8 @@ struct EffectType {
 
 inline u32 EffectTypeHash(EffectType* type) {
     if (type->hash == 0) {
-        type->hash = StrHash(type->name);
+        const char* name = type->name;
+        type->hash = StrHash(name);
     }
     return type->hash;
 }
@@ -304,8 +306,9 @@ void ToolDestroy(EffectObj* obj) {
 
 void* ToolCreate(int a, int id) {
     Tool* t;
+    EffectType* type = &gToolType;
 
-    EffectTypeHash(&gToolType);
+    EffectTypeHash(type);
     t = (Tool*)VAlloc(sizeof(Tool));
     if (t == 0) {
         return 0;

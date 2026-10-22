@@ -9,7 +9,6 @@
 extern "C" {
 
 // Callees in other files, not named yet.
-int fn_80175D60(int arg);
 void fn_800E1098(void* out, void* in, float length);
 void fn_8016D440(void* out, void* in);
 void* fn_800772E0(void* actor);
@@ -18,6 +17,7 @@ void fn_80186A88(int owner, void* info, int arg, int a, int b, float f);
 }
 
 extern "C" int SendMsg(int to, int msg, void* data);
+unsigned long Fn80175D60(unsigned long arg);
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
@@ -35,7 +35,8 @@ inline u32 StrHash(const char* s) {
         int i;
         h = 0;
         for (i = 0; s[i] != 0; i++) {
-            h = h * 31 + (unsigned char)toupper(s[i]);
+            h *= 31;
+            h += (unsigned char)toupper(s[i]);
         }
         h %= 0xFFFFFFFF;
     }
@@ -64,7 +65,8 @@ struct EffectType {
 
 inline u32 EffectTypeHash(EffectType* type) {
     if (type->hash == 0) {
-        type->hash = StrHash(type->name);
+        const char* name = type->name;
+        type->hash = StrHash(name);
     }
     return type->hash;
 }
@@ -123,18 +125,19 @@ EffectType gHomingType = {
 u32 HomingQuery(EffectObj* obj, int msg) { return 0x3DA260F7; }
 
 int HomingMsg(EffectObj* obj, int msg, int arg, void* data, float dt) {
-    int busy = fn_80175D60(arg);
+    int busy = Fn80175D60(arg);
 
     switch (msg) {
     case 0x14967: {
         int owner = obj->unk0;
+        EffectType* type = &gHomingType;
         HomingFire* fire = (HomingFire*)data;
         HomingShot* shot;
         HomingInfo info;
         int target;
         Vec3 up;
 
-        EffectTypeHash(&gHomingType);
+        EffectTypeHash(type);
         shot = fire->shot;
         memset(&info, 0, sizeof(HomingInfo));
         fn_800E1098(&info.vel, &shot->dir, fire->speed);

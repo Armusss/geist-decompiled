@@ -17,7 +17,8 @@ inline u32 StrHash(const char* s) {
         u32 h = 0;
         int i;
         for (i = 0; s[i] != 0; i++) {
-            h = h * 31 + (unsigned char)toupper(s[i]);
+            h *= 31;
+            h += (unsigned char)toupper(s[i]);
         }
         h %= 0xFFFFFFFF;
         return h;
@@ -49,7 +50,8 @@ inline float Max(float a, float b) { return a > b ? a : b; }
 
 inline u32 EffectTypeHash(EffectType* type) {
     if (type->hash == 0) {
-        type->hash = StrHash(type->name);
+        const char* name = type->name;
+        type->hash = StrHash(name);
     }
     return type->hash;
 }
@@ -406,7 +408,8 @@ int DogMeleeMsg(EffectObj* obj, int msg, int arg, void* data, float dt) {
 void DogMeleeDestroy(EffectObj* obj) { VFree(obj->data); }
 
 void* DogMeleeCreate(int a, int id) {
-    EffectTypeHash(&gDogMeleeType);
+    EffectType* type = &gDogMeleeType;
+    EffectTypeHash(type);
     DogBeh* b = (DogBeh*)VAlloc(0x80);
     memset(b, 0, 0x80);
     if (b == 0) {
