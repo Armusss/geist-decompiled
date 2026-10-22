@@ -36,7 +36,8 @@ inline u32 StrHash(const char* s, u32 h) {
         return 0;
     }
     for (i = 0; s[i] != 0; i++) {
-        h = h * 31 + (unsigned char)toupper(s[i]);
+        h *= 31;
+        h += (unsigned char)toupper(s[i]);
     }
     h %= 0xFFFFFFFF;
     return h;
@@ -278,53 +279,34 @@ static RideType gRideTypes[3] = {
 
 static inline Actor* GetActor(void* data) { return *(Actor**)data; }
 
+static inline void HostRideBStateName(Buffer* out, const char* s) {
+    String name(s);
+    String newline("\n");
+    const String& text = fn_800225C8(name, newline);
+
+    fn_8028C188(out, text.mData, text.mLength);
+}
+
+
 // 0x8028C54C: message handler.
-int HostRideBMsg(int msg, void* data) {
-    void* p = *(void**)data;
-    Actor* actor = (Actor*)p;
+static inline int HostRideBInfo(void* data) {
+    Actor* actor = *(Actor**)data;
+    Msg400* m = (Msg400*)data;
+    m->ownerId = OwnerId((Owner*)actor);
+    m->state = (actor->f904 > 0.0f) ? 1 : 0;
+    m->f10 = 1.0f;
+    m->f14 = 1.0f;
+    m->flags = 2;
+    m->unk1C = 0;
+    return 1;
+}
 
-    switch (msg) {
-    case 0x400: {
-        Msg400* m = (Msg400*)data;
-        m->ownerId = OwnerId((Owner*)actor);
-        m->state = (actor->f904 > 0.0f) ? 1 : 0;
-        m->f10 = 1.0f;
-        m->f14 = 1.0f;
-        m->flags = 2;
-        m->unk1C = 0;
-        return 1;
-    }
-    case 0x7102: {
-        HostStream* s = (HostStream*)data;
-        RideData* b = actor->beh;
-        u32 hash;
+static inline int HostRideBRestore(Actor* actor, void* data) {
+    HostStream* s = (HostStream*)data;
+    RideData* b = actor->beh;
+    int ok;
 
-        if (b == 0) {
-            return 1;
-        }
-        if (s->remain < 0x20) {
-            s->status = 0;
-            return 1;
-        }
-        hash = StrHash("[CRDSAVE]");
-        memcpy(s->ptr, &hash, 4);
-        s->count += 4;
-        s->remain -= 4;
-        s->ptr += 4;
-        memcpy(s->ptr, b, 0x1C);
-        s->count += 0x1C;
-        s->remain -= 0x1C;
-        s->ptr += 0x1C;
-        return 1;
-    }
-    case 0x7103: {
-        HostStream* s = (HostStream*)data;
-        RideData* b = actor->beh;
-        int ok;
-
-        if (b == 0) {
-            return 1;
-        }
+    if (b != 0) {
         if (s->count < 0x20) {
             s->status = 0;
             return 1;
@@ -352,6 +334,61 @@ int HostRideBMsg(int msg, void* data) {
         s->ptr += 0x1C;
         return 1;
     }
+    return 1;
+}
+
+static inline int HostRideBPlayQuery(Actor* actor, void* data) {
+    Msg40A* m = (Msg40A*)data;
+    Msg400 q;
+
+    q.actor = actor;
+    q.ownerId = OwnerId((Owner*)actor);
+    ((Actor*)m->actor)->msgFn(0x400, &q);
+    if (ActorPlayAnim(OwnerId((Owner*)actor), StrHash("QUERY", m->unk08), m->unk04)) {
+        m->unk0C = 0;
+        return 1;
+    }
+    if (fn_80049940()) {
+        if (m->unk08 == 0x7C44EC3D) {
+            m->unk0C = 0xA53F7E23;
+            return 1;
+        }
+        return 0;
+    }
+    return 1;
+}
+
+int HostRideBMsg(int msg, void* data) {
+    Actor* actor = *(Actor**)data;
+
+    switch (msg) {
+    case 0x400:
+        return HostRideBInfo(data);
+    case 0x7102: {
+        HostStream* s = (HostStream*)data;
+        RideData* b = actor->beh;
+        u32 hash;
+
+        if (b != 0) {
+            if (s->remain < 0x20) {
+                s->status = 0;
+                return 1;
+            }
+            hash = StrHash("[CRDSAVE]");
+            memcpy(s->ptr, &hash, 4);
+            s->count += 4;
+            s->remain -= 4;
+            s->ptr += 4;
+            memcpy(s->ptr, b, 0x1C);
+            s->count += 0x1C;
+            s->remain -= 0x1C;
+            s->ptr += 0x1C;
+            return 1;
+        }
+        return 1;
+    }
+    case 0x7103:
+        return HostRideBRestore(actor, data);
     case 0x41D: {
         Msg41D* m = (Msg41D*)data;
         RideData* b = actor->beh;
@@ -366,7 +403,7 @@ int HostRideBMsg(int msg, void* data) {
         case (int)0xF1AA29A3:
             b->f0C = (float)m->value;
             return 1;
-        case 0x28D2C00B:
+        case 0x28D1C00B:
             b->f10 = (float)m->value;
             return 1;
         case 0x178E2132:
@@ -393,45 +430,23 @@ int HostRideBMsg(int msg, void* data) {
             }
             return 1;
         }
-        case 0x832EF50A:
+        case 0x832DF50A:
             if (sAsset[0] == -1) {
                 sAsset[0] = AssetFind(0xF1754BF2, 0x0021C5E0);
             }
             *(int*)&m->result = sAsset[0];
             return 1;
-        case (int)0xAD8576FA: {
-            String a(gRideTypes[b->state].name);
-            String nl("\n");
-            const String& c = fn_800225C8(a, nl);
-            fn_8028C188(&m->result, c.mData, c.mLength);
+        case (int)0xAD8576FA:
+            HostRideBStateName(&m->result, gRideTypes[b->state].name);
             return 0;
-        }
         }
         return 0;
     }
     case 0x1800:
         fn_800C725C(actor);
         return 1;
-    case 0x40A: {
-        Msg40A* m = (Msg40A*)data;
-        Msg400 q;
-
-        q.actor = actor;
-        q.ownerId = OwnerId((Owner*)actor);
-        ((Actor*)m->actor)->msgFn(0x400, &q);
-        if (ActorPlayAnim(OwnerId((Owner*)actor), StrHash("QUERY", m->unk08), m->unk04)) {
-            m->unk0C = 0;
-            return 1;
-        }
-        if (fn_80049940()) {
-            if (m->unk08 == 0x7C44EC3D) {
-                m->unk0C = 0xA53F7E23;
-                return 1;
-            }
-            return 0;
-        }
-        return 1;
-    }
+    case 0x40A:
+        return HostRideBPlayQuery(actor, data);
     case 0x409: {
         Msg40A* m = (Msg40A*)data;
         return ActorPlayAnim(OwnerId((Owner*)actor), m->unk0C, m->unk08) != 0;
