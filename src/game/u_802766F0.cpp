@@ -4,6 +4,10 @@
 // - A bump allocator over 0x2000-byte blocks plus small block-pool helpers.
 // - Allocation hook setters and a small LCG.
 // Names are descriptive guesses; the code is matched against the retail DOL.
+// SolverCholeskyFactor, SolverInvertSymmetric and SolverRandRange follow the Open Dynamics Engine
+// (ODE) routines dFactorCholesky, dInvertPDMatrix (with dSolveCholesky/dSetZero) and dRandInt/dRand, which
+// Geist links: ODE is Copyright (C) 2001-2003 Russell L. Smith, used under its BSD license. Written here
+// to match the retail code; ODE was the reference for the algorithm and statement order.
 
 #pragma auto_inline off
 
