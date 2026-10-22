@@ -563,18 +563,21 @@ void StreamHeapFlush(void) {
     }
 }
 
-extern "C" void fn_80286980(void) {
-    u32 start;
+static inline void VMResetRefs() {
+    u32 end = ((u32)(lbl_804D5680 - lbl_804D5678) + 0xFFF) >> 12;
     u32 i;
 
-    lbl_804D5684 = 0;
-    lbl_804D5680 = lbl_804D5678;
-    start = ((u32)(lbl_804D5680 - lbl_804D5678) + 0xFFF) >> 12;
-    for (i = start; i < lbl_804D5664; i++) {
+    for (i = end; i < lbl_804D5664; i++) {
         lbl_804D5690[i] = 0;
     }
-    lbl_804D568C = lbl_804D5664 - start;
-    lbl_804D5688 = ((lbl_804D5664 - start) << 12) - 0x20000;
+    lbl_804D568C = lbl_804D5664 - end;
+    lbl_804D5688 = ((lbl_804D5664 - end) << 12) - 0x20000;
+}
+
+extern "C" void fn_80286980(void) {
+    lbl_804D5684 = 0;
+    lbl_804D5680 = lbl_804D5678;
+    VMResetRefs();
 }
 
 extern "C" void* fn_802869DC(u32 size) {
