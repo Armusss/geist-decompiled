@@ -75,14 +75,6 @@ struct Vec3 {
     float x, y, z;
 };
 
-inline Vec3 operator*(const Vec3& a, float s) {
-    Vec3 r;
-    r.x = a.x * s;
-    r.y = a.y * s;
-    r.z = a.z * s;
-    return r;
-}
-
 struct HomingShot {
     u8 pad[0x30];
     Vec3 pos;
@@ -97,6 +89,11 @@ struct HomingFire {
     int unk8;
     int animA;
     int animB;
+};
+
+struct MsgResult {
+    void* p;
+    char pad[0x1C];
 };
 
 struct HomingInfo {
@@ -134,7 +131,7 @@ int HomingMsg(EffectObj* obj, int msg, int arg, void* data, float dt) {
         HomingFire* fire = (HomingFire*)data;
         HomingShot* shot;
         HomingInfo info;
-        int target;
+        MsgResult target;
         Vec3 up;
 
         EffectTypeHash(type);
@@ -148,13 +145,18 @@ int HomingMsg(EffectObj* obj, int msg, int arg, void* data, float dt) {
             HomingTarget* t;
             Vec3* v;
             SendMsg(arg, 0x400, &target);
-            t = (HomingTarget*)target;
+            t = (HomingTarget*)target.p;
             v = (Vec3*)fn_800772E0(t);
             {
-                Vec3 d = *v * 1000.0f;
-                info.vel.x += d.x;
-                info.vel.y += d.y;
-                info.vel.z += d.z;
+                float x = v->x;
+                float y = v->y;
+                float z = v->z;
+                x *= 1000.0f;
+                y *= 1000.0f;
+                z *= 1000.0f;
+                info.vel.x += x;
+                info.vel.y += y;
+                info.vel.z += z;
             }
             if (t->hasAnim == 0) {
                 fn_800C5E00(t->model, 1, fire->animA, fire->animB, 0);
