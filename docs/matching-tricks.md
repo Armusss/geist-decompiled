@@ -72,9 +72,7 @@ of a parameter of the same type is merged into the parameter and keeps the param
   local, return it through an out pointer instead: `Query(&r1, ...)` (HostAction, WeaponMsg).
 - The reverse: a plain caller local that retail ranks first can come from an inline's return value
   (PickupLoad: `tag = (u32*)StreamTake(s, 4)`, a helper that advances the stream).
-- Still unsolved: the lazy type-name hash (ToolCreate etc.). Retail ranks the hash after the name
-  pointer in ~76 single-pointer hash loops; 1.3.2 ranks it first in every StrHash/toupper/wrapper
-  shape tried (about 1000 variants).
+- The lazy type-name hash (ToolCreate etc.) is solved; see "The lazy type-name hash" below.
 
 ## Loop counter vs. pointer walker register swap: move the loop into an inline helper
 When retail keeps a loop's counter and its pointer walker in each other's registers (or adds/drops a
@@ -107,3 +105,37 @@ declarations after wrapping code in an inline. SaveRestoreBlocks matched this wa
   mr off,i` (the compiler-made offset copies i); use plain indexing in the inline, not an explicit offset.
 - Outside inlines the opposite ranking holds: declaring `int i;` before `int words` matched seven Bitset
   helpers in u_80022B10.
+
+## The lazy type-name hash: solved by opus-1, 2026-10-21
+Retail (ToolCreate, SpiritGunCreate, DogMeleeCreate, HomingMsg and ~22 more effect Create/Msg
+functions) keeps the type pointer and the name pointer ahead of the hash (`s r4, type r5, h r6, c r7`);
+our shapes always gave `h r4`. Three things are needed together, none works alone:
+```
+for (i = 0; s[i] != 0; i++) {
+    h *= 31;                                    // two statements, not h = h * 31 + ...
+    h += (unsigned char)toupper(s[i]);
+}
+inline u32 EffectTypeHash(EffectType* type) {
+    if (type->hash == 0) {
+        const char* name = type->name;          // name copied into a local first
+        type->hash = StrHash(name);
+    }
+    return type->hash;
+}
+void* ToolCreate(int a, int id) {
+    EffectType* type = &gToolType;              // a local type pointer, not &gToolType in the call
+    Tool* t;
+    EffectTypeHash(type);
+```
+The StrHash null-check form (return 0 / shared h) does not matter. Findings on the way:
+- `h = h * 31 + x` makes a temp for `h * 31` that is ranked like an inline value and pulls h to the
+  front; `h *= 31; h += x` keeps h a plain variable.
+- Volatile ranking seen in 1.3.2: an inline's locals rank before its parameters, inline parameters
+  rank outer-first, the CSE'd `*s` byte ranks after them, and caller locals rank last (unless they
+  are temps). The walked pointer is never ranked by declaration order.
+- DashOnEvent and RideMsg (u_802B9088) use the seeded `StrHash(s, seed)` with the result in a
+  callee-saved register. Retail accumulates directly in that register (the caller's variable), which
+  `inline void StrHash(u32& h, const char* s)` + `h *= 31` reproduces; the callee-saved ranking is
+  still off there.
+- HomingMsg: the 0x400 query result is a 32-byte struct (`MsgResult`, as in ThermoBeh), and the
+  target velocity add is `float x = v->x; ... x *= 1000.0f; ... info.vel.x += x;`.
