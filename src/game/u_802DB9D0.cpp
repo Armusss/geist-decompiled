@@ -231,10 +231,10 @@ int HostBehMsg(int msg, void* data) {
 
         ids[0] = AssetFind(0xF2E2BEB8, 0x35E0C459);
         ids[1] = AssetFind(0xF2E2BEB8, 0x92373E14);
-        if (((int*)data)[1] == 0) {
-            fn_8000F550(ids, 2);
-        } else {
+        if (((int*)data)[1] != 0) {
             TextureLoad(ids, 2);
+        } else {
+            fn_8000F550(ids, 2);
         }
         return 0;
     }
@@ -368,10 +368,7 @@ int HostBehState2Update(Actor* actor) {
     if (info == 0 || !SendMsg(((TargetInfo*)info)->handle, 0x400, buf)) {
         return 0;
     }
-    if (HasCondition(&actor->st, 0x31)) {
-        return beh->state;
-    }
-    return 1;
+    return HasCondition(&actor->st, 0x31) == 0 ? 1 : beh->state;
 }
 
 // State 2 check hook.
