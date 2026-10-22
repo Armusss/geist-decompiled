@@ -349,13 +349,10 @@ void SetupGhostAction(Actor* a) {
 
     Fn800F7DEC(q1, q2, 0x20EE36, fn_800498D0(a), 0);
 
-    HostData* n = (HostData*)a->hosts[host];
-    a->unk98 = fn_800A1BC8(n->i14, n->i18, lbl_803BC148[3].unk0C[idx], 0, 0);
+    a->unk98 = fn_800A1BC8(((HostData*)a->hosts[host])->i14, ((HostData*)a->hosts[host])->i18, lbl_803BC148[3].unk0C[idx], 0, 0);
     a->msgHandler = GhostActionMsg;
     a->unkA4 = 1;
-
-    n = (HostData*)a->hosts[host];
-    a->unkF0 = fn_800A1BC8(n->i14, n->i1C, lbl_803BC148[3].unk0C[idx], 0, 0);
+    a->unkF0 = fn_800A1BC8(((HostData*)a->hosts[host])->i14, ((HostData*)a->hosts[host])->i1C, lbl_803BC148[3].unk0C[idx], 0, 0);
     a->unkFC = 1;
 }
 
