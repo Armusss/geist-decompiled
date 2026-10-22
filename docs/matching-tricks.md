@@ -139,3 +139,13 @@ The StrHash null-check form (return 0 / shared h) does not matter. Findings on t
   still off there.
 - HomingMsg: the 0x400 query result is a 32-byte struct (`MsgResult`, as in ThermoBeh), and the
   target velocity add is `float x = v->x; ... x *= 1000.0f; ... info.vel.x += x;`.
+
+## State-name String blocks and actor loads in message handlers (opus-1, 2026-10-21)
+- A message handler that builds String locals for a state-name reply, with the String stack slots in
+  ascending order (name 12, newline 32, result 52), needs that block as a `static inline` helper
+  (`HostBehStateName(Buffer* out, const char* s)`): inline locals get ascending stack slots. Fixed HostBehMsg
+  and HostRideCMsg; should apply to HostRideBMsg, HostRideMsg, HostRideDMsg, CollectMsg and u_80150300's.
+- If a handler keeps the actor in r6 with an `mr r3` copy, make that case an inline that loads the actor
+  from `data` itself (HostBehMsg's 0x41E query).
+- A `cond == 0 ? 1 : x` ternary gave retail's branch polarity where if/else shapes did not (HostBehState2Update).
+- Buffer/String: matching files declare `virtual ~Buffer()` so the vptr is at 0.
