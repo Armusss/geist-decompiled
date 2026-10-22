@@ -447,12 +447,14 @@ int HostRideCState2Update(Actor* o) {
     if (!(b->flags & 2)) {
         MsgC14 m;
         int r;
+        int id;
 
         b->flags |= 2;
         r = ActorPlayAnim(o->id, 0xDC35206A, target->id);
+        id = o->id;
         if (target->id != -1) {
             m.unk4 = r;
-            m.handle = o->id;
+            m.handle = id;
             m.key = 0xAF699ED0;
             SendMsg(target->id, 0xC14, &m);
         }
