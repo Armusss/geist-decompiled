@@ -155,3 +155,11 @@ The StrHash null-check form (return 0 / shared h) does not matter. Findings on t
 The lazy name-hash recipe matched 18 more `XCreate(int, int)` functions (Pistol, Sniper, Rpg, ...). The extern
 type descriptor must be declared with the full 0x30-byte EffectType: an 8-byte struct gets addressed as small
 data and breaks the match. Generator: ~/geist-work/ds/opus-1-tools/cgen.py.
+
+## Seeded hash and the "temp then late copy" pattern (opus-1, 2026-10-23)
+- The seeded StrHash variant also needs `h *= 31; h += c;` as two statements, and `h %= 0xFFFFFFFF; return h;`
+  rather than `return h % 0xFFFFFFFF;` (HostRideABehavior, HostRideCHandle40A).
+- Retail's "load into a volatile register, use it, then copy it to r31" comes from mixing a message-field
+  expression (`m->actor`, which becomes the CSE temp) with a local (`a`, which becomes the r31 copy).
+- A unit can be at N/N functions by udiff and still fail the DOL check through its .data jump table: swapped
+  case labels change only the table (HostRideAMsg's 0x41D/0x41E).
