@@ -18,7 +18,7 @@ published; generate your own from your copy of the game if you want it.
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | stopped (DeepSeek credit out); u_80080F88 merged at 6/22 | stopped |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | stopped (credit out); u_800FDDE4 draft in worktree, 20 stubs left, 1/26 | stopped |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | stopped (credit out); u_800D0BF4 draft in worktree, 13 stubs left, 7/30 | stopped |
-| opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Done: near-done pass (u_801F676C, u_801F1798 Matching) | done |
+| opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Drafting effect units: u_8018C358, u_801965FC, u_80268780, u_8025643C, u_80251CB8 | running |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
