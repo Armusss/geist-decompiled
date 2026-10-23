@@ -184,7 +184,7 @@ struct Msg40A {
 
 // Payload of message 0x41D.  The answer word doubles as an output buffer
 // for the name query.
-struct Msg41D {
+struct Msg41E {
     Actor* actor;       // 0x00
     int key;            // 0x04
     int unk08;          // 0x08
@@ -192,7 +192,7 @@ struct Msg41D {
 };
 
 // Payload of message 0x41E.
-struct Msg41E {
+struct Msg41D {
     Actor* actor;       // 0x00
     int key;            // 0x04
     int unk08;          // 0x08
@@ -289,8 +289,8 @@ int HostRideAState1Enter(Actor* actor);
 int HostRideAState0Update(void* p);
 int HostRideAState0Leave(Actor* actor);
 int HostRideAState0Enter(Actor* actor);
-int HostRideAMsgSet(void* data);
 int HostRideAMsgQuery(void* data);
+int HostRideAMsgSet(void* data);
 int HostRideABehavior(void* data);
 
 static RideType gRideTypes[3] = {
@@ -338,9 +338,9 @@ int HostRideAMsg(int msg, void* data) {
         return 0;
     }
     case 0x41E:
-        return HostRideAMsgSet(data);
-    case 0x41D:
         return HostRideAMsgQuery(data);
+    case 0x41D:
+        return HostRideAMsgSet(data);
     case 0x407: {
         Msg40A* m = (Msg40A*)data;
         RideData* b;
@@ -718,10 +718,9 @@ int HostRideAState0Enter(Actor* a) {
     return 1;
 }
 
-// 0x801F7750: message 0x41E handler (query: asset, state name, ride flags). Retail jump table sends 0x41E
-// here, so this "Set" name and the Msg41D/Msg41E struct names are swapped relative to their messages.
-int HostRideAMsgSet(void* data) {
-    Msg41D* m = (Msg41D*)data;
+// 0x801F7750: message 0x41E handler (query: asset, state name, ride flags).
+int HostRideAMsgQuery(void* data) {
+    Msg41E* m = (Msg41E*)data;
     Actor* a = (Actor*)m->actor;
     RideData* b = a->beh;
 
@@ -771,9 +770,9 @@ int HostRideAMsgSet(void* data) {
     return 0;
 }
 
-// 0x801F79C4: message 0x41D handler (set ride properties; see the note above about the swapped names).
-int HostRideAMsgQuery(void* data) {
-    Msg41E* m = (Msg41E*)data;
+// 0x801F79C4: message 0x41D handler (set ride properties).
+int HostRideAMsgSet(void* data) {
+    Msg41D* m = (Msg41D*)data;
     Actor* a = (Actor*)m->actor;
     RideData* b;
 
