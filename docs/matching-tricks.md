@@ -144,8 +144,14 @@ The StrHash null-check form (return 0 / shared h) does not matter. Findings on t
 - A message handler that builds String locals for a state-name reply, with the String stack slots in
   ascending order (name 12, newline 32, result 52), needs that block as a `static inline` helper
   (`HostBehStateName(Buffer* out, const char* s)`): inline locals get ascending stack slots. Fixed HostBehMsg
-  and HostRideCMsg; should apply to HostRideBMsg, HostRideMsg, HostRideDMsg, CollectMsg and u_80150300's.
+  and HostRideCMsg, then HostRideDMsg. Only when retail's String slots ascend: PossessHostMsg's descend,
+  and there the block stays in the outer function.
 - If a handler keeps the actor in r6 with an `mr r3` copy, make that case an inline that loads the actor
   from `data` itself (HostBehMsg's 0x41E query).
 - A `cond == 0 ? 1 : x` ternary gave retail's branch polarity where if/else shapes did not (HostBehState2Update).
 - Buffer/String: matching files declare `virtual ~Buffer()` so the vptr is at 0.
+
+## Effect Create functions (opus-1, 2026-10-22)
+The lazy name-hash recipe matched 18 more `XCreate(int, int)` functions (Pistol, Sniper, Rpg, ...). The extern
+type descriptor must be declared with the full 0x30-byte EffectType: an 8-byte struct gets addressed as small
+data and breaks the match. Generator: ~/geist-work/ds/opus-1-tools/cgen.py.
