@@ -9,7 +9,7 @@ typedef unsigned char u8;
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
-    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN", "\n",
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN", "",
 };
 
 struct Actor;
@@ -277,20 +277,26 @@ int HostTypeEnter06(Actor* a);                          // 0x80152894
 int HostTypeEnter03(Actor* a);                          // 0x801528E8
 int HostTypeEnter00(Actor* a);                          // 0x80152938
 
+static inline int PossessHostCheck(void* data) {
+    Actor* a = ((MsgHdr*)data)->actor;
+
+    if (a == 0) {
+        return 1;
+    }
+    if (fn_80116E08(a) == 0) {
+        return 1;
+    }
+    return 0;
+}
+
 int PossessHostMsg(int msg, void* data) {
     MsgHdr* m = (MsgHdr*)data;
-    Actor* a = m->actor;
+    Actor* a = *(Actor**)data;
     HostState* s = a->state;
 
     switch (msg) {
     case 0x3300:
-        if (a == 0) {
-            return 1;
-        }
-        if (fn_80116E08(a)) {
-            return 0;
-        }
-        return 1;
+        return PossessHostCheck(data);
     case 0xC06:
         if (m->cmd == 0x46341C3A || m->cmd == 0x239807 || m->cmd == 0x4A5C9FC) {
             fn_800CB8BC(a, a->iC4, s->unk2C, a->i26C);
@@ -299,13 +305,15 @@ int PossessHostMsg(int msg, void* data) {
     case 0x41E: {
         Msg41E* q = (Msg41E*)data;
 
-        if (q->cmd == 0xAD8576FA) {
+        switch (q->cmd) {
+        case 0xAD8576FA: {
             String name(lbl_803A5488[s->index].sep);
-            String sep("");
+            String sep("\n");
             const String& text = fn_800225C8(name, sep);
 
             fn_8028C188(&q->result, text.mData, text.mLength);
             return 0;
+        }
         }
         return 0;
     }
