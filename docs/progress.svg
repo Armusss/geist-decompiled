@@ -2,269 +2,269 @@
 <rect width="1000" height="516" fill="#0d1117"/>
 <text x="8" y="26" font-family="sans-serif" font-size="16" font-weight="bold" fill="#ffffff">Geist (GITE01) matching decompilation — libraries: 201/203 files (99.0%) byte-identical</text>
 <text x="8" y="60" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">Dolphin SDK: 77/77</text>
-<rect x="8" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/ar/ar.c — matching</title></rect>
-<rect x="28" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/ar/arq.c — matching</title></rect>
-<rect x="48" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/base/PPCArch.c — matching</title></rect>
-<rect x="68" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDBios.c — matching</title></rect>
-<rect x="88" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDUnlock.c — matching</title></rect>
-<rect x="108" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDRdwr.c — matching</title></rect>
-<rect x="128" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDBlock.c — matching</title></rect>
-<rect x="148" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDDir.c — matching</title></rect>
-<rect x="168" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDCheck.c — matching</title></rect>
-<rect x="188" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDMount.c — matching</title></rect>
-<rect x="208" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDFormat.c — matching</title></rect>
-<rect x="228" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDOpen.c — matching</title></rect>
-<rect x="248" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDCreate.c — matching</title></rect>
-<rect x="268" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDRead.c — matching</title></rect>
-<rect x="288" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDWrite.c — matching</title></rect>
-<rect x="308" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDDelete.c — matching</title></rect>
-<rect x="328" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDStat.c — matching</title></rect>
-<rect x="348" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDRename.c — matching</title></rect>
-<rect x="368" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/db/db.c — matching</title></rect>
-<rect x="388" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dsp/dsp.c — matching</title></rect>
-<rect x="408" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dsp/dsp_task.c — matching</title></rect>
-<rect x="428" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvdlow.c — matching</title></rect>
-<rect x="448" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvdfs.c — matching</title></rect>
-<rect x="468" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvd.c — matching</title></rect>
-<rect x="488" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvdqueue.c — matching</title></rect>
-<rect x="508" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvderror.c — matching</title></rect>
-<rect x="528" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvdidutils.c — matching</title></rect>
-<rect x="548" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/fstload.c — matching</title></rect>
-<rect x="568" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXInit.c — matching</title></rect>
-<rect x="588" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXFifo.c — matching</title></rect>
-<rect x="608" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXAttr.c — matching</title></rect>
-<rect x="628" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXMisc.c — matching</title></rect>
-<rect x="648" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXGeometry.c — matching</title></rect>
-<rect x="668" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXFrameBuf.c — matching</title></rect>
-<rect x="688" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXLight.c — matching</title></rect>
-<rect x="708" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXTexture.c — matching</title></rect>
-<rect x="728" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXBump.c — matching</title></rect>
-<rect x="748" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXTev.c — matching</title></rect>
-<rect x="768" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXPixel.c — matching</title></rect>
-<rect x="788" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXDisplayList.c — matching</title></rect>
-<rect x="808" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXTransform.c — matching</title></rect>
-<rect x="828" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXPerf.c — matching</title></rect>
-<rect x="848" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/mtx.c — matching</title></rect>
-<rect x="868" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/mtxvec.c — matching</title></rect>
-<rect x="888" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/mtx44vec.c — matching</title></rect>
-<rect x="908" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/mtx44.c — matching</title></rect>
-<rect x="928" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/vec.c — matching</title></rect>
-<rect x="948" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/quat.c — matching</title></rect>
-<rect x="8" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OS.c — matching</title></rect>
-<rect x="28" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSAlarm.c — matching</title></rect>
-<rect x="48" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSAlloc.c — matching</title></rect>
-<rect x="68" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSArena.c — matching</title></rect>
-<rect x="88" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSAudioSystem.c — matching</title></rect>
-<rect x="108" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSCache.c — matching</title></rect>
-<rect x="128" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSContext.c — matching</title></rect>
-<rect x="148" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSError.c — matching</title></rect>
-<rect x="168" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSExec.c — matching</title></rect>
-<rect x="188" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSFont.c — matching</title></rect>
-<rect x="208" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSInterrupt.c — matching</title></rect>
-<rect x="228" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSLink.c — matching</title></rect>
-<rect x="248" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSMemory.c — matching</title></rect>
-<rect x="268" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSMutex.c — matching</title></rect>
-<rect x="288" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSReboot.c — matching</title></rect>
-<rect x="308" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSReset.c — matching</title></rect>
-<rect x="328" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSResetSW.c — matching</title></rect>
-<rect x="348" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSRtc.c — matching</title></rect>
-<rect x="368" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSSync.c — matching</title></rect>
-<rect x="388" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSTime.c — matching</title></rect>
-<rect x="408" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/__ppc_eabi_init.c — matching</title></rect>
-<rect x="428" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/pad/Padclamp.c — matching</title></rect>
-<rect x="448" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/pad/Pad.c — matching</title></rect>
-<rect x="468" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/vi/vi.c — matching</title></rect>
-<rect x="488" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/ai/ai.c — matching</title></rect>
-<rect x="508" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/exi/EXIBios.c — matching</title></rect>
-<rect x="528" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/exi/EXIUart.c — matching</title></rect>
-<rect x="548" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/si/SIBios.c — matching</title></rect>
-<rect x="568" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/si/SISamplingRate.c — matching</title></rect>
+<rect x="8" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/ar/ar.c - matching</title></rect>
+<rect x="28" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/ar/arq.c - matching</title></rect>
+<rect x="48" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/base/PPCArch.c - matching</title></rect>
+<rect x="68" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDBios.c - matching</title></rect>
+<rect x="88" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDUnlock.c - matching</title></rect>
+<rect x="108" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDRdwr.c - matching</title></rect>
+<rect x="128" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDBlock.c - matching</title></rect>
+<rect x="148" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDDir.c - matching</title></rect>
+<rect x="168" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDCheck.c - matching</title></rect>
+<rect x="188" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDMount.c - matching</title></rect>
+<rect x="208" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDFormat.c - matching</title></rect>
+<rect x="228" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDOpen.c - matching</title></rect>
+<rect x="248" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDCreate.c - matching</title></rect>
+<rect x="268" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDRead.c - matching</title></rect>
+<rect x="288" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDWrite.c - matching</title></rect>
+<rect x="308" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDDelete.c - matching</title></rect>
+<rect x="328" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDStat.c - matching</title></rect>
+<rect x="348" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/card/CARDRename.c - matching</title></rect>
+<rect x="368" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/db/db.c - matching</title></rect>
+<rect x="388" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dsp/dsp.c - matching</title></rect>
+<rect x="408" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dsp/dsp_task.c - matching</title></rect>
+<rect x="428" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvdlow.c - matching</title></rect>
+<rect x="448" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvdfs.c - matching</title></rect>
+<rect x="468" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvd.c - matching</title></rect>
+<rect x="488" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvdqueue.c - matching</title></rect>
+<rect x="508" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvderror.c - matching</title></rect>
+<rect x="528" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/dvdidutils.c - matching</title></rect>
+<rect x="548" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/dvd/fstload.c - matching</title></rect>
+<rect x="568" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXInit.c - matching</title></rect>
+<rect x="588" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXFifo.c - matching</title></rect>
+<rect x="608" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXAttr.c - matching</title></rect>
+<rect x="628" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXMisc.c - matching</title></rect>
+<rect x="648" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXGeometry.c - matching</title></rect>
+<rect x="668" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXFrameBuf.c - matching</title></rect>
+<rect x="688" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXLight.c - matching</title></rect>
+<rect x="708" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXTexture.c - matching</title></rect>
+<rect x="728" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXBump.c - matching</title></rect>
+<rect x="748" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXTev.c - matching</title></rect>
+<rect x="768" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXPixel.c - matching</title></rect>
+<rect x="788" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXDisplayList.c - matching</title></rect>
+<rect x="808" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXTransform.c - matching</title></rect>
+<rect x="828" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/gx/GXPerf.c - matching</title></rect>
+<rect x="848" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/mtx.c - matching</title></rect>
+<rect x="868" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/mtxvec.c - matching</title></rect>
+<rect x="888" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/mtx44vec.c - matching</title></rect>
+<rect x="908" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/mtx44.c - matching</title></rect>
+<rect x="928" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/vec.c - matching</title></rect>
+<rect x="948" y="66" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/mtx/quat.c - matching</title></rect>
+<rect x="8" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OS.c - matching</title></rect>
+<rect x="28" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSAlarm.c - matching</title></rect>
+<rect x="48" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSAlloc.c - matching</title></rect>
+<rect x="68" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSArena.c - matching</title></rect>
+<rect x="88" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSAudioSystem.c - matching</title></rect>
+<rect x="108" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSCache.c - matching</title></rect>
+<rect x="128" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSContext.c - matching</title></rect>
+<rect x="148" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSError.c - matching</title></rect>
+<rect x="168" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSExec.c - matching</title></rect>
+<rect x="188" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSFont.c - matching</title></rect>
+<rect x="208" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSInterrupt.c - matching</title></rect>
+<rect x="228" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSLink.c - matching</title></rect>
+<rect x="248" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSMemory.c - matching</title></rect>
+<rect x="268" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSMutex.c - matching</title></rect>
+<rect x="288" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSReboot.c - matching</title></rect>
+<rect x="308" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSReset.c - matching</title></rect>
+<rect x="328" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSResetSW.c - matching</title></rect>
+<rect x="348" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSRtc.c - matching</title></rect>
+<rect x="368" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSSync.c - matching</title></rect>
+<rect x="388" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/OSTime.c - matching</title></rect>
+<rect x="408" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/os/__ppc_eabi_init.c - matching</title></rect>
+<rect x="428" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/pad/Padclamp.c - matching</title></rect>
+<rect x="448" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/pad/Pad.c - matching</title></rect>
+<rect x="468" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/vi/vi.c - matching</title></rect>
+<rect x="488" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/ai/ai.c - matching</title></rect>
+<rect x="508" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/exi/EXIBios.c - matching</title></rect>
+<rect x="528" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/exi/EXIUart.c - matching</title></rect>
+<rect x="548" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/si/SIBios.c - matching</title></rect>
+<rect x="568" y="86" width="18" height="18" rx="2" fill="#2ea043"><title>dolphin/si/SISamplingRate.c - matching</title></rect>
 <text x="8" y="126" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">MusyX: 26/26</text>
-<rect x="8" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/seq.c — matching</title></rect>
-<rect x="28" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synth.c — matching</title></rect>
-<rect x="48" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/seq_api.c — matching</title></rect>
-<rect x="68" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd_synthapi.c — matching</title></rect>
-<rect x="88" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/stream.c — matching</title></rect>
-<rect x="108" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synthdata.c — matching</title></rect>
-<rect x="128" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synthmacros.c — matching</title></rect>
-<rect x="148" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synthvoice.c — matching</title></rect>
-<rect x="168" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synth_ac.c — matching</title></rect>
-<rect x="188" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synth_adsr.c — matching</title></rect>
-<rect x="208" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synth_vsamples.c — matching</title></rect>
-<rect x="228" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/s_data.c — matching</title></rect>
-<rect x="248" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hw_dspctrl.c — matching</title></rect>
-<rect x="268" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hw_volconv.c — matching</title></rect>
-<rect x="288" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd3d.c — matching</title></rect>
-<rect x="308" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd_init.c — matching</title></rect>
-<rect x="328" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd_math.c — matching</title></rect>
-<rect x="348" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd_midictrl.c — matching</title></rect>
-<rect x="368" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd_service.c — matching</title></rect>
-<rect x="388" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hardware.c — matching</title></rect>
-<rect x="408" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hw_aramdma.c — matching</title></rect>
-<rect x="428" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/dsp_import.c — matching</title></rect>
-<rect x="448" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hw_dolphin.c — matching</title></rect>
-<rect x="468" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hw_memory.c — matching</title></rect>
-<rect x="488" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/CheapReverb/creverb_fx.c — matching</title></rect>
-<rect x="508" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/CheapReverb/creverb.c — matching</title></rect>
+<rect x="8" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/seq.c - matching</title></rect>
+<rect x="28" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synth.c - matching</title></rect>
+<rect x="48" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/seq_api.c - matching</title></rect>
+<rect x="68" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd_synthapi.c - matching</title></rect>
+<rect x="88" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/stream.c - matching</title></rect>
+<rect x="108" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synthdata.c - matching</title></rect>
+<rect x="128" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synthmacros.c - matching</title></rect>
+<rect x="148" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synthvoice.c - matching</title></rect>
+<rect x="168" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synth_ac.c - matching</title></rect>
+<rect x="188" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synth_adsr.c - matching</title></rect>
+<rect x="208" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/synth_vsamples.c - matching</title></rect>
+<rect x="228" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/s_data.c - matching</title></rect>
+<rect x="248" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hw_dspctrl.c - matching</title></rect>
+<rect x="268" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hw_volconv.c - matching</title></rect>
+<rect x="288" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd3d.c - matching</title></rect>
+<rect x="308" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd_init.c - matching</title></rect>
+<rect x="328" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd_math.c - matching</title></rect>
+<rect x="348" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd_midictrl.c - matching</title></rect>
+<rect x="368" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/snd_service.c - matching</title></rect>
+<rect x="388" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hardware.c - matching</title></rect>
+<rect x="408" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hw_aramdma.c - matching</title></rect>
+<rect x="428" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/dsp_import.c - matching</title></rect>
+<rect x="448" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hw_dolphin.c - matching</title></rect>
+<rect x="468" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/hw_memory.c - matching</title></rect>
+<rect x="488" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/CheapReverb/creverb_fx.c - matching</title></rect>
+<rect x="508" y="132" width="18" height="18" rx="2" fill="#2ea043"><title>musyx/runtime/CheapReverb/creverb.c - matching</title></rect>
 <text x="8" y="172" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">zlib 1.1.4: 12/12</text>
-<rect x="8" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/adler32.c — matching</title></rect>
-<rect x="28" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/compress.c — matching</title></rect>
-<rect x="48" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/deflate.c — matching</title></rect>
-<rect x="68" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/infblock.c — matching</title></rect>
-<rect x="88" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/infcodes.c — matching</title></rect>
-<rect x="108" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/inffast.c — matching</title></rect>
-<rect x="128" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/inflate.c — matching</title></rect>
-<rect x="148" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/inftrees.c — matching</title></rect>
-<rect x="168" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/infutil.c — matching</title></rect>
-<rect x="188" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/trees.c — matching</title></rect>
-<rect x="208" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/uncompr.c — matching</title></rect>
-<rect x="228" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/zutil.c — matching</title></rect>
+<rect x="8" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/adler32.c - matching</title></rect>
+<rect x="28" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/compress.c - matching</title></rect>
+<rect x="48" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/deflate.c - matching</title></rect>
+<rect x="68" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/infblock.c - matching</title></rect>
+<rect x="88" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/infcodes.c - matching</title></rect>
+<rect x="108" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/inffast.c - matching</title></rect>
+<rect x="128" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/inflate.c - matching</title></rect>
+<rect x="148" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/inftrees.c - matching</title></rect>
+<rect x="168" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/infutil.c - matching</title></rect>
+<rect x="188" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/trees.c - matching</title></rect>
+<rect x="208" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/uncompr.c - matching</title></rect>
+<rect x="228" y="178" width="18" height="18" rx="2" fill="#2ea043"><title>zlib/zutil.c - matching</title></rect>
 <text x="8" y="218" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">MSL C: 51/52</text>
-<rect x="8" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/abort_exit.c — matching</title></rect>
-<rect x="28" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/alloc.c — matching</title></rect>
-<rect x="48" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/ansi_files.c — matching</title></rect>
-<rect x="68" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Src/ansi_fp.c — matching</title></rect>
-<rect x="88" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/buffer_io.c — matching</title></rect>
-<rect x="108" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/PPC_EABI/Src/critical_regions.gamecube.c — matching</title></rect>
-<rect x="128" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/ctype.c — matching</title></rect>
-<rect x="148" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/direct_io.c — matching</title></rect>
-<rect x="168" y="224" width="18" height="18" rx="2" fill="#30363d"><title>MSL_C/MSL_Common/Src/file_io.c — asm</title></rect>
-<rect x="188" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/FILE_POS.c — matching</title></rect>
-<rect x="208" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/mbstring.c — matching</title></rect>
-<rect x="228" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/mem.c — matching</title></rect>
-<rect x="248" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/mem_funcs.c — matching</title></rect>
-<rect x="268" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/misc_io.c — matching</title></rect>
-<rect x="288" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/printf.c — matching</title></rect>
-<rect x="308" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/qsort.c — matching</title></rect>
-<rect x="328" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/rand.c — matching</title></rect>
-<rect x="348" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/signal.c — matching</title></rect>
-<rect x="368" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/string.c — matching</title></rect>
-<rect x="388" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/time.c — matching</title></rect>
-<rect x="408" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/wchar_io.c — matching</title></rect>
-<rect x="428" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/PPC_EABI/Src/time.gamecube.c — matching</title></rect>
-<rect x="448" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/PPC_EABI/Src/uart_console_io_gcn.c — matching</title></rect>
-<rect x="468" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_acos.c — matching</title></rect>
-<rect x="488" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_atan2.c — matching</title></rect>
-<rect x="508" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_exp.c — matching</title></rect>
-<rect x="528" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_fmod.c — matching</title></rect>
-<rect x="548" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_pow.c — matching</title></rect>
-<rect x="568" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_rem_pio2.c — matching</title></rect>
-<rect x="588" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/k_cos.c — matching</title></rect>
-<rect x="608" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/k_rem_pio2.c — matching</title></rect>
-<rect x="628" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/k_sin.c — matching</title></rect>
-<rect x="648" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/k_tan.c — matching</title></rect>
-<rect x="668" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_atan.c — matching</title></rect>
-<rect x="688" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_copysign.c — matching</title></rect>
-<rect x="708" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_cos.c — matching</title></rect>
-<rect x="728" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_floor.c — matching</title></rect>
-<rect x="748" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_frexp.c — matching</title></rect>
-<rect x="768" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_ldexp.c — matching</title></rect>
-<rect x="788" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_modf.c — matching</title></rect>
-<rect x="808" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_sin.c — matching</title></rect>
-<rect x="828" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_tan.c — matching</title></rect>
-<rect x="848" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_acos.c — matching</title></rect>
-<rect x="868" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_atan2.c — matching</title></rect>
-<rect x="888" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_exp.c — matching</title></rect>
-<rect x="908" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_fmod.c — matching</title></rect>
-<rect x="928" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_pow.c — matching</title></rect>
-<rect x="948" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_sqrt.c — matching</title></rect>
-<rect x="8" y="244" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/PPC_EABI/Src/math_ppc.c — matching</title></rect>
-<rect x="28" y="244" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/math_api.c — matching</title></rect>
-<rect x="48" y="244" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_sqrt.c — matching</title></rect>
-<rect x="68" y="244" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/extras.c — matching</title></rect>
+<rect x="8" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/abort_exit.c - matching</title></rect>
+<rect x="28" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/alloc.c - matching</title></rect>
+<rect x="48" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/ansi_files.c - matching</title></rect>
+<rect x="68" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Src/ansi_fp.c - matching</title></rect>
+<rect x="88" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/buffer_io.c - matching</title></rect>
+<rect x="108" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/PPC_EABI/Src/critical_regions.gamecube.c - matching</title></rect>
+<rect x="128" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/ctype.c - matching</title></rect>
+<rect x="148" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/direct_io.c - matching</title></rect>
+<rect x="168" y="224" width="18" height="18" rx="2" fill="#d29922"><title>MSL_C/MSL_Common/Src/file_io.c - partial: 4/5 functions match</title></rect>
+<rect x="188" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/FILE_POS.c - matching</title></rect>
+<rect x="208" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/mbstring.c - matching</title></rect>
+<rect x="228" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/mem.c - matching</title></rect>
+<rect x="248" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/mem_funcs.c - matching</title></rect>
+<rect x="268" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/misc_io.c - matching</title></rect>
+<rect x="288" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/printf.c - matching</title></rect>
+<rect x="308" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/qsort.c - matching</title></rect>
+<rect x="328" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/rand.c - matching</title></rect>
+<rect x="348" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/signal.c - matching</title></rect>
+<rect x="368" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/string.c - matching</title></rect>
+<rect x="388" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/time.c - matching</title></rect>
+<rect x="408" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/wchar_io.c - matching</title></rect>
+<rect x="428" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/PPC_EABI/Src/time.gamecube.c - matching</title></rect>
+<rect x="448" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/PPC_EABI/Src/uart_console_io_gcn.c - matching</title></rect>
+<rect x="468" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_acos.c - matching</title></rect>
+<rect x="488" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_atan2.c - matching</title></rect>
+<rect x="508" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_exp.c - matching</title></rect>
+<rect x="528" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_fmod.c - matching</title></rect>
+<rect x="548" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_pow.c - matching</title></rect>
+<rect x="568" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_rem_pio2.c - matching</title></rect>
+<rect x="588" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/k_cos.c - matching</title></rect>
+<rect x="608" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/k_rem_pio2.c - matching</title></rect>
+<rect x="628" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/k_sin.c - matching</title></rect>
+<rect x="648" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/k_tan.c - matching</title></rect>
+<rect x="668" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_atan.c - matching</title></rect>
+<rect x="688" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_copysign.c - matching</title></rect>
+<rect x="708" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_cos.c - matching</title></rect>
+<rect x="728" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_floor.c - matching</title></rect>
+<rect x="748" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_frexp.c - matching</title></rect>
+<rect x="768" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_ldexp.c - matching</title></rect>
+<rect x="788" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_modf.c - matching</title></rect>
+<rect x="808" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_sin.c - matching</title></rect>
+<rect x="828" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/s_tan.c - matching</title></rect>
+<rect x="848" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_acos.c - matching</title></rect>
+<rect x="868" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_atan2.c - matching</title></rect>
+<rect x="888" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_exp.c - matching</title></rect>
+<rect x="908" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_fmod.c - matching</title></rect>
+<rect x="928" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_pow.c - matching</title></rect>
+<rect x="948" y="224" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/e_sqrt.c - matching</title></rect>
+<rect x="8" y="244" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/PPC_EABI/Src/math_ppc.c - matching</title></rect>
+<rect x="28" y="244" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/math_api.c - matching</title></rect>
+<rect x="48" y="244" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common_Embedded/Math/Double_precision/w_sqrt.c - matching</title></rect>
+<rect x="68" y="244" width="18" height="18" rx="2" fill="#2ea043"><title>MSL_C/MSL_Common/Src/extras.c - matching</title></rect>
 <text x="8" y="284" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">Runtime: 8/8</text>
-<rect x="8" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/__va_arg.c — matching</title></rect>
-<rect x="28" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/global_destructor_chain.c — matching</title></rect>
-<rect x="48" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/exception.cp — matching</title></rect>
-<rect x="68" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/NMWException.cp — matching</title></rect>
-<rect x="88" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/runtime.c — matching</title></rect>
-<rect x="108" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/__init_cpp_exceptions.cpp — matching</title></rect>
-<rect x="128" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp — matching</title></rect>
-<rect x="148" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/GCN_mem_alloc.c — matching</title></rect>
+<rect x="8" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/__va_arg.c - matching</title></rect>
+<rect x="28" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/global_destructor_chain.c - matching</title></rect>
+<rect x="48" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/exception.cp - matching</title></rect>
+<rect x="68" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/NMWException.cp - matching</title></rect>
+<rect x="88" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/runtime.c - matching</title></rect>
+<rect x="108" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/__init_cpp_exceptions.cpp - matching</title></rect>
+<rect x="128" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp - matching</title></rect>
+<rect x="148" y="290" width="18" height="18" rx="2" fill="#2ea043"><title>Runtime.PPCEABI.H/GCN_mem_alloc.c - matching</title></rect>
 <text x="8" y="330" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">MetroTRK: 27/28</text>
-<rect x="8" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mainloop.c — matching</title></rect>
-<rect x="28" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/nubevent.c — matching</title></rect>
-<rect x="48" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/nubinit.c — matching</title></rect>
-<rect x="68" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msg.c — matching</title></rect>
-<rect x="88" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msgbuf.c — matching</title></rect>
-<rect x="108" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/serpoll.c — matching</title></rect>
-<rect x="128" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/usr_put.c — matching</title></rect>
-<rect x="148" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/dispatch.c — matching</title></rect>
-<rect x="168" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msghndlr.c — matching</title></rect>
-<rect x="188" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/support.c — matching</title></rect>
-<rect x="208" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mutex_TRK.c — matching</title></rect>
-<rect x="228" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/notify.c — matching</title></rect>
-<rect x="248" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/flush_cache.c — matching</title></rect>
-<rect x="268" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mem_TRK.c — matching</title></rect>
-<rect x="288" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/targimpl.c — matching</title></rect>
-<rect x="308" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/mpc_7xx_603e.c — matching</title></rect>
-<rect x="328" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/dolphin_trk.c — matching</title></rect>
-<rect x="348" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/main_TRK.c — matching</title></rect>
-<rect x="368" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/dolphin_trk_glue.c — matching</title></rect>
-<rect x="388" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/targcont.c — matching</title></rect>
-<rect x="408" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/target_options.c — matching</title></rect>
-<rect x="428" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Export/mslsupp.c — matching</title></rect>
-<rect x="448" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/UDP_Stubs.c — matching</title></rect>
-<rect x="468" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/cc/exi2/GCN/EXI2_DDH_GCN/main.c — matching</title></rect>
-<rect x="488" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/CircleBuffer.c — matching</title></rect>
-<rect x="508" y="336" width="18" height="18" rx="2" fill="#30363d"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/cc/exi2/GCN/EXI2_GDEV_GCN/main.c — asm</title></rect>
-<rect x="528" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/MWTrace.c — matching</title></rect>
-<rect x="548" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/gc/MWCriticalSection_gc.c — matching</title></rect>
-<text x="8" y="376" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">Game code: 52/216 files (provisional file boundaries)</text>
+<rect x="8" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mainloop.c - matching</title></rect>
+<rect x="28" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/nubevent.c - matching</title></rect>
+<rect x="48" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/nubinit.c - matching</title></rect>
+<rect x="68" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msg.c - matching</title></rect>
+<rect x="88" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msgbuf.c - matching</title></rect>
+<rect x="108" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/serpoll.c - matching</title></rect>
+<rect x="128" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/usr_put.c - matching</title></rect>
+<rect x="148" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/dispatch.c - matching</title></rect>
+<rect x="168" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/msghndlr.c - matching</title></rect>
+<rect x="188" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/support.c - matching</title></rect>
+<rect x="208" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mutex_TRK.c - matching</title></rect>
+<rect x="228" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/notify.c - matching</title></rect>
+<rect x="248" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/flush_cache.c - matching</title></rect>
+<rect x="268" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/mem_TRK.c - matching</title></rect>
+<rect x="288" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/targimpl.c - matching</title></rect>
+<rect x="308" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Processor/ppc/Generic/mpc_7xx_603e.c - matching</title></rect>
+<rect x="328" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/dolphin_trk.c - matching</title></rect>
+<rect x="348" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Portable/main_TRK.c - matching</title></rect>
+<rect x="368" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/dolphin_trk_glue.c - matching</title></rect>
+<rect x="388" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/targcont.c - matching</title></rect>
+<rect x="408" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/target_options.c - matching</title></rect>
+<rect x="428" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Export/mslsupp.c - matching</title></rect>
+<rect x="448" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/debugger/embedded/MetroTRK/Os/dolphin/UDP_Stubs.c - matching</title></rect>
+<rect x="468" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/cc/exi2/GCN/EXI2_DDH_GCN/main.c - matching</title></rect>
+<rect x="488" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/CircleBuffer.c - matching</title></rect>
+<rect x="508" y="336" width="18" height="18" rx="2" fill="#d29922"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/cc/exi2/GCN/EXI2_GDEV_GCN/main.c - partial: 9/10 functions match</title></rect>
+<rect x="528" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/MWTrace.c - matching</title></rect>
+<rect x="548" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/gc/MWCriticalSection_gc.c - matching</title></rect>
+<text x="8" y="376" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">Game code: 52/216 files matching, 42 partly matched (provisional file boundaries)</text>
 <rect x="8" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/Cube.cpp - asm</title></rect>
 <rect x="28" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/main.cpp - matching</title></rect>
 <rect x="48" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8000F2F0.cpp - asm</title></rect>
 <rect x="68" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/Turf.cpp - asm</title></rect>
 <rect x="88" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_8001598C.cpp - matching</title></rect>
 <rect x="108" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_80015A44.cpp - matching</title></rect>
-<rect x="128" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80015B64.cpp - asm</title></rect>
+<rect x="128" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80015B64.cpp - partial: 21/36 functions match</title></rect>
 <rect x="148" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/File.cpp - matching</title></rect>
 <rect x="168" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/DbRoom.c - asm</title></rect>
-<rect x="188" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80022B10.cpp - asm</title></rect>
+<rect x="188" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80022B10.cpp - partial: 35/57 functions match</title></rect>
 <rect x="208" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/ModInfo.cpp - asm</title></rect>
 <rect x="228" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8003B98C.cpp - asm</title></rect>
 <rect x="248" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8003CC90.cpp - asm</title></rect>
-<rect x="268" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800448D0.cpp - asm</title></rect>
-<rect x="288" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/Store.c - asm</title></rect>
+<rect x="268" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_800448D0.cpp - partial: 5/8 functions match</title></rect>
+<rect x="288" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/Store.c - partial: 13/15 functions match</title></rect>
 <rect x="308" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/FearActor.c - asm</title></rect>
-<rect x="328" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80064FD4.cpp - asm</title></rect>
+<rect x="328" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80064FD4.cpp - partial: 11/17 functions match</title></rect>
 <rect x="348" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_80067FF8.cpp - matching</title></rect>
 <rect x="368" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80068004.cpp - asm</title></rect>
 <rect x="388" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8006C604.cpp - asm</title></rect>
 <rect x="408" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800776FC.cpp - asm</title></rect>
-<rect x="428" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/Arena.c - asm</title></rect>
+<rect x="428" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/Arena.c - partial: 1/5 functions match</title></rect>
 <rect x="448" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/Audio.c - matching</title></rect>
 <rect x="468" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_8007DAC8.cpp - matching</title></rect>
 <rect x="488" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_8007E1E8.cpp - matching</title></rect>
 <rect x="508" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_8007E8F8.cpp - matching</title></rect>
-<rect x="528" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8007EE68.cpp - asm</title></rect>
-<rect x="548" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80080714.cpp - asm</title></rect>
-<rect x="568" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80080F88.cpp - asm</title></rect>
+<rect x="528" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8007EE68.cpp - partial: 11/14 functions match</title></rect>
+<rect x="548" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80080714.cpp - partial: 10/11 functions match</title></rect>
+<rect x="568" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80080F88.cpp - partial: 6/22 functions match</title></rect>
 <rect x="588" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/Script.c - asm</title></rect>
 <rect x="608" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_80085CDC.cpp - matching</title></rect>
 <rect x="628" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_80085E50.cpp - matching</title></rect>
 <rect x="648" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/AppMain.c - asm</title></rect>
 <rect x="668" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800886C8.cpp - asm</title></rect>
 <rect x="688" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8008DCDC.cpp - asm</title></rect>
-<rect x="708" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/Shadow2.cpp - asm</title></rect>
+<rect x="708" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/Shadow2.cpp - partial: 6/12 functions match</title></rect>
 <rect x="728" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/Memory.cpp - matching</title></rect>
 <rect x="748" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8009DE94.cpp - asm</title></rect>
 <rect x="768" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800A6F18.cpp - asm</title></rect>
 <rect x="788" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800B1834.cpp - asm</title></rect>
 <rect x="808" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800BAA14.cpp - asm</title></rect>
 <rect x="828" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800C5028.cpp - asm</title></rect>
-<rect x="848" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/Progress.cpp - asm</title></rect>
+<rect x="848" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/Progress.cpp - partial: 6/7 functions match</title></rect>
 <rect x="868" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800D0BF4.cpp - asm</title></rect>
 <rect x="888" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800D32E8.cpp - asm</title></rect>
 <rect x="908" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_800DD92C.cpp - matching</title></rect>
-<rect x="928" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800DE0C4.cpp - asm</title></rect>
+<rect x="928" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_800DE0C4.cpp - partial: 15/16 functions match</title></rect>
 <rect x="948" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_800DED18.cpp - matching</title></rect>
 <rect x="8" y="402" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_800DFE3C.cpp - matching</title></rect>
-<rect x="28" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/SAM.cpp - asm</title></rect>
+<rect x="28" y="402" width="18" height="18" rx="2" fill="#d29922"><title>game/SAM.cpp - partial: 12/13 functions match</title></rect>
 <rect x="48" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800E0CB8.cpp - asm</title></rect>
 <rect x="68" y="402" width="18" height="18" rx="2" fill="#2ea043"><title>game/asyncio.cpp - matching</title></rect>
 <rect x="88" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800E1B5C.cpp - asm</title></rect>
-<rect x="108" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800E9418.cpp - asm</title></rect>
+<rect x="108" y="402" width="18" height="18" rx="2" fill="#d29922"><title>game/u_800E9418.cpp - partial: 17/19 functions match</title></rect>
 <rect x="128" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800EB1B8.cpp - asm</title></rect>
 <rect x="148" y="402" width="18" height="18" rx="2" fill="#2ea043"><title>game/SpiritGun.cpp - matching</title></rect>
 <rect x="168" y="402" width="18" height="18" rx="2" fill="#2ea043"><title>game/Homing.cpp - matching</title></rect>
@@ -279,17 +279,17 @@
 <rect x="348" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80112308.cpp - asm</title></rect>
 <rect x="368" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80116B28.cpp - asm</title></rect>
 <rect x="388" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8011818C.cpp - asm</title></rect>
-<rect x="408" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8012071C.cpp - asm</title></rect>
+<rect x="408" y="402" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8012071C.cpp - partial: 8/9 functions match</title></rect>
 <rect x="428" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80120D98.cpp - asm</title></rect>
 <rect x="448" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80125DE4.cpp - asm</title></rect>
 <rect x="468" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80127D80.cpp - asm</title></rect>
 <rect x="488" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80136884.cpp - asm</title></rect>
 <rect x="508" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8013A3D4.cpp - asm</title></rect>
 <rect x="528" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8013CA38.cpp - asm</title></rect>
-<rect x="548" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80140A30.cpp - asm</title></rect>
+<rect x="548" y="402" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80140A30.cpp - partial: 2/12 functions match</title></rect>
 <rect x="568" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80142E88.cpp - asm</title></rect>
 <rect x="588" y="402" width="18" height="18" rx="2" fill="#2ea043"><title>game/Skybox.cpp - matching</title></rect>
-<rect x="608" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80150300.cpp - asm</title></rect>
+<rect x="608" y="402" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80150300.cpp - partial: 46/60 functions match</title></rect>
 <rect x="628" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80153C10.cpp - asm</title></rect>
 <rect x="648" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80157730.cpp - asm</title></rect>
 <rect x="668" y="402" width="18" height="18" rx="2" fill="#2ea043"><title>game/Hazard.cpp - matching</title></rect>
@@ -297,29 +297,29 @@
 <rect x="708" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8015C79C.cpp - asm</title></rect>
 <rect x="728" y="402" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_80160188.cpp - matching</title></rect>
 <rect x="748" y="402" width="18" height="18" rx="2" fill="#2ea043"><title>game/GrenadeFx.cpp - matching</title></rect>
-<rect x="768" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80160DB0.cpp - asm</title></rect>
+<rect x="768" y="402" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80160DB0.cpp - partial: 16/22 functions match</title></rect>
 <rect x="788" y="402" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_80161F40.cpp - matching</title></rect>
 <rect x="808" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80161FF4.cpp - asm</title></rect>
-<rect x="828" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8016A774.cpp - asm</title></rect>
-<rect x="848" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8016C244.cpp - asm</title></rect>
+<rect x="828" y="402" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8016A774.cpp - partial: 8/17 functions match</title></rect>
+<rect x="848" y="402" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8016C244.cpp - partial: 9/18 functions match</title></rect>
 <rect x="868" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/Msx.cpp - asm</title></rect>
 <rect x="888" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80175D60.cpp - asm</title></rect>
 <rect x="908" y="402" width="18" height="18" rx="2" fill="#2ea043"><title>game/DataStream.cpp - matching</title></rect>
 <rect x="928" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8017D794.cpp - asm</title></rect>
 <rect x="948" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8018C358.cpp - asm</title></rect>
-<rect x="8" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8018D2D4.cpp - asm</title></rect>
+<rect x="8" y="422" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8018D2D4.cpp - partial: 6/10 functions match</title></rect>
 <rect x="28" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8018FAE8.cpp - asm</title></rect>
 <rect x="48" y="422" width="18" height="18" rx="2" fill="#2ea043"><title>game/Repel.cpp - matching</title></rect>
 <rect x="68" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801920B8.cpp - asm</title></rect>
 <rect x="88" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801965FC.cpp - asm</title></rect>
-<rect x="108" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8019FDD0.cpp - asm</title></rect>
-<rect x="128" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801A0F2C.cpp - asm</title></rect>
+<rect x="108" y="422" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8019FDD0.cpp - partial: 4/7 functions match</title></rect>
+<rect x="128" y="422" width="18" height="18" rx="2" fill="#d29922"><title>game/u_801A0F2C.cpp - partial: 20/23 functions match</title></rect>
 <rect x="148" y="422" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_801A1D24.cpp - matching</title></rect>
 <rect x="168" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801A28A4.cpp - asm</title></rect>
 <rect x="188" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801A6094.cpp - asm</title></rect>
 <rect x="208" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801AADA8.cpp - asm</title></rect>
 <rect x="228" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801AE50C.cpp - asm</title></rect>
-<rect x="248" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/VMem.cpp - asm</title></rect>
+<rect x="248" y="422" width="18" height="18" rx="2" fill="#d29922"><title>game/VMem.cpp - partial: 8/9 functions match</title></rect>
 <rect x="268" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801BF578.cpp - asm</title></rect>
 <rect x="288" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801D9A70.cpp - asm</title></rect>
 <rect x="308" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801E0EDC.cpp - asm</title></rect>
@@ -327,11 +327,11 @@
 <rect x="348" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801E7DE0.cpp - asm</title></rect>
 <rect x="368" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801EAACC.cpp - asm</title></rect>
 <rect x="388" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801EDE74.cpp - asm</title></rect>
-<rect x="408" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801F1798.cpp - asm</title></rect>
+<rect x="408" y="422" width="18" height="18" rx="2" fill="#d29922"><title>game/u_801F1798.cpp - partial: 14/15 functions match</title></rect>
 <rect x="428" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801F2DA4.cpp - asm</title></rect>
-<rect x="448" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801F676C.cpp - asm</title></rect>
+<rect x="448" y="422" width="18" height="18" rx="2" fill="#d29922"><title>game/u_801F676C.cpp - partial: 15/16 functions match</title></rect>
 <rect x="468" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801F7F48.cpp - asm</title></rect>
-<rect x="488" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801FC634.cpp - asm</title></rect>
+<rect x="488" y="422" width="18" height="18" rx="2" fill="#d29922"><title>game/u_801FC634.cpp - partial: 6/9 functions match</title></rect>
 <rect x="508" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/FearMap2.c - asm</title></rect>
 <rect x="528" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80202AB8.cpp - asm</title></rect>
 <rect x="548" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802052B4.cpp - asm</title></rect>
@@ -341,23 +341,23 @@
 <rect x="628" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8020D47C.cpp - asm</title></rect>
 <rect x="648" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80210D80.cpp - asm</title></rect>
 <rect x="668" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/linkObjSys.c - asm</title></rect>
-<rect x="688" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8021427C.cpp - asm</title></rect>
+<rect x="688" y="422" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8021427C.cpp - partial: 12/14 functions match</title></rect>
 <rect x="708" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802154B0.cpp - asm</title></rect>
 <rect x="728" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80221100.cpp - asm</title></rect>
 <rect x="748" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80222C08.cpp - asm</title></rect>
 <rect x="768" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80226DE8.cpp - asm</title></rect>
 <rect x="788" y="422" width="18" height="18" rx="2" fill="#2ea043"><title>game/Streamer.cpp - matching</title></rect>
-<rect x="808" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8022ED88.cpp - asm</title></rect>
+<rect x="808" y="422" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8022ED88.cpp - partial: 5/7 functions match</title></rect>
 <rect x="828" y="422" width="18" height="18" rx="2" fill="#2ea043"><title>game/PadRecord.cpp - matching</title></rect>
 <rect x="848" y="422" width="18" height="18" rx="2" fill="#2ea043"><title>game/ExtraData.cpp - matching</title></rect>
-<rect x="868" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80230504.cpp - asm</title></rect>
+<rect x="868" y="422" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80230504.cpp - partial: 4/7 functions match</title></rect>
 <rect x="888" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80231550.cpp - asm</title></rect>
 <rect x="908" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/Corona.cpp - asm</title></rect>
 <rect x="928" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8023824C.cpp - asm</title></rect>
 <rect x="948" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8023B96C.cpp - asm</title></rect>
-<rect x="8" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8023E7E0.cpp - asm</title></rect>
+<rect x="8" y="442" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8023E7E0.cpp - partial: 16/19 functions match</title></rect>
 <rect x="28" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8023FA5C.cpp - asm</title></rect>
-<rect x="48" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80243B0C.cpp - asm</title></rect>
+<rect x="48" y="442" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80243B0C.cpp - partial: 1/4 functions match</title></rect>
 <rect x="68" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80244728.cpp - asm</title></rect>
 <rect x="88" y="442" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_80247EB0.cpp - matching</title></rect>
 <rect x="108" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80248FC8.cpp - asm</title></rect>
@@ -372,25 +372,25 @@
 <rect x="288" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8025ECF8.cpp - asm</title></rect>
 <rect x="308" y="442" width="18" height="18" rx="2" fill="#2ea043"><title>game/ThermoBeh.cpp - matching</title></rect>
 <rect x="328" y="442" width="18" height="18" rx="2" fill="#2ea043"><title>game/Thermostat.cpp - matching</title></rect>
-<rect x="348" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/Retinal.cpp - asm</title></rect>
+<rect x="348" y="442" width="18" height="18" rx="2" fill="#d29922"><title>game/Retinal.cpp - partial: 6/8 functions match</title></rect>
 <rect x="368" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80268528.cpp - asm</title></rect>
 <rect x="388" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80268780.cpp - asm</title></rect>
 <rect x="408" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8026A158.cpp - asm</title></rect>
-<rect x="428" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8026A37C.cpp - asm</title></rect>
+<rect x="428" y="442" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8026A37C.cpp - partial: 30/41 functions match</title></rect>
 <rect x="448" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8026C200.cpp - asm</title></rect>
-<rect x="468" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802766F0.cpp - asm</title></rect>
+<rect x="468" y="442" width="18" height="18" rx="2" fill="#d29922"><title>game/u_802766F0.cpp - partial: 21/21 functions match</title></rect>
 <rect x="488" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80277600.cpp - asm</title></rect>
 <rect x="508" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8027D3EC.cpp - asm</title></rect>
 <rect x="528" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8028009C.cpp - asm</title></rect>
 <rect x="548" y="442" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_80285014.cpp - matching</title></rect>
 <rect x="568" y="442" width="18" height="18" rx="2" fill="#2ea043"><title>game/Mirror.cpp - matching</title></rect>
-<rect x="588" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80285ACC.cpp - asm</title></rect>
-<rect x="608" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/VM.c - asm</title></rect>
+<rect x="588" y="442" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80285ACC.cpp - partial: 16/19 functions match</title></rect>
+<rect x="608" y="442" width="18" height="18" rx="2" fill="#d29922"><title>game/VM.c - partial: 2/5 functions match</title></rect>
 <rect x="628" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8028703C.cpp - asm</title></rect>
 <rect x="648" y="442" width="18" height="18" rx="2" fill="#2ea043"><title>game/Clock.cpp - matching</title></rect>
 <rect x="668" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8028865C.cpp - asm</title></rect>
 <rect x="688" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8028A77C.cpp - asm</title></rect>
-<rect x="708" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8028C54C.cpp - asm</title></rect>
+<rect x="708" y="442" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8028C54C.cpp - partial: 12/14 functions match</title></rect>
 <rect x="728" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8028DA1C.cpp - asm</title></rect>
 <rect x="748" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80290C58.cpp - asm</title></rect>
 <rect x="768" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80294548.cpp - asm</title></rect>
@@ -405,7 +405,7 @@
 <rect x="948" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802B3430.cpp - asm</title></rect>
 <rect x="8" y="462" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802B4600.cpp - asm</title></rect>
 <rect x="28" y="462" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802B7120.cpp - asm</title></rect>
-<rect x="48" y="462" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802B9088.cpp - asm</title></rect>
+<rect x="48" y="462" width="18" height="18" rx="2" fill="#d29922"><title>game/u_802B9088.cpp - partial: 5/11 functions match</title></rect>
 <rect x="68" y="462" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_802BA078.cpp - matching</title></rect>
 <rect x="88" y="462" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802BB1F4.cpp - asm</title></rect>
 <rect x="108" y="462" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_802BF114.cpp - matching</title></rect>
@@ -415,12 +415,12 @@
 <rect x="188" y="462" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802C9818.cpp - asm</title></rect>
 <rect x="208" y="462" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802CBB44.cpp - asm</title></rect>
 <rect x="228" y="462" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802CED5C.cpp - asm</title></rect>
-<rect x="248" y="462" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802D439C.cpp - asm</title></rect>
+<rect x="248" y="462" width="18" height="18" rx="2" fill="#d29922"><title>game/u_802D439C.cpp - partial: 3/4 functions match</title></rect>
 <rect x="268" y="462" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802D4D18.cpp - asm</title></rect>
-<rect x="288" y="462" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802D77AC.cpp - asm</title></rect>
+<rect x="288" y="462" width="18" height="18" rx="2" fill="#d29922"><title>game/u_802D77AC.cpp - partial: 12/14 functions match</title></rect>
 <rect x="308" y="462" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802D8C7C.cpp - asm</title></rect>
 <rect x="328" y="462" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_802DB9D0.cpp - matching</title></rect>
-<rect x="348" y="462" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802DC82C.cpp - asm</title></rect>
+<rect x="348" y="462" width="18" height="18" rx="2" fill="#d29922"><title>game/u_802DC82C.cpp - partial: 6/12 functions match</title></rect>
 <rect x="368" y="462" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802DDEDC.cpp - asm</title></rect>
 <rect x="388" y="462" width="18" height="18" rx="2" fill="#2ea043"><title>game/CollectionHost.cpp - matching</title></rect>
 <rect x="408" y="462" width="18" height="18" rx="2" fill="#2ea043"><title>game/CollectionGhost.cpp - matching</title></rect>
@@ -429,7 +429,9 @@
 <rect x="468" y="462" width="18" height="18" rx="2" fill="#2ea043"><title>game/NoBot.cpp - matching</title></rect>
 <rect x="8" y="493" width="12" height="12" rx="2" fill="#2ea043"/>
 <text x="26" y="504" font-family="sans-serif" font-size="12" font-weight="normal" fill="#8b949e">byte-identical C</text>
-<rect x="150" y="493" width="12" height="12" rx="2" fill="#30363d"/>
-<text x="168" y="504" font-family="sans-serif" font-size="12" font-weight="normal" fill="#8b949e">still assembly</text>
-<text x="300" y="504" font-family="sans-serif" font-size="12" font-weight="normal" fill="#2ea043">verified: built main.dol SHA-1 6612f52ce6c5… = original</text>
+<rect x="150" y="493" width="12" height="12" rx="2" fill="#d29922"/>
+<text x="168" y="504" font-family="sans-serif" font-size="12" font-weight="normal" fill="#8b949e">partly matched C</text>
+<rect x="300" y="493" width="12" height="12" rx="2" fill="#30363d"/>
+<text x="318" y="504" font-family="sans-serif" font-size="12" font-weight="normal" fill="#8b949e">still assembly</text>
+<text x="440" y="504" font-family="sans-serif" font-size="12" font-weight="normal" fill="#2ea043">verified: built main.dol SHA-1 6612f52ce6c5… = original</text>
 </svg>

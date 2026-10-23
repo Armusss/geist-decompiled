@@ -7,7 +7,7 @@ source becomes the reference for the Rust rewrite in `../geist-rs`.
 
 ![progress map](docs/progress.svg)
 
-Green = translation unit rebuilt from C/C++ byte-identically; grey = still assembly. Hover a square for the
+Green = translation unit rebuilt from C/C++ byte-identically; orange = partly matched (C source exists and some of its functions already compile to the original bytes; the unit still links from assembly); grey = still assembly. Hover a square for the
 file name. Regenerate after a build with `python3 tools/progress_svg.py`.
 
 Built on [encounter/dtk-template](https://github.com/encounter/dtk-template) (git remote `template`).
