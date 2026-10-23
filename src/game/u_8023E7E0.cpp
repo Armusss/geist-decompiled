@@ -218,6 +218,14 @@ RideType gHostRideDTypes[5] = {
 };
 
 // 0x8023E7E0: message handler.
+static inline void HostRideDStateName(Buffer* out, const char* s) {
+    String name(s);
+    String newline(sActionNames + 0x48);
+    const String& text = fn_800225C8(name, newline);
+
+    fn_8028C188(out, text.mData, text.mLength);
+}
+
 int HostRideDMsg(int msg, int* data) {
     Beh* b;
     Actor* a = (Actor*)data[0];
@@ -243,13 +251,9 @@ int HostRideDMsg(int msg, int* data) {
         case 0x52AB9E79:
             ((Msg41ETime*)data)->value = (float)a->i2C - 500.0f;
             return 1;
-        case 0xAD8576FA: {
-            const String& text = fn_800225C8(
-                String(gHostRideDTypes[b->state].name), String(sActionNames + 0x48));
-
-            fn_8028C188(&m->result, text.mData, text.mLength);
+        case 0xAD8576FA:
+            HostRideDStateName(&m->result, gHostRideDTypes[b->state].name);
             return 0;
-        }
         }
         return 0;
     }

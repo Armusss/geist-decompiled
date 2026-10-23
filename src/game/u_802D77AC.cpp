@@ -144,7 +144,7 @@ struct Msg41D {
     Actor* actor;   // 0x00
     int cmd;        // 0x04
     int unk08;      // 0x08
-    u32 arg;        // 0x0C
+    int arg;        // 0x0C
 };
 
 struct Msg41E {
@@ -177,7 +177,7 @@ struct MsgC04 {
     int unk04;      // 0x04
     int unk08;      // 0x08
     int unk0C;      // 0x0C
-    u32 unk10;      // 0x10
+    int unk10;      // 0x10
     int unk14;      // 0x14
     int unk18;      // 0x18
 };
@@ -209,7 +209,7 @@ void fn_8008F230(int obj, float f, int a, int b);       // 0x8008F230
 void fn_8008F378(int obj);                              // 0x8008F378
 void fn_8008F4E8(int obj, int a);                       // 0x8008F4E8
 void fn_8008F4EC(int obj, int a);                       // 0x8008F4EC
-void fn_8008F4F0(float f, int obj, int a);              // 0x8008F4F0
+void fn_8008F4F0(int obj, int a, float f);              // 0x8008F4F0
 void fn_80090778(int obj, float f, int a, int b, int c, int d, int e);  // 0x80090778
 int fn_80090EA4(int owner, int a);                      // 0x80090EA4
 int fn_800BA84C(int a);                                 // 0x800BA84C
@@ -243,6 +243,21 @@ void* memcpy(void* dst, const void* src, unsigned long n);
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
 
+inline u32 StrHash(const char* s) {
+    int i;
+    u32 h;
+
+    if (s == 0) {
+        return 0;
+    }
+    h = 0;
+    for (i = 0; s[i] != 0; i++) {
+        h = h * 31 + (u8)toupper(s[i]);
+    }
+    h %= 0xFFFFFFFF;
+    return h;
+}
+
 inline u32 StrHash(const char* s, u32 h) {
     int i;
 
@@ -250,9 +265,11 @@ inline u32 StrHash(const char* s, u32 h) {
         return 0;
     }
     for (i = 0; s[i] != 0; i++) {
-        h = h * 31 + (unsigned char)toupper(s[i]);
+        h *= 31;
+        h += (unsigned char)toupper(s[i]);
     }
-    return h % 0xFFFFFFFF;
+    h %= 0xFFFFFFFF;
+    return h;
 }
 
 int HostRideMsg(int msg, void* data);
@@ -279,63 +296,50 @@ HostRideType gHostRideTypes[] = {
     { HostRideState2Enter, HostRideState2Exit, (HostRideFunc)HostRideState2Update, "" },
 };
 
-int HostRideMsg(int msg, void* data) {
+static inline void HostRideStateName(Buffer* out, const char* s) {
+    String name(s);
+    String newline("\n");
+    const String& text = fn_800225C8(name, newline);
+
+    fn_8028C188(out, text.mData, text.mLength);
+}
+
+static inline int HostRideInfo(void* data) {
     Actor* actor = *(Actor**)data;
-    Msg400 q;
+    Msg400* m = (Msg400*)data;
+    m->ownerId = OwnerId((Owner*)actor);
+    m->state = (actor->f904 > 0.0f) ? 1 : 0;
+    m->f10 = 1.0f;
+    m->f14 = 1.0f;
+    m->flags = 2;
+    m->unk1C = 0;
+    return 1;
+}
 
-    switch (msg) {
-    case 0x400: {
-        Msg400* m = (Msg400*)data;
-        m->ownerId = OwnerId((Owner*)actor);
-        m->state = (actor->f904 > 0.0f) ? 1 : 0;
-        m->f10 = 1.0f;
-        m->f14 = 1.0f;
-        m->flags = 2;
-        m->unk1C = 0;
-        return 1;
-    }
-    case 0x7102: {
-        MsgSave* m = (MsgSave*)data;
-        Beh* beh = actor->beh;
+static inline int HostRideRestore(Actor* actor, void* data) {
+    MsgSave* m = (MsgSave*)data;
+    Beh* beh = actor->beh;
+    int ok;
 
-        if (beh == 0) {
-            return 1;
-        }
-        if (m->size < 0x20) {
-            m->result = 0;
-            return 1;
-        }
-        u32 hash = StrHash("[CRDSAVE]", 0);
-        memcpy(m->buf, &hash, 4);
-        m->pos += 4;
-        m->size -= 4;
-        m->buf += 4;
-        memcpy(m->buf, beh, 0x1C);
-        m->pos += 0x1C;
-        m->size -= 0x1C;
-        m->buf += 0x1C;
-        return 1;
-    }
-    case 0x7103: {
-        MsgSave* m = (MsgSave*)data;
-        Beh* beh = actor->beh;
-        bool ok;
-
-        if (beh == 0) {
-            return 1;
-        }
+    if (beh != 0) {
         if (m->pos < 0x20) {
             m->result = 0;
             return 1;
         }
         if (m->pos < 4) {
-            ok = false;
+            ok = 0;
         } else {
             u32* p = (u32*)m->buf;
+            u32 hash;
             m->pos += 4;
             m->size -= 4;
             m->buf += 4;
-            ok = (*p == StrHash("[CRDSAVE]", 0));
+            hash = StrHash("[CRDSAVE]");
+            if (*p == hash) {
+                ok = 1;
+            } else {
+                ok = 0;
+            }
         }
         if (!ok) {
             return 1;
@@ -345,6 +349,61 @@ int HostRideMsg(int msg, void* data) {
         m->buf += 0x1C;
         return 1;
     }
+    return 1;
+}
+
+static inline int HostRidePlayQuery(Actor* actor, void* data) {
+    Msg40A* m = (Msg40A*)data;
+    Msg400 q;
+
+    q.actor = actor;
+    q.ownerId = OwnerId((Owner*)actor);
+    m->actor->msgFn(0x400, &q);
+    if (ActorPlayAnim(OwnerId((Owner*)actor), StrHash("QUERY", m->anim), m->unk04)) {
+        m->result = 0;
+        return 1;
+    }
+    if (fn_80049940()) {
+        if (m->anim == 0x7C44EC3D) {
+            m->result = (int)0xA53F7E23;
+            return 1;
+        }
+        return 0;
+    }
+    return 1;
+}
+
+int HostRideMsg(int msg, void* data) {
+    Actor* actor = *(Actor**)data;
+
+    switch (msg) {
+    case 0x400:
+        return HostRideInfo(data);
+    case 0x7102: {
+        MsgSave* m = (MsgSave*)data;
+        Beh* beh = actor->beh;
+        u32 hash;
+
+        if (beh != 0) {
+            if (m->size < 0x20) {
+                m->result = 0;
+                return 1;
+            }
+            hash = StrHash("[CRDSAVE]");
+            memcpy(m->buf, &hash, 4);
+            m->pos += 4;
+            m->size -= 4;
+            m->buf += 4;
+            memcpy(m->buf, beh, 0x1C);
+            m->pos += 0x1C;
+            m->size -= 0x1C;
+            m->buf += 0x1C;
+            return 1;
+        }
+        return 1;
+    }
+    case 0x7103:
+        return HostRideRestore(actor, data);
     case 0x41D: {
         Msg41D* m = (Msg41D*)data;
         Beh* beh = actor->beh;
@@ -353,10 +412,10 @@ int HostRideMsg(int msg, void* data) {
             return 1;
         }
         switch (m->cmd) {
-        case 0x8757F68E:
+        case (int)0x8757F68E:
             beh->target = m->arg;
             return 1;
-        case 0xF1AA29A3:
+        case (int)0xF1AA29A3:
             beh->f0C = (float)m->arg;
             return 1;
         case 0x28D1C00B:
@@ -378,56 +437,34 @@ int HostRideMsg(int msg, void* data) {
         switch (m->cmd) {
         case 0x63F94A69: {
             u32* p = fn_800A7A18(&actor->st);
-            m->result.mData = p ? (char*)p[0x38 / 4] : (char*)-1;
+
+            if (p != 0) {
+                *(int*)&m->result = p[0x38 / 4];
+            } else {
+                *(int*)&m->result = -1;
+            }
             return 1;
         }
-        case 0x832EF50A:
+        case 0x832DF50A:
             if (gHostAsset == -1) {
                 gHostAsset = AssetFind(0xF1754BF2, 0x21C5E0);
             }
-            m->result.mData = (char*)gHostAsset;
+            *(int*)&m->result = gHostAsset;
             return 1;
-        case 0xAD8576FA: {
-            String name(gHostRideTypes[beh->state].name);
-            String newline("\n");
-            const String& text = fn_800225C8(name, newline);
-
-            fn_8028C188(&m->result, text.mData, text.mLength);
+        case (int)0xAD8576FA:
+            HostRideStateName(&m->result, gHostRideTypes[beh->state].name);
             return 0;
-        }
         }
         return 0;
     }
     case 0x1800:
         fn_800C725C(actor);
         return 1;
-    case 0x40A: {
-        Msg40A* m = (Msg40A*)data;
-        int r;
-
-        q.actor = actor;
-        q.ownerId = OwnerId((Owner*)actor);
-        actor->msgFn(0x400, &q);
-        u32 hash = StrHash("QUERY", m->anim);
-        r = ActorPlayAnim(OwnerId((Owner*)actor), hash, m->unk04);
-        if (r != 0) {
-            m->result = 0;
-            return 1;
-        }
-        if (fn_80049940() == 0) {
-            return 1;
-        }
-        if (m->anim == 0x7C44EC3D) {
-            m->result = (int)0xA53F7E23;
-            return 1;
-        }
-        return 0;
-    }
+    case 0x40A:
+        return HostRidePlayQuery(actor, data);
     case 0x409: {
         Msg409* m = (Msg409*)data;
-        int r = ActorPlayAnim(OwnerId((Owner*)actor), m->arg, m->anim);
-
-        return r != 0;
+        return ActorPlayAnim(OwnerId((Owner*)actor), m->arg, m->anim) != 0;
     }
     case 0x407:
         return fn_800A7B78(&actor->st, 10) != 0;
@@ -447,18 +484,17 @@ int HostRideMsg(int msg, void* data) {
             fn_8008F4E8(actor->iD4, 0);
             fn_8008F378(actor->iD4);
             fn_8008F4EC(actor->iD4, 0);
-            fn_8008F230(actor->iD4, (float)(u32)fn_800BA84C(10), 0, 1);
+            fn_8008F230(actor->iD4, (float)fn_800BA84C(10), 0, 1);
         } else {
-            fn_8008F230(actor->iD4, (float)(u32)fn_800BA84C(10), 0, 1);
+            fn_8008F230(actor->iD4, (float)fn_800BA84C(10), 0, 1);
         }
         fn_800A7A54(&actor->st, 0xC, 0);
         fn_800A7A54(&actor->st, 0xD, 1);
         {
-            u32 v = m->unk10 ? m->unk10 : 0x1000;
-
-            fn_80090778(actor->iD4, (float)v / 4096.0f, 2, m->unk04, m->unk0C, m->unk14, m->unk18);
+            int denom = (m->unk10 != 0) ? m->unk10 : 0x1000;
+            fn_80090778(actor->iD4, (float)denom / 4096.0f, 2, m->unk04, m->unk0C, m->unk14, m->unk18);
         }
-        fn_8008F4F0(1.0f, actor->iD4, 2);
+        fn_8008F4F0(actor->iD4, 2, 1.0f);
         return 1;
     }
     }

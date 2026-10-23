@@ -358,7 +358,86 @@ int CollectSetId(int id, void* p) {
     return 1;
 }
 
+static inline void CollectStateName(String* out, const char* s) {
+    String name(s);
+    String newline("\n");
+    const String& text = fn_800225C8(name, newline);
+
+    fn_8028C188(out, text.mData, text.mLength);
+}
+
 // 0x8016C89C: message handler.
+static inline int CollectAnimate(Actor* o, Msg* m) {
+    Beh* st;
+    int anim;
+
+    if (o == 0) {
+        return 0;
+    }
+    st = o->beh;
+    if (st->timer < 1000.0f && st->unk18 != 0) {
+        return 1;
+    }
+    anim = fn_800AFD20(o);
+    fn_8003F15C(anim, (void*)fn_8003A1F0(anim, o->bone, ModelAnimate(o->model, 0, 0)),
+                o->anim, 1.0f, &m->f10, 0);
+    o->f13c = 0.0f;
+    return 1;
+}
+
+static inline int CollectQuery(Actor* o, void* p) {
+    MsgName* n = (MsgName*)p;
+    String* res = &n->name;
+    Beh* st;
+
+    if (fn_80117FF8(o->obj, n->id, res)) {
+        return 1;
+    }
+    if (o == 0) {
+        return 0;
+    }
+    st = o->beh;
+    switch (n->id) {
+    case 0xAD8576FA:
+        CollectStateName(res, gCollectBehTypes[st->state].name);
+        return 0;
+    }
+    return 0;
+}
+
+static inline int CollectInfo(Actor* o, Msg* m) {
+    if (o == 0 || m == 0) {
+        return 0;
+    }
+    m->id = OwnerId((Owner*)o);
+    m->unkC = 1;
+    m->f10 = 1.0f;
+    m->f14 = 1.0f;
+    m->unk18 = 2;
+    m->unk1C = 0;
+    return 1;
+}
+
+static inline int CollectSet(Actor* o, void* p) {
+    if (o == 0) {
+        return 0;
+    }
+    if (fn_80019F88(p, o)) {
+        return 1;
+    }
+    return 0;
+}
+
+static inline int CollectEvent(Actor* o, Msg* m) {
+    switch (m->unkC) {
+    case 0x6C345908:
+        fn_800A3210(o);
+        o->f8f8 = 1;
+        return 1;
+    }
+    return 0;
+}
+
 int CollectMsg(int msg, void* p) {
     Actor* o;
     Msg* m;
@@ -369,78 +448,25 @@ int CollectMsg(int msg, void* p) {
         return 1;
     }
     switch (msg) {
-    case 0: {
-        Beh* st;
-        int anim;
-
-        if (o == 0) {
-            return 0;
-        }
-        st = o->beh;
-        if (st->timer < 1000.0f && st->unk18 != 0) {
-            return 1;
-        }
-        anim = fn_800AFD20(o);
-        fn_8003F15C(anim, (void*)fn_8003A1F0(anim, o->bone, ModelAnimate(o->model, 0, 0)),
-                    o->anim, 1.0f, &m->f10, 0);
-        o->f13c = 0.0f;
-        return 1;
-    }
+    case 0:
+        return CollectAnimate(o, m);
     case 1:
         return -999999;
-    case 4:
-        return 0;
+    case 0xC14:
+        return CollectEvent(o, m);
+    case 0x407:
+        return 1;
     case 0x400:
-        if (o == 0 || p == 0) {
-            return 0;
-        }
-        m->id = OwnerId((Owner*)o);
-        m->unkC = 1;
-        m->f10 = 1.0f;
-        m->f14 = 1.0f;
-        m->unk18 = 2;
-        m->unk1C = 0;
+        return CollectInfo(o, m);
+    case 0x40A:
         return 1;
     case 0x401:
         return fn_80116D40(o, p);
-    case 0x407:
-        return 1;
-    case 0x40A:
-        return 1;
+    case 0x41E:
+        return CollectQuery(o, p);
     case 0x41D:
-        if (o == 0) {
-            return 0;
-        }
-        return fn_80019F88(p, o) != 0;
-    case 0x41E: {
-        MsgName* n = (MsgName*)p;
-        String* res = &n->name;
-
-        if (fn_80117FF8(o->obj, n->id, res)) {
-            return 1;
-        }
-        if (o == 0) {
-            return 0;
-        }
-        if (n->id != 0xAD8576FA) {
-            return 0;
-        }
-        {
-            String name(gCollectBehTypes[o->beh->state].name);
-            String nl("\n");
-            String joined = fn_800225C8(name, nl);
-
-            fn_8028C188(res, joined.mData, joined.mLength);
-        }
-        return 0;
-    }
-    case 0xC14:
-        if (m->unkC != 0x6C345908) {
-            return 0;
-        }
-        fn_800A3210(o);
-        o->f8f8 = 1;
-        return 1;
+        return CollectSet(o, p);
+    case 4:
     default:
         return 0;
     }
