@@ -35,7 +35,7 @@ ninja        # must end with: build/GITE01/main.dol: OK
 
 ## 2. Setting up the agent
 - **Give it the repository as its working directory** (a fork of
-  [Cliftonscott91/geist-decompiled](https://github.com/Cliftonscott91/geist-decompiled), on a branch).
+  [Armusss/geist-decompiled](https://github.com/Armusss/geist-decompiled), on a branch).
 - **Make sure it reads [AGENTS.md](../AGENTS.md).** Many harnesses load `AGENTS.md` automatically (Codex,
   Cursor, Aider with a config, and others). For Claude Code, the first prompt below tells it to read the file;
   you can also copy AGENTS.md's contents into a `CLAUDE.md` in your fork.
