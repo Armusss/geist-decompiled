@@ -1,6 +1,14 @@
-# STATUS (2026-10-10)
+# STATUS
 
-Handoff file for the matching decompilation. Newest section first. See README.md for setup/build.
+Working log and work queue for the matching decompilation, newest section first. See README.md for setup and
+CONTRIBUTING.md for how to help. **The Opus queue section below is the list of partly matched units, the
+functions still left in each, and what was already tried.**
+
+Note for contributors: this log was written by the maintainer's Lead session and its helper agents. Paths under
+`~/geist-work/...` are the maintainer's private scripts and notes, not part of this repository. Their public
+equivalents are in `tools/matching/`: `mdiff.py`, `udiff.py`, `variants.py` (variant runner), `audit.sh`,
+`linked.py` and `scan_fakes.sh`. "Ghidra pseudocode" means the maintainer's local study copy, which is never
+published; generate your own from your copy of the game if you want it.
 
 ## Team board (Decomp Lead + DeepSeek workers) — game code, from 2026-10-18
 
