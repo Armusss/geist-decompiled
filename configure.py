@@ -690,7 +690,7 @@ config.libs = [
             Object(NonMatching, "game/u_801E7DE0.cpp"),  # guess
             Object(NonMatching, "game/u_801EAACC.cpp"),  # guess
             Object(NonMatching, "game/u_801EDE74.cpp"),  # guess
-            Object(NonMatching, "game/u_801F1798.cpp"),  # guess
+            Object(Matching, "game/u_801F1798.cpp"),  # guess
             Object(NonMatching, "game/u_801F2DA4.cpp"),  # pinned
             Object(Matching, "game/u_801F676C.cpp"),  # pinned
             Object(NonMatching, "game/u_801F7F48.cpp"),  # pinned
