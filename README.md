@@ -11,7 +11,9 @@ of its functions already compile to the original bytes; the unit still links fro
 assembly. Hover a square for the file name. Regenerate after a build with `python3 tools/progress_svg.py`
 (run `ninja build/GITE01/report.json` first for the orange squares).
 
-**Contributions are welcome**, from people and from AI models. Start with [CONTRIBUTING.md](CONTRIBUTING.md);
+**Contributions are welcome**, from people and from AI models. You provide your own copy of the game.
+Start with [CONTRIBUTING.md](CONTRIBUTING.md). To point an AI agent at the repo, see
+[docs/contributing-with-ai.md](docs/contributing-with-ai.md) (what to provide, setup, and prompts to paste);
 agents should also read [AGENTS.md](AGENTS.md). The work queue and what has been tried are in
 [STATUS.md](STATUS.md), and the source shapes that make this compiler match are in
 [docs/matching-tricks.md](docs/matching-tricks.md).

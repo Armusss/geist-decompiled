@@ -1,8 +1,9 @@
 # Contributing
 
 Thanks for helping. This is a **matching** decompilation: a change is only useful if the rebuilt `main.dol`
-stays byte-identical to the retail one. Everything below serves that goal. AI agents: read
-[AGENTS.md](AGENTS.md) too.
+stays byte-identical to the retail one. Everything below serves that goal. Using an AI agent? See
+[docs/contributing-with-ai.md](docs/contributing-with-ai.md) for what to provide, how to set it up and prompts to
+paste; the agent itself should read [AGENTS.md](AGENTS.md).
 
 ## Before you start
 - Follow the setup in the [README](README.md) with your **own** copy of the game. Never commit or upload game

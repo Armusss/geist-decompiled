@@ -4,6 +4,7 @@ You are helping with a **byte-for-byte matching decompilation** of Geist (GameCu
 is judged by one thing: after your change, `python3 configure.py && ninja` must still end with
 `build/GITE01/main.dol: OK`, and the functions you claim must compile to exactly the retail instructions.
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup and the full rules; this file is the short version.
+Humans setting you up: see [docs/contributing-with-ai.md](docs/contributing-with-ai.md) for ready-made prompts.
 
 ## Ground truth
 - `orig/GITE01/sys/main.dol` (the user's own copy, SHA-1 `6612f52c...`) is the source of truth. **Never modify
