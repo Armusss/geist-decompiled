@@ -24,7 +24,8 @@ inline u32 StrHash(const char* s, u32 h) {
         return 0;
     }
     for (i = 0; s[i] != 0; i++) {
-        h = h * 31 + (unsigned char)toupper(s[i]);
+        h *= 31;
+        h += (unsigned char)toupper(s[i]);
     }
     h %= 0xFFFFFFFF;
     return h;
@@ -336,9 +337,9 @@ int HostRideAMsg(int msg, void* data) {
         }
         return 0;
     }
-    case 0x41D:
-        return HostRideAMsgSet(data);
     case 0x41E:
+        return HostRideAMsgSet(data);
+    case 0x41D:
         return HostRideAMsgQuery(data);
     case 0x407: {
         Msg40A* m = (Msg40A*)data;
@@ -717,7 +718,8 @@ int HostRideAState0Enter(Actor* a) {
     return 1;
 }
 
-// 0x801F7750: message 0x41D handler (get/set ride properties).
+// 0x801F7750: message 0x41E handler (query: asset, state name, ride flags). Retail jump table sends 0x41E
+// here, so this "Set" name and the Msg41D/Msg41E struct names are swapped relative to their messages.
 int HostRideAMsgSet(void* data) {
     Msg41D* m = (Msg41D*)data;
     Actor* a = (Actor*)m->actor;
@@ -769,7 +771,7 @@ int HostRideAMsgSet(void* data) {
     return 0;
 }
 
-// 0x801F79C4: message 0x41E handler (query ride properties).
+// 0x801F79C4: message 0x41D handler (set ride properties; see the note above about the swapped names).
 int HostRideAMsgQuery(void* data) {
     Msg41E* m = (Msg41E*)data;
     Actor* a = (Actor*)m->actor;
@@ -827,8 +829,8 @@ int HostRideABehavior(void* data) {
     RideData* b = a->beh;
     Msg400 q;
 
-    q.actor = a;
-    q.ownerId = OwnerId((Owner*)a);
+    q.actor = m->actor;
+    q.ownerId = OwnerId((Owner*)m->actor);
     ((Actor*)m->actor)->msgFn(0x400, &q);
     if (ActorPlayAnim(OwnerId((Owner*)a), StrHash("QUERY", m->unk08), m->unk04)) {
         m->unk0C = 0;
