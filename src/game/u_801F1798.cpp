@@ -22,9 +22,11 @@ inline u32 StrHash(const char* s, u32 h) {
         return 0;
     }
     for (i = 0; s[i] != 0; i++) {
-        h = h * 31 + (unsigned char)toupper(s[i]);
+        h *= 31;
+        h += (unsigned char)toupper(s[i]);
     }
-    return h % 0xFFFFFFFF;
+    h %= 0xFFFFFFFF;
+    return h;
 }
 
 // Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
