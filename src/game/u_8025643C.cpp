@@ -220,9 +220,6 @@ int GunHostCheckGun(Actor* a);
 int GunHostCheckReload(Actor* a, float dt);
 int GunHostMsg(int msg, void* data);
 
-static inline float fabsf2(float x) { return __fabsf(x); }
-inline float Max(float a, float b) { return a > b ? a : b; }
-inline float MaxLt(float a, float b) { return a < b ? b : a; }
 int AssetFind(u32 table, u32 key);
 
 extern int lbl_804A2930[16];  // the host's sounds
@@ -239,7 +236,12 @@ void GunHostAimUpdate(Actor* a, float dt) {
     fn_800769A0(a, dt);
     fn_80072058(a, dt);
     a->unk7D0 = 1;
-    m = __fabsf(a->move[0]) > __fabsf(a->move[2]) ? __fabsf(a->move[0]) : __fabsf(a->move[2]);
+    {
+        float z = a->move[2];
+        float x = a->move[0];
+
+        m = __fabsf(x) > __fabsf(z) ? __fabsf(x) : __fabsf(z);
+    }
     if (m != 0.0f) {
         fn_8008E824(a->model, 0);
     }

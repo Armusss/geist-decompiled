@@ -607,7 +607,10 @@ int ImpAttackUpdate(void* owner) {
                 to.y = dir.y + a->pos.y;
                 to.z = dir.z + a->pos.z;
                 if (fn_800BB218(a, a->unk2C4, &a->pos, &to, a, &scale, &hitB, &hitA, a->unk900)) {
-                    fn_800BAFF8(a, &dir, hitB, hitA, &to, scale, (1.0f - scale) * fn_800E1020(&dir));
+                    float len = fn_800E1020(&dir);
+
+                    len *= 1.0f - scale;
+                    fn_800BAFF8(a, &dir, hitB, hitA, &to, scale, len);
                 }
                 if (fn_800BF2D0(&to) == fn_800BF2D0(&a->pos)) {
                     fn_800A7B08(a->st, 0x1D, 1);

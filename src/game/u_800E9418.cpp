@@ -221,13 +221,15 @@ void GunUpdateState3(Actor* a, float dt) {
     fn_80072058(a, dt);
     a->unk7D0 = 1;
 
-    float f0;
-    float f1;
-    f0 = fabsf(a->unk394);
-    f1 = fabsf(a->unk38C);
-    f1 = (f0 > f1) ? f0 : f1;
-    if (f1 != 0.0f) {
-        fn_8008E824(a->model, 0, f1);
+    float m;
+    {
+        float z = a->unk394;
+        float x = a->unk38C;
+
+        m = fabsf(x) > fabsf(z) ? fabsf(x) : fabsf(z);
+    }
+    if (m != 0.0f) {
+        fn_8008E824(a->model, 0, m);
     }
 
     if (a->unk7D8 == 0.0f) {
