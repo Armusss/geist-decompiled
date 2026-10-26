@@ -220,9 +220,6 @@ int GunHostCheckGun(Actor* a);
 int GunHostCheckReload(Actor* a, float dt);
 int GunHostMsg(int msg, void* data);
 
-static inline float fabsf2(float x) { return __fabsf(x); }
-inline float Max(float a, float b) { return a > b ? a : b; }
-inline float MaxLt(float a, float b) { return a < b ? b : a; }
 int AssetFind(u32 table, u32 key);
 
 extern int lbl_804A2930[16];  // the host's sounds
