@@ -15,7 +15,7 @@ published; generate your own from your copy of the game if you want it.
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
-| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_802B3430 (new, easiest-first) | running |
+| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_8028A77C (new, easiest-first) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80208238 (new, easiest-first) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_80116B28 (new, easiest-first) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Paused (session usage); partial work on its branch | paused |
@@ -67,6 +67,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+u_802B3430 1/5 (ds-1 draft, clock actor): Msg 88, Init 115, UpdateHands 184, Tick 619 diffs
 u_801E0EDC 3/17 (ds-1 draft): near misses fn_801E1354 1, fn_801E13A0 1, fn_801E10D8 2, fn_801E0FD0 3, fn_801E1150/11C0 6, fn_801E1420 8; Barrier actor functions 88-430
 u_80210D80 4/21 (ds-3 draft): closest MarkLookupEntryFlag 7, GetLookupEntryValue 18, SetParticleDrawTransform 21, fn_80211E38 23 diffs
 u_8003B98C 0/11 (ds-2 draft): closest fn_8003BA70 8, SetHandleEntryValue 13, StreamHandleFree 17 diffs
