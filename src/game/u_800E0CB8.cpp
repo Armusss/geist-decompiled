@@ -12,14 +12,17 @@ struct Vec3 {
 };
 
 inline float FastSqrt(float x) {
-    float r = 0.0f;
-    if (!(x <= 0.0f)) {
+    float r;
+    if (x <= 0.0f) {
+        r = 0.0f;
+    } else {
         float y;
+        register float t;
         asm {
-            lfs f0, x
-            ps_rsqrte f0, f0
-            ps_res f0, f0
-            stfs f0, y
+            lfs t, x
+            ps_rsqrte t, t
+            ps_res t, t
+            stfs t, y
         }
         r = y;
     }
@@ -28,6 +31,7 @@ inline float FastSqrt(float x) {
 
 int IVecNormalize(IVec3* out, IVec3* in) {
     float x, y, z;
+    float sq;
     float len;
     float scale;
 
@@ -40,7 +44,8 @@ int IVecNormalize(IVec3* out, IVec3* in) {
     x = in->x;
     y = in->y;
     z = in->z;
-    len = FastSqrt(x * x + y * y + z * z);
+    sq = x * x + y * y + z * z;
+    len = FastSqrt(sq);
     scale = 4096.0f / len;
     x *= scale;
     y *= scale;
@@ -55,12 +60,15 @@ int IVecLength(IVec3* v) {
     if ((v->x | v->y | v->z) == 0) {
         return 0;
     }
-    return FastSqrt((float)v->x * (float)v->x + (float)v->y * (float)v->y + (float)v->z * (float)v->z);
+    float sq = (float)v->x * (float)v->x + (float)v->y * (float)v->y + (float)v->z * (float)v->z;
+    return FastSqrt(sq);
 }
 
 void IVecSetLength(IVec3* out, IVec3* in, int length) {
+    float sq;
     float len;
     float scale;
+    float x, y, z;
 
     if ((in->x | in->y | in->z) == 0) {
         out->x = 0;
@@ -68,22 +76,32 @@ void IVecSetLength(IVec3* out, IVec3* in, int length) {
         out->z = 0;
         return;
     }
-    len = FastSqrt((float)in->x * (float)in->x + (float)in->y * (float)in->y + (float)in->z * (float)in->z);
+    sq = (float)in->x * (float)in->x + (float)in->y * (float)in->y + (float)in->z * (float)in->z;
+    len = FastSqrt(sq);
     scale = (float)length / len;
-    out->x = (float)in->x * scale;
-    out->y = (float)in->y * scale;
-    out->z = (float)in->z * scale;
+    x = in->x;
+    y = in->y;
+    z = in->z;
+    x *= scale;
+    y *= scale;
+    z *= scale;
+    out->x = x;
+    out->y = y;
+    out->z = z;
 }
 
 float VecLength(Vec3* v) {
     if (((*(unsigned long*)&v->x | *(unsigned long*)&v->y | *(unsigned long*)&v->z) & 0x7FFFFFFF) == 0) {
         return 0.0f;
     }
-    return FastSqrt(v->x * v->x + v->y * v->y + v->z * v->z);
+    float sq = v->x * v->x + v->y * v->y + v->z * v->z;
+    return FastSqrt(sq);
 }
 
 void VecSetLength(Vec3* out, Vec3* in, float length) {
+    float sq;
     float scale;
+    float x, y, z;
 
     if (((*(unsigned long*)&in->x | *(unsigned long*)&in->y | *(unsigned long*)&in->z) & 0x7FFFFFFF) == 0) {
         out->x = 0.0f;
@@ -91,8 +109,12 @@ void VecSetLength(Vec3* out, Vec3* in, float length) {
         out->z = 0.0f;
         return;
     }
-    scale = length / FastSqrt(in->x * in->x + in->y * in->y + in->z * in->z);
-    out->x = in->x * scale;
-    out->y = in->y * scale;
-    out->z = in->z * scale;
+    sq = in->x * in->x + in->y * in->y + in->z * in->z;
+    scale = length / FastSqrt(sq);
+    x = in->x;
+    y = in->y;
+    z = in->z;
+    out->x = x * scale;
+    out->y = y * scale;
+    out->z = z * scale;
 }
