@@ -1083,7 +1083,7 @@ extern "C" float fn_800A1418(float value);               // 0x800A1418
 extern "C" int fn_800F7C64(const char* text, u32 hash);  // 0x800F7C64
 extern "C" int fn_800FC3B8(int arg);                     // 0x800FC3B8
 extern "C" int fn_802A1D04(void);                        // 0x802A1D04
-extern "C" int fn_800A7B78(void* p, int mode);    // 0x800A7B78
+int MemFlagIsSet(void* bits, int index);  // 0x800A7B78
 extern "C" void fn_800B1AB8(Actor* actor, int a, int b, int c, int d, float e);  // 0x800B1AB8
 
 // Resolves the asset every zone queries for bone positions, once.
@@ -1350,7 +1350,7 @@ int ZoneDashNode(u32 unused, Actor* actor, float value, Actor* owner) {
 
     if (value < lbl_804D703C && kind == 0x13 && visQuery.result != 0 &&
         actorName != 0 && PlayerInHost(owner) != 0) {
-        if (fn_800A7B78(actor->unk270, 5) == 0) {
+        if (MemFlagIsSet(actor->unk270, 5) == 0) {
             actor->unk17C = 2;
             actor->unk174 = lbl_804D7040;
             actor->unk184 = (void*)owner->unk38;

@@ -181,7 +181,6 @@ int fn_800A1BC8(int a, int b, u32 type, int c, int d);
 void fn_800A0168(Mtx34* out, Mtx34* in);
 void fn_800A0030(Vec3* out, Mtx34* m, Vec3* in);
 void fn_800A025C(Vec3* out, void* m, int row);
-void fn_800A7A54(void* conditions, int which, int value);
 int fn_8008E964(int anim);
 int fn_8008E7D0(int anim);
 float fn_800CC2D0(Actor* a, int b, int c, int d);
@@ -190,6 +189,7 @@ inline float fabsf(float x) { return __fabsf(x); }
 String fn_800225C8(const String& a, const String& b);
 void fn_8028C188(Buffer* b, char* data, int len);
 }
+int ConditionSetBit(void* cond, int bit, int set);
 
 int RideAction2Msg(int msg, void* data);
 int RideAction2Update(void* p);
@@ -322,20 +322,20 @@ static inline void ResetAction2(Actor* actor) {
     b->f20 = 0.0f;
     b->f24 = 0.0f;
     if (HasCondition(actor->conditions, 0xC)) {
-        fn_800A7A54(actor->conditions, 0xC, 0);
-        fn_800A7A54(actor->conditions, 0xE, 1);
+        ConditionSetBit(actor->conditions, 0xC, 0);
+        ConditionSetBit(actor->conditions, 0xE, 1);
         fn_8008F4E8(actor->anim, 0);
         fn_8008F378(actor->anim);
         fn_8008F4EC(actor->anim, 0);
     }
     b->anim = fn_800A1BC8(actor->data->i14, actor->data->i1C, gRideActionType2[b->state].type, 0, 0);
     if (fn_8008E7D0(b->anim)) {
-        fn_800A7A54(actor->conditions, 0x1C, 0);
+        ConditionSetBit(actor->conditions, 0x1C, 0);
     }
     fn_80090974(actor->anim, 0, b->anim, 1.0f, 9, gRideActionType2[b->state].event, actor);
     if (HasCondition(actor->conditions, 0xE)) {
         fn_8008F230(actor->anim, 0.0f, 0, 0);
-        fn_800A7A54(actor->conditions, 0xE, 0);
+        ConditionSetBit(actor->conditions, 0xE, 0);
     } else if (b->prevAnim == b->anim) {
         fn_8008F230(actor->anim, 0.0f, 0, 0);
     } else {
@@ -401,8 +401,8 @@ void RideAction2Animate(Actor* actor) {
         if (HasCondition(actor->conditions, 0x1C) && HasCondition(actor->conditions, 0xD) &&
             fn_8008E964(actor->anim)) {
             ActorPlayAnim(actor->handle, 0xB2CB0AA4, actor->handle);
-            fn_800A7A54(actor->conditions, 0x1C, 0);
-            fn_800A7A54(actor->conditions, 0x1D, 1);
+            ConditionSetBit(actor->conditions, 0x1C, 0);
+            ConditionSetBit(actor->conditions, 0x1D, 1);
         }
     }
     fn_800913EC(actor->anim, actor->f138, &delta);

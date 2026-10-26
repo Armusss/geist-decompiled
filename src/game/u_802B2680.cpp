@@ -174,7 +174,6 @@ void fn_800913EC(int anim, float scale, Vec3* out);
 int fn_800A1BC8(int a, int b, u32 type, int c, int d);
 void fn_800A0168(Mtx34* out, Mtx34* in);
 void fn_800A0030(Vec3* out, Mtx34* m, Vec3* in);
-void fn_800A7A54(void* conditions, int which, int value);
 float fn_800CC2D0(Actor* a, int b, int c, int d);
 int fn_800CDD10();
 int fn_80158AFC(int owner, void* data);
@@ -184,6 +183,7 @@ void fn_8003F15C(int a, int b, int c, float f, void* d, int e);
 String fn_800225C8(const String& a, const String& b);
 void fn_8028C188(Buffer* b, char* data, int len);
 }
+int ConditionSetBit(void* cond, int bit, int set);
 
 int HostActionMsg(int msg, void* data);
 int HostActionUpdate(Actor* actor);
@@ -333,8 +333,8 @@ static inline void ResetAction(Actor* actor) {
     b->f1C = 0.0f;
     b->f20 = 0.0f;
     if (HasCondition(actor->conditions, 0xC)) {
-        fn_800A7A54(actor->conditions, 0xC, 0);
-        fn_800A7A54(actor->conditions, 0xE, 1);
+        ConditionSetBit(actor->conditions, 0xC, 0);
+        ConditionSetBit(actor->conditions, 0xE, 1);
         fn_8008F4E8(actor->anim, 0);
         fn_8008F378(actor->anim);
         fn_8008F4EC(actor->anim, 0);
@@ -343,7 +343,7 @@ static inline void ResetAction(Actor* actor) {
     fn_80090974(actor->anim, 0, b->anim, 1.0f, 9, gHostActionType[b->state].event, actor);
     if (HasCondition(actor->conditions, 0xE)) {
         fn_8008F230(actor->anim, 0.0f, 0, 0);
-        fn_800A7A54(actor->conditions, 0xE, 0);
+        ConditionSetBit(actor->conditions, 0xE, 0);
     } else if (b->prevAnim == b->anim) {
         fn_8008F230(actor->anim, 0.0f, 0, 0);
     } else {

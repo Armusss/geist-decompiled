@@ -481,12 +481,10 @@ static ActionEntry sAmmoActions[9] = {
 };
 
 extern "C" {
-void fn_800A7BF0(int actor, Mtx34* m, int a);
 void fn_800A0168(Mtx34* out, Mtx34* in);
 void fn_8009FC6C(Mtx34* out, Mtx34* a, Mtx34* b);
 void fn_800A0030(Vec3* out, Mtx34* m, Vec3* in);
 void fn_800A025C(Vec3* out, Mtx34* m, int row);
-SpitActor* fn_800A7A18(void* link);
 void fn_8016D440(Vec3* out, Vec3* in);
 void fn_8016D4EC(Vec3* out, Vec3* in);
 float fn_800E1020(Vec3* v);
@@ -495,6 +493,8 @@ void fn_800E1098(Vec3* out, Vec3* in, float length);
 void fn_800E0CB8(IVec3* out, IVec3* in);
 int rand(void);
 }
+int FollowBoneMatrix(void* self, Mtx34* mtx, int flag);
+void* FollowGetTargetObj(void* range);
 
 void MtxSetEuler(Mtx34* m, Vec3* rot);
 int GhostShotFire(float a, float b, float c, int d, Vec3* p5, Vec3* p6, Vec3* p7, Vec3* p8, Vec4* p9,
@@ -593,7 +593,7 @@ void HermitSpitAmmoFire(int arg, int busy, void* data, int unk) {
     AmmoTypeHash(&sHermitSpitAmmoType);
     SendMsg(arg, 0x400, res);
     actor = (SpitActor*)res[0];
-    fn_800A7BF0((int)actor, &mtx, 0);
+    FollowBoneMatrix(actor, &mtx, 0);
     rot.z = 0.0f;
     rot.x = 0.0f;
     rot.y = 90.0f * (rand() / 32767.0f) - 45.0f;
@@ -609,7 +609,7 @@ void HermitSpitAmmoFire(int arg, int busy, void* data, int unk) {
     fn_800A0030(&dir, &aim, &dir);
     dist = 5000.0f;
     fn_800A025C(&fwd, &mtx, 1);
-    target = fn_800A7A18(actor->target);
+    target = (SpitActor*)FollowGetTargetObj(actor->target);
     if (target) {
         delta.x = target->pos.x;
         delta.y = target->pos.y;
@@ -642,9 +642,9 @@ void HermitSpitAmmoFire(int arg, int busy, void* data, int unk) {
     fn_800E1098(&vel, &dir, 0.0f);
     GhostShotFire(2.0f * len, 10.0f + 120.0f * len / 5000.0f, 1500.0f, actor->handle, &mtx.pos, &dir,
                   &end, &vel, &sSpitColor, &sSpitColor2, 0x24A738, 600, 0, 1, &fwd);
-    target = fn_800A7A18(actor->target);
+    target = (SpitActor*)FollowGetTargetObj(actor->target);
     if (target) {
-        fn_800A7BF0((int)actor, &tmtx, 0);
+        FollowBoneMatrix(actor, &tmtx, 0);
         fn_800A025C(&facing, &tmtx, 1);
         facing.z = 0.0f;
         VecNormalize(&facing);

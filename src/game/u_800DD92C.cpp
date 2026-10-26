@@ -15,10 +15,10 @@ int rand(void);
 
 // Callees in other files, not named yet.
 struct TalkActor* fn_800A3990(void* owner);
-int fn_800A7B78(void* state, int flag);
 void fn_8016EEF4(int sound);
 int fn_8016F120(int sound, void* pos);
 }
+int MemFlagIsSet(void* bits, int index);
 
 void* VAlloc(int size);
 void VFree(void* p);
@@ -129,7 +129,7 @@ int TalkPlay(void* owner, int kind) {
     int offset;
 
     actor = fn_800A3990(owner);
-    if (actor == 0 || fn_800A7B78(actor->state, 0x11) != 0 || actor->talker < 0 || sTalkKinds[kind].count == 0) {
+    if (actor == 0 || MemFlagIsSet(actor->state, 0x11) != 0 || actor->talker < 0 || sTalkKinds[kind].count == 0) {
         return 0;
     }
     if (kind == 8) {

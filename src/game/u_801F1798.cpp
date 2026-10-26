@@ -233,13 +233,6 @@ int SendMsg(int to, int msg, void* data);               // 0x800265D4
 int fn_80019F88(void* data, Actor* actor);              // 0x80019F88
 String fn_800225C8(const String& a, const String& b);   // 0x800225C8
 int fn_80049940();                                      // 0x80049940
-void fn_800A7028(void* conditions);                     // 0x800A7028
-void fn_800A78A0(void* conditions, void* target);       // 0x800A78A0
-Target* fn_800A7A18(void* conditions);                  // 0x800A7A18
-void fn_800A7A54(void* conditions, int which, int value);  // 0x800A7A54
-void fn_800A7B08(void* conditions, int which, int value);  // 0x800A7B08
-int fn_800A7B78(void* conditions, int which);           // 0x800A7B78
-int fn_800A8CDC(Actor* actor, void* target, float f);   // 0x800A8CDC
 void fn_800B1AB8(Actor* actor, int state, float f, int a);  // 0x800B1AB8
 int fn_800B1EF4(Actor* actor, int state);               // 0x800B1EF4
 void fn_800B1F20(Actor* actor, int state);              // 0x800B1F20
@@ -262,6 +255,13 @@ int fn_8029B070(Actor* actor, u32 key);                 // 0x8029B070
 int fn_8029B140(Actor* actor, u32 key);                 // 0x8029B140
 int fn_8029B3B0(Actor* actor, int key);                 // 0x8029B3B0
 }
+int FollowLineCheckActorDist(void* self, void* target, float budget);
+int MemFlagIsSet(void* bits, int index);
+int ConditionUpdateBit(void* cond, int bit, int set);
+int ConditionSetBit(void* cond, int bit, int set);
+void* FollowGetTargetObj(void* range);
+void FollowSetTargetObj(void* range, void* obj);
+void RangeResetPending(void* range);
 
 int HostRideCMsg(int msg, void* data);
 int HostRideCTick(void* owner);
@@ -325,7 +325,7 @@ int HostRideCMsg(int msg, void* data) {
         switch (m->arg) {
         case 0x272CAC:
             if (gHostRideCTypes[b->state].check(a)) {
-                fn_800A78A0(&a->st, (void*)m->unk04);
+                FollowSetTargetObj(&a->st, (void*)m->unk04);
                 if (gHostRideCTypes[2].enter(a) == 0) {
                     gHostRideCTypes[b->state].enter(a);
                 }
@@ -359,7 +359,7 @@ int HostRideCMsg(int msg, void* data) {
         b = a->beh;
 
         if ((type == 0x12EC1 || type == 0x906E8474) &&
-            fn_800A7B78(&a->st, 0x28) == 0 &&
+            MemFlagIsSet(&a->st, 0x28) == 0 &&
             (float)rand() / 32767.0f > a->f5B4 &&
             a->unk908 != 0x8CD18EE1 &&
             fn_8029B3B0(a, 0x13E6B) != 0 &&
@@ -396,10 +396,10 @@ int HostRideCTick(void* owner) {
     if (next != b->state && !(b->flags & 1)) {
         if (gHostRideCTypes[b->state].check(o)) {
             gHostRideCTypes[next].enter(o);
-            fn_800A7A54(&o->st, 0x40, 0);
-            fn_800A7A54(&o->st, 0x41, 0);
-            fn_800A7A54(&o->st, 0x43, 0);
-            fn_800A7A54(&o->st, 0x42, 0);
+            ConditionSetBit(&o->st, 0x40, 0);
+            ConditionSetBit(&o->st, 0x41, 0);
+            ConditionSetBit(&o->st, 0x43, 0);
+            ConditionSetBit(&o->st, 0x42, 0);
         }
     }
     fn_80162658(o, &o->unk894);
@@ -434,7 +434,7 @@ int HostRideCState2Update(Actor* o) {
     Target* target;
     Beh* b = o->beh;
 
-    target = fn_800A7A18(&o->st);
+    target = (Target*)FollowGetTargetObj(&o->st);
 
     if (target == 0 || (int)((u32)target->id >> 24) != 2) {
         MsgC14 m;
@@ -475,21 +475,21 @@ int HostRideCState2Exit(Actor* o) {
         return 0;
     }
     b->flags &= ~2;
-    fn_800A7028(&o->st);
-    fn_800A7B08(&o->st, 0x16, 0);
+    RangeResetPending(&o->st);
+    ConditionUpdateBit(&o->st, 0x16, 0);
     return 1;
 }
 
 int HostRideCState2Enter(Actor* o) {
     Beh* b = o->beh;
 
-    if (fn_800A7A18(&o->st) == 0) {
+    if (FollowGetTargetObj(&o->st) == 0) {
         return 0;
     }
     o->unk288 = 0;
     b->state = 2;
     b->flags &= ~2;
-    fn_800A7B08(&o->st, 0x16, 1);
+    ConditionUpdateBit(&o->st, 0x16, 1);
     return 1;
 }
 
@@ -500,10 +500,10 @@ int HostRideCState1Exit(void* owner) {
     o = (Actor*)owner;
     b = o->beh;
     b->timer = 1500.0f * ((float)rand() / 32767.0f) + 1500.0f;
-    fn_800A7B08(&o->st, 0x16, 0);
+    ConditionUpdateBit(&o->st, 0x16, 0);
     fn_8029B070(o, 0x73B1E248);
     if (o->unkC4->type == 0x12EC1 || o->unkC4->type == 0x906E8474) {
-        if (fn_800A7B78(&o->st, 0x28) == 0 &&
+        if (MemFlagIsSet(&o->st, 0x28) == 0 &&
             (float)rand() / 32767.0f < o->f5B4 &&
             o->unk908 != 0x8CD18EE1 &&
             fn_8029B3B0(o, 0x13E6B) != 0 &&
@@ -540,7 +540,7 @@ int HostRideCState1Update(void* owner) {
                 void* t;
 
                 fn_800B261C(o, kind, &t);
-                fn_800A78A0(&o->st, t);
+                FollowSetTargetObj(&o->st, t);
                 if (t != 0) {
                     fn_800C9FC0(o, ((Target*)t)->id, 10000.0f);
                 }
@@ -551,21 +551,21 @@ int HostRideCState1Update(void* owner) {
     } else {
         return 0;
     }
-    target = fn_800A7A18(&o->st);
+    target = FollowGetTargetObj(&o->st);
     if (target == 0) {
         return 0;
     }
     if (fn_8029B140(o, 0x73B1E248) == 0) {
         return 0;
     }
-    if (!HasCondition(&o->st, 8) && fn_800A8CDC(o, target, 0.0f) == 0) {
+    if (!HasCondition(&o->st, 8) && FollowLineCheckActorDist(o, target, 0.0f) == 0) {
         return 0;
     }
     if (Fn800F7DEC(o->unk894.f58, o->unk894.f5C, 0x20EE36, o->id, 0) == 0xC0BECF7E) {
         return 0;
     }
     fn_800C9ED0(o);
-    if (fn_800A7B78(&o->st, 0x28) == 0 &&
+    if (MemFlagIsSet(&o->st, 0x28) == 0 &&
         fn_800B7098(o->unk608, o->id, ((Target*)target)->id, 1) == 0 &&
         o->id != -1) {
         MsgC14 m;
@@ -595,13 +595,13 @@ int HostRideCState1Enter(Actor* o) {
         void* target = 0;
 
         fn_800B261C(o, kind, &target);
-        fn_800A78A0(&o->st, target);
+        FollowSetTargetObj(&o->st, target);
     }
     b->state = 1;
     b->timer = 2000.0f * ((float)rand() / 32767.0f) + 4000.0f;
-    fn_800A7B08(&o->st, 3, 1);
-    fn_800A7B08(&o->st, 0x16, 1);
-    fn_800A7A54(&o->st, 8, 1);
+    ConditionUpdateBit(&o->st, 3, 1);
+    ConditionUpdateBit(&o->st, 0x16, 1);
+    ConditionSetBit(&o->st, 8, 1);
     return 1;
 }
 
@@ -623,9 +623,9 @@ int HostRideCState0Update(void* owner) {
     if (kind != 4 && fn_800B22F8(o, kind) <= 1) {
         target = 0;
         fn_800B261C(o, kind, &target);
-        fn_800A7A54(&o->st, 0x1A, 1);
+        ConditionSetBit(&o->st, 0x1A, 1);
         if (target != 0) {
-            fn_800A78A0(&o->st, target);
+            FollowSetTargetObj(&o->st, target);
         }
         if (fn_800B2454(o, kind) == 0) {
             fn_800B2418(o, kind, 15000.0f);
@@ -643,11 +643,11 @@ int HostRideCState0Update(void* owner) {
     } else {
         b->timer = 0.0f;
         if (!(b->flags & 1)) {
-            fn_800A7A54(&o->st, 0x1A, 0);
+            ConditionSetBit(&o->st, 0x1A, 0);
         }
     }
-    if (fn_800A7B78(&o->st, 0x28) == 0) {
-        Target* t = fn_800A7A18(&o->st);
+    if (MemFlagIsSet(&o->st, 0x28) == 0) {
+        Target* t = (Target*)FollowGetTargetObj(&o->st);
         if (t != 0 && fn_800B7098(o->unk608, o->id, t->id, 1) == 0) {
             if (o->id != -1) {
                 MsgC14 m;
@@ -708,7 +708,7 @@ int HostRideCState0Enter(Actor* o) {
     Beh* b = o->beh;
 
     b->state = 0;
-    fn_800A7B08(&o->st, 3, 0);
+    ConditionUpdateBit(&o->st, 3, 0);
     o->unk288 = 0;
     return 1;
 }
@@ -734,20 +734,20 @@ int HostRideCHandle41D(void* data) {
             o->unk178 = 1;
         } else {
             fn_800B35D0(o);
-            fn_800A7028(&o->st);
+            RangeResetPending(&o->st);
         }
         return 1;
     case 0x21D542:
         if (m->arg != 0) {
             b->flags |= 1;
-            fn_800A7A54(&o->st, 0x1A, 1);
+            ConditionSetBit(&o->st, 0x1A, 1);
             if (b->state != 0) {
                 gHostRideCTypes[b->state].check(o);
                 gHostRideCTypes[0].enter(o);
             }
         } else {
             b->flags &= ~1;
-            fn_800A7A54(&o->st, 0x1A, 0);
+            ConditionSetBit(&o->st, 0x1A, 0);
         }
         return 1;
     case 0x7A1C0EF3:
@@ -759,7 +759,7 @@ int HostRideCHandle41D(void* data) {
             }
         } else {
             b->flags &= ~1;
-            fn_800A7A54(&o->st, 0x1A, 0);
+            ConditionSetBit(&o->st, 0x1A, 0);
         }
         return 1;
     case 0xF1C3E114:
@@ -788,14 +788,14 @@ int HostRideCHandle40A(void* data) {
         m->result = 0;
         return 1;
     }
-    if (fn_800A7B78(&o->st, 0xB) != 0) {
+    if (MemFlagIsSet(&o->st, 0xB) != 0) {
         return 1;
     }
     if (o->f904 > 0.0f) {
         if (HasCondition(&o->st, 0xA) == 0) {
             if (q.flags & 2) {
                 if (m->anim == 0x3CA34BD6) {
-                    if (fn_800A7B78(&o->st, 0x20) != 0) {
+                    if (MemFlagIsSet(&o->st, 0x20) != 0) {
                         Msg40B mm;
 
                         if (GetPlayer() == 0) {
@@ -842,7 +842,7 @@ int HostRideCHandle40A(void* data) {
                     if (HasCondition(&o->st, 0xB) != 0) {
                         return 0;
                     }
-                    if (fn_800A7B78(&o->st, 0x1E) != 0) {
+                    if (MemFlagIsSet(&o->st, 0x1E) != 0) {
                         return 0;
                     }
                     if (b->state == 0) {

@@ -80,7 +80,7 @@ void HudSlotFlagClear(int slot);
 // Fires one of the two paired effects that link the ghost `self` to `target`.
 void Fn800F7F5C(int effectTarget, int effectSource, int event, int id, void* flag,
                 float value);
-extern "C" void fn_800A7B08(void* owner, int kind, int flag);
+int ConditionUpdateBit(void* cond, int bit, int set);
 void ActorRender(Actor* actor);
 
 unsigned long GhostPossessCommit(GhostSlot* self, GhostSlot* target, int mode);
@@ -918,7 +918,7 @@ unsigned long fn_801554E0(GhostSlot* self, GhostSlot* target, int mode) {
                 }
             }
         }
-        fn_800A7B08((char*)self->unk04 + 0x270, 0xB, 1);
+        ConditionUpdateBit((char*)self->unk04 + 0x270, 0xB, 1);
         break;
     default:
         return 0;
@@ -1203,8 +1203,8 @@ unsigned long GhostPossessAttempt(GhostSlot* self) {
                     }
                     fn_8003D7A0(table, 11);
                     fn_80007158();
-                    fn_800A7B08((char*)target + 0x270, 5, 1);
-                    fn_800A7B08((char*)target + 0x270, 0xB, 1);
+                    ConditionUpdateBit((char*)target + 0x270, 5, 1);
+                    ConditionUpdateBit((char*)target + 0x270, 0xB, 1);
                     int handle = fn_8007EB34(0x92234D44,
                                              *(unsigned long*)((char*)src + 0x14C));
                     if (handle != -1) {

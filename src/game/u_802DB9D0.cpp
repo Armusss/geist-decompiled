@@ -42,7 +42,7 @@ struct Conditions {
     char pad[0x18];
 };
 
-// The actor object returned by fn_800A7A18 (the current interaction target).
+// The actor object returned by FollowGetTargetObj(the current interaction target).
 struct TargetInfo {
     char pad0[0x38];
     int handle;     // 0x38
@@ -115,10 +115,6 @@ int fn_801625C8(Actor* actor, void* cond, int msg, void* data);  // 0x801625C8
 void fn_80162610(Actor* actor, void* cond, int value);           // 0x80162610
 void fn_80162658(Actor* actor, void* cond);                      // 0x80162658
 int fn_80162940(void* cond, int which);                          // 0x80162940
-void fn_800A7A54(void* conditions, int which, int value);        // 0x800A7A54
-void fn_800A7B08(void* conditions, int which, int value);        // 0x800A7B08
-void* fn_800A7A18(void* conditions);                             // 0x800A7A18
-void fn_800A78A0(void* conditions, void* target);                // 0x800A78A0
 int fn_800BAF40(Actor* actor);                                   // 0x800BAF40
 void fn_800BBCA8(Actor* actor);                                  // 0x800BBCA8
 int fn_800B26B8(Actor* actor);                                   // 0x800B26B8
@@ -129,6 +125,10 @@ void fn_800B2D00(void);                                          // 0x800B2D00
 void fn_8028C188(Buffer* buffer, const char* data, int length);  // 0x8028C188
 String fn_800225C8(const String& a, const String& b);            // 0x800225C8
 }
+int ConditionUpdateBit(void* cond, int bit, int set);
+int ConditionSetBit(void* cond, int bit, int set);
+void* FollowGetTargetObj(void* range);
+void FollowSetTargetObj(void* range, void* obj);
 void EmitterDeferStart(int sound);
 
 // Owned by the next unit's .sdata.
@@ -278,10 +278,10 @@ int HostBehUpdate(void* p) {
     fn_80162658(actor, actor->unk894);
     if (next != beh->state && lbl_803C57B0[beh->state].check(actor)) {
         lbl_803C57B0[next].enter(actor);
-        fn_800A7A54(&actor->st, 0x40, 0);
-        fn_800A7A54(&actor->st, 0x41, 0);
-        fn_800A7A54(&actor->st, 0x43, 0);
-        fn_800A7A54(&actor->st, 0x42, 0);
+        ConditionSetBit(&actor->st, 0x40, 0);
+        ConditionSetBit(&actor->st, 0x41, 0);
+        ConditionSetBit(&actor->st, 0x43, 0);
+        ConditionSetBit(&actor->st, 0x42, 0);
     }
     return 1;
 }
@@ -337,8 +337,8 @@ int HostBehState3Check(Actor* actor) {
     if (actor == 0) {
         return 0;
     }
-    fn_800A7A54(&actor->st, 0x2E, 0);
-    fn_800A7A54(&actor->st, 0x2F, 0);
+    ConditionSetBit(&actor->st, 0x2E, 0);
+    ConditionSetBit(&actor->st, 0x2F, 0);
     return 1;
 }
 
@@ -361,7 +361,7 @@ int HostBehState3Enter(Actor* actor) {
         beh->f08 = HostBehLerp(lbl_804D3D70, lbl_804D3D74, (float)rand() / 32767.0f);
     }
     beh->f08 += (float)lbl_804D3D34;
-    fn_800A7A54(&actor->st, 0x2E, 1);
+    ConditionSetBit(&actor->st, 0x2E, 1);
     fn_800BBCA8(actor);
     return 1;
 }
@@ -372,7 +372,7 @@ int HostBehState2Update(Actor* actor) {
     void* info;
     char buf[0x20];
 
-    info = fn_800A7A18(&actor->st);
+    info = FollowGetTargetObj(&actor->st);
     if (info == 0 || !SendMsg(((TargetInfo*)info)->handle, 0x400, buf)) {
         return 0;
     }
@@ -391,7 +391,7 @@ int HostBehState2Enter(Actor* actor) {
     }
     actor->beh->state = 2;
     actor->i288 = 0;
-    fn_800A7A54(&actor->st, 0x31, 1);
+    ConditionSetBit(&actor->st, 0x31, 1);
     fn_800BBCA8(actor);
     return 1;
 }
@@ -402,7 +402,7 @@ int HostBehState1Update(Actor* actor) {
     void* info;
     char buf[0x20];
 
-    info = fn_800A7A18(&actor->st);
+    info = FollowGetTargetObj(&actor->st);
     if (info == 0 || !SendMsg(((TargetInfo*)info)->handle, 0x400, buf)) {
         return 0;
     }
@@ -411,7 +411,7 @@ int HostBehState1Update(Actor* actor) {
         return 2;
     }
     if (HasCondition(&actor->st, 5)) {
-        fn_800A7A54(&actor->st, 5, 0);
+        ConditionSetBit(&actor->st, 5, 0);
         return 3;
     }
     return beh->state;
@@ -420,7 +420,7 @@ int HostBehState1Update(Actor* actor) {
 // State 1 leave hook.
 int HostBehState1Check(Actor* actor) {
     fn_80162610(actor, actor->unk894, 0);
-    fn_800A7B08(&actor->st, 4, 0);
+    ConditionUpdateBit(&actor->st, 4, 0);
     return 1;
 }
 
@@ -441,7 +441,7 @@ int HostBehState1Enter(Actor* actor) {
     } else {
         beh->f04 = HostBehLerp(lbl_804D3D68, lbl_804D3D6C, (float)rand() / 32767.0f);
     }
-    fn_800A7B08(&actor->st, 4, 1);
+    ConditionUpdateBit(&actor->st, 4, 1);
     fn_800BBCA8(actor);
     return 1;
 }
@@ -458,7 +458,7 @@ int HostBehState0Update(void* p) {
         target = 0;
         fn_800B261C(actor, kind, &target);
         if (target != 0) {
-            fn_800A78A0(&actor->st, target);
+            FollowSetTargetObj(&actor->st, target);
             return 1;
         }
     }

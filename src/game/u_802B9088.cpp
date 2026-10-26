@@ -213,16 +213,16 @@ int HasCondition(void* conditions, int which);   // 0x800A7AC4
 extern "C" int SendMsg(int to, int msg, void* data);   // 0x800265D4
 
 // Still-unnamed helpers.
-u32* fn_800A7A18(void* conditions);              // 0x800A7A18
-int fn_800A7A3C(void* conditions);               // 0x800A7A3C
-void fn_800A7A54(void* conditions, int which, int value);  // 0x800A7A54
-void fn_800A78A0(void* conditions);              // 0x800A78A0
-void fn_800A7B08(void* conditions, int which, int value);  // 0x800A7B08
-int fn_800A7B78(void* conditions, int which);    // 0x800A7B78
-void fn_800A794C(void* conditions, Vec3* out);   // 0x800A794C
-void fn_800A7028(void* conditions);              // 0x800A7028
-int fn_800A70D0(Actor* actor);                   // 0x800A70D0
-float fn_800AA9FC(Actor* actor, Vec3* v);        // 0x800AA9FC
+void* FollowGetTargetObj(void* range);  // 0x800A7A18
+int ConditionGetOwner(void* cond);  // 0x800A7A3C
+int ConditionSetBit(void* cond, int bit, int set);  // 0x800A7A54
+void FollowSetTargetObj(void* range, void* obj);  // 0x800A78A0
+int ConditionUpdateBit(void* cond, int bit, int set);  // 0x800A7B08
+int MemFlagIsSet(void* bits, int index);  // 0x800A7B78
+int FollowGetTargetPos(void* range, Vec3* out);  // 0x800A794C
+void RangeResetPending(void* range);  // 0x800A7028
+int FollowOffsetUpdate(void* self);  // 0x800A70D0
+float ActorAngleToPos(void* self, Vec3* pos);  // 0x800AA9FC
 void fn_800E1098(Vec3* out, Vec3* in, float scale);   // 0x800E1098
 void fn_8016D440(Vec3* out, Vec3* in);           // 0x8016D440
 void fn_80162658(Actor* actor, void* p);         // 0x80162658
@@ -281,11 +281,11 @@ static inline int RideBehavior(Actor* actor) {
     if (actor == 0 || actor->beh == 0) {
         return 0;
     }
-    p = fn_800A7A18(&actor->st);
+    p = (u32*)FollowGetTargetObj(&actor->st);
     if (p != 0) {
         t = p[0x38 / 4] >> 24;
         if (t == 0x13 || t == 2) {
-            int s = fn_800A7A3C(&actor->st);
+            int s = ConditionGetOwner(&actor->st);
             if (s == 1) {
                 return 0;
             } else if (s == 2) {
@@ -345,7 +345,7 @@ int RideMsg(int msg, void* data) {
         switch (m41D->id) {
         case 0x63F94A69:
             if (m41D->arg == -1) {
-                fn_800A7028(&actor->st);
+                RangeResetPending(&actor->st);
             }
             return 0;
         case 0xA996F6DE:
@@ -386,7 +386,7 @@ int RideMsg(int msg, void* data) {
             m40A->result = 0;
             return 1;
         }
-        if (fn_800A7B78(&actor->st, 0xB) != 0) {
+        if (MemFlagIsSet(&actor->st, 0xB) != 0) {
             return 1;
         }
         if (actor->f904 > 0.0f && HasCondition(&actor->st, 0xA) == 0 && (q.flags & 2) != 0 &&
@@ -417,7 +417,7 @@ int RideUpdate(void* p) {
     if (actor->i220 == 2) {
         if (!SendMsg(actor->pTarget->id, 0x400, &m) || m.state == 0) {
             actor->i220 = 0;
-            fn_800A7028(&actor->st);
+            RangeResetPending(&actor->st);
         }
     }
     beh->f0 += actor->dt;
@@ -433,10 +433,10 @@ int RideUpdate(void* p) {
         if (beh->idx != idx && gRideTypes[beh->idx].check(actor)) {
             beh->f0 = 0.0f;
             gRideTypes[idx].enter(actor);
-            fn_800A7A54(&actor->st, 0x40, 0);
-            fn_800A7A54(&actor->st, 0x41, 0);
-            fn_800A7A54(&actor->st, 0x43, 0);
-            fn_800A7A54(&actor->st, 0x42, 0);
+            ConditionSetBit(&actor->st, 0x40, 0);
+            ConditionSetBit(&actor->st, 0x41, 0);
+            ConditionSetBit(&actor->st, 0x43, 0);
+            ConditionSetBit(&actor->st, 0x42, 0);
         }
     }
     fn_80162658(actor, actor->unk894);
@@ -487,9 +487,9 @@ int RideState1Update(void* p) {
     if (state != 4 && beh->unk4 == 0) {
         r = fn_800B22F8(actor, state);
         fn_800B261C(actor, state, &cond);
-        if (fn_800A7A18(&actor->st) != (u32*)cond) {
-            fn_800A78A0(&actor->st);
-            fn_800A7B08(&actor->st, 4, 1);
+        if (FollowGetTargetObj(&actor->st) != (u32*)cond) {
+            FollowSetTargetObj(&actor->st, (void*)cond);
+            ConditionUpdateBit(&actor->st, 4, 1);
         }
         fn_800B1F20(actor, state);
         if (r != 4) {
@@ -520,9 +520,9 @@ int RideState0Update(void* p) {
     if (state != 4 && beh->unk4 == 0) {
         r = fn_800B22F8(actor, state);
         fn_800B261C(actor, state, &cond);
-        if (fn_800A7A18(&actor->st) != (u32*)cond) {
-            fn_800A78A0(&actor->st);
-            fn_800A7B08(&actor->st, 4, 1);
+        if (FollowGetTargetObj(&actor->st) != (u32*)cond) {
+            FollowSetTargetObj(&actor->st, (void*)cond);
+            ConditionUpdateBit(&actor->st, 4, 1);
         }
         fn_800B1F20(actor, state);
         if (r != 4) {
@@ -533,7 +533,7 @@ int RideState0Update(void* p) {
     if (actor->i220 != 0) {
         return 1;
     }
-    return fn_800A7A3C(&actor->st) != 0;
+    return ConditionGetOwner(&actor->st) != 0;
 }
 
 int RideState0Enter(Actor* actor) {
@@ -565,10 +565,10 @@ int RideTick(void* p) {
     }
     actor = (Actor*)p;
     st = &actor->st;
-    if (st->i20 != 0 && fn_800A7B78(st, 0x16) && actor->data->hash != 0x8FA05C1A) {
+    if (st->i20 != 0 && MemFlagIsSet(st, 0x16) && actor->data->hash != 0x8FA05C1A) {
         Vec3 dir;
-        fn_800A794C(st, &dir);
-        st->f40 = fn_800AA9FC(actor, &dir);
+        FollowGetTargetPos(st, &dir);
+        st->f40 = ActorAngleToPos(actor, &dir);
         st->f40 = st->f40 < -60.0f ? -60.0f : (st->f40 > 60.0f ? 60.0f : st->f40);
     } else {
         st->f40 = 0.0f;
@@ -599,10 +599,10 @@ int RideTick(void* p) {
             st->f3C = actor->data->fF4;
             st->f38 = actor->data->fE4;
             st->f1C = actor->data->fE4;
-            fn_800A7B08(st, 4, 1);
+            ConditionUpdateBit(st, 4, 1);
         }
-        if (fn_800A7B78(st, 4)) {
-            fn_800A794C(st, &v);
+        if (MemFlagIsSet(st, 4)) {
+            FollowGetTargetPos(st, &v);
         }
         v.x -= f31;
         v.y -= f30;
@@ -652,7 +652,7 @@ int RideTick(void* p) {
         if (fabs(d.z) < 1.1920929e-7f && fabs(d.x) < 1.1920929e-7f) {
             actor->i220 = 0;
             ActorPlayAnim(actor->i224, actor->i228, OwnerId(actor));
-        } else if (!fn_800A7B78(st, 0x16) || fabs(st->f40 - actor->f258) < 10.0f) {
+        } else if (!MemFlagIsSet(st, 0x16) || fabs(st->f40 - actor->f258) < 10.0f) {
             st->i18 = actor->i218;
             Vec3Set(&st->rot, d.z, d.x, 0.0f);
             EulerNormalize(&st->rot, &st->rot);
@@ -662,5 +662,5 @@ int RideTick(void* p) {
         }
         return 1;
     }
-    return fn_800A70D0(actor);
+    return FollowOffsetUpdate(actor);
 }

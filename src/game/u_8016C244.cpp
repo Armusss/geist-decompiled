@@ -166,8 +166,6 @@ int fn_8003A1F0(int anim, int bone, int model);
 void fn_8003F15C(int bone, void* mtx, int anim, float blend, void* data, int unk);
 void fn_800CE96C();
 int fn_80117D80(Actor* actor);
-void fn_800A7A54(void* cond, int id, int value);
-void fn_800A7B08(void* cond, int id, int value);
 void fn_800B6CAC(Actor* actor, void* fn);
 void fn_800B5028();
 void fn_800A31A0(Actor* actor);
@@ -202,6 +200,8 @@ int ModelAnimate(int model, char* name, int unk);
 void ZoneUpdate(void* zone, IVec3* pos);
 String fn_800225C8(String& a, String& b);
 }
+int ConditionUpdateBit(void* cond, int bit, int set);
+int ConditionSetBit(void* cond, int bit, int set);
 
 // From a shared header: names of the ghost actions (the array itself is unused here).
 static const char* sActionNames[] = {
@@ -614,9 +614,9 @@ void CollectInit(Actor* o) {
     st->pos.y = 0.0f;
     st->pos.z = 0.0f;
     found = Query(0x4B000000, 0x41E, 0xC355E8EE);
-    fn_800A7A54(o->cond, 0xB, found == 0);
-    fn_800A7A54(o->cond, 1, 1);
-    fn_800A7B08(o->cond, 6, 0);
+    ConditionSetBit(o->cond, 0xB, found == 0);
+    ConditionSetBit(o->cond, 1, 1);
+    ConditionUpdateBit(o->cond, 6, 0);
     fn_800B6CAC(o, (void*)fn_800B5028);
 }
 

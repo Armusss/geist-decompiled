@@ -574,18 +574,18 @@ int fn_80162940(void* p, int arg);
 int fn_801BD694();
 int fn_800B26B8(void* owner);
 int fn_800B1ED4(void* owner, int arg = 0);
-void fn_800A78A0(void* p, void* actor);
 unsigned long fn_8011D7E4(void* owner, int arg);
 void fn_800CE75C();
 void fn_800CEE08();
 int fn_80117D80(void* owner);
-void fn_800A7A54(void* list, int a, int b);
-void fn_800A7B08(void* list, int a, int b);
 int fn_80162658(void* owner, void* p);
 void fn_800B42E0(void* p, int handle, float f, int a, int b);
 int fn_800BAF40(void* owner);
 extern unsigned long lbl_804D2E10;
 }
+int ConditionUpdateBit(void* cond, int bit, int set);
+int ConditionSetBit(void* cond, int bit, int set);
+void FollowSetTargetObj(void* range, void* obj);
 
 struct ZoneList;
 void ZoneFlagSet(ZoneList* list, int on, int unused);
@@ -844,7 +844,7 @@ int HandleItemDropEvent(void* arg)
             if (value != -1) {
                 fn_80118084(owner->state, 0x0315C41D, &value);
                 SendMsg(value, 0x400, &reply);
-                fn_800A78A0((char*)owner + 0x270, reply.actor);
+                FollowSetTargetObj((char*)owner + 0x270, reply.actor);
             }
             info->type = 0;
         }
@@ -2075,8 +2075,8 @@ extern const ItemIdTable lbl_80345818;
 extern float lbl_804D77CC;
 int fn_800F8AF4(int item);
 int fn_800BBF9C(void* owner, void* actor);
-int fn_800A7B78(void* p, int arg);
 }
+int MemFlagIsSet(void* bits, int index);
 
 // Item-store query used when an item needs a drop target: asks the shared item
 // table for its entries, keeps the handles that answer the name queries with
@@ -2125,7 +2125,7 @@ int ItemStorePickPreferredHandle(void* owner)
         if (fn_800BBF9C(owner, reply.actor) == 0) {
             continue;
         }
-        if (fn_800A7B78((char*)reply.actor + 0x270, 0xB) != 0) {
+        if (MemFlagIsSet((char*)reply.actor + 0x270, 0xB) != 0) {
             continue;
         }
         if (QueryName(*(int*)((char*)reply.actor + 0x38), 0xFF3C0C68) != 0) {
@@ -2205,7 +2205,7 @@ int ItemStorePickRandomHandle(void* owner)
         if (fn_800BBF9C(owner, reply.actor) == 0) {
             continue;
         }
-        if (fn_800A7B78((char*)reply.actor + 0x270, 0xB) != 0) {
+        if (MemFlagIsSet((char*)reply.actor + 0x270, 0xB) != 0) {
             continue;
         }
         if (QueryName(*(int*)((char*)reply.actor + 0x38), 0xFF3C0C68) != 0) {
@@ -2251,7 +2251,7 @@ int ItemStorePickClosestHandle(void* arg)
         if (reply.actor == 0 || reply.state == 0) {
             continue;
         }
-        if (fn_800A7B78((char*)reply.actor + 0x270, 0xB) != 0) {
+        if (MemFlagIsSet((char*)reply.actor + 0x270, 0xB) != 0) {
             continue;
         }
         if (*(int*)((char*)reply.actor + 0x2C4) == -1) {
@@ -2728,13 +2728,13 @@ int ItemWearMessage(WearOwner* owner, ExtraMsg* msg)
         owner->condition = owner->condition - value;
         owner->unk214 = msg->bone;
         if (owner->condition > lbl_804D778C) {
-            fn_800A7A54(owner->cond, 4, 1);
+            ConditionSetBit(owner->cond, 4, 1);
         } else {
             if (HasCondition(owner->cond, 0xC) != 0) {
-                fn_800A7A54(owner->cond, 0xC, 0);
+                ConditionSetBit(owner->cond, 0xC, 0);
                 fn_80090390((void*)owner->unkD4, 0);
             }
-            fn_800A7A54(owner->cond, 9, 1);
+            ConditionSetBit(owner->cond, 9, 1);
             if (QueryName(0x4B000000, 0x2D88B734) != 0) {
                 fn_8013F4B8(owner, *(int*)((char*)owner + 0x38));
             }
@@ -2888,10 +2888,10 @@ void ItemCreate(void* arg)
     }
     o->state->setInfoType = ItemSetInfoType;
     o->state->owner = o;
-    fn_800A7A54(o->unk270, 1, 0);
-    fn_800A7B08(o->unk270, 6, 0);
-    fn_800A7B08(o->unk270, 0, 0);
-    fn_800A7B08(o->unk270, 0x23, 1);
+    ConditionSetBit(o->unk270, 1, 0);
+    ConditionUpdateBit(o->unk270, 6, 0);
+    ConditionUpdateBit(o->unk270, 0, 0);
+    ConditionUpdateBit(o->unk270, 0x23, 1);
     um.flags = o->handle;
     um.key = 0x2840341C;
     um.unk4 = 3;

@@ -1036,7 +1036,7 @@ struct SplineHitEvent {
     f32 unk50;                   // 0x50
 };
 
-extern "C" f32 fn_800AA230(HazardSplineActor*);
+float RangeValueDistance2D(void* self);
 extern "C" s32 fn_8001F928(s32, void*, u32, void*, void*);
 
 // Hit record handed to the collision-test callback (0x48 bytes); the callback
@@ -1102,7 +1102,7 @@ s32 HazardSplineZoneCheck(f32 dist, HazardSplineActor* actor, HazardSplineZone* 
     } else {
         reach = lbl_804D7810;
     }
-    reach -= fn_800AA230(actor);
+    reach -= RangeValueDistance2D(actor);
     if (reach < lbl_804D7810) {
         reach = lbl_804D7810;
     }
@@ -1333,7 +1333,7 @@ struct Owner {
 s32 OwnerId(Owner*);
 s32 HandleToPlayer(s32);
 s32 PlayerTeam(s32);
-extern "C" s32 fn_800A87A0(void*, void*);
+int FollowLineCheck(void* self, void* target);
 
 // Returns 1 when `handle` is a live, hostile target of `self`.
 s32 HazardCheckTarget(Owner* self, s32 handle) {
@@ -1493,12 +1493,12 @@ extern float lbl_804D787C;
 extern "C" f32 sqrtf(f32);
 
 // Engine helpers used by the hazard aim/pad code below.
-extern "C" f32 fn_800A8600(Vec3*, Vec3*, Vec3*, Vec3*, f32*);
+float SegmentClosestSquaredDist(float* p1, float* p2, float* p3, float* p4, float* p5);
 extern "C" void fn_800A0030(Vec3*, Mtx34*, Vec3*);
 extern "C" void fn_800A0168(Mtx34*, Mtx34*);
 extern "C" void fn_800E1098(Vec3*, Vec3*, f32);
-extern "C" void fn_800A78A0(void*, void*);
-extern "C" void fn_800A7028(void*);
+void FollowSetTargetObj(void* range, void* obj);
+void RangeResetPending(void* range);
 void ActorGetMatrix(Mtx34*, Actor*);
 
 // Controller helpers.
@@ -1546,7 +1546,7 @@ s32 HazardTrackTarget(f32 dist, s32 type, HazardMsgPort* port, HazardTrackActor*
                 if (lbl_804D7830 < range) {
                     d = sqrtf(range);
                 }
-                if (d < lbl_804D7834 && fn_800A87A0(actor, msg.port) != 0) {
+                if (d < lbl_804D7834 && FollowLineCheck(actor, msg.port) != 0) {
                     if (list->count != 4) {
                         list->items[list->count] = handle;
                         list->count++;
@@ -1615,10 +1615,10 @@ struct HazardTargetProbe {
 
 // Engine/actor helpers used by the target tracking code below.
 extern "C" s32 fn_800A1F94();
-extern "C" HazardTargetActor* fn_800A7A18(void*);
-extern "C" f32 fn_800AA170(void*, void*);
+void* FollowGetTargetObj(void* range);
+float OwnerValue(Owner* owner, Vec3* vec);
 f32 OwnerValue(Owner*, void*);
-extern "C" s32 fn_800A8A74(void*, void*);
+int FollowLineCheckPos(void* self, float* pos);
 typedef void (*HazardCallback)(void*, void*);
 extern "C" void fn_800B6CAC(void*, HazardCallback);
 extern "C" s32 fn_800BAF40(void*);
@@ -1672,7 +1672,7 @@ s32 HazardTrackListUpdate(HazardTrackActor* self, HazardTrackOwner* owner) {
         HazardTargetProbe probe;
 
         if (SendMsg(list->items[0], 0x400, &probe) == 1) {
-            fn_800A78A0(self->pad270, probe.object);
+            FollowSetTargetObj(self->pad270, probe.object);
             break;
         }
 
@@ -1686,7 +1686,7 @@ s32 HazardTrackListUpdate(HazardTrackActor* self, HazardTrackOwner* owner) {
             }
         }
         if (index == -1) {
-            fn_800A7028(self->pad270);
+            RangeResetPending(self->pad270);
             return 1;
         }
         for (; index < targets->count - 1; index++) {
@@ -1741,11 +1741,11 @@ s32 HazardTrackListUpdateMain(HazardTrackActor* self, HazardTrackOwner* owner) {
 
     if ((list->state >> 24) == 0x13 && fn_800A1F94() == 0) {
         list->state = -1;
-        fn_800A7028(self->pad270);
+        RangeResetPending(self->pad270);
         return 1;
     }
 
-    fn_800A7A18(self->pad270);
+    FollowGetTargetObj(self->pad270);
     s32 slot = fn_800B26B8();
     HazardTargetActor* target;
 
@@ -1789,7 +1789,7 @@ s32 HazardTrackListUpdateMain(HazardTrackActor* self, HazardTrackOwner* owner) {
     f32 dist;
 
     if (list->active == 1) {
-        dist = fn_800AA170(self, &list->items[0]);
+        dist = OwnerValue((Owner*)self, (Vec3*)&list->items[0]);
     } else if (list->active < 1 || list->active > 2) {
         dist = lbl_804D7878;
     } else {
@@ -1806,14 +1806,14 @@ s32 HazardTrackListUpdateMain(HazardTrackActor* self, HazardTrackOwner* owner) {
     if (dist < list->limit) {
         owner->send(0x3147a953, self);
         list->active = 0;
-        fn_800A7028(self->pad270);
+        RangeResetPending(self->pad270);
         return 1;
     }
 
     s32 valid;
 
     if (list->active == 1) {
-        valid = fn_800A8A74(self, &list->items[0]);
+        valid = FollowLineCheckPos(self, (float*)&list->items[0]);
     } else if (list->active < 1 || list->active > 2) {
         valid = 0;
     } else {
@@ -1823,7 +1823,7 @@ s32 HazardTrackListUpdateMain(HazardTrackActor* self, HazardTrackOwner* owner) {
         if (SendMsg(list->items[0], 0x400, &probe) == 0) {
             valid = 0;
         } else {
-            valid = fn_800A87A0(self, probe.object);
+            valid = FollowLineCheck(self, probe.object);
         }
     }
 
@@ -1885,11 +1885,11 @@ s32 HazardTrackListUpdateAlt(HazardTrackActor* self, HazardTrackOwner* owner) {
 
     if ((list->state >> 24) == 0x13 && fn_800A1F94() == 0) {
         list->state = -1;
-        fn_800A7028(self->pad270);
+        RangeResetPending(self->pad270);
         return 1;
     }
 
-    HazardTargetActor* current = fn_800A7A18(self->pad270);
+    HazardTargetActor* current = (HazardTargetActor*)FollowGetTargetObj(self->pad270);
     s32 slot = fn_800B26B8();
     HazardTargetActor* target;
 
@@ -1947,7 +1947,7 @@ s32 HazardTrackListUpdateAlt(HazardTrackActor* self, HazardTrackOwner* owner) {
     f32 dist;
 
     if (list->active == 1) {
-        dist = fn_800AA170(self, &list->items[0]);
+        dist = OwnerValue((Owner*)self, (Vec3*)&list->items[0]);
     } else if (list->active < 1 || list->active > 2) {
         dist = lbl_804D7878;
     } else {
@@ -1988,7 +1988,7 @@ s32 HazardTrackListUpdateAlt(HazardTrackActor* self, HazardTrackOwner* owner) {
     s32 valid;
 
     if (list->active == 1) {
-        valid = fn_800A8A74(self, &list->items[0]);
+        valid = FollowLineCheckPos(self, (float*)&list->items[0]);
     } else if (list->active < 1 || list->active > 2) {
         valid = 0;
     } else {
@@ -1998,7 +1998,7 @@ s32 HazardTrackListUpdateAlt(HazardTrackActor* self, HazardTrackOwner* owner) {
         if (SendMsg(list->items[0], 0x400, &probe) == 0) {
             valid = 0;
         } else {
-            valid = fn_800A87A0(self, probe.object);
+            valid = FollowLineCheck(self, probe.object);
         }
     }
 
@@ -2136,7 +2136,7 @@ s32 HazardTrackListRefresh(HazardTrackActor* self, HazardAutoTargetOwner* owner)
     f32 dist;
 
     if (list->active == 1) {
-        dist = fn_800AA170(self, &list->target);
+        dist = OwnerValue((Owner*)self, (Vec3*)&list->target);
     } else if (list->active < 1 || list->active > 2) {
         dist = lbl_804D7878;
     } else {
@@ -2153,14 +2153,14 @@ s32 HazardTrackListRefresh(HazardTrackActor* self, HazardAutoTargetOwner* owner)
     if (dist < list->limit) {
         owner->send(0x3147a953, self);
         list->active = 0;
-        fn_800A7028(self->pad270);
+        RangeResetPending(self->pad270);
         return 1;
     }
 
     s32 valid;
 
     if (list->active == 1) {
-        valid = fn_800A8A74(self, &list->target);
+        valid = FollowLineCheckPos(self, (float*)&list->target);
     } else if (list->active < 1 || list->active > 2) {
         valid = 0;
     } else {
@@ -2170,7 +2170,7 @@ s32 HazardTrackListRefresh(HazardTrackActor* self, HazardAutoTargetOwner* owner)
         if (SendMsg(list->target, 0x400, &probe) == 0) {
             valid = 0;
         } else {
-            valid = fn_800A87A0(self, probe.object);
+            valid = FollowLineCheck(self, probe.object);
         }
     }
 
@@ -2244,12 +2244,12 @@ s32 HazardTrackSlotStart(HazardTrackActor* self, HazardAutoTargetOwner* owner) {
 
 // Resets the hazard's tracking helper and installs its per-frame callback.
 s32 HazardTrackReset(HazardTrackActor* self) {
-    fn_800A7028(self->pad270);
+    RangeResetPending(self->pad270);
     fn_800B6CAC(self, (HazardCallback)HazardTargetAimDir);
     return 1;
 }
 
-extern "C" void fn_800A7B08(void*, s32, s32);
+int ConditionUpdateBit(void* cond, int bit, int set);
 extern float lbl_804D7888;
 
 // Restarts the hazard's target tracking: resets the list entry and its timer,
@@ -2264,15 +2264,15 @@ s32 HazardTrackRestart(HazardTrackActor* self, HazardTrackOwner* owner) {
     list->unk00 = 4;
     list->handle = -1;
     list->timer = lbl_804D7888;
-    fn_800A7B08(self->pad270, 3, 1);
-    fn_800A7B08(self->pad270, 4, 1);
+    ConditionUpdateBit(self->pad270, 3, 1);
+    ConditionUpdateBit(self->pad270, 4, 1);
     self->unk288 = 0;
-    fn_800A7028(self->pad270);
+    RangeResetPending(self->pad270);
 
     HazardTargetProbe probe;
 
     if (SendMsg(list->items[0], 0x400, &probe) != 0) {
-        fn_800A78A0(self->pad270, probe.object);
+        FollowSetTargetObj(self->pad270, probe.object);
     }
     return 1;
 }
@@ -2290,15 +2290,15 @@ s32 HazardTargetStartMode(HazardTrackActor* self, HazardTrackOwner* owner) {
     list->unk00 = 3;
     list->handle = -1;
     list->timer = lbl_804D7844;
-    fn_800A7B08(self->pad270, 3, 1);
-    fn_800A7B08(self->pad270, 4, 1);
+    ConditionUpdateBit(self->pad270, 3, 1);
+    ConditionUpdateBit(self->pad270, 4, 1);
     self->unk288 = 3;
-    fn_800A7028(self->pad270);
+    RangeResetPending(self->pad270);
 
     HazardTargetProbe probe;
 
     if (SendMsg(list->items[0], 0x400, &probe) != 0) {
-        fn_800A78A0(self->pad270, probe.object);
+        FollowSetTargetObj(self->pad270, probe.object);
         fn_800B6D04(self, (HazardCallback)HazardTargetAimDir);
     }
     return 1;
@@ -2314,20 +2314,20 @@ s32 HazardTargetStartQuery(HazardTrackActor* self, HazardTrackOwner* owner) {
     HazardTargetList* list = owner->list;
     list->unk00 = 2;
     list->handle = -1;
-    fn_800A7B08(self->pad270, 3, 1);
-    fn_800A7B08(self->pad270, 4, 1);
+    ConditionUpdateBit(self->pad270, 3, 1);
+    ConditionUpdateBit(self->pad270, 4, 1);
     self->unk288 = 3;
 
     HazardTargetProbe probe;
 
     memset(&probe, 0, 0x20);
     if (SendMsg(list->state, 0x400, &probe) != 0) {
-        fn_800A78A0(self->pad270, probe.object);
+        FollowSetTargetObj(self->pad270, probe.object);
     }
     return 1;
 }
 
-extern "C" void fn_800A78E4(void*, void*);
+void FollowSetTargetVec(void* range, Vec3* vec);
 
 // Restarts the hazard's target tracking in mode 1: resets the target list,
 // re-enables the tracking helper and resolves the current target's object.
@@ -2340,17 +2340,17 @@ s32 HazardTargetStartTrack(HazardTrackActor* self, HazardAutoTargetOwner* owner)
     list = owner->list;
     list->unk00 = 1;
     list->handle = -1;
-    fn_800A7B08(self->pad270, 3, 1);
-    fn_800A7B08(self->pad270, 4, 0);
+    ConditionUpdateBit(self->pad270, 3, 1);
+    ConditionUpdateBit(self->pad270, 4, 0);
     self->unk288 = 3;
     if (list->active == 1) {
-        fn_800A78E4(self->pad270, &list->target);
+        FollowSetTargetVec(self->pad270, (Vec3*)&list->target);
     } else if (list->active > 1 && list->active < 3) {
         HazardTargetProbe probe;
 
         memset(&probe, 0, 0x20);
         if (SendMsg(list->target, 0x400, &probe) != 0) {
-            fn_800A78A0(self->pad270, probe.object);
+            FollowSetTargetObj(self->pad270, probe.object);
         }
     }
     return 1;
@@ -2363,8 +2363,8 @@ s32 HazardTargetStopTrack(HazardTrackActor* self, HazardAutoTargetOwner* owner) 
         return 0;
     }
     owner->list->unk00 = 0;
-    fn_800A7B08(self->pad270, 3, 1);
-    fn_800A7B08(self->pad270, 4, 0);
+    ConditionUpdateBit(self->pad270, 3, 1);
+    ConditionUpdateBit(self->pad270, 4, 0);
     self->unk288 = 3;
     return 1;
 }
@@ -2632,7 +2632,7 @@ void HazardTrackStateInit(void* owner, HazardTrackStateActor* self) {
     list->unk38 = -1;
 
     fn_800BBCA8(owner);
-    fn_800A7028(((HazardTrackActor*)self)->pad270);
+    RangeResetPending(((HazardTrackActor*)self)->pad270);
     lbl_8039F528[list->index].enter(owner, self);
 }
 

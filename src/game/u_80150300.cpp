@@ -191,8 +191,6 @@ void fn_800CB8BC(Actor* actor, int a, int b, int c);    // 0x800CB8BC
 int fn_8008EA9C(int a, int b);                          // 0x8008EA9C
 void fn_80152990(Actor* actor);                         // 0x80152990
 void fn_801537E8(Actor* actor, int arg);                // 0x801537E8
-void fn_800A7A54(void* cond, int id, int value);        // 0x800A7A54
-int fn_800A82D0(Actor* actor, void* pos);               // 0x800A82D0
 void fn_80162610(Actor* actor, void* obj, u32 hash);    // 0x80162610
 int fn_8016325C(void* obj);                             // 0x8016325C
 int fn_80212730(int id);                                // 0x80212730
@@ -205,7 +203,6 @@ void fn_80090974(int id, int a, int b, float t, int c,
 void fn_80120AC0(double t, u32 hash, int n, int id);    // 0x80120AC0
 void fn_800FC764(int actor, int flag);                  // 0x800FC764
 int fn_802A1D04(void);                                  // 0x802A1D04
-void fn_800A7068(void);                                 // 0x800A7068
 void fn_800CDD10(void);                                 // 0x800CDD10
 void fn_8008F230(int actor, int id, int on, float value);// 0x8008F230
 int fn_80153A64(int* arg, int* out);                    // 0x80153A64
@@ -217,6 +214,10 @@ extern float lbl_804D2F10;
 extern HostEntry* lbl_803A5968[];
 extern int lbl_804D4E20;
 }
+struct Vec3;
+int ZoneClassifyDirection(void* self, Vec3* dir);
+int ConditionSetBit(void* cond, int bit, int set);
+int RangeResetFields(void* range);
 
 // Local (this unit) functions.
 int PossessHostMsg(int msg, void* data);                   // 0x80150300
@@ -530,14 +531,14 @@ int HostTypeCheckB(Actor* a, int next) {
         return 0;
     }
     s = a->state;
-    fn_800A7A54(&a->i270, 0, 0);
+    ConditionSetBit(&a->i270, 0, 0);
     a->pos[0] = 0.0f;
     a->pos[1] = 0.0f;
     a->pos[2] = 0.0f;
     if (s->index % 13 == 10 && next % 13 != 10) {
         s->sub = next;
     }
-    fn_800A7A54(&a->i270, 4, 0);
+    ConditionSetBit(&a->i270, 4, 0);
     return 1;
 }
 
@@ -548,14 +549,14 @@ int HostTypeCheckC(Actor* a, int next) {
         return 0;
     }
     s = a->state;
-    fn_800A7A54(&a->i270, 0, 0);
+    ConditionSetBit(&a->i270, 0, 0);
     a->pos[0] = 0.0f;
     a->pos[1] = 0.0f;
     a->pos[2] = 0.0f;
     if (next % 13 != 10) {
         s->sub = next;
     }
-    fn_800A7A54(&a->i270, 4, 0);
+    ConditionSetBit(&a->i270, 4, 0);
     return 0;
 }
 
@@ -572,7 +573,7 @@ int HostTypeCheckD(Actor* a, int next) {
         fn_80162610(a, a->obj894, 0x968CBE3D);
     }
     s->sub = next;
-    fn_800A7A54(&a->i270, 0, 0);
+    ConditionSetBit(&a->i270, 0, 0);
     if (fn_8016325C(a->obj894) != 0) {
         fn_80162610(a, a->obj894, 0x1B83833F);
     }
@@ -653,10 +654,10 @@ int HostTypeUpdateF(Actor* a) {
     iVar1 = HasCondition(&a->i270, 4);
     if ((iVar1 != 0) && HasCondition(&a->i270, 9) == 0 &&
         (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
-        fn_800A7A54(&a->i270, 4, 0);
+        ConditionSetBit(&a->i270, 4, 0);
         return 10;
     }
-    iVar1 = fn_800A82D0(a, a->pos);
+    iVar1 = ZoneClassifyDirection(a, (Vec3*)a->pos);
     if (iVar1 == 3) {
         iVar1 = 0;
     }
@@ -692,7 +693,7 @@ int HostTypeUpdateG(Actor* a) {
         return 0;
     }
     s = a->state;
-    iVar1 = fn_800A82D0(a, a->pos);
+    iVar1 = ZoneClassifyDirection(a, (Vec3*)a->pos);
     if (iVar1 == 3) {
         iVar1 = 0;
     }
@@ -705,7 +706,7 @@ int HostTypeUpdateG(Actor* a) {
     iVar2 = HasCondition(&a->i270, 4);
     if ((iVar2 != 0) && HasCondition(&a->i270, 9) == 0 &&
         (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
-        fn_800A7A54(&a->i270, 4, 0);
+        ConditionSetBit(&a->i270, 4, 0);
         return 10;
     }
     if (fabsf(a->f284) < 1.0f) {
@@ -727,7 +728,7 @@ int HostTypeUpdateH(Actor* a) {
     }
     s = a->state;
     fn_80152990(a);
-    iVar1 = fn_800A82D0(a, a->pos);
+    iVar1 = ZoneClassifyDirection(a, (Vec3*)a->pos);
     if (iVar1 == 3) {
         iVar1 = 0;
     }
@@ -739,7 +740,7 @@ int HostTypeUpdateH(Actor* a) {
     iVar2 = HasCondition(&a->i270, 4);
     if ((iVar2 != 0) && HasCondition(&a->i270, 9) == 0 &&
         (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
-        fn_800A7A54(&a->i270, 4, 0);
+        ConditionSetBit(&a->i270, 4, 0);
         return 10;
     }
     iVar2 = a->i26C;
@@ -777,7 +778,7 @@ int HostTypeUpdateI(Actor* a) {
         return 0;
     }
     s = a->state;
-    iVar2 = fn_800A82D0(a, a->pos);
+    iVar2 = ZoneClassifyDirection(a, (Vec3*)a->pos);
     if (iVar2 == 3) {
         iVar2 = 0;
     }
@@ -790,7 +791,7 @@ int HostTypeUpdateI(Actor* a) {
     iVar3 = HasCondition(&a->i270, 4);
     if ((iVar3 != 0) && HasCondition(&a->i270, 9) == 0 &&
         (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
-        fn_800A7A54(&a->i270, 4, 0);
+        ConditionSetBit(&a->i270, 4, 0);
         return 10;
     }
     if (s->unk38 != a->i26C) {
@@ -838,10 +839,10 @@ int HostTypeUpdateJ(Actor* a) {
     iVar2 = HasCondition(&a->i270, 4);
     if ((iVar2 != 0) && HasCondition(&a->i270, 9) == 0 &&
         (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
-        fn_800A7A54(&a->i270, 4, 0);
+        ConditionSetBit(&a->i270, 4, 0);
         return 10;
     }
-    iVar2 = fn_800A82D0(a, a->pos);
+    iVar2 = ZoneClassifyDirection(a, (Vec3*)a->pos);
     if (iVar2 == 3) {
         iVar2 = 0;
     }
@@ -1106,7 +1107,7 @@ int HostTypeEnter11(Actor* a) {
 int HostTypeEnter0C(Actor* a) {
     ENTER_HEAD
     ENTER_BEGIN
-    a->fn10C = fn_800A7068;
+    a->fn10C = (void (*)())RangeResetFields;
     s->index = 0x0C;
     s->sub = 0x0C;
     s->unk38 = 0;
@@ -1114,7 +1115,7 @@ int HostTypeEnter0C(Actor* a) {
     s->f24 = lbl_804D2F10;
     fn_8008DE4C(a->iD4, 0, s->unk0C, 0x18);
     if (HasCondition(&a->i270, 10) == 0) {
-        fn_800A7A54(&a->i270, 10, 1);
+        ConditionSetBit(&a->i270, 10, 1);
         ActorPlayAnim(a->i38, 0xDC04E3D5, a->i38);
     }
     return 1;
@@ -1148,7 +1149,7 @@ int HostTypeEnter0B(void* p) {
     s->sub = 0x0C;
     s->unk38 = 0;
     s->unk34 = 0;
-    fn_800A7A54(&a->i270, 0, 1);
+    ConditionSetBit(&a->i270, 0, 1);
     if (a->p5F0 == 0 || fn_80212730(a->i38) != -1) {
         fn_801537E8(a, HostBoneIndex(a));
     }
@@ -1340,7 +1341,7 @@ void fn_801537E8(Actor* a, int arg) {
     s->f3C = 0.0f;
     s->f40 = 0.0f;
     s->f44 = 0.0f;
-    fn_800A7A54(&a->i270, 0xC, 0);
+    ConditionSetBit(&a->i270, 0xC, 0);
     if (arg != -1) {
         s->unk0C = fn_800A1BC8(*(int*)(a->iC4 + 0x14), *(int*)(a->iC4 + 0x1C),
                                lbl_803A5488[s->index].id, arg, 0);
@@ -1353,7 +1354,7 @@ void fn_801537E8(Actor* a, int arg) {
         if (HasCondition(&a->i270, 0xE) != 0) {
             fn_8008F230(a->iD4, 0, 0, 0.0f);
             fn_8008F230(a->iD4, 1, 0, 0.0f);
-            fn_800A7A54(&a->i270, 0xE, 0);
+            ConditionSetBit(&a->i270, 0xE, 0);
         } else if (s->f28 >= 0.0f) {
             fn_8008F230(a->iD4, 0, 1, s->f28);
             s->f28 = -1.0f;

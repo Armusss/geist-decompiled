@@ -212,12 +212,6 @@ int SendMsg(int to, int msg, void* data);
 int fn_80019F88(void* data, Actor* actor);
 String fn_800225C8(const String& a, const String& b);
 void fn_80090390(int a, int b);
-void fn_800A7028(void* conditions);
-void fn_800A78A0(void* conditions, void* target);
-Target* fn_800A7A18(void* conditions);
-void fn_800A7A54(void* conditions, int which, int value);
-void fn_800A7B08(void* conditions, int which, int value);
-int fn_800A7B78(void* conditions, int which);
 int fn_800B1EF4(Actor* actor, int kind);
 void fn_800B1F20(Actor* actor, int kind);
 void fn_800B20B8(Actor* actor, int a);
@@ -237,7 +231,6 @@ void fn_800CC984();
 void fn_800CE96C();
 void fn_800CF064();
 void fn_800C748C();
-void fn_800A70D0();
 float fn_800E1020(Vec3* v);
 void fn_800E1098(void* out, void* in, float length);
 void fn_80162610(Actor* actor, void* p, int a);
@@ -247,6 +240,13 @@ void fn_8016D864(ZoneHitBox* out, void* src);
 int fn_8016F120(void* fx, int* pos);
 void fn_8028C188(Buffer* b, char* data, int len);
 }
+int MemFlagIsSet(void* bits, int index);
+int ConditionUpdateBit(void* cond, int bit, int set);
+int ConditionSetBit(void* cond, int bit, int set);
+void* FollowGetTargetObj(void* range);
+void FollowSetTargetObj(void* range, void* obj);
+int FollowOffsetUpdate(void* self);
+void RangeResetPending(void* range);
 
 extern void* lbl_804D3600;  // "trib_see" effect
 extern void* lbl_804D3604;  // "ice_frozenimps" effect
@@ -272,7 +272,7 @@ inline int ImpHandle41D(void* data) {
     case 0x56D8C010:
         lbl_803BECD8[b->state].exit(o);
         lbl_803BECD8[1].enter(o);
-        fn_800A7B08(o->st, 3, 1);
+        ConditionUpdateBit(o->st, 3, 1);
         b->timer = 500.0f;
         return 0;
     }
@@ -319,19 +319,19 @@ int ImpMsg(int msg, void* data) {
             if (HasCondition(a->st, 9) == 1) {
                 return 1;
             }
-            if (fn_800A7B78(a->st, 10) != 0) {
+            if (MemFlagIsSet(a->st, 10) != 0) {
                 return 1;
             }
             a->health -= m->damage;
             a->unk214 = m->unk44;
             if (a->health <= 0.0f) {
                 if (HasCondition(a->st, 0xC)) {
-                    fn_800A7A54(a->st, 0xC, 0);
+                    ConditionSetBit(a->st, 0xC, 0);
                     fn_80090390(a->unkD4, 0);
                 }
-                fn_800A7A54(a->st, 9, 1);
+                ConditionSetBit(a->st, 9, 1);
             } else {
-                fn_800A7A54(a->st, 4, 1);
+                ConditionSetBit(a->st, 4, 1);
             }
             if (b->hurt <= 0.0f) {
                 fn_8016F120(lbl_804D3604, &a->x);
@@ -356,7 +356,7 @@ int ImpMsg(int msg, void* data) {
             m->result = 0;
             return 1;
         }
-        if (fn_800A7B78(a->st, 0xB) != 0) {
+        if (MemFlagIsSet(a->st, 0xB) != 0) {
             return 1;
         }
         if (a->health > 0.0f && HasCondition(a->st, 0xA) == 0 && (q.flags & 2) && m->anim == 0x3CA34BD6) {
@@ -383,7 +383,7 @@ inline int ImpPickState(Actor* a) {
         return 0;
     }
     kind = fn_800B26B8(a);
-    if (fn_800A7B78(a->st, 5) != 0 && (kind == 4 || a->unk220 != 0)) {
+    if (MemFlagIsSet(a->st, 5) != 0 && (kind == 4 || a->unk220 != 0)) {
         return 2;
     }
     if (kind != 4) {
@@ -411,7 +411,7 @@ int ImpTick(void* owner) {
 
         if (SendMsg(a->unk22C->id, 0x400, &q) == 0 || q.state == 0) {
             a->unk220 = 0;
-            fn_800A7028(a->st);
+            RangeResetPending(a->st);
             b->flags |= 1;
         }
     }
@@ -420,10 +420,10 @@ int ImpTick(void* owner) {
         next = ImpPickState(a);
         if (b->state != next && lbl_803BECD8[b->state].exit(a)) {
             lbl_803BECD8[next].enter(a);
-            fn_800A7A54(a->st, 0x40, 0);
-            fn_800A7A54(a->st, 0x41, 0);
-            fn_800A7A54(a->st, 0x43, 0);
-            fn_800A7A54(a->st, 0x42, 0);
+            ConditionSetBit(a->st, 0x40, 0);
+            ConditionSetBit(a->st, 0x41, 0);
+            ConditionSetBit(a->st, 0x43, 0);
+            ConditionSetBit(a->st, 0x42, 0);
         }
     }
     if (fn_800BAF40(a) == -1) {
@@ -470,25 +470,25 @@ int ImpChaseUpdate(Actor* a) {
     kind = fn_800B26B8(a);
     if (kind != 4) {
         fn_800B261C(a, kind, &target);
-        if (fn_800A7B78(a->st, 5) == 0) {
+        if (MemFlagIsSet(a->st, 5) == 0) {
             a->unk220 = 0;
             return 1;
         }
     }
-    if (a->unk220 == 0 && fn_800A7B78(a->st, 5) == 0) {
+    if (a->unk220 == 0 && MemFlagIsSet(a->st, 5) == 0) {
         return 1;
     }
     if (a->unk220 == 2) {
         a->unk10C = (void*)fn_800C748C;
-        if (fn_800A7A18(a->st) != a->unk22C) {
-            fn_800A78A0(a->st, a->unk22C);
+        if (FollowGetTargetObj(a->st) != a->unk22C) {
+            FollowSetTargetObj(a->st, a->unk22C);
             if (a->unk21C != 0) {
                 a->unk288 = a->unk21C;
                 fn_800BC56C(a, a->unk22C);
             }
         }
         if (fn_800BAF40(a) == -1 && a->unk21C != 0) {
-            fn_800A78A0(a->st, 0);
+            FollowSetTargetObj(a->st, 0);
             a->unk288 = 0;
         }
     }
@@ -499,12 +499,12 @@ int ImpChaseExit(Actor* a) {
     if (a == 0) {
         return 0;
     }
-    a->unk10C = (void*)fn_800A70D0;
+    a->unk10C = (void*)FollowOffsetUpdate;
     if (a->unk220 == 4) {
         a->unk220 = 0;
     }
     if (HasCondition(a->st, 0xD)) {
-        fn_800A7A54(a->st, 0xD, 0);
+        ConditionSetBit(a->st, 0xD, 0);
     }
     return 1;
 }
@@ -520,9 +520,9 @@ int ImpChaseEnter(Actor* a) {
 }
 
 int ImpAttackExit(Actor* a) {
-    fn_800A7B08(a->st, 4, 0);
-    fn_800A7B08(a->st, 3, 0);
-    fn_800A7B08(a->st, 0, 0);
+    ConditionUpdateBit(a->st, 4, 0);
+    ConditionUpdateBit(a->st, 3, 0);
+    ConditionUpdateBit(a->st, 0, 0);
     return 1;
 }
 
@@ -535,7 +535,7 @@ int ImpAttackUpdate(void* owner) {
     kind = fn_800B26B8(a);
     if (kind != 4) {
         fn_800B261C(a, kind, &target);
-        fn_800A78A0(a->st, target);
+        FollowSetTargetObj(a->st, target);
         if (fn_800B1EF4(a, kind) == 0) {
             fn_800B1F20(a, kind);
         } else if (fn_800B2454(a, kind) == 0) {
@@ -544,8 +544,8 @@ int ImpAttackUpdate(void* owner) {
     } else {
         return 1;
     }
-    if (fn_800A7B78(a->st, 0) != 0) {
-        fn_800A7B08(a->st, 4, 1);
+    if (MemFlagIsSet(a->st, 0) != 0) {
+        ConditionUpdateBit(a->st, 4, 1);
         if (b->timer <= 0.0f) {
             if (fn_80162940(a->unk894, 2) && fn_80162940(a->unk894, 8)) {
                 fn_80162610(a, a->unk894, 2);
@@ -554,21 +554,21 @@ int ImpAttackUpdate(void* owner) {
         } else {
             b->timer -= a->dt;
         }
-    } else if (fn_800A7B78(a->st, 3) != 0) {
+    } else if (MemFlagIsSet(a->st, 3) != 0) {
         fn_800BBCA8(a);
         a->unk288 = 0;
     } else if (HasCondition(a->st, 5)) {
         b->timer = 4000.0f * (rand() / 32767.0f) + 3000.0f;
-        fn_800A7A54(a->st, 5, 0);
+        ConditionSetBit(a->st, 5, 0);
     } else {
         b->timer -= a->dt;
         if (b->timer <= 0.0f) {
-            fn_800A7B08(a->st, 3, 1);
-            fn_800A7B08(a->st, 4, 0);
+            ConditionUpdateBit(a->st, 3, 1);
+            ConditionUpdateBit(a->st, 4, 0);
             b->timer = 500.0f;
         }
     }
-    if (fn_800A7B78(a->st, 3) == 0) {
+    if (MemFlagIsSet(a->st, 3) == 0) {
         b->chase -= a->dt;
         if (b->chase < 0.0f) {
             float dist = OwnerValue((Owner*)a, target);
@@ -584,7 +584,7 @@ int ImpAttackUpdate(void* owner) {
                 b->chase = 10000.0f * (rand() / 32767.0f) + 8000.0f;
             }
         } else if (fn_80162940(a->unk894, 0x800)) {
-            fn_800A7B08(a->st, 0x1D, 1);
+            ConditionUpdateBit(a->st, 0x1D, 1);
             fn_800BC56C(a, target);
             a->unk288 = 3;
         } else if (fn_80162940(a->unk894, 0x400)) {
@@ -613,7 +613,7 @@ int ImpAttackUpdate(void* owner) {
                     fn_800BAFF8(a, &dir, hitB, hitA, &to, scale, len);
                 }
                 if (fn_800BF2D0(&to) == fn_800BF2D0(&a->pos)) {
-                    fn_800A7B08(a->st, 0x1D, 1);
+                    ConditionUpdateBit(a->st, 0x1D, 1);
                     fn_800BC5A8(a, &to);
                     a->unk288 = 3;
                 }
@@ -621,8 +621,8 @@ int ImpAttackUpdate(void* owner) {
         } else if (fn_800BAF40(a) != -1) {
             float dist = OwnerValue((Owner*)a, target);
 
-            if (fn_800A7B78(a->st, 0x1D) != 0 && dist > (float)a->nearMin && dist < (float)a->nearMax) {
-                fn_800A7B08(a->st, 0x1D, 0);
+            if (MemFlagIsSet(a->st, 0x1D) != 0 && dist > (float)a->nearMin && dist < (float)a->nearMax) {
+                ConditionUpdateBit(a->st, 0x1D, 0);
                 fn_800BBCA8(a);
                 a->unk288 = 0;
             }
@@ -640,9 +640,9 @@ int ImpAttackEnter(Actor* a) {
     ImpBeh* b = a->beh;
 
     b->state = 1;
-    fn_800A7B08(a->st, 4, 1);
-    fn_800A7B08(a->st, 3, 0);
-    fn_800A7B08(a->st, 0, 0);
+    ConditionUpdateBit(a->st, 4, 1);
+    ConditionUpdateBit(a->st, 3, 0);
+    ConditionUpdateBit(a->st, 0, 0);
     b->timer = 4000.0f * (rand() / 32767.0f) + 3000.0f;
     b->near = 0.0f;
     b->chase = 10000.0f * (rand() / 32767.0f) + 8000.0f;

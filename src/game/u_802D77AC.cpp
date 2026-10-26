@@ -197,14 +197,6 @@ extern "C" {
 int fn_80019F88(void* data, Actor* actor);              // 0x80019F88
 String fn_800225C8(const String& a, const String& b);   // 0x800225C8
 int fn_80049940();                                      // 0x80049940
-void fn_800A7028(void* conditions);                     // 0x800A7028
-void fn_800A70D0(Actor* actor);                         // 0x800A70D0
-void fn_800A78A0(void* conditions, void* target);       // 0x800A78A0
-u32* fn_800A7A18(void* conditions);                     // 0x800A7A18
-void fn_800A7A54(void* conditions, int which, int value);  // 0x800A7A54
-void fn_800A7B08(void* conditions, int which, int value);  // 0x800A7B08
-int fn_800A7B78(void* conditions, int which);           // 0x800A7B78
-int fn_800A8CDC(Actor* actor, void* target, float f);   // 0x800A8CDC
 void fn_8008F230(int obj, float f, int a, int b);       // 0x8008F230
 void fn_8008F378(int obj);                              // 0x8008F378
 void fn_8008F4E8(int obj, int a);                       // 0x8008F4E8
@@ -239,6 +231,14 @@ void fn_8028C188(Buffer* b, char* data, int len);       // 0x8028C188
 int SendMsg(int to, int msg, void* data);               // 0x800265D4
 void* memcpy(void* dst, const void* src, unsigned long n);
 }
+int FollowLineCheckActorDist(void* self, void* target, float budget);
+int MemFlagIsSet(void* bits, int index);
+int ConditionUpdateBit(void* cond, int bit, int set);
+int ConditionSetBit(void* cond, int bit, int set);
+void* FollowGetTargetObj(void* range);
+void FollowSetTargetObj(void* range, void* obj);
+int FollowOffsetUpdate(void* self);
+void RangeResetPending(void* range);
 
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
@@ -436,7 +436,7 @@ int HostRideMsg(int msg, void* data) {
 
         switch (m->cmd) {
         case 0x63F94A69: {
-            u32* p = fn_800A7A18(&actor->st);
+            u32* p = (u32*)FollowGetTargetObj(&actor->st);
 
             if (p != 0) {
                 *(int*)&m->result = p[0x38 / 4];
@@ -467,7 +467,7 @@ int HostRideMsg(int msg, void* data) {
         return ActorPlayAnim(OwnerId((Owner*)actor), m->arg, m->anim) != 0;
     }
     case 0x407:
-        return fn_800A7B78(&actor->st, 10) != 0;
+        return MemFlagIsSet(&actor->st, 10) != 0;
     case 0xC04:
     case 0xC0D: {
         MsgC04* m = (MsgC04*)data;
@@ -479,8 +479,8 @@ int HostRideMsg(int msg, void* data) {
             }
         }
         if (HasCondition(&actor->st, 0xC)) {
-            fn_800A7A54(&actor->st, 0xC, 0);
-            fn_800A7A54(&actor->st, 0xE, 1);
+            ConditionSetBit(&actor->st, 0xC, 0);
+            ConditionSetBit(&actor->st, 0xE, 1);
             fn_8008F4E8(actor->iD4, 0);
             fn_8008F378(actor->iD4);
             fn_8008F4EC(actor->iD4, 0);
@@ -488,8 +488,8 @@ int HostRideMsg(int msg, void* data) {
         } else {
             fn_8008F230(actor->iD4, (float)fn_800BA84C(10), 0, 1);
         }
-        fn_800A7A54(&actor->st, 0xC, 0);
-        fn_800A7A54(&actor->st, 0xD, 1);
+        ConditionSetBit(&actor->st, 0xC, 0);
+        ConditionSetBit(&actor->st, 0xD, 1);
         {
             int denom = (m->unk10 != 0) ? m->unk10 : 0x1000;
             fn_80090778(actor->iD4, (float)denom / 4096.0f, 2, m->unk04, m->unk0C, m->unk14, m->unk18);
@@ -596,7 +596,7 @@ void HostRideInit(Actor* actor) {
     b->f14 = 0.0f;
     b->f18 = 0.0f;
     fn_800B6CAC(actor, fn_800B5028);
-    fn_800A7B08(&actor->st, 6, 1);
+    ConditionUpdateBit(&actor->st, 6, 1);
     gHostRideTypes[b->state].enter(actor);
     gHostAsset = AssetFind(0xF1754BF2, 0x21C5E0);
 }
@@ -613,14 +613,14 @@ int HostRideState2Update(void* p) {
     if (kind != 4) {
         fn_800B261C(actor, kind, &target);
         if (target == 0 || fn_800B22F8(actor, kind) > 1) {
-            fn_800A7028(&actor->st);
+            RangeResetPending(&actor->st);
             return 1;
         }
         if (fn_800B1EF4(actor, kind) == 0) {
             fn_800B2418(actor, kind, 10000.0f);
             fn_800B1F20(actor, kind);
             fn_800B1AB8(actor, kind, -1.0f, 1);
-            fn_800A78A0(&actor->st, target);
+            FollowSetTargetObj(&actor->st, target);
         } else {
             if (fn_800B2454(actor, kind) != 0) {
                 return 1;
@@ -628,15 +628,15 @@ int HostRideState2Update(void* p) {
             fn_800B2418(actor, kind, 10000.0f);
         }
     } else {
-        fn_800A7028(&actor->st);
+        RangeResetPending(&actor->st);
         return 1;
     }
-    if (actor->s922 == actor->s920 - 1 && fn_800A8CDC(actor, target, 0.8f)) {
+    if (actor->s922 == actor->s920 - 1 && FollowLineCheckActorDist(actor, target, 0.8f)) {
         fn_80162610(actor, actor->unk894, 1);
     }
     if (actor->i220 == 2) {
         actor->cb10C = (int)fn_800C748C;
-        if ((fn_800A7A18(&actor->st) != (u32*)actor->pTarget || actor->i288 != actor->i21C) &&
+        if ((FollowGetTargetObj(&actor->st) != (u32*)actor->pTarget || actor->i288 != actor->i21C) &&
             actor->i21C != 0) {
             actor->i288 = actor->i21C;
             fn_800BC56C(actor, actor->pTarget);
@@ -649,18 +649,18 @@ int HostRideState2Update(void* p) {
 }
 
 int HostRideState2Exit(Actor* actor) {
-    actor->cb10C = (int)fn_800A70D0;
-    fn_800A7B08(&actor->st, 0x16, 0);
-    fn_800A7B08(&actor->st, 3, 0);
-    fn_800A7028(&actor->st);
+    actor->cb10C = (int)FollowOffsetUpdate;
+    ConditionUpdateBit(&actor->st, 0x16, 0);
+    ConditionUpdateBit(&actor->st, 3, 0);
+    RangeResetPending(&actor->st);
     fn_80162610(actor, actor->unk894, 0);
     return 1;
 }
 
 int HostRideState2Enter(Actor* actor) {
     actor->beh->state = 2;
-    fn_800A7B08(&actor->st, 0x16, 1);
-    fn_800A7B08(&actor->st, 3, 1);
+    ConditionUpdateBit(&actor->st, 0x16, 1);
+    ConditionUpdateBit(&actor->st, 3, 1);
     return 1;
 }
 
@@ -682,20 +682,20 @@ int HostRideState1Update(void* p) {
             fn_800B1F20(actor, kind);
         }
     }
-    if (actor->i220 == 0 && fn_800A7B78(&actor->st, 5) == 0) {
+    if (actor->i220 == 0 && MemFlagIsSet(&actor->st, 5) == 0) {
         return 1;
     }
     if (actor->i220 == 2) {
         actor->cb10C = (int)fn_800C748C;
-        if (fn_800A7A18(&actor->st) != (u32*)actor->pTarget || actor->i288 != actor->i21C) {
-            fn_800A78A0(&actor->st, actor->pTarget);
+        if (FollowGetTargetObj(&actor->st) != (u32*)actor->pTarget || actor->i288 != actor->i21C) {
+            FollowSetTargetObj(&actor->st, actor->pTarget);
             if (actor->i21C != 0) {
                 actor->i288 = actor->i21C;
                 fn_800BC56C(actor, actor->pTarget);
             }
         }
         if (fn_800BAF40(actor) == -1 && actor->i21C != 0) {
-            fn_800A78A0(&actor->st, 0);
+            FollowSetTargetObj(&actor->st, 0);
             actor->i288 = 0;
         }
     }
@@ -703,12 +703,12 @@ int HostRideState1Update(void* p) {
 }
 
 int HostRideState1Exit(Actor* actor) {
-    actor->cb10C = (int)fn_800A70D0;
+    actor->cb10C = (int)FollowOffsetUpdate;
     if (actor->i220 == 4) {
         actor->i220 = 0;
     }
     if (HasCondition(&actor->st, 0xD)) {
-        fn_800A7A54(&actor->st, 0xD, 0);
+        ConditionSetBit(&actor->st, 0xD, 0);
     }
     return 1;
 }
@@ -733,15 +733,15 @@ int HostRideState0Update(Actor* actor) {
             return 1;
         }
     } else {
-        fn_800A7B08(&actor->st, 4, 0);
-        fn_800A7028(&actor->st);
+        ConditionUpdateBit(&actor->st, 4, 0);
+        RangeResetPending(&actor->st);
     }
     fn_800BBCA8(actor);
     return 0;
 }
 
 int HostRideState0Check(Actor* actor) {
-    fn_800A7B08(&actor->st, 4, 0);
+    ConditionUpdateBit(&actor->st, 4, 0);
     return 1;
 }
 
@@ -762,14 +762,14 @@ int HostRideState0Enter(void* p) {
     if (kind != 4) {
         fn_800B261C(actor, kind, &target);
         if (target != 0 && SendMsg(((Target*)target)->id, 0x400, &q) && (q.flags & 2)) {
-            fn_800A78A0(&actor->st, target);
+            FollowSetTargetObj(&actor->st, target);
         } else {
-            fn_800A7028(&actor->st);
+            RangeResetPending(&actor->st);
         }
     } else {
-        fn_800A7028(&actor->st);
+        RangeResetPending(&actor->st);
     }
-    fn_800A7B08(&actor->st, 3, 0);
+    ConditionUpdateBit(&actor->st, 3, 0);
     beh->state = 0;
     return 1;
 }
@@ -793,7 +793,7 @@ int HostRideBehavior(void* p) {
         level = fn_800B22F8(actor, kind);
         fn_800B1ED4(actor, kind);
     }
-    if (fn_800A7B78(&actor->st, 0x15) && actor->i220 != 0) {
+    if (MemFlagIsSet(&actor->st, 0x15) && actor->i220 != 0) {
         return 2;
     }
     if (kind != 4) {
