@@ -68,7 +68,6 @@ void IVecSetLength(IVec3* out, IVec3* in, int length) {
     float sq;
     float len;
     float scale;
-    float x, y, z;
 
     if ((in->x | in->y | in->z) == 0) {
         out->x = 0;
@@ -79,15 +78,15 @@ void IVecSetLength(IVec3* out, IVec3* in, int length) {
     sq = (float)in->x * (float)in->x + (float)in->y * (float)in->y + (float)in->z * (float)in->z;
     len = FastSqrt(sq);
     scale = (float)length / len;
-    x = in->x;
-    y = in->y;
-    z = in->z;
-    x *= scale;
-    y *= scale;
-    z *= scale;
-    out->x = x;
-    out->y = y;
-    out->z = z;
+    {
+        int ix = in->x;
+        int iy = in->y;
+        int iz = in->z;
+
+        out->x = (float)ix * scale;
+        out->y = (float)iy * scale;
+        out->z = (float)iz * scale;
+    }
 }
 
 float VecLength(Vec3* v) {
