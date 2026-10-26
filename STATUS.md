@@ -16,7 +16,7 @@ published; generate your own from your copy of the game if you want it.
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_802C8900 (new, drafting) | running |
-| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_8026A158 + u_80268528 (new, small) | running |
+| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80268528 (new, small) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_800B1834 run 3 (36/94, 25 stubs) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Paused (session usage); partial work on its branch | paused |
 
@@ -67,6 +67,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+u_8026A158 3/4: AmmoRefillMsg 110 diffs (retail uses a switch on msg, 0x50 frame with r30; try the lazy name-hash idiom from matching-tricks.md)
 u_80150300: rename the Ghidra-style locals (iVar1, uVar2, ...; 98 uses) to real names
 u_800A6F18 12/64 (ds-2 draft): 14 TODO functions
 u_8009DE94 14/90 (ds-1 draft): 4 TODO; 42 shared math/AI helpers keep fn_ names (descriptive names in comments) until callers are relinked
