@@ -16,7 +16,7 @@ published; generate your own from your copy of the game if you want it.
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_80100EB0 run 2 (4/24 after the draft) | running |
-| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_800FDDE4 run 2 (9/26 after the draft) | running |
+| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80153C10 (22 fns, chunked draft) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_800D0BF4 run 2 (14/31; write ZoneLineFilter first) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | GUNWITHGRENADE effect (u_8025643C), then u_80251CB8 | running |
 
@@ -67,6 +67,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_800FDDE4 10/26 (HUD notifications, ds-2 2 runs): 16 left (HudNotifySet 202, HudNotifyBar 193, ...).
 - opus-1 near-done pass (2026-10-23): HostRideBMsg/HostRideMsg 15 each (the temp now coalesces into r4 with fn_80019F88's argument in case 0x41D where retail keeps mr r4,r5; patch ~/geist-work/ds/opus-1-tools/nd/hrb_temp_split.patch), VecSwapXY/VecSwapXY2 2 at best (retail loads y before x), StatGetDebug 6, VMem::Init 9, SAMReadCallback (r28/r29), GhostGunUpdate 9, GunUpdateState3 4 (~80 max/fabs shapes), GunNodeFn1 4 (maybe an extra parameter on the fn1 pointer type), QueuePush 6. Not reached: Store, SaveCommand, u_80285ACC, CollectMsg.
 - opus-1 idioms pass (2026-10-22): HostRideBMsg and HostRideMsg 15 each (retail keeps the actor's CSE temp in r5 and reads f904 through r31; ours r29), CollectMsg 31 (msg/p callee-saved swap). New one-function sources for 18 effect Create functions (u_800E1B5C, u_800EB1B8, u_801920B8, u_801965FC, u_801BF578, u_801E241C, u_80251CB8, u_8025643C, u_80268780, u_80294548, u_802CED5C, u_8013CA38, u_8017D794, u_8015C79C, u_80226DE8, Corona, u_8018C358): they need the rest of each unit drafted, plus data/sdata2 splits, before they can link. Not done: ShotgunCreate and ProxMineCreate (u_80127D80, static-init guard), RocketCreate (u_8015C79C).
 - opus-1 partials pass (2026-10-21): u_802766F0 has 21/21 functions matching (ODE solver shapes) but will not link as Matching: its .sdata2 literal pool order differs (retail [1.0f, 0.0f, 0.5, 3.0, 0.0, u32-cvt, 2^32, s32-cvt]; CW pools literals in first-use order, so retail probably had earlier code using 1.0f and an unsigned-to-double conversion first): needs a Lead decision. Left: u_801F1798 HostRideCHandle40A 11 (seeded StrHash, r29), GunUpdateState3 4, GunNodeFn1 4 (maybe a pass-through 2nd argument), ArenaRelease 5 (and. operand order), VMAllocPages 5, ReflectEnd 6, MirrorObjState4/5Update 7. Scripts: ~/geist-work/ds/opus-1-tools/o5/ (allu.sh prints udiff summaries for every NonMatching unit).
