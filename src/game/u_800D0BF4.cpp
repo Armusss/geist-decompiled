@@ -896,17 +896,12 @@ Actor* ZoneGetLinked(Actor* actor) {
 
 // Resets the zone state block; only the first 0x70 bytes are touched.
 void ZoneDashInit(ZoneDash* dash) {
-    float g;
-    float f;
-
     dash->linkedA = 0;
     dash->linkedB = 0;
-    f = lbl_804D7020;
-    g = lbl_804D7024;
-    dash->unk14 = f;
-    dash->unk18 = f;
-    dash->unk1C = f;
-    dash->unk20 = g;
+    dash->unk14 = lbl_804D7020;
+    dash->unk18 = lbl_804D7020;
+    dash->unk1C = lbl_804D7020;
+    dash->unk20 = lbl_804D7024;
     dash->unk10 = -1;
     dash->unk24 = 0;
     dash->unk28 = 0;
@@ -1371,12 +1366,10 @@ int ZoneDashNode(u32 unused, Actor* actor, float value, Actor* owner) {
 
 // Accepts the candidate when it is not already the actor stored at `stored`.
 int ZoneActorFilter(u32* stored, u32 actor) {
-    if (*stored == actor) {
-        if (*stored != 0) {
-            return 0;
-        }
+    if (*stored != actor || *stored == 0) {
+        return 1;
     }
-    return 1;
+    return 0;
 }
 
 // Spatial-query entry holding the candidate actor and its fixed-point position.
@@ -1407,11 +1400,11 @@ struct ZoneDistQuery {
 // entry's fixed-point position and the query point, and rejects null entries.
 int ZoneDistFilter(ZoneHitEntry* entry, ZoneDistQuery* query) {
     if (entry->actor != 0) {
-        float dy = (float)entry->y - query->y;
         float dx = (float)entry->x - query->x;
+        float dy = (float)entry->y - query->y;
         float dz = (float)entry->z - query->z;
 
-        query->target->dist = dy * dy + dx * dx + dz * dz;
+        query->target->dist = dx * dx + dy * dy + dz * dz;
         return 0;
     }
     return 1;
@@ -1594,17 +1587,180 @@ void ZoneLinkedUpdate(Actor* owner) {
     owner->unk1DB8 = owner->unk1DB4;
 }
 
+int ModelBoneName(int model, int bone);            // 0x80018834
+int ModelBoneCount(int model);                     // 0x80018B88
+u32 fn_80037230(int model, int bone);              // 0x80037230
+unsigned short* fn_80037B6C(int model);            // 0x80037B6C
+
+// Candidate handed to the line query: the actor, the flags that select which
+// bone the line must hit, and the two integer endpoints of the segment.
 struct ZoneLineEntry {
-    int unk00;
+    Actor* actor;       // 0x00
+    char pad04[0x8];    // 0x04
+    u32 flags;          // 0x0C
+    char pad10[0x4];    // 0x10
+    int bone;           // 0x14
+    char pad18[0x4];    // 0x18
+    int model;          // 0x1C
+    char pad20[0x10];   // 0x20
+    int x;              // 0x30
+    int y;              // 0x34
+    int z;              // 0x38
 };
 
+// Record the query fills with the closest hit found so far; the distance slot
+// doubles as the current limit, so only a closer candidate replaces the record.
+struct ZoneLineHit {
+    char pad00[0xC];    // 0x00
+    int model;          // 0x0C
+    int bone;           // 0x10
+    float x;            // 0x14
+    float y;            // 0x18
+    float z;            // 0x1C
+    float dist;         // 0x20
+    int unk24;          // 0x24
+    char pad28[0x34];   // 0x28
+    int kind13;         // 0x5C
+    int kind2;          // 0x60
+    int overlap;        // 0x64
+    char pad68[0x4];    // 0x68
+    int invalid;        // 0x6C
+};
+
+// Description of the line query handed to the spatial walk.
 struct ZoneLineQuery {
-    int unk00;
+    ZoneLineHit* hit;   // 0x00
+    float x;            // 0x04
+    float y;            // 0x08
+    float z;            // 0x0C
+    Actor* owner;       // 0x10
 };
 
-// TODO (draft): ZoneLineFilter (0x800D2EF0, 0x3F8 bytes) is not written yet; this is a placeholder.
+// 0x400 reply, filled for the query owner and for the candidate alike; bit 11
+// of `mask` tags the bones the line may hit.
+struct ZoneLineReply {
+    Actor* actor;       // 0x00
+    u32 id;             // 0x04
+    u32 unk08;          // 0x08
+    int unk0C;          // 0x0C
+    u32 unk10;          // 0x10
+    u32 unk14;          // 0x14
+    u32 mask;           // 0x18
+    u32 unk1C;          // 0x1C
+};
+
+// Scans the model's bone list for one tagged with bit 11 of the query flags.
+static inline int ZoneBoneFlagged(int model, unsigned short* bones, int count) {
+    int i;
+
+    for (i = 0; i < count; i++) {
+        if ((fn_80037230(model, bones[i]) & 0x800) != 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// Line-of-sight filter of the zone queries: rejects candidates the owner cannot
+// see, then keeps the closest one whose segment reaches the tracked bone.
 int ZoneLineFilter(ZoneLineEntry* entry, ZoneLineQuery* query) {
-    (void)entry;
-    (void)query;
+    ZoneLineReply actorReply;
+    ZoneLineReply ownerReply;
+    ZoneLineReply reply;
+    Actor* actor;
+    unsigned short* bones;
+    int count;
+    int bone;
+    int found;
+    int i;
+    int model;
+    float dy;
+    float dx;
+    float dz;
+    float dist;
+    Actor* owner;
+
+    owner = query->owner;
+    if (PlayerInHost(owner)) {
+        if ((int)(owner->unk26E4->unk38 >> 24) == 1) {
+            actor = entry->actor;
+            if (actor != 0) {
+                if ((int)(actor->unk38 >> 24) == 0xA) {
+                    return 0;
+                }
+            }
+            if (actor != 0) {
+                if ((int)(actor->unk38 >> 24) == 1) {
+                    if (actor->info != 0) {
+                        if (actor->info->unk1C != 0x6BD564F0) {
+                            return 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (entry->actor != 0 && PlayerInHost(owner) && owner->unk26C8 != 0 &&
+        *(u32*)owner->unk26C8 == 0xFFF5 &&
+        (int)(entry->actor->unk38 >> 24) != 0x13) {
+        return 0;
+    }
+    actor = entry->actor;
+    if (actor != 0) {
+    dy = (float)entry->y - query->y;
+    dx = (float)entry->x - query->x;
+    dz = (float)entry->z - query->z;
+    dist = dy * dy + dx * dx + dz * dz;
+    actorReply.actor = actor;
+    actor->handle(0x400, &actorReply);
+    ownerReply.actor = owner;
+    owner->handle(0x400, &ownerReply);
+    if (entry->actor == ownerReply.actor->unk2794 ||
+        entry->actor == ownerReply.actor->unk26E4) {
+        return 0;
+    }
+    if ((ownerReply.mask & actorReply.mask) != 0 || ownerReply.mask == 1) {
+        if (dist < query->hit->dist) {
+            bone = ModelFindBone(entry->model, lbl_804D2BC0);
+            model = entry->model;
+            bones = fn_80037B6C(model);
+            count = ModelBoneCount(model);
+            found = ZoneBoneFlagged(model, bones, count);
+            query->hit->invalid = 0;
+            if ((bone == -1 && found == 0) ||
+                (bone != -1 && bone == entry->bone) ||
+                (found == 1 && (entry->flags & 0x800) != 0)) {
+                *(Actor**)lbl_804D4948 = entry->actor;
+                query->hit->model = entry->model;
+                query->hit->bone = ModelBoneName(entry->model, entry->bone);
+                query->hit->x = dx;
+                query->hit->y = dy;
+                query->hit->z = dz;
+                query->hit->dist = dist;
+                if ((int)(actorReply.id >> 24) == 0x13 ||
+                    (int)(actorReply.id >> 24) == 2) {
+                    if (actorReply.unk0C != 0) {
+                        reply.actor = 0;
+                        SendMsg(actorReply.id, 0x400, &reply);
+                        if (reply.actor == actorReply.actor) {
+                            if ((int)(actorReply.id >> 24) == 0x13) {
+                                query->hit->kind13 = 1;
+                            } else if ((int)(actorReply.id >> 24) == 2) {
+                                query->hit->kind2 = 1;
+                            }
+                            if ((ownerReply.mask & actorReply.mask) != 0) {
+                                query->hit->overlap = 1;
+                            }
+                            query->hit->unk24 = actorReply.unk0C;
+                        }
+                    }
+                }
+                return 1;
+            }
+            query->hit->invalid = 1;
+        }
+    }
+    return 0;
+    }
     return 1;
 }
