@@ -15,9 +15,9 @@ published; generate your own from your copy of the game if you want it.
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
-| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_8009DE94 (new, drafting) | running |
-| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_800A6F18 (new, drafting) | running |
-| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_800B1834 (new, drafting) | running |
+| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_802C8900 (new, drafting) | running |
+| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_8026A158 + u_80268528 (new, small) | running |
+| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_800B1834 run 3 (36/94, 25 stubs) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Paused (session usage); partial work on its branch | paused |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
@@ -67,6 +67,9 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+u_80150300: rename the Ghidra-style locals (iVar1, uVar2, ...; 98 uses) to real names
+u_800A6F18 12/64 (ds-2 draft): 14 TODO functions
+u_8009DE94 14/90 (ds-1 draft): 4 TODO; 42 shared math/AI helpers keep fn_ names (descriptive names in comments) until callers are relinked
 u_8006C604 19/61 (ds-3 draft): 9 TODO functions incl. fn_80074018 (0xD50), fn_80074D68 (0x7F8); PlayerUpdateGunMotion stack-buffer layout for ActorGetMatrix needs review
 u_80120D98 12/49 (ds-1 draft): HazardTargetAimDir TODO; HazardTrackTarget 155, TrackListUpdate 137; Clear vtable slot vs base class; lbl_8039EED8 needs a struct type (0x14C entries)
 u_8011818C 15/49 (ds-2 draft): fn_8011F66C (0x660) and fn_8011FCEC (0x674) not drafted; ItemSetupNearest/StatusEvent etc. have large diffs
