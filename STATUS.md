@@ -17,7 +17,7 @@ published; generate your own from your copy of the game if you want it.
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_801A28A4 (new) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_8023FA5C (new) | running |
-| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_802CBB44 (new) | running |
+| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_801AADA8 (new) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Paused (session usage); partial work on its branch | paused |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
@@ -67,6 +67,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+u_802CBB44 6/32 (ds-3 draft, Stone Men): CollisionSplashFx 6, StateUpdate 8, SetPendingState 11
 u_8027D3EC 4/15 (ds-1 draft, possessed-actor effects): PossessedEffectQuery 16, PossessedEffectCreate 98
 u_80125DE4 1/9 (ds-2 draft, pickup key actor): ProbeHit 1, UpdatePickupKey 42; weak QueryMsg/QueryResult/String dtors are emitted between Update and Message
 u_8024E5D0 9/33 (ds-3 draft, host-ride behaviour states): EnterRideState 2, UpdateTypeCheckedState 10
