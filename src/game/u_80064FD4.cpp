@@ -259,7 +259,6 @@ void fn_800C97EC(void* p);                                 // 0x800C97EC
 void fn_8001BA6C(void* p);                                 // 0x8001BA6C
 float fn_800D8BE4(int, int, int, int);                     // 0x800D8BE4
 void* fn_800D1BE0(void* p);                                // 0x800D1BE0
-void fn_8006D76C(Actor* a);                                // 0x8006D76C
 void fn_800A0168(Mtx34* out, Mtx33* m);                    // 0x800A0168
 void fn_800A0030(Vec3* out, void* m, Vec3* v);             // 0x800A0030
 float fn_800A1394(float x);                                // 0x800A1394
@@ -274,6 +273,7 @@ int fn_8001ACD4(Player* p, Vec3* cur, Vec3* a, Vec3* b, Vec3* c,
                 Vec3* out);                                // 0x8001ACD4
 void fn_8009F7A8(Mtx33* out, Vec3* v);                     // 0x8009F7A8
 }
+void PlayerResetGunTimer(void* owner);
 
 // C++-mangled engine helpers.
 int PlayerInHost(Actor* a);                                // 0x80049750
@@ -636,7 +636,7 @@ void PlayerGroundMove(Player* p, float dt) {
         p->offset.x = (dir.x - p->offset.x) * (p->unk280 * dt) + p->offset.x;
     } else {
         if (mag - p->unk5A0 != 0.0f) {
-            fn_8006D76C((Actor*)p);
+            PlayerResetGunTimer((Actor*)p);
             p->unk24C = 0.0f;
         }
 

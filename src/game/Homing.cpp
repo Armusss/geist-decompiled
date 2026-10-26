@@ -11,10 +11,10 @@ extern "C" {
 // Callees in other files, not named yet.
 void fn_800E1098(void* out, void* in, float length);
 void fn_8016D440(void* out, void* in);
-void* fn_800772E0(void* actor);
 void fn_800C5E00(int a, int b, int c, int d, int e);
 void fn_80186A88(int owner, void* info, int arg, int a, int b, float f);
 }
+void* PlayerGetGunVec(void* owner);
 
 extern "C" int SendMsg(int to, int msg, void* data);
 unsigned long Fn80175D60(unsigned long arg);
@@ -146,7 +146,7 @@ int HomingMsg(EffectObj* obj, int msg, int arg, void* data, float dt) {
             Vec3* v;
             SendMsg(arg, 0x400, &target);
             t = (HomingTarget*)target.p;
-            v = (Vec3*)fn_800772E0(t);
+            v = (Vec3*)PlayerGetGunVec(t);
             {
                 float x = v->x;
                 float y = v->y;

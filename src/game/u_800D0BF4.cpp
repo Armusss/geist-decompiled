@@ -858,7 +858,7 @@ int DashSendAnim(Actor* actor, int anim);     // 0x80266208
 extern "C" void fn_8016D440(void* out, void* in);                     // 0x8016D440
 extern "C" void fn_8009F63C(Mtx34* out, Mtx34* in);                   // 0x8009F63C
 extern "C" void fn_8009F44C(int* out, const void* mtx, const int* in);  // 0x8009F44C
-extern "C" int fn_8006CAB8(Actor* actor);                             // 0x8006CAB8
+int PlayerGetHeldSlotIndex(void* owner);  // 0x8006CAB8
 extern "C" int fn_8001F928(Actor* actor, int* data, u32 flags, void (*cb)(),
                            void** ctx);                               // 0x8001F928
 extern "C" void fn_800F94C8(void* p);                                 // 0x800F94C8
@@ -985,7 +985,7 @@ void ZoneDashUpdate(ZoneDash* dash, Actor* actor) {
     msg.fpos[0] = (float)msg.pos[0];
     msg.fpos[1] = (float)msg.pos[1];
     msg.fpos[2] = (float)msg.pos[2];
-    if (PlayerInHost(actor) == 1 && fn_8006CAB8(actor) != 0) {
+    if (PlayerInHost(actor) == 1 && PlayerGetHeldSlotIndex(actor) != 0) {
         lbl_804D4948 = &actor->unk1D64;
         fn_8001F928(actor, (int*)&msg, 0x16002800, (void (*)())ZoneLineFilter,
                     (void**)&msg.owner);

@@ -167,9 +167,7 @@ int ActorAim(int* out, Actor* a, int index);              // 0x8009F700
 int AssetFind(u32 table, u32 key);                        // 0x8007EB34
 
 extern "C" {
-int fn_8006D174(int* p);
 void fn_80090634(int a, int b, int c, int d);
-int fn_8006D288(Actor* a, int state);
 int fn_800C5210(int handle, int msg, void* data);
 void* fn_8016F120(void* fx, int* pos);
 int fn_8001ED98(int* p, int len, int (*cb)(Actor*, Actor*), Actor* a, int b);
@@ -178,6 +176,8 @@ int fn_800A1BC8(u32 key, u32 value, int a, int b, int c);
 int fn_80073E80(Actor* a);
 void fn_800E1098(float* dst, float* src);
 }
+void PlayerSetValue28(void* owner, int value);
+void PlayerSetActionMode(void* owner, int mode);
 
 static float sDashOutRate = 5000.0f;
 static float sDashInRate = 5000.0f;
@@ -217,15 +217,15 @@ int DashOnEvent(int event, Actor* a) {
 
             if (ActorPlayAnim(an->handle, h, a->handle) != 0 || AnimNotify(an->handle, a->handle, h) != 0) {
                 if (a->unk1DA0 != 0) {
-                    fn_8006D174(&a->unk7A4);
+                    PlayerSetValue28(&a->unk7A4, a->unk1DA0);
                     fn_80090634(a->unk7C, 0, 0, 0);
-                    fn_8006D288(a, 0xC);
+                    PlayerSetActionMode(a, 0xC);
                 }
             } else {
-                fn_8006D288(a, a->unk7A8);
+                PlayerSetActionMode(a, a->unk7A8);
             }
         } else {
-            fn_8006D288(a, a->unk7A8);
+            PlayerSetActionMode(a, a->unk7A8);
         }
         break;
     }

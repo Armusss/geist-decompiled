@@ -167,11 +167,6 @@ void fn_80048BA8(Actor* a, void* buf, int flag);            // 0x80048BA8
 int fn_800498D0(Actor* a);                                  // 0x800498D0
 void fn_800699A8(void* p);                                  // 0x800699A8
 float fn_800699B8(Actor* a);                                // 0x800699B8
-void fn_8006D17C(int* p, int v);                            // 0x8006D17C
-void fn_8006D184(Actor* a, int v);                          // 0x8006D184
-void fn_8006D288(Actor* a, int v);                          // 0x8006D288
-void fn_8006D76C(Actor* a);                                 // 0x8006D76C
-void fn_80072058(Actor* a, float dt);                       // 0x80072058
 void fn_800769A0(Actor* a, float dt);                       // 0x800769A0
 void fn_8008E824(int anim, int a, float speed);             // 0x8008E824
 int fn_800A1BC8(int a, int b, u32 type, int c, int d);      // 0x800A1BC8
@@ -180,6 +175,11 @@ int fn_800F7994(int a, u32 key);                            // 0x800F7994
 int fn_802A1D04(void);                                      // 0x802A1D04
 int rand(void);                                             // 0x802F2CFC
 }
+void PlayerSelectCollisionUpdate(void* owner, float dt);
+void PlayerResetGunTimer(void* owner);
+void PlayerSetValue4(void* owner, int value);
+void PlayerSetActionMode(void* owner, int mode);
+void PlayerSetHeldSlotMode(void* owner, int mode);
 
 int GunMsg(int msg, void* data);
 int GunCheckCommon(Actor* a, float dt);
@@ -218,7 +218,7 @@ void GunUpdateState3(Actor* a, float dt) {
     a->unk638 = 1;
     a->flags &= ~1;
     fn_800769A0(a, dt);
-    fn_80072058(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
     a->unk7D0 = 1;
 
     float m;
@@ -233,12 +233,12 @@ void GunUpdateState3(Actor* a, float dt) {
     }
 
     if (a->unk7D8 == 0.0f) {
-        fn_8006D184(a, 0);
+        PlayerSetHeldSlotMode(a, 0);
     } else if (a->unk678 & 0x80) {
         a->unk678 &= ~0x80;
-        fn_8006D288(a, 3);
+        PlayerSetActionMode(a, 3);
     } else {
-        fn_8006D17C(&a->state, 3);
+        PlayerSetValue4(&a->state, 3);
         if (a->unk26C8 != 0 && *(int*)((char*)a->unk26C8 + 0x12C) != 0xA921FADD) {
             a->flags &= ~0x200000;
         }
@@ -307,12 +307,12 @@ void GunUpdateState2(Actor* a, float dt) {
     a->unk638 = 1;
     a->flags &= ~1;
     fn_800769A0(a, dt);
-    fn_80072058(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
     if (a->unk26C8 != 0 && *(int*)((char*)a->unk26C8 + 0x12C) != 0xA921FADD) {
         a->flags &= ~0x200000;
     }
     DashUpdate(a);
-    fn_8006D17C(&a->state, 3);
+    PlayerSetValue4(&a->state, 3);
 }
 
 // Set up the state-2 node and start its effect.
@@ -347,12 +347,12 @@ void GunUpdateState1(Actor* a, float dt) {
     a->unk638 = 1;
     a->flags &= ~1;
     fn_800769A0(a, dt);
-    fn_80072058(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
     if (a->unk678 & 0x80) {
         a->unk678 &= ~0x80;
-        fn_8006D288(a, 1);
+        PlayerSetActionMode(a, 1);
     }
-    fn_8006D17C(&a->state, 1);
+    PlayerSetValue4(&a->state, 1);
     a->unk7D0 = 0;
     if (a->unk26C8 != 0 && *(int*)((char*)a->unk26C8 + 0x12C) != 0xA921FADD) {
         a->flags &= ~0x200000;
@@ -361,9 +361,9 @@ void GunUpdateState1(Actor* a, float dt) {
     if (!GunCheckState5(a)) {
         if (!GunCheckState8(a) && (a->unk320 & 1)) {
             if (a->unk7D0 == 0) {
-                fn_8006D184(a, 2);
+                PlayerSetHeldSlotMode(a, 2);
             } else {
-                fn_8006D184(a, 9);
+                PlayerSetHeldSlotMode(a, 9);
             }
         }
     }
@@ -393,7 +393,7 @@ void GunInitState1(Actor* a) {
 
 // Idle callback for the state-0 node.
 void GunIdleState0(Actor* a) {
-    fn_8006D76C(a);
+    PlayerResetGunTimer(a);
 }
 
 // Frame update for the state-0 node.
@@ -401,7 +401,7 @@ void GunUpdateState0(Actor* a, float dt) {
     a->unk638 = 1;
     a->flags &= ~1;
     a->unk7D0 = 1;
-    fn_8006D17C(&a->state, 3);
+    PlayerSetValue4(&a->state, 3);
     if (a->unk26C8 != 0 && *(int*)((char*)a->unk26C8 + 0x12C) != 0xA921FADD) {
         a->flags &= ~0x200000;
     }
@@ -411,7 +411,7 @@ void GunUpdateState0(Actor* a, float dt) {
     }
     if (a->unk394 != 0.0f || a->unk38C != 0.0f || a->unk390 != 0.0f || a->unk398 != 0.0f ||
         a->unk328) {
-        fn_8006D288(a, 3);
+        PlayerSetActionMode(a, 3);
     }
 }
 
@@ -475,33 +475,33 @@ int GunCheckCommon(Actor* a, float dt) {
 
     if (a->unk588 == 5 || a->unk588 == 4) {
         if (a->unk320 & 1) {
-            fn_8006D76C(a);
+            PlayerResetGunTimer(a);
             if (a->unk7D0 == 0) {
-                fn_8006D184(a, 2);
+                PlayerSetHeldSlotMode(a, 2);
             } else {
-                fn_8006D184(a, 9);
+                PlayerSetHeldSlotMode(a, 9);
             }
             return 1;
         }
         if (a->unk324 & 1) {
-            fn_8006D76C(a);
+            PlayerResetGunTimer(a);
             if (Fn800F7DEC(q1, q2, 0xE6B71BCC, fn_800498D0(a), 0) == 0x04A3E183) {
-                fn_8006D184(a, 10);
+                PlayerSetHeldSlotMode(a, 10);
                 return 1;
             }
             if (Fn800F7DEC(q1, q2, 0x968CBE3D, fn_800498D0(a), 0) == 0x04A3E183) {
-                fn_8006D184(a, 0xB);
+                PlayerSetHeldSlotMode(a, 0xB);
                 return 1;
             }
         }
     } else if (a->unk320 != 0) {
-        fn_8006D76C(a);
+        PlayerResetGunTimer(a);
         a->unk5E8 += dt;
         if (fn_800699B8(a) == 1.0f) {
             if (a->unk7D0 == 0) {
-                fn_8006D184(a, 2);
+                PlayerSetHeldSlotMode(a, 2);
             } else {
-                fn_8006D184(a, 9);
+                PlayerSetHeldSlotMode(a, 9);
             }
             fn_800699A8(&a->unk2F4);
             return 1;
@@ -511,12 +511,12 @@ int GunCheckCommon(Actor* a, float dt) {
 
         if (d > -1.0f && d < 0.0f) {
             if (Fn800F7DEC(q1, q2, 0xE6B71BCC, fn_800498D0(a), 0) == 0x04A3E183) {
-                fn_8006D184(a, 10);
+                PlayerSetHeldSlotMode(a, 10);
                 fn_800699A8(&a->unk2F4);
                 return 1;
             }
             if (Fn800F7DEC(q1, q2, 0x968CBE3D, fn_800498D0(a), 0) == 0x04A3E183) {
-                fn_8006D184(a, 0xB);
+                PlayerSetHeldSlotMode(a, 0xB);
                 fn_800699A8(&a->unk2F4);
                 return 1;
             }
@@ -536,22 +536,22 @@ int GunCheckState8(Actor* a) {
 
     if (a->unk318 >= 1) {
         if (a->state == 1) {
-            fn_8006D184(a, 2);
+            PlayerSetHeldSlotMode(a, 2);
             return 1;
         }
-        fn_8006D76C(a);
+        PlayerResetGunTimer(a);
         int r = Fn800F7DEC(q1, q2, 0xF829DB93, fn_800498D0(a), 0);
 
         switch (r) {
         case 0x04A3E183:
             if (a->state != 8) {
-                fn_8006D184(a, 8);
+                PlayerSetHeldSlotMode(a, 8);
                 return 1;
             }
             break;
         case 0xC0BECF7E:
             if (Fn800F7DEC(q1, q2, 0x968CBE3D, fn_800498D0(a), 0) == 0x04A3E183) {
-                fn_8006D184(a, 0xB);
+                PlayerSetHeldSlotMode(a, 0xB);
                 return 1;
             }
             break;
@@ -560,18 +560,18 @@ int GunCheckState8(Actor* a) {
                 SendNodeMsg(a->target, 0x41D, 0x7FFCFD4F, 0x91A0CEF7);
             }
             if (a->state == 8) {
-                fn_8006D184(a, 3);
+                PlayerSetHeldSlotMode(a, 3);
             }
             break;
         case 0x3DA260F7:
             if (a->state == 8) {
-                fn_8006D184(a, 3);
+                PlayerSetHeldSlotMode(a, 3);
             }
             break;
         }
     } else {
         if (a->state == 8) {
-            fn_8006D184(a, 3);
+            PlayerSetHeldSlotMode(a, 3);
         }
     }
     return 0;
@@ -587,19 +587,19 @@ int GunCheckState5(Actor* a) {
 
     if (a->unk314 >= 1) {
         if (a->state == 1) {
-            fn_8006D184(a, 2);
+            PlayerSetHeldSlotMode(a, 2);
             return 1;
         }
-        fn_8006D76C(a);
+        PlayerResetGunTimer(a);
         int r = Fn800F7DEC(q1, q2, 0x20EE36, fn_800498D0(a), 0);
 
         switch (r) {
         case 0x04A3E183:
-            fn_8006D184(a, 5);
+            PlayerSetHeldSlotMode(a, 5);
             return 1;
         case 0xC0BECF7E:
             if (Fn800F7DEC(q1, q2, 0xE6B71BCC, fn_800498D0(a), 0) == 0x04A3E183) {
-                fn_8006D184(a, 10);
+                PlayerSetHeldSlotMode(a, 10);
                 return 1;
             }
             break;
@@ -608,18 +608,18 @@ int GunCheckState5(Actor* a) {
                 SendNodeMsg(a->target, 0x41D, 0x7FFCFD4F, 0x91A0CEF7);
             }
             if (a->state == 5) {
-                fn_8006D184(a, 3);
+                PlayerSetHeldSlotMode(a, 3);
             }
             break;
         case 0x3DA260F7:
             if (a->state == 5) {
-                fn_8006D184(a, 3);
+                PlayerSetHeldSlotMode(a, 3);
             }
             break;
         }
     } else {
         if (a->state == 5) {
-            fn_8006D184(a, 3);
+            PlayerSetHeldSlotMode(a, 3);
         }
     }
     return 0;
@@ -651,9 +651,9 @@ int GunMsg(int msg, void* data) {
                     ActorPlayAnim(a->target, 0xA7D124DE, a->target);
                     FxStart(FxFind("gun_empty"), 0, 0);
                 }
-                fn_8006D184(a, 3);
+                PlayerSetHeldSlotMode(a, 3);
             } else {
-                fn_8006D288(a, a->unk7A8);
+                PlayerSetActionMode(a, a->unk7A8);
             }
         } else if (a->state == 8) {
             int r = Fn800F7DEC(q1, q2, 0xF829DB93, fn_800498D0(a), 0);
@@ -661,20 +661,20 @@ int GunMsg(int msg, void* data) {
             if (r != 0x04A3E183) {
                 if ((q2 == (int)Fn800F8A98(0x7990FA64) || q2 == (int)Fn800F8A98(0xF8B88EC8)) &&
                     r != 0x11D2C025) {
-                    fn_8006D184(a, 0xB);
+                    PlayerSetHeldSlotMode(a, 0xB);
                 } else {
                     if (r == 0xC0BECF7E || r == 0x11D2C025) {
                         FxStart(FxFind("gun_empty"), 0, 0);
                     }
-                    fn_8006D184(a, 3);
+                    PlayerSetHeldSlotMode(a, 3);
                 }
             } else {
-                fn_8006D288(a, a->unk7A8);
+                PlayerSetActionMode(a, a->unk7A8);
             }
         } else if (a->state == 0xD) {
             a->flags |= 0x20000;
         } else {
-            fn_8006D288(a, a->unk7A8);
+            PlayerSetActionMode(a, a->unk7A8);
         }
         break;
     case 0x20EE36:

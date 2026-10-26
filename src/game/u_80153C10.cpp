@@ -1052,7 +1052,7 @@ extern "C" void fn_80103ABC(int a);
 extern "C" void fn_8014284C(int a);
 extern "C" void fn_800FF4E4(int a);
 extern "C" void fn_80090390(int a, int b);
-extern "C" void fn_8006CAC8(int a);
+void PlayerResetHeldSlots(void* owner);
 extern "C" void fn_8008F230(double value, int a, int b, int c);
 extern "C" void fn_800C64E4(void);
 extern "C" int fn_800C6510(void);
@@ -1233,7 +1233,7 @@ unsigned long GhostPossessAttempt(GhostSlot* self) {
                 fn_80090390(owner->unk7C, 0);
                 fn_80090390(owner->unkD4, 0);
                 fn_80090390(owner->unkD4, 1);
-                fn_8006CAC8((int)owner);
+                PlayerResetHeldSlots(owner);
                 fn_8008F230((double)lbl_804D7CA0, owner->unk7C, 0, 1);
                 fn_8008F230((double)lbl_804D7CA0, owner->unkD4, 0, 1);
                 fn_8008F230((double)lbl_804D7CA0, owner->unkD4, 1, 1);

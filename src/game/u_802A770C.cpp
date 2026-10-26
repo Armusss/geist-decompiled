@@ -88,8 +88,8 @@ extern "C" {
 int fn_800C5210(int to, int msg, void* data);
 int fn_800498D0(Actor* a);
 void fn_80048BA8(Actor* a, void* buf, int mode);
-void fn_8006D288(Actor* a, int state);
 }
+void PlayerSetActionMode(void* owner, int mode);
 
 extern "C" int SendMsg(int to, int msg, void* data);                 // 0x800265D4
 int Fn800F7DEC(int a, int b, int c, int d, void* e);      // 0x800F7DEC
@@ -134,17 +134,17 @@ int HostAction(int action, void* p) {
                 ActorPlayAnim(actor->handle, 0xA7D124DE, actor->handle);
                 FxStart(FxFind("gun_empty"), 0, 0);
             }
-            fn_8006D288(actor, actor->nextType);
+            PlayerSetActionMode(actor, actor->nextType);
         } else if (actor->type == 8) {
             int r = Fn800F7DEC(r1, r2, 0xF829DB93, fn_800498D0(actor), 0);
             if (r == 0xC0BECF7E || r == 0x11D2C025) {
                 FxStart(FxFind("gun_empty"), 0, 0);
             }
-            fn_8006D288(actor, actor->nextType);
+            PlayerSetActionMode(actor, actor->nextType);
         } else if (actor->type == 13) {
             actor->flags |= 0x20000;
         } else {
-            fn_8006D288(actor, actor->nextType);
+            PlayerSetActionMode(actor, actor->nextType);
         }
         break;
     case 0x0020EE36:

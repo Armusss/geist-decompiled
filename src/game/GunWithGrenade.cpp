@@ -161,8 +161,6 @@ struct Actor {
 
 extern "C" {
 int fn_800498D0(Actor* a);
-void fn_8006D184(Actor* a, int state);
-void fn_8006D288(Actor* a, int state);
 int fn_800A1BC8(int set, int anim, u32 action, int a, int b);
 int fn_802A1D04(void);
 float fn_800699B8(Actor* a);
@@ -173,10 +171,12 @@ int fn_800C5210(int to, int msg, void* data);
 void fn_80048BA8(Actor* a, void* buf, int mode);
 int rand(void);
 void fn_800769A0(Actor* a, float dt);
-void fn_80072058(Actor* a, float dt);
-void fn_8006D17C(int* type, int state);
-void fn_8006D76C(Actor* a);
 }
+void PlayerSelectCollisionUpdate(void* owner, float dt);
+void PlayerResetGunTimer(void* owner);
+void PlayerSetValue4(void* owner, int value);
+void PlayerSetActionMode(void* owner, int mode);
+void PlayerSetHeldSlotMode(void* owner, int mode);
 
 int ActorPlayAnim(int actor, u32 anim, int arg);
 void DashUpdate(Actor* a);

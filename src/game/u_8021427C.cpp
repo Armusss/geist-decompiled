@@ -227,10 +227,6 @@ int FxStart(void* fx, int a, int b);                        // 0x8016F390
 void fn_8000F550(short* tex, int a);                        // 0x8000F550
 void fn_80048BA8(Actor* a, void* buf, int flag);            // 0x80048BA8
 int fn_800498D0(Actor* a);                                  // 0x800498D0
-void fn_8006D17C(int* p, int v);                            // 0x8006D17C
-void fn_8006D184(Actor* a, int v);                          // 0x8006D184
-void fn_8006D288(Actor* a, int v);                          // 0x8006D288
-void fn_80072058(Actor* a, float dt);                       // 0x80072058
 void fn_800769A0(Actor* a, float dt);                       // 0x800769A0
 void fn_8008E824(int anim, int a, float speed);             // 0x8008E824
 void fn_800A0030(Vec3* out, Mtx34* m, Vec3* in);            // 0x800A0030
@@ -243,6 +239,10 @@ void fn_8016F018(int fx, int value);                        // 0x8016F018
 void fn_8021DC40(void* p);                                  // 0x8021DC40
 void fn_8021DCF4(void* p);                                  // 0x8021DCF4
 }
+void PlayerSelectCollisionUpdate(void* owner, float dt);
+void PlayerSetValue4(void* owner, int value);
+void PlayerSetActionMode(void* owner, int mode);
+void PlayerSetHeldSlotMode(void* owner, int mode);
 
 int GhostActionMsg(int msg, void* data);
 
@@ -316,7 +316,7 @@ void UpdateGhostAction(Actor* a, float dt) {
     a->unk638 = 1;
     a->flags &= ~1;
     fn_800769A0(a, dt);
-    fn_80072058(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
     a->unk7D0 = 1;
 
     float f0 = fabs(a->unk394);
@@ -328,9 +328,9 @@ void UpdateGhostAction(Actor* a, float dt) {
 
     if (a->unk678 & 0x80) {
         a->unk678 &= ~0x80;
-        fn_8006D288(a, 3);
+        PlayerSetActionMode(a, 3);
     } else {
-        fn_8006D17C(&a->state, 3);
+        PlayerSetValue4(&a->state, 3);
     }
 
     CheckTarget(a);
@@ -361,13 +361,13 @@ void UpdateGhostActionIdle(Actor* a, float dt) {
     a->unk638 = 1;
     a->flags &= ~1;
     fn_800769A0(a, dt);
-    fn_80072058(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
 
     if (a->unk678 & 0x80) {
         a->unk678 &= ~0x80;
-        fn_8006D288(a, 1);
+        PlayerSetActionMode(a, 1);
     }
-    fn_8006D17C(&a->state, 1);
+    PlayerSetValue4(&a->state, 1);
     a->unk7D0 = 0;
 
     if (sRollFx != -1) {
@@ -434,22 +434,22 @@ int GhostActionMsg(int msg, void* data) {
             int r = Fn800F7DEC(q1, q2, 0x0020EE36, fn_800498D0(a), 0);
 
             if (r != 0x04A3E183) {
-                fn_8006D184(a, 3);
+                PlayerSetHeldSlotMode(a, 3);
             } else {
-                fn_8006D288(a, a->unk7A8);
+                PlayerSetActionMode(a, a->unk7A8);
             }
         } else if (a->state == 8) {
             int r = Fn800F7DEC(q1, q2, 0xF829DB93, fn_800498D0(a), 0);
 
             if (r != 0x04A3E183) {
-                fn_8006D184(a, 3);
+                PlayerSetHeldSlotMode(a, 3);
             } else {
-                fn_8006D288(a, a->unk7A8);
+                PlayerSetActionMode(a, a->unk7A8);
             }
         } else if (a->state == 0xD) {
             a->flags |= 0x20000;
         } else {
-            fn_8006D288(a, a->unk7A8);
+            PlayerSetActionMode(a, a->unk7A8);
         }
         break;
     case 0x0020EE36:

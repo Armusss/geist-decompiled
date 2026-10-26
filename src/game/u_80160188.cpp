@@ -96,9 +96,9 @@ extern "C" {
 int fn_800C5210(int target, int msg, void* data);         // 0x800C5210
 void fn_80048BA8(Weapon* w, void* buf, int flag);         // 0x80048BA8
 int fn_800498D0(Weapon* w);                               // 0x800498D0
-void fn_8006D184(Weapon* w, int a);                       // 0x8006D184
-void fn_8006D288(Weapon* w, int a);                       // 0x8006D288
 }
+void PlayerSetActionMode(void* owner, int mode);
+void PlayerSetHeldSlotMode(void* owner, int mode);
 
 // One message, two queried node ids and the target they belong to.
 static int sNodeIndex;
@@ -145,16 +145,16 @@ int WeaponMsg(int msg, void* p) {
                 if (r == 0xC0BECF7E || r == 0x11D2C025) {
                     FxStart(FxFind("gun_empty"), 0, 0);
                 }
-                fn_8006D184(w, 3);
+                PlayerSetHeldSlotMode(w, 3);
             } else {
-                fn_8006D288(w, w->unk7A8);
+                PlayerSetActionMode(w, w->unk7A8);
             }
         } else if (w->state == 8) {
             break;
         } else if (w->state == 0xD) {
             w->flags |= 0x20000;
         } else {
-            fn_8006D288(w, w->unk7A8);
+            PlayerSetActionMode(w, w->unk7A8);
         }
         break;
     case 0x0020EE36:

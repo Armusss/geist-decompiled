@@ -238,7 +238,6 @@ void FxStart(void* fx, int a, int b);
 
 void fn_800E1098(void* out, void* in, float scale);
 void fn_8016D440(Vec3* out, Vec3* in);
-Vec3* fn_800772E0(void* actor);
 void fn_800C5E00(int, int, int, int, int);
 void fn_800E1BD8(int, int, int, int, int);
 void fn_800B4C50(float* pos, u32 id, int a, int b, float f1, float f2);
@@ -274,6 +273,7 @@ int fn_8001A14C(void* obj, int id);
 void fn_8003D710(int);
 void fn_801ED8CC(int a, void* hit, int b, int c, void* delta, int d, int e, float f1, float f2);
 }
+Vec3* PlayerGetGunVec(void* owner);
 
 unsigned long AssetFind(unsigned long table, unsigned long key);
 void ModelNodeSetup(int a, int b, int c, int d);
@@ -388,7 +388,7 @@ void FearRivetSpawn(u32 id, int mode, SpawnInfo* info, int arg) {
 
         SendMsg((void*)id, 0x400, &q);
         t = q.actor;
-        vel = fn_800772E0(t);
+        vel = PlayerGetGunVec(t);
         desc.offset.x += vel->x * 1000.0f;
         desc.offset.y += vel->y * 1000.0f;
         desc.offset.z += vel->z * 1000.0f;

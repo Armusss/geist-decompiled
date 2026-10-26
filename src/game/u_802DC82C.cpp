@@ -327,7 +327,6 @@ void fn_80158AAC(int a, Actor* actor, int b);
 void fn_80158990(int a, Actor* actor);
 void fn_80048A34(Actor* a, int b);
 float fn_80018A40(int model);
-void fn_8006D184(Actor* a, int b);
 void fn_8008F230(int anim, float f, int a, int b);
 void fn_800913EC(int anim, float f, void* buf);
 float fn_800C63A0(int a);
@@ -343,6 +342,7 @@ void fn_8000F7E4(int a, int b);
 void fn_800EBCC4(int a, int b);
 void fn_800ECB18(void);
 }
+void PlayerSetHeldSlotMode(void* owner, int mode);
 void EmitterSetEnabled(u32 handle, int a);
 
 int PlayerInHost(Actor* a);                                       // 0x80049750
@@ -936,7 +936,7 @@ void HostDie(Actor* a) {
     a->flags7B4 &= ~0x02000000;
     a->flags7B4 &= ~0x00080000;
     a->state = 0;
-    fn_8006D184(a, 1);
+    PlayerSetHeldSlotMode(a, 1);
     a->state = 1;
     fn_8008F230(a->anim, 0.0f, 0, 1);
     fn_800913EC(a->anim, 100.0f, buf);
