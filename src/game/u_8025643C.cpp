@@ -1,5 +1,5 @@
-// u_8025643C.cpp: the "GUNWITHGRENADE" effect type. Only the create function is written so far; names are
-// descriptive guesses and the code is matched against the retail DOL.
+// u_8025643C.cpp: the gun-with-grenade host states and the "GUNWITHGRENADE" effect type (Update/Msg written,
+// the effect half 0x8025808C-0x80259448 matches). Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <dolphin/types.h>
 
@@ -16,6 +16,11 @@ void fn_80175EE4(void* p);
 void* VAlloc(int size);
 void Fn800F840C(int emitter, int a, int b);
 extern int lbl_804D54D0;
+
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
 
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
@@ -94,7 +99,7 @@ struct HostData {
     int run;              // 0x24
 };
 
-typedef int (*HostMsgFunc)(int msg, Actor* a);
+typedef int (*HostMsgFunc)(int msg, void* data);
 
 struct Actor {
     char pad0[0x38];
@@ -118,7 +123,7 @@ struct Actor {
     int ammo;             // 0x314
     int grenades;         // 0x318
     char pad31C[4];
-    u32 pressed;          // 0x320
+    int pressed;          // 0x320
     u32 pressed2;         // 0x324
     int unk328;           // 0x328
     char pad32C[0x38C - 0x32C];
@@ -179,7 +184,7 @@ extern "C" int SendMsg(int to, int msg, void* data);
 int Fn800F7DEC(int a, int b, int c, int d, void* e);
 void Fn800F7F5C(int a, int b, int c, int d, void* e, float f);
 void* FxFind(const char* name);
-extern "C" void FxStart(void* fx, int a, int b);
+extern "C" int FxStart(void* fx, int a, int b);
 extern int lbl_804D3620;
 
 struct MsgQuery {
@@ -213,9 +218,11 @@ inline void QueryValue(int target, u32 hash, int value) {
 int GunHostCheckGrenade(Actor* a);
 int GunHostCheckGun(Actor* a);
 int GunHostCheckReload(Actor* a, float dt);
-int GunHostMsg(int msg, Actor* a);
+int GunHostMsg(int msg, void* data);
 
 static inline float fabsf2(float x) { return __fabsf(x); }
+inline float Max(float a, float b) { return a > b ? a : b; }
+inline float MaxLt(float a, float b) { return a < b ? b : a; }
 int AssetFind(u32 table, u32 key);
 
 extern int lbl_804A2930[16];  // the host's sounds
@@ -232,10 +239,7 @@ void GunHostAimUpdate(Actor* a, float dt) {
     fn_800769A0(a, dt);
     fn_80072058(a, dt);
     a->unk7D0 = 1;
-    m = fabsf2(a->move[2]);
-    if (m < fabsf2(a->move[0])) {
-        m = fabsf2(a->move[0]);
-    }
+    m = __fabsf(a->move[0]) > __fabsf(a->move[2]) ? __fabsf(a->move[0]) : __fabsf(a->move[2]);
     if (m != 0.0f) {
         fn_8008E824(a->model, 0);
     }
@@ -253,19 +257,11 @@ void GunHostAimUpdate(Actor* a, float dt) {
     }
 }
 
-inline void GunHostSetAnims(Actor* a, HostData* h, u32 action, int variant) {
-    if (a->flags & 0x80000) {
-        a->anim2 = fn_800A1BC8(h->set, h->run, action, variant, 0);
-    } else {
-        a->anim2 = fn_800A1BC8(h->set, h->walk, action, variant, 0);
-    }
-}
-
 void GunHostAimEnter(Actor* a) {
+    int weapon;
     int r1;
     int r2;
     int host;
-    int weapon;
     int empty;
     int r;
 
@@ -287,7 +283,11 @@ void GunHostAimEnter(Actor* a) {
             empty = 0;
         }
     }
-    GunHostSetAnims(a, a->hosts[host], lbl_803BF068[3].actions[weapon], 0);
+    if (a->flags & 0x80000) {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->run, lbl_803BF068[3].actions[weapon], 0, 0);
+    } else {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[3].actions[weapon], 0, 0);
+    }
     a->animMode2 = 1;
 }
 
@@ -306,16 +306,20 @@ void GunHostIdleUpdate(Actor* a, float dt) {
 
 void GunHostFireEnter(Actor* a) {
     int r2;
-    HostData* h;
-    u32* action;
+    int host;
+    int weapon;
 
     Query(&r2, a->handle, 0x41E, 0xDFF3097A);
-    h = a->hosts[PlayerInHost(a)];
-    action = &lbl_803BF068[2].actions[a->weapon];
-    a->anim = fn_800A1BC8(h->set, h->aim, *action, 0, 0);
+    host = PlayerInHost(a);
+    weapon = a->weapon;
+    a->anim = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->aim, lbl_803BF068[2].actions[weapon], 0, 0);
     a->animMode = 16;
     a->msgHandler = GunHostMsg;
-    GunHostSetAnims(a, h, *action, 0);
+    if (a->flags & 0x80000) {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->run, lbl_803BF068[2].actions[weapon], 0, 0);
+    } else {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[2].actions[weapon], 0, 0);
+    }
     a->animMode2 = 16;
     lbl_804D3620 = fn_800F7994(r2, 0xAFEF562B);
     FxStart((void*)lbl_804D3620, 0, 0);
@@ -343,13 +347,17 @@ void GunHostFireUpdate(Actor* a, float dt) {
 }
 
 void GunHostIdleEnter(Actor* a) {
-    HostData* h = a->hosts[PlayerInHost(a)];
-    u32* action = &lbl_803BF068[1].actions[a->weapon];
+    int host = PlayerInHost(a);
+    int weapon = a->weapon;
 
-    a->anim = fn_800A1BC8(h->set, h->aim, *action, 0, 0);
+    a->anim = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->aim, lbl_803BF068[1].actions[weapon], 0, 0);
     a->animMode = 1;
     a->msgHandler = 0;
-    GunHostSetAnims(a, h, *action, 0);
+    if (a->flags & 0x80000) {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->run, lbl_803BF068[1].actions[weapon], 0, 0);
+    } else {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[1].actions[weapon], 0, 0);
+    }
     a->msgHandler2 = GunHostMsg;
     a->animMode2 = 1;
     a->unk7D0 = 0;
@@ -376,7 +384,7 @@ void GunHostWalkUpdate(Actor* a, float dt) {
 void GunHostThrowEnter(Actor* a) {
     int r1;
     int r2;
-    HostData* h;
+    int host;
     int r;
     int walk;
 
@@ -385,28 +393,33 @@ void GunHostThrowEnter(Actor* a) {
     r = Fn800F7DEC(r1, r2, 0x0020EE36, fn_800498D0(a), 0);
     if (r == 0xC0BECF7E || r == 0x11D2C025) {
         a->variant = 2;
-    } else if (rand() / 32767.0f < 0.5f) {
-        a->variant = 1;
-    } else {
+    } else if (rand() / 32767.0f >= 0.5f) {
         a->variant = 0;
+    } else {
+        a->variant = 1;
     }
-    h = a->hosts[PlayerInHost(a)];
-    a->anim = fn_800A1BC8(h->set, h->aim, lbl_803BF068[0].actions[0], a->variant, 0);
+    host = PlayerInHost(a);
+    a->anim = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->aim, lbl_803BF068[0].actions[0], a->variant, 0);
     if (a->anim == -1) {
         a->variant = 0;
-        a->anim = fn_800A1BC8(h->set, h->aim, lbl_803BF068[0].actions[0], a->variant, 0);
+        a->anim = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->aim, lbl_803BF068[0].actions[0], a->variant, 0);
     }
     a->msgHandler = GunHostMsg;
     a->animMode = 1;
-    if (a->flags & 0x80000) {
-        walk = h->run;
-    } else {
-        walk = h->walk;
+    {
+        HostData* h = a->hosts[host];
+        int set = h->set;
+
+        if (a->flags & 0x80000) {
+            walk = h->run;
+        } else {
+            walk = h->walk;
+        }
+        a->anim2 = fn_800A1BC8(set, walk, lbl_803BF068[0].actions[0], a->variant, 0);
     }
-    a->anim2 = fn_800A1BC8(h->set, walk, lbl_803BF068[0].actions[0], a->variant, 0);
     if (a->anim2 == -1) {
         a->variant = 0;
-        a->anim2 = fn_800A1BC8(h->set, walk, lbl_803BF068[0].actions[0], a->variant, 0);
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, walk, lbl_803BF068[0].actions[0], a->variant, 0);
     }
     a->msgHandler2 = GunHostMsg;
     a->animMode2 = 1;
@@ -439,7 +452,19 @@ int GunHostCheckReload(Actor* a, float dt) {
                 return 1;
             }
         }
-    } else if (a->pressed == 0) {
+    } else if (a->pressed != 0) {
+        fn_8006D76C(a);
+        a->hold += dt;
+        if (fn_800699B8(a) == 1.0f) {
+            if (a->unk7D0 == 0) {
+                fn_8006D184(a, 2);
+            } else {
+                fn_8006D184(a, 9);
+            }
+            fn_800699A8(a->timer);
+            return 1;
+        }
+    } else {
         float t = fn_800699B8(a);
         if (t > -1.0f && t < 0.0f) {
             if (Fn800F7DEC(r1, r2, 0xE6B71BCC, fn_800498D0(a), 0) == 0x04A3E183) {
@@ -454,18 +479,6 @@ int GunHostCheckReload(Actor* a, float dt) {
             }
         }
         fn_800699A8(a->timer);
-    } else {
-        fn_8006D76C(a);
-        a->hold += dt;
-        if (fn_800699B8(a) == 1.0f) {
-            if (a->unk7D0 == 0) {
-                fn_8006D184(a, 2);
-            } else {
-                fn_8006D184(a, 9);
-            }
-            fn_800699A8(a->timer);
-            return 1;
-        }
     }
     return 0;
 }
@@ -477,7 +490,7 @@ int GunHostCheckGrenade(Actor* a) {
 
     Query(&r1, a->handle, 0x41E, 0x2DA8293C);
     Query(&r2, a->handle, 0x41E, 0xDFF3097A);
-    if (a->grenades > 0) {
+    if (a->grenades >= 1) {
         if (a->type == 1) {
             fn_8006D184(a, 2);
             return 1;
@@ -485,14 +498,6 @@ int GunHostCheckGrenade(Actor* a) {
         fn_8006D76C(a);
         r = Fn800F7DEC(r1, r2, 0xF829DB93, fn_800498D0(a), 0);
         switch (r) {
-        case 0x11D2C025:
-            if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
-                QueryValue(a->handle, 0x7FFCFD4F, 0x91A0CEF7);
-            }
-            if (a->type == 8) {
-                fn_8006D184(a, 3);
-            }
-            break;
         case 0x04A3E183:
             if (a->type != 8) {
                 fn_8006D184(a, 8);
@@ -503,6 +508,14 @@ int GunHostCheckGrenade(Actor* a) {
             if (Fn800F7DEC(r1, r2, 0x968CBE3D, fn_800498D0(a), 0) == 0x04A3E183) {
                 fn_8006D184(a, 11);
                 return 1;
+            }
+            break;
+        case 0x11D2C025:
+            if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
+                QueryValue(a->handle, 0x7FFCFD4F, 0x91A0CEF7);
+            }
+            if (a->type == 8) {
+                fn_8006D184(a, 3);
             }
             break;
         case 0x3DA260F7:
@@ -524,7 +537,7 @@ int GunHostCheckGun(Actor* a) {
 
     Query(&r1, a->handle, 0x41E, 0x2DA8293C);
     Query(&r2, a->handle, 0x41E, 0xDFF3097A);
-    if (a->ammo > 0) {
+    if (a->ammo >= 1) {
         if (a->type == 1) {
             fn_8006D184(a, 2);
             return 1;
@@ -532,14 +545,6 @@ int GunHostCheckGun(Actor* a) {
         fn_8006D76C(a);
         r = Fn800F7DEC(r1, r2, 0x0020EE36, fn_800498D0(a), 0);
         switch (r) {
-        case 0x11D2C025:
-            if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
-                QueryValue(a->handle, 0x7FFCFD4F, 0x91A0CEF7);
-            }
-            if (a->type == 5) {
-                fn_8006D184(a, 3);
-            }
-            break;
         case 0x04A3E183:
             fn_8006D184(a, 5);
             fn_8006D17C(&a->type, 5);
@@ -548,6 +553,14 @@ int GunHostCheckGun(Actor* a) {
             if (Fn800F7DEC(r1, r2, 0xE6B71BCC, fn_800498D0(a), 0) == 0x04A3E183) {
                 fn_8006D184(a, 10);
                 return 1;
+            }
+            break;
+        case 0x11D2C025:
+            if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
+                QueryValue(a->handle, 0x7FFCFD4F, 0x91A0CEF7);
+            }
+            if (a->type == 5) {
+                fn_8006D184(a, 3);
             }
             break;
         case 0x3DA260F7:
@@ -563,7 +576,8 @@ int GunHostCheckGun(Actor* a) {
 }
 
 // Animation message handler of the gun states: passes fire/reload actions on to the host's weapon.
-int GunHostMsg(int msg, Actor* a) {
+int GunHostMsg(int msg, void* data) {
+    Actor* a = (Actor*)data;
     MsgQuery q0;
     int r1;
     int r2;
@@ -577,19 +591,6 @@ int GunHostMsg(int msg, Actor* a) {
     Query(&r1, a->handle, 0x41E, 0x2DA8293C);
     Query(&r2, a->handle, 0x41E, 0xDFF3097A);
     switch (msg) {
-    case 0xF829DB93:
-        fn_80048BA8(a, a->buf, 0);
-        a->bufAim = a->aim;
-        Fn800F7F5C(r1, r2, 0xF829DB93, fn_800498D0(a), a->buf, a->speed);
-        return 1;
-    case 0xE6B71BCC:
-        fn_80048BA8(a, a->buf, 1);
-        Fn800F7F5C(r1, r2, 0xE6B71BCC, fn_800498D0(a), a->buf, a->speed);
-        return 0;
-    case 0x968CBE3D:
-        fn_80048BA8(a, a->buf, 1);
-        Fn800F7F5C(r1, r2, 0x968CBE3D, fn_800498D0(a), a->buf, a->speed);
-        return 0;
     case 0x1B83833F:
         if (a->type == 5) {
             r = Fn800F7DEC(r1, r2, 0x0020EE36, fn_800498D0(a), 0);
@@ -598,44 +599,51 @@ int GunHostMsg(int msg, Actor* a) {
                     FxStart(FxFind("gun_empty"), 0, 0);
                 }
                 fn_8006D184(a, 3);
-                return 0;
+            } else {
+                fn_8006D288(a, a->nextType);
             }
-            fn_8006D288(a, a->nextType);
-            return 0;
-        }
-        if (a->type == 8) {
+        } else if (a->type == 8) {
             r = Fn800F7DEC(r1, r2, 0xF829DB93, fn_800498D0(a), 0);
             if (r != 0x04A3E183) {
                 if (r == 0xC0BECF7E || r == 0x11D2C025) {
                     FxStart(FxFind("gun_empty"), 0, 0);
                 }
                 fn_8006D184(a, 3);
-                return 0;
+            } else {
+                fn_8006D288(a, a->nextType);
             }
-            fn_8006D288(a, a->nextType);
-            return 0;
-        }
-        if (a->type == 13) {
+        } else if (a->type == 13) {
             a->flags |= 0x20000;
-            return 0;
+        } else {
+            fn_8006D288(a, a->nextType);
         }
-        fn_8006D288(a, a->nextType);
-        return 0;
+        break;
     case 0x0020EE36:
         fn_80048BA8(a, a->buf, 1);
         a->bufAim = a->aim;
-        Fn800F7F5C(r1, r2, 0x0020EE36, fn_800498D0(a), a->buf, a->speed);
-        return 0;
+        Fn800F7F5C(r1, r2, msg, fn_800498D0(a), a->buf, a->speed);
+        break;
+    case 0xF829DB93:
+        fn_80048BA8(a, a->buf, 0);
+        a->bufAim = a->aim;
+        Fn800F7F5C(r1, r2, msg, fn_800498D0(a), a->buf, a->speed);
+        return 1;
     case 0x9791AF51:
     case 0x96224FCC:
     case 0x0D19E338:
     case 0x42E50A3D:
+        fn_80048BA8(a, a->buf, 1);
+        Fn800F7F5C(r1, r2, msg, fn_800498D0(a), a->buf, a->speed);
         break;
-    default:
-        return 0;
+    case 0xE6B71BCC:
+        fn_80048BA8(a, a->buf, 1);
+        Fn800F7F5C(r1, r2, msg, fn_800498D0(a), a->buf, a->speed);
+        break;
+    case 0x968CBE3D:
+        fn_80048BA8(a, a->buf, 1);
+        Fn800F7F5C(r1, r2, msg, fn_800498D0(a), a->buf, a->speed);
+        break;
     }
-    fn_80048BA8(a, a->buf, 1);
-    Fn800F7F5C(r1, r2, msg, fn_800498D0(a), a->buf, a->speed);
     return 0;
 }
 
@@ -716,32 +724,106 @@ inline u32 EffectTypeHash(EffectType* type) {
     }
     return type->hash;
 }
+struct Vec3 {
+    float x, y, z;
+};
+
+struct Mtx34;
+struct Player;
+
+struct GunShot {
+    u8 pad00[0x30];
+    float x, y, z;
+    Vec3 dir;
+    u8 pad48[0x50 - 0x48];
+    float spread;
+    float scale;
+    u8 pad58[0x60 - 0x58];
+};
+
 struct GunWithGrenadeDef {
-    u8 pad00[0x4];
-    int unk04;
-    int unk08;
-    u8 pad0C[0x58];
-    int unk64;
-    int unk68;
+    int unk00;
+    int unk04;  // gun ammo id
+    int unk08;  // gun ammo max
+    float speed;
+    int unk10;
+    int unk14;
+    int charge;
+    int drain;
+    int maxCharge;
+    int spread;
+    int unk28;
+    int unk2C;
+    void* fx;
+    u8 pad34[0x3C - 0x34];
+    void* hitFx;
+    u8 pad40[0x4C - 0x40];
+    float recoil;
+    float recoilRate;
+    float spreadMinA;
+    float spreadMaxA;
+    float spreadMinB;
+    float spreadMaxB;
+    int unk64;  // grenade ammo id
+    int unk68;  // grenade ammo max
+    float speed2;
+    float unk70;
+    u8 pad74[0x90 - 0x74];
+    void* fx2;
+    void* hitFx2;
+    int model;
+    u8 pad9C[0xBC - 0x9C];
+    int hud;
 };
 
 struct GunWithGrenade {
-    int unk00;
-    float unk04;
-    float unk08;
-    float unk0C;
-    float unk10;
-    float unk14;
+    int unk00;  // state: 1 firing, 2 throwing
+    float unk04;  // timer
+    float unk08;  // rate
+    float unk0C;  // charge
+    float unk10;  // recoil
+    float unk14;  // recoil timer
     int emitter;
     GunWithGrenadeDef* def;
     int unk20;
-    u8 pad24[0x68];
+    int arg;
+    int pad28;
+    GunShot shot;
     int unk8C;
-    int unk90;
+    int unk90;  // fx
     int unk94;
     u8 pad98[0x38];
     int unkD0;
     u8 padD4[0x70];
+};
+
+struct GunShotInfo {
+    GunShot* hit;
+    float speed;
+    float unk8;
+    int unkC;
+    int charge;
+    int unk14;
+    int unk18;
+    int unk1C;
+    int unk20;
+};
+
+struct MsgResult {
+    void* p;
+    char pad[0x1C];
+};
+
+struct Target {
+    u8 pad[0x24];
+    int x, y, z;
+};
+
+struct GrabMsg {
+    int unk0;
+    int asset;
+    u8 pad08[0x34 - 0x08];
+    int x, y, z;
 };
 
 extern EffectType lbl_803BF770;  // the "GUNWITHGRENADE" type descriptor
@@ -761,6 +843,59 @@ void fn_80175D80(void* p);
 void fn_80175EA4(void* p);
 void fn_80175D8C(void* p);
 void fn_80175EF8(void);
+void fn_80175DE8(void* p, float dt);
+void fn_80175D84(void* p, float dt);
+void fn_80175E40(void* p, float* pos, void* hit, int arg);
+void fn_800F825C(int emitter, int id, int count);
+int fn_8016F120(void* fx, int* pos);
+void fn_8016F118(int handle, int a, int b);
+void fn_8016EDD8(int handle, int* pos);
+void fn_800E0E9C(int* out, int* in, int scale);
+int fn_800F94C8(int a);
+Mtx34* fn_800C6510(int id);
+void fn_8016D440(Vec3* out, Vec3* in);
+void fn_80163824(int player, u32 id, int a, int b, int c);
+void fn_80163810(int player, u32 id, int a, int b, int c);
+void fn_80163854(int player, int a, int b);
+}
+
+int Fn80175D60(unsigned long arg);
+void ActorAim(int* out, Actor* a, int b);
+void PlayerAnimOffUpdate(Player* p, float dt);
+int PlayerGetPossessor(int arg);
+void MtxGetEuler(Vec3* rot, Mtx34* m);
+int GrenadeThrow(int a, Vec3* pos, Vec3* rot, int duration, float power);
+void ModelLoadIds(short* ids, int count);
+void ModelFreeIds(short* ids, int count);
+
+inline float Min(float a, float b) { return a < b ? a : b; }
+
+inline int FxStartAt(void* fx, float* p, int* pos) {
+    int h;
+    if (p) {
+        pos[0] = p[0];
+        pos[1] = p[1];
+        pos[2] = p[2];
+        h = fn_8016F120(fx, pos);
+        fn_8016F118(h, 0, 100000);
+    } else {
+        h = FxStart(fx, 0, 0);
+    }
+    return h;
+}
+
+inline void GunTrack(int fx, int target) {
+    MsgResult q;
+    int pos[3];
+
+    if (fx != -1 && target != -1 && SendMsg(target, 0x400, &q) && q.p) {
+        ActorAim(pos, (Actor*)q.p, 1);
+        fn_800E0E9C(pos, pos, 1000);
+        pos[0] = pos[0] + ((Target*)q.p)->x;
+        pos[1] = pos[1] + ((Target*)q.p)->y;
+        pos[2] = pos[2] + ((Target*)q.p)->z;
+        fn_8016EDD8(fx, pos);
+    }
 }
 
 void VFree(void* p);
@@ -772,6 +907,87 @@ void GunWithGrenadeReset(EffectObj* obj) {
     g->unk04 = 0.0f;
     fn_80175DA8(&g->unk94);
     fn_80175D80(&g->unkD0);
+}
+
+void GunWithGrenadeUpdate(EffectObj* obj, float dt) {
+    GunWithGrenade* g = (GunWithGrenade*)obj->data;
+    GunWithGrenadeDef* def = g->def;
+
+    g->unk20 = 0;
+    if (g->unk00 == 1) {
+        g->unk04 -= dt;
+        while (g->unk04 <= 0.0f) {
+            GunShotInfo info;
+            int pos[3];
+            void* fx;
+
+            g->unk04 += g->unk08;
+            if (!fn_800F7D28(g->emitter, def->unk04)) {
+                return;
+            }
+            g->unk0C += def->charge;
+            g->unk0C = Min(g->unk0C, def->maxCharge);
+            info.hit = &g->shot;
+            info.speed = def->speed;
+            info.unkC = def->unk14;
+            info.charge = g->unk0C;
+            info.unk18 = def->unk28;
+            info.unk1C = def->unk2C;
+            info.hit->spread += def->spread;
+            Fn800F7F5C(g->emitter, def->unk04, 0x14967, g->arg, &info, dt);
+            fx = def->fx;
+            g->unk90 = FxStartAt(fx, &info.hit->x, pos);
+        }
+    } else if (g->unk00 == 2) {
+        GunShotInfo info;
+        int pos[3];
+        void* fx;
+
+        if (!fn_800F7D28(g->emitter, def->unk64)) {
+            return;
+        }
+        info.hit = &g->shot;
+        info.speed = def->speed2;
+        info.unk8 = def->unk70;
+        info.unkC = def->unk14;
+        info.charge = g->unk0C;
+        Fn800F7F5C(g->emitter, def->unk64, 0x14967, g->arg, &info, dt);
+        fx = def->fx2;
+        g->unk90 = FxStartAt(fx, &info.hit->x, pos);
+        fn_800F825C(g->emitter, def->unk64, 1);
+    }
+    if (g->unk90 != -1) {
+        GunTrack(g->unk90, g->arg);
+    }
+    if (g->unk0C > 0.0f) {
+        g->unk0C -= 0.001f * dt * def->drain;
+        g->unk0C = g->unk0C > 0.0f ? g->unk0C : 0.0f;
+    }
+    g->unk14 -= dt;
+    g->unk14 = g->unk14 > 0.0f ? g->unk14 : 0.0f;
+    if (g->unk10 > 0.0f && 0.0f == g->unk14) {
+        float step = def->recoilRate * dt;
+        if (step <= 0.0f) {
+            g->unk10 = 0.0f;
+        }
+        if (g->unk10 > step) {
+            if (((g->arg >> 24) & 0xFF) == 2) {
+                MsgResult q;
+                SendMsg(g->arg, 0x400, &q);
+                PlayerAnimOffUpdate((Player*)q.p, -step);
+            }
+            g->unk10 -= step;
+        } else {
+            if (((g->arg >> 24) & 0xFF) == 2) {
+                MsgResult q;
+                SendMsg(g->arg, 0x400, &q);
+                PlayerAnimOffUpdate((Player*)q.p, -g->unk10);
+            }
+            g->unk10 = 0.0f;
+        }
+    }
+    fn_80175DE8(&g->unk94, dt);
+    fn_80175D84(&g->unkD0, dt);
 }
 
 u32 GunWithGrenadeQuery(EffectObj* obj, int msg) {
@@ -825,6 +1041,221 @@ u32 GunWithGrenadeQuery(EffectObj* obj, int msg) {
         return 0x11D2C025;
     }
     return 0x3DA260F7;
+}
+
+int GunWithGrenadeMsg(EffectObj* obj, int msg, int arg, void* data, float dt) {
+    GunWithGrenade* g = (GunWithGrenade*)obj->data;
+    GunWithGrenadeDef* def = g->def;
+    int busy = Fn80175D60(arg);
+    Vec3 rot;
+    Vec3 pos;
+
+
+    g->arg = arg;
+    switch (msg) {
+    case 0x0020EE36:
+        if (g->unk00 == 1) {
+            memcpy(&g->shot, data, 0x60);
+        } else {
+            GunShotInfo info;
+            MsgResult q;
+            int posA[3];
+            int posB[3];
+            void* fx;
+            int kind;
+
+            g->unk20 = 1;
+            if (!fn_800F7D28(g->emitter, def->unk04)) {
+                return 0;
+            }
+            g->unk0C += def->charge;
+            g->unk0C = Min(g->unk0C, def->maxCharge);
+            kind = (arg >> 24) & 0xFF;
+            if (kind == 2) {
+                SendMsg(arg, 0x400, &q);
+                PlayerAnimOffUpdate((Player*)q.p, def->recoil);
+                g->unk10 += def->recoil;
+                g->unk14 = 300.0f;
+            }
+            info.hit = (GunShot*)data;
+            info.speed = def->speed;
+            info.unkC = def->unk14;
+            info.charge = g->unk0C;
+            info.unk18 = def->unk28;
+            info.unk1C = def->unk2C;
+            if (((g->arg >> 24) & 0xFF) == 2) {
+                ((GunShot*)data)->spread =
+                    ((GunShot*)data)->spread * (def->spreadMaxA - def->spreadMinA) + def->spreadMinA;
+            } else {
+                ((GunShot*)data)->spread =
+                    ((GunShot*)data)->spread * (def->spreadMaxB - def->spreadMinB) + def->spreadMinB;
+            }
+            info.hit->spread *= info.hit->scale;
+            Fn800F7F5C(g->emitter, def->unk04, 0x14967, arg, &info, dt);
+            fx = def->fx;
+            g->unk90 = FxStartAt(fx, &info.hit->x, posA);
+            if (fn_80019A04() - lbl_804D54D0 >= 3 && kind == 2) {
+                FxStartAt((void*)def->unk2C, &info.hit->x, posB);
+                lbl_804D54D0 = fn_80019A04();
+            }
+            fn_80175E40(&g->unk94, &info.hit->x, info.hit, arg);
+            fn_800F825C(g->emitter, def->unk04, 1);
+        }
+        return 1;
+    case 0x96224FCC:
+        if (g->unk00 != 1) {
+            g->unk00 = 1;
+            g->unk04 = g->unk08;
+        }
+        memcpy(&g->shot, data, 0x60);
+        return 1;
+    case 0x315A1A7F:
+        memcpy(&g->shot, data, 0x60);
+        return 1;
+    case 0x0D19E338:
+        g->unk00 = 0;
+        return 1;
+    case 0xE6B71BCC: {
+        int n;
+        int m;
+        int r;
+
+        g->unk20 = 1;
+        n = fn_800F7D28(g->emitter, def->unk04);
+        if (n == def->unk08) {
+            return 0;
+        }
+        m = fn_800F7D28(obj->emitter, def->unk04);
+        if (m == 0) {
+            return 0;
+        }
+        n = (m < def->unk08 - n) ? m : def->unk08 - n;
+        Query(&r, arg, 0x41E, 0x5A32795A);
+        if (r == 0) {
+            fn_800F825C(obj->emitter, def->unk04, n);
+        }
+        Fn800F840C(g->emitter, def->unk04, n);
+        return 1;
+    }
+    case 0xF829DB93:
+        if (g->unk00 == 2) {
+            memcpy(&g->shot, data, 0x60);
+        } else {
+            GrabMsg grab;
+
+            g->unk20 = 1;
+            if (!fn_800F7D28(g->emitter, def->unk64)) {
+                return 0;
+            }
+            grab.asset = AssetFind(0xF1754BF2, 0x0450B2BB);
+            SendMsg(arg, 0x411, &grab);
+            pos.x = grab.x;
+            pos.y = grab.y;
+            pos.z = grab.z;
+            if (((arg >> 24) & 0xFF) == 2) {
+                Mtx34* m = fn_800C6510(fn_800F94C8(*(int*)(PlayerGetPossessor(arg) + 0x184)));
+                MtxGetEuler(&rot, m);
+            } else {
+                fn_8016D440(&rot, &((GunShot*)data)->dir);
+            }
+            GrenadeThrow(arg, &pos, &rot, 1, 4800.0f);
+            fn_800F825C(g->emitter, def->unk64, 1);
+        }
+        return 1;
+    case 0x42E50A3D:
+        if (g->unk00 != 2) {
+            g->unk00 = 2;
+            g->unk04 = g->unk08;
+        }
+        memcpy(&g->shot, data, 0x60);
+        return 1;
+    case 0x9791AF51:
+        g->unk00 = 0;
+        return 1;
+    case 0x968CBE3D: {
+        int n;
+        int m;
+        int r;
+
+        g->unk20 = 1;
+        n = fn_800F7D28(g->emitter, def->unk64);
+        if (n == def->unk68) {
+            return 0;
+        }
+        m = fn_800F7D28(obj->emitter, def->unk64);
+        if (m == 0) {
+            return 0;
+        }
+        n = (m < def->unk68 - n) ? m : def->unk68 - n;
+        Query(&r, arg, 0x41E, 0x5A32795A);
+        Fn800F840C(g->emitter, def->unk64, n);
+        return 1;
+    }
+    case 0x8FDD7599: {
+        GunShot* hit;
+        void* fx;
+        int pos[3];
+
+        g->unk20 = 1;
+        fx = def->hitFx;
+        hit = (GunShot*)data;
+        g->unk90 = FxStartAt(fx, &hit->x, pos);
+        return 1;
+    }
+    case 0xBC78F550: {
+        GunShot* hit;
+        void* fx;
+        int pos[3];
+
+        g->unk20 = 1;
+        fx = def->hitFx2;
+        hit = (GunShot*)data;
+        g->unk90 = FxStartAt(fx, &hit->x, pos);
+        return 1;
+    }
+    case 0x0B59E861:
+        if (busy == 0) {
+            int player = PlayerGetPossessor(arg);
+            int a = fn_800F7D28(obj->emitter, def->unk04);
+            int b = fn_800F7D28(g->emitter, def->unk04);
+            int c = def->unk08;
+            int d = fn_800F7D28(obj->emitter, def->unk64);
+            int e = fn_800F7D28(g->emitter, def->unk64);
+            int f = def->unk68;
+
+            fn_80163824(player, 0x878DC2AD, a, b, c);
+            fn_80163810(player, 0xAB3DC1F9, d, e, f);
+            fn_80163854(player, player + 0x1508, def->hud);
+        }
+        return 1;
+    case 0xE452286F: {
+        int player = PlayerGetPossessor(arg);
+        short ids[2];
+
+        ids[0] = def->model;
+        ids[1] = def->unk28;
+        if ((int)data == 1) {
+            ModelLoadIds(ids, 2);
+        } else {
+            ModelFreeIds(ids, 2);
+        }
+        fn_80163854(player, player + 0x1508, def->hud);
+        return 1;
+    }
+    case 0x141109BD: {
+        short ids[2];
+
+        ids[0] = def->model;
+        ids[1] = def->unk28;
+        if ((int)data == 1) {
+            ModelLoadIds(ids, 2);
+        } else {
+            ModelFreeIds(ids, 2);
+        }
+        return 1;
+    }
+    }
+    return 0;
 }
 
 void GunWithGrenadeDestroy(EffectObj* obj) {
