@@ -375,18 +375,15 @@ static inline float RandRange(float range)
 // entry is not active.
 static inline Emitter* EmitterFromHandle(int handle)
 {
-    Emitter* em;
-
     if (handle != -1 && (int)(handle & 0xFFFFFF) >= 0 &&
         (int)(handle & 0xFFFFFF) < lbl_804D4964) {
-        em = &lbl_804D4960[handle & 0xFFFFFF];
-        if (em->field98 == 0) {
-            em = 0;
+        Emitter* em = &lbl_804D4960[handle & 0xFFFFFF];
+
+        if (em->field98 != 0) {
+            return em;
         }
-    } else {
-        em = 0;
     }
-    return em;
+    return 0;
 }
 
 // Start an emitter at its current position, deferred to the end of the frame.
@@ -399,7 +396,9 @@ void EmitterDeferStart(int handle)
     }
     if (em != 0 && em->field98 != 0) {
         em->flags |= 4;
-        if (em->state < 2 && em->state >= 0) {
+        switch (em->state) {
+        case 0:
+        case 1: {
             EmitterBank* bank = em->bank;
             int parent = 1;
             Vec3 pos;
@@ -412,6 +411,8 @@ void EmitterDeferStart(int handle)
                 parent = fn_8000FECC(bank->sub->groups[0].id);
             }
             DeferAdd(parent, &pos, (void (*)(void*))fn_800D72CC, em);
+            break;
+        }
         }
     }
 }
@@ -419,45 +420,48 @@ void EmitterDeferStart(int handle)
 // Enable or disable an emitter. Returns 0 for a bad handle, 1 otherwise.
 int EmitterSetEnabled(u32 handle, int on)
 {
-    int result;
     Emitter* em = EmitterFromHandle(handle);
 
     if (em == 0) {
-        result = 0;
-    } else {
-        if (em != 0 && em->field98 != 0 && em->state < 2 && em->state >= 0 &&
-            em != 0 && em->bank != 0 && em->bank->sub != 0) {
-            if (on == 0) {
-                em->flags &= ~1;
-                em->fieldA8 = lbl_804D705C;
-            } else {
-                EmitterSub* sub = em->bank->sub;
-                float f;
+        return 0;
+    }
+    if (em != 0 && em->field98 != 0) {
+        switch (em->state) {
+        case 0:
+        case 1:
+            if (em != 0 && em->bank != 0 && em->bank->sub != 0) {
+                if (on != 0) {
+                    EmitterSub* sub = em->bank->sub;
+                    float f;
 
-                em->flags |= 1;
-                if (sub->field98 == 0) {
-                    f = sub->field94;
-                } else {
-                    f = lbl_804D705C;
-                    if (sub->field90 > lbl_804D7058) {
-                        f = (float)sub->field7C / sub->field90;
+                    em->flags |= 1;
+                    if (sub->field98 == 0) {
+                        f = sub->field94;
+                    } else {
+                        f = lbl_804D705C;
+                        if (sub->field90 > lbl_804D7058) {
+                            f = (float)sub->field7C / sub->field90;
+                        }
                     }
-                }
-                f *= em->fieldB4;
-                em->bank->field14 =
-                    (f > lbl_804D7058) ? lbl_804D7060 / f : lbl_804D7064;
-                em->fieldBC = lbl_804D705C;
-                {
-                    Mtx34 matrix;
+                    f *= em->fieldB4;
+                    em->bank->field14 =
+                        (f > lbl_804D7058) ? lbl_804D7060 / f : lbl_804D7064;
+                    em->fieldBC = lbl_804D705C;
+                    {
+                        Mtx34 matrix;
 
-                    ActorGetMatrix(&matrix, (Actor*)em);
-                    fn_800A0168(em->matrix, &matrix);
+                        ActorGetMatrix(&matrix, (Actor*)em);
+                        fn_800A0168(em->matrix, &matrix);
+                    }
+                } else {
+                    em->flags &= ~1;
+                    em->fieldA8 = lbl_804D705C;
                 }
             }
+            break;
         }
-        result = 1;
     }
-    return result;
+    return 1;
 }
 
 // Attach an emitter asset (looked up by the hashed name) to an actor via
@@ -514,28 +518,33 @@ void EmitterDestroy(int handle)
     if (em->field98 == 0) {
         return;
     }
-    if (em->state != 1) {
-        return;
-    }
-    bank = em->bank;
-    fn_8021284C(em->field38);
-    ActorFn80022D98((Actor*)em, 0);
-    ActorUnlinkOwnerObjects((Actor*)em);
-    VFree(bank->field04);
-    bank->field04 = 0;
-    VFree(bank->field08);
-    bank->field08 = 0;
-    idx = bank - lbl_804D4954;
-    if (idx >= 0 && idx < lbl_804D4958) {
-        lbl_804D4954[idx].field0C = 0;
-    }
-    idx = em - lbl_804D4960;
-    if (idx >= 0 && idx < lbl_804D4964) {
-        lbl_804D4960[idx].field98 = 0;
-    }
-    idx = bank->sub - lbl_804D495C;
-    if (idx >= 0 && idx < 0x100) {
-        lbl_804D495C[idx].field88 &= ~1u;
+    switch (em->state) {
+    case 0:
+        break;
+    case 1:
+        bank = em->bank;
+        if (em->state != 1)
+            break;
+        fn_8021284C(em->field38);
+        ActorFn80022D98((Actor*)em, 0);
+        ActorUnlinkOwnerObjects((Actor*)em);
+        VFree(bank->field04);
+        bank->field04 = 0;
+        VFree(bank->field08);
+        bank->field08 = 0;
+        idx = bank - lbl_804D4954;
+        if (idx >= 0 && idx < lbl_804D4958) {
+            lbl_804D4954[idx].field0C = 0;
+        }
+        idx = em - lbl_804D4960;
+        if (idx >= 0 && idx < lbl_804D4964) {
+            lbl_804D4960[idx].field98 = 0;
+        }
+        idx = bank->sub - lbl_804D495C;
+        if (idx >= 0 && idx < 0x100) {
+            lbl_804D495C[idx].field88 &= ~1u;
+        }
+        break;
     }
 }
 
@@ -746,8 +755,9 @@ void EmitterUpdate(float t)
     int offset;
     int i;
 
+    i = 0;
     offset = 0;
-    for (i = 0; i < lbl_804D4964; i++) {
+    for (; i < lbl_804D4964; i++) {
         Emitter* em = (Emitter*)((u8*)lbl_804D4960 + offset);
 
         if (em->field98 != 0) {
@@ -755,12 +765,19 @@ void EmitterUpdate(float t)
 
             if ((flags & 0x400) != 0) {
                 em->field4C = flags & ~0x400u;
-            } else if (lbl_804D2BD0 != 0) {
-                if ((flags & 0x20000) == 0) {
-                    t = t * fn_802A2080(t);
-                }
-                if (em->state < 2 && em->state >= 0) {
-                    fn_800D4754(em, t);
+            } else {
+                float dt = t;
+
+                if (lbl_804D2BD0 != 0) {
+                    if ((flags & 0x20000) == 0) {
+                        dt = t * fn_802A2080(t);
+                    }
+                    switch (em->state) {
+                    case 0:
+                    case 1:
+                        fn_800D4754(em, dt);
+                        break;
+                    }
                 }
             }
         }
@@ -773,16 +790,11 @@ void EmitterUpdate(float t)
 void EmitterNotifyRelease(void)
 {
     EmitterReleaseMsg msg;
-    int offset;
     int i;
 
-    offset = 0;
     for (i = 0; i < lbl_804D4964; i++) {
-        Emitter* em = (Emitter*)((u8*)lbl_804D4960 + offset);
-
-        msg.emitter = em;
-        SendMsg(em->handle, 0x800, &msg);
-        offset += 0xC0;
+        msg.emitter = &lbl_804D4960[i];
+        SendMsg(lbl_804D4960[i].handle, 0x800, &msg);
     }
 }
 
@@ -791,7 +803,6 @@ void EmitterNotifyRelease(void)
 // build every emitter configured in lbl_804D4950.
 void EmitterSystemInit(void)
 {
-    EmitterSubList* list;
     int count;
     int offset;
     int i;
@@ -804,8 +815,7 @@ void EmitterSystemInit(void)
     lbl_804D4978 = 0;
     lbl_804D497C = 0;
 
-    list = lbl_804D4950;
-    count = (list != 0) ? list->count : 0;
+    count = (lbl_804D4950 != 0) ? lbl_804D4950->count : 0;
     if ((lbl_804D4958 = count + 0x100) != 0) {
         lbl_804D4954 = (EmitterBank*)VAlloc(lbl_804D4958 * 0x20);
         memset(lbl_804D4954, 0, lbl_804D4958 << 5);
@@ -821,11 +831,12 @@ void EmitterSystemInit(void)
     } else {
         lbl_804D4960 = 0;
     }
-    if (list != 0) {
+    if (lbl_804D4950 != 0) {
+        i = 0;
         offset = 0;
-        for (i = 0; i < list->count; i++) {
-            EmitterSubScaleParams((EmitterSub*)((u8*)list->subs + offset));
-            EmitterBuildFromSub((EmitterSub*)((u8*)list->subs + offset));
+        for (; i < lbl_804D4950->count; i++) {
+            EmitterSubScaleParams((EmitterSub*)((u8*)lbl_804D4950->subs + offset));
+            EmitterBuildFromSub((EmitterSub*)((u8*)lbl_804D4950->subs + offset));
             offset += 0xEC;
         }
     }
@@ -1434,7 +1445,7 @@ extern "C" int EmitterParticleAdvance(Emitter* em, EmitterParticleState* particl
                                       float t)
 {
     if (particle->clock > lbl_804D705C) {
-        if (particle->clock != lbl_804D70A4)
+        if (lbl_804D70A4 != particle->clock)
             particle->clock -= t;
         EmitterSampleSpawnOffset(em, particle, &particle->data, 0, t);
         if (particle->clock > lbl_804D705C)
@@ -1601,9 +1612,13 @@ void EmitterSpawnTracePick(float t, EmitterSpawnData* data, Vec3* pos,
 void EmitterSpawnOffset(float t, EmitterSpawnData* src, Vec3* pos, Vec3* dir,
                         float* scale, Emitter* em, float* out)
 {
-    if (src != 0 && em != 0 && em->field98 != 0 && em->state < 2 &&
-        em->state >= 0) {
-        EmitterSpawnTracePick(t, src, pos, dir, scale, em, out);
+    if (src != 0 && em != 0 && em->field98 != 0) {
+        switch (em->state) {
+        case 0:
+        case 1:
+            EmitterSpawnTracePick(t, src, pos, dir, scale, em, out);
+            break;
+        }
     }
 }
 
@@ -1649,7 +1664,10 @@ struct EmitterTraceHit {
 // qsort comparator for the accepted hits: ascending hit distance.
 int EmitterHitParamCompare(const void* a, const void* b)
 {
-    return (int)(*(const float*)a - *(const float*)b);
+    float x = *(const float*)a;
+    float y = *(const float*)b;
+
+    return (int)(x - y);
 }
 
 // Builds the spawn quad of every particle of the sub-descriptor's second list,
@@ -1867,7 +1885,7 @@ int EmitterSubLookup(int handle, int arg, Emitter** out, int flag)
 {
     int result = 0;
     int index = handle & 0xFFFFFF;
-    u32 id;
+    u32 id = index | 0x14000000;
     Emitter* entry;
 
     if (index < 0 || index >= lbl_804D4964) {
@@ -1878,7 +1896,6 @@ int EmitterSubLookup(int handle, int arg, Emitter** out, int flag)
         return 0;
     }
     *out = entry;
-    id = index | 0x14000000;
     result = fn_800C5210(id);
     if (result == 0) {
         result = fn_80084540(id, arg, out, &result);
@@ -3745,37 +3762,27 @@ int PadFindPressedPlayer(int mode, int action)
 // value is exactly 1 (pressed this frame).  The channel index sits in the high
 // word of the result and the scan position inside the channel in the low word;
 // the high word is -1 when no channel reports a pressed button.
-unsigned long long PadFirstPressedChannel(void)
+int PadFirstPressedChannel(void)
 {
-    int pos = 0;
     int i;
+    int j;
+    int found;
 
     for (i = 0; i < 4; i++) {
-        int state;
-
-        if (i < 4) {
-            state = *(int*)((u8*)lbl_80452560 + i * 0x8C);
-        } else {
-            state = 0;
-        }
-        if (state != 0) {
-            int g;
-
-            pos = 0;
-            for (g = 0; g < 3; g++) {
-                int b;
-
-                for (b = 0; b < 8; b++) {
-                    if (*(int*)((u8*)lbl_80452560 + i * 0x8C + 4 +
-                                (g * 8 + b) * 4) == 1) {
-                        return ((unsigned long long)i << 32) | (u32)pos;
-                    }
+        found = 0;
+        if (*(int*)((u8*)lbl_80452560 + i * 0x8C) != 0) {
+            for (j = 0; j < 21; j++) {
+                if (*(int*)((u8*)lbl_80452560 + i * 0x8C + 4 + j * 4) == 1) {
+                    found = 1;
+                    break;
                 }
-                pos += 7;
             }
         }
+        if (found != 0) {
+            return i;
+        }
     }
-    return ((unsigned long long)0xFFFFFFFFu << 32) | (u32)pos;
+    return -1;
 }
 
 // Bitmask of the pad channels that are live this frame: bit N is set for each
