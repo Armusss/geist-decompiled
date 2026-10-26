@@ -50,6 +50,20 @@ inline u32 EffectTypeHash(EffectType* type) {
     }
     return type->hash;
 }
+struct EffectObj {
+    int unk0;
+    int unk4;
+    int emitter;
+    void* data;
+};
+
+extern "C" {
+int fn_800F7D28(int emitter, int id);
+void fn_800F86A0(int emitter);
+}
+
+void VFree(void* p);
+
 struct ImpFireDef {
     u8 pad00[0x4];
     int unk04;
@@ -65,6 +79,46 @@ struct ImpFire {
 };
 
 extern EffectType lbl_803BEDE8;  // the "IMP FIRE" type descriptor
+
+void ImpFireReset(EffectObj* obj) {
+    ImpFire* g = (ImpFire*)obj->data;
+
+    g->unk00 = 0;
+    g->unk04 = 0.0f;
+}
+
+u32 ImpFireQuery(EffectObj* obj, int msg) {
+    ImpFire* g = (ImpFire*)obj->data;
+    ImpFireDef* def = g->def;
+
+    switch (msg) {
+    case 0x0020EE36:
+        return g->unk00 != 0 ? 0x3DA260F7 : 0x04A3E183;
+    case 0xF829DB93:
+        if (g->unk00 != 0) {
+            return 0x3DA260F7;
+        }
+        if (fn_800F7D28(g->emitter, def->unk04)) {
+            return 0x04A3E183;
+        }
+        return fn_800F7D28(obj->emitter, def->unk04) != 0 ? 0xC0BECF7E : 0x11D2C025;
+    case 0x9791AF51:
+    case 0x968CBE3D:
+    case 0x96224FCC:
+    case 0xE6B71BCC:
+    case 0x0D19E338:
+    case 0x42E50A3D:
+        return 0x3DA260F7;
+    }
+    return 0x3DA260F7;
+}
+
+void ImpFireDestroy(EffectObj* obj) {
+    ImpFire* g = (ImpFire*)obj->data;
+
+    fn_800F86A0(g->emitter);
+    VFree(g);
+}
 
 void* ImpFireCreate(int a, int id) {
     EffectType* type = &lbl_803BEDE8;
