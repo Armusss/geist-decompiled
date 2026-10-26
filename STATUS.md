@@ -17,7 +17,7 @@ published; generate your own from your copy of the game if you want it.
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_801E0EDC (new, easiest-first) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80208238 (new, easiest-first) | running |
-| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_80210D80 (new, easiest-first) | running |
+| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_80116B28 (new, easiest-first) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Paused (session usage); partial work on its branch | paused |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
@@ -67,6 +67,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+u_80210D80 4/21 (ds-3 draft): closest MarkLookupEntryFlag 7, GetLookupEntryValue 18, SetParticleDrawTransform 21, fn_80211E38 23 diffs
 u_8003B98C 0/11 (ds-2 draft): closest fn_8003BA70 8, SetHandleEntryValue 13, StreamHandleFree 17 diffs
 u_8028703C 8/22 (ds-1 draft): 5 TODO functions incl. fn_8028787C (0x608), fn_80287EB8 (0x32C); fn_8028757C should inline the sprintf/halt body
 u_800B1834 38/94 (ds-3 draft, 3 runs): 19 TODO; register-rotation and branch-layout diffs noted in commit history
