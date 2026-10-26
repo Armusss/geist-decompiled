@@ -162,8 +162,10 @@ struct Msg40D {
 };
 
 void GhostsTick(float dt) {
-    for (int i = 0; i < lbl_804D4E20; i++) {
-        GhostSlot* slot = lbl_803A5968[i];
+    GhostSlot* slot;
+    int i;
+    for (i = 0; i < lbl_804D4E20; i++) {
+        slot = lbl_803A5968[i];
         if (slot->active != 0 && slot->update != 0) {
             slot->update(dt);
         }
@@ -174,8 +176,10 @@ void GhostsTick(float dt) {
 unsigned long GhostPossessBegin(GhostSlot* self, GhostSlot* target, int mode) {
     int answer;
     int ok;
-    for (int i = 0; i < lbl_804D4E20; i++) {
-        GhostSlot* slot = lbl_803A5968[i];
+    GhostSlot* slot;
+    int i;
+    for (i = 0; i < lbl_804D4E20; i++) {
+        slot = lbl_803A5968[i];
         if (slot->active != 0 && (slot->unk04 == target || slot->unk08 == target)) {
             return 0;
         }
@@ -1409,8 +1413,10 @@ int GhostSlotCanPossess(GhostSlot* self, GhostActor* target) {
     }
     int answer;
     Query(&answer, self->unk00->id, 0x41E, 0xFA969430);
-    for (int i = 0; i < lbl_804D4E20; i++) {
-        GhostSlot* slot = lbl_803A5968[i];
+    GhostSlot* slot;
+    int i;
+    for (i = 0; i < lbl_804D4E20; i++) {
+        slot = lbl_803A5968[i];
         if (slot->active != 0 &&
             (slot->unk04 == (GhostSlot*)target || slot->unk08 == (GhostSlot*)target)) {
             return 0;
@@ -1605,79 +1611,78 @@ int GhostFlashFindSpot(Mtx34* out, GhostSlot* self, float angle);
 // 0x80156B1C: build the ghost's flash matrix (asking the world for a free spot
 // around the actor unless the mode pins it) and send the 0xC07 position message.
 int GhostFlashNotify(GhostSlot* self, int mode) {
-    GhostSlot* actor = self->unk00;
     int* bounds;
+    int ok = 1;
 
     lbl_804D4E28 = 0;
-    bounds = *(int**)((char*)actor + 0x40);
-    fn_8001ED98((int*)((char*)actor + 0x24), bounds[4] - bounds[1],
-                (void (*)(void))GhostFlashSpotPlace, actor, 0);
-    if (lbl_804D4E28 != 0) {
-        return 1;
-    }
-    if (lbl_804D4E24 != 0) {
-        mode = lbl_804D4E24;
-    }
+    bounds = *(int**)((char*)self->unk00 + 0x40);
+    fn_8001ED98((int*)((char*)self->unk00 + 0x24), bounds[4] - bounds[1],
+                (void (*)(void))GhostFlashSpotPlace, self->unk00, 0);
+    if (lbl_804D4E28 == 0) {
+        if (lbl_804D4E24 != 0) {
+            mode = lbl_804D4E24;
+        }
 
-    Mtx34 mtx;
-    int ok = 1;
-    switch (mode) {
-    case 1:
-        if (GhostFlashFindSpot(&mtx, self, lbl_804D7CA0) == 0) {
-            ok = 0;
-        }
-        break;
-    case 3:
-        if (GhostFlashFindSpot(&mtx, self, lbl_804D7CA0) == 0 &&
-            GhostFlashFindSpot(&mtx, self, lbl_804D7CCC) == 0) {
-            ok = 0;
-        }
-        break;
-    case 4:
-        if (GhostFlashFindSpot(&mtx, self, lbl_804D7CCC) == 0 &&
-            GhostFlashFindSpot(&mtx, self, lbl_804D7CA0) == 0) {
-            ok = 0;
-        }
-        break;
-    case 5:
-        ActorGetMatrix(&mtx, (Actor*)actor);
-        ok = 0;
-        mtx.m[11] = mtx.m[11] - lbl_804D7CD0;
-        break;
-    default:
-        if (GhostFlashFindSpot(&mtx, self, lbl_804D7CCC) == 0) {
-            ok = 0;
-        }
-        break;
-    }
-
-    Vec3 euler;
-    MtxGetEuler(&euler, &mtx);
-    if (ok) {
-        euler.z = euler.z + lbl_804D7CCC;
-    }
-    EulerNormalize(&euler, &euler);
-
-    if ((actor->id >> 24) == 2) {
+        Mtx34 mtx;
         Mtx34 blend;
-        MtxSetEuler(&blend, &euler);
-        blend.m[9] = *(float*)((char*)actor + 0x1E4);
-        blend.m[10] = *(float*)((char*)actor + 0x1E8);
-        blend.m[11] = *(float*)((char*)actor + 0x1EC);
-        PlayerBeginBlend((Player*)actor, (Place*)&blend, lbl_804D2F24);
+        MsgC07 msg;
+        IVec3 swapped;
+        Vec3 euler;
+        IVec3 angles;
+        switch (mode) {
+        case 3:
+            if (GhostFlashFindSpot(&mtx, self, lbl_804D7CA0) == 0 &&
+                GhostFlashFindSpot(&mtx, self, lbl_804D7CCC) == 0) {
+                ok = 0;
+            }
+            break;
+        case 4:
+            if (GhostFlashFindSpot(&mtx, self, lbl_804D7CCC) == 0 &&
+                GhostFlashFindSpot(&mtx, self, lbl_804D7CA0) == 0) {
+                ok = 0;
+            }
+            break;
+        case 1:
+            if (GhostFlashFindSpot(&mtx, self, lbl_804D7CA0) == 0) {
+                ok = 0;
+            }
+            break;
+        case 5:
+            ActorGetMatrix(&mtx, (Actor*)self->unk00);
+            ok = 0;
+            mtx.m[11] = mtx.m[11] - lbl_804D7CD0;
+            break;
+        default:
+            if (GhostFlashFindSpot(&mtx, self, lbl_804D7CCC) == 0) {
+                ok = 0;
+            }
+            break;
+        }
+
+        MtxGetEuler(&euler, &mtx);
+        if (ok) {
+            euler.z = euler.z + lbl_804D7CCC;
+        }
+        EulerNormalize(&euler, &euler);
+
+        if ((int)(self->unk00->id >> 24) == 2) {
+            Actor* a = (Actor*)self->unk00;
+            MtxSetEuler(&blend, &euler);
+            blend.m[9] = *(float*)((char*)a + 0x1E4);
+            blend.m[10] = *(float*)((char*)a + 0x1E8);
+            blend.m[11] = *(float*)((char*)a + 0x1EC);
+            PlayerBeginBlend((Player*)a, (Place*)&blend, lbl_804D2F24);
+        }
+
+        RadToFixed(&angles, &euler);
+        VecSwapXY2(&swapped, &angles);
+
+        msg.unk4 = 3;
+        msg.x = (int)mtx.m[9];
+        msg.y = (int)mtx.m[10];
+        msg.z = (int)mtx.m[11];
+        SendMsg(self->unk00->id, 0xC07, &msg);
     }
-
-    IVec3 angles;
-    IVec3 swapped;
-    RadToFixed(&angles, &euler);
-    VecSwapXY2(&swapped, &angles);
-
-    MsgC07 msg;
-    msg.unk4 = 3;
-    msg.x = (int)mtx.m[9];
-    msg.y = (int)mtx.m[10];
-    msg.z = (int)mtx.m[11];
-    SendMsg(actor->id, 0xC07, &msg);
     return 1;
 }
 
@@ -1687,101 +1692,106 @@ int GhostFlashNotify(GhostSlot* self, int mode) {
 int GhostFlashFindSpot(Mtx34* out, GhostSlot* self, float angle) {
     Mtx34 base;
     Vec3 euler;
-    Actor* actor = (Actor*)self->unk00;
+    Vec3 dir;
+    Vec3 pos;
+    Vec3 vec;
+    IVec3 fixed;
+    Vec3 offset;
+    Vec3 az;
+    Vec3 ay;
+    Vec3 ax;
+    unsigned long used;
+    int flag;
+    int done;
 
-    ActorGetMatrix(&base, actor);
+    ActorGetMatrix(&base, (Actor*)self->unk00);
     MtxGetEuler(&euler, &base);
+    used = 0;
+    done = 0;
     euler.x = lbl_804D7CA0;
     euler.y = lbl_804D7CA0;
 
-    unsigned long used = 0;
-    int done = 0;
-    Vec3 dir;
-    Vec3 vec;
-    Vec3 pos;
-    Vec3 ax;
-    Vec3 ay;
-    Vec3 az;
-    Vec3 offset;
-
-    while (done == 0) {
+    do {
+        if (done) {
+            MtxSetEuler(out, &dir);
+            out->m[9] = pos.x;
+            out->m[10] = pos.y;
+            out->m[11] = pos.z;
+            return 1;
+        }
         if (BitsetFirstClear(&used, 1, lbl_804D2F20) == -1) {
             *out = base;
             return 0;
         }
         int k = rand() % lbl_804D2F20;
         unsigned long mask = 1UL << (k & 31);
-        if ((used & mask) != 0) {
-            continue;
-        }
-        used |= mask;
+        if ((used & mask) == 0) {
+            used |= mask;
 
-        float spread = lbl_804D2F1C * ((float)k / (float)(lbl_804D2F20 - 1)) -
-                       lbl_804D2F1C * lbl_804D7CD4;
-        fn_8016D68C(&dir, &euler);
-        dir.z = dir.z + (spread + angle);
-        EulerNormalize(&dir, &dir);
-        fn_8016D4EC(&vec, &dir);
+            float spread = (float)k * (lbl_804D2F1C / (float)(lbl_804D2F20 - 1)) -
+                           lbl_804D2F1C * lbl_804D7CD4;
+            fn_8016D68C(&dir, &euler);
+            dir.z = dir.z + (spread + angle);
+            EulerNormalize(&dir, &dir);
+            fn_8016D4EC(&vec, &dir);
 
-        if (fabsf(vec.x) > lbl_804D7CD8 || fabsf(vec.y) > lbl_804D7CD8 ||
-            fabsf(vec.z) > lbl_804D7CD8) {
-            float inv = 1.0f / sqrtf(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
-            vec.x = vec.x * inv;
-            vec.y = vec.y * inv;
-            vec.z = vec.z * inv;
-            inv = 1.0f / inv;
-        } else {
-            vec.x = lbl_804D7CA0;
-            vec.y = lbl_804D7CA0;
-            vec.z = lbl_804D7CA0;
-        }
+            float inv;
+            if (fabsf(vec.x) > lbl_804D7CD8 || fabsf(vec.y) > lbl_804D7CD8 ||
+                fabsf(vec.z) > lbl_804D7CD8) {
+                inv = 1.0f / sqrtf(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
+                vec.x = vec.x * inv;
+                vec.y = vec.y * inv;
+                vec.z = vec.z * inv;
+                inv = 1.0f / inv;
+            } else {
+                vec.x = lbl_804D7CA0;
+                vec.y = lbl_804D7CA0;
+                vec.z = lbl_804D7CA0;
+            }
 
-        vec.x = vec.x * lbl_804D2F18;
-        vec.y = vec.y * lbl_804D2F18;
-        vec.z = vec.z * lbl_804D2F18;
-        pos.x = base.m[9] + vec.x;
-        pos.y = base.m[10] + vec.y;
-        pos.z = base.m[11] + vec.z;
+            vec.x = vec.x * lbl_804D2F18;
+            vec.y = vec.y * lbl_804D2F18;
+            vec.z = vec.z * lbl_804D2F18;
+            pos.x = vec.x + base.m[9];
+            pos.y = vec.y + base.m[10];
+            pos.z = vec.z + base.m[11];
 
-        int* bounds = *(int**)((char*)actor + 0x40);
-        float minHW = (float)(bounds[3] - bounds[0]);
-        if (!(minHW < (float)(bounds[4] - bounds[1]))) {
-            minHW = (float)(bounds[4] - bounds[1]);
-        }
-        float rowScale = lbl_804D7CD4 * minHW;
-        fn_800A025C(&ax, &base, 0);
-        fn_800E1098(rowScale, &ax, &ax);
-        fn_800A025C(&ay, &base, 1);
-        fn_800E1098(rowScale, &ay, &ay);
-        fn_800A025C(&az, &base, 2);
-        fn_800E1098(lbl_804D7CDC * (float)(bounds[5] - bounds[2]), &az, &az);
+            int* bounds = *(int**)((char*)self->unk00 + 0x40);
+            float minHW = (float)(bounds[4] - bounds[1]);
+            if ((float)(bounds[3] - bounds[0]) < minHW) {
+                minHW = (float)(bounds[3] - bounds[0]);
+            }
+            float rowScale = lbl_804D7CD4 * minHW;
+            fn_800A025C(&ax, &base, 0);
+            fn_800E1098(rowScale, &ax, &ax);
+            fn_800A025C(&ay, &base, 1);
+            fn_800E1098(rowScale, &ay, &ay);
+            fn_800A025C(&az, &base, 2);
+            fn_800E1098(lbl_804D7CDC * (float)(bounds[5] - bounds[2]), &az, &az);
 
-        offset.x = pos.x - base.m[9];
-        offset.y = pos.y - base.m[10];
-        offset.z = pos.z - base.m[11];
+            offset.x = pos.x - base.m[9];
+            offset.y = pos.y - base.m[10];
+            offset.z = pos.z - base.m[11];
 
-        int found = fn_8001ACD4(actor, (Vec3*)&base.m[9], &ax, &ay, &az, &offset,
-                                0x10000000, (void*)GhostFlashSpotFilter, self->unk04);
-        if (found == 0) {
-            IVec3 fixed;
-            int flag = 0;
-            fixed.x = (int)pos.x;
-            fixed.y = (int)pos.y;
-            fixed.z = (int)pos.z;
-            fn_8001F0DC(actor, &fixed, 0, 0, 0, 0, &flag, 0);
-            if (flag != 0) {
+            int found = fn_8001ACD4((Actor*)self->unk00, (Vec3*)&base.m[9],
+                                    &ax, &ay, &az, &offset, 0x10000000,
+                                    (void*)GhostFlashSpotFilter, self->unk04);
+            if (found == 0) {
+                flag = 0;
+                fixed.x = (int)pos.x;
+                fixed.y = (int)pos.y;
+                fixed.z = (int)pos.z;
+                fn_8001F0DC((Actor*)self->unk00, &fixed, 0, 0, 0, 0, &flag, 0);
+                if (flag == 0) {
+                    found = 1;
+                }
+            }
+            if (found == 0) {
                 done = 1;
             }
         }
-    }
-
-    MtxSetEuler(out, &dir);
-    out->m[9] = pos.x;
-    out->m[10] = pos.y;
-    out->m[11] = pos.z;
-    return 1;
+    } while (1);
 }
-
 // 0x80157288: candidate filter for the flash-position search.  Passes a
 // candidate unless its id is the target id.
 unsigned long GhostFlashSpotFilter(int* candidate, int target) {
@@ -1883,9 +1893,9 @@ int GhostFlashSpotPlace(FlashSpotActor* other, FlashSpotActor* owner) {
 // the frame time at 0xC.
 struct Msg414 {
     int unk00;    // 0x00
-    int unk04;    // 0x04
+    float dt;     // 0x04
     int unk08;    // 0x08
-    float dt;     // 0x0C
+    int unk0C;    // 0x0C
 };
 
 extern "C" void fn_8008910C(void);
@@ -1916,8 +1926,10 @@ int GhostFrameUpdate(float dt, void* p) {
     fn_801E0880(dt);
     fn_800C6C28(dt);
     fn_80005A64(dt);
-    for (int i = 0; i < lbl_804D4E20; i++) {
-        GhostSlot* slot = lbl_803A5968[i];
+    GhostSlot* slot;
+    int i;
+    for (i = 0; i < lbl_804D4E20; i++) {
+        slot = lbl_803A5968[i];
         if (slot->active != 0 && slot->update != 0) {
             slot->update(dt);
         }
