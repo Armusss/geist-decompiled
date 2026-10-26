@@ -1,4 +1,4 @@
-// u_8025643C.cpp: the gun-with-grenade host states (aim, fire, reload, grenade throw) and the host type table.
+// u_802541D4.cpp: host types (0x802541D4-0x8025643C, not written yet) and the gun-with-grenade host states (aim, fire, reload, grenade throw) and the host type table.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <dolphin/types.h>
