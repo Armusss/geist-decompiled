@@ -15,7 +15,7 @@ published; generate your own from your copy of the game if you want it.
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
-| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_8028703C (new, drafting) | running |
+| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_801E0EDC (new, easiest-first) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_8003B98C (new, easiest-first) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_80210D80 (new, easiest-first) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Paused (session usage); partial work on its branch | paused |
@@ -67,6 +67,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+u_8028703C 8/22 (ds-1 draft): 5 TODO functions incl. fn_8028787C (0x608), fn_80287EB8 (0x32C); fn_8028757C should inline the sprintf/halt body
 u_800B1834 38/94 (ds-3 draft, 3 runs): 19 TODO; register-rotation and branch-layout diffs noted in commit history
 u_8020A650 1/4 (ds-2 draft): BuildModel 814 diffs (0xCDC bytes), DestroyVtObject 24, InitNameTables
 u_802C8900 0/5 (ds-1 draft): all five functions 80-396 diffs; ActorFxEmitterUpdate's String/SendMsg(0x41D) else-branch layout is approximated
