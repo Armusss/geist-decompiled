@@ -118,7 +118,7 @@ struct Actor {
     int ammo;             // 0x314
     int grenades;         // 0x318
     char pad31C[4];
-    u32 pressed;          // 0x320
+    int pressed;          // 0x320
     u32 pressed2;         // 0x324
     int unk328;           // 0x328
     char pad32C[0x38C - 0x32C];
@@ -447,7 +447,19 @@ int GunHostCheckReload(Actor* a, float dt) {
                 return 1;
             }
         }
-    } else if (a->pressed == 0) {
+    } else if (a->pressed != 0) {
+        fn_8006D76C(a);
+        a->hold += dt;
+        if (fn_800699B8(a) == 1.0f) {
+            if (a->unk7D0 == 0) {
+                fn_8006D184(a, 2);
+            } else {
+                fn_8006D184(a, 9);
+            }
+            fn_800699A8(a->timer);
+            return 1;
+        }
+    } else {
         float t = fn_800699B8(a);
         if (t > -1.0f && t < 0.0f) {
             if (Fn800F7DEC(r1, r2, 0xE6B71BCC, fn_800498D0(a), 0) == 0x04A3E183) {
@@ -462,18 +474,6 @@ int GunHostCheckReload(Actor* a, float dt) {
             }
         }
         fn_800699A8(a->timer);
-    } else {
-        fn_8006D76C(a);
-        a->hold += dt;
-        if (fn_800699B8(a) == 1.0f) {
-            if (a->unk7D0 == 0) {
-                fn_8006D184(a, 2);
-            } else {
-                fn_8006D184(a, 9);
-            }
-            fn_800699A8(a->timer);
-            return 1;
-        }
     }
     return 0;
 }
