@@ -234,7 +234,6 @@ void fn_80027690(int hud);                                      // 0x80027690
 int fn_800E0DBC(IVec3* v);                                      // 0x800E0DBC
 void fn_801D55CC(void* effect);                                 // 0x801D55CC
 void fn_8016D6A8(Vec3* v);                                      // 0x8016D6A8
-void fn_800D3430(int emitter, int a);                           // 0x800D3430
 int fn_80027A58(int type, Vec3* pos, Vec4* color, int a, int b); // 0x80027A58
 void fn_8009F028(Actor* actor, Vec3* v);                        // 0x8009F028
 void fn_8016EEF4(int fx);                                       // 0x8016EEF4
@@ -246,6 +245,7 @@ void fn_80122108(int a, int b, Vec3* pos, u32 id, float f1, float f2, float f3,
 int fn_80049940(void);                                          // 0x80049940
 void fn_800C7B78(Actor* actor);                                 // 0x800C7B78
 }
+void EmitterSetEnabled(u32 handle, int a);
 
 int AssetFind(u32 bank, u32 name);                               // 0x8007EB34
 int TrailCreate(TrailDesc* desc);                                // 0x801DE960
@@ -505,7 +505,7 @@ void GrenadeUpdate(Actor* actor, float dt) {
             ed.unkC4 = 0.0f;
             ed.unkC8 = 3.0f;
             data->emitter = EmitterCreate(&ed);
-            fn_800D3430(data->emitter, 1);
+            EmitterSetEnabled(data->emitter, 1);
 
             color = sBlastColor;
             pos.z += 5.0f;

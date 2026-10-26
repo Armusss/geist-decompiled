@@ -527,7 +527,7 @@ int fn_80032FD4(int a, int b, const void* p, int c);
 int fn_800331F8(int a, int b, const void* p, int c, int* o1, int* o2, float* dist);
 int fn_800333E0(void);
 int fn_80033450(int a, int b, int c);
-int fn_800345BC(void);
+int fn_800345BC(Vec3** corner, Vec3* pos, Vec3* dir, float* t, float* u, float* v);
 int fn_80037230(int model, int node);
 int fn_80037930(int model, int node);
 void* fn_80037B6C(int model);
@@ -811,8 +811,8 @@ int ModelBoneHitSphere(int a, int b, int c, int d, int e, int f) {
     return result;
 }
 
-int ModelBoneHitFlush(void) {
-    return fn_800345BC();
+int ModelBoneHitFlush(Vec3** corner, Vec3* pos, Vec3* dir, float* t, float* u, float* v) {
+    return fn_800345BC(corner, pos, dir, t, u, v);
 }
 
 // Walks the node hierarchy from start and returns the position of the first of the

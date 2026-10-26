@@ -41,7 +41,6 @@ int fn_8003C48C(char* name, u32 bind, int count, void* subs, u32 arg, int flags,
 void fn_80081008(u32 handle);                                           // 0x80081008
 void fn_80081D0C(char* name, int a, int b, int c);                      // 0x80081D0C
 int fn_80082874(int id, u32 handle, u32 key);                           // 0x80082874
-void fn_800D3430(int handle, int a);                                    // 0x800D3430
 void fn_800E0554(float a);                                              // 0x800E0554
 void fn_800E05A4(s16 id, u32 arg);                                      // 0x800E05A4
 void fn_800E05A8(int id);                                               // 0x800E05A8
@@ -57,6 +56,7 @@ void fn_801871E0(void* list, void* it);                                 // 0x801
 void* fn_80187214(void* list, void* node);                              // 0x80187214
 void fn_8018721C(void* list, void* node);                               // 0x8018721C
 }
+void EmitterSetEnabled(u32 handle, int a);
 
 // A sub-entry of an SLT entry (0x0C bytes).
 struct SltSub {
@@ -985,15 +985,15 @@ void SltEffectUpdate(float dt) {
             break;
         case 2:
             if (e->timer <= dt) {
-                fn_800D3430(e->unk04, 0);
-                fn_800D3430(e->unk08, 0);
-                fn_800D3430(e->unk0C, 0);
-                fn_800D3430(e->unk10, 0);
-                fn_800D3430(e->unk14, 0);
-                fn_800D3430(e->unk18, 0);
-                fn_800D3430(e->unk1C, 0);
-                fn_800D3430(e->unk20, 0);
-                fn_800D3430(e->unk24, 0);
+                EmitterSetEnabled(e->unk04, 0);
+                EmitterSetEnabled(e->unk08, 0);
+                EmitterSetEnabled(e->unk0C, 0);
+                EmitterSetEnabled(e->unk10, 0);
+                EmitterSetEnabled(e->unk14, 0);
+                EmitterSetEnabled(e->unk18, 0);
+                EmitterSetEnabled(e->unk1C, 0);
+                EmitterSetEnabled(e->unk20, 0);
+                EmitterSetEnabled(e->unk24, 0);
                 e->timer = 100.0f;
                 e->state = 3;
             } else {

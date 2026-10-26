@@ -14,12 +14,12 @@ int sprintf(char* s, const char* format, ...);
 
 // Callees in other files, not named yet.
 void fn_80005A64(float dt);
-void fn_800DCBB0(float dt);
 int fn_800059D0(int arg);
 void fn_8000ADD8(void);
 void fn_80008D10(void);
 void fn_800448D0(void* mesh); // draw an indexed mesh
 }
+void PadUpdateAll(float dt);
 
 extern "C" void MemFree(void* p, const char* file, int line);
 void* FileLoad(const char* name, int* outSize, int unused);
@@ -129,7 +129,7 @@ void LoadingDraw(float progress, float dt, int alpha);
 
 inline void LoadingFrame(float progress, float dt) {
     fn_80005A64(dt);
-    fn_800DCBB0(dt);
+    PadUpdateAll(dt);
     LoadingDraw(progress, dt, 0xFF);
     if (sIdleCallback) {
         sIdleCallback(progress, dt);

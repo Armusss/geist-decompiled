@@ -126,10 +126,10 @@ void fn_800B261C(Actor* actor, int state, void** out);           // 0x800B261C
 int fn_800BEF9C(int obj);                                        // 0x800BEF9C
 void fn_800CE328(void);                                          // 0x800CE328
 void fn_800B2D00(void);                                          // 0x800B2D00
-void fn_800D32E8(int sound);                                     // 0x800D32E8
 void fn_8028C188(Buffer* buffer, const char* data, int length);  // 0x8028C188
 String fn_800225C8(const String& a, const String& b);            // 0x800225C8
 }
+void EmitterDeferStart(int sound);
 
 // Owned by the next unit's .sdata.
 extern int lbl_804D3D84;
@@ -484,9 +484,9 @@ int HostBehState0Enter(Actor* actor) {
 // Stop the two host sound loops started elsewhere (called when the host stops being active).
 void HostBehStop(void) {
     if (lbl_804D3D88 > -1) {
-        fn_800D32E8(lbl_804D3D88);
+        EmitterDeferStart(lbl_804D3D88);
     }
     if (lbl_804D3D84 > -1) {
-        fn_800D32E8(lbl_804D3D84);
+        EmitterDeferStart(lbl_804D3D84);
     }
 }

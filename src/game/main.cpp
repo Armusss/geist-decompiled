@@ -24,12 +24,9 @@ extern unsigned char __upper_map[];
 void fn_8000ADD0(int stage);
 void fn_8000B034(int arg);
 void fn_80005CEC(void);
-void fn_800DCD44(void);
 void fn_801EB060(int arg);
 void fn_80170C28(void);
 void fn_80005A64(float dt);
-void fn_800DCBB0(float dt);
-int fn_800DCAE8(void);
 void fn_80170AA4(void);
 void fn_8000B604(int arg);
 void fn_80115EE0(void);
@@ -39,7 +36,6 @@ void fn_80170B14(int arg);
 void fn_8000879C(const char* name);
 void fn_8000B000(void);
 void fn_80006558(int arg);
-int fn_800DC95C(int pad, int button);
 void fn_800087D8(int a, int b, int c);
 int fn_800087C8(int arg);
 void* fn_802869DC(int size);
@@ -58,6 +54,10 @@ float fn_800A1394(float x);
 const char* fn_80086B9C(const char* level, int* arg);
 void fn_800880D0(void);
 }
+void PadManagerInit(void);
+void PadUpdateAll(float dt);
+int PadActiveChannelMask(void);
+int PadFindPressedPlayer(int pad, int button);
 
 // Trail buffers and 3D line drawing (u_8013A3D4.cpp).
 struct TrailBuffer;
@@ -230,12 +230,12 @@ int main(int argc, char** argv) {
     InitFastCast();
     fn_8000B034(0);
     fn_80005CEC();
-    fn_800DCD44();
+    PadManagerInit();
     fn_801EB060(2);
     fn_80170C28();
     fn_80005A64(1.0f);
-    fn_800DCBB0(1.0f);
-    for (n = fn_800DCAE8(); n != 0; n >>= 1) {
+    PadUpdateAll(1.0f);
+    for (n = PadActiveChannelMask(); n != 0; n >>= 1) {
     }
     if ((sResetCode & 0x7FFFFFFF) < 3) {
         DebugPrintf("Showing Logos\n");
@@ -373,7 +373,7 @@ const char* LevelSelect(const char* name, char** names, char** titles, char** pa
         float y;
 
         fn_80005A64(dt);
-        fn_800DCBB0(dt);
+        PadUpdateAll(dt);
         ScreenPrintf("%s                            Checkpoint (X/Y) %d\n", sGameName, *sCheckpoint);
         if (slot < 3) {
             ScreenPrintf("%s                            Save slot (Z) %d\n\n", sGameName, slot);
@@ -401,25 +401,25 @@ const char* LevelSelect(const char* name, char** names, char** titles, char** pa
         DrawClearTexOffsets();
         Draw2DEnd();
         GfxFrameBegin();
-        if (fn_800DC95C(0, 0x13) != -1) {
+        if (PadFindPressedPlayer(0, 0x13) != -1) {
             (*sCheckpoint)--;
             if (*sCheckpoint < 0) {
                 *sCheckpoint = 0;
             }
         }
-        if (fn_800DC95C(0, 0x12) != -1) {
+        if (PadFindPressedPlayer(0, 0x12) != -1) {
             (*sCheckpoint)++;
         }
-        if (fn_800DC95C(0, 0x11) != -1) {
+        if (PadFindPressedPlayer(0, 0x11) != -1) {
             slot = (slot + 1) % 4;
         }
-        if (fn_800DC95C(0, 3) != -1 || fn_800DC95C(0, 2) != -1) {
+        if (PadFindPressedPlayer(0, 3) != -1 || PadFindPressedPlayer(0, 2) != -1) {
             break;
         }
-        if (fn_800DC95C(0, 0) != -1) {
+        if (PadFindPressedPlayer(0, 0) != -1) {
             sel--;
         }
-        if (fn_800DC95C(0, 1) != -1) {
+        if (PadFindPressedPlayer(0, 1) != -1) {
             sel++;
         }
         if (sel < 0) {

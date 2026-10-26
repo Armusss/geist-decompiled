@@ -300,7 +300,6 @@ void CARDUnmount(int chan);
 void OSResetSystem(int reset, int code, int force);
 
 // Unmatched functions in neighbouring units.
-void fn_800D3430(int handle, int a);
 void fn_801D55CC(int object);
 int fn_802A1D04(void);
 void fn_800A0168(Mtx34* out, Mtx34* in);
@@ -344,6 +343,7 @@ void fn_8000F7E4(int a, int b);
 void fn_800EBCC4(int a, int b);
 void fn_800ECB18(void);
 }
+void EmitterSetEnabled(u32 handle, int a);
 
 int PlayerInHost(Actor* a);                                       // 0x80049750
 int ActorPlayAnim(int actor, u32 anim, int arg);                  // 0x800C5654
@@ -529,8 +529,8 @@ void HostCreateEmitters(Actor* a) {
 
     lbl_804D3D88 = EmitterCreate(&lowDesc);
     lbl_804D3D84 = EmitterCreate(&highDesc);
-    fn_800D3430(lbl_804D3D88, 1);
-    fn_800D3430(lbl_804D3D84, 1);
+    EmitterSetEnabled(lbl_804D3D88, 1);
+    EmitterSetEnabled(lbl_804D3D84, 1);
 }
 
 // 0x802DCBF0: restart the slow-motion timer.

@@ -810,7 +810,6 @@ void HudTimerClearAll(void) {
 
 extern "C" {
 void fn_80005A64(float dt);                                   // 0x80005A64
-void fn_800DCBB0(float dt);                                   // 0x800DCBB0
 void fn_8003BAD0(float dt);                                   // 0x8003BAD0
 void fn_80173DD0(int id);                                     // 0x80173DD0
 void fn_800E2300(int arg);                                    // 0x800E2300
@@ -818,6 +817,7 @@ const char* fn_802A1FA0(void);                                // 0x802A1FA0
 void fn_800886F0(void);                                       // 0x800886F0
 void* fn_800886C8(void);                                      // 0x800886C8
 }
+void PadUpdateAll(float dt);
 
 void* GetPlayer(void);                                        // GetPlayer__Fv   0x80049948
 void SAMUpdate(float dt);                                     // SAMUpdate__Ff   0x800E073C
@@ -867,7 +867,7 @@ int HudMenuUpdate(const char* title, float dt) {
     }
 
     fn_80005A64(dt);
-    fn_800DCBB0(dt);
+    PadUpdateAll(dt);
     fn_8003BAD0(dt);
     SAMUpdate(dt);
     TextBegin();
