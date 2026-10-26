@@ -17,7 +17,7 @@ published; generate your own from your copy of the game if you want it.
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_8013A3D4 (28 fns, chunked draft) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80153C10 (22 fns, chunked draft) | running |
-| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_800D0BF4 run 2 (14/31; write ZoneLineFilter first) | running |
+| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_800D32E8 (50 fns, chunked draft) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | IMP FIRE (u_80251CB8) + leftovers (GunHostAimUpdate, SensorSeeActor, HermitSpitAmmoFire) | running |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
@@ -67,6 +67,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_800D0BF4 16/31 (zones, ds-3 2 runs + resume): 15 left.
 - u_80100EB0 6/24 (ds-1 2 runs): 18 left.
 - u_800FDDE4 10/26 (HUD notifications, ds-2 2 runs): 16 left (HudNotifySet 202, HudNotifyBar 193, ...).
 - opus-1 near-done pass (2026-10-23): HostRideBMsg/HostRideMsg 15 each (the temp now coalesces into r4 with fn_80019F88's argument in case 0x41D where retail keeps mr r4,r5; patch ~/geist-work/ds/opus-1-tools/nd/hrb_temp_split.patch), VecSwapXY/VecSwapXY2 2 at best (retail loads y before x), StatGetDebug 6, VMem::Init 9, SAMReadCallback (r28/r29), GhostGunUpdate 9, GunUpdateState3 4 (~80 max/fabs shapes), GunNodeFn1 4 (maybe an extra parameter on the fn1 pointer type), QueuePush 6. Not reached: Store, SaveCommand, u_80285ACC, CollectMsg.
