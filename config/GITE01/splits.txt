@@ -762,7 +762,10 @@ game/u_80251CB8.cpp:
 	.text       start:0x80251CB8 end:0x802541D4
 
 game/u_802541D4.cpp:
-	.text       start:0x802541D4 end:0x8025808C
+	.text       start:0x802541D4 end:0x80254F54
+
+game/u_80254F54.cpp:
+	.text       start:0x80254F54 end:0x8025808C
 
 game/GunWithGrenade.cpp:
 	.text       start:0x8025808C end:0x80259448
