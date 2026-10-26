@@ -37,6 +37,7 @@ struct Actor {
     int model;                    // 0x058
     u8  unk05C[0x7C - 0x5C];      // 0x05C
     void* field7C;                // 0x07C
+    u8 pad80[0x8C - 0x80];
     int (*field8C)(int, Actor*);  // 0x08C
     u8  unk090[0x98 - 0x90];      // 0x090
     int field98;                  // 0x098
@@ -44,6 +45,7 @@ struct Actor {
     int fieldA4;                  // 0x0A4
     u8  unk0A8[0xE4 - 0xA8];      // 0x0A8
     int (*updateE4)(int, Actor*); // 0x0E4
+    u8 padE8[0xF0 - 0xE8];
     int fieldF0;                  // 0x0F0
     u8  unk0F4[0xFC - 0xF4];      // 0x0F4
     int fieldFC;                  // 0x0FC
