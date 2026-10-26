@@ -526,21 +526,23 @@ int ImpAttackExit(Actor* a) {
     return 1;
 }
 
-int ImpAttackUpdate(Actor* a) {
+int ImpAttackUpdate(void* owner) {
+    Actor* a = (Actor*)owner;
     ImpBeh* b = a->beh;
     int kind;
     Target* target;
 
     kind = fn_800B26B8(a);
-    if (kind == 4) {
+    if (kind != 4) {
+        fn_800B261C(a, kind, &target);
+        fn_800A78A0(a->st, target);
+        if (fn_800B1EF4(a, kind) == 0) {
+            fn_800B1F20(a, kind);
+        } else if (fn_800B2454(a, kind) == 0) {
+            fn_800B2418(a, kind, 10000.0f);
+        }
+    } else {
         return 1;
-    }
-    fn_800B261C(a, kind, &target);
-    fn_800A78A0(a->st, target);
-    if (fn_800B1EF4(a, kind) == 0) {
-        fn_800B1F20(a, kind);
-    } else if (fn_800B2454(a, kind) == 0) {
-        fn_800B2418(a, kind, 10000.0f);
     }
     if (fn_800A7B78(a->st, 0) != 0) {
         fn_800A7B08(a->st, 4, 1);
@@ -587,11 +589,11 @@ int ImpAttackUpdate(Actor* a) {
             a->unk288 = 3;
         } else if (fn_80162940(a->unk894, 0x400)) {
             if (b->near > 800.0f) {
-                Vec3 dir;
                 Vec3 to;
-                float scale;
-                int hitA;
+                Vec3 dir;
                 int hitB;
+                int hitA;
+                float scale;
 
                 dir.x = target->x;
                 dir.y = target->y;
@@ -605,8 +607,7 @@ int ImpAttackUpdate(Actor* a) {
                 to.y = dir.y + a->pos.y;
                 to.z = dir.z + a->pos.z;
                 if (fn_800BB218(a, a->unk2C4, &a->pos, &to, a, &scale, &hitB, &hitA, a->unk900)) {
-                    float len = fn_800E1020(&dir);
-                    fn_800BAFF8(a, &dir, hitB, hitA, &to, scale, len * (1.0f - scale));
+                    fn_800BAFF8(a, &dir, hitB, hitA, &to, scale, (1.0f - scale) * fn_800E1020(&dir));
                 }
                 if (fn_800BF2D0(&to) == fn_800BF2D0(&a->pos)) {
                     fn_800A7B08(a->st, 0x1D, 1);
