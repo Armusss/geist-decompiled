@@ -956,25 +956,3 @@ int SensorHandler(int id, int msg, void* data, int arg) {
 int SensorMsg(int msg, Sensor** data) {
     return SensorHandler((*data)->handle, msg, data, 0);
 }
-
-// ---------------------------------------------------------------------------------------------------
-// 0x8026A0F0-0x8026A158: per-level hooks of a small timer module (more likely its own file too).
-
-extern int lbl_804D5510;
-extern int lbl_804D5514;
-extern int lbl_804D3778;
-
-void TimerModuleReset(void) {
-}
-
-void TimerModuleUpdate(float dt) {
-    lbl_804D5510 = 0;
-    lbl_804D5514 += (int)dt;
-}
-
-void TimerModuleLoad(void) {
-    lbl_804D3778 = AssetFind(0xF2E2BEB8, 0x6D8AA555);
-}
-
-void TimerModuleUnload(void) {
-}

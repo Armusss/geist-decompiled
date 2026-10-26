@@ -731,6 +731,7 @@ config.libs = [
             Object(NonMatching, "game/u_80251CB8.cpp"),  # pinned
             Object(NonMatching, "game/u_802541D4.cpp"),  # guess
             Object(NonMatching, "game/u_8025643C.cpp"),  # guess
+            Object(Matching, "game/RobotArm.cpp"),  # "Possessable Robot Arm" actor type
             Object(Matching, "game/LaserScope.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_80259AB0.cpp"),  # pinned
             Object(NonMatching, "game/u_8025ECF8.cpp"),  # pinned
@@ -739,6 +740,7 @@ config.libs = [
             Object(NonMatching, "game/Retinal.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_80268528.cpp"),  # split from u_80267558
             Object(NonMatching, "game/u_80268780.cpp"),  # guess
+            Object(Matching, "game/Timer.cpp"),  # per-level timer hooks
             Object(NonMatching, "game/u_8026A158.cpp"),  # guess
             Object(NonMatching, "game/u_8026A37C.cpp"),  # guess
             Object(NonMatching, "game/u_8026C200.cpp"),  # guess

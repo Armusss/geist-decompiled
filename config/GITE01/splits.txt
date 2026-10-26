@@ -765,7 +765,12 @@ game/u_802541D4.cpp:
 	.text       start:0x802541D4 end:0x8025643C
 
 game/u_8025643C.cpp:
-	.text       start:0x8025643C end:0x8025951C
+	.text       start:0x8025643C end:0x80259448
+
+game/RobotArm.cpp:
+	.text       start:0x80259448 end:0x8025951C
+	.rodata     start:0x8034AA28 end:0x8034AA88
+	.data       start:0x803BF7A0 end:0x803BF7D0
 
 game/LaserScope.cpp:
 	.text       start:0x8025951C end:0x80259AB0
@@ -798,7 +803,12 @@ game/u_80268528.cpp:
 	.text       start:0x80268528 end:0x80268780
 
 game/u_80268780.cpp:
-	.text       start:0x80268780 end:0x8026A158
+	.text       start:0x80268780 end:0x8026A0F0
+
+game/Timer.cpp:
+	.text       start:0x8026A0F0 end:0x8026A158
+	.sdata      start:0x804D3778 end:0x804D3780
+	.sbss       start:0x804D5510 end:0x804D5518
 
 game/u_8026A158.cpp:
 	.text       start:0x8026A158 end:0x8026A37C
