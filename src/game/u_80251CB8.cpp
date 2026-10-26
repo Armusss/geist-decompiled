@@ -180,18 +180,20 @@ void fn_800E1098(void* out, void* in, float length);
 void fn_802541D4(int arg, ImpThrow* t, int n);
 
 inline float FastSqrt(float x) {
-    float r = 0.0f;
-    if (!(x <= 0.0f)) {
-        float y;
+    register float r;
+    float y;
+
+    if (x <= 0.0f) {
+        return 0.0f;
+    } else {
         asm {
-            lfs f0, x
-            ps_rsqrte f0, f0
-            ps_res f0, f0
-            stfs f0, y
+            lfs r, x
+            ps_rsqrte r, r
+            ps_res r, r
+            stfs r, y
         }
-        r = y;
+        return y;
     }
-    return r;
 }
 
 inline int FxStartAt(void* fx, float* p, int* pos) {
