@@ -1,10 +1,6 @@
-// u_801965FC.cpp: the "Foam" item type (0x801965FC-0x801969D8) and the "EXTINGUISHER" effect type
-// (0x801969D8-0x80197E50). The two halves have their own string pools (each starting with the action-name
-// table) and their own .sdata2 constants, so they are probably two source files.
-// Foam: picking it up spawns the WP_FIRE1 model at the owner and tells the level; dropping frees it.
-// Extinguisher: while spraying (state 1) it drains ammo and raycasts the spray; state 2 waits for a clear
-// line, state 3 drives a carried target. Names are descriptive guesses; the code is matched against the
-// retail DOL.
+// Extinguisher.cpp: the "EXTINGUISHER" effect type (0x801969D8-0x80197E50). While spraying (state 1) it
+// drains ammo and raycasts the spray; state 2 waits for a clear line, state 3 drives a carried target.
+// Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <dolphin/types.h>
 #include <string.h>
@@ -136,80 +132,6 @@ struct SpawnMsg {
     Mtx33 rot;
     Vec3 pos;
 };
-
-// ---- Foam ----
-
-void FoamUpdate(void);
-u32 FoamId(void);
-int FoamMsg(int item, int msg, u32 owner, void* data);
-
-ItemType gFoamType = { "Foam", { 0 }, FoamMsg, FoamId, FoamUpdate };
-
-void FoamUpdate(void) {}
-
-u32 FoamId(void) { return 0x3DA260F7; }
-
-int FoamMsg(int item, int msg, u32 owner, void* data) {
-    Fn80175D60(owner);
-    AssetFind(0xF2E2BEB8, 0xFAC4DCB6);
-
-    switch (msg) {
-    case 0x96224FCC:
-        if (data) {
-            if (*((int**)data)[1] == -1) {
-                QueryMsg q1;
-                QueryMsg q2;
-                SpawnMsg m;
-                Vec3 rot;
-
-                q1.hash = 0x00012D80;
-                SendMsg(0x61000000, 0x41E, &q1);
-                *((int**)data)[1] = *(int*)&q1.result;
-                q2.hash = 0x03F08D2D;
-                *(int*)&q2.result = 0;
-                SendMsg(*((int**)data)[1], 0x41D, &q2);
-                m.owner = owner;
-                m.asset = AssetFind(0xF1754BF2, StrHash("WP_FIRE1"));
-                m.unkC = 1;
-                Vec3Set(&rot, -90.0f, 0.0f, 0.0f);
-                MtxSetEuler((Mtx34*)&m.rot, &rot);
-                m.pos.x = 0.0f;
-                m.pos.y = 0.0f;
-                m.pos.z = 0.0f;
-                SendMsg(*((int**)data)[1], 0x415, &m);
-            }
-            if (*((int**)data)[1]) {
-                QueryMsg q;
-                q.hash = 0x7A281983;
-                *(int*)&q.result = 1;
-                SendMsg(*((int**)data)[1], 0x41D, &q);
-            }
-        }
-        return 1;
-    case 0x0D19E338:
-        if (data) {
-            if (*((int**)data)[1]) {
-                QueryMsg q;
-                q.hash = 0x7A281983;
-                *(int*)&q.result = 0;
-                SendMsg(*((int**)data)[1], 0x41D, &q);
-                q.hash = 0x03F08D2D;
-                *(int*)&q.result = 0;
-                SendMsg(*((int**)data)[1], 0x41D, &q);
-            }
-        }
-        return 1;
-    case 0x00014967:
-        if (*((int**)data)[1]) {
-            QueryMsg q;
-            q.hash = 0x03F08D2D;
-            *(int*)&q.result = 1;
-            SendMsg(*((int**)data)[1], 0x41D, &q);
-        }
-        return 1;
-    }
-    return 0;
-}
 
 // ---- Extinguisher ----
 

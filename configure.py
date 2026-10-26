@@ -674,7 +674,8 @@ config.libs = [
             Object(NonMatching, "game/u_8018FAE8.cpp"),  # guess
             Object(Matching, "game/Repel.cpp"),  # starts 0x80191C6C (helper-game-b)
             Object(NonMatching, "game/u_801920B8.cpp"),  # known
-            Object(NonMatching, "game/u_801965FC.cpp"),  # guess
+            Object(Matching, "game/Foam.cpp"),  # "Foam" item type
+            Object(Matching, "game/Extinguisher.cpp"),  # "EXTINGUISHER" effect type
             Object(NonMatching, "game/u_8019FDD0.cpp"),  # rendering after zutil (mirror/reflection)
             Object(NonMatching, "game/u_801A0F2C.cpp"),  # guess
             Object(Matching, "game/u_801A1D24.cpp"),  # guess
