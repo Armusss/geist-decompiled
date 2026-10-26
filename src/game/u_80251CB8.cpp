@@ -1,5 +1,5 @@
-// u_80251CB8.cpp: the "IMP FIRE" effect type. Only the create function is written so far; names are
-// descriptive guesses and the code is matched against the retail DOL.
+// u_80251CB8.cpp: the "IMP FIRE" effect type (0x8025362C-0x802540F4: Update drafted, Reset/Query/Msg/Destroy/Create
+// match). Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <dolphin/types.h>
 
@@ -66,11 +66,16 @@ void VFree(void* p);
 
 struct Player;
 
+struct Target {
+    u8 pad[0x24];
+    int x, y, z;
+};
+
 struct ImpShot {
     u8 pad00[0x30];
     float x, y, z;
     u8 pad3C[0x48 - 0x3C];
-    int target;
+    Target* target;
     int pad4C;
     float spread;
     float scale;
@@ -152,6 +157,43 @@ void fn_80254164(void);
 
 inline float Min(float a, float b) { return a < b ? a : b; }
 
+struct Vec3 {
+    float x, y, z;
+};
+
+
+// Launch parameters for the fire ball (see fn_802541D4).
+struct ImpThrow {
+    Vec3 pos;
+    u8 pad0C[0x18 - 0x0C];
+    Vec3 vel;
+    Vec3 spin;
+    Vec3 accel;
+    u8 pad3C[0x4C - 0x3C];
+};
+
+extern "C" {
+int rand(void);
+float fn_800E1020(Vec3* v);
+void fn_800E1098(void* out, void* in, float length);
+}
+void fn_802541D4(int arg, ImpThrow* t, int n);
+
+inline float FastSqrt(float x) {
+    float r = 0.0f;
+    if (!(x <= 0.0f)) {
+        float y;
+        asm {
+            lfs f0, x
+            ps_rsqrte f0, f0
+            ps_res f0, f0
+            stfs f0, y
+        }
+        r = y;
+    }
+    return r;
+}
+
 inline int FxStartAt(void* fx, float* p, int* pos) {
     int h;
     if (p) {
@@ -173,6 +215,80 @@ void ImpFireReset(EffectObj* obj) {
 
     g->unk00 = 0;
     g->unk04 = 0.0f;
+}
+
+void ImpFireUpdate(EffectObj* obj, float dt) {
+    ImpFire* g = (ImpFire*)obj->data;
+    ImpFireDef* def = g->def;
+
+    if (g == 0) {
+        return;
+    }
+    switch (g->unk00) {
+    case 0:
+        break;
+    case 1:
+        g->unk04 -= dt;
+        while (g->unk04 <= 0.0f) {
+            if (fn_800F7D28(g->emitter, def->unk04) > 0) {
+                MsgResult q;
+                ImpThrow t;
+                Vec3 d;
+                int pos[3];
+                Target* src;
+                Target* dst;
+                void* fx;
+                float rz;
+                float ry;
+                float rx;
+                float up;
+                float root;
+
+                if (g->shot.target == 0) {
+                    return;
+                }
+                SendMsg(g->arg, 0x400, &q);
+                src = (Target*)q.p;
+                memset(&t, 0, sizeof(ImpThrow));
+                t.pos.x = src->x;
+                t.pos.y = src->y;
+                t.pos.z = src->z;
+                t.accel.x = 0.0f;
+                t.accel.y = 0.0f;
+                t.accel.z = -6000.0f;
+                rz = rand() / 32767.0f;
+                ry = rand() / 32767.0f;
+                rx = rand() / 32767.0f;
+                t.spin.x = 800.0f * rx - 400.0f;
+                t.spin.y = 800.0f * ry - 400.0f;
+                t.spin.z = 800.0f * rz - 400.0f;
+                t.vel.x = 0.0f;
+                t.vel.y = 0.0f;
+                t.vel.z = 3500.0f;
+                dst = g->shot.target;
+                d.x = dst->x;
+                d.y = dst->y;
+                d.z = dst->z;
+                d.x -= t.pos.x;
+                d.y -= t.pos.y;
+                d.z -= t.pos.z;
+                up = -(t.vel.z / t.accel.z);
+                root = FastSqrt((d.z - 0.5f * t.vel.z * up) / (0.5f * t.accel.z));
+                {
+                    float len = fn_800E1020(&d);
+                    d.z = 0.0f;
+                    fn_800E1098(&d, &d, len / (up + root));
+                }
+                t.vel.x += d.x;
+                t.vel.y += d.y;
+                t.vel.z += d.z;
+                fn_802541D4(g->arg, &t, 1);
+                fx = def->fx;
+                FxStartAt(fx, &g->shot.x, pos);
+            }
+        }
+        break;
+    }
 }
 
 u32 ImpFireQuery(EffectObj* obj, int msg) {
