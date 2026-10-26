@@ -17,6 +17,11 @@ void* VAlloc(int size);
 void Fn800F840C(int emitter, int a, int b);
 extern int lbl_804D54D0;
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
 
@@ -94,7 +99,7 @@ struct HostData {
     int run;              // 0x24
 };
 
-typedef int (*HostMsgFunc)(int msg, Actor* a);
+typedef int (*HostMsgFunc)(int msg, void* data);
 
 struct Actor {
     char pad0[0x38];
@@ -213,7 +218,7 @@ inline void QueryValue(int target, u32 hash, int value) {
 int GunHostCheckGrenade(Actor* a);
 int GunHostCheckGun(Actor* a);
 int GunHostCheckReload(Actor* a, float dt);
-int GunHostMsg(int msg, Actor* a);
+int GunHostMsg(int msg, void* data);
 
 static inline float fabsf2(float x) { return __fabsf(x); }
 inline float Max(float a, float b) { return a > b ? a : b; }
@@ -571,7 +576,8 @@ int GunHostCheckGun(Actor* a) {
 }
 
 // Animation message handler of the gun states: passes fire/reload actions on to the host's weapon.
-int GunHostMsg(int msg, Actor* a) {
+int GunHostMsg(int msg, void* data) {
+    Actor* a = (Actor*)data;
     MsgQuery q0;
     int r1;
     int r2;
@@ -585,19 +591,6 @@ int GunHostMsg(int msg, Actor* a) {
     Query(&r1, a->handle, 0x41E, 0x2DA8293C);
     Query(&r2, a->handle, 0x41E, 0xDFF3097A);
     switch (msg) {
-    case 0xF829DB93:
-        fn_80048BA8(a, a->buf, 0);
-        a->bufAim = a->aim;
-        Fn800F7F5C(r1, r2, 0xF829DB93, fn_800498D0(a), a->buf, a->speed);
-        return 1;
-    case 0xE6B71BCC:
-        fn_80048BA8(a, a->buf, 1);
-        Fn800F7F5C(r1, r2, 0xE6B71BCC, fn_800498D0(a), a->buf, a->speed);
-        return 0;
-    case 0x968CBE3D:
-        fn_80048BA8(a, a->buf, 1);
-        Fn800F7F5C(r1, r2, 0x968CBE3D, fn_800498D0(a), a->buf, a->speed);
-        return 0;
     case 0x1B83833F:
         if (a->type == 5) {
             r = Fn800F7DEC(r1, r2, 0x0020EE36, fn_800498D0(a), 0);
@@ -606,44 +599,51 @@ int GunHostMsg(int msg, Actor* a) {
                     FxStart(FxFind("gun_empty"), 0, 0);
                 }
                 fn_8006D184(a, 3);
-                return 0;
+            } else {
+                fn_8006D288(a, a->nextType);
             }
-            fn_8006D288(a, a->nextType);
-            return 0;
-        }
-        if (a->type == 8) {
+        } else if (a->type == 8) {
             r = Fn800F7DEC(r1, r2, 0xF829DB93, fn_800498D0(a), 0);
             if (r != 0x04A3E183) {
                 if (r == 0xC0BECF7E || r == 0x11D2C025) {
                     FxStart(FxFind("gun_empty"), 0, 0);
                 }
                 fn_8006D184(a, 3);
-                return 0;
+            } else {
+                fn_8006D288(a, a->nextType);
             }
-            fn_8006D288(a, a->nextType);
-            return 0;
-        }
-        if (a->type == 13) {
+        } else if (a->type == 13) {
             a->flags |= 0x20000;
-            return 0;
+        } else {
+            fn_8006D288(a, a->nextType);
         }
-        fn_8006D288(a, a->nextType);
-        return 0;
+        break;
     case 0x0020EE36:
         fn_80048BA8(a, a->buf, 1);
         a->bufAim = a->aim;
-        Fn800F7F5C(r1, r2, 0x0020EE36, fn_800498D0(a), a->buf, a->speed);
-        return 0;
+        Fn800F7F5C(r1, r2, msg, fn_800498D0(a), a->buf, a->speed);
+        break;
+    case 0xF829DB93:
+        fn_80048BA8(a, a->buf, 0);
+        a->bufAim = a->aim;
+        Fn800F7F5C(r1, r2, msg, fn_800498D0(a), a->buf, a->speed);
+        return 1;
     case 0x9791AF51:
     case 0x96224FCC:
     case 0x0D19E338:
     case 0x42E50A3D:
+        fn_80048BA8(a, a->buf, 1);
+        Fn800F7F5C(r1, r2, msg, fn_800498D0(a), a->buf, a->speed);
         break;
-    default:
-        return 0;
+    case 0xE6B71BCC:
+        fn_80048BA8(a, a->buf, 1);
+        Fn800F7F5C(r1, r2, msg, fn_800498D0(a), a->buf, a->speed);
+        break;
+    case 0x968CBE3D:
+        fn_80048BA8(a, a->buf, 1);
+        Fn800F7F5C(r1, r2, msg, fn_800498D0(a), a->buf, a->speed);
+        break;
     }
-    fn_80048BA8(a, a->buf, 1);
-    Fn800F7F5C(r1, r2, msg, fn_800498D0(a), a->buf, a->speed);
     return 0;
 }
 
