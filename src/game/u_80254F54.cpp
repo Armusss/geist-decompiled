@@ -520,19 +520,22 @@ void GunHostState19Update(Actor* a, float dt) {
     }
 }
 
+static inline void GunHostDataOf(Actor* h, HostData** hd, int* cond) {
+    if (HandleKind(h->handle) == 0x13) {
+        *hd = fn_800A384C(h);
+        if (HasCondition(h->conditions, 11)) {
+            *cond = 1;
+        }
+    }
+}
+
 void GunHostState19Enter(Actor* a) {
-    Actor* h = a->host;
     HostData* hd;
     int host;
     int weapon;
     int cond = 0;
 
-    if (HandleKind(h->handle) == 0x13) {
-        hd = fn_800A384C(h);
-        if (HasCondition(h->conditions, 11)) {
-            cond = 1;
-        }
-    }
+    GunHostDataOf(a->host, &hd, &cond);
     host = PlayerInHost(a);
     weapon = a->weapon;
     a->anim = fn_800A1BC8(hd->set, hd->aim, lbl_803BF068[19].actions[weapon], cond, 0);
