@@ -216,6 +216,8 @@ int GunHostCheckReload(Actor* a, float dt);
 int GunHostMsg(int msg, Actor* a);
 
 static inline float fabsf2(float x) { return __fabsf(x); }
+inline float Max(float a, float b) { return a > b ? a : b; }
+inline float MaxLt(float a, float b) { return a < b ? b : a; }
 int AssetFind(u32 table, u32 key);
 
 extern int lbl_804A2930[16];  // the host's sounds
@@ -232,10 +234,7 @@ void GunHostAimUpdate(Actor* a, float dt) {
     fn_800769A0(a, dt);
     fn_80072058(a, dt);
     a->unk7D0 = 1;
-    m = fabsf2(a->move[2]);
-    if (m < fabsf2(a->move[0])) {
-        m = fabsf2(a->move[0]);
-    }
+    m = __fabsf(a->move[0]) > __fabsf(a->move[2]) ? __fabsf(a->move[0]) : __fabsf(a->move[2]);
     if (m != 0.0f) {
         fn_8008E824(a->model, 0);
     }
@@ -486,7 +485,7 @@ int GunHostCheckGrenade(Actor* a) {
 
     Query(&r1, a->handle, 0x41E, 0x2DA8293C);
     Query(&r2, a->handle, 0x41E, 0xDFF3097A);
-    if (a->grenades > 0) {
+    if (a->grenades >= 1) {
         if (a->type == 1) {
             fn_8006D184(a, 2);
             return 1;
@@ -494,14 +493,6 @@ int GunHostCheckGrenade(Actor* a) {
         fn_8006D76C(a);
         r = Fn800F7DEC(r1, r2, 0xF829DB93, fn_800498D0(a), 0);
         switch (r) {
-        case 0x11D2C025:
-            if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
-                QueryValue(a->handle, 0x7FFCFD4F, 0x91A0CEF7);
-            }
-            if (a->type == 8) {
-                fn_8006D184(a, 3);
-            }
-            break;
         case 0x04A3E183:
             if (a->type != 8) {
                 fn_8006D184(a, 8);
@@ -512,6 +503,14 @@ int GunHostCheckGrenade(Actor* a) {
             if (Fn800F7DEC(r1, r2, 0x968CBE3D, fn_800498D0(a), 0) == 0x04A3E183) {
                 fn_8006D184(a, 11);
                 return 1;
+            }
+            break;
+        case 0x11D2C025:
+            if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
+                QueryValue(a->handle, 0x7FFCFD4F, 0x91A0CEF7);
+            }
+            if (a->type == 8) {
+                fn_8006D184(a, 3);
             }
             break;
         case 0x3DA260F7:
@@ -533,7 +532,7 @@ int GunHostCheckGun(Actor* a) {
 
     Query(&r1, a->handle, 0x41E, 0x2DA8293C);
     Query(&r2, a->handle, 0x41E, 0xDFF3097A);
-    if (a->ammo > 0) {
+    if (a->ammo >= 1) {
         if (a->type == 1) {
             fn_8006D184(a, 2);
             return 1;
@@ -541,14 +540,6 @@ int GunHostCheckGun(Actor* a) {
         fn_8006D76C(a);
         r = Fn800F7DEC(r1, r2, 0x0020EE36, fn_800498D0(a), 0);
         switch (r) {
-        case 0x11D2C025:
-            if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
-                QueryValue(a->handle, 0x7FFCFD4F, 0x91A0CEF7);
-            }
-            if (a->type == 5) {
-                fn_8006D184(a, 3);
-            }
-            break;
         case 0x04A3E183:
             fn_8006D184(a, 5);
             fn_8006D17C(&a->type, 5);
@@ -557,6 +548,14 @@ int GunHostCheckGun(Actor* a) {
             if (Fn800F7DEC(r1, r2, 0xE6B71BCC, fn_800498D0(a), 0) == 0x04A3E183) {
                 fn_8006D184(a, 10);
                 return 1;
+            }
+            break;
+        case 0x11D2C025:
+            if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
+                QueryValue(a->handle, 0x7FFCFD4F, 0x91A0CEF7);
+            }
+            if (a->type == 5) {
+                fn_8006D184(a, 3);
             }
             break;
         case 0x3DA260F7:
