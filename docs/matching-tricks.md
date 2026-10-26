@@ -163,3 +163,11 @@ data and breaks the match. Generator: ~/geist-work/ds/opus-1-tools/cgen.py.
   expression (`m->actor`, which becomes the CSE temp) with a local (`a`, which becomes the r31 copy).
 - A unit can be at N/N functions by udiff and still fail the DOL check through its .data jump table: swapped
   case labels change only the table (HostRideAMsg's 0x41D/0x41E).
+
+## Max of two fabs (opus-1, 2026-10-26)
+When retail evaluates the right-hand operand first in a max of two absolute values, copy both operands to
+locals, declaring the right-hand one first, then compare their fabs in a ternary:
+`{ float z = a->move[2]; float x = a->move[0]; m = __fabsf(x) > __fabsf(z) ? __fabsf(x) : __fabsf(z); }`.
+Inline Max/fabs helpers get the load order but not the registers. Fixed GunHostAimUpdate and GunUpdateState3.
+Also: in the FastSqrt asm helper, use a `register float` temp instead of naming f0, so the compiler does not
+reserve f0 for the whole function (if/else form, `r = 0.0f` in the if branch).
