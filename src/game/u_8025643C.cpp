@@ -239,7 +239,12 @@ void GunHostAimUpdate(Actor* a, float dt) {
     fn_800769A0(a, dt);
     fn_80072058(a, dt);
     a->unk7D0 = 1;
-    m = __fabsf(a->move[0]) > __fabsf(a->move[2]) ? __fabsf(a->move[0]) : __fabsf(a->move[2]);
+    {
+        float z = a->move[2];
+        float x = a->move[0];
+
+        m = __fabsf(x) > __fabsf(z) ? __fabsf(x) : __fabsf(z);
+    }
     if (m != 0.0f) {
         fn_8008E824(a->model, 0);
     }
