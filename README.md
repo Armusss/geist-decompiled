@@ -42,8 +42,8 @@ A good build ends with `build/GITE01/main.dol: OK`.
 ## State
 - **Libraries:** 201 of 203 units build from C and match: Dolphin SDK 77/77, MusyX 26/26, zlib 12/12,
   Runtime 8/8, MSL C 51/52, MetroTRK 27/28.
-- **Game code** (CodeWarrior GC/1.3.2, C++) is split into 216 provisional units; file boundaries are corrected
-  as files get matched. 54 are fully matched, each verified byte-identical in the linked DOL, and about 57 more
+- **Game code** (CodeWarrior GC/1.3.2, C++) is split into 217 provisional units; file boundaries are corrected
+  as files get matched. 57 are fully matched, each verified byte-identical in the linked DOL, and about 55 more
   are partly matched (see the progress map). STATUS.md has the per-unit queue.
 - There's no symbol map on the disc, so names are descriptive guesses except for SDK/runtime functions that
   were recognised by signature. Placeholders are `fn_`/`lbl_` followed by the address.
