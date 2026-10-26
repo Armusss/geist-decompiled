@@ -210,7 +210,7 @@
 <rect x="508" y="336" width="18" height="18" rx="2" fill="#d29922"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/cc/exi2/GCN/EXI2_GDEV_GCN/main.c - partial: 9/10 functions match</title></rect>
 <rect x="528" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/MWTrace.c - matching</title></rect>
 <rect x="548" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/gc/MWCriticalSection_gc.c - matching</title></rect>
-<text x="8" y="376" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">Game code: 60/220 files matching, 58 partly matched (provisional file boundaries)</text>
+<text x="8" y="376" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">Game code: 60/220 files matching, 61 partly matched (provisional file boundaries)</text>
 <rect x="8" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/Cube.cpp - asm</title></rect>
 <rect x="28" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/main.cpp - matching</title></rect>
 <rect x="48" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8000F2F0.cpp - asm</title></rect>
@@ -254,8 +254,8 @@
 <rect x="808" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800BAA14.cpp - asm</title></rect>
 <rect x="828" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800C5028.cpp - asm</title></rect>
 <rect x="848" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/Progress.cpp - partial: 6/7 functions match</title></rect>
-<rect x="868" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_800D0BF4.cpp - partial: 14/31 functions match</title></rect>
-<rect x="888" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800D32E8.cpp - asm</title></rect>
+<rect x="868" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_800D0BF4.cpp - partial: 16/31 functions match</title></rect>
+<rect x="888" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_800D32E8.cpp - partial: 11/50 functions match</title></rect>
 <rect x="908" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_800DD92C.cpp - matching</title></rect>
 <rect x="928" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_800DE0C4.cpp - partial: 15/16 functions match</title></rect>
 <rect x="948" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_800DED18.cpp - matching</title></rect>
@@ -284,13 +284,13 @@
 <rect x="448" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80125DE4.cpp - asm</title></rect>
 <rect x="468" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80127D80.cpp - asm</title></rect>
 <rect x="488" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80136884.cpp - asm</title></rect>
-<rect x="508" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8013A3D4.cpp - asm</title></rect>
+<rect x="508" y="402" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8013A3D4.cpp - partial: 19/28 functions match</title></rect>
 <rect x="528" y="402" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8013CA38.cpp - partial: 1/39 functions match</title></rect>
 <rect x="548" y="402" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80140A30.cpp - partial: 2/12 functions match</title></rect>
 <rect x="568" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80142E88.cpp - asm</title></rect>
 <rect x="588" y="402" width="18" height="18" rx="2" fill="#2ea043"><title>game/Skybox.cpp - matching</title></rect>
 <rect x="608" y="402" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80150300.cpp - partial: 47/60 functions match</title></rect>
-<rect x="628" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80153C10.cpp - asm</title></rect>
+<rect x="628" y="402" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80153C10.cpp - partial: 7/22 functions match</title></rect>
 <rect x="648" y="402" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80157730.cpp - asm</title></rect>
 <rect x="668" y="402" width="18" height="18" rx="2" fill="#2ea043"><title>game/Hazard.cpp - matching</title></rect>
 <rect x="688" y="402" width="18" height="18" rx="2" fill="#2ea043"><title>game/EvacPoint.cpp - matching</title></rect>
@@ -365,7 +365,7 @@
 <rect x="148" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8024CAA0.cpp - asm</title></rect>
 <rect x="168" y="442" width="18" height="18" rx="2" fill="#2ea043"><title>game/Scannable.cpp - matching</title></rect>
 <rect x="188" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_8024E5D0.cpp - asm</title></rect>
-<rect x="208" y="442" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80251CB8.cpp - partial: 5/35 functions match</title></rect>
+<rect x="208" y="442" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80251CB8.cpp - partial: 31/35 functions match</title></rect>
 <rect x="228" y="442" width="18" height="18" rx="2" fill="#30363d"><title>game/u_802541D4.cpp - asm</title></rect>
 <rect x="248" y="442" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8025643C.cpp - partial: 18/19 functions match</title></rect>
 <rect x="268" y="442" width="18" height="18" rx="2" fill="#2ea043"><title>game/GunWithGrenade.cpp - matching</title></rect>

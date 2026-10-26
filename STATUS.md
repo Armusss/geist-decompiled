@@ -67,6 +67,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- opus-1 effects4 (2026-10-26): u_80251CB8 31/35 (ImpMsg 3 and ImpInit 2 only string-pool offsets: define the state table lbl_803BECD8 in source after the data split; ImpAttackUpdate 12; ImpFireUpdate 43, rand() scheduling). Boundaries: actor .rodata 0x8034A660-0x8034A6C8, IMP FIRE pool from 0x8034A6C8 ('IMP FIRE' 0x8034A70F) and .sdata2 0x804D9E20-48; actor .sdata2 0x804D9DD0-0x804D9E18; attack behaviour 0x80252F2C-0x80253614 may be its own file (own 0.0f at 0x804D9E18). FastSqrt with a register temp takes u_800E0CB8 IVecLength 55 -> 7. GunHostAimUpdate 4, SensorSeeActor 25, HermitSpitAmmoFire not attempted.
 - u_800D0BF4 16/31 (zones, ds-3 2 runs + resume): 15 left.
 - u_80100EB0 6/24 (ds-1 2 runs): 18 left.
 - u_800FDDE4 10/26 (HUD notifications, ds-2 2 runs): 16 left (HudNotifySet 202, HudNotifyBar 193, ...).
