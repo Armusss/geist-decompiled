@@ -17,7 +17,7 @@ published; generate your own from your copy of the game if you want it.
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_80120D98 (49 fns, chunked draft) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_8011818C (49 fns, chunked draft) | running |
-| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_800D32E8 run 3 (16/50 after run 2) | running |
+| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_8006C604 (61 fns, chunked draft) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | u_802541D4 host types (32 fns) to complete the merged unit | running |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
@@ -67,6 +67,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+- u_800D32E8 16/50 (emitters/pads, ds-3 3 runs): 34 left.
 - opus-1 close1 (2026-10-26): u_800E9418 18/19 (GunNodeFn1 4: retail keeps r4 free, maybe a pass-through int argument on the fn1 type); u_800E0CB8 Vec3 helpers 0/5 exact, all within 5-14 (the 5 pre-stwu loads look out of reach for 1.3.2; GC/2.0 also puts stwu first); fn_800E1098 is declared with the wrong argument order in u_80153C10, u_802D439C, u_80064FD4, u_80243B0C (real: Vec3* out, Vec3* in, float length). u_80251CB8 32/35: ImpMsg 3 and ImpInit 2 are a one-byte string-pool offset (retail has an extra 0 byte after SCAN at lbl_8034A660), ImpFireUpdate 43.
 - u_8013A3D4 21/28 (trail buffers / 3D lines, ds-1 2 runs): 7 left.
 - u_80153C10 8/22 (ghost possession, ds-2 2 runs): GhostPossessEnd/Tick/Notify, fn_801554E0, GhostPossessAttempt (0x5A4-0xB50 bytes) barely started; frame-size differences.
