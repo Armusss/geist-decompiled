@@ -669,7 +669,7 @@ config.libs = [
             Object(NonMatching, "game/u_80175D60.cpp"),  # known
             Object(Matching, "game/DataStream.cpp"),
             Object(NonMatching, "game/u_8017D794.cpp"),  # known
-            Object(NonMatching, "game/u_8018C358.cpp"),  # guess
+            Object(Matching, "game/SplineGun.cpp"),  # "SplineGun" effect type (starts at SplineGunReset)
             Object(NonMatching, "game/u_8018D2D4.cpp"),  # pinned
             Object(NonMatching, "game/u_8018FAE8.cpp"),  # guess
             Object(Matching, "game/Repel.cpp"),  # starts 0x80191C6C (helper-game-b)

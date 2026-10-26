@@ -450,10 +450,13 @@ game/DataStream.cpp:
 	.sbss       start:0x804D5058 end:0x804D50A8
 
 game/u_8017D794.cpp:
-	.text       start:0x8017D794 end:0x8018C358
+	.text       start:0x8017D794 end:0x8018C2F8
 
-game/u_8018C358.cpp:
-	.text       start:0x8018C358 end:0x8018D2D4
+game/SplineGun.cpp:
+	.text       start:0x8018C2F8 end:0x8018D2D4
+	.rodata     start:0x80347068 end:0x803470C8
+	.data       start:0x803A8F38 end:0x803A8F68
+	.sdata2     start:0x804D84C8 end:0x804D84F8
 
 game/u_8018D2D4.cpp:
 	.text       start:0x8018D2D4 end:0x8018FAE8

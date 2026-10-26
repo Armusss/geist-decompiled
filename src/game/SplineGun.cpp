@@ -1,4 +1,4 @@
-// u_8018C358.cpp: the "SPLINE GUN" effect type (0x8018C358-0x8018D2D4).
+// SplineGun.cpp: the "SPLINE GUN" effect type (0x8018C2F8-0x8018D2D4).
 // A chargeable gun: while charging (state 2) a spline shot builds up over three seconds and a light
 // follows the shot; releasing fires the spline bullet from the definition's second ammo. A plain shot
 // fires the first ammo. Its reset function (0x8018C2F8) sits just before this unit's split.
@@ -189,7 +189,7 @@ struct SplineGun {
     ShotHit shot;
 };
 
-void SplineGunReset(EffectObj* obj);  // 0x8018C2F8, just before this unit's split
+void SplineGunReset(EffectObj* obj);
 void SplineGunUpdate(EffectObj* obj, float dt);
 u32 SplineGunQuery(EffectObj* obj, int msg);
 int SplineGunMsg(EffectObj* obj, int msg, int arg, void* data, float dt);
@@ -227,6 +227,20 @@ inline void SplineGunTrack(int fx, int target) {
         pos[1] = pos[1] + ((Target*)q.p)->y;
         pos[2] = pos[2] + ((Target*)q.p)->z;
         fn_8016EDD8(fx, pos);
+    }
+}
+
+void SplineGunReset(EffectObj* obj) {
+    SplineGun* g = (SplineGun*)obj->data;
+
+    g->state = 0;
+    if (g->light != 0) {
+        fn_8015A10C(g->light);
+        g->light = 0;
+    }
+    if (g->fx != -1) {
+        fn_8016EEF4(g->fx);
+        g->fx = -1;
     }
 }
 
