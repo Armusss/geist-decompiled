@@ -676,17 +676,39 @@ int EmitterCreate(EmitterDesc* desc)
 // Destroy every live emitter and release the three global emitter pools.
 void EmitterDestroyAll(void)
 {
-    int offset;
+    int offset = 0;
+    EmitterBank* bank;
     int i;
     Emitter* em;
 
-    offset = 0;
     for (i = 0; i < lbl_804D4964; i++) {
         em = (Emitter*)((u8*)lbl_804D4960 + offset);
         if (em->field98 != 0) {
-            if (em->state == 1) {
-                EmitterBank* bank = em->bank;
+            switch (em->state) {
+            case 0: {
+                int idx;
 
+                bank = em->bank;
+
+                fn_8021284C(em->field38);
+                ActorFn80022D98((Actor*)em, 0);
+                ActorUnlinkOwnerObjects((Actor*)em);
+                VFree(bank->field04);
+                bank->field04 = 0;
+                VFree(bank->field08);
+                bank->field08 = 0;
+                idx = bank - lbl_804D4954;
+                if (idx >= 0 && idx < lbl_804D4958) {
+                    lbl_804D4954[idx].field0C = 0;
+                }
+                idx = em - lbl_804D4960;
+                if (idx >= 0 && idx < lbl_804D4964) {
+                    lbl_804D4960[idx].field98 = 0;
+                }
+                break;
+            }
+            case 1: {
+                bank = em->bank;
                 if (em->state == 1) {
                     int idx;
 
@@ -710,25 +732,8 @@ void EmitterDestroyAll(void)
                         lbl_804D495C[idx].field88 &= ~1u;
                     }
                 }
-            } else if (em->state < 1 && em->state >= 0) {
-                EmitterBank* bank = em->bank;
-                int idx;
-
-                fn_8021284C(em->field38);
-                ActorFn80022D98((Actor*)em, 0);
-                ActorUnlinkOwnerObjects((Actor*)em);
-                VFree(bank->field04);
-                bank->field04 = 0;
-                VFree(bank->field08);
-                bank->field08 = 0;
-                idx = bank - lbl_804D4954;
-                if (idx >= 0 && idx < lbl_804D4958) {
-                    lbl_804D4954[idx].field0C = 0;
-                }
-                idx = em - lbl_804D4960;
-                if (idx >= 0 && idx < lbl_804D4964) {
-                    lbl_804D4960[idx].field98 = 0;
-                }
+                break;
+            }
             }
         }
         offset += 0xC0;
@@ -844,45 +849,61 @@ void EmitterSystemInit(void)
 
 // Scale one emitter sub-descriptor's parameters by the frame factors and mark
 // it active.
-void EmitterSubScaleParams(EmitterSub* sub)
+// Scales the fields that every emitter sub-descriptor shares.
+static inline void EmitterSubScaleCommon(EmitterSub* sub)
 {
+    float s = lbl_804D7078;
+
+    sub->field70 = sub->field70 * s;
+    sub->field6C = sub->field6C * s;
+
+    switch (sub->state) {
+    case 0:
+        sub->field80 = (sub->field80 * sub->field78) / lbl_804D707C;
+        sub->field80 = sub->field80 * s;
+        break;
+    case 2:
+        sub->field80 = sub->field80 * s;
+        break;
+    }
+}
+
+// Scales the group tables and the per-particle records, then marks the
+// sub-descriptor as already scaled.
+static inline void EmitterSubScaleGroups(EmitterSub* sub)
+{
+    float s = lbl_804D7078;
+    float range = lbl_804D7060;
+    float rate = lbl_804D7080;
     int i;
 
-    sub->field70 = sub->field70 * lbl_804D7078;
-    sub->field6C = sub->field6C * lbl_804D7078;
-
-    if (sub->state != 1) {
-        if (sub->state < 1) {
-            if (sub->state >= 0) {
-                sub->field80 = (sub->field80 * sub->field78) / lbl_804D707C;
-                sub->field80 = sub->field80 * lbl_804D7078;
-            }
-        } else if (sub->state < 3) {
-            sub->field80 = sub->field80 * lbl_804D7078;
-        }
-    }
-
-    sub->fieldAC = sub->fieldAC * lbl_804D7078;
-    sub->fieldB0 = sub->fieldB0 * lbl_804D7078;
-    sub->fieldB4 = sub->fieldB4 * lbl_804D7060;
-    sub->fieldB8 = sub->fieldB8 * lbl_804D7060;
-    sub->fieldC4 = sub->fieldC4 * lbl_804D7060;
-    sub->fieldC8 = sub->fieldC8 * lbl_804D7060;
-    sub->field8C = sub->field8C * lbl_804D7060;
-    sub->field78 = sub->field78 * lbl_804D7080;
-    sub->field74 = sub->field74 * lbl_804D7080;
+    sub->fieldAC = sub->fieldAC * s;
+    sub->fieldB0 = sub->fieldB0 * s;
+    sub->fieldB4 = sub->fieldB4 * range;
+    sub->fieldB8 = sub->fieldB8 * range;
+    sub->fieldC4 = sub->fieldC4 * range;
+    sub->fieldC8 = sub->fieldC8 * range;
+    sub->field8C = sub->field8C * range;
+    sub->field78 = sub->field78 * rate;
+    sub->field74 = sub->field74 * rate;
 
     for (i = 0; i < sub->countA4; i++) {
-        EmitterParticle* p = &sub->listA8[i];
+        EmitterParticle* particle = &sub->listA8[i];
 
-        p->field24 = p->field24 * lbl_804D7078;
-        p->field20 = p->field20 * lbl_804D7078;
+        particle->field24 = particle->field24 * s;
+        particle->field20 = particle->field20 * s;
     }
     for (i = 0; i < sub->count9C; i++) {
         sub->listA0[i].field20 = sub->listA0[i].field20 * lbl_804D7084;
     }
 
     sub->field88 |= 1;
+}
+
+void EmitterSubScaleParams(EmitterSub* sub)
+{
+    EmitterSubScaleCommon(sub);
+    EmitterSubScaleGroups(sub);
 }
 
 // Release the emitter system's global state and unregister its callbacks.
@@ -1869,12 +1890,13 @@ void EmitterSpawnTracePick(float t, EmitterSpawnData* data, Vec3* pos,
 // sub-descriptor up.
 int EmitterResolveHandle(int arg, Emitter** out)
 {
+    Emitter* em = *out;
     int result;
 
-    if (*out == 0) {
+    if (em == 0) {
         result = 0;
     } else {
-        result = EmitterSubLookup((*out)->handle, arg, out, 0);
+        result = EmitterSubLookup(em->handle, arg, out, 0);
     }
     return result;
 }
@@ -2819,16 +2841,17 @@ extern "C" void fn_800D8664(u32 param_1, int* param_2, int param_3)
 // Returns 0 when either pool is full (the bank slot is then released).
 Emitter* EmitterBuildFromSub(EmitterDesc* sub)
 {
-    EmitterBank* bank = 0;
-    Emitter* em = 0;
+    EmitterBank* bank;
+    Emitter* em;
     float fade;
-    Mtx34 matrix;
     Mtx34 placement;
+    Mtx34 matrix;
     int half;
     int first;
     int second;
     int i;
 
+    bank = 0;
     if (lbl_804D4954 != 0) {
         for (i = 0; i < lbl_804D4958; i++) {
             if (lbl_804D4954[i].field0C == 0) {
@@ -2842,6 +2865,7 @@ Emitter* EmitterBuildFromSub(EmitterDesc* sub)
     if (bank == 0) {
         return 0;
     }
+    em = 0;
     if (lbl_804D4960 != 0) {
         for (i = 0; i < lbl_804D4964; i++) {
             if (lbl_804D4960[i].field98 == 0) {
@@ -2904,10 +2928,13 @@ Emitter* EmitterBuildFromSub(EmitterDesc* sub)
     first = AssetFind(0xFFFFFFFF, em->bank->sub->fieldE0);
     second = AssetFind(0xF1754BF2, em->bank->sub->fieldE4);
     fn_80212814(em->field38, first, second, 1, 0, 0);
-    if (SelectionSetTest(bank->sub->fieldE8) == 0 &&
-        (int)(em->field38 & 0xFFFFFF) < lbl_804D4950->count) {
-        ActorRefreshHostState((Actor*)em, 0);
-        ObjSendC00(em, 0);
+    if (SelectionSetTest(bank->sub->fieldE8) == 0) {
+        int index = em->field38 & 0xFFFFFF;
+
+        if (index >= 0 && index < lbl_804D4950->count) {
+            ActorRefreshHostState((Actor*)em, 0);
+            ObjSendC00(em, 0);
+        }
     }
     return em;
 }
