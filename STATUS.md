@@ -16,7 +16,7 @@ published; generate your own from your copy of the game if you want it.
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_80100EB0 (24 fns, chunked draft) | running |
-| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_800FDDE4 (resume chunked draft, 20 stubs left) | running |
+| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_800FDDE4 run 2 (9/26 after the draft) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_800D0BF4 (resume chunked draft, 13 stubs left) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Effect units: HermitSpit rest, u_8025643C, u_80251CB8 | running |
 
