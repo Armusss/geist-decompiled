@@ -98,9 +98,16 @@ struct HostData {
 typedef int (*HostMsgFunc)(int msg, void* data);
 
 struct Actor {
-    char pad0[0x38];
+    char pad0[0x24];
+    int pos[3];           // 0x24
+    char pad30[0x38 - 0x30];
     int handle;           // 0x38
-    char pad3C[0x7C - 0x3C];
+    char pad3C[0x50 - 0x3C];
+    u32 flags50;          // 0x50
+    char pad54[0x58 - 0x54];
+    int model58;          // 0x58
+    char pad5C[0x78 - 0x5C];
+    int unk78;            // 0x78
     int model;            // 0x7C
     char pad80[0x8C - 0x80];
     HostMsgFunc msgHandler;  // 0x8C
@@ -108,13 +115,18 @@ struct Actor {
     int anim;             // 0x98
     char pad9C[0xA4 - 0x9C];
     int animMode;         // 0xA4
-    char padA8[0xE4 - 0xA8];
+    char padA8[0xC4 - 0xA8];
+    int prevAnim;         // 0xC4
+    char padC8[0xE4 - 0xC8];
     HostMsgFunc msgHandler2;  // 0xE4
     char padE8[0xF0 - 0xE8];
     int anim2;            // 0xF0
     char padF4[0xFC - 0xF4];
     int animMode2;        // 0xFC
-    char pad100[0x2F4 - 0x100];
+    char pad100[0x11C - 0x100];
+    int prevAnim2;        // 0x11C
+    char pad120[0x270 - 0x120];
+    char conditions[0x2F4 - 0x270];  // 0x270
     char timer[0x314 - 0x2F4];  // 0x2F4
     int ammo;             // 0x314
     int grenades;         // 0x318
@@ -150,8 +162,15 @@ struct Actor {
     char pad1500[0x1D04 - 0x1500];
     char buf[0x50];       // 0x1D04
     float bufAim;         // 0x1D54
-    char pad1D58[0x26C4 - 0x1D58];
-    HostData* hosts[8];   // 0x26C4
+    char pad1D58[0x26B0 - 0x1D58];
+    int bone;             // 0x26B0
+    char pad26B4[0x26C4 - 0x26B4];
+    HostData* hosts[7];   // 0x26C4
+    char grab[4];         // 0x26E0
+    Actor* holder;        // 0x26E4
+    Actor* host;          // 0x26E8
+    char pad26EC[0x279C - 0x26EC];
+    int unk279C;          // 0x279C
 };
 
 extern "C" {
@@ -171,7 +190,19 @@ void fn_800769A0(Actor* a, float dt);
 void fn_80072058(Actor* a, float dt);
 void fn_8006D17C(int* type, int state);
 void fn_8006D76C(Actor* a);
+HostData* fn_800A384C(Actor* a);
+void fn_80155A84(void* grab, Actor* host, int a);
+int fn_8006CAB8(Actor* a);
+void fn_8006CAC0(Actor* a, int b);
+int fn_80175EFC(int a);
+void fn_80050EB0(Actor* a);
 }
+
+int HasCondition(void* conditions, int which);
+int ModelBoneName(int model, int bone);
+int ModelBoneNodeChain(int model, int name, int* chain, int count);
+extern int lbl_804D3624;
+extern int lbl_804D3628;
 
 int ActorPlayAnim(int actor, u32 anim, int arg);
 void DashUpdate(Actor* a);
@@ -797,6 +828,423 @@ int GunHostMsg(int msg, void* data);
 int AssetFind(u32 table, u32 key);
 
 extern int lbl_804A2930[16];  // the host's sounds
+
+// ---------------------------------------------------------------------------------------------------
+// 0x80254F54-0x8025643C: more host type callbacks (entries 5-22 of the host table; entry 12 points to
+// 0x80243778-0x80243988, outside this file). Each entry holds an enter, update and message callback.
+
+void GunHostState22Update(Actor* a, float dt) {
+    a->unk638 = 0;
+    a->flags &= ~1;
+    fn_800769A0(a, dt);
+    fn_80072058(a, dt);
+    if (a->prevAnim == -1) {
+        if (a->unk7D0 != 0) {
+            fn_8006D17C(&a->type, 3);
+        } else {
+            fn_8006D17C(&a->type, 1);
+        }
+    } else {
+        fn_8006D17C(&a->type, 22);
+    }
+}
+
+void GunHostState22Enter(Actor* a) {
+    a->msgHandler = 0;
+    if (a->prevAnim != -1) {
+        a->anim = a->prevAnim;
+    }
+    if (a->prevAnim2 != -1) {
+        a->anim2 = a->prevAnim2;
+    }
+}
+
+void GunHostState21Update(Actor* a, float dt) {
+    fn_8006D76C(a);
+    a->unk638 = 1;
+    a->flags &= ~1;
+    fn_8006D17C(&a->type, 21);
+    if (a->unk279C == -1 || fn_80175EFC(a->unk279C) != 0) {
+        fn_8006D17C(&a->type, 3);
+        fn_80155A84(a->grab, a->host, 1);
+    }
+}
+
+void GunHostState21Enter(Actor* a) {
+    Actor* h = a->host;
+    HostData* hd;
+    int cond = 0;
+    int weapon;
+
+    if (HandleKind(h->handle) == 0x13) {
+        hd = fn_800A384C(h);
+        if (HasCondition(h->conditions, 11)) {
+            cond = 1;
+        }
+    }
+    PlayerInHost(a);
+    weapon = a->weapon;
+    a->anim = fn_800A1BC8(hd->set, hd->aim, lbl_803BF068[21].actions[weapon], cond, 0);
+    a->msgHandler = GunHostMsg;
+    a->animMode = 25;
+    a->anim2 = fn_800A1BC8(hd->set, hd->walk, lbl_803BF068[21].actions[weapon], cond, 0);
+    a->animMode2 = 25;
+    fn_8006D17C(&a->type, 21);
+}
+
+void GunHostState20Update(Actor* a, float dt) {
+    fn_8006D76C(a);
+    a->unk638 = 1;
+    a->flags &= ~1;
+    fn_800769A0(a, dt);
+    fn_80072058(a, dt);
+    if (fn_8006CAB8(a)) {
+        fn_8006D17C(&a->type, 2);
+    } else {
+        fn_8006D17C(&a->type, 1);
+    }
+    PlayerInHost(a);
+    DashUpdate(a);
+}
+
+void GunHostState20Enter(Actor* a) {
+    int host = PlayerInHost(a);
+    int weapon = a->weapon;
+
+    a->unk78 = 0;
+    a->flags50 &= ~0x20000;
+    a->anim = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->aim, lbl_803BF068[20].actions[weapon], 0, 0);
+    a->msgHandler = GunHostMsg;
+    a->animMode = 1;
+    a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[20].actions[weapon], 0, 0);
+    a->animMode2 = 1;
+    {
+        QueryMsg m;
+
+        m.hash = 0x08783452;
+        SendMsg(a->holder->handle, 0x41E, &m);
+        if (*(int*)&m.result != 0) {
+            fn_8006CAC0(a, 0);
+            if (a->anim == -1) {
+                fn_8006D288(a, 1);
+            }
+        } else {
+            fn_8006CAC0(a, 1);
+            if (a->anim == -1) {
+                fn_8006D288(a, 3);
+            }
+        }
+    }
+}
+
+void GunHostState19Update(Actor* a, float dt) {
+    fn_8006D76C(a);
+    a->unk638 = 1;
+    if (a->flags & 1) {
+        a->flags &= ~1;
+    } else {
+        a->flags50 |= 0x20000;
+        a->unk78 = 1;
+    }
+}
+
+void GunHostState19Enter(Actor* a) {
+    Actor* h = a->host;
+    HostData* hd;
+    int host;
+    int weapon;
+    int cond = 0;
+
+    if (HandleKind(h->handle) == 0x13) {
+        hd = fn_800A384C(h);
+        if (HasCondition(h->conditions, 11)) {
+            cond = 1;
+        }
+    }
+    host = PlayerInHost(a);
+    weapon = a->weapon;
+    a->anim = fn_800A1BC8(hd->set, hd->aim, lbl_803BF068[19].actions[weapon], cond, 0);
+    a->msgHandler = GunHostMsg;
+    a->animMode = 25;
+    a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[19].actions[weapon], 0, 0);
+    a->animMode2 = 25;
+    {
+        QueryMsg m;
+
+        m.hash = 0x08783452;
+        SendMsg(a->host->handle, 0x41E, &m);
+        if (*(int*)&m.result != 0) {
+            fn_8006CAC0(a, 0);
+        } else {
+            fn_8006CAC0(a, 1);
+        }
+    }
+}
+
+void GunHostState18Msg(Actor* a) {
+    fn_80155A84(a->grab, a->host, 1);
+}
+
+void GunHostState18Update(Actor* a, float dt) {
+    fn_8006D76C(a);
+    a->unk638 = 1;
+    a->flags &= ~1;
+    a->flags50 |= 0x20000;
+    a->unk78 = 1;
+    fn_8006D17C(&a->type, 19);
+}
+
+void GunHostState18Enter(Actor* a) {
+    int host = PlayerInHost(a);
+    Actor* h = a->host;
+    HostData* hd;
+    int weapon = a->weapon;
+    int cond = 0;
+
+    if (HandleKind(h->handle) == 0x13) {
+        hd = fn_800A384C(h);
+        if (HasCondition(h->conditions, 11)) {
+            cond = 1;
+        }
+    }
+    a->anim = fn_800A1BC8(hd->set, hd->aim, lbl_803BF068[18].actions[weapon], cond, 0);
+    a->msgHandler = GunHostMsg;
+    a->animMode = 89;
+    a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[18].actions[weapon], 0, 0);
+    a->animMode2 = 89;
+    {
+        QueryMsg m;
+
+        m.hash = 0x08783452;
+        SendMsg(a->host->handle, 0x41E, &m);
+        if (*(int*)&m.result != 0) {
+            fn_8006CAC0(a, 0);
+        } else {
+            fn_8006CAC0(a, 1);
+        }
+    }
+}
+
+void GunHostState13Msg(Actor* a) {
+    a->flags50 &= ~0x40000;
+}
+
+void GunHostState13Update(Actor* a, float dt) {
+    fn_8006D76C(a);
+    a->unk638 = 1;
+    a->flags &= ~1;
+    fn_80072058(a, dt);
+}
+
+void GunHostState13Enter(Actor* a) {
+    int host;
+    int weapon;
+    int chain;
+
+    fn_8006D76C(a);
+    a->flags50 |= 0x40000;
+    fn_80050EB0(a);
+    host = PlayerInHost(a);
+    weapon = a->weapon;
+    a->anim = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->aim, lbl_803BF068[13].actions[weapon], 0, 0);
+    a->animMode = 80;
+    if (a->bone == -1) {
+        chain = 8;
+    } else {
+        chain = ModelBoneNodeChain(a->model58, ModelBoneName(a->model58, a->bone), lbl_804A2930, 16);
+        if (chain == -1) {
+            chain = 8;
+        }
+    }
+    if (a->flags & 0x80000) {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->run, lbl_803BF068[13].actions[weapon], chain * 2, 0);
+    } else {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[13].actions[weapon], chain * 2, 0);
+    }
+    a->msgHandler2 = GunHostMsg;
+    a->animMode2 = 80;
+}
+
+void GunHostState11Update(Actor* a, float dt) {
+    a->unk638 = 1;
+    a->flags &= ~1;
+    fn_800769A0(a, dt);
+    fn_80072058(a, dt);
+    DashUpdate(a);
+    fn_8006D17C(&a->type, 3);
+}
+
+void GunHostState11Enter(Actor* a) {
+    int r1;
+    int r2;
+    int host;
+    int weapon;
+
+    Query(&r1, a->handle, 0x41E, 0x2DA8293C);
+    Query(&r2, a->handle, 0x41E, 0xDFF3097A);
+    fn_80048BA8(a, a->buf, 1);
+    Fn800F7F5C(r1, r2, 0xBC78F550, fn_800498D0(a), a->buf, a->speed);
+    host = PlayerInHost(a);
+    weapon = a->weapon;
+    a->anim = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->aim, lbl_803BF068[11].actions[weapon], 0, 0);
+    a->msgHandler = GunHostMsg;
+    a->animMode = 17;
+    if (a->flags & 0x80000) {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->run, lbl_803BF068[11].actions[weapon], 0, 0);
+        if (a->anim2 == fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->run, lbl_803BF068[3].actions[weapon], 0, 0)) {
+            a->animMode2 = 1;
+        } else {
+            a->animMode2 = 17;
+        }
+    } else {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[11].actions[weapon], 0, 0);
+        if (a->anim2 == fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[3].actions[weapon], 0, 0)) {
+            a->animMode2 = 1;
+        } else {
+            a->animMode2 = 17;
+        }
+    }
+}
+
+void GunHostState10Update(Actor* a, float dt) {
+    a->unk638 = 1;
+    a->flags &= ~1;
+    fn_800769A0(a, dt);
+    fn_80072058(a, dt);
+    DashUpdate(a);
+    fn_8006D17C(&a->type, 3);
+}
+
+void GunHostState10Enter(Actor* a) {
+    int r1;
+    int r2;
+    int host;
+    int weapon;
+
+    Query(&r1, a->handle, 0x41E, 0x2DA8293C);
+    Query(&r2, a->handle, 0x41E, 0xDFF3097A);
+    fn_80048BA8(a, a->buf, 1);
+    Fn800F7F5C(r1, r2, 0x8FDD7599, fn_800498D0(a), a->buf, a->speed);
+    host = PlayerInHost(a);
+    weapon = a->weapon;
+    a->anim = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->aim, lbl_803BF068[10].actions[weapon], 0, 0);
+    a->msgHandler = GunHostMsg;
+    a->animMode = 17;
+    if (a->flags & 0x80000) {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->run, lbl_803BF068[10].actions[weapon], 0, 0);
+        if (a->anim2 == fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->run, lbl_803BF068[3].actions[weapon], 0, 0)) {
+            a->animMode2 = 1;
+        } else {
+            a->animMode2 = 17;
+        }
+    } else {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[10].actions[weapon], 0, 0);
+        if (a->anim2 == fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[3].actions[weapon], 0, 0)) {
+            a->animMode2 = 1;
+        } else {
+            a->animMode2 = 17;
+        }
+    }
+}
+
+void GunHostState9Msg(Actor* a) {
+    ActorPlayAnim(0x2000000, 0xD39F69B4, fn_800498D0(a));
+}
+
+void GunHostState9Update(Actor* a, float dt) {
+    a->unk638 = 1;
+    a->flags &= ~1;
+    fn_800769A0(a, dt);
+    fn_80072058(a, dt);
+    DashUpdate(a);
+    fn_8006D17C(&a->type, 1);
+}
+
+void GunHostState9Enter(Actor* a) {
+    int r2;
+    int host;
+    int weapon;
+
+    Query(&r2, a->handle, 0x41E, 0xDFF3097A);
+    host = PlayerInHost(a);
+    weapon = a->weapon;
+    a->anim = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->aim, lbl_803BF068[9].actions[weapon], 0, 0);
+    a->msgHandler = GunHostMsg;
+    a->animMode = 16;
+    if (a->flags & 0x80000) {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->run, lbl_803BF068[9].actions[weapon], 0, 0);
+    } else {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[9].actions[weapon], 0, 0);
+    }
+    a->animMode2 = 16;
+    lbl_804D3624 = fn_800F7994(r2, 0x9D1C245C);
+    FxStart((void*)lbl_804D3624, 0, 0);
+}
+
+void GunHostState8Update(Actor* a, float dt) {
+    a->unk638 = 1;
+    a->flags &= ~1;
+    fn_800769A0(a, dt);
+    fn_80072058(a, dt);
+    fn_8006D17C(&a->type, 8);
+    DashUpdate(a);
+    if (a->grenades == 0) {
+        fn_8006D17C(&a->type, 3);
+    } else {
+        fn_8006D76C(a);
+    }
+}
+
+void GunHostState8Enter(Actor* a) {
+    int r2;
+    int host;
+    int weapon;
+
+    Query(&r2, a->handle, 0x41E, 0xDFF3097A);
+    host = PlayerInHost(a);
+    weapon = a->weapon;
+    a->anim = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->aim, lbl_803BF068[8].actions[weapon], 0, 0);
+    a->msgHandler = GunHostMsg;
+    a->animMode = 1;
+    if (a->flags & 0x80000) {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->run, lbl_803BF068[8].actions[weapon], 0, 0);
+    } else {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[8].actions[weapon], 0, 0);
+    }
+    a->msgHandler2 = 0;
+    a->animMode2 = 1;
+    lbl_804D3628 = fn_800F7994(r2, 0x6E56393C);
+    fn_8016F120((void*)lbl_804D3628, a->pos);
+}
+
+void GunHostState5Update(Actor* a, float dt) {
+    a->unk638 = 1;
+    a->flags &= ~1;
+    fn_800769A0(a, dt);
+    fn_80072058(a, dt);
+    fn_8006D17C(&a->type, 5);
+    DashUpdate(a);
+    if (a->ammo == 0 || a->grenades != 0) {
+        fn_8006D17C(&a->type, 3);
+    } else {
+        fn_8006D76C(a);
+    }
+}
+
+void GunHostState5Enter(Actor* a) {
+    int host = PlayerInHost(a);
+    int weapon = a->weapon;
+
+    a->anim = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->aim, lbl_803BF068[5].actions[weapon], 0, 0);
+    a->msgHandler = GunHostMsg;
+    a->animMode = 1;
+    if (a->flags & 0x80000) {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->run, lbl_803BF068[5].actions[weapon], 0, 0);
+    } else {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[5].actions[weapon], 0, 0);
+    }
+    a->animMode2 = 1;
+}
 
 void GunHostAimUpdate(Actor* a, float dt) {
     int r1;
