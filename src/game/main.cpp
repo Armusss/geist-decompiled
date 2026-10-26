@@ -39,11 +39,6 @@ void fn_80170B14(int arg);
 void fn_8000879C(const char* name);
 void fn_8000B000(void);
 void fn_80006558(int arg);
-void fn_8013C7D4(void* a, void* b, int c, int d, int e, int f, int g, int h, int i, int j, int k);
-void fn_8013C76C(void* a, void* pos);
-void fn_8013BF58(int a, float b);
-void fn_8013BA9C(void* a, int r, int g, int b, int alpha);
-void fn_8013BA70(void);
 int fn_800DC95C(int pad, int button);
 void fn_800087D8(int a, int b, int c);
 int fn_800087C8(int arg);
@@ -63,6 +58,15 @@ float fn_800A1394(float x);
 const char* fn_80086B9C(const char* level, int* arg);
 void fn_800880D0(void);
 }
+
+// Trail buffers and 3D line drawing (u_8013A3D4.cpp).
+struct TrailBuffer;
+struct DrawStrip;
+void TrailBufferInit(TrailBuffer* t, float* view, u32 n, u32 a, u32 b, u32 c, u32 d, u8 r, u8 g, u8 bl, u8 al);
+void TrailBufferPush(TrailBuffer* t, float* pos);
+void Draw3DBeginLineSimple(float width, int mode);
+void DrawLineStrip(DrawStrip* s, u8 r, u8 g, u8 b, u8 a);
+void DrawClearTexOffsets(void);
 
 void SAMAllocBuffers(void);                 // SAM.cpp
 int SaveCommand(int command, int arg);      // u_800DE0C4.cpp
@@ -359,7 +363,7 @@ const char* LevelSelect(const char* name, char** names, char** titles, char** pa
 
     fn_80006558(0);
     time = 0;
-    fn_8013C7D4(obj, view, 32, 0, 155, 255, 255, 0, 100, 255, 0);
+    TrailBufferInit((TrailBuffer*)obj, (float*)view, 32, 0, 155, 255, 255, 0, 100, 255, 0);
     for (;;) {
         float dt = LoadingTime();
         float t;
@@ -390,11 +394,11 @@ const char* LevelSelect(const char* name, char** names, char** titles, char** pa
         Vec3 pos = {0.0f, 0.0f, 0.0f};
         pos.x = x;
         pos.y = y;
-        fn_8013C76C(obj, &pos);
+        TrailBufferPush((TrailBuffer*)obj, (float*)&pos);
         Draw2DBegin();
-        fn_8013BF58(-3, 5.0f);
-        fn_8013BA9C(obj, 255, 255, 255, 255);
-        fn_8013BA70();
+        Draw3DBeginLineSimple(5.0f, -3);
+        DrawLineStrip((DrawStrip*)obj, 255, 255, 255, 255);
+        DrawClearTexOffsets();
         Draw2DEnd();
         GfxFrameBegin();
         if (fn_800DC95C(0, 0x13) != -1) {
