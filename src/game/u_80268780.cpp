@@ -806,8 +806,8 @@ inline void IVecToVec(Vec3* out, IVec3 in) {
 // Called for each actor in range: if it is inside the sensor's frustum and the sensor has a clear
 // line to it, the sensor's actor is told.
 int SensorSeeActor(SensorActor* actor, Sensor* s) {
-    IVec3 spos;
     Vec3 apos;
+    IVec3 spos;
     u32 out;
 
     spos = s->place.pos;
