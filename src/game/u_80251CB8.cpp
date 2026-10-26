@@ -259,6 +259,26 @@ static inline void ImpStateName(Buffer* out, const char* s) {
     fn_8028C188(out, text.mData, text.mLength);
 }
 
+inline int ImpHandle41D(void* data) {
+    Msg41D* m = (Msg41D*)data;
+    Actor* o = m->actor;
+    ImpBeh* b;
+
+    if (fn_80019F88(data, o) != 0) {
+        return 1;
+    }
+    b = o->beh;
+    switch (m->cmd) {
+    case 0x56D8C010:
+        lbl_803BECD8[b->state].exit(o);
+        lbl_803BECD8[1].enter(o);
+        fn_800A7B08(o->st, 3, 1);
+        b->timer = 500.0f;
+        return 0;
+    }
+    return 0;
+}
+
 int ImpMsg(int msg, void* data) {
     Actor* a = *(Actor**)data;
 
@@ -285,24 +305,8 @@ int ImpMsg(int msg, void* data) {
         }
         return 0;
     }
-    case 0x41D: {
-        Msg41D* m = (Msg41D*)data;
-        ImpBeh* b;
-
-        if (fn_80019F88(data, a) != 0) {
-            return 1;
-        }
-        b = a->beh;
-        switch (m->cmd) {
-        case 0x56D8C010:
-            lbl_803BECD8[b->state].exit(a);
-            lbl_803BECD8[1].enter(a);
-            fn_800A7B08(a->st, 3, 1);
-            b->timer = 500.0f;
-            return 0;
-        }
-        return 0;
-    }
+    case 0x41D:
+        return ImpHandle41D(data);
     case 0x407: {
         Msg407* m = (Msg407*)data;
         u32 type = m->type;
@@ -382,24 +386,23 @@ inline int ImpPickState(Actor* a) {
     if (fn_800A7B78(a->st, 5) != 0 && (kind == 4 || a->unk220 != 0)) {
         return 2;
     }
-    if (kind == 4) {
-        return 0;
+    if (kind != 4) {
+        fn_800B261C(a, kind, &target);
+        if (target != 0) {
+            return 1;
+        }
     }
-    fn_800B261C(a, kind, &target);
-    if (target == 0) {
-        return 0;
-    }
-    return 1;
+    return 0;
 }
 
-int ImpTick(Actor* a) {
-    ImpBeh* b;
+int ImpTick(void* owner) {
+    Actor* a = (Actor*)owner;
+    ImpBeh* b = a->beh;
     int next;
 
     if (a->health <= 0.0f) {
         return 1;
     }
-    b = a->beh;
     if (b->hurt > 0.0f) {
         b->hurt -= a->dt;
     }
@@ -415,7 +418,7 @@ int ImpTick(Actor* a) {
     if (lbl_803BECD8[b->state].update(a) != 0 || (b->flags & 1)) {
         b->flags &= ~1;
         next = ImpPickState(a);
-        if (next != b->state && lbl_803BECD8[b->state].exit(a)) {
+        if (b->state != next && lbl_803BECD8[b->state].exit(a)) {
             lbl_803BECD8[next].enter(a);
             fn_800A7A54(a->st, 0x40, 0);
             fn_800A7A54(a->st, 0x41, 0);
@@ -768,10 +771,12 @@ int fn_80252F34(void* owner, void* beh, int msg) {
         ZoneHitBox boxB;
 
         if (b->targetKind == 2) {
-            q.ownerId = b->target;
-            if (q.ownerId != -1) {
+            int id = b->target;
+
+            if (id != -1) {
                 Actor* t;
 
+                q.ownerId = id;
                 if (SendMsg(q.ownerId, 0x400, &q) != 0 && (t = q.actor) != 0) {
                     ActorGetMatrix(&mtxA, o);
                     ActorGetMatrix(&mtxB, t);
@@ -812,19 +817,19 @@ int fn_802531B4(void* owner, void* beh) {
         BehDone(b);
     } else {
         if (lbl_803BED88[d->state].update) {
-            lbl_803BED88[d->state].update(owner, beh);
+            lbl_803BED88[d->state].update(o, b);
         }
         if (d->next != d->state) {
             if (lbl_803BED88[d->state].exit) {
-                lbl_803BED88[d->state].exit(owner, beh);
+                lbl_803BED88[d->state].exit(o, b);
             }
             d->state = d->next;
             b->state = d->next;
             if (b->onState) {
-                b->onState(owner, beh, d->next);
+                b->onState(o, b, d->next);
             }
             if (lbl_803BED88[d->state].enter) {
-                lbl_803BED88[d->state].enter(owner, beh);
+                lbl_803BED88[d->state].enter(o, b);
             }
         }
     }
@@ -858,7 +863,7 @@ int fn_80253360(void* owner, void* beh) {
     d->next = 0;
     d->flags = 0;
     if (lbl_803BED88[d->state].enter) {
-        lbl_803BED88[d->state].enter(owner, beh);
+        lbl_803BED88[d->state].enter(owner, b);
     }
     return 1;
 }
