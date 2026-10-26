@@ -253,19 +253,11 @@ void GunHostAimUpdate(Actor* a, float dt) {
     }
 }
 
-inline void GunHostSetAnims(Actor* a, HostData* h, u32 action, int variant) {
-    if (a->flags & 0x80000) {
-        a->anim2 = fn_800A1BC8(h->set, h->run, action, variant, 0);
-    } else {
-        a->anim2 = fn_800A1BC8(h->set, h->walk, action, variant, 0);
-    }
-}
-
 void GunHostAimEnter(Actor* a) {
+    int weapon;
     int r1;
     int r2;
     int host;
-    int weapon;
     int empty;
     int r;
 
@@ -287,7 +279,11 @@ void GunHostAimEnter(Actor* a) {
             empty = 0;
         }
     }
-    GunHostSetAnims(a, a->hosts[host], lbl_803BF068[3].actions[weapon], 0);
+    if (a->flags & 0x80000) {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->run, lbl_803BF068[3].actions[weapon], 0, 0);
+    } else {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[3].actions[weapon], 0, 0);
+    }
     a->animMode2 = 1;
 }
 
@@ -306,16 +302,20 @@ void GunHostIdleUpdate(Actor* a, float dt) {
 
 void GunHostFireEnter(Actor* a) {
     int r2;
-    HostData* h;
-    u32* action;
+    int host;
+    int weapon;
 
     Query(&r2, a->handle, 0x41E, 0xDFF3097A);
-    h = a->hosts[PlayerInHost(a)];
-    action = &lbl_803BF068[2].actions[a->weapon];
-    a->anim = fn_800A1BC8(h->set, h->aim, *action, 0, 0);
+    host = PlayerInHost(a);
+    weapon = a->weapon;
+    a->anim = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->aim, lbl_803BF068[2].actions[weapon], 0, 0);
     a->animMode = 16;
     a->msgHandler = GunHostMsg;
-    GunHostSetAnims(a, h, *action, 0);
+    if (a->flags & 0x80000) {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->run, lbl_803BF068[2].actions[weapon], 0, 0);
+    } else {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[2].actions[weapon], 0, 0);
+    }
     a->animMode2 = 16;
     lbl_804D3620 = fn_800F7994(r2, 0xAFEF562B);
     FxStart((void*)lbl_804D3620, 0, 0);
@@ -343,13 +343,17 @@ void GunHostFireUpdate(Actor* a, float dt) {
 }
 
 void GunHostIdleEnter(Actor* a) {
-    HostData* h = a->hosts[PlayerInHost(a)];
-    u32* action = &lbl_803BF068[1].actions[a->weapon];
+    int host = PlayerInHost(a);
+    int weapon = a->weapon;
 
-    a->anim = fn_800A1BC8(h->set, h->aim, *action, 0, 0);
+    a->anim = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->aim, lbl_803BF068[1].actions[weapon], 0, 0);
     a->animMode = 1;
     a->msgHandler = 0;
-    GunHostSetAnims(a, h, *action, 0);
+    if (a->flags & 0x80000) {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->run, lbl_803BF068[1].actions[weapon], 0, 0);
+    } else {
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[1].actions[weapon], 0, 0);
+    }
     a->msgHandler2 = GunHostMsg;
     a->animMode2 = 1;
     a->unk7D0 = 0;
@@ -376,7 +380,7 @@ void GunHostWalkUpdate(Actor* a, float dt) {
 void GunHostThrowEnter(Actor* a) {
     int r1;
     int r2;
-    HostData* h;
+    int host;
     int r;
     int walk;
 
@@ -385,28 +389,33 @@ void GunHostThrowEnter(Actor* a) {
     r = Fn800F7DEC(r1, r2, 0x0020EE36, fn_800498D0(a), 0);
     if (r == 0xC0BECF7E || r == 0x11D2C025) {
         a->variant = 2;
-    } else if (rand() / 32767.0f < 0.5f) {
-        a->variant = 1;
-    } else {
+    } else if (rand() / 32767.0f >= 0.5f) {
         a->variant = 0;
+    } else {
+        a->variant = 1;
     }
-    h = a->hosts[PlayerInHost(a)];
-    a->anim = fn_800A1BC8(h->set, h->aim, lbl_803BF068[0].actions[0], a->variant, 0);
+    host = PlayerInHost(a);
+    a->anim = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->aim, lbl_803BF068[0].actions[0], a->variant, 0);
     if (a->anim == -1) {
         a->variant = 0;
-        a->anim = fn_800A1BC8(h->set, h->aim, lbl_803BF068[0].actions[0], a->variant, 0);
+        a->anim = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->aim, lbl_803BF068[0].actions[0], a->variant, 0);
     }
     a->msgHandler = GunHostMsg;
     a->animMode = 1;
-    if (a->flags & 0x80000) {
-        walk = h->run;
-    } else {
-        walk = h->walk;
+    {
+        HostData* h = a->hosts[host];
+        int set = h->set;
+
+        if (a->flags & 0x80000) {
+            walk = h->run;
+        } else {
+            walk = h->walk;
+        }
+        a->anim2 = fn_800A1BC8(set, walk, lbl_803BF068[0].actions[0], a->variant, 0);
     }
-    a->anim2 = fn_800A1BC8(h->set, walk, lbl_803BF068[0].actions[0], a->variant, 0);
     if (a->anim2 == -1) {
         a->variant = 0;
-        a->anim2 = fn_800A1BC8(h->set, walk, lbl_803BF068[0].actions[0], a->variant, 0);
+        a->anim2 = fn_800A1BC8(a->hosts[host]->set, walk, lbl_803BF068[0].actions[0], a->variant, 0);
     }
     a->msgHandler2 = GunHostMsg;
     a->animMode2 = 1;
