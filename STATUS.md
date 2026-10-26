@@ -15,9 +15,9 @@ published; generate your own from your copy of the game if you want it.
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
-| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | stopped (DeepSeek budget plan); ready for reassignment | running |
-| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_8020D47C (new, last DeepSeek unit before the budget stop) | running |
-| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_801EAACC (final DeepSeek unit) | running |
+| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | stopped: DeepSeek budget used ($20.66 of $25) | running |
+| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | stopped: DeepSeek budget used | running |
+| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | stopped: DeepSeek budget used | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Paused (session usage); partial work on its branch | paused |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
@@ -67,6 +67,8 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+u_801EAACC 6/33 (ds-3 draft, text rendering/player mode): PlayerSetupGunAction 2, PlayerModeUpdate 3, TextDrawBeginFrame 6
+u_8020D47C 16/37 (ds-2 draft, possession select): EnterPossessed 1, ResetGun 2, CollisionUpdate 3, SelectSlotUpdate 4, GunUpdate 6
 u_802C01E8 6/25 (ds-1 draft, possessed-actor status): fn_802C301C 1
 u_801AADA8 7/29 (ds-3 draft, FSHSVE actor): TargetBlocksFollow 3, ResetRangeState 5, StateTwoEnter 5, FollowAbortState 6
 u_8023FA5C 20/52 (ds-2 draft, large actor): LargeActorResetFlags 3
