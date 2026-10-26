@@ -1101,7 +1101,7 @@ inline float Min(float a, float b) { return a < b ? a : b; }
 
 
 
-// Launch parameters for the fire ball (see fn_802541D4).
+// Launch parameters for the fire ball (see ImpFireBallSpawn).
 struct ImpThrow {
     Vec3 pos;
     u8 pad0C[0x18 - 0x0C];
@@ -1116,7 +1116,7 @@ int rand(void);
 float fn_800E1020(Vec3* v);
 void fn_800E1098(void* out, void* in, float length);
 }
-void fn_802541D4(int arg, ImpThrow* t, int n);
+int ImpFireBallSpawn(int owner, ImpThrow* t, int n);
 
 inline float FastSqrt(float x) {
     register float r;
@@ -1223,7 +1223,7 @@ void ImpFireUpdate(EffectObj* obj, float dt) {
                 t.vel.x += d.x;
                 t.vel.y += d.y;
                 t.vel.z += d.z;
-                fn_802541D4(g->arg, &t, 1);
+                ImpFireBallSpawn(g->arg, &t, 1);
                 fx = def->fx;
                 FxStartAt(fx, &g->shot.x, pos);
             }
