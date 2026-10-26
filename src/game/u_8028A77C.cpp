@@ -400,8 +400,6 @@ public:
     virtual ~ScreenEffectSlot();
     void Set(int start, int size);
     void Clear();
-    void Flush();
-    int Consume(int pos, int size);
     static void operator delete(void* p) { VFree(p); }
 
     int mStart; // 0x04
@@ -443,28 +441,30 @@ void ScreenEffectSlot::Clear()
 // 0x8028B2D4: write the range reported by the slot's virtual query into the
 // pending window and shrink the window by the reported size.  Retail evaluates
 // the query twice in a row (first result is the size, second the position).
-void ScreenEffectSlot::Flush()
+// ScreenEffectSlotFlush
+extern "C" void fn_8028B2D4(ScreenEffectSlot* slot)
 {
-    int size = Query();
-    int pos = Query();
-    fn_8028BC5C(this, (unk0C + mSize) - pos, size);
-    mSize -= size;
+    int size = slot->Query();
+    int pos = slot->Query();
+    fn_8028BC5C(slot, (slot->unk0C + slot->mSize) - pos, size);
+    slot->mSize -= size;
 }
 
 // 0x8028B35C: mark [pos, pos + size) of the current window as written.  The
 // window base is re-read from the object after the write call, as retail does.
-int ScreenEffectSlot::Consume(int pos, int size)
+// ScreenEffectSlotConsume
+extern "C" int fn_8028B35C(ScreenEffectSlot* slot, int pos, int size)
 {
-    int rel = pos - unk0C;
-    fn_8028BC5C(this, unk0C + rel, size);
-    mSize -= size;
-    return unk0C + rel;
+    int rel = pos - slot->unk0C;
+    fn_8028BC5C(slot, slot->unk0C + rel, size);
+    slot->mSize -= size;
+    return slot->unk0C + rel;
 }
 
 // 0x8009D974: grow (or, with a null base, allocate) a heap block.
 void* VRealloc(void* block, int size);
 
-extern "C" void fn_8028BB3C(void* src, u32 size, void* dst);
+u8* CopyBytes(const u8* src, u32 size, u8* dst);
 extern "C" void fn_8028BC94(void* self, int pos, int size);
 extern "C" void ScreenEffectSlotQueueCopy(void* self, int base, int offset, int size);
 
@@ -529,7 +529,7 @@ extern "C" void* fn_8028B3BC(void* buffer, int offset, int size)
                 count = want;
                 if ((u32)self->mSize + 1 < want)
                     count = (u32)self->mSize + 1;
-                fn_8028BB3C((void*)self->mStart, count, (void*)newBlock);
+                CopyBytes((const u8*)self->mStart, count, (u8*)newBlock);
             }
             self->Set(newBlock, self->mSize);
             self->unk0C = newBlock;
@@ -572,7 +572,7 @@ extern "C" void fn_8028B5FC(void* buffer, int size, u8 raw)
             count = want;
             if ((u32)self->mSize + 1 < want)
                 count = (u32)self->mSize + 1;
-            fn_8028BB3C((void*)self->mStart, count, (void*)newBlock);
+            CopyBytes((const u8*)self->mStart, count, (u8*)newBlock);
         }
         self->Set(newBlock, self->mSize);
         self->unk0C = newBlock;
@@ -605,7 +605,7 @@ void ScreenEffectSlotReserveAndCopy(ScreenEffectSlot* self, int offset, int size
                 u32 count = want;
                 if ((u32)self->mSize + 1 < want)
                     count = (u32)self->mSize + 1;
-                fn_8028BB3C((void*)self->mStart, count, (void*)newBlock);
+                CopyBytes((const u8*)self->mStart, count, (u8*)newBlock);
             }
             self->Set(newBlock, self->mSize);
             self->unk0C = newBlock;
@@ -754,7 +754,7 @@ extern "C" void fn_8028BC94(void* self, int pos, int size)
 extern "C" void ScreenEffectSlotQueueCopy(void* self, int base, int offset, int size)
 {
     if (offset != 0 && size != 0 && offset != *(int*)((char*)self + 0xC))
-        fn_8028BB3C((void*)offset, (u32)size, (void*)base);
+        CopyBytes((const u8*)offset, (u32)size, (u8*)base);
 }
 
 // 0x8028BD18: clear the slot's queued-effect state and forget the pending
@@ -969,8 +969,8 @@ extern "C" void fn_8028C188(Buffer* self, char* text, int size)
         fn_8028B5FC(self, pos, 1);
     self->mSize = pos;
     ((char*)self->unk0C)[pos] = 0;
-    fn_8028BB3C((void*)text, (u32)len,
-                (void*)((char*)(self->unk0C + self->mSize) - len));
+    CopyBytes((const u8*)text, (u32)len,
+                (u8*)((char*)(self->unk0C + self->mSize) - len));
 }
 
 // fn_8028C258: append a text (AppendText), ignoring any trailing NULs, and
@@ -992,8 +992,8 @@ extern "C" void fn_8028C258(Buffer* self, const char* text)
         fn_8028B5FC(self, pos, 1);
     self->mSize = pos;
     ((char*)self->unk0C)[pos] = 0;
-    fn_8028BB3C((void*)text, len,
-                (void*)((char*)(self->unk0C + self->mSize) - len));
+    CopyBytes((const u8*)text, len,
+                (u8*)((char*)(self->unk0C + self->mSize) - len));
 }
 
 // fn_8028C338: replace the buffer's text with a text (SetText), ignoring any
