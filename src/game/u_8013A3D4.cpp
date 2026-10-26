@@ -65,9 +65,10 @@ void DrawWorldQuad(f32 width, f32 angle, f32* pos, u8 r, u8 g, u8 b, u8 a)
     p0[0] -= lbl_8046D2B0.vp[0];
     p0[1] -= lbl_8046D2B0.vp[1];
 
-    GXProject(pos[0] + lbl_8046D2B0.mtx[0][0] * width,
-              pos[1] + lbl_8046D2B0.mtx[0][1] * width,
-              pos[2] + lbl_8046D2B0.mtx[0][2] * width,
+    p1[0] = pos[0] + lbl_8046D2B0.mtx[0][0] * width;
+    p1[1] = pos[1] + lbl_8046D2B0.mtx[0][1] * width;
+    p1[2] = pos[2] + lbl_8046D2B0.mtx[0][2] * width;
+    GXProject(p1[0], p1[1], p1[2],
               lbl_8046D2B0.mtx, lbl_8046D2B0.proj, lbl_8046D2B0.vp,
               &p1[0], &p1[1], &p1[2]);
     p1[0] -= lbl_8046D2B0.vp[0];
@@ -76,41 +77,49 @@ void DrawWorldQuad(f32 width, f32 angle, f32* pos, u8 r, u8 g, u8 b, u8 a)
     radius = PSVECDistance(p0, p1);
 
     visible = false;
-    if ((lbl_804D4D10 < p0[0] + radius || p0[0] - radius < lbl_804D4D18) &&
-        (lbl_804D4D14 < p0[1] + radius || p0[1] - radius < lbl_804D4D1C)) {
+    if ((p0[0] + radius > lbl_804D4D10 || p0[0] - radius < lbl_804D4D18) &&
+        (p0[1] + radius > lbl_804D4D14 || p0[1] - radius < lbl_804D4D1C)) {
         rot[0] = lbl_804D7A88 + angle;
         rot[1] = lbl_804D7A8C + angle;
         fn_800A0FC4(rot, rot);
-        x0 = p0[0] + radius * rot[2];
-        y0 = p0[1] + radius * rot[0];
-        x1 = p0[0] + radius * rot[3];
-        y1 = p0[1] + radius * rot[1];
+        x0 = radius * rot[2] + p0[0];
+        y0 = radius * rot[0] + p0[1];
+        x1 = radius * rot[3] + p0[0];
+        y1 = radius * rot[1] + p0[1];
 
         rot[0] = lbl_804D7A90 + angle;
         rot[1] = lbl_804D7A94 + angle;
         fn_800A0FC4(rot, rot);
-        x2 = p0[0] + radius * rot[2];
-        y2 = p0[1] + radius * rot[0];
-        x3 = p0[0] + radius * rot[3];
-        y3 = p0[1] + radius * rot[1];
+        x2 = radius * rot[2] + p0[0];
+        y2 = radius * rot[0] + p0[1];
+        x3 = radius * rot[3] + p0[0];
+        y3 = radius * rot[1] + p0[1];
         visible = true;
     }
 
     if (visible) {
+        x0 *= lbl_804D4D08;
+        y0 *= lbl_804D4D0C;
+        x1 *= lbl_804D4D08;
+        y1 *= lbl_804D4D0C;
+        x2 *= lbl_804D4D08;
+        y2 *= lbl_804D4D0C;
+        x3 *= lbl_804D4D08;
+        y3 *= lbl_804D4D0C;
         GXBegin(GX_QUADS, GX_VTXFMT2, 4);
-        GXPosition3f32(x0 * lbl_804D4D08, y0 * lbl_804D4D0C, p0[2]);
+        GXPosition3f32(x0, y0, p0[2]);
         GXColor4u8(r, g, b, a);
         GXTexCoord2f32(0.0f, 1.0f);
         GXTexCoord2f32(0.0f, 0.0f);
-        GXPosition3f32(x1 * lbl_804D4D08, y1 * lbl_804D4D0C, p0[2]);
+        GXPosition3f32(x1, y1, p0[2]);
         GXColor4u8(r, g, b, a);
         GXTexCoord2f32(0.0f, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
-        GXPosition3f32(x2 * lbl_804D4D08, y2 * lbl_804D4D0C, p0[2]);
+        GXPosition3f32(x2, y2, p0[2]);
         GXColor4u8(r, g, b, a);
         GXTexCoord2f32(1.0f, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
-        GXPosition3f32(x3 * lbl_804D4D08, y3 * lbl_804D4D0C, p0[2]);
+        GXPosition3f32(x3, y3, p0[2]);
         GXColor4u8(r, g, b, a);
         GXTexCoord2f32(1.0f, 1.0f);
         GXTexCoord2f32(0.0f, 0.0f);
@@ -313,8 +322,9 @@ void DrawTrailRing(TrailBuffer* p, u8 r, u8 g, u8 b, u8 a)
     f32 cr, cg, cb, ca;
     f32 sr, sg, sb, sa;
     int i, j;
+    int count = p->count;
 
-    if (p->count <= 1)
+    if (count <= 1)
         return;
 
     cr = lbl_804D2E78 * ((f32)p->base[0] * (f32)r);
@@ -326,36 +336,39 @@ void DrawTrailRing(TrailBuffer* p, u8 r, u8 g, u8 b, u8 a)
     sb = lbl_804D2E78 * (p->db * (f32)b);
     sa = lbl_804D2E78 * (p->da * (f32)a);
 
-    GXBegin(GX_LINESTRIP, GX_VTXFMT2, p->count);
+    GXBegin(GX_LINESTRIP, GX_VTXFMT2, count);
 
-    j = (p->end - p->count) + 1;
-    if (j < 0)
-        j += p->max;
+    i = 0;
+    int start = (p->end - count) + 1;
+    if (start < 0)
+        start += p->max;
+    j = start;
 
-    for (i = 0; j < p->max && i < p->count; i++, j++) {
-        const f32* v = &p->verts[j * 3];
-        const f32* tc = &lbl_803A0EE0[(j & 1) * 2];
-        GXPosition3f32(v[0], v[1], v[2]);
+    while (j < p->max && i < count) {
+        GXPosition3f32(p->verts[j * 3 + 0], p->verts[j * 3 + 1], p->verts[j * 3 + 2]);
         GXColor4u8((u8)cr, (u8)cg, (u8)cb, (u8)ca);
-        GXTexCoord2f32(tc[0], tc[1]);
+        GXTexCoord2f32(lbl_803A0EE0[(j & 1) * 2], lbl_803A0EE0[(j & 1) * 2 + 1]);
         GXTexCoord2f32(0.0f, 0.0f);
         cr += sr;
         cg += sg;
         cb += sb;
         ca += sa;
+        i++;
+        j++;
     }
 
-    for (j = 0; j <= p->end && i < p->count; i++, j++) {
-        const f32* v = &p->verts[j * 3];
-        const f32* tc = &lbl_803A0EE0[(j & 1) * 2];
-        GXPosition3f32(v[0], v[1], v[2]);
+    j = 0;
+    while (j <= p->end && i < count) {
+        GXPosition3f32(p->verts[j * 3 + 0], p->verts[j * 3 + 1], p->verts[j * 3 + 2]);
         GXColor4u8((u8)cr, (u8)cg, (u8)cb, (u8)ca);
-        GXTexCoord2f32(tc[0], tc[1]);
+        GXTexCoord2f32(lbl_803A0EE0[(j & 1) * 2], lbl_803A0EE0[(j & 1) * 2 + 1]);
         GXTexCoord2f32(0.0f, 0.0f);
         cr += sr;
         cg += sg;
         cb += sb;
         ca += sa;
+        i++;
+        j++;
     }
 }
 
@@ -513,10 +526,11 @@ void DrawLineStrip(DrawStrip* strip, u8 r, u8 g, u8 b, u8 a)
 {
     f32 cr, cg, cb, ca;
     f32 sr, sg, sb, sa;
+    int count = strip->count;
     int i;
     int n;
 
-    if (strip->count > 1) {
+    if (count > 1) {
         cr = strip->color[0] * (f32)r * lbl_804D2E78;
         cg = strip->color[1] * (f32)g * lbl_804D2E78;
         cb = strip->color[2] * (f32)b * lbl_804D2E78;
@@ -526,13 +540,14 @@ void DrawLineStrip(DrawStrip* strip, u8 r, u8 g, u8 b, u8 a)
         sb = strip->db * (f32)b * lbl_804D2E78;
         sa = strip->da * (f32)a * lbl_804D2E78;
 
-        GXBegin(GX_LINESTRIP, GX_VTXFMT2, (u16)strip->count);
+        GXBegin(GX_LINESTRIP, GX_VTXFMT2, (u16)count);
 
         n = 0;
-        i = (strip->head - strip->count) + 1;
-        if (i < 0)
-            i += strip->capacity;
-        while (i < strip->capacity && n < strip->count) {
+        int start = (strip->head - count) + 1;
+        if (start < 0)
+            start += strip->capacity;
+        i = start;
+        while (i < strip->capacity && n < count) {
             GXPosition3f32(strip->verts[i].x, strip->verts[i].y, 0.0f);
             GXColor4u8((u8)cr, (u8)cg, (u8)cb, (u8)ca);
             GXTexCoord2f32(lbl_803A0EE0[(i & 1) * 2], lbl_803A0EE0[(i & 1) * 2 + 1]);
@@ -541,12 +556,12 @@ void DrawLineStrip(DrawStrip* strip, u8 r, u8 g, u8 b, u8 a)
             cg += sg;
             cb += sb;
             ca += sa;
-            i++;
             n++;
+            i++;
         }
 
         i = 0;
-        while (i <= strip->head && n < strip->count) {
+        while (i <= strip->head && n < count) {
             GXPosition3f32(strip->verts[i].x, strip->verts[i].y, 0.0f);
             GXColor4u8((u8)cr, (u8)cg, (u8)cb, (u8)ca);
             GXTexCoord2f32(lbl_803A0EE0[(i & 1) * 2], lbl_803A0EE0[(i & 1) * 2 + 1]);
@@ -555,8 +570,8 @@ void DrawLineStrip(DrawStrip* strip, u8 r, u8 g, u8 b, u8 a)
             cg += sg;
             cb += sb;
             ca += sa;
-            i++;
             n++;
+            i++;
         }
     }
 }
@@ -791,13 +806,13 @@ void TrailBufferPush(TrailBuffer* p, f32* v)
 
 // Initialises a ring buffer with `max` vertices and a per-vertex colour ramp
 // running from the base colour to the end colour.
-void TrailBufferInit(TrailBuffer* p, f32* verts, s32 max,
-                     s32 rEnd, s32 gEnd, s32 bEnd, s32 aEnd,
+void TrailBufferInit(TrailBuffer* p, f32* verts, u32 max,
+                     u32 rEnd, u32 gEnd, u32 bEnd, u32 aEnd,
                      u8 rBase, u8 gBase, u8 bBase, u8 aBase)
 {
     f32 scale = 1.0f / (f32)max;
-    s32 end = max - 1;
-    s32 count = 0;
+    u32 end = max - 1;
+    u32 count = 0;
 
     p->verts = verts;
     p->count = count;
