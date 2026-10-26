@@ -15,9 +15,9 @@ published; generate your own from your copy of the game if you want it.
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
-| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_8024CAA0 (new, easiest-first) | running |
+| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_8028865C (new, easiest-first) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_8029C0AC (new, easiest-first) | running |
-| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_8020B77C (new, easiest-first) | running |
+| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_8018FAE8 (new, easiest-first) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Paused (session usage); partial work on its branch | paused |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
@@ -67,6 +67,8 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+u_8020B77C 7/15 (ds-3 draft, FX emitter): Start 64, StartTextOut 64, SetAsset 86; StateUpdate 553
+u_8024CAA0 0/8 (ds-1 draft, camera rail/scannable beam): RailFireloopDestroy 22, ScannableBeamSetParam 44; RailMove 601
 u_8028A77C 17/47 (ds-1 draft, Buffer/String/ScreenEffectSlot): ScreenEffectSlotQueueCopy 3, GeistCommMessage 10, fn_8028B2D4 (slot Flush) 15 diffs; fn_8028BAE0 not named yet
 u_802A815C 3/10 (ds-2 draft, Actor62 path actor): Dispatch 10, CopyState 38, DrawPathTrail 45; UpdatePath 615
 u_802B7120 5/17 (ds-3 draft): ActorShouldCollect802B84C8 1, ActorGetSelectedId802B85D0 5 diffs; MessageHandler (0x5F0) and DamageHandler (0x2CC) large
