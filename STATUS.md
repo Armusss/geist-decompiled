@@ -15,7 +15,7 @@ published; generate your own from your copy of the game if you want it.
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
-| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_801EDE74 (new) | running |
+| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_8027D3EC (new) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80125DE4 (new, has a 0xB08 function) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_8024E5D0 (new) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Paused (session usage); partial work on its branch | paused |
@@ -67,6 +67,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+u_801EDE74 9/41 (ds-1 draft, held-slot/gun aim/item): HeldSlotField44 4, HeldSlotCallback0 5, HeldSlotDispatchCallback 7
 u_80136884 23/53 (ds-2 draft, player gun): HeldTypeValue 4, HeldTypeCallback 4, HeldTypeBegin 8
 u_802D4D18 4/19 (ds-3 draft, host ride): RideStartHandler 1, RefreshStreamState 7; RideHostUpdate (0x924) TODO, the DeepSeek draft did not compile
 u_80290C58 8/43 (ds-1 draft, host follow/carrier): OffsetResetEnter 2, FollowBeginState 3, OffsetStateEnter 4, CarrierReleaseState 5, AccumLinkDirection 8
