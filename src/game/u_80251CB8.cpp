@@ -64,19 +64,107 @@ void fn_800F86A0(int emitter);
 
 void VFree(void* p);
 
+struct Player;
+
+struct ImpShot {
+    u8 pad00[0x30];
+    float x, y, z;
+    u8 pad3C[0x48 - 0x3C];
+    int target;
+    int pad4C;
+    float spread;
+    float scale;
+    u8 pad58[0x60 - 0x58];
+};
+
+struct ImpShotInfo {
+    ImpShot* hit;
+    float speed;
+    float unk8;
+    int unkC;
+    int charge;
+    int unk14;
+    int unk18;
+    int unk1C;
+    int unk20;
+};
+
+struct MsgResult {
+    void* p;
+    char pad[0x1C];
+};
+
 struct ImpFireDef {
-    u8 pad00[0x4];
-    int unk04;
-    int unk08;
+    int unk00;
+    int unk04;  // ammo id
+    int unk08;  // ammo max
+    float speed;
+    float unk10;
+    int unk14;
+    int charge;
+    int drain;
+    int maxCharge;
+    int spread;
+    int unk28;
+    int unk2C;
+    void* fx;
+    u8 pad34[0x48 - 0x34];
+    int model;
+    float recoil;
+    float recoilRate;
+    float spreadMinA;
+    float spreadMaxA;
+    float spreadMinB;
+    float spreadMaxB;
 };
 
 struct ImpFire {
-    int unk00;
-    float unk04;
+    int unk00;  // state
+    float unk04;  // timer
     int emitter;
     ImpFireDef* def;
-    u8 pad10[0x78];
+    int unk10;
+    float charge;
+    float recoil;
+    float recoilTimer;
+    int arg;
+    ImpShot shot;
+    int unk84;
 };
+
+extern "C" {
+int fn_8016F120(void* fx, int* pos);
+void fn_8016F118(int handle, int a, int b);
+int FxStart(void* fx, int a, int b);
+int SendMsg(int target, int msg, void* data);
+void fn_8000F550(short* ids, int count);
+}
+
+int Fn80175D60(unsigned long arg);
+void Fn800F7F5C(int emitter, int id, int msg, int arg, void* info, float dt);
+void PlayerAnimOffUpdate(Player* p, float dt);
+int AssetFind(u32 table, u32 key);
+void TextureLoad(short* ids, int count);
+void ModelLoadIds(short* ids, int count);
+void ModelFreeIds(short* ids, int count);
+void fn_802540F4(void);
+void fn_80254164(void);
+
+inline float Min(float a, float b) { return a < b ? a : b; }
+
+inline int FxStartAt(void* fx, float* p, int* pos) {
+    int h;
+    if (p) {
+        pos[0] = p[0];
+        pos[1] = p[1];
+        pos[2] = p[2];
+        h = fn_8016F120(fx, pos);
+        fn_8016F118(h, 0, 100000);
+    } else {
+        h = FxStart(fx, 0, 0);
+    }
+    return h;
+}
 
 extern EffectType lbl_803BEDE8;  // the "IMP FIRE" type descriptor
 
@@ -111,6 +199,92 @@ u32 ImpFireQuery(EffectObj* obj, int msg) {
         return 0x3DA260F7;
     }
     return 0x3DA260F7;
+}
+
+int ImpFireMsg(EffectObj* obj, int msg, int arg, void* data, float dt) {
+    ImpFire* g = (ImpFire*)obj->data;
+    ImpFireDef* def = g->def;
+    short texs[6];
+
+    g->arg = arg;
+    Fn80175D60(g->arg);
+    switch (msg) {
+    case 0x1B83833F:
+        g->unk00 = 0;
+        return 1;
+    case 0xF26951B8:
+        fn_80254164();
+        return 1;
+    case 0x0CAE7B51:
+        fn_802540F4();
+        return 1;
+    case 0xF829DB93:
+    case 0x0020EE36: {
+        ImpShotInfo info;
+        MsgResult q;
+        int pos[3];
+        void* fx;
+
+        g->unk10 = 1;
+        if (!fn_800F7D28(g->emitter, def->unk04)) {
+            return 0;
+        }
+        g->charge += def->charge;
+        g->charge = Min(g->charge, def->maxCharge);
+        if (((arg >> 24) & 0xFF) == 2) {
+            SendMsg(arg, 0x400, &q);
+            PlayerAnimOffUpdate((Player*)q.p, def->recoil);
+            g->recoil += def->recoil;
+            g->recoilTimer = 300.0f;
+        }
+        info.hit = (ImpShot*)data;
+        info.speed = def->speed;
+        info.unk8 = def->unk10;
+        info.unkC = def->unk14;
+        info.charge = g->charge;
+        info.unk18 = def->unk28;
+        info.unk1C = def->unk2C;
+        if (((g->arg >> 24) & 0xFF) == 2) {
+            ((ImpShot*)data)->spread =
+                ((ImpShot*)data)->spread * (def->spreadMaxA - def->spreadMinA) + def->spreadMinA;
+        } else {
+            ((ImpShot*)data)->spread =
+                ((ImpShot*)data)->spread * (def->spreadMaxB - def->spreadMinB) + def->spreadMinB;
+        }
+        info.hit->spread *= info.hit->scale;
+        Fn800F7F5C(g->emitter, def->unk04, 0x14967, arg, &info, dt);
+        fx = def->fx;
+        FxStartAt(fx, &g->shot.x, pos);
+        return 1;
+    }
+    case 0x968CBE3D:
+    case 0x8FDD7599:
+    case 0xBC78F550:
+    case 0xE6B71BCC:
+    case 0x0B59E861:
+        return 1;
+    case 0xE452286F:
+    case 0x141109BD: {
+        short model;
+
+        model = def->model;
+        texs[0] = AssetFind(0xF2E2BEB8, 0x5541EDD2);
+        texs[1] = AssetFind(0xF2E2BEB8, 0x56F6C671);
+        texs[2] = AssetFind(0xF2E2BEB8, 0x58AB9F10);
+        texs[3] = AssetFind(0xF2E2BEB8, 0x5A6077AF);
+        texs[4] = AssetFind(0xF2E2BEB8, 0x2E20AEE7);
+        texs[5] = AssetFind(0xF2E2BEB8, 0x961C77AB);
+        if ((int)data == 1) {
+            ModelLoadIds(&model, 1);
+            TextureLoad(texs, 6);
+        } else {
+            ModelFreeIds(&model, 1);
+            fn_8000F550(texs, 6);
+        }
+        return 1;
+    }
+    }
+    return 0;
 }
 
 void ImpFireDestroy(EffectObj* obj) {
