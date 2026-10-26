@@ -17,7 +17,7 @@ published; generate your own from your copy of the game if you want it.
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_8028A77C (new, easiest-first) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_802A815C (new, easiest-first) | running |
-| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_802B7120 (new, easiest-first) | running |
+| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_8020B77C (new, easiest-first) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Paused (session usage); partial work on its branch | paused |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
@@ -67,6 +67,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+u_802B7120 5/17 (ds-3 draft): ActorShouldCollect802B84C8 1, ActorGetSelectedId802B85D0 5 diffs; MessageHandler (0x5F0) and DamageHandler (0x2CC) large
 u_80208238 9/38 (ds-2 draft, Batsqueeks host): near misses SoundListStopAll 2, SoundListTeardown 2, GetModeMotionId 4, RunModeCallback 4, ApplySourceMode 4, RunModeHook04 6
 u_80116B28 3/13 (ds-3 draft): QueryTypeId 3, fn_80117FB4 14, GetTypeName 14 diffs; fn_801174B0 521, fn_80116E30 384
 u_802B3430 1/5 (ds-1 draft, clock actor): Msg 88, Init 115, UpdateHands 184, Tick 619 diffs
