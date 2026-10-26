@@ -93,7 +93,7 @@ struct HudState {
     char pad08[0x14];             // 0x08
     int count;                    // 0x1C
     int field20;                  // 0x20
-    u32 handles[8];               // 0x24
+    int handles[8];               // 0x24
     char msgs[8][16];             // 0x44
     int fieldC4;                  // 0xC4
     int arrC8[8];                 // 0xC8
@@ -178,7 +178,7 @@ int ActorGet(int id);                           // ActorGet__Fi   0x802A2024
 float fn_802A2080(void);                        // 0x802A2080
 void fn_802A1DA4(void);                         // 0x802A1DA4
 float fn_800A1394(void);                        // 0x800A1394
-void PlayerInHost(void* actor);                 // PlayerInHost__FP5Actor 0x80049750
+int PlayerInHost(void* actor);                  // PlayerInHost__FP5Actor 0x80049750
 void ActorPlayAnim(int handle, u32 hash, int arg); // ActorPlayAnim__FiUli 0x800C5654
 u32 StrFindKey(u32 hash, u32* out);             // StrFindKey__FUlPUl 0x80086234
 void DebugTextSetKey(u32 key);
@@ -259,71 +259,73 @@ int HudMsgQuery(void* state, void* msg) {
     HudMsg* m = (HudMsg*)msg;
 
     switch (m->cmd) {
-    case 0x0E83B88B:
-        if (s->mode != 0 && s->mode > 0 && s->mode < 4) {
-            m->value = lbl_804D4BD8;
-            return 1;
-        }
-        m->value = 1;
-        return 1;
-    case 0xC6D2473B:
-        m->value = s->field04;
-        return 1;
     case 0xC541822C:
-        if (s->mode == 2) {
+        switch (s->mode) {
+        case 1:
+            m->value = 0xC00D5BD1;
+            break;
+        case 2:
             m->value = 0x14E49BD1;
-        } else if (s->mode < 2) {
-            if (s->mode != 0 && s->mode > 0) {
-                m->value = 0xC00D5BD1;
-                return 1;
-            }
-            m->value = 0;
-        } else if (s->mode < 4) {
+            break;
+        case 3:
             m->value = 0x220393;
-            return 1;
-        } else {
+            break;
+        case 0:
+        default:
             m->value = 0;
+            break;
         }
         return 1;
     case 0xA267AD6C:
-        m->value = s->fieldC4;
+        m->value = lbl_8039E748.fieldC4;
+        return 1;
+    case 0x0C343772:
+        m->value = s->field138;
+        return 1;
+    case 0x6B6D9FD6:
+        m->value = lbl_8039E748.arr108[(u32)m->value >> 16];
         return 1;
     case 0x0E4043D9: {
-        u32 v = (u32)m->value;
+        int v = m->value;
         int i;
 
         do {
             i = 0;
-            for (int n = 0; n < s->count; n++, i++) {
-                if (s->handles[n] == v) {
+            for (int n = 0; n < lbl_8039E748.count; n++, i++) {
+                if (lbl_8039E748.handles[n] == v) {
                     goto found;
                 }
             }
-        } while ((v >> 24) == 0x13 &&
-                 ((v = fn_80153B9C()), (v >> 24) == 2) &&
+        } while ((int)((u32)v >> 24) == 0x13 &&
+                 ((v = fn_80153B9C()), (int)((u32)v >> 24) == 2) &&
                  (*(int*)(PlayerGetPossessor((int)v) + 0x2740) == 0));
         i = -1;
     found:
-        m->value = s->arr108[i];
+        m->value = lbl_8039E748.arr108[i];
         return 1;
     }
-    case 0x0C343772:
-        m->value = s->field138;
-        return 1;
     case 0x67FFEA96:
-        m->value = s->field128;
+        m->value = lbl_8039E748.field128;
         return 1;
     case 0x50F42175:
-        m->value = s->field12C;
+        m->value = lbl_8039E748.field12C;
         return 1;
     case 0x3777E06F:
-        m->value = s->field130;
-        return 1;
-    case 0x6B6D9FD6:
-        m->value = s->arr108[((u32)m->value >> 16) & 0x3FF];
+        m->value = lbl_8039E748.field130;
         return 1;
     case 0x6A055115:
         *(float*)&m->value = lbl_804D2D8C;
+        return 1;
+    case 0xC6D2473B:
+        m->value = lbl_8039E748.field04;
+        return 1;
+    case 0x0E83B88B:
+        if (s->mode != 0 && s->mode >= 0 &&
+            s->mode < 4) {
+            m->value = lbl_804D4BD8;
+            return 1;
+        }
+        m->value = 1;
         return 1;
     }
     return 0;
@@ -335,45 +337,45 @@ int HudMsgSet(void* state, void* msg) {
     HudMsg* m = (HudMsg*)msg;
 
     switch (m->cmd) {
-    case 0x0C343772:
-        s->field138 = m->value;
-        return 1;
     case 0xC541822C:
-        if (m->value == 0x220393) {
-            s->mode = 3;
-        } else if (m->value < 0x220393) {
-            if (m->value == 0xC00D5BD1) {
-                s->mode = 1;
-            } else {
-                s->mode = 0;
-            }
-        } else if (m->value == 0x14E49BD1) {
+        switch (m->value) {
+        case 0xC00D5BD1:
+            s->mode = 1;
+            break;
+        case 0x14E49BD1:
             s->mode = 2;
-        } else {
+            break;
+        case 0x220393:
+            s->mode = 3;
+            break;
+        default:
             s->mode = 0;
+            break;
         }
         fn_802A1D0C(s->mode);
         return 1;
     case 0xA267AD6C:
-        s->fieldC4 = m->value;
-        HudRefreshSlots(s);
-        return 1;
-    case 0xC6D2473B:
-        s->field04 = m->value;
+        lbl_8039E748.fieldC4 = m->value;
+        HudRefreshSlots(&lbl_8039E748);
         return 1;
     case 0x4531C86F: {
         u32 v = (u32)m->value;
-        u32 slot = (v >> 16) & 0x3FF;
 
-        s->arrC8[slot] = v & 0xF;
-        s->arrE8[slot] = (v >> 4) & 0xF;
+        lbl_8039E748.arrC8[v >> 16] = v & 0xF;
+        lbl_8039E748.arrE8[v >> 16] = (v >> 4) & 0xF;
         return 1;
     }
-    case 0x0E83B88B:
-        lbl_804D4BD8 = m->value;
+    case 0x0C343772:
+        s->field138 = m->value;
         return 1;
     case 0x6B6D9FD6:
-        s->arr108[((u32)m->value >> 16) & 0x3FF] = (u32)m->value & 0xFFFF;
+        lbl_8039E748.arr108[(u32)m->value >> 16] = (u32)m->value & 0xFFFF;
+        return 1;
+    case 0xC6D2473B:
+        lbl_8039E748.field04 = m->value;
+        return 1;
+    case 0x0E83B88B:
+        lbl_804D4BD8 = m->value;
         return 1;
     }
     return 0;
@@ -418,7 +420,7 @@ void HudRefreshSlots(HudState* s) {
         u32 bit = 4 << s->arrC8[i];
 
         if ((s->field128 & bit) == 0) {
-            u32 hi;
+            int hi;
 
             s->field128 |= bit;
             s->fieldC4++;
@@ -443,13 +445,13 @@ void HudTimerReset(int slot) {
     if (slot < 0) {
         return;
     }
-    if (slot >= 4) {
+    if (slot < 4) {
+        lbl_8045D9F0[slot].entries[0].timer = lbl_804D7500;
+        lbl_8045D9F0[slot].entries[1].timer = lbl_804D7500;
+        lbl_8045D9F0[slot].entries[2].timer = lbl_804D7500;
+        lbl_8045D9F0[slot].entries[3].timer = lbl_804D7500;
         return;
     }
-    lbl_8045D9F0[slot].entries[0].timer = lbl_804D7500;
-    lbl_8045D9F0[slot].entries[1].timer = lbl_804D7500;
-    lbl_8045D9F0[slot].entries[2].timer = lbl_804D7500;
-    lbl_8045D9F0[slot].entries[3].timer = lbl_804D7500;
 }
 
 // Restarts one timer of a HUD slot; when the timer runs out (value <= 0) the entry is
@@ -689,12 +691,18 @@ void HudMessagePush(int slot, const char* text, float r, float g, float b, float
 
 // Draws the live message entries of one HUD slot through the 2D text system.
 void HudDrawSlotMessages(int slot) {
+    float zero;
     float step;
     float y;
-    float zero;
     HudSlotEntry* e;
 
-    if (slot < 0 || slot >= 5 || lbl_8045E730[slot] != 0) {
+    if (slot < 0) {
+        return;
+    }
+    if (slot > 4) {
+        return;
+    }
+    if (lbl_8045E730[slot] != 0) {
         return;
     }
     if (!lbl_804D4BE4) {
@@ -1063,19 +1071,22 @@ int HudNotifyMsg(void* state, int msg, void* data) {
 // Hashes a key string onto an existing hash value: characters are mapped through the
 // game's case table (0xFF maps to 0xFFFFFFFF) and the result is reduced mod 0xFFFFFFFF.
 static inline u32 HudHashKey(u32 h, const char* s) {
+    int i;
+
     if (s == 0) {
         return 0;
     }
-    while (*s != 0) {
+    for (i = 0; s[i] != 0; i++) {
+        signed char ch = s[i];
         u32 c;
 
-        if (*s == -1) {
+        if (ch == -1) {
             c = 0xFFFFFFFF;
         } else {
-            c = __upper_map[(u8)*s];
+            c = __upper_map[(u8)ch];
         }
-        h = h * 31 + (c & 0xFF);
-        s++;
+        h *= 31;
+        h += c & 0xFF;
     }
     return h % 0xFFFFFFFF;
 }
@@ -1086,45 +1097,48 @@ void HudNotifyBar(float dt);    // 0x80100BC4
 // Asks the HUD manager for the two notification strings; when either exists, restarts the
 // countdowns of the three notification kinds that are not disabled.
 void HudNotifyCheck(int owner, int arg) {
-    const char* s0;
-    const char* s1;
+    int buf[8];
+    int found0;
+    int found1;
+    int target;
 
     if (arg != 0) {
         return;
     }
+    target = fn_800FD6EC(arg);
     {
         QueryMsg q;
 
         q.hash = 0x640D1F4D;
         *(int*)&q.result = 0;
         q.unk8 = 0;
-        SendMsg(fn_800FD6EC(arg), 0x41E, &q);
-        s0 = q.result.name.mData;
+        SendMsg(target, 0x41E, &q);
+        found0 = *(int*)&q.result;
     }
+    target = fn_800FD6EC(arg);
     {
         QueryMsg q;
 
         q.hash = 0x2B9216E5;
         *(int*)&q.result = 0;
         q.unk8 = 0;
-        SendMsg(fn_800FD6EC(arg), 0x41E, &q);
-        s1 = q.result.name.mData;
+        SendMsg(target, 0x41E, &q);
+        found1 = *(int*)&q.result;
     }
-    if (s0 != 0 || s1 != 0) {
+    if (found0 != 0 || found1 != 0) {
+        float zero = lbl_804D7528;
         float* pf = &lbl_8045E740.f00;
         int i = 0;
-        int buf[8];
 
         do {
-            if (*pf > lbl_804D7528 && (lbl_8045E740.flags & (1 << i)) == 0) {
-                fn_801403D0(0, i);
+            if (*pf > zero && (lbl_8045E740.flags & (1 << i)) == 0) {
+                fn_801403D0(arg, i);
             }
             i++;
             pf++;
         } while (i < 3);
-        SendMsg(((int*)owner)[9 + arg], 0x400, buf);
-        PlayerInHost((void*)buf[0]);
-        HudNotifyDraw(0);
+        SendMsg(*(int*)(owner + 0x24 + arg * 4), 0x400, buf);
+        HudNotifyDraw(PlayerInHost((void*)buf[0]));
     }
 }
 
@@ -1240,13 +1254,11 @@ void HudNotifyTick(float dt) {
 
     do {
         if (*pf > zero) {
-            float v = *pf - dt * fn_802A2080();
-
-            *pf = v;
-            if (v <= zero) {
+            *pf -= dt * fn_802A2080();
+            if (*pf <= lbl_804D7528) {
                 u32 h;
 
-                *pf = zero;
+                *pf = lbl_804D7528;
                 fn_801408A8(0, i);
                 h = HudHashKey(0, "onTimer1");
                 h += i;
