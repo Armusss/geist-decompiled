@@ -17,7 +17,7 @@ published; generate your own from your copy of the game if you want it.
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_8009DE94 (new, drafting) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_800A6F18 (new, drafting) | running |
-| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_8006C604 (61 fns, chunked draft) | running |
+| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_800B1834 (new, drafting) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Paused (session usage); partial work on its branch | paused |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
@@ -67,6 +67,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+u_8006C604 19/61 (ds-3 draft): 9 TODO functions incl. fn_80074018 (0xD50), fn_80074D68 (0x7F8); PlayerUpdateGunMotion stack-buffer layout for ActorGetMatrix needs review
 u_80120D98 12/49 (ds-1 draft): HazardTargetAimDir TODO; HazardTrackTarget 155, TrackListUpdate 137; Clear vtable slot vs base class; lbl_8039EED8 needs a struct type (0x14C entries)
 u_8011818C 15/49 (ds-2 draft): fn_8011F66C (0x660) and fn_8011FCEC (0x674) not drafted; ItemSetupNearest/StatusEvent etc. have large diffs
 - u_800D32E8 16/50 (emitters/pads, ds-3 3 runs): 34 left.
