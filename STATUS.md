@@ -17,7 +17,7 @@ published; generate your own from your copy of the game if you want it.
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_802052B4 (new) | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_8023824C (new) | running |
-| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_80202AB8 (new, 25-turn draft chunks) | running |
+| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | u_802D8C7C (new) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Paused (session usage); partial work on its branch | paused |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
@@ -67,6 +67,7 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+u_80202AB8 0/13 (ds-3 draft, host actor possession): HostActorInit 5, BeginTimerDone 47, HoldTimerDone 49, TimerDone 62
 u_801E7DE0 7/35 (ds-2 draft, player weapon/aim states): Ea620StateEnter 1, WeaponStateId 4, WeaponStateNotify 4, CollisionViewUpdate/StateUpdate 6, AimStateUpdate 25
 u_8028865C 1/19 (ds-1 draft, clock pages/particles): EmitParticlePageFromInts 7, PageBufferDestroy 9 (hand-written deleting dtor; should become a real class dtor), DrawParticleSlots 11, fn_8028A728 15
 u_802C9818 untouched: DeepSeek draft stalled on its first two functions (0x504, 0x7EC); left for Opus
