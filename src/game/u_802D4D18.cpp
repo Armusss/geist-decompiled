@@ -771,9 +771,10 @@ int RideBehaviourGetType(void* argp)
 // behaviour's type index is returned either way.
 int RideRefreshStreamState(void* argp)
 {
+    RideBehaviour* beh;
     RideActor* a = (RideActor*)argp;
-    RideBehaviour* beh = a->behaviour;
 
+    beh = a->behaviour;
     if (a->unk5F0 == 0 || fn_80212730(a->unk038) != -1) {
         RideHostUpdate(a);
     }
