@@ -417,14 +417,13 @@ void HudRefreshSlots(HudState* s) {
     }
     n += ActorCount();
     for (int i = 0; i < n; i++) {
+        int hi;
         u32 bit = 4 << s->arrC8[i];
 
         if ((s->field128 & bit) == 0) {
-            int hi;
-
             s->field128 |= bit;
             s->fieldC4++;
-            hi = s->handles[i] >> 24;
+            hi = (u32)s->handles[i] >> 24;
             if (hi == 2) {
                 if ((s->field12C & bit) == 0) {
                     s->field12C |= bit;
