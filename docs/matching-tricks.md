@@ -171,3 +171,18 @@ locals, declaring the right-hand one first, then compare their fabs in a ternary
 Inline Max/fabs helpers get the load order but not the registers. Fixed GunHostAimUpdate and GunUpdateState3.
 Also: in the FastSqrt asm helper, use a `register float` temp instead of naming f0, so the compiler does not
 reserve f0 for the whole function (if/else form, `r = 0.0f` in the if branch).
+
+## Near-miss patterns (opus-1 sweep, 2026-10-27; 56 functions)
+- **Dropped callee arguments.** If retail loads a field into r3/r4 right before a call and ours loads it into r0
+  (or not at all), the callee takes that value as an argument the draft left out (`fn_80175EFC(slot)`,
+  `fn_8016EEF4(handle)`, `fn_800A1F94(handle)`, `VMAllocPages(addr, size)`).
+- **Table of structs via a typed base pointer.** For per-mode 0x48-byte tables, `T* table = (T*)&lbl; table[i].f`
+  matched where `((T*)lbl)[i].f` and `(&lbl[i])->f` did not.
+- **`if (p) p->vtbl[2](p, 1)` is `delete p`** through a virtual destructor. C++ views of these objects need an
+  8-byte vtable header (virtuals start at +8, and the destructor comes first).
+- **Branch order.** `if (x != 0) A else B` vs `if (x == 0) B else A` changes block layout; try both.
+- **Two `li` loop inits in the wrong order:** use a comma init `for (i = 1, off = 0x28; ...)`.
+- **Signedness.** A field compared or extended with the wrong sign (e.g. the FOV word at +0x104 is signed) shows up as
+  `lha`/`lhz` or `extsh` diffs.
+- **Not fixable in a free function:** retail calling `~Buffer(this, 0)` means the caller is itself a derived
+  destructor; model the class, don't fake the call.
