@@ -1572,7 +1572,8 @@ float RangeValueDistance2D(void* self)
     delta[1] = pos[4] - pos[1];
     delta[2] = pos[5] - pos[2];
     delta[2] = 0;
-    return lbl_804D6C6C * (float)fn_800E0DBC(delta);
+    float d = fn_800E0DBC(delta);
+    return d * lbl_804D6C6C;
 }
 
 // Engine RNG (mangled C++ name Rand__Fv), declared through its real prototype.
