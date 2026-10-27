@@ -71,6 +71,18 @@ int RangeIsIdle(void* range)
     return 1;
 }
 
+// True when the follow block's lock flag (bit 21 of the word at +0x24) is set.
+static inline int FollowIsLocked(void* range)
+{
+    if (range == 0) {
+        return 0;
+    }
+    if ((*(unsigned long*)((char*)range + 0x24) & 0x200000) != 0) {
+        return 1;
+    }
+    return 0;
+}
+
 // Release the pending count word of a range, unless the range carries the
 // busy flag at 0x24.  A null range is ignored.
 void RangeResetPending(void* range)
@@ -80,15 +92,7 @@ void RangeResetPending(void* range)
     if (range == 0) {
         return;
     }
-    if (range != 0) {
-        if ((*(unsigned long*)((char*)range + 0x24) & 0x200000) != 0) {
-            busy = 1;
-        } else {
-            busy = 0;
-        }
-    } else {
-        busy = 0;
-    }
+    busy = FollowIsLocked(range);
     if (busy) {
         return;
     }
@@ -373,18 +377,6 @@ void FollowOffsetReset(void* self)
     st->offset.x = (float)*(int*)((char*)self + 0x24);
     st->offset.y = (float)*(int*)((char*)self + 0x28);
     st->offset.z = (float)*(int*)((char*)self + 0x2c);
-}
-
-// True when the follow block's lock flag (bit 21 of the word at +0x24) is set.
-static inline int FollowIsLocked(void* range)
-{
-    if (range == 0) {
-        return 0;
-    }
-    if ((*(unsigned long*)((char*)range + 0x24) & 0x200000) != 0) {
-        return 1;
-    }
-    return 0;
 }
 
 // Point the follow target at another object (mode 2).  A null block, or one
