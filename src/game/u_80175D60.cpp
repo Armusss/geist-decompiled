@@ -2043,173 +2043,2188 @@ void GunAimBehReset80178C88(void* ownerArg, void* behArg) {
     }
 }
 
-// TODO fn_80178CC0 (0x8C bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_80178CC0(void) {}
+// Name is a guess: gun-aim behaviour callback that clears the block flag word,
+// finishes the behaviour, asks the owner and marks the behaviour when the reply
+// is the aim hash (address 0x80178CC0).
+void GunAimBehCheck80178CC0(void* ownerArg, void* behArg) {
+    GunFxBeh80177A2C* beh;
+    GunAimOwner80176D4C* owner;
+    int result;
 
-// TODO fn_80178D4C (0x8 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_80178D4C(void) {}
+    if (behArg != 0) {
+        beh = (GunFxBeh80177A2C*)behArg;
+        owner = (GunAimOwner80176D4C*)ownerArg;
+        beh->block->flags = 0;
+        BehDone(beh);
+        result = Fn800F7DEC(owner->field8EC, owner->field8F0, 0xe6b71bcc,
+                            OwnerId((Owner*)owner), 0);
+        if (result == 0x04a3e183) {
+            beh->flags |= 0x10;
+        }
+    }
+}
 
-// TODO fn_80178D54 (0x24C bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_80178D54(void) {}
+// Name is a guess: gun-aim state query that always reports failure
+// (address 0x80178D4C).
+// fn_80178D4C
+extern "C" int fn_80178D4C(void) { return 0; }
 
-// TODO fn_80178FA0 (0x1B4 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_80178FA0(void) {}
+// Per-behaviour state block of the two gun-aim handlers below: the state
+// counter, the requested state, the flag word, the live effect handle and the
+// block's remaining life (offsets from retail; names are guesses).
+struct GunAimBlock80178D54 {
+    int state;           // 0x00 current state
+    int next;            // 0x04 requested state
+    unsigned int flags;  // 0x08
+    int effect;          // 0x0c live effect handle, -1 when none
+    float time;          // 0x10 seconds of life left
+};
 
-// TODO fn_80179154 (0x5C bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_80179154(void) {}
+// The behaviour object: +0x10 receives the new state, +0x2c holds the aim flags
+// and +0x54 holds the block.
+struct GunAimBeh80178D54 {
+    unsigned char unk00[0x10];           // 0x00
+    int field10;                         // 0x10 current state copy
+    unsigned char unk14[0x2c - 0x14];    // 0x14
+    unsigned int flags;                  // 0x2c
+    unsigned char unk30[0x54 - 0x30];    // 0x30
+    GunAimBlock80178D54* block;          // 0x54
+};
 
-// TODO fn_801791B0 (0xB8 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_801791B0(void) {}
+// Owner-side fields the handlers touch (offsets from retail; names are guesses:
+// the model handle, two node ids, the frame delta, the condition set and the
+// message channel of the owner).
+struct GunAimOwner80178D54 {
+    unsigned char unk00[0xcc];            // 0x00
+    int fieldCC;                          // 0xcc
+    unsigned char unkD0[0xe4 - 0xd0];     // 0xd0
+    int fieldE4;                          // 0xe4
+    unsigned char unkE8[0x138 - 0xe8];    // 0xe8
+    float field138;                       // 0x138
+    unsigned char unk13C[0x270 - 0x13c];  // 0x13c
+    unsigned char conditions[4];          // 0x270 condition set
+    unsigned char unk274[0x8ec - 0x274];  // 0x274
+    int field8EC;                         // 0x8ec
+    int field8F0;                         // 0x8f0
+};
 
-// TODO fn_80179268 (0x63C bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_80179268(void) {}
+// Reply/parameter buffer filled by Fn80161FF4 (retail stack slot is 0x6c bytes).
+struct GunAimPayload80178D54 {
+    unsigned char data[0x6c];
+};
 
-// TODO fn_801798A4 (0x2C bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_801798A4(void) {}
+// One row of the gun-aim state table: enter, change and update callbacks.
+struct GunAimStateEntry80178D54 {
+    void (*enter)(void* owner, void* beh);   // 0x00
+    void (*change)(void* owner, void* beh);  // 0x04
+    void (*update)(void* owner, void* beh);  // 0x08
+};
 
-// TODO fn_801798D0 (0x2C bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_801798D0(void) {}
+extern GunAimStateEntry80178D54 lbl_803A8200[];
+extern float lbl_804D8198;
 
-// TODO fn_801798FC (0x244 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_801798FC(void) {}
+// Placeholder name kept: u_80161F40.cpp references it (behaviour table entry).
+// Message handler of the gun-aim behaviour (GunAimMsg80178D54 is the descriptive
+// name): the message id picks the block's next phase, the two effect messages
+// ask the owner, fill a payload from the reply and send it on, and one message
+// raises the block's aim flag. Returns 0 to swallow the message, 1 to let it
+// through (address 0x80178D54).
+extern "C" int fn_80178D54(void* ownerArg, void* behArg, int msg) {
+    GunAimOwner80178D54* owner = (GunAimOwner80178D54*)ownerArg;
+    GunAimBlock80178D54* block;
+    GunAimPayload80178D54 payload;
+    int reply;
 
-// TODO fn_80179B40 (0x21C bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_80179B40(void) {}
+    if (behArg == 0) {
+        return 0;
+    }
+    block = ((GunAimBeh80178D54*)behArg)->block;
+    switch (msg) {
+    case 1:
+        if (block->state != 0) {
+            return 0;
+        }
+        block->next = 4;
+        break;
+    case 2:
+        if (block->state != 0) {
+            return 0;
+        }
+        block->next = 5;
+        break;
+    case 3:
+        if (block->state != 0) {
+            return 0;
+        }
+        block->next = 6;
+        break;
+    case 4:
+        if (block->state != 0) {
+            return 0;
+        }
+        block->next = 7;
+        break;
+    case 0x1b83833f:
+        block->flags |= 0x10;
+        break;
+    case 0xe6b71bcc:
+    case 0x968cbe3d:
+        if ((block->flags & 0x20) != 0) {
+            return 0;
+        }
+        block->flags |= 0x20;
+        Fn800F7F5C(owner->field8EC, owner->field8F0, 0x968cbe3d,
+                   OwnerId((Owner*)ownerArg), 0, owner->field138);
+        break;
+    case 0xf829db93:
+    case 0x20ee36:
+        reply = Fn800F7DEC(owner->field8EC, owner->field8F0, msg,
+                           OwnerId((Owner*)ownerArg), 0);
+        if (reply == 0x04a3e183) {
+            block->flags |= 1;
+            if (Fn80161FF4((Owner*)ownerArg, &payload, lbl_804D818C) == 0) {
+                return 0;
+            }
+            Fn800F7F5C(owner->field8EC, owner->field8F0, msg,
+                       OwnerId((Owner*)ownerArg), &payload, owner->field138);
+            block->flags &= ~0x100;
+            block->time = lbl_804D8198;
+        }
+        break;
+    }
+    return 1;
+}
 
-// TODO fn_80179D5C (0x1AC bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_80179D5C(void) {}
+// Placeholder name kept: u_80161F40.cpp references it (behaviour table entry).
+// Per-frame update of the gun-aim behaviour (GunAimTick80178FA0 is the
+// descriptive name): when one of the aim conditions holds, releases the live
+// effect, re-arms the owner's model and resets then finishes the behaviour;
+// otherwise runs the current state's update callback, counts the block's life
+// down, and - when a new state was requested - runs the change callback, copies
+// the state and runs the new state's enter callback. Returns 1
+// (address 0x80178FA0).
+extern "C" int fn_80178FA0(void* ownerArg, void* behArg) {
+    GunAimOwner80178D54* owner = (GunAimOwner80178D54*)ownerArg;
+    GunAimBeh80178D54* beh;
+    GunAimBlock80178D54* block;
+    GunAimStateEntry80178D54* entry;
 
-// TODO fn_80179F08 (0x47C bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_80179F08(void) {}
+    if (behArg == 0) {
+        return 0;
+    }
+    beh = (GunAimBeh80178D54*)behArg;
+    block = beh->block;
+    if (HasCondition(owner->conditions, 9) != 0 ||
+        HasCondition(owner->conditions, 10) != 0 ||
+        HasCondition(owner->conditions, 11) != 0) {
+        if (block->effect != -1) {
+            fn_80027690(block->effect);
+            block->effect = -1;
+        }
+        ModelNodeSetup(owner->fieldCC, owner->fieldE4, 0, 1);
+        block->flags = 0;
+        block->time = lbl_804D818C;
+        BehReset(behArg);
+        BehDone(behArg);
+    } else {
+        entry = &lbl_803A8200[block->state];
+        if (entry->update != 0) {
+            entry->update(ownerArg, behArg);
+        }
+        if (block->time >= lbl_804D818C) {
+            beh->flags &= ~4;
+            block->time = block->time - owner->field138;
+        }
+        if (block->next != block->state) {
+            entry = &lbl_803A8200[block->state];
+            if (entry->change != 0) {
+                entry->change(ownerArg, behArg);
+            }
+            block->state = block->next;
+            beh->field10 = block->next;
+            entry = &lbl_803A8200[block->state];
+            if (entry->enter != 0) {
+                entry->enter(ownerArg, behArg);
+            }
+        }
+    }
+    return 1;
+}
 
-// TODO fn_8017A384 (0x4 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017A384(void) {}
+// Placeholder name kept: u_80161F40.cpp references it (behaviour table entry).
+// Release callback of the gun-aim behaviour (GunAimBehFree80179154 is the
+// descriptive name): releases the live effect, frees the state block and
+// reports success (address 0x80179154).
+extern "C" int fn_80179154(void* ownerArg, void* behArg) {
+    GunAimBlock80178D54* block;
 
-// TODO fn_8017A388 (0x4 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017A388(void) {}
+    if (behArg == 0) {
+        return 0;
+    }
+    block = ((GunAimBeh80178D54*)behArg)->block;
+    if (block->effect != -1) {
+        fn_80027690(block->effect);
+        block->effect = -1;
+    }
+    VFree(block);
+    return 1;
+}
 
-// TODO fn_8017A38C (0x48 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017A38C(void) {}
+// Placeholder name kept: u_80161F40.cpp references it (behaviour table entry).
+// Start callback of the gun-aim behaviour (GunAimBehStart801791B0 is the
+// descriptive name): allocates the 0x14-byte state block, initialises it,
+// stores it on the behaviour and runs the initial state's enter callback.
+// Returns 0 when the behaviour is missing or the block cannot be allocated
+// (address 0x801791B0).
+extern "C" int fn_801791B0(void* ownerArg, void* behArg) {
+    GunAimBeh80178D54* beh = (GunAimBeh80178D54*)behArg;
+    GunAimBlock80178D54* block;
 
-// TODO fn_8017A3D4 (0x48 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017A3D4(void) {}
+    if (beh == 0) {
+        return 0;
+    }
+    block = (GunAimBlock80178D54*)VAlloc(0x14);
+    if (block == 0) {
+        beh->block = 0;
+        return 0;
+    }
+    beh->block = block;
+    beh->field10 = 0;
+    block->state = 0;
+    block->next = 0;
+    block->flags = 0;
+    block->effect = -1;
+    block->time = lbl_804D818C;
+    if (lbl_803A8200[block->state].enter != 0) {
+        lbl_803A8200[block->state].enter(ownerArg, behArg);
+    }
+    return 1;
+}
 
-// TODO fn_8017A41C (0x4 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017A41C(void) {}
+// Owner-side fields the aim-matrix update below touches (offsets from retail;
+// names are guesses): the model handle, the two bone ids, the animation, the aim
+// mode, the aim range, the behaviour object BehTarget reads at 0x894, the fade
+// window at 0x8b8 and the message channel of the owner.
+struct GunAimMatOwner80179268 {
+    unsigned char unk00[0xcc];            // 0x00
+    int model;                            // 0xcc
+    unsigned char unkD0[0xd8 - 0xd0];     // 0xd0
+    int boneA;                            // 0xd8
+    int boneB;                            // 0xdc
+    unsigned char unkE0[0xf0 - 0xe0];     // 0xe0
+    int anim;                             // 0xf0
+    unsigned char unkF4[0x26c - 0xf4];    // 0xf4
+    int mode;                             // 0x26c aim mode, picks the aim scale
+    unsigned char unk270[0x5c8 - 0x270];  // 0x270
+    float range;                          // 0x5c8 aim range
+    unsigned char unk5CC[0x894 - 0x5cc];  // 0x5cc
+    unsigned char behTarget[0x8b8 - 0x894]; // 0x894 behaviour passed to BehTarget
+    unsigned short fadeStart;             // 0x8b8
+    unsigned short fadeEnd;               // 0x8ba zero when the blend is off
+    unsigned char unk8BC[0x8ec - 0x8bc];  // 0x8bc
+    int field8EC;                         // 0x8ec condition/message channel
+};
 
-// TODO fn_8017A420 (0x4 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017A420(void) {}
+// The target object the first reply points at: the position it reports and the
+// message channel the aim query goes to (names are guesses).
+struct GunAimMatTarget80179268 {
+    unsigned char unk00[0x24];            // 0x00
+    int posX;                             // 0x24
+    int posY;                             // 0x28
+    int posZ;                             // 0x2c
+    unsigned char unk30[0x38 - 0x30];     // 0x30
+    int msgTo;                            // 0x38 message channel
+};
 
-// TODO fn_8017A424 (0x38 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017A424(void) {}
+// The behaviour object the update writes: the basis matrix at 0x00, the bone
+// translation at 0x30, the aim direction at 0x3c, the target and the aim range /
+// blend / scale at 0x48..0x54 and the bone index at 0x5c (names are guesses).
+struct GunAimMatBeh80179268 {
+    Mtx34 matrix;                         // 0x00
+    Vec3 field30;                         // 0x30 bone translation
+    Vec3 field3C;                         // 0x3c aim direction
+    void* target;                         // 0x48 target object from the reply
+    float field4C;                        // 0x4c aim range
+    float field50;                        // 0x50 aim blend
+    float field54;                        // 0x54 aim scale
+    unsigned char unk58[0x5c - 0x58];     // 0x58
+    int bone;                             // 0x5c model bone index
+};
 
-// TODO fn_8017A45C (0x38 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017A45C(void) {}
+// Reply to the "who are you aiming at" message (message 0x400).
+struct GunAimReply80179268 {
+    void* obj;                            // 0x00 target object
+};
 
-// TODO fn_8017A494 (0x204 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017A494(void) {}
+// Payload of the aim query (message 0x412): the object to query, the id of the
+// sender and the position the reply writes at 0x34..0x3c (names are guesses).
+struct GunAimQuery80179268 {
+    void* obj;                            // 0x00
+    int id;                               // 0x04
+    unsigned char unk08[0x34 - 0x08];     // 0x08
+    int x;                                // 0x34
+    int y;                                // 0x38
+    int z;                                // 0x3c
+};
 
-// TODO fn_8017A698 (0x280 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017A698(void) {}
+int BehTarget(Beh* beh);
+extern "C" int fn_800F7C64(int channel, unsigned long id);
+extern "C" int fn_800FC3B8(int condition);
+extern "C" void fn_800A025C(Vec3* out, Mtx34* m, int index);
+void Mtx34StoreColumn(Mtx34* m, Vec3* v, int index);
+extern "C" int fn_80049940(void);
 
-// TODO fn_8017A918 (0x130 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017A918(void) {}
+extern float lbl_804D81A0;
+extern float lbl_804D81A4;
+extern float lbl_804D81A8;
+extern float lbl_804D81AC;
+extern float lbl_804D81B0;
+extern float lbl_804D81B4;
+extern float lbl_804D81B8;
+extern float lbl_804D81BC;
+extern int lbl_804D4EC0;
 
-// TODO fn_8017AA48 (0xC8 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017AA48(void) {}
+// Scales a 3-vector to unit length and returns the inverse of its old length; a
+// vector shorter than the epsilon is set to zero and reports zero.
+static inline float GunNormalizeAimVec80179268(Vec3* v) {
+    float inv;
+    if (((fabsf(v->x) > lbl_804D81A8) + (fabsf(v->y) > lbl_804D81A8) +
+         (fabsf(v->z) > lbl_804D81A8)) != 0) {
+        inv = 1.0f / sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
+        v->x *= inv;
+        v->y *= inv;
+        v->z *= inv;
+        return inv;
+    }
+    v->x = lbl_804D81A4;
+    v->y = lbl_804D81A4;
+    v->z = lbl_804D81A4;
+    return lbl_804D81A4;
+}
 
-// TODO fn_8017AB10 (0x8 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017AB10(void) {}
+// Name is a guess: aim-matrix update of the gun behaviour. Asks the behaviour's
+// target for the object it aims at (message 0x400), picks the model bone to aim
+// from (falling back to a second bone id), stores the target and the range on the
+// behaviour and scales the range when the owner is in the scoped state. It then
+// takes the target position from the aim query (message 0x412) or from the target
+// object itself, adds the frame time to its height, and builds the behaviour's
+// basis: the bone matrix row 0 as the reference direction, the normalised
+// direction to the target as the middle column, the cross products as the first
+// and third columns. Finally it blends the aim scale from the owner's aim mode
+// and the fade window. Returns 1 when the basis was rebuilt, 0 with no target.
+int GunAimMatrixUpdate80179268(float time, Owner* ownerArg, Beh* behArg) {
+    GunAimMatOwner80179268* owner = (GunAimMatOwner80179268*)ownerArg;
+    GunAimMatBeh80179268* beh = (GunAimMatBeh80179268*)behArg;
+    GunAimReply80179268 reply;
+    GunAimQuery80179268 query;
+    GunAimMatTarget80179268* target;
+    Mtx34* mats;
+    Vec3 dir;
+    Vec3 up;
+    Vec3 delta;
+    Vec3 side;
+    Mtx34 mtx;
+    float invDist;
+    float blend;
+    int posX;
+    int posY;
+    int posZ;
+    int bone;
 
-// TODO fn_8017AB18 (0x220 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017AB18(void) {}
+    if (SendMsg(BehTarget((Beh*)owner->behTarget), 0x400, &reply) == 0) {
+        return 0;
+    }
+    target = (GunAimMatTarget80179268*)reply.obj;
+    bone = ModelFindBone(owner->model, owner->boneA);
+    beh->bone = bone;
+    if (beh->bone == -1) {
+        bone = ModelFindBone(owner->model, owner->boneB);
+        beh->bone = bone;
+    }
+    if (target == 0 || beh->bone == -1) {
+        return 0;
+    }
+    beh->target = target;
+    beh->field4C = owner->range;
+    if (fn_800F7C64(owner->field8EC, 0x20a5aa68) > 0 || fn_800FC3B8(0x12) != 0) {
+        beh->field4C = beh->field4C * lbl_804D81A0;
+    }
+    query.obj = target;
+    query.id = lbl_804D4EC0;
+    if (lbl_804D4EC0 == -1) {
+        posX = target->posX;
+        posY = target->posY;
+        posZ = target->posZ;
+    } else if (SendMsg(target->msgTo, 0x412, &query) != 0) {
+        posX = query.x;
+        posY = query.y;
+        posZ = query.z;
+    }
+    posZ += (int)time;
+    mats = (Mtx34*)fn_8003A3F0(owner->model, owner->anim,
+                               ModelAnimate(owner->model, 0, 0));
+    ActorGetMatrix(&mtx, (Actor*)&mats[beh->bone]);
+    beh->field30.x = mtx.trans[0];
+    beh->field30.y = mtx.trans[1];
+    beh->field30.z = mtx.trans[2];
+    beh->matrix.trans[0] = mtx.trans[0];
+    beh->matrix.trans[1] = mtx.trans[1];
+    beh->matrix.trans[2] = mtx.trans[2];
+    fn_800A025C(&dir, &mtx, 0);
+    dir.z = lbl_804D81A4;
+    GunNormalizeAimVec80179268(&dir);
+    {
+        int* bonePos = (int*)&mats[beh->bone].trans[0];
+        delta.x = (float)(posX - bonePos[0]);
+        delta.y = (float)(posY - bonePos[1]);
+        delta.z = (float)(posZ - bonePos[2]);
+    }
+    {
+        float sq = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
+        invDist = lbl_804D81A4;
+        if (sq > lbl_804D81A4) {
+            invDist = 1.0f / sqrtf(sq);
+        }
+    }
+    GunNormalizeAimVec80179268(&delta);
+    if (delta.z * dir.z + delta.x * dir.x + delta.y * dir.y < lbl_804D81AC) {
+        delta.x = dir.x;
+        delta.y = dir.y;
+        delta.z = dir.z;
+    }
+    ActorGetMatrix(&mtx, (Actor*)mats);
+    fn_800A025C(&side, &mtx, 0);
+    fn_800A025C(&up, &mtx, 2);
+    up.x = side.y * delta.z - side.z * delta.y;
+    up.y = side.z * delta.x - side.x * delta.z;
+    up.z = side.x * delta.y - side.y * delta.x;
+    side.x = delta.y * up.z - delta.z * up.y;
+    side.y = delta.z * up.x - delta.x * up.z;
+    side.z = delta.x * up.y - delta.y * up.x;
+    Mtx34StoreColumn(&mtx, &side, 0);
+    Mtx34StoreColumn(&mtx, &delta, 1);
+    Mtx34StoreColumn(&mtx, &up, 2);
+    beh->field54 = lbl_804D81B0;
+    switch (owner->mode) {
+    case 0:
+        beh->field50 = lbl_804D81A4;
+        break;
+    case 1:
+        beh->field50 = lbl_804D81B4;
+        break;
+    case 2:
+        beh->field50 = lbl_804D81B8;
+        break;
+    case 3:
+        beh->field50 = lbl_804D81B0;
+        break;
+    }
+    blend = lbl_804D81A4;
+    if (owner->fadeEnd != 0) {
+        blend = (invDist - (float)owner->fadeStart) /
+                (float)(owner->fadeEnd - owner->fadeStart);
+        if (blend < lbl_804D81A4) {
+            blend = lbl_804D81A4;
+        } else if (blend > lbl_804D81B0) {
+            blend = lbl_804D81B0;
+        }
+    }
+    beh->field50 = (lbl_804D81B0 - beh->field50) * blend + beh->field50;
+    if (fn_80049940() != 0) {
+        beh->field50 = beh->field50 * lbl_804D81BC;
+    }
+    beh->field3C.x = delta.x;
+    beh->field3C.y = delta.y;
+    beh->field3C.z = delta.z;
+    fn_800A0168((Mtx34*)beh, &mtx);
+    return 1;
+}
 
-// TODO fn_8017AD38 (0x118 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017AD38(void) {}
+// Flags block reached through the behaviour's +0x54 pointer (field names are
+// guesses): the state request at 0x04 and the aim flags at 0x08.
+struct GunAimFlagBlock801798A4 {
+    int field00;         // 0x00
+    int field04;         // 0x04 requested state
+    unsigned int flags;  // 0x08
+};
 
-// TODO fn_8017AE50 (0x5C bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017AE50(void) {}
+// The behaviour object; only its +0x54 block pointer is used.
+struct GunAimFlagBeh801798A4 {
+    unsigned char unk00[0x54];               // 0x00
+    GunAimFlagBlock801798A4* block;          // 0x54
+};
 
-// TODO fn_8017AEAC (0xCC bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017AEAC(void) {}
+// Name is a guess: state callback that drops the behaviour's requested state once
+// the block has both the released flag (0x20) and the done flag (0x10) set, which
+// stops the behaviour. Does nothing while either flag is clear.
+void GunAimResetNext801798A4(void* owner, void* behArg) {
+    GunAimFlagBeh801798A4* beh;
+    GunAimFlagBlock801798A4* block;
 
-// TODO fn_8017AF78 (0x2C bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017AF78(void) {}
+    if (behArg == 0) {
+        return;
+    }
+    beh = (GunAimFlagBeh801798A4*)behArg;
+    block = beh->block;
+    if ((block->flags & 0x20) == 0) {
+        return;
+    }
+    if ((block->flags & 0x10) == 0) {
+        return;
+    }
+    block->field04 = 0;
+}
 
-// TODO fn_8017AFA4 (0xBC bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017AFA4(void) {}
+extern float lbl_804D81D0;
+extern float lbl_804D81D4;
+extern float lbl_804D81D8;
+extern float lbl_804D81DC;
 
-// TODO fn_8017B060 (0x104 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017B060(void) {}
+// Name is a guess: state callback with the same shape as GunAimResetNext801798A4
+// above - it drops the behaviour's requested state once the block has both the
+// released flag (0x20) and the done flag (0x10) set. The owner is unused.
+void GunAimResetNext801798D0(void* owner, void* behArg) {
+    GunAimFlagBeh801798A4* beh;
+    GunAimFlagBlock801798A4* block;
 
-// TODO fn_8017B164 (0x324 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017B164(void) {}
+    if (behArg == 0) {
+        return;
+    }
+    beh = (GunAimFlagBeh801798A4*)behArg;
+    block = beh->block;
+    if ((block->flags & 0x20) == 0) {
+        return;
+    }
+    if ((block->flags & 0x10) == 0) {
+        return;
+    }
+    block->field04 = 0;
+}
 
-// TODO fn_8017B488 (0x238 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017B488(void) {}
+// The effect handle block reached through the behaviour's +0x54 pointer: the
+// requested state at 0x04, the flags at 0x08 and the live effect id at 0x0c.
+struct GunAimFxBlock801798FC {
+    int field00;   // 0x00
+    int state;     // 0x04 requested state
+    int flags;     // 0x08
+    int effect;    // 0x0c live effect id, -1 when none
+};
 
-// TODO fn_8017B6C0 (0x68 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017B6C0(void) {}
+// The behaviour object; only its +0x54 block pointer is used.
+struct GunAimFxBeh801798FC {
+    unsigned char unk00[0x54];              // 0x00
+    GunAimFxBlock801798FC* block;           // 0x54
+};
 
-// TODO fn_8017B728 (0x78 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017B728(void) {}
+// The owner/actor the behaviour belongs to; only the fields used here are named.
+struct GunAimFxOwner801798FC {
+    unsigned char unk00[0x84];                  // 0x00
+    Vec3 pos;                                   // 0x84
+    unsigned char unk90[0xcc - 0x90];           // 0x90
+    int model;                                  // 0xcc
+    unsigned char unkD0[0xd8 - 0xd0];           // 0xd0
+    int boneA;                                  // 0xd8
+    int boneB;                                  // 0xdc
+    unsigned char unkE0[0xf0 - 0xe0];           // 0xe0
+    int anim;                                   // 0xf0
+    unsigned char unkF4[0x138 - 0xf4];          // 0xf4
+    float field138;                             // 0x138
+    unsigned char unk13C[0x8ec - 0x13c];        // 0x13c
+    int field8EC;                               // 0x8ec
+    int field8F0;                               // 0x8f0
+};
 
-// TODO fn_8017B7A0 (0x4 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017B7A0(void) {}
+// Name is a guess: keeps the live effect of a gun behaviour in sync. While the
+// block still holds a live effect id (not -1) it rebuilds the muzzle position
+// from the model bone (falling back to the owner position), rolls a fresh delay
+// and colour/parameter vector, and re-issues the effect update. When the block's
+// 0x40 flag is set it also asks the owner for the effect message and drops the
+// requested state on the answers that end it.
+void GunAimFxUpdate801798FC(Owner* ownerArg, void* behArg) {
+    GunAimFxOwner801798FC* owner = (GunAimFxOwner801798FC*)ownerArg;
+    GunAimFxBeh801798FC* beh;
+    GunAimFxBlock801798FC* block;
+    Mtx34 mtx;
+    Vec3 pos;
+    float params[4];
+    int delay;
+    int bone;
+    Mtx34* mats;
 
-// TODO fn_8017B7A4 (0x114 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017B7A4(void) {}
+    if (behArg == 0) {
+        return;
+    }
+    beh = (GunAimFxBeh801798FC*)behArg;
+    block = beh->block;
+    if (block->effect != -1) {
+        bone = ModelFindBone(owner->model, owner->boneA);
+        if (bone == -1) {
+            bone = ModelFindBone(owner->model, owner->boneB);
+        }
+        if (bone != -1) {
+            mats = (Mtx34*)fn_8003A3F0(owner->model, owner->anim,
+                                        ModelAnimate(owner->model, 0, 0));
+            ActorGetMatrix(&mtx, (Actor*)&mats[bone]);
+            pos.x = mtx.trans[0];
+            pos.y = mtx.trans[1];
+            pos.z = mtx.trans[2];
+        } else {
+            pos.x = owner->pos.x;
+            pos.y = owner->pos.y;
+            pos.z = owner->pos.z;
+        }
+        delay = (int)(lbl_804D81D8 *
+                          ((float)(unsigned)rand() / lbl_804D81D0) +
+                      lbl_804D81D4);
+        params[0] = lbl_804D81B0;
+        params[1] = lbl_804D81DC *
+                        ((float)(unsigned)rand() / lbl_804D81D0) +
+                    lbl_804D81DC;
+        params[2] = lbl_804D81A4;
+        params[3] = lbl_804D81B0;
+        fn_800277B0(block->effect, &pos, params, &delay);
+    }
+    if ((block->flags & 0x40) != 0) {
+        switch (Fn800F7DEC(owner->field8EC, owner->field8F0, 0xf829db93,
+                           OwnerId(ownerArg), 0)) {
+        case 0xc0becf7e:
+            Fn800F7F5C(owner->field8EC, owner->field8F0, 0x968cbe3d,
+                       OwnerId(ownerArg), 0, owner->field138);
+            block->state = 0;
+            break;
+        case 0x04a3e183:
+            block->state = 0;
+            break;
+        case 0x3da260f7:
+            break;
+        case 0x11d2c025:
+            break;
+        }
+    }
+}
 
-// TODO fn_8017B8B8 (0x68 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017B8B8(void) {}
+// Name is a guess: sibling of GunAimFxUpdate801798FC with its own message ids.
+// Keeps the live effect of a gun behaviour in sync: while the block still holds a
+// live effect id it rebuilds the muzzle position from the model bone (falling back
+// to the owner position), rolls a fresh delay and parameter vector, and re-issues
+// the effect update. When the block's 0x02 flag is set it asks the owner for the
+// effect message and moves the requested state from the reply.
+void GunAimFxUpdate80179B40(Owner* ownerArg, void* behArg) {
+    GunAimFxOwner801798FC* owner = (GunAimFxOwner801798FC*)ownerArg;
+    GunAimFxBeh801798FC* beh;
+    GunAimFxBlock801798FC* block;
+    Mtx34 mtx;
+    Vec3 pos;
+    float params[4];
+    int delay;
+    int bone;
+    Mtx34* mats;
 
-// TODO fn_8017B920 (0x48 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017B920(void) {}
+    if (behArg == 0) {
+        return;
+    }
+    beh = (GunAimFxBeh801798FC*)behArg;
+    block = beh->block;
+    if (block->effect != -1) {
+        bone = ModelFindBone(owner->model, owner->boneA);
+        if (bone == -1) {
+            bone = ModelFindBone(owner->model, owner->boneB);
+        }
+        if (bone != -1) {
+            mats = (Mtx34*)fn_8003A3F0(owner->model, owner->anim,
+                                        ModelAnimate(owner->model, 0, 0));
+            ActorGetMatrix(&mtx, (Actor*)&mats[bone]);
+            pos.x = mtx.trans[0];
+            pos.y = mtx.trans[1];
+            pos.z = mtx.trans[2];
+        } else {
+            pos.x = owner->pos.x;
+            pos.y = owner->pos.y;
+            pos.z = owner->pos.z;
+        }
+        delay = (int)(lbl_804D81D8 *
+                          ((float)(unsigned)rand() / lbl_804D81D0) +
+                      lbl_804D81D4);
+        params[0] = lbl_804D81B0;
+        params[1] = lbl_804D81DC *
+                        ((float)(unsigned)rand() / lbl_804D81D0) +
+                    lbl_804D81DC;
+        params[2] = lbl_804D81A4;
+        params[3] = lbl_804D81B0;
+        fn_800277B0(block->effect, &pos, params, &delay);
+    }
+    if ((block->flags & 2) != 0) {
+        switch (Fn800F7DEC(owner->field8EC, owner->field8F0, 0x20ee36,
+                           OwnerId(ownerArg), 0)) {
+        case 0xc0becf7e:
+            block->state = 6;
+            break;
+        case 0x04a3e183:
+            block->state = 0;
+            break;
+        case 0x3da260f7:
+            break;
+        case 0x11d2c025:
+            break;
+        }
+    }
+}
 
-// TODO fn_8017B968 (0x60 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017B968(void) {}
+// The effect-timer block reached through the behaviour's +0x54 pointer: the
+// requested state at 0x04 and the remaining life time at 0x18 (names are guesses).
+struct GunAimFxTimerBlock80179D5C {
+    unsigned char unk00[0x04];         // 0x00
+    int state;                         // 0x04 requested state
+    unsigned char unk08[0x18 - 0x08];  // 0x08
+    float time;                        // 0x18 seconds of life left
+};
 
-// TODO fn_8017B9C8 (0x8 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017B9C8(void) {}
+// The behaviour object; only its +0x54 block pointer is used.
+struct GunAimFxTimerBeh80179D5C {
+    unsigned char unk00[0x54];                     // 0x00
+    GunAimFxTimerBlock80179D5C* block;             // 0x54
+};
 
-// TODO fn_8017B9D0 (0x20 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017B9D0(void) {}
+// Name is a guess: counts the behaviour's life time down. A first effect message
+// sends the owner's current payload on, the second one asks the owner whether the
+// timer should tick (or has run out). When it has run out, a third message either
+// asks for the payload and moves the requested state to 4, or drops the state.
+void GunAimFxTimerUpdate80179D5C(Owner* ownerArg, void* behArg) {
+    GunAimFxOwner801798FC* owner = (GunAimFxOwner801798FC*)ownerArg;
+    GunAimFxTimerBeh80179D5C* beh;
+    GunAimFxTimerBlock80179D5C* block;
+    unsigned char payload315A1A7F[0x6c];
+    unsigned char payloadD19E338[0x60];
+    int expired = 0;
+    int result;
 
-// TODO fn_8017B9F0 (0x20 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017B9F0(void) {}
+    if (behArg == 0) {
+        return;
+    }
+    beh = (GunAimFxTimerBeh80179D5C*)behArg;
+    block = beh->block;
+    if (Fn80161FF4(ownerArg, payload315A1A7F, lbl_804D81A4) != 0) {
+        Fn800F7F5C(owner->field8EC, owner->field8F0, 0x315a1a7f,
+                   OwnerId(ownerArg), payload315A1A7F, owner->field138);
+    }
+    result = Fn800F7DEC(owner->field8EC, owner->field8F0, 0x6fab23fe,
+                        OwnerId(ownerArg), 0);
+    switch (result) {
+    case 0x7183f329:
+    case 0x7183f5a1:
+        if (lbl_804D81A4 <= block->time) {
+            block->time -= owner->field138;
+        } else {
+            expired = 1;
+        }
+        break;
+    case 0xbef8884d:
+        expired = 1;
+        break;
+    case 0x3da260f7:
+    default:
+        block->state = 0;
+        break;
+    }
+    if (expired) {
+        result = Fn800F7DEC(owner->field8EC, owner->field8F0, 0xd19e338,
+                            OwnerId(ownerArg), 0);
+        if (result == 0x04a3e183) {
+            block->state = 4;
+            if (Fn80161FF4(ownerArg, payloadD19E338, lbl_804D81A4) != 0) {
+                Fn800F7F5C(owner->field8EC, owner->field8F0, 0xd19e338,
+                           OwnerId(ownerArg), payloadD19E338,
+                           owner->field138);
+            }
+        }
+    }
+}
 
-// TODO fn_8017BA10 (0x1C bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017BA10(void) {}
+// Owner, follow target and behaviour of the second aim-target update family
+// (offsets come from retail; names are guesses).
+struct GunAimActor80179F08 {
+    unsigned char unk00[0x24];          // 0x00
+    int posX;                           // 0x24
+    int posY;                           // 0x28
+    int posZ;                           // 0x2c
+    unsigned char unk30[0x270 - 0x30];  // 0x30
+    int follow;                         // 0x270
+};
 
-// TODO fn_8017BA2C (0xA4 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017BA2C(void) {}
+// Follow target: its position and the id copied into the behaviour.
+struct GunAimTarget80179F08 {
+    unsigned char unk00[0x24];          // 0x00
+    int posX;                           // 0x24
+    int posY;                           // 0x28
+    unsigned char unk2C[0x38 - 0x2c];   // 0x2c
+    int field38;                        // 0x38
+};
 
-// TODO fn_8017BAD0 (0xA4 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017BAD0(void) {}
+// Per-behaviour flag block; +0x1c gates the wide-angle aim test.
+struct GunAimBlock80179F08 {
+    unsigned char unk00[0x1c];  // 0x00
+    float field1C;              // 0x1c
+};
 
-// TODO fn_8017BB74 (0x24 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017BB74(void) {}
+// Aim behaviour: view limits and counters at 0x14-0x22, aim flags at 0x2c and
+// the flag block at 0x54.
+struct GunAimBeh80179F08 {
+    unsigned char unk00[0x14];          // 0x00
+    unsigned short field14;             // 0x14
+    unsigned short field16;             // 0x16
+    unsigned short field18;             // 0x18
+    unsigned short field1A;             // 0x1a
+    unsigned short field1C;             // 0x1c
+    unsigned char unk1E[0x22 - 0x1e];   // 0x1e
+    unsigned short field22;             // 0x22
+    unsigned char unk24[0x2c - 0x24];   // 0x24
+    unsigned int flags;                 // 0x2c
+    int field30;                        // 0x30
+    int field34;                        // 0x34
+    unsigned char unk38[0x54 - 0x38];   // 0x38
+    GunAimBlock80179F08* block;         // 0x54
+};
 
-// TODO fn_8017BB98 (0x24 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017BB98(void) {}
+extern float lbl_804D81E0;
 
-// TODO fn_8017BBBC (0xA0 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017BBBC(void) {}
+float OwnerValue(Owner* owner, void* target);
 
-// TODO fn_8017BC5C (0x74 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017BC5C(void) {}
+// Name is a guess: second aim-target update of the gun behaviour tables. Ends and
+// restarts the behaviour, picks up its follow target and copies the target id;
+// then checks whether the target lies inside the behaviour's view limits and
+// sets the aim flags from the result.
+void GunAimTargetUpdate80179F08(void* ownerArg, void* behArg) {
+    GunAimActor80179F08* owner = (GunAimActor80179F08*)ownerArg;
+    GunAimBeh80179F08* beh;
+    GunAimTarget80179F08* target;
+    GunAimBlock80179F08* block;
+    Vec3 delta;
+    Vec3 axis;
+    Mtx34 mtx;
+    float angle;
 
-// TODO fn_8017BCD0 (0x50 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017BCD0(void) {}
+    if (behArg == 0) {
+        return;
+    }
+    beh = (GunAimBeh80179F08*)behArg;
+    block = beh->block;
+    BehDone(beh);
+    BehReset(beh);
+    target = (GunAimTarget80179F08*)FollowGetTargetObj(&owner->follow);
+    beh->flags |= 1;
+    beh->flags |= 2;
+    if (target == 0) {
+        return;
+    }
+    beh->field30 = 2;
+    beh->field34 = target->field38;
 
-// TODO fn_8017BD20 (0x54 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017BD20(void) {}
+    delta.x = (float)target->posX - (float)owner->posX;
+    delta.y = (float)target->posY - (float)owner->posY;
+    delta.z = (float)owner->posZ - (float)owner->posZ;
 
-// TODO fn_8017BD74 (0x4 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017BD74(void) {}
+    axis.x = lbl_804D81A4;
+    axis.y = lbl_804D81B0;
+    axis.z = lbl_804D81A4;
+    ActorGetMatrix(&mtx, (Actor*)owner);
+    fn_800A0168(&mtx, &mtx);
+    fn_800A0030(&axis, &mtx, &axis);
+    GunNormalizeAimVec80179268(&axis);
+    GunNormalizeAimVec80179268(&delta);
 
-// TODO fn_8017BD78 (0x48 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017BD78(void) {}
+    if (axis.z * delta.z + axis.x * delta.x + axis.y * delta.y >
+        lbl_804D81E0) {
+        angle = OwnerValue((Owner*)owner, target);
+        if (angle <= (float)beh->field16 && (float)beh->field14 <= angle) {
+            beh->flags |= 4;
+        }
+        if (block->field1C <= lbl_804D81A4 &&
+            angle <= (float)beh->field1A &&
+            (float)beh->field18 <= angle) {
+            beh->flags |= 8;
+        }
+        if ((beh->flags & 4) == 0 && (beh->flags & 8) == 0) {
+            beh->flags |= 0x80;
+        }
+        if ((float)beh->field1C <= angle) {
+            if (angle > (float)beh->field22) {
+                beh->flags |= 0x800;
+            }
+        } else {
+            beh->flags |= 0x400;
+        }
+    }
+}
 
-// TODO fn_8017BDC0 (0x78 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8017BDC0(void) {}
+// Name is a guess: empty gun-aim state callback, retail body is a bare `blr`;
+// address 0x8017A384.
+void GunAimNoOp8017A384(void) {}
+
+// Name is a guess: empty gun-aim state callback, retail body is a bare `blr`;
+// address 0x8017A388.
+void GunAimNoOp8017A388(void) {}
+
+// Name is a guess: another gun-aim behaviour callback. Releases the live effect
+// handle held in the behaviour block and clears it so it is released only once
+// (address 0x8017A38C).
+void GunAimBehRelease8017A38C(void* ownerArg, void* behArg) {
+    GunFxBeh80177A2C* beh;
+    GunFxBlock80177A2C* block;
+
+    if (behArg != 0) {
+        beh = (GunFxBeh80177A2C*)behArg;
+        block = beh->block;
+        if (block->effect != -1) {
+            fn_80027690(block->effect);
+            block->effect = -1;
+        }
+    }
+}
+
+// Name is a guess: same shape as the other gun-aim behaviour release callbacks.
+// Releases the live effect handle held in the behaviour block and clears it so it
+// is released only once (address 0x8017A3D4).
+void GunAimBehRelease8017A3D4(void* ownerArg, void* behArg) {
+    GunAimFxBeh801798FC* beh;
+    GunAimFxBlock801798FC* block;
+
+    if (behArg != 0) {
+        beh = (GunAimFxBeh801798FC*)behArg;
+        block = beh->block;
+        if (block->effect != -1) {
+            fn_80027690(block->effect);
+            block->effect = -1;
+        }
+    }
+}
+
+// Name is a guess: empty gun-aim state callback, retail body is a bare `blr`;
+// address 0x8017A41C.
+void GunAimNoOp8017A41C(void) {}
+
+// Name is a guess: empty gun-aim state callback, retail body is a bare `blr`;
+// address 0x8017A420.
+void GunAimNoOp8017A420(void) {}
+
+// Name is a guess: clears the aim block's 0x08 word and ends the behaviour;
+// address 0x8017A424.
+void GunAimStateDone8017A424(void* owner, void* beh) {
+    GunFlagOwner80176CF4* o = (GunFlagOwner80176CF4*)beh;
+    GunFlagBlock80176CF4* b;
+
+    if (o == 0) {
+        return;
+    }
+    b = o->flags;
+    b->flags = 0;
+    BehDone(beh);
+}
+
+// Per-behaviour block: the state/flag word at 0x08 and the live effect handle
+// at 0x0c (names are guesses).
+struct GunSpawnBlock8017A45C {
+    unsigned char unk00[0x08];  // 0x00
+    int flags;                  // 0x08
+    int effect;                 // 0x0c
+};
+
+// The behaviour object; only its +0x54 block pointer is used.
+struct GunSpawnBeh8017A45C {
+    unsigned char unk00[0x54];               // 0x00
+    GunSpawnBlock8017A45C* block;            // 0x54
+};
+
+// Name is a guess: clears the behaviour block's flag word and ends the
+// behaviour; address 0x8017A45C.
+void GunSpawnStateDone8017A45C(void* ownerArg, void* behArg) {
+    GunSpawnBeh8017A45C* beh;
+    GunSpawnBlock8017A45C* block;
+
+    if (behArg != 0) {
+        beh = (GunSpawnBeh8017A45C*)behArg;
+        block = beh->block;
+        block->flags = 0;
+        BehDone(beh);
+    }
+}
+
+// Actor-side message target shared by the owner and the player: a callback at
+// +0x30 receives the message id and the payload block (names are guesses).
+struct GunMsgTarget8017A494 {
+    unsigned char unk00[0x30];             // 0x00
+    void (*send)(int msg, void* payload);  // 0x30
+};
+
+// The gun actor that owns the behaviour: the message callback at 0x30, the
+// position at 0x84, the model at 0xcc, the muzzle bones at 0xd8/0xdc and the
+// animation at 0xf0 (names are guesses).
+struct GunSpawnOwner8017A494 {
+    GunMsgTarget8017A494 target;         // 0x00
+    unsigned char unk34[0x84 - 0x34];    // 0x34
+    Vec3 pos;                            // 0x84
+    unsigned char unk90[0xcc - 0x90];    // 0x90
+    int model;                           // 0xcc
+    unsigned char unkD0[0xd8 - 0xd0];    // 0xd0
+    int boneA;                           // 0xd8
+    int boneB;                           // 0xdc
+    unsigned char unkE0[0xf0 - 0xe0];    // 0xe0
+    int anim;                            // 0xf0
+};
+
+// Message payload: the target object at 0x00 and the reply flags at 0x18.
+struct GunMsgPayload8017A494 {
+    GunMsgTarget8017A494* target;        // 0x00
+    unsigned char unk04[0x18 - 0x04];    // 0x04
+    unsigned int flags;                  // 0x18
+    unsigned char unk1C[0x20 - 0x1C];    // 0x1c
+};
+
+GunMsgTarget8017A494* GetPlayer();
+
+// Name is a guess: spawn callback of the gun effect behaviour. Clears the
+// block's flag word, ends the behaviour and then - when no menu is open and no
+// effect is running - asks the owner and the player for their reply flags; when
+// they overlap it starts a muzzle effect at the model bone (or, for an actor
+// without that bone, at the owner position) with a random lifetime and
+// randomised colour/parameter vector. The effect handle is kept in the block.
+void GunSpawnStart8017A494(void* ownerArg, void* behArg) {
+    GunSpawnOwner8017A494* owner = (GunSpawnOwner8017A494*)ownerArg;
+    GunSpawnBeh8017A45C* beh;
+    GunSpawnBlock8017A45C* block;
+    GunMsgPayload8017A494 ownerMsg;
+    GunMsgPayload8017A494 playerMsg;
+    Vec3 pos;
+    float params[4];
+    Mtx34 mtx;
+    int bone;
+    int delay;
+
+    if (behArg != 0) {
+        beh = (GunSpawnBeh8017A45C*)behArg;
+        block = beh->block;
+        block->flags = 0;
+        BehDone(beh);
+        if (fn_800BA7FC(0x29) == 0 && block->effect == -1) {
+            ownerMsg.target = &owner->target;
+            playerMsg.target = GetPlayer();
+            ownerMsg.target->send(0x400, &ownerMsg);
+            playerMsg.target->send(0x400, &playerMsg);
+            if ((ownerMsg.flags & playerMsg.flags) != 0) {
+                bone = ModelFindBone(owner->model, owner->boneA);
+                if (bone == -1) {
+                    bone = ModelFindBone(owner->model, owner->boneB);
+                }
+                if (bone != -1) {
+                    Mtx34* mats = (Mtx34*)fn_8003A3F0(
+                        owner->model, owner->anim,
+                        ModelAnimate(owner->model, 0, 0));
+                    ActorGetMatrix(&mtx, (Actor*)&mats[bone]);
+                    pos.x = mtx.trans[0];
+                    pos.y = mtx.trans[1];
+                    pos.z = mtx.trans[2];
+                } else {
+                    pos.x = owner->pos.x;
+                    pos.y = owner->pos.y;
+                    pos.z = owner->pos.z;
+                }
+                params[0] = lbl_804D81B0;
+                params[1] = lbl_804D81DC *
+                                ((float)(unsigned)rand() / lbl_804D81D0) +
+                            lbl_804D81DC;
+                params[2] = lbl_804D81A4;
+                params[3] = lbl_804D81B0;
+                delay = (int)(lbl_804D81D8 *
+                                  ((float)(unsigned)rand() / lbl_804D81D0) +
+                              lbl_804D81D4);
+                block->effect = fn_80027A58(1, &pos, params, delay, 9);
+            }
+        }
+    }
+}
+
+// The gun actor shared by the two spawn callbacks below: the message target at
+// 0x00, the position at 0x84, the model at 0xcc, the muzzle bones at 0xd8/0xdc,
+// the animation at 0xf0, the frame time at 0x138 and the message-handler pair at
+// 0x8ec/0x8f0 (names are guesses).
+struct GunSpawnOwner8017A698 {
+    GunMsgTarget8017A494 target;         // 0x00
+    unsigned char unk34[0x84 - 0x34];    // 0x34
+    Vec3 pos;                            // 0x84
+    unsigned char unk90[0xcc - 0x90];    // 0x90
+    int model;                           // 0xcc
+    unsigned char unkD0[0xd8 - 0xd0];    // 0xd0
+    int boneA;                           // 0xd8
+    int boneB;                           // 0xdc
+    unsigned char unkE0[0xf0 - 0xe0];    // 0xe0
+    int anim;                            // 0xf0
+    unsigned char unkF4[0x138 - 0xf4];   // 0xf4
+    float field138;                      // 0x138
+    unsigned char unk13C[0x8ec - 0x13c]; // 0x13c
+    int field8EC;                        // 0x8ec
+    int field8F0;                        // 0x8f0
+};
+
+// Name is a guess: second spawn callback of the gun effect behaviour. Like the
+// other spawn callback it clears the block's flag word, ends the behaviour and -
+// when no menu is open and no effect is running - asks owner and player for their
+// reply flags and starts a muzzle effect at the model bone (or the owner position)
+// with a random colour parameter and delay. It then sends the aim-matrix payload
+// on when the spawn message answers with the start reply.
+void GunSpawnStart8017A698(Owner* ownerArg, void* behArg) {
+    GunSpawnOwner8017A698* owner = (GunSpawnOwner8017A698*)ownerArg;
+    GunSpawnBeh8017A45C* beh;
+    GunSpawnBlock8017A45C* block;
+    GunMsgPayload8017A494 ownerMsg;
+    GunMsgPayload8017A494 playerMsg;
+    unsigned char payload[0x60];
+    Vec3 pos;
+    float params[4];
+    Mtx34 mtx;
+    Mtx34* mats;
+    float ratio;
+    int bone;
+    int delay;
+
+    if (behArg == 0) {
+        return;
+    }
+    beh = (GunSpawnBeh8017A45C*)behArg;
+    block = beh->block;
+    block->flags = 0;
+    BehDone(beh);
+    if (fn_800BA7FC(0x29) == 0 && block->effect != -1) {
+        ownerMsg.target = &owner->target;
+        playerMsg.target = GetPlayer();
+        ownerMsg.target->send(0x400, &ownerMsg);
+        playerMsg.target->send(0x400, &playerMsg);
+        if ((ownerMsg.flags & playerMsg.flags) != 0) {
+            bone = ModelFindBone(owner->model, owner->boneA);
+            if (bone == -1) {
+                bone = ModelFindBone(owner->model, owner->boneB);
+            }
+            if (bone != -1) {
+                mats = (Mtx34*)fn_8003A3F0(owner->model, owner->anim,
+                                            ModelAnimate(owner->model, 0, 0));
+                ActorGetMatrix(&mtx, (Actor*)&mats[bone]);
+                pos.x = mtx.trans[0];
+                pos.y = mtx.trans[1];
+                pos.z = mtx.trans[2];
+            } else {
+                pos.x = owner->pos.x;
+                pos.y = owner->pos.y;
+                pos.z = owner->pos.z;
+            }
+            ratio = (float)(unsigned)rand() / lbl_804D81D0;
+            params[0] = lbl_804D81B0;
+            params[1] = lbl_804D81DC * ratio + lbl_804D81DC;
+            params[2] = lbl_804D81A4;
+            params[3] = lbl_804D81B0;
+            delay = (int)(lbl_804D81D8 *
+                              ((float)(unsigned)rand() / lbl_804D81D0) +
+                          lbl_804D81D4);
+            block->effect = fn_80027A58(1, &pos, params, delay, 9);
+        }
+    }
+    if (Fn800F7DEC(owner->field8EC, owner->field8F0, 0x20ee36, OwnerId(ownerArg),
+                   0) == 0x04a3e183) {
+        block->flags |= 2;
+        if (GunAimMatrixUpdate80179268(lbl_804D81A4, ownerArg, (Beh*)payload) !=
+            0) {
+            Fn800F7F5C(owner->field8EC, owner->field8F0, 0x20ee36,
+                       OwnerId(ownerArg), payload, owner->field138);
+        }
+    }
+}
+
+// The block of the random spawn timer below: the flag word at 0x08, the spawn
+// range at 0x10/0x14 and the rolled spawn time at 0x18 (names are guesses).
+struct GunSpawnTimerBlock8017A918 {
+    unsigned char unk00[0x08];  // 0x00
+    int flags;                  // 0x08
+    int field0C;                // 0x0c
+    int min;                    // 0x10
+    int max;                    // 0x14
+    float time;                 // 0x18
+};
+
+// The behaviour object; only its +0x54 block pointer is used.
+struct GunSpawnTimerBeh8017A918 {
+    unsigned char unk00[0x54];                    // 0x00
+    GunSpawnTimerBlock8017A918* block;            // 0x54
+};
+
+// Name is a guess: spawn-timer callback of the gun effect behaviour. Clears the
+// block's flag word, ends the behaviour and rolls a spawn time between the
+// block's range limits; when the spawn message answers with the start reply it
+// sends the aim payload on.
+void GunSpawnTimer8017A918(Owner* ownerArg, void* behArg) {
+    GunSpawnOwner8017A698* owner = (GunSpawnOwner8017A698*)ownerArg;
+    GunSpawnTimerBeh8017A918* beh;
+    GunSpawnTimerBlock8017A918* block;
+    unsigned char payload[0x60];
+    float ratio;
+
+    if (behArg == 0) {
+        return;
+    }
+    beh = (GunSpawnTimerBeh8017A918*)behArg;
+    block = beh->block;
+    block->flags = 0;
+    BehDone(beh);
+    ratio = (float)(unsigned)rand() / lbl_804D81D0;
+    block->time = (float)(block->max - block->min) * ratio;
+    block->time += (float)block->min;
+    if (Fn800F7DEC(owner->field8EC, owner->field8F0, 0x96224fcc, OwnerId(ownerArg),
+                   0) == 0x04a3e183 &&
+        Fn80161FF4(ownerArg, payload, lbl_804D81A4) != 0) {
+        Fn800F7F5C(owner->field8EC, owner->field8F0, 0x96224fcc,
+                   OwnerId(ownerArg), payload, owner->field138);
+    }
+}
+
+// The aim behaviour of the two callbacks below: the aim flags at 0x2c and the
+// flag block pointer at 0x54 (offsets come from retail; names are guesses).
+struct GunAimBeh8017AA48 {
+    unsigned char unk00[0x2c];          // 0x00
+    unsigned int flags;                 // 0x2c
+    unsigned char unk30[0x54 - 0x30];   // 0x30
+    GunFlagBlock80176CF4* block;        // 0x54
+};
+
+// Name is a guess: ends the aim behaviour and sets its 0x10/0x20 aim flags when
+// the owner answers the two aim messages with the done reply.
+void GunAimFlagsDone8017AA48(void* ownerArg, void* behArg) {
+    GunSpawnOwner8017A698* owner;
+    GunAimBeh8017AA48* beh;
+
+    if (behArg == 0) {
+        return;
+    }
+    owner = (GunSpawnOwner8017A698*)ownerArg;
+    beh = (GunAimBeh8017AA48*)behArg;
+    beh->block->flags = 0;
+    BehDone(beh);
+    if (Fn800F7DEC(owner->field8EC, owner->field8F0, 0xe6b71bcc,
+                   OwnerId((Owner*)ownerArg), 0) == 0x04a3e183) {
+        beh->flags |= 0x10;
+    }
+    if (Fn800F7DEC(owner->field8EC, owner->field8F0, 0x968cbe3d,
+                   OwnerId((Owner*)ownerArg), 0) == 0x04a3e183) {
+        beh->flags |= 0x20;
+    }
+}
+
+// Name is a guess: no-op callback of an aim behaviour table.
+// fn_8017AB10
+extern "C" int fn_8017AB10(void) {
+    return 0;
+}
+
+extern float lbl_804D81E4;
+extern float lbl_804D81E8;
+
+// Placeholder name kept until other units are checked: weapon behaviour message
+// handler of the second gun behaviour table (GunAimMsg8017AB18 is the
+// descriptive name). Picks the next state from the message id and handles the
+// aimed-shot and release messages; returns 0 only when the behaviour object is
+// missing or the payload request failed.
+extern "C" int fn_8017AB18(void* ownerArg, void* behArg, int msg) {
+    GunMsgOwner8017744C* owner;
+    GunMsgBlock8017744C* block;
+    GunMsgPayload8017744C payload;
+    int reply;
+
+    if (behArg == 0) {
+        return 0;
+    }
+    owner = (GunMsgOwner8017744C*)ownerArg;
+    block = ((GunMsgBeh8017744C*)behArg)->block;
+    switch (msg) {
+    case 1:
+        if (block->state == 0) {
+            block->next = 1;
+        }
+        break;
+    case 2:
+        if (block->state == 0) {
+            block->next = 5;
+        }
+        break;
+    case 3:
+        if (block->state == 0) {
+            block->next = 6;
+        }
+        break;
+    case 4:
+        if (block->state == 0) {
+            block->next = 7;
+        }
+        break;
+    case 0x20ee36:
+        break;
+    case 0x1b83833f:
+        block->flags |= 0x10;
+        break;
+    case 0xe6b71bcc:
+    case 0x968cbe3d:
+        if ((block->flags & 0x20) == 0) {
+            block->flags |= 0x20;
+            Fn800F7F5C(owner->field8EC, owner->field8F0, msg,
+                       OwnerId((Owner*)ownerArg), 0, owner->field138);
+        }
+        break;
+    case 0xf829db93:
+        if ((block->flags & 0x40) == 0) {
+            reply = Fn800F7DEC(owner->field8EC, owner->field8F0, 0xf829db93,
+                               OwnerId((Owner*)ownerArg), 0);
+            if (reply == 0x04a3e183) {
+                block->flags |= 0x40;
+                if (Fn80161FF4((Owner*)ownerArg, &payload, lbl_804D81E4) == 0) {
+                    return 0;
+                }
+                Fn800F7F5C(owner->field8EC, owner->field8F0, 0xf829db93,
+                           OwnerId((Owner*)ownerArg), &payload,
+                           owner->field138);
+                block->time = lbl_804D81E8;
+            }
+        }
+        break;
+    }
+    return 1;
+}
+
+// Per-behaviour state block of the update below (time field at 0x1c here).
+struct GunStateBlock8017AD38 {
+    int state;                           // 0x00 current state
+    int next;                            // 0x04 requested state
+    unsigned int flags;                  // 0x08
+    int field0C;                         // 0x0c effect handle, -1 when idle
+    int field10;                         // 0x10
+    int field14;                         // 0x14
+    float field18;                       // 0x18
+    float time;                          // 0x1c
+};
+
+// The behaviour object; +0x10 receives the new state, +0x54 holds the block.
+struct GunStateBeh8017AD38 {
+    unsigned char unk00[0x10];           // 0x00
+    int field10;                         // 0x10
+    unsigned char unk14[0x54 - 0x14];    // 0x14
+    GunStateBlock8017AD38* block;        // 0x54
+};
+
+extern GunStateEntry80177694 lbl_803A8260[];
+extern float lbl_804D81A4;
+
+// Placeholder name kept until other units are checked: per-frame behaviour
+// update of the second gun behaviour table (GunAimStateUpdate8017AD38 is the
+// descriptive name). Runs the current state's update callback, then - when a
+// new state was requested - the change callback, the state copy and the new
+// state's enter callback.
+extern "C" int fn_8017AD38(void* ownerArg, void* behArg) {
+    GunMsgOwner8017744C* owner;
+    GunStateBeh8017AD38* beh;
+    GunStateBlock8017AD38* block;
+
+    if (behArg == 0) {
+        return 0;
+    }
+    owner = (GunMsgOwner8017744C*)ownerArg;
+    beh = (GunStateBeh8017AD38*)behArg;
+    block = beh->block;
+    if (block->time >= lbl_804D81A4) {
+        block->time -= owner->field138;
+    }
+    if (lbl_803A8260[block->state].update != 0) {
+        lbl_803A8260[block->state].update(ownerArg);
+    }
+    if (block->next != block->state) {
+        if (lbl_803A8260[block->state].change != 0) {
+            lbl_803A8260[block->state].change(ownerArg, behArg);
+        }
+        block->state = block->next;
+        beh->field10 = block->next;
+        if (lbl_803A8260[block->state].enter != 0) {
+            lbl_803A8260[block->state].enter(ownerArg, behArg);
+        }
+    }
+    return 1;
+}
+
+// Name is a guess: stops the effect recorded in the state block and frees the
+// block hung off +0x54 of the behaviour object (GunStateBlockFree8017AE50).
+// Placeholder name kept: u_80161F40.cpp's behaviour table references it.
+extern "C" int fn_8017AE50(void* ownerArg, void* behArg) {
+    GunStateBeh8017AD38* beh;
+    GunStateBlock8017AD38* block;
+
+    if (behArg == 0) {
+        return 0;
+    }
+    beh = (GunStateBeh8017AD38*)behArg;
+    block = beh->block;
+    if (block->field0C != -1) {
+        fn_80027690(block->field0C);
+        block->field0C = -1;
+    }
+    VFree(block);
+    return 1;
+}
+
+// Name is a guess: allocates the 0x20-byte state block for the second gun
+// behaviour table, stores it at +0x54 of the behaviour object and runs the
+// initial state's enter callback (GunStateBlockCreate8017AEAC).  Placeholder
+// name kept: u_80161F40.cpp's behaviour table references it.
+extern "C" int fn_8017AEAC(void* ownerArg, void* behArg) {
+    GunStateBeh8017AD38* beh;
+    GunStateBlock8017AD38* block;
+
+    if (behArg == 0) {
+        return 0;
+    }
+    beh = (GunStateBeh8017AD38*)behArg;
+    block = (GunStateBlock8017AD38*)VAlloc(0x20);
+    if (block == 0) {
+        beh->block = 0;
+        return 0;
+    }
+    beh->block = block;
+    beh->field10 = 0;
+    block->state = 0;
+    block->next = 0;
+    block->field0C = -1;
+    block->flags = 0;
+    block->field10 = 400;
+    block->field14 = 600;
+    block->field18 = lbl_804D81A4;
+    block->time = lbl_804D81A4;
+    if (lbl_803A8260[block->state].enter != 0) {
+        lbl_803A8260[block->state].enter(ownerArg, behArg);
+    }
+    return 1;
+}
+
+// Trail sample copied into a live trail entry (offsets from retail; the meaning of
+// each vector is a guess).
+struct GunTrailData8017AFA4 {
+    Vec3 vec0;  // 0x00
+    Vec3 vec1;  // 0x0c
+    Vec3 vec2;  // 0x18
+    Vec3 vec3;  // 0x24 position handed to the trail buffer
+};
+
+struct TrailBuffer;
+
+void TrailBufferPush(TrailBuffer* buffer, float* position);
+
+// Live trail entry owned by the gun effect state (offsets from retail; names are
+// guesses).
+struct GunTrailEntry8017AFA4 {
+    int state;                          // 0x00
+    int next;                           // 0x04
+    unsigned char unk08[0x0c - 0x08];   // 0x08
+    GunTrailData8017AFA4 data;          // 0x0c
+    TrailBuffer* trail;                 // 0x3c
+};
+
+extern float lbl_804D81F0;
+
+// Advances the entry from state 1 to state 2 (address 0x8017AF78).
+void GunTrailStateStart8017AF78(void* block) {
+    GunTrailEntry8017AFA4* entry;
+    if (!block) {
+        return;
+    }
+    entry = (GunTrailEntry8017AFA4*)block;
+    if (!block) {
+        return;
+    }
+    if (entry->state != 1) {
+        return;
+    }
+    entry->state = 2;
+    entry->next = 0;
+}
+
+// Copies one trail sample into the entry and pushes it to the trail buffer
+// (address 0x8017AFA4).
+void GunTrailEntryInit8017AFA4(void* block, void* sample) {
+    GunTrailEntry8017AFA4* entry;
+    GunTrailData8017AFA4* data;
+    if (!block) {
+        return;
+    }
+    if (!sample) {
+        return;
+    }
+    entry = (GunTrailEntry8017AFA4*)block;
+    if (!block) {
+        return;
+    }
+    if (entry->state != 1) {
+        return;
+    }
+    data = (GunTrailData8017AFA4*)sample;
+    entry->data = *data;
+    entry->data.vec3.z -= lbl_804D81F0;
+    TrailBufferPush(entry->trail, &entry->data.vec3.x);
+}
+
+// Effect preset (0x3c bytes each) of the trail effects below: two line-fan
+// passes with their own colour ramp, then a ring pass (offsets from retail).
+struct GunTrailFx8017B060 {
+    int field00;                        // 0x00 texture/mode of the first fan
+    float field04;                      // 0x04 width of the first fan
+    float scaleA;                       // 0x08 vertex scale of the first fan
+    unsigned char colorA[8];            // 0x0c colour ramp of the first fan
+    int field14;                        // 0x14 texture/mode of the second fan
+    float field18;                      // 0x18 width of the second fan
+    float scaleB;                       // 0x1c vertex scale of the second fan
+    unsigned char colorB[8];            // 0x20 colour ramp of the second fan
+    int field28;                        // 0x28 texture/mode of the ring pass
+    float field2C;                      // 0x2c width of the ring pass
+    unsigned char unk30[4];             // 0x30
+    unsigned char params[8];            // 0x34 ring buffer colours (end + base)
+};
+
+// One live trail effect (0xf0 bytes): state, lifetime counter, effect preset
+// index, the 0x30-byte draw link, the ring buffer and its 36 vertices.
+struct GunTrailBlock8017B060 {
+    int state;                          // 0x00
+    int counter;                        // 0x04
+    int effect;                         // 0x08
+    unsigned char link[0x30];           // 0x0c
+    unsigned char trail[0x24];          // 0x3c ring buffer (TrailBuffer)
+    float points[36];                   // 0x60
+};
+
+// Growing array of live trail effects; the size at 0x08 is in bytes and the
+// entries are 4-byte pointers.
+struct GunTrailList8017B060 {
+    unsigned char unk00[8];             // 0x00
+    unsigned int size;                  // 0x08
+    void* data;                         // 0x0c
+};
+
+extern GunTrailList8017B060* lbl_804D5048;
+extern GunTrailFx8017B060 lbl_803A82C0[];
+// Shared trail geometry table: 12 base points, 12 angle offsets and the
+// per-frame scale factors derived from them.
+struct GunTrailGeometry8017B488 {
+    float points[36];                   // 0x00
+    int angleOffsets[12];               // 0x90
+    float scaleY[12];                   // 0xc0
+    float scaleXZ[12];                  // 0xf0
+};
+
+extern GunTrailGeometry8017B488 lbl_80491760;
+extern float lbl_804D81F4;
+extern float lbl_804D81F8;
+extern float lbl_804D81FC;
+extern float lbl_804D8200;
+
+void LinkInfoInit(void* info);
+void TrailBufferInit(TrailBuffer* buffer, float* points, unsigned long max,
+                     unsigned long rEnd, unsigned long gEnd, unsigned long bEnd,
+                     unsigned long aEnd, unsigned char rBase, unsigned char gBase,
+                     unsigned char bBase, unsigned char aBase);
+void Draw3DBeginLine(int texture, void* link, float width);
+void DrawLine(float* from, float* to, unsigned char c0, unsigned char c1,
+              unsigned char c2, unsigned char c3, unsigned char c4,
+              unsigned char c5, unsigned char c6, unsigned char c7);
+void DrawDisableTexOffsets(void);
+void DrawTrailRing(TrailBuffer* buffer, unsigned char r, unsigned char g,
+                   unsigned char b, unsigned char a);
+extern "C" void fn_8028B35C(void* list, void* item, int size);
+extern "C" void* fn_8028B3BC(void* list, void* end, int size);
+
+// Name is a guess: allocates a trail effect for the given effect preset and
+// registers it in the live list, dropping the oldest effects once 32 are live.
+GunTrailBlock8017B060* GunTrailSpawn8017B060(int effect) {
+    GunTrailBlock8017B060* block;
+    GunTrailFx8017B060* fx;
+
+    while ((lbl_804D5048->size >> 2) >= 0x20) {
+        VFree(*(void**)lbl_804D5048->data);
+        fn_8028B35C(lbl_804D5048, lbl_804D5048->data, 4);
+    }
+    block = (GunTrailBlock8017B060*)VAlloc(0xf0);
+    if (block != 0) {
+        *(GunTrailBlock8017B060**)fn_8028B3BC(
+            lbl_804D5048,
+            (unsigned char*)lbl_804D5048->data + lbl_804D5048->size, 4) = block;
+        block->state = 1;
+        block->counter = 0;
+        block->effect = effect;
+        LinkInfoInit(block->link);
+        fx = &lbl_803A82C0[block->effect];
+        TrailBufferInit((TrailBuffer*)block->trail, block->points, 12,
+                        fx->params[0], fx->params[1], fx->params[2],
+                        fx->params[3], fx->params[4], fx->params[5],
+                        fx->params[6], fx->params[7]);
+    }
+    return block;
+}
+
+// Placeholder name kept: u_80157730.cpp calls it. Per-frame update of the live
+// trail effects: draws the live ones from their effect preset, fades the dying
+// ones out and frees the effects whose 300 frames are over.
+extern "C" void fn_8017B164(void) {
+    GunTrailBlock8017B060* block;
+    GunTrailFx8017B060* fx;
+    void** slot;
+    float value;
+    float pos[3];
+    float base[3];
+    int dead;
+    int i;
+    unsigned char alpha;
+
+    value = lbl_804D81F4;
+    slot = (void**)lbl_804D5048->data;
+    while (slot != (void**)((unsigned char*)lbl_804D5048->data +
+                            lbl_804D5048->size)) {
+        block = (GunTrailBlock8017B060*)*slot;
+        dead = 0;
+        base[0] = value;
+        base[1] = value;
+        base[2] = value;
+        if (block->state == 2) {
+            if (block->counter < 300) {
+                alpha = (unsigned char)(int)(lbl_804D81F8 *
+                        (lbl_804D81FC - (float)block->counter / lbl_804D8200));
+                fx = &lbl_803A82C0[block->effect];
+                Draw3DBeginLine(fx->field28, 0, fx->field2C);
+                DrawTrailRing((TrailBuffer*)block->trail, alpha, alpha, alpha,
+                              alpha);
+                DrawDisableTexOffsets();
+            } else {
+                dead = 1;
+            }
+        } else if (block->state == 1) {
+            fx = &lbl_803A82C0[block->effect];
+            Draw3DBeginLine(fx->field00, block->link, fx->field04);
+            for (i = 0; i < 12; i++) {
+                pos[0] = lbl_80491760.points[i * 3 + 0] * lbl_80491760.scaleXZ[i] *
+                         fx->scaleA;
+                pos[2] = lbl_80491760.points[i * 3 + 2] * lbl_80491760.scaleXZ[i] *
+                         fx->scaleA;
+                pos[1] = lbl_80491760.points[i * 3 + 1] * lbl_80491760.scaleY[i] *
+                         fx->scaleA;
+                DrawLine(base, pos, fx->colorA[0], fx->colorA[1], fx->colorA[2],
+                         fx->colorA[3], fx->colorA[4], fx->colorA[5],
+                         fx->colorA[6], fx->colorA[7]);
+            }
+            DrawDisableTexOffsets();
+            fx = &lbl_803A82C0[block->effect];
+            Draw3DBeginLine(fx->field14, block->link, fx->field18);
+            for (i = 0; i < 12; i++) {
+                pos[0] = lbl_80491760.points[i * 3 + 0] * lbl_80491760.scaleXZ[i] *
+                         fx->scaleB;
+                pos[2] = lbl_80491760.points[i * 3 + 2] * lbl_80491760.scaleXZ[i] *
+                         fx->scaleB;
+                pos[1] = lbl_80491760.points[i * 3 + 1] * lbl_80491760.scaleY[i] *
+                         fx->scaleB;
+                DrawLine(base, pos, fx->colorB[0], fx->colorB[1], fx->colorB[2],
+                         fx->colorB[3], fx->colorB[4], fx->colorB[5],
+                         fx->colorB[6], fx->colorB[7]);
+            }
+            DrawDisableTexOffsets();
+            fx = &lbl_803A82C0[block->effect];
+            Draw3DBeginLine(fx->field28, 0, fx->field2C);
+            DrawTrailRing((TrailBuffer*)block->trail, 0xFF, 0xFF, 0xFF, 0xFF);
+            DrawDisableTexOffsets();
+        }
+        if (dead) {
+            VFree(block);
+            fn_8028B35C(lbl_804D5048, slot, 4);
+        } else {
+            slot++;
+        }
+    }
+}
+
+extern int lbl_804D504C;
+extern signed char lbl_804D5050;
+extern float lbl_804D8210;
+extern float lbl_804D8214;
+extern float lbl_804D8218;
+extern float lbl_804D821C;
+extern float lbl_804D8220;
+extern float lbl_804D8224;
+
+// Per-frame update of the live trail effects: advances the shared angle table
+// and the effect lifetimes (address 0x8017B488). Name is a guess.
+extern "C" void fn_8017B488(float dt) {
+    GunTrailBlock8017B060** slot;
+    GunTrailBlock8017B060* block;
+    float value;
+    float sinValue;
+    float cosValue;
+    int counter;
+    int angle;
+    int frames;
+    int i;
+
+    slot = (GunTrailBlock8017B060**)lbl_804D5048->data;
+    if (lbl_804D5050 == 0) {
+        lbl_804D504C = 0;
+        lbl_804D5050 = 1;
+    }
+    lbl_804D504C += (int)(lbl_804D8210 * dt);
+    for (i = 0; i < 12; i++) {
+        counter = lbl_804D504C + lbl_80491760.angleOffsets[i];
+        angle = counter % 360 - 180;
+        value = lbl_804D8214 * (float)angle / lbl_804D8218;
+        if (value < lbl_804D81F4) {
+            value = value * lbl_804D821C;
+        } else {
+            value = value * lbl_804D8220;
+        }
+        lbl_80491760.scaleY[i] = value;
+        sinValue = fn_800A1394(lbl_804D8220 * (float)counter);
+        cosValue = fn_800A1394(lbl_804D8224 * (float)counter);
+        lbl_80491760.scaleXZ[i] = cosValue * sinValue;
+    }
+    frames = (int)dt;
+    while (slot != (GunTrailBlock8017B060**)((unsigned char*)lbl_804D5048->data +
+                                             lbl_804D5048->size)) {
+        block = *slot;
+        if (block != 0) {
+            block->counter += frames;
+        }
+        slot++;
+    }
+}
+
+// The live-effect list is a polymorphic container; slot 2 of its vtable
+// releases the container itself.
+struct GunTrailListVt8017B6C0 {
+    void** vtable;                      // 0x00
+    unsigned int unk04;                 // 0x04
+    unsigned int size;                  // 0x08
+    void* data;                         // 0x0c
+};
+
+typedef void (*GunTrailListRelease8017B6C0)(void* list, int free);
+
+// Frees every live trail effect and destroys their container
+// (address 0x8017B6C0). Name is a guess.
+extern "C" void fn_8017B6C0(void) {
+    GunTrailListVt8017B6C0* list;
+
+    while ((lbl_804D5048->size >> 2) != 0) {
+        VFree(*(void**)lbl_804D5048->data);
+        fn_8028B35C(lbl_804D5048, lbl_804D5048->data, 4);
+    }
+    list = (GunTrailListVt8017B6C0*)lbl_804D5048;
+    if (list != 0) {
+        ((GunTrailListRelease8017B6C0)list->vtable[2])(list, 1);
+    }
+}
+
+// Shared byte-buffer base class: its destructor is out of line (0x8028B9C0) and the
+// class frees its storage through VFree (declared above).
+class Buffer {
+public:
+    Buffer();
+    virtual ~Buffer();
+    static void operator delete(void* p) { VFree(p); }
+};
+
+// Address 0x8028B960: per-object cleanup run from the intermediate base destructor.
+// Placeholder name kept (the symbol is unnamed in retail); the call takes only `this`.
+extern "C" void fn_8028B960(void* self);
+
+// Base class of the trail-list container: its destructor is defined inline, which is
+// why the derived deleting destructor below carries an extra vtable store before it
+// reaches Buffer's destructor.
+class GunTrailNodeBase : public Buffer {
+public:
+    virtual ~GunTrailNodeBase() {
+        fn_8028B960(this);
+    }
+};
+
+// Trail-list container; retail deleting destructor at 0x8017B728.
+// The `if (flag > 0) VFree(this)` tail is the compiler-generated delete path through
+// Buffer::operator delete; source is just an empty destructor body.
+class GunTrailNode : public GunTrailNodeBase {
+public:
+    virtual ~GunTrailNode();
+};
+
+GunTrailNode::~GunTrailNode() {
+}
+
+// Name is a guess: empty helper, retail body is a bare `blr`; address 0x8017B7A0.
+// fn_8017B7A0
+extern "C" void fn_8017B7A0(void) {
+}
+
+// Live-effect list container. The intermediate base's deleting destructor is out of
+// line at 0x8017B8B8: vptr reset, per-object cleanup, the Buffer destructor and the
+// compiler-generated VFree delete path. Its vtable is 0x803A8374.
+class GunTrailListBase : public Buffer {
+public:
+    virtual ~GunTrailListBase();
+
+    unsigned int unk04;                 // 0x04
+    unsigned int size;                  // 0x08 bytes in `data`
+    void* data;                         // 0x0c
+    unsigned int unk10;                 // 0x10
+};
+
+GunTrailListBase::~GunTrailListBase() {
+    fn_8028B960(this);
+}
+
+// Most-derived container; its inline constructor chain (Buffer's out-of-line
+// constructor followed by the two vptr stores) is what 0x8017B7A4 expands, and its
+// allocation goes through VAlloc.
+class GunTrailList : public GunTrailListBase {
+public:
+    static void* operator new(unsigned long size) { return VAlloc((int)size); }
+};
+
+// Builds the shared trail geometry table (12 base vectors at 30-degree steps as
+// (sin, 1, cos), plus their offsets into the source table) and allocates the
+// live-effect list container (address 0x8017B7A4). Name is a guess.
+// fn_8017B7A4
+extern "C" void fn_8017B7A4(void) {
+    GunTrailList* list;
+    int angle;
+    int i;
+
+    list = new GunTrailList;
+    lbl_804D5048 = (GunTrailList8017B060*)list;
+    angle = 0;
+    for (i = 0; i < 12; i++) {
+        lbl_80491760.points[i * 3 + 0] = fn_800A1418((float)angle);
+        lbl_80491760.points[i * 3 + 1] = lbl_804D81FC;
+        lbl_80491760.points[i * 3 + 2] = fn_800A1394((float)angle);
+        lbl_80491760.angleOffsets[i] = (i % 3) * 120 + angle;
+        angle += 30;
+    }
+}
+
+// Shared callback lock flag (plain C global, no mangling).
+extern int sCbLock;
+
+// External helpers used by the range wrappers below (still placeholder names).
+extern "C" void fn_8028BC2C(int ctx);
+extern "C" void fn_8028BC28(int ctx, int ptr, unsigned long size);
+void GunRangeWalk8017B9F0(unsigned long start, unsigned long end);
+
+void GunRangeNoOp8017B9D0(unsigned long start, unsigned long end);
+
+// 8017B920 - descriptive name (guess): runs a context prologue on `ctx`, then
+// walks the word-aligned range [ptr, ptr + (size & ~3)).
+void GunRangeOp8017B920(int ctx, int ptr, unsigned long size) {
+    fn_8028BC2C(ctx);
+    GunRangeNoOp8017B9D0(ptr, ptr + (size & ~3));
+}
+
+// 8017B968 - descriptive name (guess): walks the word-aligned range
+// [ptr, ptr + (size & ~3)) first, then hands (ctx, ptr, size) to the runtime.
+void GunRangeOp8017B968(int ctx, int ptr, unsigned long size) {
+    GunRangeWalk8017B9F0(ptr, ptr + (size & ~3));
+    fn_8028BC28(ctx, ptr, size);
+}
+
+// 8017B9C8 - descriptive name (guess): returns the element size (4 bytes) of
+// the word range walked by the helpers below.
+unsigned long GunRangeElemSize8017B9C8(void) {
+    return 4;
+}
+
+// 8017B9D0 - descriptive name (guess): walks the word-aligned range from
+// `start` to `end` doing no per-element work (a no-op range walk).
+void GunRangeNoOp8017B9D0(unsigned long start, unsigned long end) {
+    unsigned long count;
+    unsigned long i;
+
+    count = (end + 3 - start) >> 2;
+    if (end <= start) {
+        return;
+    }
+    for (i = count; i != 0; i--) {
+    }
+}
+
+// 8017B9F0 - descriptive name (guess): walks the word-aligned range from
+// `start` to `end` doing no per-element work (the `unsigned` twin of 8017B9D0).
+void GunRangeWalk8017B9F0(unsigned long start, unsigned long end) {
+    unsigned long count;
+    unsigned long i;
+
+    count = (end + 3 - start) >> 2;
+    if (end <= start) {
+        return;
+    }
+    for (i = count; i != 0; i--) {
+    }
+}
+
+// 8017BA10 - descriptive name (guess): takes the shared callback lock (sets it
+// on first use) and reports success.
+// fn_8017BA10
+extern "C" int fn_8017BA10(void) {
+    if (sCbLock == 0) {
+        sCbLock = 1;
+    }
+    return 1;
+}
+
+extern "C" int fn_80012E6C(void* out, int value);
+extern "C" int fn_8003CE8C(void* out, int value);
+extern "C" int fn_8000F2F0(void* out, int value);
+extern "C" int fn_8002FA84(void* out, int value);
+extern "C" int fn_8009305C(void* out, int value);
+int FileOlcSize();
+extern int sLastPool;
+
+// Name is a guess: bytes still free in the 0xa80000-byte gun pool. Returns 0
+// while the pool is still being set up (sLastPool == -1). The file OLC size and
+// four tracked block sizes are queried first (each helper writes its size
+// through an out-parameter); the fifth helper's block is not charged here.
+int GunPoolFreeSize8017BA2C(void) {
+    int fileSize;
+    int a;
+    int b;
+    int c;
+    int d;
+    int e;
+
+    if (sLastPool == -1) {
+        fileSize = FileOlcSize();
+        fn_80012E6C(&a, 0);
+        fn_8003CE8C(&b, 0);
+        fn_8000F2F0(&c, 0);
+        fn_8002FA84(&d, 0);
+        fn_8009305C(&e, 0);
+        return (0xA80000 - fileSize) - (a + b + c + d);
+    }
+    return 0;
+}
+
+// Name is a guess: state word plus a countdown timer, the layout reached
+// through a void* by the gun behaviour callbacks.
+struct GunStateTimer8017BAD0 {
+    unsigned short state;               // 0x00
+    unsigned char unk02[0x0c - 0x02];   // 0x02
+    int timer;                          // 0x0c
+};
+
+// Name is a guess: a two-state timer tick. State 1 counts down and switches to
+// state 3 when it runs out; state 2 counts down and switches to state 0. A
+// negative timer is clamped to 0, and the sentinel values -9999998 and
+// -9999999 freeze the tick (they are the "inactive" markers).
+void GunStateTimerTick8017BAD0(void* p) {
+    GunStateTimer8017BAD0* t = (GunStateTimer8017BAD0*)p;
+
+    if (t->timer == -9999998) {
+        return;
+    }
+    if (t->timer == -9999999) {
+        return;
+    }
+    if (t->timer < 0) {
+        t->timer = 0;
+    }
+    switch (t->state) {
+    case 1:
+        t->timer--;
+        if (t->timer <= 0) {
+            t->state = 3;
+            t->timer = 0;
+        }
+        break;
+    case 2:
+        t->timer--;
+        if (t->timer <= 0) {
+            t->state = 0;
+            t->timer = 0;
+        }
+        break;
+    }
+}
+
+// Name is a guess: the behaviour block reached through void* by the two abort
+// callbacks below: active state at 0x00, armed behaviour id at 0x0c.
+struct GunStateAbortBlk8017BB74 {
+    unsigned short state;               // 0x00
+    unsigned char unk02[0x0c - 0x02];   // 0x02
+    unsigned int id;                    // 0x0c
+};
+
+// Name is a guess: arms behaviour id 0xff676981 and, unless the block is idle
+// (state 0), forces it to state 3.
+void GunStateAbort8017BB74(void* p) {
+    GunStateAbortBlk8017BB74* b = (GunStateAbortBlk8017BB74*)p;
+
+    b->id = 0xff676981;
+    if (b->state == 0) {
+        return;
+    }
+    b->state = 3;
+}
+
+// Name is a guess: arms behaviour id 0xff676982 and, unless the block is
+// already in state 1, forces it to state 2.
+void GunStateAbort8017BB98(void* p) {
+    GunStateAbortBlk8017BB74* b = (GunStateAbortBlk8017BB74*)p;
+
+    b->id = 0xff676982;
+    if (b->state == 1) {
+        return;
+    }
+    b->state = 2;
+}
+
+// Name is a guess: the behaviour block this callback steps: active state at
+// 0x00 and a timer/behaviour id at 0x0c.
+struct GunStateStepBlk8017BBBC {
+    unsigned short state;               // 0x00
+    unsigned char unk02[0x0c - 0x02];   // 0x02
+    int id;                             // 0x0c
+};
+
+// Name is a guess: advances the state machine of the block whose id was armed
+// by GunStateAbort8017BB74/GunStateAbort8017BB98. States 0 and 3 lead into the
+// busy state 2, state 1 backs out to state 2 after a tick.
+void GunStateStep8017BBBC(void* p) {
+    GunStateStepBlk8017BBBC* b = (GunStateStepBlk8017BBBC*)p;
+
+    if (b->id == (int)0xff676981) {
+        return;
+    }
+    if (b->id == (int)0xff676982) {
+        return;
+    }
+    if (b->id < 0) {
+        b->id = 0;
+    }
+    switch (b->state) {
+    case 0:
+        b->state = 2;
+        b->id = 1;
+        break;
+    case 1:
+        b->id++;
+        break;
+    case 2:
+        b->id++;
+        break;
+    case 3:
+        b->state = 1;
+        b->id = 1;
+        break;
+    }
+}
+
+// Name is a guess: winds the same behaviour block down; the busy state 2 drops
+// back to idle and state 1 moves to the finishing state 3.
+void GunStateFinish8017BC5C(void* p) {
+    GunStateStepBlk8017BBBC* b = (GunStateStepBlk8017BBBC*)p;
+
+    if (b->id == (int)0xff676981) {
+        return;
+    }
+    if (b->id == (int)0xff676982) {
+        return;
+    }
+    if (b->id < 0) {
+        b->id = 0;
+    }
+    switch (b->state) {
+    case 1:
+        b->state = 3;
+        b->id = 0;
+        break;
+    case 2:
+        b->state = 0;
+        b->id = 0;
+        break;
+    }
+}
+
+// Name is a guess: the behaviour block shared by the two state-clear helpers
+// below: current state at 0x00 and armed behaviour id at 0x0c.
+struct GunBlockClearBlk8017BCD0 {
+    unsigned short state;               // 0x00
+    unsigned char unk02[0x0c - 0x02];   // 0x02
+    unsigned int id;                    // 0x0c
+};
+
+// Name is a guess: returns the block's state, dropping any state below 4 back
+// to idle (state 0, id 0) unless the block carries an armed behaviour id.
+unsigned short GunBlockClear8017BCD0(void* p) {
+    GunBlockClearBlk8017BCD0* b = (GunBlockClearBlk8017BCD0*)p;
+
+    if (b->id != 0xff676982 && b->id != 0xff676981) {
+        if (b->state != 4 && b->state < 4) {
+            b->state = 0;
+            b->id = 0;
+        }
+    }
+    return b->state;
+}
+
+// Name is a guess: same as above, but only the idle state 0 and the finishing
+// state 3 are cleared.
+unsigned short GunBlockClear8017BD20(void* p) {
+    GunBlockClearBlk8017BCD0* b = (GunBlockClearBlk8017BCD0*)p;
+
+    if (b->id != 0xff676982 && b->id != 0xff676981) {
+        if (b->state == 3 || (b->state < 3 && b->state == 0)) {
+            b->state = 0;
+            b->id = 0;
+        }
+    }
+    return b->state;
+}
+
+// No-op gun hook, retail body is a bare `blr`; address 0x8017BD74.
+void GunNoOp8017BD74(void) {}
+
+// File-system load state, owned by the file unit.
+extern int sFileOpen;
+extern int sPendingBytes;
+
+extern void SystemIdle(void);
+extern void SystemPoll(void);
+
+// Name is a guess: pumps the system for one frame and reports whether the file
+// system still has a file open or pending bytes (a load in progress).
+unsigned char SystemPumpBusy(void) {
+    unsigned char busy;
+
+    SystemIdle();
+    SystemPoll();
+    busy = 0;
+    if (sFileOpen != 0 || sPendingBytes != 0) {
+        busy = 1;
+    }
+    return busy;
+}
+
+extern void StreamUpdate(void);
+extern void GfxFrameSwap(void);
+extern void GfxFrameBegin(void);
+extern void fn_8007F064(int a, int b);
+extern "C" int fn_80007060(int a);
+
+// Name is a guess: runs the stream update once, then pumps frames while a file
+// load is still in progress (see SystemPumpBusy above).
+// fn_8017BDC0
+extern "C" void fn_8017BDC0(void) {
+    StreamUpdate();
+    while (SystemPumpBusy()) {
+        if (fn_80007060(4) != 0) {
+            GfxFrameSwap();
+            fn_8007F064(0, -1);
+            GfxFrameBegin();
+        }
+    }
+}
