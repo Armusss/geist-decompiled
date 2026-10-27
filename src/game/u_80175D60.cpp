@@ -6,10 +6,11 @@ void TrailDestroy(int id);
 // Name is a guess: returns 0 when the top byte of an id is 2 (engine-side subtype?
 // network message class?), 1 otherwise.
 unsigned long Fn80175D60(unsigned long id) {
-    if ((id >> 24) != 2) {
-        return 1;
+    switch (id >> 24) {
+    case 2:
+        return 0;
     }
-    return 0;
+    return 1;
 }
 
 // Placeholder name kept: called from other units. Empty body in retail (just blr).
@@ -106,7 +107,7 @@ extern "C" void fn_80175EA4(int* id) {
 // to "no trail" and loads its default lifetime.
 extern "C" void fn_80175EE4(MuzzleFlash* flash) {
     flash->trail = -1;
-    flash->time = lbl_804D80E4;
+    flash->time = 0.0f;
 }
 
 // Placeholder name kept: called from other units (GunWithGrenade.cpp and others).
@@ -162,7 +163,7 @@ struct GunActiveRecord {
     float fieldE4;                      // 0xe4
 };
 
-extern unsigned long lbl_804D5040[];    // 2-word live-id bitmap (.sbss)
+extern unsigned long lbl_804D5040[2];    // 2-word live-id bitmap (.sbss)
 extern GunActiveRecord lbl_80491020[];
 
 extern "C" void fn_800C6900(unsigned long handle);
@@ -172,8 +173,8 @@ void BitClear(unsigned long* bits, unsigned long id);
 // Placeholder name kept: called from other units. Returns the record field for a
 // live id, or 0 when the id's bit is clear in the global live-id bitmap.
 extern "C" unsigned long fn_80175EFC(unsigned long id) {
-    unsigned long index = id & 0xffffff;
-    if ((lbl_804D5040[index >> 5] & (1 << (id & 0x1f))) != 0) {
+    int index = id & 0xffffff;
+    if ((lbl_804D5040[index / 32] & (1 << (id & 0x1f))) != 0) {
         return lbl_80491020[index].value;
     }
     return 0;
@@ -182,8 +183,8 @@ extern "C" unsigned long fn_80175EFC(unsigned long id) {
 // Releases the effect handle held in a live id's record and clears the id's bit in
 // the global live-id bitmap. Name is a guess.
 void GunDestroyLiveEffect(unsigned long id) {
-    unsigned long index = id & 0xffffff;
-    if ((lbl_804D5040[(int)index >> 5] & (1 << (id & 0x1f))) != 0) {
+    int index = id & 0xffffff;
+    if ((lbl_804D5040[index / 32] & (1 << (id & 0x1f))) != 0) {
         BitClear(lbl_804D5040, index);
         fn_800C6900(lbl_80491020[index].handle);
     }
@@ -191,8 +192,8 @@ void GunDestroyLiveEffect(unsigned long id) {
 
 // Releases the effect handle of one of the first eight ids. Name is a guess.
 void GunDestroyEffectSlot(unsigned long id) {
-    unsigned long index = id & 0xffffff;
-    if (index < 8) {
+    int index = id & 0xffffff;
+    if (index >= 0 && index < 8) {
         fn_800C6664(lbl_80491020[index].handle);
     }
 }
@@ -202,8 +203,8 @@ extern "C" void fn_800C6760(unsigned long handle);
 // Placeholder name kept: called from other units. Releases the effect handle of one
 // of the first eight ids with a different release routine than GunDestroyEffectSlot.
 extern "C" void fn_80176000(unsigned long id) {
-    unsigned long index = id & 0xffffff;
-    if (index < 8) {
+    int index = id & 0xffffff;
+    if (index >= 0 && index < 8) {
         fn_800C6760(lbl_80491020[index].handle);
     }
 }
@@ -1723,7 +1724,7 @@ extern "C" int fn_80178470(void* owner, void* beh) {
     block->next = 0;
     block->effect = -1;
     block->flags = 0;
-    block->time = lbl_804D8164;
+    block->time = 0.0f;
     entry = &lbl_803A81A0[block->state];
     if (entry->enter != 0) {
         entry->enter(owner, beh);
@@ -2294,7 +2295,7 @@ extern "C" int fn_801791B0(void* ownerArg, void* behArg) {
     block->next = 0;
     block->flags = 0;
     block->effect = -1;
-    block->time = lbl_804D818C;
+    block->time = 0.0f;
     if (lbl_803A8200[block->state].enter != 0) {
         lbl_803A8200[block->state].enter(ownerArg, behArg);
     }
@@ -3932,28 +3933,14 @@ unsigned long GunRangeElemSize8017B9C8(void) {
 // 8017B9D0 - descriptive name (guess): walks the word-aligned range from
 // `start` to `end` doing no per-element work (a no-op range walk).
 void GunRangeNoOp8017B9D0(unsigned long start, unsigned long end) {
-    unsigned long count;
-    unsigned long i;
-
-    count = (end + 3 - start) >> 2;
-    if (end <= start) {
-        return;
-    }
-    for (i = count; i != 0; i--) {
+    for (; start < end; start += 4) {
     }
 }
 
 // 8017B9F0 - descriptive name (guess): walks the word-aligned range from
 // `start` to `end` doing no per-element work (the `unsigned` twin of 8017B9D0).
 void GunRangeWalk8017B9F0(unsigned long start, unsigned long end) {
-    unsigned long count;
-    unsigned long i;
-
-    count = (end + 3 - start) >> 2;
-    if (end <= start) {
-        return;
-    }
-    for (i = count; i != 0; i--) {
+    for (; start < end; start += 4) {
     }
 }
 
