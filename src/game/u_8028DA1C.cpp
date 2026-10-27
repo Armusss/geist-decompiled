@@ -953,12 +953,14 @@ float HostDriveSnap(Actor* a, float* out) {
 }
 
 // 0x8028F484: animation-event callback (states 0, 1, 4, 5).
-int HostDriveAnimEvent(int key, Actor* a) {
+int HostDriveAnimEvent(int key, void* owner) {
+    Actor* a;
     Beh* b;
 
-    if (a == 0) {
+    if (owner == 0) {
         return 0;
     }
+    a = (Actor*)owner;
     b = a->beh;
     switch (key) {
     case 0x1B83833F:
@@ -983,29 +985,30 @@ int HostDriveAnimEventB(int key, Actor* a) {
     }
     b = a->beh;
     switch (key) {
-    case 0x20EE36:
-    case 0xF829DB93:
-        if (fn_8016325C(a->animState) == 4) {
-            fn_80162610(a, a->animState, 0x20EE36);
-            return 1;
-        }
-        if (fn_8016325C(a->animState) != 5) {
-            return 1;
-        }
-        fn_80162610(a, a->animState, 0xF829DB93);
-        return 1;
-    case 0x239807:
-    case 0x46341C3A:
-        fn_800CB8BC(a, a->type, b->unk10, a->i26C);
-        return 1;
     case 0x1B83833F:
         lbl_803C2AA8[b->state].leave(a, b->next);
         lbl_803C2AA8[b->next].enter(a);
         if (fn_8016325C(a->animState) == 0) {
-            return 1;
+            break;
         }
         fn_80162610(a, a->animState, 0x1B83833F);
-        return 1;
+        break;
+    case 0x20EE36:
+    case 0xF829DB93:
+        if (fn_8016325C(a->animState) == 4) {
+            fn_80162610(a, a->animState, 0x20EE36);
+            break;
+        }
+        if (fn_8016325C(a->animState) != 5) {
+            break;
+        }
+        fn_80162610(a, a->animState, 0xF829DB93);
+        break;
+    case 0x239807:
+    case 0x4A5C9FC:
+    case 0x46341C3A:
+        fn_800CB8BC(a, a->type, b->unk10, a->i26C);
+        break;
     }
     return 1;
 }
