@@ -1544,7 +1544,7 @@ int FSHSVETargetBlocksFollow(Actor* actor, u32 targetId)
             (info.unk18 & 1) != 0) {
             return 0;
         }
-        return (info.unk18 & 2) == 0;
+        return !(info.unk18 & 2);
 
     case 2:
         return info.unk0C != 0;
