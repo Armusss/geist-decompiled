@@ -180,7 +180,7 @@ void PlayerSetHeldSlotIndex(void* owner, int index)
 extern "C" int fn_802A1D04(void);
 // Retail calls this as (int handle, float* out) (see 0x8006E66C); the older
 // call sites in this draft still pass a leading float and need revisiting.
-extern "C" void fn_800913EC(int handle, ...);
+extern "C" void fn_800913EC(int handle, float scale, void* out);
 extern "C" float lbl_804D65B8;
 
 // C++-mangled helper of another unit (Fiif).
@@ -216,8 +216,8 @@ void PlayerResetHeldSlots(void* owner)
 
     PlayerUpdateHeldSlots(p);
 
-    fn_800913EC(lbl_804D65B8, *(int*)(p + 0x7C), 0);
-    fn_800913EC(lbl_804D65B8, *(int*)(p + 0xD4), 0);
+    fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
 
     *(int*)(p + 0x7A8) = 0x15;
 }
@@ -239,8 +239,8 @@ void PlayerEnterIdle(void* owner)
 
     PlayerUpdateHeldSlots(p);
 
-    fn_800913EC(lbl_804D65B8, *(int*)(p + 0x7C), 0);
-    fn_800913EC(lbl_804D65B8, *(int*)(p + 0xD4), 0);
+    fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
 }
 
 // Picks the player's held-slot state from the slot word at 0x7D0
@@ -274,8 +274,8 @@ void PlayerApplyHeldSlotState(void* owner)
 
         PlayerUpdateHeldSlots(p);
 
-        fn_800913EC(lbl_804D65B8, *(int*)(p + 0x7C), 0);
-        fn_800913EC(lbl_804D65B8, *(int*)(p + 0xD4), 0);
+        fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
+        fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
     }
     else
     {
@@ -293,8 +293,8 @@ void PlayerApplyHeldSlotState(void* owner)
 
         PlayerUpdateHeldSlots(p);
 
-        fn_800913EC(lbl_804D65B8, *(int*)(p + 0x7C), 0);
-        fn_800913EC(lbl_804D65B8, *(int*)(p + 0xD4), 0);
+        fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
+        fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
     }
 }
 
@@ -378,8 +378,8 @@ void Fn8006CE5C(Player* player, int value, int index, int flags, int param5,
 
     PlayerUpdateHeldSlots(p);
 
-    fn_800913EC(lbl_804D65B8, *(int*)(p + 0x7C), 0);
-    fn_800913EC(lbl_804D65B8, *(int*)(p + 0xD4), 0);
+    fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
 }
 
 // Stores one pending held-slot entry into both slot groups and refreshes the
@@ -441,8 +441,8 @@ void fn_8006D038(void* owner)
 
     PlayerUpdateHeldSlots(p);
 
-    fn_800913EC(lbl_804D65B8, *(int*)(p + 0x7C), 0);
-    fn_800913EC(lbl_804D65B8, *(int*)(p + 0xD4), 0);
+    fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
 }
 
 // Leaves the player's held-slot action state 0x0C and refreshes the slots
@@ -462,8 +462,8 @@ void PlayerExitHeldSlotState0C(void* owner)
 
     PlayerUpdateHeldSlots(p);
 
-    fn_800913EC(lbl_804D65B8, *(int*)(p + 0x7C), 0);
-    fn_800913EC(lbl_804D65B8, *(int*)(p + 0xD4), 0);
+    fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
 }
 
 // Stores a value at offset 0x28 of the object (a setter; name is a guess).
@@ -513,8 +513,8 @@ void PlayerSetHeldSlotMode(void* owner, int mode)
 
     PlayerUpdateHeldSlots(p);
 
-    fn_800913EC(lbl_804D65B8, *(int*)(p + 0x7C), 0);
-    fn_800913EC(lbl_804D65B8, *(int*)(p + 0xD4), 0);
+    fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
 }
 
 // Switches the player to the given held-item action mode and refreshes the
@@ -537,8 +537,8 @@ void PlayerSetActionMode(void* owner, int mode)
 
     PlayerUpdateHeldSlots(p);
 
-    fn_800913EC(lbl_804D65B8, *(int*)(p + 0x7C), 0);
-    fn_800913EC(lbl_804D65B8, *(int*)(p + 0xD4), 0);
+    fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
 }
 
 // Callbacks installed on the player when it holds a given item (offsets are
@@ -1030,7 +1030,7 @@ void PlayerUpdateGunMotion(float dt, void* owner)
         return;
     }
 
-    fn_800913EC(dt, *(int*)(p + 0xD4), streamPos);
+    fn_800913EC(*(int*)(p + 0xD4), dt, streamPos);
     *(int*)(p + 0x660) += (int)streamPos[0];
     *(int*)(p + 0x664) += (int)streamPos[1];
 
@@ -1317,7 +1317,7 @@ extern "C" void fn_800C6D08(float);
 // host-tracking matrix copies done for state 1 and the per-state model matrix
 // setup. Offsets and message ids are transcribed from retail; the name and the
 // field meanings are guesses.
-void PlayerModelAnimUpdate(void* owner)
+void PlayerModelAnimUpdate(float dt, void* owner)
 {
     u8* p = (u8*)owner;
     float stream[3];
@@ -1334,7 +1334,7 @@ void PlayerModelAnimUpdate(void* owner)
         float f3;
         float* anim = (float*)*(int*)(p + 0x1400);
 
-        fn_800913EC(*(int*)(p + 0x7C), stream);
+        fn_800913EC(*(int*)(p + 0x7C), dt, stream);
         animData = (int)ModelAnimate(*(int*)(p + 0x54), (char*)anim, 1);
         f0 = anim[0];
         f1 = anim[1];
@@ -1366,7 +1366,7 @@ void PlayerModelAnimUpdate(void* owner)
         goto finished;
     }
 
-    fn_800913EC(*(int*)(p + 0x7C), stream);
+    fn_800913EC(*(int*)(p + 0x7C), dt, stream);
     animData = (int)ModelAnimate(*(int*)(p + 0x54), *(char**)(p + 0x1400), 1);
     if (*(u32*)(p + 0x50) & 0x200)
     {
@@ -1450,7 +1450,7 @@ finished:
 // Applies the animation of the secondary (0x12C) model when it has one.
 // Offsets are transcribed from retail; the name and the field meanings are
 // guesses.
-void PlayerSubModelAnimUpdate(void* owner)
+void PlayerSubModelAnimUpdate(float dt, void* owner)
 {
     u8* p = (u8*)owner;
     float stream[4];
@@ -1460,7 +1460,7 @@ void PlayerSubModelAnimUpdate(void* owner)
         int animData;
         int boneCount;
 
-        fn_800913EC(*(int*)(p + 0x12C), stream);
+        fn_800913EC(*(int*)(p + 0x12C), dt, stream);
         animData = (int)ModelAnimate(*(int*)(p + 0x64),
                                      *(char**)(p + 0x1418), 1);
         boneCount = ModelBoneCount(*(int*)(p + 0x64));

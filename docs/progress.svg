@@ -230,7 +230,7 @@
 <rect x="328" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80064FD4.cpp - partial: 11/17 functions match</title></rect>
 <rect x="348" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_80067FF8.cpp - matching</title></rect>
 <rect x="368" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_80068004.cpp - asm</title></rect>
-<rect x="388" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8006C604.cpp - partial: 20/61 functions match</title></rect>
+<rect x="388" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8006C604.cpp - partial: 24/61 functions match</title></rect>
 <rect x="408" y="382" width="18" height="18" rx="2" fill="#30363d"><title>game/u_800776FC.cpp - asm</title></rect>
 <rect x="428" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/Arena.c - partial: 1/5 functions match</title></rect>
 <rect x="448" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/Audio.c - matching</title></rect>
@@ -318,7 +318,7 @@
 <rect x="168" y="422" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_801A1D24.cpp - matching</title></rect>
 <rect x="188" y="422" width="18" height="18" rx="2" fill="#d29922"><title>game/u_801A28A4.cpp - partial: 16/44 functions match</title></rect>
 <rect x="208" y="422" width="18" height="18" rx="2" fill="#d29922"><title>game/u_801A6094.cpp - partial: 13/49 functions match</title></rect>
-<rect x="228" y="422" width="18" height="18" rx="2" fill="#d29922"><title>game/u_801AADA8.cpp - partial: 11/29 functions match</title></rect>
+<rect x="228" y="422" width="18" height="18" rx="2" fill="#d29922"><title>game/u_801AADA8.cpp - partial: 12/29 functions match</title></rect>
 <rect x="248" y="422" width="18" height="18" rx="2" fill="#30363d"><title>game/u_801AE50C.cpp - asm</title></rect>
 <rect x="268" y="422" width="18" height="18" rx="2" fill="#d29922"><title>game/VMem.cpp - partial: 8/9 functions match</title></rect>
 <rect x="288" y="422" width="18" height="18" rx="2" fill="#d29922"><title>game/u_801BF578.cpp - partial: 1/383 functions match</title></rect>

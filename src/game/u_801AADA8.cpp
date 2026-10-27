@@ -784,9 +784,9 @@ int FSHSVEFollowUpdate(Actor* actor)
 }
 
 // Name is a descriptive guess: aborts the "[FSHSVE]" follow state.
-int FSHSVEFollowAbort(void)
+int FSHSVEFollowAbort(Actor* actor)
 {
-    fn_800BBCA8(0);
+    fn_800BBCA8(actor);
     return 1;
 }
 
