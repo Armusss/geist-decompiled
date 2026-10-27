@@ -710,7 +710,7 @@ int HostTypeUpdateG(Actor* a) {
         return 10;
     }
     if (fabsf(a->f284) < 1.0f) {
-        return a->i26C * 13 + iVar1 + s->sub;
+        return iVar1 + (a->i26C * 13 + s->sub);
     }
     if (a->i288 != 0) {
         return a->i26C * 13 + 9;
