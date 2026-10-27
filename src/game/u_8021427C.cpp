@@ -232,7 +232,7 @@ void fn_8008E824(int anim, int a, float speed);             // 0x8008E824
 void fn_800A0030(Vec3* out, Mtx34* m, Vec3* in);            // 0x800A0030
 int fn_800A1BC8(int a, int b, u32 type, int c, int d);      // 0x800A1BC8
 int fn_800C5210(int target, int msg, void* data);           // 0x800C5210
-u32 fn_800E0DBC(Vec3i* v);                                  // 0x800E0DBC
+int fn_800E0DBC(Vec3i* v);                                  // 0x800E0DBC
 float fn_800E1020(Vec3* v);                                 // 0x800E1020
 void fn_8016EEF4(int fx);                                   // 0x8016EEF4
 void fn_8016F018(int fx, int value);                        // 0x8016F018
@@ -257,15 +257,6 @@ inline void Query(int* out, int target, int msg, u32 hash) {
     *out = *(int*)&m.result;
 }
 
-// One value query (0x41D): the receiver stores an int in the answer string.
-inline void QueryValue(int target, u32 hash, int value) {
-    QueryMsg m;
-
-    *(int*)&m.result = value;
-    m.hash = hash;
-    SendMsg(target, 0x41D, &m);
-}
-
 // Ask the owner for the current target and flag the actor when it is in range.
 static inline void CheckTarget(Actor* a) {
     Msg41A m;
@@ -280,10 +271,14 @@ static inline void CheckTarget(Actor* a) {
         delta.x = t->x - a->x;
         delta.y = t->y - a->y;
         delta.z = t->z - a->z;
-        u32 dist = fn_800E0DBC(&delta);
+        int dist = fn_800E0DBC(&delta);
 
         if (a->unk650.x != 0.0f || a->unk650.y != 0.0f) {
-            QueryValue(m.target, 0xF9D0235B, 1);
+            QueryMsg qm;
+
+            qm.hash = 0xF9D0235B;
+            *(int*)&qm.result = 1;
+            SendMsg(m.target, 0x41D, &qm);
         }
 
         if (a->flags & 0x4000000) {
@@ -319,11 +314,14 @@ void UpdateGhostAction(Actor* a, float dt) {
     PlayerSelectCollisionUpdate(a, dt);
     a->unk7D0 = 1;
 
-    float f0 = fabs(a->unk394);
-    float f1 = fabs(a->unk38C);
-    f1 = (f1 > f0) ? f1 : f0;
-    if (f1 != 0.0f) {
-        fn_8008E824(a->model, 0, f1);
+    float m;
+    {
+        float z = a->unk394;
+        float x = a->unk38C;
+        m = __fabsf(x) > __fabsf(z) ? __fabsf(x) : __fabsf(z);
+    }
+    if (m != 0.0f) {
+        fn_8008E824(a->model, 0, m);
     }
 
     if (a->unk678 & 0x80) {
