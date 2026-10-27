@@ -2299,7 +2299,7 @@ struct LargeActor {
     int mUnk26D8;                 // 0x26D8
 };
 
-extern "C" void fn_8004D604(void);
+extern "C" void fn_8004D604(void* actor);
 
 // Clears the pending action and parks the actor's flags (name is a guess).
 void LargeActorResetFlags(LargeActor* actor)
@@ -2312,7 +2312,7 @@ void LargeActorResetFlags(LargeActor* actor)
             actor->mFlags &= ~0x20000;
             actor->mFlags &= ~0x2000;
         } else {
-            fn_8004D604();
+            fn_8004D604(actor);
         }
     }
     actor->mUnk26D8 = 1;
