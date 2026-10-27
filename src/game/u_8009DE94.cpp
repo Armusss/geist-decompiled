@@ -2676,12 +2676,9 @@ int NeoAgentIsCurrent(int agent)
 }
 
 // Whether the given agent slot is the currently controlled one.
-int NeoAgentIsCurrentSlot(int agent)
+bool NeoAgentIsCurrentSlot(int agent)
 {
-    int slot;
-
-    slot = (agent - (int)lbl_804D47D0) / 0x928;
-    return slot == lbl_804D47DC;
+    return lbl_804D47DC == (agent - (int)lbl_804D47D0) / 0x928;
 }
 
 // Searches the global AI agent definition table for the record whose leading

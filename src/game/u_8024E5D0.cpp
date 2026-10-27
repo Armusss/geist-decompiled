@@ -650,13 +650,13 @@ int HostRideUpdateTypeCheckedState(HostActor* actor)
     HostBehaviour* beh = actor->beh;
 
     HostRideEffectUpdate(actor);
-    if (fn_8016325C(actor->unk894) == 5) {
-        if (HasCondition(actor->cond, 9)) {
-            return 0xc;
-        }
-        return beh->state;
+    if (fn_8016325C(actor->unk894) != 5) {
+        return 3;
     }
-    return 3;
+    if (HasCondition(actor->cond, 9)) {
+        return 0xc;
+    }
+    return beh->state;
 }
 
 // Advances the charge timer of the host-ride behaviour while the actor stands on the
