@@ -10,7 +10,6 @@ typedef unsigned long u32;
 typedef unsigned char u8;
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
-// From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN", "",
 };
