@@ -532,13 +532,13 @@ extern "C" void fn_80088F0C(unsigned int key, int usable)
 {
     ScrollSource* source;
     unsigned int flags;
-    int index;
+    unsigned int index;
 
     if (lbl_804D4704 == 0) {
         return;
     }
     index = key & 0xfff;
-    if (index >= lbl_804D4704) {
+    if ((int)index >= lbl_804D4704) {
         return;
     }
     source = lbl_804D4700[index];
