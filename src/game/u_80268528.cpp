@@ -77,6 +77,13 @@ int HermitSpitQuery(EffectObj* obj, int msg) {
     HermitSpitParams* p = s->params;
 
     switch (msg) {
+    case kMsgSpitCheck:
+    case kMsgSpitCheck2:
+        if (fn_800F7D28(s->idA, s->idB) != 0)
+            return kHermitSpitBusy;
+        if (fn_800F7D28(obj->id, p->idA) != 0)
+            return kHermitSpitBlocked;
+        return kHermitSpitAllowed;
     case kMsgSpitFire:
     case kMsgSpitFire2:
         if (fn_800F7D28(s->idA, p->idC) != 0)
@@ -95,13 +102,6 @@ int HermitSpitQuery(EffectObj* obj, int msg) {
             return kHermitSpitIgnore;
         if (fn_800F7D28(obj->id, p->idA) != 0)
             return kHermitSpitBusy;
-        return kHermitSpitAllowed;
-    case kMsgSpitCheck:
-    case kMsgSpitCheck2:
-        if (fn_800F7D28(s->idA, s->idB) != 0)
-            return kHermitSpitBusy;
-        if (fn_800F7D28(obj->id, p->idA) != 0)
-            return kHermitSpitBlocked;
         return kHermitSpitAllowed;
     }
     return kHermitSpitDeny;
