@@ -775,7 +775,7 @@ int ActorShouldCollect802B84C8(void* playerArg, void* ownerArg)
     Actor* player = (Actor*)playerArg;
     Actor* owner = (Actor*)ownerArg;
 
-    if ((unsigned int)player->id >> 24 == 1 && player->i88 != 0 &&
+    if ((int)((unsigned int)player->id >> 24) == 1 && player->i88 != 0 &&
         *player->i88 == 0x0A303C34) {
         PickupState* state = (PickupState*)owner->extra;
         unsigned long asset = AssetFind(0xF1754BF2, 0x619DEF54);

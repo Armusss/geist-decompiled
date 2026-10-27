@@ -1359,7 +1359,7 @@ void PossessSelectEnterPossessed(PlayerSelectObj* obj)
     HostPossessInfo* info;
     unsigned int flag = 0;
 
-    if (((unsigned int)host->unk38 >> 24) == 0x13) {
+    if ((int)((unsigned int)host->unk38 >> 24) == 0x13) {
         info = (HostPossessInfo*)fn_800A384C(host);
         if (HasCondition((unsigned char*)host + 0x270, 0xB) != 0)
             flag = 1;
