@@ -765,9 +765,7 @@ void HazardSplineClearAll() {
         VFree(*(void**)lbl_804D4CC8->used);
         fn_8028B35C(lbl_804D4CC8, (void*)lbl_804D4CC8->used, 4);
     }
-    if (lbl_804D4CC8 != 0) {
-        lbl_804D4CC8->Clear(1);
-    }
+    delete lbl_804D4CC8;
 }
 
 // Destructor of the hazard spline-instance list (the deleting-destructor slot
