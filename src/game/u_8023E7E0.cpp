@@ -10,8 +10,10 @@ typedef unsigned long u32;
 typedef unsigned char u8;
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
-static const char sActionNames[] =
-    "POSSESS\0GHOSTACTION\0SLIP\0HIJACK\0HOSTACTION\0EXCHANGE\0H_HIJACK\0TALK\0SCAN\0";
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN", "",
+};
 
 // Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
 class Buffer {
@@ -210,17 +212,17 @@ int HostRideDState4Check(Actor* actor);
 int HostRideDState4Update(void* owner);
 
 RideType gHostRideDTypes[5] = {
-    { (RideFunc)HostRideDState0Enter, (RideFunc)HostRideDState0Check, (RideFunc)HostRideDState0Update, "\n" },
-    { (RideFunc)HostRideDState1Enter, (RideFunc)HostRideDState1Check, (RideFunc)HostRideDState1Update, "\n" },
-    { (RideFunc)HostRideDState2Enter, (RideFunc)HostRideDState2Check, (RideFunc)HostRideDState2Update, "\n" },
-    { (RideFunc)HostRideDState3Enter, (RideFunc)HostRideDState3Check, (RideFunc)HostRideDState3Update, "\n" },
-    { (RideFunc)HostRideDState4Enter, (RideFunc)HostRideDState4Check, (RideFunc)HostRideDState4Update, "\n" },
+    { (RideFunc)HostRideDState0Enter, (RideFunc)HostRideDState0Check, (RideFunc)HostRideDState0Update, "" },
+    { (RideFunc)HostRideDState1Enter, (RideFunc)HostRideDState1Check, (RideFunc)HostRideDState1Update, "" },
+    { (RideFunc)HostRideDState2Enter, (RideFunc)HostRideDState2Check, (RideFunc)HostRideDState2Update, "" },
+    { (RideFunc)HostRideDState3Enter, (RideFunc)HostRideDState3Check, (RideFunc)HostRideDState3Update, "" },
+    { (RideFunc)HostRideDState4Enter, (RideFunc)HostRideDState4Check, (RideFunc)HostRideDState4Update, "" },
 };
 
 // 0x8023E7E0: message handler.
 static inline void HostRideDStateName(Buffer* out, const char* s) {
     String name(s);
-    String newline(sActionNames + 0x48);
+    String newline("\n");
     const String& text = fn_800225C8(name, newline);
 
     fn_8028C188(out, text.mData, text.mLength);
