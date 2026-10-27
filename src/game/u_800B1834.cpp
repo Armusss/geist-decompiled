@@ -3405,8 +3405,9 @@ extern "C" void fn_800B985C(void);
 
 
 // Decode the group-table header that `data` points at.
-extern "C" void fn_800B9AE0(void* unused, u8* data, int size)
+extern "C" void fn_800B9AE0(void* unused, void* buf, int size)
 {
+    u8* data = (u8*)buf;
     u8* header = size > 0 ? data : 0;
     FileFlushBuffer(header, 0x10);
     if (*(int*)header == 0x0f) {
