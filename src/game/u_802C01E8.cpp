@@ -1340,7 +1340,7 @@ extern "C" void fn_802C301C(void)
 
     lbl_804D57A0 = (EffectParticle*)VAlloc(0x580);
     lbl_804D57A4 = 0;
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i != 3; i++) {
         lbl_803C4D00[i].handle = (s16)AssetFind(0xF2E2BEB8, lbl_803C4D00[i].asset);
         TextureLoad(&lbl_803C4D00[i].handle, 1);
     }
