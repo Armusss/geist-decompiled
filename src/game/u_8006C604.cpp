@@ -189,37 +189,38 @@ void Fn8008E33C(int slot, int hand, float value);
 // Clears the player's held slots and resets the action state to 0x15 (name is a guess).
 void PlayerResetHeldSlots(void* owner)
 {
-    u8* p = (u8*)owner;
-    int i = 0;
-    u8* q = p;
+    int i;
+    u8* q;
 
     fn_802A1D04();
 
+    q = (u8*)owner;
+    i = 0;
     do
     {
-        fn_80090390(*(int*)(p + 0x7C), i);
-        fn_80090390(*(int*)(p + 0xD4), i);
+        fn_80090390(*(int*)((u8*)owner + 0x7C), i);
+        fn_80090390(*(int*)((u8*)owner + 0xD4), i);
         *(int*)(q + 0x80) = -1;
         i++;
         *(int*)(q + 0xD8) = -1;
         q += 4;
     } while (i < 3);
 
-    if (*(void (**)(void*))(p + 0x814) != 0)
-        (*(void (**)(void*))(p + 0x814))(p);
+    if (*(void (**)(void*))((u8*)owner + 0x814) != 0)
+        (*(void (**)(void*))((u8*)owner + 0x814))(owner);
 
-    *(int*)(p + 0x7A4) = 0x15;
-    *(u32*)(p + 0x7B4) |= 1;
+    *(int*)((u8*)owner + 0x7A4) = 0x15;
+    *(u32*)((u8*)owner + 0x7B4) |= 1;
 
-    if (*(void (**)(void*))(p + 0x80C) != 0)
-        (*(void (**)(void*))(p + 0x80C))(p);
+    if (*(void (**)(void*))((u8*)owner + 0x80C) != 0)
+        (*(void (**)(void*))((u8*)owner + 0x80C))(owner);
 
-    PlayerUpdateHeldSlots(p);
+    PlayerUpdateHeldSlots(owner);
 
-    fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
-    fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)((u8*)owner + 0x7C), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)((u8*)owner + 0xD4), lbl_804D65B8, 0);
 
-    *(int*)(p + 0x7A8) = 0x15;
+    *(int*)((u8*)owner + 0x7A8) = 0x15;
 }
 
 // Runs the player's reset callback pair, sets the action state to 0x14 and
@@ -482,39 +483,40 @@ void PlayerSetValue4(void* owner, int value)
 // game state allows it (name is a guess; offsets are transcribed from retail).
 void PlayerSetHeldSlotMode(void* owner, int mode)
 {
-    u8* p = (u8*)owner;
-    int i = 0;
-    u8* q = p;
+    u8* q;
+    int i;
 
     if (fn_802A1D04() != 0 && (mode == 1 || mode == 0))
         return;
 
+    q = (u8*)owner;
+    i = 0;
     do
     {
-        fn_80090390(*(int*)(p + 0x7C), i);
-        fn_80090390(*(int*)(p + 0xD4), i);
+        fn_80090390(*(int*)((u8*)owner + 0x7C), i);
+        fn_80090390(*(int*)((u8*)owner + 0xD4), i);
         *(int*)(q + 0x80) = -1;
         i++;
         *(int*)(q + 0xD8) = -1;
         q += 4;
     } while (i < 3);
 
-    if (*(int*)(p + 0x960) == 1 && (u32)mode <= 1)
+    if (*(int*)((u8*)owner + 0x960) == 1 && (u32)mode <= 1)
         return;
 
-    if (*(void (**)(void*))(p + 0x814) != 0)
-        (*(void (**)(void*))(p + 0x814))(p);
+    if (*(void (**)(void*))((u8*)owner + 0x814) != 0)
+        (*(void (**)(void*))((u8*)owner + 0x814))(owner);
 
-    *(int*)(p + 0x7A4) = mode;
-    *(u32*)(p + 0x7B4) |= 1;
+    *(int*)((u8*)owner + 0x7A4) = mode;
+    *(u32*)((u8*)owner + 0x7B4) |= 1;
 
-    if (*(void (**)(void*))(p + 0x80C) != 0)
-        (*(void (**)(void*))(p + 0x80C))(p);
+    if (*(void (**)(void*))((u8*)owner + 0x80C) != 0)
+        (*(void (**)(void*))((u8*)owner + 0x80C))(owner);
 
-    PlayerUpdateHeldSlots(p);
+    PlayerUpdateHeldSlots(owner);
 
-    fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
-    fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)((u8*)owner + 0x7C), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)((u8*)owner + 0xD4), lbl_804D65B8, 0);
 }
 
 // Switches the player to the given held-item action mode and refreshes the
