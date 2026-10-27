@@ -142,9 +142,9 @@ struct CordBeh {
     int prevInput;          // 0x08
     int anim;               // 0x0C
     int unk10;              // 0x10
-    char pad14[4];
+    float unk14;            // 0x14
     float unk18;            // 0x18
-    int fx;                 // 0x1C
+    u32 fx;                 // 0x1C
     int sound;              // 0x20
     int fxId;               // 0x24
     int unk28;              // 0x28
@@ -514,9 +514,9 @@ int CordHandlerBasic(int msg, Actor* a) {
 
 struct EventMsg {
     int unk0;
-    u32 hash;
-    int owner;
-    int unkC;
+    int value;              // 0x04
+    int target;             // 0x08
+    u32 key;                // 0x0C
 };
 
 struct PosQuery {
@@ -572,16 +572,16 @@ int CordHandlerAttack(int msg, Actor* a) {
             }
             {
                 EventMsg e;
-                e.unk0 = fn_80162610(a, a->sm, 0xF829DB93);
-                if (e.unk0 == -1) {
+                e.value = fn_80162610(a, a->sm, 0xF829DB93);
+                if (e.value == -1) {
                     return 1;
                 }
-                e.hash = a->handle;
-                if (e.hash == (u32)-1) {
+                e.target = a->handle;
+                if (e.target == (u32)-1) {
                     return 1;
                 }
-                e.owner = 0x7603EBEB;
-                SendMsg(e.hash, 0xC14, &e);
+                e.key = 0x7603EBEB;
+                SendMsg(e.target, 0xC14, &e);
             }
             return 1;
         }
@@ -637,12 +637,12 @@ int CordHitCallback(int msg, Actor* a) {
     done:
         if (fn_8016325C(a->sm) == 5) {
             EventMsg e;
-            e.unk0 = fn_80162610(a, a->sm, 0xF829DB93);
-            if (e.unk0 != -1) {
-                e.hash = a->handle;
-                if (e.hash != (u32)-1) {
-                    e.owner = 0x7603EBEB;
-                    SendMsg(e.hash, 0xC14, &e);
+            e.value = fn_80162610(a, a->sm, 0xF829DB93);
+            if (e.value != -1) {
+                e.target = a->handle;
+                if (e.target != -1) {
+                    e.key = 0x7603EBEB;
+                    SendMsg(e.target, 0xC14, &e);
                 }
             }
         } else {
@@ -717,9 +717,9 @@ int CordLeaveNotify(Actor* a, int next) {
     ConditionSetBit(a->flags, 0, 0);
     ConditionSetBit(a->flags, 0x3B, 0);
     if (a->handle != -1) {
-        e.owner = 0xE18980E3;
-        e.unk0 = 0;
-        e.hash = a->handle;
+        e.target = a->handle;
+        e.key = 0xE18980E3;
+        e.value = 0;
         SendMsg(a->handle, 0xC14, &e);
     }
     if (b->state == 0x15) {
@@ -785,7 +785,13 @@ inline void SmStep(Actor* a) {
 }
 
 inline int RandHalf(void) {
-    return (float)rand() / 32767.0f <= 0.5f;
+    int r;
+    if ((float)rand() / 32767.0f > 0.5f) {
+        r = 0;
+    } else {
+        r = 1;
+    }
+    return r;
 }
 
 // 0x8024A3F8: update for the three recover states.
@@ -812,9 +818,9 @@ int CordUpdateRecover(Actor* a) {
     } else {
         if (a->handle != -1) {
             EventMsg e;
-            e.owner = 0xE18980E3;
-            e.unk0 = 0;
-            e.hash = a->handle;
+            e.key = 0xE18980E3;
+            e.value = 0;
+            e.target = a->handle;
             SendMsg(a->handle, 0xC14, &e);
         }
         next = 3;
@@ -1125,7 +1131,7 @@ int CordEnterGrenadeA(Actor* a) {
     b->state = 0x18;
     b->next = 3;
     b->prevInput = 0;
-    b->unk18 = 0.0f;
+    b->unk14 = 0.0f;
     ConditionSetBit(a->flags, 0, 1);
     CordPlayAnim(a, 0);
     return 1;
@@ -1173,10 +1179,10 @@ int CordEnterRunStart(Actor* a) {
     b->state = 0x10;
     b->next = 4;
     b->prevInput = 1;
-    if (0.5f * (float)a->info->maxHealth <= a->unk904) {
-        CordPlayAnim(a, 0);
-    } else {
+    if (a->unk904 < 0.5f * (float)a->info->maxHealth) {
         CordPlayAnim(a, 1);
+    } else {
+        CordPlayAnim(a, 0);
     }
     return 1;
 }
@@ -1217,10 +1223,10 @@ int CordEnterWalkStart(Actor* a) {
     b->state = 0x11;
     b->next = 5;
     b->prevInput = 2;
-    if (0.5f * (float)a->info->maxHealth <= a->unk904) {
-        CordPlayAnim(a, 0);
-    } else {
+    if (a->unk904 < 0.5f * (float)a->info->maxHealth) {
         CordPlayAnim(a, 1);
+    } else {
+        CordPlayAnim(a, 0);
     }
     return 1;
 }
@@ -1296,10 +1302,10 @@ int CordEnterStandStart(Actor* a) {
     b->state = 0xF;
     b->next = 3;
     b->prevInput = 0;
-    if (0.5f * (float)a->info->maxHealth <= a->unk904) {
-        CordPlayAnim(a, 0);
-    } else {
+    if (a->unk904 < 0.5f * (float)a->info->maxHealth) {
         CordPlayAnim(a, 1);
+    } else {
+        CordPlayAnim(a, 0);
     }
     return 1;
 }
