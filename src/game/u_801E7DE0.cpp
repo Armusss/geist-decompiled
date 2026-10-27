@@ -191,9 +191,9 @@ void PlayerFirstPersonSetup(Actor* actor)
 
     int localPlayer = PlayerInHost(actor);
     int slot = actor->weaponSlot;
-    PlayerView* view = actor->views[localPlayer];
 
-    actor->field98 = fn_800A1BC8(view->field14, view->field18, lbl_803B3B60.weapons[slot], 0, 0);
+    actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18,
+                                 lbl_803B3B60.weapons[slot], 0, 0);
     actor->fieldA4 = 0x50;
 
     int bone;
@@ -207,7 +207,8 @@ void PlayerFirstPersonSetup(Actor* actor)
         }
     }
 
-    actor->fieldF0 = fn_800A1BC8(view->field14, view->field1C, lbl_803B3B60.weapons[slot], bone << 1, 0);
+    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
+                                 lbl_803B3B60.weapons[slot], bone << 1, 0);
     actor->updateE4 = fn_801E9F08;
     actor->fieldFC = 0x50;
     actor->field7E0 = 0;
@@ -387,12 +388,13 @@ void PlayerWeaponHandlesInit(Actor* actor)
 {
     int localPlayer = PlayerInHost(actor);
     int slot = actor->weaponSlot;
-    PlayerView* view = actor->views[localPlayer];
 
-    actor->field98 = fn_800A1BC8(view->field14, view->field18, lbl_803B3B60.ids174[slot], 0, 0);
+    actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18,
+                                 lbl_803B3B60.ids174[slot], 0, 0);
     actor->field8C = fn_801E9F08;
     actor->fieldA4 = 1;
-    actor->fieldF0 = fn_800A1BC8(view->field14, view->field1C, lbl_803B3B60.ids174[slot], 0, 0);
+    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
+                                 lbl_803B3B60.ids174[slot], 0, 0);
     actor->fieldFC = 1;
 }
 
