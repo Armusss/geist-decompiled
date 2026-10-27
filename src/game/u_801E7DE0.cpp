@@ -25,7 +25,7 @@ struct PlayerView {
     int field18;                // 0x018
     int field1C;                // 0x01C
     u8  unk020[0x104 - 0x20];   // 0x020
-    u32 fov;                    // 0x104
+    int fov;                    // 0x104
 };
 
 struct Actor {
@@ -210,7 +210,7 @@ void PlayerFirstPersonSetup(Actor* actor)
     actor->updateE4 = fn_801E9F08;
     actor->fieldFC = 0x50;
     actor->field7E0 = 0;
-    CameraSetFov(actor->cameraIndex, (float)(u32)actor->views[1]->fov);
+    CameraSetFov(actor->cameraIndex, (float)actor->views[1]->fov);
     actor->flags7B4 &= ~0x01000000;
 }
 
@@ -283,7 +283,7 @@ void PlayerWeaponFirstPersonInit(Actor* actor)
         actor->fieldFC = 0x11;
     }
     actor->field7E0 = 0;
-    CameraSetFov(actor->cameraIndex, (float)(u32)actor->views[1]->fov);
+    CameraSetFov(actor->cameraIndex, (float)actor->views[1]->fov);
     actor->flags7B4 &= ~0x01000000;
 }
 
@@ -335,7 +335,7 @@ void PlayerWeaponViewSetup(Actor* actor)
     lbl_804D330C = fn_800F7994(name, 0x9d1c245c);
     FxStart(lbl_804D330C, 0, 0);
     actor->field7E0 = 0;
-    CameraSetFov(actor->cameraIndex, (float)(u32)actor->views[1]->fov);
+    CameraSetFov(actor->cameraIndex, (float)actor->views[1]->fov);
     actor->flags7B4 &= ~0x01000000;
 }
 
@@ -556,7 +556,7 @@ void PlayerWeaponDrawnSetup(Actor* actor)
     lbl_804D3308 = fn_800F7994(name, 0xafef562b);
     FxStart(lbl_804D3308, 0, 0);
     actor->field7E0 = 0;
-    CameraSetFov(actor->cameraIndex, (float)(u32)actor->views[1]->fov);
+    CameraSetFov(actor->cameraIndex, (float)actor->views[1]->fov);
     actor->flags7B4 &= ~0x01000000;
 }
 
@@ -880,7 +880,7 @@ int PlayerZoomLevelUpdate(Actor* actor, int slotA, int slotB)
             CameraSetFov(actor->cameraIndex, lbl_804D8F14);
         } else if (state < 1) {
             if (state >= 0) {
-                CameraSetFov(actor->cameraIndex, (float)(u32)actor->views[1]->fov);
+                CameraSetFov(actor->cameraIndex, (float)actor->views[1]->fov);
             }
         } else if (state < 3) {
             CameraSetFov(actor->cameraIndex, lbl_804D8F0C);
@@ -1052,7 +1052,7 @@ int PlayerGunActionMessage(int msg, Actor* actor)
 void PlayerWeaponZoomExitFx(Actor* actor)
 {
     actor->field7E0 = 0;
-    CameraSetFov(actor->cameraIndex, (float)(u32)actor->views[1]->fov);
+    CameraSetFov(actor->cameraIndex, (float)actor->views[1]->fov);
     actor->flags7B4 &= ~0x01000000;
     AssetFind(0xf2e2beb8, 0xdefd6fa5);
     fn_8000F60C();
@@ -1065,7 +1065,7 @@ void PlayerWeaponZoomExitFx(Actor* actor)
 void PlayerWeaponZoomExit(Actor* actor)
 {
     actor->field7E0 = 0;
-    CameraSetFov(actor->cameraIndex, (float)(u32)actor->views[1]->fov);
+    CameraSetFov(actor->cameraIndex, (float)actor->views[1]->fov);
     actor->flags7B4 &= ~0x01000000;
     fn_80165D9C(actor);
 }
@@ -1077,7 +1077,7 @@ void PlayerWeaponZoomExit(Actor* actor)
 void PlayerWeaponZoomExitFxAsset(Actor* actor)
 {
     actor->field7E0 = 0;
-    CameraSetFov(actor->cameraIndex, (float)(u32)actor->views[1]->fov);
+    CameraSetFov(actor->cameraIndex, (float)actor->views[1]->fov);
     actor->flags7B4 &= ~0x01000000;
     fn_8000F7E4(AssetFind(0xf2e2beb8, 0xdefd6fa5), 1);
     fn_80165D9C(actor);
