@@ -735,10 +735,10 @@ int ActorGetFleeState(Actor* actor) {
     if (HasCondition(&actor->conditions, 0x0d) != 0) {
         return 0x14;
     }
-    if (HasCondition(&actor->conditions, 0x3c) != 0) {
-        return ai->state;
+    if (HasCondition(&actor->conditions, 0x3c) == 0) {
+        return 0xc;
     }
-    return 0xc;
+    return ai->state;
 }
 
 // Returns the AI sub-state selected by the behaviour condition flags when the

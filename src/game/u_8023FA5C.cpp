@@ -974,10 +974,10 @@ int HydraGetIdleNextState(Actor* actor)
     Behaviour* beh = actor->mBehaviour;
 
     SkinnedActorUpdateModel(actor);
-    if (HasCondition(actor->mCondition, 6) == 0) {
-        return 8;
+    if (HasCondition(actor->mCondition, 6) != 0) {
+        return beh->mState;
     }
-    return beh->mState;
+    return 8;
 }
 
 // Randomises the timer at 0x8FC on entering the "state C" behaviour state,
