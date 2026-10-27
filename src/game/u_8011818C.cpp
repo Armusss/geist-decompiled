@@ -462,7 +462,7 @@ void fn_80118084(void* state, unsigned long hash, int* out);
 TrackedActor* fn_8002394C();
 int fn_800BC01C(void* owner, float* pos);
 extern float lbl_804D77A0;
-int fn_800A1F94();
+int fn_800A1F94(int id);
 int fn_800B949C(int hash, int* out, int count, int arg);
 int fn_800B6FE4(int handle);
 void fn_800B261C(void* owner, int handle, void** out);
@@ -874,7 +874,7 @@ int HandleItemUseEvent(void* arg)
     switch (info->type) {
     case 0x3147A953:
         unsigned int target = info->target;
-        if ((int)(target >> 24) != 0x13 || fn_800A1F94() == 0) {
+        if ((int)(target >> 24) != 0x13 || fn_800A1F94(target) == 0) {
             return 1;
         }
         ItemUseBeginDrop(arg);
