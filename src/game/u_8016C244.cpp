@@ -622,22 +622,24 @@ void CollectInit(Actor* o) {
 
 // 0x8016D170: swap x and y (used by the ghost action code).
 void VecSwapXY(IVec3* out, IVec3* in) {
-    int y = in->y;
+    int t = in->y;
     int x = in->x;
 
-    out->x = y;
+    out->x = t;
+    t = in->z;
     out->y = x;
-    out->z = in->z;
+    out->z = t;
 }
 
 // 0x8016D18C: swap x and y (second copy used by the angle helpers).
 void VecSwapXY2(IVec3* out, IVec3* in) {
-    int y = in->y;
+    int t = in->y;
     int x = in->x;
 
-    out->x = y;
+    out->x = t;
+    t = in->z;
     out->y = x;
-    out->z = in->z;
+    out->z = t;
 }
 
 // 0x8016D1A8: 12-bit fixed point -> degrees.
