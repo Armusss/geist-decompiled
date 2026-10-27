@@ -356,6 +356,8 @@ void SetupGhostAction(Actor* a) {
 
 // Frame update for the rolling variant (also drives the roll effect and the spin).
 void UpdateGhostActionIdle(Actor* a, float dt) {
+    float fade = 0.0f;
+
     a->unk638 = 1;
     a->flags &= ~1;
     fn_800769A0(a, dt);
@@ -375,13 +377,13 @@ void UpdateGhostActionIdle(Actor* a, float dt) {
         fn_8016F018(sRollFx, speed);
     }
 
-    float fade = 0.0f;
-
-    if (a->ghost != 0 && (a->ghost->unk38 >> 24) == 1) {
-        int h = *a->ghost->unk84;
-
-        if (h == 0x6EF9D8F1 || h == 0xDE71952A || h == 0x7AABF5C8) {
+    if (a->ghost != 0 && (int)(a->ghost->unk38 >> 24) == 1) {
+        switch (*a->ghost->unk84) {
+        case 0x6EF9D8F1:
+        case 0xDE71952A:
+        case 0x7AABF5C8:
             fade = 0.3f;
+            break;
         }
         if (fade > 0.0f) {
             Mtx34 m;
