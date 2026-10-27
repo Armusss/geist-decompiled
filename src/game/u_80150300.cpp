@@ -795,11 +795,11 @@ int HostTypeUpdateI(Actor* a) {
         return 10;
     }
     if (s->unk38 != a->i26C) {
-        return iVar2 + a->i26C * 13 + 3;
+        return iVar2 + (a->i26C * 13 + 3);
     } else {
         iVar3 = fn_8016325C(a->obj894);
         if (iVar3 == 6 || fn_8016325C(a->obj894) == 7) {
-            return a->i288 * 13 + iVar2 + 6;
+            return iVar2 + (a->i288 * 13 + 6);
         } else {
             iVar3 = fn_8016325C(a->obj894);
             if (iVar3 == 0) {
@@ -831,13 +831,13 @@ int HostTypeUpdateJ(Actor* a) {
     }
     s = a->state;
     fn_80152990(a);
-    iVar2 = HasCondition(&a->i270, 9);
-    if (iVar2 != 0 && HasCondition(&a->i270, 10) == 0 &&
+    iVar3 = HasCondition(&a->i270, 9);
+    if (iVar3 != 0 && HasCondition(&a->i270, 10) == 0 &&
         HasCondition(&a->i270, 11) == 0) {
         return 0xB;
     }
-    iVar2 = HasCondition(&a->i270, 4);
-    if ((iVar2 != 0) && HasCondition(&a->i270, 9) == 0 &&
+    iVar3 = HasCondition(&a->i270, 4);
+    if ((iVar3 != 0) && HasCondition(&a->i270, 9) == 0 &&
         (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
         ConditionSetBit(&a->i270, 4, 0);
         return 10;
@@ -848,11 +848,11 @@ int HostTypeUpdateJ(Actor* a) {
     }
     iVar3 = fn_8016325C(a->obj894);
     if (iVar3 == 4 || fn_8016325C(a->obj894) == 5) {
-        return a->i288 * 13 + iVar2 + 3;
+        return iVar2 + (a->i288 * 13 + 3);
     } else {
         iVar3 = fn_8016325C(a->obj894);
         if (iVar3 == 6 || fn_8016325C(a->obj894) == 7) {
-            return a->i288 * 13 + iVar2 + 6;
+            return iVar2 + (a->i288 * 13 + 6);
         } else if (s->unk38 != a->i26C) {
             return iVar2 + a->i26C * 13;
         } else {
