@@ -2047,8 +2047,8 @@ void GunAimBehReset80178C88(void* ownerArg, void* behArg) {
 // finishes the behaviour, asks the owner and marks the behaviour when the reply
 // is the aim hash (address 0x80178CC0).
 void GunAimBehCheck80178CC0(void* ownerArg, void* behArg) {
-    GunFxBeh80177A2C* beh;
     GunAimOwner80176D4C* owner;
+    GunFxBeh80177A2C* beh;
     int result;
 
     if (behArg != 0) {
@@ -3572,6 +3572,14 @@ void GunTrailEntryInit8017AFA4(void* block, void* sample) {
 
 // Effect preset (0x3c bytes each) of the trail effects below: two line-fan
 // passes with their own colour ramp, then a ring pass (offsets from retail).
+// One draw pass of a trail preset (0x14 bytes).
+struct GunTrailPass {
+    int mode;                           // 0x00 texture/mode
+    float width;                        // 0x04
+    unsigned char unk08[4];             // 0x08
+    unsigned char color[8];             // 0x0c ring buffer colours (end + base)
+};
+
 struct GunTrailFx8017B060 {
     int field00;                        // 0x00 texture/mode of the first fan
     float field04;                      // 0x04 width of the first fan
@@ -3581,10 +3589,7 @@ struct GunTrailFx8017B060 {
     float field18;                      // 0x18 width of the second fan
     float scaleB;                       // 0x1c vertex scale of the second fan
     unsigned char colorB[8];            // 0x20 colour ramp of the second fan
-    int field28;                        // 0x28 texture/mode of the ring pass
-    float field2C;                      // 0x2c width of the ring pass
-    unsigned char unk30[4];             // 0x30
-    unsigned char params[8];            // 0x34 ring buffer colours (end + base)
+    GunTrailPass ring;                  // 0x28 ring pass
 };
 
 // One live trail effect (0xf0 bytes): state, lifetime counter, effect preset
@@ -3659,10 +3664,11 @@ GunTrailBlock8017B060* GunTrailSpawn8017B060(int effect) {
         block->effect = effect;
         LinkInfoInit(block->link);
         fx = &lbl_803A82C0[block->effect];
+        GunTrailPass* ring = &fx->ring;
         TrailBufferInit((TrailBuffer*)block->trail, block->points, 12,
-                        fx->params[0], fx->params[1], fx->params[2],
-                        fx->params[3], fx->params[4], fx->params[5],
-                        fx->params[6], fx->params[7]);
+                        ring->color[0], ring->color[1], ring->color[2],
+                        ring->color[3], ring->color[4], ring->color[5],
+                        ring->color[6], ring->color[7]);
     }
     return block;
 }
@@ -3695,7 +3701,7 @@ extern "C" void fn_8017B164(void) {
                 alpha = (unsigned char)(int)(lbl_804D81F8 *
                         (lbl_804D81FC - (float)block->counter / lbl_804D8200));
                 fx = &lbl_803A82C0[block->effect];
-                Draw3DBeginLine(fx->field28, 0, fx->field2C);
+                Draw3DBeginLine(fx->ring.mode, 0, fx->ring.width);
                 DrawTrailRing((TrailBuffer*)block->trail, alpha, alpha, alpha,
                               alpha);
                 DrawDisableTexOffsets();
@@ -3732,7 +3738,7 @@ extern "C" void fn_8017B164(void) {
             }
             DrawDisableTexOffsets();
             fx = &lbl_803A82C0[block->effect];
-            Draw3DBeginLine(fx->field28, 0, fx->field2C);
+            Draw3DBeginLine(fx->ring.mode, 0, fx->ring.width);
             DrawTrailRing((TrailBuffer*)block->trail, 0xFF, 0xFF, 0xFF, 0xFF);
             DrawDisableTexOffsets();
         }
@@ -4183,7 +4189,7 @@ extern void SystemPoll(void);
 // Name is a guess: pumps the system for one frame and reports whether the file
 // system still has a file open or pending bytes (a load in progress).
 unsigned char SystemPumpBusy(void) {
-    unsigned char busy;
+    int busy;
 
     SystemIdle();
     SystemPoll();
