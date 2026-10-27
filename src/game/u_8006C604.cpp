@@ -1456,14 +1456,12 @@ void PlayerSubModelAnimUpdate(float dt, void* owner)
     if (*(int*)(p + 0x12C) != -1)
     {
         int animData;
-        int boneCount;
 
         fn_800913EC(*(int*)(p + 0x12C), dt, stream);
         animData = (int)ModelAnimate(*(int*)(p + 0x64),
                                      *(char**)(p + 0x1418), 1);
-        boneCount = ModelBoneCount(*(int*)(p + 0x64));
         AnimApply(*(int*)(p + 0x12C), *(char**)(p + 0x1418), animData,
-                  boneCount);
+                  ModelBoneCount(*(int*)(p + 0x64)));
     }
 }
 
