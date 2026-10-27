@@ -268,15 +268,13 @@ inline void FearPlayAnim(Actor* a, int variant, int mode) {
     if (fn_8008E7D0() != 0) {
         ConditionSetBit(a->flags, 0x1C, 0);
         fn_80090974(1.0f, a->unkD4, 0, anim, mode, (int (*)(int, Actor*))gFearStates[b->state].handler, a);
-        if (HasCondition(a->flags, 0xE) == 0 && b->anim != anim) {
-            if (b->state == 0) {
-                fn_8008F230(350.0f, a->unkD4, 0, 1);
-            } else {
-                fn_8008F230(150.0f, a->unkD4, 0, 1);
-            }
-        } else {
+        if (HasCondition(a->flags, 0xE) != 0 || b->anim == anim) {
             fn_8008F230(0.0f, a->unkD4, 0, 0);
             ConditionSetBit(a->flags, 0xE, 0);
+        } else if (b->state == 0) {
+            fn_8008F230(350.0f, a->unkD4, 0, 1);
+        } else {
+            fn_8008F230(150.0f, a->unkD4, 0, 1);
         }
         b->anim = anim;
     }
@@ -530,10 +528,11 @@ int FearSmHandlerB(int msg, Actor* a) {
 
 // 0x801F39C8: leave callback that only clears the pose bits.
 int FearLeaveClear(Actor* a) {
-    if (a != 0) {
-        ConditionSetBit(a->flags, 0, 0);
-        ConditionSetBit(a->flags, 4, 0);
+    if (a == 0) {
+        return 0;
     }
+    ConditionSetBit(a->flags, 0, 0);
+    ConditionSetBit(a->flags, 4, 0);
     return 0;
 }
 
