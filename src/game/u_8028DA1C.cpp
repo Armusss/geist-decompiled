@@ -145,12 +145,12 @@ struct Actor {
     int i2C0;                       // 0x2C0
     int i2C4;                       // 0x2C4
     char pad2C8[0x5F0 - 0x2C8];
-    int i5F0;                       // 0x5F0
+    u32 i5F0;                       // 0x5F0
     char pad5F4[0x894 - 0x5F4];
     char animState[0x900 - 0x894];  // 0x894
     float f900;                     // 0x900
     float f904;                     // 0x904
-    int i908;                       // 0x908
+    u32 i908;                       // 0x908
     char pad90C[0x920 - 0x90C];
     short s920;                     // 0x920
     short s922;                     // 0x922
@@ -1034,10 +1034,11 @@ int HostDriveIdle(Actor* a) {
 
 // 0x8028F7B4: update for the walking states (turn left variant).
 int HostDriveWalkA(Actor* a) {
-    Beh* b = a->beh;
-    int target = (a->i288 != 0) ? 1 : 0;
-    int next;
+    int target;
+    Beh* b;
 
+    b = a->beh;
+    target = (a->i288 != 0) ? 1 : 0;
     HostDriveAnimate(a);
     if (fn_8016325C(a->animState) == 6) {
         fn_80162610(a, a->animState, 0xE6B71BCC);
@@ -1046,22 +1047,22 @@ int HostDriveWalkA(Actor* a) {
         fn_80162610(a, a->animState, 0x968CBE3D);
         fn_80162610(a, a->animState, 0x1B83833F);
     }
-    next = target;
-    if (b->flag == target) {
-        if (fn_8016325C(a->animState) == 4 || fn_8016325C(a->animState) == 5) {
-            next = b->state;
-        }
-    } else {
-        next = target + 2;
+    if (b->flag != target) {
+        return target + 2;
     }
-    return next;
+    if (fn_8016325C(a->animState) == 4 || fn_8016325C(a->animState) == 5) {
+        return b->state;
+    }
+    return target;
 }
 
 // 0x8028F8B8: update for the walking states (turn right variant).
 int HostDriveWalkB(Actor* a) {
-    Beh* b = a->beh;
-    int target = (a->i288 != 0) ? 1 : 0;
+    int target;
+    Beh* b;
 
+    b = a->beh;
+    target = (a->i288 != 0) ? 1 : 0;
     HostDriveAnimate(a);
     if (fn_8016325C(a->animState) == 6) {
         fn_80162610(a, a->animState, 0xE6B71BCC);
@@ -1070,14 +1071,13 @@ int HostDriveWalkB(Actor* a) {
         fn_80162610(a, a->animState, 0x968CBE3D);
         fn_80162610(a, a->animState, 0x1B83833F);
     }
-    if (b->flag == target) {
-        if (fn_8016325C(a->animState) == 4 || fn_8016325C(a->animState) == 5) {
-            target = target + 2;
-        } else {
-            target = b->state;
-        }
+    if (b->flag != target) {
+        return target;
     }
-    return target;
+    if (fn_8016325C(a->animState) == 4 || fn_8016325C(a->animState) == 5) {
+        return target + 2;
+    }
+    return b->state;
 }
 
 // 0x8028F9BC: enter state 5.

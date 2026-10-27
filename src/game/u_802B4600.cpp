@@ -9,6 +9,11 @@
 typedef unsigned long u32;
 typedef unsigned char u8;
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN", "",
+};
+
 extern "C" {
 void* memset(void* dst, int c, unsigned long n);
 int rand(void);
@@ -136,7 +141,7 @@ struct Actor {
     int i288;                       // 0x288
     float f28C;                     // 0x28C
     char pad290[0x5F4 - 0x290];
-    int i5F4;                       // 0x5F4
+    u32 i5F4;                       // 0x5F4
     char pad5F8[0x658 - 0x5F8];
     char zones[0x894 - 0x658];      // 0x658
     char animState[0x900 - 0x894];  // 0x894
@@ -505,7 +510,7 @@ void CrabInit(int owner, Actor* a) {
             b->debrisIdx = -1;
             b->debrisTimer = 150.0f;
             memset(b->debris, 0, 0x1100);
-            memset(b->hazard, 0xFF, 0x100);
+            memset(b->hazard, -1, 0x100);
         }
     }
 }
@@ -815,10 +820,10 @@ int CrabUpdateIdle(Actor* a) {
     if (HasCondition(a->st, 0x30) != 0) {
         return 5;
     }
-    if (HasCondition(a->st, 0x24) == 0 && HasCondition(a->st, 0x25) == 0) {
-        return b->state;
+    if (HasCondition(a->st, 0x24) != 0 || HasCondition(a->st, 0x25) != 0) {
+        return 1;
     }
-    return 1;
+    return b->state;
 }
 
 // 0x802B61DC: enter state 5.
@@ -882,10 +887,10 @@ int CrabEnter1(Actor* a) {
     b->next = 2;
     a->i288 = 3;
     a->i26C = 3;
-    if (HasCondition(a->st, 0x24) == 0) {
-        b->flag = 1;
-    } else {
+    if (HasCondition(a->st, 0x24) != 0) {
         b->flag = 0;
+    } else {
+        b->flag = 1;
     }
     ConditionSetBit(a->st, 0xE, 1);
     CrabSetAnim(a, 0x18);
