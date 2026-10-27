@@ -88,7 +88,7 @@ struct PlayerObj {
 
 struct ZoomSource {
     u8 unk000[0x104];
-    u32 field104;                       // 0x104
+    s32 field104;                       // 0x104
 };
 
 struct HostSound {
