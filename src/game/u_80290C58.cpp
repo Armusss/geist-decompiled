@@ -1586,11 +1586,12 @@ int HostFollowStateCheck(void* owner)
 // reports whether it was actually called with an actor.
 int HostFollowStateExit(void* owner)
 {
-    if (owner != 0) {
-        fn_800BBCA8(owner);
-        ConditionUpdateBit(((Host*)owner)->field270, 4, 0);
+    if (owner == 0) {
+        return 0;
     }
-    return owner != 0;
+    fn_800BBCA8(owner);
+    ConditionUpdateBit(((Host*)owner)->field270, 4, 0);
+    return 1;
 }
 
 // 0x802935D4: enter the follow state.  Marks the behaviour active, sets the
@@ -1620,12 +1621,12 @@ extern "C" void fn_800C748C(void);
 int HostChaseStateUpdate(void* owner)
 {
     void* target;
+    Host* host = (Host*)owner;
 
-    if (owner == 0) {
+    if (host == 0) {
         return 0;
     }
 
-    Host* host = (Host*)owner;
     HostBehaviour* behaviour = host->behaviour;
     int type = fn_800B26B8();
 
@@ -1640,7 +1641,7 @@ int HostChaseStateUpdate(void* owner)
             int ok = 1;
             if (type == 3) {
                 float position[5];
-                OwnerSlotGetPosition((int)host, 3, position);
+                OwnerSlotGetPosition((int)host, type, position);
                 if (FollowLineCheckPos(host, position) == 0) {
                     ok = 0;
                 }
