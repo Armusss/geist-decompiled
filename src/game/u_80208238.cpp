@@ -693,14 +693,13 @@ void PlayerBatsqueekSlotMotionSetup(Player* player)
 {
     int slot = PlayerInHost((Actor*)player);
     int index = player->field73C;
-    HostSlot* host = player->slots26C4[slot];
 
-    player->field098 = fn_800A1BC8(host->field14, host->field18,
+    player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field18,
                                    lbl_803BA2B0.ids54[index], 0, 0);
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 1;
 
-    player->field0F0 = fn_800A1BC8(host->field14, host->field1C,
+    player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field1C,
                                    lbl_803BA2B0.ids54[index], 0, 0);
     player->field0FC = 1;
     player->field7D0 = 0;
