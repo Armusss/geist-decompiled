@@ -442,11 +442,11 @@ void DogMeleeFxNotify(int* handle) {
 }
 
 u32 VMAllocPage(void) {
+    u32 start = lbl_804D5650;
     u32 result = 0;
     int candA = -1;
     int candB = -1;
     int candC = -1;
-    u32 start = lbl_804D5650;
 
     if (lbl_804D3790 == 0) {
         for (;;) {
@@ -455,14 +455,13 @@ u32 VMAllocPage(void) {
             int c;
 
             if (e == 0 || fn_80340604() == 0) {
-                result = lbl_804D5650;
                 break;
             }
             a = fn_8034062C(e);
             c = fn_80340654(e);
             if (a == 0 && c == 0 && VMPageRef(lbl_804D5650) == 0) {
                 result = lbl_804D5650;
-                break;
+                goto done;
             }
             if (a == 0 && c != 0) {
                 if (candA < 0 && VMPageRef(lbl_804D5650) == 0) {
@@ -480,28 +479,26 @@ u32 VMAllocPage(void) {
             if (a != 0) {
                 fn_8034070C(e, 0);
             }
-            if (lbl_804D5650 == start) {
+            if (start == lbl_804D5650) {
                 if (candA >= 0) {
                     result = candA;
-                    break;
-                }
-                if (candB >= 0) {
+                } else if (candB >= 0) {
                     result = candB;
-                    break;
-                }
-                if (candC >= 0) {
+                } else if (candC >= 0) {
                     result = candC;
                 }
-                break;
+                goto done;
             }
             lbl_804D5650++;
             if (lbl_804D5650 >= fn_802872F4()) {
                 lbl_804D5650 = 0;
             }
         }
+        result = lbl_804D5650;
     } else {
         result = start;
     }
+done:
     lbl_804D5650++;
     if (lbl_804D5650 >= fn_802872F4()) {
         lbl_804D3790 = 0;
