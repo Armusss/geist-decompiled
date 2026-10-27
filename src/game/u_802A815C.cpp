@@ -59,7 +59,7 @@ struct Actor {
     Actor* prev;                 // 0xFA0
 };
 
-typedef u32 (*Actor62Handler)(u32 id, int msg, int* data);
+typedef u32 (*Actor62Handler)(u32 id, int msg, int* data, int param);
 
 extern "C" {
 extern Actor* lbl_804D5768;      // head of the actor list
@@ -117,7 +117,7 @@ void ActorRelinkOwners(Actor*);
 void ActorFn800231A8(Actor*);
 void DeferAdd(int, Vec3*, void (*)(void*), void*);
 
-u32 Actor62Msg(u32 id, int msg, int* data);
+u32 Actor62Msg(u32 id, int msg, int* data, int param);
 u32 Actor62SpawnMsg(u32 id, int* data);
 u32 Actor62UpdatePath(u32 id, int* data, int owner);
 
@@ -235,7 +235,7 @@ static inline u32 CreateActor62(void)
 }
 
 // Message handler for the type-0x62 actors: find, query, create and dispatch.
-u32 Actor62Msg(u32 id, int msg, int* data)
+u32 Actor62Msg(u32 id, int msg, int* data, int param)
 {
     id &= 0xFFFFFF;
     Actor* obj = FindActor62(id);
@@ -366,7 +366,7 @@ u32 Actor62SpawnMsg(u32 id, int* data)
 void Actor62Dispatch(int msg, int* data)
 {
     Actor* a = (Actor*)data[0];
-    Actor62Msg(a->id, msg, data);
+    Actor62Msg(a->id, msg, data, 0);
 }
 
 // Message 0x413: copy the caller's transform into the actor and rebuild both

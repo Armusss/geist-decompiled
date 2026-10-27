@@ -45,7 +45,7 @@ A good build ends with `build/GITE01/main.dol: OK`.
 - **Game code** (CodeWarrior GC/1.3.2, C++) is split into 220 provisional units; file boundaries are corrected
   as files get matched. 68 are fully matched, each verified byte-identical in the linked DOL, and 99 more are
   partly matched (orange on the progress map): they have C source and some of their functions already compile
-  to the original bytes. Across the game code, 1,657 of 7,123 functions match. STATUS.md has the per-unit queue.
+  to the original bytes. Across the game code, 1,658 of 7,123 functions match. STATUS.md has the per-unit queue.
 - There's no symbol map on the disc, so names are descriptive guesses except for SDK/runtime functions that
   were recognised by signature. Placeholders are `fn_`/`lbl_` followed by the address.
 - `loader.rel` is left out: its imports from main.dol use ELF-style section indices with absolute addresses,
