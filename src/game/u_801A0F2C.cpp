@@ -196,10 +196,14 @@ void MirrorObjState5Update(void* owner, void* beh) {
         if (d->flags & 1) {
             if (fn_800BA7FC(0x29) == 0 && (d->flags & 0x100) == 0) {
                 delay = (int)(250.0f * (rand() / 32767.0f) + 800.0f);
-                color[1] = 0.3f * (rand() / 32767.0f) + 0.3f;
-                color[0] = 1.0f;
-                color[2] = 0.0f;
-                color[3] = 1.0f;
+                {
+                    float r = rand() / 32767.0f;
+
+                    color[0] = 1.0f;
+                    color[1] = 0.3f * r + 0.3f;
+                    color[2] = 0.0f;
+                    color[3] = 1.0f;
+                }
                 if (d->effect == -1) {
                     d->effect = fn_80027A58(1, o->fxSource, color, delay, 9);
                     b->flags |= 0x100000;
@@ -243,10 +247,14 @@ void MirrorObjState4Update(void* owner, void* beh) {
         if (d->flags & 1) {
             if (fn_800BA7FC(0x29) == 0 && (d->flags & 0x100) == 0) {
                 delay = (int)(250.0f * (rand() / 32767.0f) + 800.0f);
-                color[1] = 0.3f * (rand() / 32767.0f) + 0.3f;
-                color[0] = 1.0f;
-                color[2] = 0.0f;
-                color[3] = 1.0f;
+                {
+                    float r = rand() / 32767.0f;
+
+                    color[0] = 1.0f;
+                    color[1] = 0.3f * r + 0.3f;
+                    color[2] = 0.0f;
+                    color[3] = 1.0f;
+                }
                 if (d->effect == -1) {
                     d->effect = fn_80027A58(1, o->fxSource, color, delay, 9);
                     b->flags |= 0x100000;
