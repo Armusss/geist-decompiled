@@ -3971,7 +3971,7 @@ void PlayerResetGunMotion(void* owner)
 {
     u8* p = (u8*)owner;
 
-    float zero = lbl_804D65CC;
+    float zero = 0.0f;
 
     *(float*)(p + 0x650) = zero;
     *(float*)(p + 0x654) = zero;
