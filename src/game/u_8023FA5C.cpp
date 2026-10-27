@@ -143,7 +143,7 @@ extern "C" int fn_8003A1F0(int, int, int);
 extern "C" void fn_8003F15C(float, int, int, int, Skin*, int);
 extern "C" int fn_8008EA9C(int, int);
 extern "C" int fn_800AFD20(Actor* actor);
-extern "C" void fn_8016EEF4(void);
+extern "C" void fn_8016EEF4(int handle);
 extern "C" void fn_8028C188(int* out, int, int);
 int SkinnedActorOnHitEvent(int* event);
 extern "C" void fn_800913EC(int handle, Vec3* out, float time);
@@ -426,7 +426,7 @@ int SkinnedActorUpdateBehaviour(void* owner)
     }
 
     if ((beh->mState == 0xB || beh->mState == 0xC) && beh->mUnk1C != -1) {
-        fn_8016EEF4();
+        fn_8016EEF4(beh->mUnk1C);
         beh->mUnk1C = -1;
     }
 
@@ -1009,7 +1009,7 @@ int HydraEnterStateB(Actor* actor)
     fn_8016D6A8(actor->mUnk27C);
     SkinnedActorPlayAnimSet(actor, 0x18, -1);
     if (beh->mUnk1C != -1) {
-        fn_8016EEF4();
+        fn_8016EEF4(beh->mUnk1C);
         beh->mUnk1C = -1;
     }
     fn_8016F120(lbl_804D3528, actor->mMsgBlock24);
@@ -1146,7 +1146,7 @@ int HydraEnterBehaviourState2(Actor* actor)
     }
 
     if (beh->mUnk1C != -1) {
-        fn_8016EEF4();
+        fn_8016EEF4(beh->mUnk1C);
         beh->mUnk1C = -1;
     }
     fn_8016F120(lbl_804D3500, actor->mMsgBlock24);

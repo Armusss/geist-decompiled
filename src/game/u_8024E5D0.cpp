@@ -698,7 +698,7 @@ int HostRideUpdateChargeState(HostActor* actor)
 }
 
 extern "C" void fn_8008DE4C(int handle, int a, int b, int c);
-extern "C" void fn_8016EEF4();
+extern "C" void fn_8016EEF4(int handle);
 extern "C" void fn_800FC764(int handle, int arg);
 void ActorPlayAnim(int handle, unsigned long anim, int arg);
 
@@ -782,7 +782,7 @@ int HostRideEnterRideState(void* actorArg)
         ActorPlayAnim(actor->unk038, 0xdc04e3d5, actor->unk038);
     }
     if (beh->unk28 != -1) {
-        fn_8016EEF4();
+        fn_8016EEF4(beh->unk28);
         beh->unk28 = -1;
     }
     if (fn_802A1D04() == 6) {
@@ -842,7 +842,7 @@ int HostBehaviourEnterPulseState(void* actorArg)
     HostRideEffectMsgHandler(0xb9fc42f5, actor);
     HostRideEffectMsgHandler(0x8e69aec8, actor);
     if (beh->unk28 != -1) {
-        fn_8016EEF4();
+        fn_8016EEF4(beh->unk28);
         beh->unk28 = -1;
     }
     fn_8016F120(lbl_804D35F8, &actor->unk024);
@@ -898,7 +898,7 @@ int HostBehaviourEnterWaitState(void* actorArg)
                     lbl_803BEB88[beh->state].unk10, actor, lbl_804D9D70);
     }
     if (beh->unk28 != -1) {
-        fn_8016EEF4();
+        fn_8016EEF4(beh->unk28);
         beh->unk28 = -1;
     }
     fn_8016F120(lbl_804D35F8, &actor->unk024);
@@ -1075,7 +1075,7 @@ int HostBehaviourEnterFlinchState(void* actorArg)
                     lbl_803BEB88[beh2->state].unk10, actor, lbl_804D9D70);
     }
     if (beh->unk28 != -1) {
-        fn_8016EEF4();
+        fn_8016EEF4(beh->unk28);
         beh->unk28 = -1;
     }
     beh3 = actor->beh;
@@ -1150,7 +1150,7 @@ int HostBehaviourEnterIdleState(void* actorArg)
                     lbl_803BEB88[beh2->state].unk10, actor, lbl_804D9D70);
     }
     if (beh->unk28 != -1) {
-        fn_8016EEF4();
+        fn_8016EEF4(beh->unk28);
         beh->unk28 = -1;
     }
     return 1;
