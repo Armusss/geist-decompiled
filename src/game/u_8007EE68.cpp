@@ -250,7 +250,7 @@ FontDef sFontDefs[41] = {
 
 Font sFonts[16];
 u8 sFontCode[16][0x540];
-FontNode sNodes[32];
+static FontNode sNodes[32];
 FontQueue sQueues[8];
 
 float sRedScale = 1.0f;
@@ -414,16 +414,17 @@ static inline void FontResetNodes(void) {
     FontNode* prev;
     int i;
 
-    for (i = 0, prev = 0; i < 32; i++) {
-        sNodes[i].next = prev;
-        prev = &sNodes[i];
-    }
     sFreeNode = 0;
     sQueue = 0;
     sNode = 0;
     for (i = 0; i < 8; i++) {
         sQueues[i].head = 0;
         sQueues[i].tail = 0;
+    }
+    prev = 0;
+    for (i = 0; i < 32; i++) {
+        sNodes[i].next = prev;
+        prev = &sNodes[i];
     }
     sFreeNode = prev;
 }
