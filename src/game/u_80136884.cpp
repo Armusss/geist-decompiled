@@ -390,28 +390,27 @@ void PlayerGunReactivate(void* p) {
 // follow-up values, the state callback is the name-intro handler, and the slot
 // selector is armed.
 void PlayerGunStartAction(void* p) {
-    Actor* a = (Actor*)p;
-    GunOwner* g = (GunOwner*)a->field26E8;
+    GunOwner* g = (GunOwner*)((Actor*)p)->field26E8;
     PlayerRef* ref;
     int flag = 0;
     int kind;
     int* types;
 
-    if ((g->flags38 >> 24) == 0x13) {
+    if ((int)(g->flags38 >> 24) == 0x13) {
         ref = (PlayerRef*)fn_800A384C(g);
         if (HasCondition(g->cond, 0xB) != 0) {
             flag = 1;
         }
     }
-    PlayerInHost(a);
-    kind = a->field73C;
+    PlayerInHost((Actor*)p);
+    kind = ((Actor*)p)->field73C;
     types = (int*)(lbl_803A07D8 + 0x5F4);
-    a->field98 = fn_800A1BC8(ref->field14, ref->field18, types[kind], flag, 0);
-    a->field8C = (int)PlayerGunActionMsg;
-    a->fieldA4 = 0x19;
-    a->fieldF0 = fn_800A1BC8(ref->field14, ref->field1C, types[kind], flag, 0);
-    a->fieldFC = 0x19;
-    PlayerSetValue4(&a->type, 0x15);
+    ((Actor*)p)->field98 = fn_800A1BC8(ref->field14, ref->field18, types[kind], flag, 0);
+    ((Actor*)p)->field8C = (int)PlayerGunActionMsg;
+    ((Actor*)p)->fieldA4 = 0x19;
+    ((Actor*)p)->fieldF0 = fn_800A1BC8(ref->field14, ref->field1C, types[kind], flag, 0);
+    ((Actor*)p)->fieldFC = 0x19;
+    PlayerSetValue4(&((Actor*)p)->type, 0x15);
 }
 
 // 0x80137228: per-frame gun update; re-arms the timer, clears the active flag and
@@ -499,7 +498,7 @@ void PlayerGunStartActionWeapon(void* p) {
     int* types;
     int name;
 
-    if ((g->flags38 >> 24) == 0x13) {
+    if ((int)(g->flags38 >> 24) == 0x13) {
         ref = (PlayerRef*)fn_800A384C(g);
         if (HasCondition(g->cond, 0xB) != 0) {
             flag = 1;

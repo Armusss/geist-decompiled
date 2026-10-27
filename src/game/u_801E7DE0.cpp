@@ -109,7 +109,8 @@ struct Actor {
 struct WeaponTable {
     u8  unk000[0x00C];      // 0x000
     int globalWeaponId;     // 0x00C weapon id used by the timer variant
-    u8  unk010[0x09C - 0x10]; // 0x010
+    u8  unk010[0x054 - 0x10]; // 0x010
+    int ids54[0x12];        // 0x054
     int ids9C[0x12];        // 0x09C
     int idsE4[0x24];        // 0x0E4
     int ids174[0x48];       // 0x174
@@ -190,9 +191,9 @@ void PlayerFirstPersonSetup(Actor* actor)
 
     int localPlayer = PlayerInHost(actor);
     int slot = actor->weaponSlot;
-    PlayerView* view = actor->views[localPlayer];
 
-    actor->field98 = fn_800A1BC8(view->field14, view->field18, lbl_803B3B60.weapons[slot], 0, 0);
+    actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18,
+                                 lbl_803B3B60.weapons[slot], 0, 0);
     actor->fieldA4 = 0x50;
 
     int bone;
@@ -206,7 +207,8 @@ void PlayerFirstPersonSetup(Actor* actor)
         }
     }
 
-    actor->fieldF0 = fn_800A1BC8(view->field14, view->field1C, lbl_803B3B60.weapons[slot], bone << 1, 0);
+    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
+                                 lbl_803B3B60.weapons[slot], bone << 1, 0);
     actor->updateE4 = fn_801E9F08;
     actor->fieldFC = 0x50;
     actor->field7E0 = 0;
@@ -386,12 +388,13 @@ void PlayerWeaponHandlesInit(Actor* actor)
 {
     int localPlayer = PlayerInHost(actor);
     int slot = actor->weaponSlot;
-    PlayerView* view = actor->views[localPlayer];
 
-    actor->field98 = fn_800A1BC8(view->field14, view->field18, lbl_803B3B60.ids174[slot], 0, 0);
+    actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18,
+                                 lbl_803B3B60.ids174[slot], 0, 0);
     actor->field8C = fn_801E9F08;
     actor->fieldA4 = 1;
-    actor->fieldF0 = fn_800A1BC8(view->field14, view->field1C, lbl_803B3B60.ids174[slot], 0, 0);
+    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
+                                 lbl_803B3B60.ids174[slot], 0, 0);
     actor->fieldFC = 1;
 }
 
@@ -626,11 +629,12 @@ void PlayerWeaponTimerStateSetup(Actor* actor)
 {
     int localPlayer = PlayerInHost(actor);
     int slot = actor->weaponSlot;
-    PlayerView* view = actor->views[localPlayer];
 
-    actor->field98 = fn_800A1BC8(view->field14, view->field18, lbl_803B3B60.weapons[slot], 0, 0);
+    actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18,
+                                 lbl_803B3B60.ids54[slot], 0, 0);
     actor->fieldA4 = 1;
-    actor->fieldF0 = fn_800A1BC8(view->field14, view->field1C, lbl_803B3B60.weapons[slot], 0, 0);
+    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
+                                 lbl_803B3B60.ids54[slot], 0, 0);
     actor->updateE4 = fn_801E9F08;
     actor->fieldFC = 1;
     actor->field7D0 = 0;

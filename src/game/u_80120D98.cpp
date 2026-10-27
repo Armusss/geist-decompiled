@@ -1271,8 +1271,9 @@ extern "C" void fn_8028BC28(void* dst, void* src, u32 size);
 void HazardBlockRangeReset(u8* start, u8* end);
 
 void HazardBlockCopy(void* dst, u8* src, u32 size) {
-    u32 n = size & 0xfffffffc;
-    HazardBlockRangeReset(src, src + n);
+    u32 start = (u32)src;
+
+    HazardBlockRangeReset((u8*)start, (u8*)(start + (size & 0xfffffffc)));
     fn_8028BC28(dst, src, size);
 }
 
