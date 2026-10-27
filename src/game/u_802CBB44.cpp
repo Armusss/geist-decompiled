@@ -158,6 +158,7 @@ struct CollisionReply400 {
 struct Msg400Reply {
     /*0x00*/ u8 unk00[0x0C];
     /*0x0C*/ int hit;
+    /*0x10*/ u8 unk10[0x10];
 };
 
 // Collision record handed to the query callback (only the used offsets).
@@ -922,10 +923,10 @@ int CollisionSplashFx(void* owner)
     ctrl->state = 8;
     ctrl->pending = 9;
     result = SendMsg(self->field608, 0x400, &reply);
-    if ((result == 0) || (reply.hit == 0))
-        FxStart(lbl_804D3BFC, 0, 0);
-    else
+    if (result != 0 && reply.hit != 0)
         FxStart(lbl_804D3BF8, 0, 0);
+    else
+        FxStart(lbl_804D3BFC, 0, 0);
     return 1;
 }
 
