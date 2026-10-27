@@ -461,7 +461,7 @@ void* VRealloc(void* block, int size);
 
 u8* CopyBytes(const u8* src, u32 size, u8* dst);
 extern "C" void fn_8028BC94(void* self, int pos, int size);
-extern "C" void ScreenEffectSlotQueueCopy(void* self, int base, int offset, int size);
+extern "C" void ScreenEffectSlotQueueCopy(void* self, u32 base, u32 offset, u32 size);
 
 // Round `value` up to the next multiple of `align`.  The powers of two are
 // special-cased; everything else uses a remainder division.
@@ -746,10 +746,10 @@ extern "C" void fn_8028BC94(void* self, int pos, int size)
 
 // 0x8028BCCC: queue a copy of `size` bytes from `base` into the slot, unless
 // the request is empty or already points at the slot's own store.
-extern "C" void ScreenEffectSlotQueueCopy(void* self, int base, int offset, int size)
+extern "C" void ScreenEffectSlotQueueCopy(void* self, u32 base, u32 offset, u32 size)
 {
-    if (offset != 0 && size != 0 && offset != *(int*)((char*)self + 0xC))
-        CopyBytes((const u8*)offset, (u32)size, (u8*)base);
+    if (offset != 0 && size != 0 && offset != *(u32*)((char*)self + 0xC))
+        CopyBytes((const u8*)offset, size, (u8*)base);
 }
 
 // 0x8028BD18: clear the slot's queued-effect state and forget the pending
@@ -1007,7 +1007,7 @@ extern "C" void fn_8028C338(Buffer* self, const char* text)
         fn_8028B5FC(self, len, 1);
     self->mSize = len;
     ((char*)self->unk0C)[len] = 0;
-    ScreenEffectSlotQueueCopy(self, self->unk0C, (int)text, (int)len);
+    ScreenEffectSlotQueueCopy(self, self->unk0C, (u32)text, (u32)len);
 }
 
 // 0x8028C400: construct a String over an outside character array.  A null
