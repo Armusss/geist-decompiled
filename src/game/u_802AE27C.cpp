@@ -456,8 +456,8 @@ extern "C" void fn_80162610(void* owner, unsigned char* stream, int msg);
 // state, then enter that state.
 int BehParamsStateChangeMsg(int msg, void* actorPtr)
 {
-    BehActor* a = (BehActor*)actorPtr;
     BehParams* beh;
+    BehActor* a = (BehActor*)actorPtr;
 
     if (a == 0) {
         return 0;
