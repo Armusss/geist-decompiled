@@ -35,7 +35,7 @@ extern "C" u32 lbl_804D5660;
 extern "C" u8* lbl_804D565C;
 extern "C" void (*lbl_804D5668)(u32 addr, void* page, int pageIndex, u32 elapsed, int copied);
 extern "C" u32 lbl_804D5658;
-extern "C" u32 lbl_804D566C;
+extern "C" int lbl_804D566C;
 extern "C" u32* lbl_804D5698;
 extern "C" u32* lbl_804D569C;
 
@@ -177,11 +177,11 @@ void AramInit(u32 size, u32 pageCount, u32 pageState)
 {
     if (lbl_804D566C == 0) {
         void* irq = __RAS_OSDisableInterrupts_begin();
-        lbl_804D5664 = size >> 12;
         lbl_804D566C = 1;
         lbl_804D3798 = pageCount;
-        lbl_804D5658 = size;
         lbl_804D5660 = pageState;
+        lbl_804D5658 = size;
+        lbl_804D5664 = size >> 12;
         fn_80340418(fn_802870F0);
         AramAllocPageBuffer();
         AramInitPageTable();
