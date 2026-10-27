@@ -602,11 +602,11 @@ int BehParamsGhostStateCheck(void* actorPtr)
     }
     GhostActorFrameUpdate(a);
     beh = a->beh;
-    if (!HasCondition(a->cond, 9) || HasCondition(a->cond, 10) ||
-        HasCondition(a->cond, 0xb)) {
-        return beh->state;
+    if (HasCondition(a->cond, 9) && !HasCondition(a->cond, 10) &&
+        !HasCondition(a->cond, 0xb)) {
+        return 0xb;
     }
-    return 0xb;
+    return beh->state;
 }
 
 // Picks the ghost's resting behaviour state once it has lost the player: 0xb

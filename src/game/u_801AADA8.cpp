@@ -798,7 +798,8 @@ int FSHSVEFollowSelectTarget(Actor* actor)
         return 0;
     }
 
-    actor->unk130->unk00 = 6;
+    FSHSVE* st = actor->unk130;
+    st->unk00 = 6;
     ConditionUpdateBit(actor->unk270, 3, 1);
 
     int kind = fn_800B26B8(actor);
@@ -806,14 +807,14 @@ int FSHSVEFollowSelectTarget(Actor* actor)
         return 0;
     }
 
-    int target;
-    fn_800B261C(actor, kind, &target);
+    void* target;
+    fn_800B261C(actor, kind, (int*)&target);
     if (target == 0) {
         return 0;
     }
 
-    FollowSetTargetObj(actor->unk270, (void*)target);
-    fn_800BC56C(actor, (void*)target);
+    FollowSetTargetObj(actor->unk270, target);
+    fn_800BC56C(actor, target);
     actor->unk288 = 3;
     return 1;
 }
