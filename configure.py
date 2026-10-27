@@ -627,7 +627,7 @@ config.libs = [
             Object(NonMatching, "game/u_800E0CB8.cpp"),  # Vec3 helpers
             Object(Matching, "game/asyncio.cpp"),  # guess
             Object(NonMatching, "game/u_800E1B5C.cpp"),  # guess
-            Object(NonMatching, "game/u_800E9418.cpp"),  # guess
+            Object(Matching, "game/u_800E9418.cpp"),  # guess
             Object(NonMatching, "game/u_800EB1B8.cpp"),  # guess
             Object(Matching, "game/SpiritGun.cpp"),  # "SpiritGun" effect type
             Object(Matching, "game/Homing.cpp"),  # "Homing" effect type

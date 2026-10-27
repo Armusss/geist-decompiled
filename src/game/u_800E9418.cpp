@@ -61,7 +61,7 @@ struct Actor;
 // One entry of the per-gun node table (0x48 bytes each, 25 entries at 0x8039C570).
 struct WeaponNode {
     void (*fn0)(Actor*);
-    void (*fn1)(Actor*, float);
+    void (*fn1)(Actor*, int, float);
     void (*fn2)(Actor*, WeaponNode*);
     int unk0C[14];
     int unk44;
@@ -721,7 +721,7 @@ void GunNodeFn2(Actor* a) {
     }
 }
 
-void GunNodeFn1(Actor* a, float dt) {
+void GunNodeFn1(Actor* a, int arg, float dt) {
     if (a->state == 5 || a->state == 8) {
         if (a->unk800 < 1.0f) {
             a->unk800 += 0.0005f * dt;
@@ -735,7 +735,7 @@ void GunNodeFn1(Actor* a, float dt) {
     }
 
     if (sGunNodes[a->state].fn1) {
-        sGunNodes[a->state].fn1(a, dt);
+        sGunNodes[a->state].fn1(a, arg, dt);
     }
 }
 
