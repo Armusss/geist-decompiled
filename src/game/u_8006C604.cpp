@@ -521,24 +521,22 @@ void PlayerSetHeldSlotMode(void* owner, int mode)
 // held slots (name is a guess; offsets are transcribed from retail).
 void PlayerSetActionMode(void* owner, int mode)
 {
-    u8* p = (u8*)owner;
-
-    if (*(int*)(p + 0x960) == 1 && (mode == 1 || mode == 0))
+    if (*(int*)((u8*)owner + 0x960) == 1 && (mode == 1 || mode == 0))
         return;
 
-    if (*(void (**)(void*))(p + 0x814) != 0)
-        (*(void (**)(void*))(p + 0x814))(p);
+    if (*(void (**)(void*))((u8*)owner + 0x814) != 0)
+        (*(void (**)(void*))((u8*)owner + 0x814))(owner);
 
-    *(int*)(p + 0x7A4) = mode;
-    *(u32*)(p + 0x7B4) |= 1;
+    *(int*)((u8*)owner + 0x7A4) = mode;
+    *(u32*)((u8*)owner + 0x7B4) |= 1;
 
-    if (*(void (**)(void*))(p + 0x80C) != 0)
-        (*(void (**)(void*))(p + 0x80C))(p);
+    if (*(void (**)(void*))((u8*)owner + 0x80C) != 0)
+        (*(void (**)(void*))((u8*)owner + 0x80C))(owner);
 
-    PlayerUpdateHeldSlots(p);
+    PlayerUpdateHeldSlots(owner);
 
-    fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
-    fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)((u8*)owner + 0x7C), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)((u8*)owner + 0xD4), lbl_804D65B8, 0);
 }
 
 // Callbacks installed on the player when it holds a given item (offsets are
