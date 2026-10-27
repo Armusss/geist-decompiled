@@ -89,7 +89,9 @@ void BufferOwner::Commit(int start, u32 size)
 // fn_8028A82C: append `size` bytes of data to the buffer, then copy them in.
 void Buffer::Append(u8* data, u32 size)
 {
-    ClearWordRange((u32)data, (u32)(data + (size & 0xFFFFFFFC)));
+    u32 start = (u32)data;
+
+    ClearWordRange(start, start + (size & 0xFFFFFFFC));
     fn_8028BC28(this, data, size);
 }
 

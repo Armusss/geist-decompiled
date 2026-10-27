@@ -23,7 +23,9 @@ void MemFlushRange(void* self, void* addr, unsigned long size)
 // Touch the range word by word, then report the whole span to the hook.
 void MemStoreRange(void* self, void* addr, unsigned long size)
 {
-    RangeTouchWords(addr, (char*)addr + (size & ~3));
+    char* start = (char*)addr;
+
+    RangeTouchWords(start, start + (size & ~3));
     fn_8028BC28(self, addr, size);
 }
 

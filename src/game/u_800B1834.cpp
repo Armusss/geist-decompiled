@@ -3821,7 +3821,9 @@ extern "C" void fn_800BA6FC(void* dst, u8* src, u32 size)
 // Clear the aligned tail, then copy `size` bytes from `src` to `dst`.
 extern "C" void fn_800BA744(void* dst, u8* src, u32 size)
 {
-    fn_800BA7CC(src, src + (size & ~3u));
+    u32 start = (u32)src;
+
+    fn_800BA7CC((u8*)start, (u8*)(start + (size & ~3u)));
     fn_8028BC28(dst, src, size);
 }
 
