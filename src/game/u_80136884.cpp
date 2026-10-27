@@ -1442,15 +1442,16 @@ struct HeldTypeEntry {
 
 // 0x80139FCC: returns the current held type's value from the 0x44 table field.
 int PlayerGunHeldTypeValue(Actor* a) {
-    return ((HeldTypeEntry*)lbl_803A07D8)[a->type].value;
+    HeldTypeEntry* table = (HeldTypeEntry*)lbl_803A07D8;
+    return table[a->type].value;
 }
 
 // 0x80139FE8: runs the current held type's message handler, if it has one.
 void PlayerGunHeldTypeCallback(void* p) {
-    HeldTypeEntry* e = &((HeldTypeEntry*)lbl_803A07D8)[((Actor*)p)->type];
+    HeldTypeEntry* table = (HeldTypeEntry*)lbl_803A07D8;
 
-    if (e->msg) {
-        e->msg(p);
+    if (table[((Actor*)p)->type].msg) {
+        table[((Actor*)p)->type].msg(p);
     }
 }
 

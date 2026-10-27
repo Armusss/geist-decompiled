@@ -830,14 +830,15 @@ struct BatsqueekModeEntry {
 
 // Return the motion id registered for the player's current action mode.
 s32 BatsqueekGetModeMotionId(Player* player) {
-    return ((BatsqueekModeEntry*)&lbl_803BA2B0)[player->field7A4].motionId;
+    BatsqueekModeEntry* table = (BatsqueekModeEntry*)&lbl_803BA2B0;
+    return table[player->field7A4].motionId;
 }
 
 // Run the per-action-mode callback for the player's current mode, if one is set.
 void BatsqueekRunModeCallback(Player* player) {
-    BatsqueekModeEntry* entry = &((BatsqueekModeEntry*)&lbl_803BA2B0)[player->field7A4];
-    if (entry->callback != 0) {
-        entry->callback(player);
+    BatsqueekModeEntry* table = (BatsqueekModeEntry*)&lbl_803BA2B0;
+    if (table[player->field7A4].callback != 0) {
+        table[player->field7A4].callback(player);
     }
 }
 

@@ -1093,8 +1093,8 @@ struct WeaponSlotEntry {
 // Returns the weapon id assigned to the actor's current weapon state.
 int PlayerWeaponStateId(Actor* actor)
 {
-    WeaponSlotEntry* entry = (WeaponSlotEntry*)&lbl_803B3B60 + actor->state7A4;
-    return entry->field44;
+    WeaponSlotEntry* table = (WeaponSlotEntry*)&lbl_803B3B60;
+    return table[actor->state7A4].field44;
 }
 
 extern "C" {
@@ -1121,9 +1121,9 @@ struct WeaponStateEntry {
 // Notifies the actor's current weapon state through the +0x08 callback.
 void PlayerWeaponStateNotify(Actor* actor)
 {
-    WeaponStateEntry* entry = (WeaponStateEntry*)&lbl_803B3B60 + actor->state7A4;
-    if (entry->notify != 0) {
-        entry->notify(actor);
+    WeaponStateEntry* table = (WeaponStateEntry*)&lbl_803B3B60;
+    if (table[actor->state7A4].notify != 0) {
+        table[actor->state7A4].notify(actor);
     }
 }
 

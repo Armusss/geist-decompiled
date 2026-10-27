@@ -1705,7 +1705,8 @@ struct PlayerSlotEntry {
 
 s32 PlayerHeldSlotField44(PlayerObj* p)
 {
-    return ((PlayerSlotEntry*)lbl_803B9378)[p->field7a4].value44;
+    PlayerSlotEntry* table = (PlayerSlotEntry*)lbl_803B9378;
+    return table[p->field7a4].value44;
 }
 
 // 0x801F1434: calls the callback at 0x8 of the same table entry, if any.

@@ -2063,10 +2063,10 @@ int SelectSlotValue(PlayerSelectObj* obj)
 // index, if the slot has one. Name and meaning are guesses.
 void SelectSlotUpdate(PlayerSelectObj* obj)
 {
-    SelectSlotEntry* entry = &lbl_803BB9E0.slot[obj->unk7A4];
+    SelectSlotEntry* table = lbl_803BB9E0.slot;
 
-    if (entry->callback != 0) {
-        entry->callback(obj);
+    if (table[obj->unk7A4].callback != 0) {
+        table[obj->unk7A4].callback(obj);
     }
 }
 
