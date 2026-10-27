@@ -830,7 +830,6 @@ void FontRender(int id) {
     float cb;
     float frac;
     float val;
-    float t;
 
     for (node = sQueue->head; node != 0; node = node->next) {
         if (node->id != id) {
@@ -867,12 +866,9 @@ void FontRender(int id) {
             cr = fn_800A1394(90.0f * node->r / 255.0f);
             cg = fn_800A1394(90.0f * node->g / 255.0f);
             cb = fn_800A1394(90.0f * node->b / 255.0f);
-            t = 0.015 * cr;
-            fn_80094E20(t, t, 0.9f);
-            t = 0.01 * cr;
-            fn_80094E20(t, t, 0.95f);
-            t = 0.008 * cr;
-            fn_80094E20(t, t, 1.0f);
+            fn_80094E20(0.015 * cr, 0.015 * cr, 0.9f);
+            fn_80094E20(0.01 * cr, 0.01 * cr, 0.95f);
+            fn_80094E20(0.008 * cr, 0.008 * cr, 1.0f);
             fn_800983FC((u8)(cr * cr * 255.0f), (u8)(cg * cg * 255.0f),
                         (u8)(cb * cb * 255.0f));
             break;
@@ -881,12 +877,9 @@ void FontRender(int id) {
                 frac = (float)node->x.i / (float)node->y.i;
                 val = fn_800A1394(540.0f * frac);
                 frac = (1.0f - frac) * val;
-                t = 0.015 * frac;
-                fn_80094E20(t, t, 0.9f);
-                t = 0.01 * frac;
-                fn_80094E20(t, t, 0.95f);
-                t = 0.008 * frac;
-                fn_80094E20(t, t, 1.0f);
+                fn_80094E20(0.015 * frac, 0.015 * frac, 0.9f);
+                fn_80094E20(0.01 * frac, 0.01 * frac, 0.95f);
+                fn_80094E20(0.008 * frac, 0.008 * frac, 1.0f);
             }
             break;
         case 13:
