@@ -189,12 +189,12 @@ struct ScreenEffectMsg {
     int duration;
 };
 
-// Payload of message 0x40D; only the enable flag at +0xC is read.
+// Payload of message 0x40D; only the enable flag at +0x4 is written.
 struct ScreenEffectNotice {
     int unk00;
-    int unk04;
-    int unk08;
     int enable;
+    int unk08;
+    int unk0C;
 };
 
 // Stop the actor animation the effect started, if there is one.
@@ -389,15 +389,12 @@ extern "C" void ScreenEffectResetState(void* self)
 class ScreenEffectSlot {
 public:
     ScreenEffectSlot();
-    virtual void Unk00();
-    virtual void Unk04();
-    virtual void Unk08();
+    virtual ~ScreenEffectSlot();
     virtual void Prepare();
     virtual int Query();
     virtual void Fill(int offset, int size); // 0x14: clear the newly added store
     virtual void Unk18(int data);            // 0x18: not identified yet
     virtual int GetSpan();                   // 0x1C: bytes the next reserve needs
-    virtual ~ScreenEffectSlot();
     void Set(int start, int size);
     void Clear();
     static void operator delete(void* p) { VFree(p); }
