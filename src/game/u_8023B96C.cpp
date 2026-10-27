@@ -435,20 +435,21 @@ void RulesSyncMenu() {
 // 0x8023D0BC: message handler of the rules object.
 int RulesMsg(int to, int msg, int* data) {
     switch (msg) {
-    case 0x420:
-        if (data[1] != 0x381B348D) {
-            return 0;
-        }
-        data[3] = (data[2] < lbl_804A28A0.count) ? data[2] : lbl_804A28A0.count;
-        memcpy((void*)data[4], lbl_804A28A0.list,
-               ((data[2] < lbl_804A28A0.count) ? data[2] : lbl_804A28A0.count) << 2);
-        return 1;
+    case 0xC14:
+        return RulesPlayerMsg(to, data[3], data[2], data[1]);
     case 0x41E:
         return RulesVarAccess(1, data);
     case 0x41D:
         return RulesVarAccess(0, data);
-    case 0xC14:
-        return RulesPlayerMsg(to, data[3], data[2], data[1]);
+    case 0x420:
+        switch (data[1]) {
+        case 0x381B348D:
+            data[3] = (data[2] < lbl_804A28A0.count) ? data[2] : lbl_804A28A0.count;
+            memcpy((void*)data[4], lbl_804A28A0.list,
+                   ((data[2] < lbl_804A28A0.count) ? data[2] : lbl_804A28A0.count) << 2);
+            return 1;
+        }
+        return 0;
     }
     return 0;
 }
