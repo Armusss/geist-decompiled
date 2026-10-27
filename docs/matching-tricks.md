@@ -205,3 +205,12 @@ reserve f0 for the whole function (if/else form, `r = 0.0f` in the if branch).
   write a one-case switch.
 - **Pointer loads before a run of stores:** load the sub-struct pointer into a local first (`st = actor->unk130;`).
 - **Arithmetic association:** `dir + (row * 13 + k)` gives `mulli; add; addi`.
+- **Use the `void*` parameter directly.** In many `F(void* p)` functions retail works on `((T*)p)->f`; a typed local
+  copy gets its own register and outranks the parameter. Try it per function, never unit-wide (it makes others worse).
+  Sweep helper: ~/geist-work/ds/opus-1-tools/pvsweep.py (local).
+- **Pointer re-read per use:** `views[i]->a, views[i]->b` re-loads the pointer for each argument; a cached local does
+  not match.
+- **Copy a source pointer into a local of another type** (`char* start`, `u32 start`) and compute the end from it,
+  for range-copy helpers.
+- **String pools starting at +71:** the unit defines the shared ghost-action name table (POSSESS..SCAN) before its
+  own strings.
