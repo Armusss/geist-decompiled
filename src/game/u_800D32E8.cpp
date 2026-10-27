@@ -499,6 +499,14 @@ int EmitterAttach(int handle, int value, const char* name)
 
 // Tear down a live emitter: release its bank objects and clear its slots in
 // the three global emitter pools.
+static inline void BankRelease(EmitterBank* b)
+{
+    int i = b - lbl_804D4954;
+    if (i >= 0 && i < lbl_804D4958) {
+        lbl_804D4954[i].field0C = 0;
+    }
+}
+
 void EmitterDestroy(int handle)
 {
     Emitter* em;
@@ -532,10 +540,7 @@ void EmitterDestroy(int handle)
         bank->field04 = 0;
         VFree(bank->field08);
         bank->field08 = 0;
-        idx = bank - lbl_804D4954;
-        if (idx >= 0 && idx < lbl_804D4958) {
-            lbl_804D4954[idx].field0C = 0;
-        }
+        BankRelease(bank);
         idx = em - lbl_804D4960;
         if (idx >= 0 && idx < lbl_804D4964) {
             lbl_804D4960[idx].field98 = 0;
@@ -697,10 +702,7 @@ void EmitterDestroyAll(void)
                 bank->field04 = 0;
                 VFree(bank->field08);
                 bank->field08 = 0;
-                idx = bank - lbl_804D4954;
-                if (idx >= 0 && idx < lbl_804D4958) {
-                    lbl_804D4954[idx].field0C = 0;
-                }
+                BankRelease(bank);
                 idx = em - lbl_804D4960;
                 if (idx >= 0 && idx < lbl_804D4964) {
                     lbl_804D4960[idx].field98 = 0;
@@ -719,10 +721,7 @@ void EmitterDestroyAll(void)
                     bank->field04 = 0;
                     VFree(bank->field08);
                     bank->field08 = 0;
-                    idx = bank - lbl_804D4954;
-                    if (idx >= 0 && idx < lbl_804D4958) {
-                        lbl_804D4954[idx].field0C = 0;
-                    }
+                    BankRelease(bank);
                     idx = em - lbl_804D4960;
                     if (idx >= 0 && idx < lbl_804D4964) {
                         lbl_804D4960[idx].field98 = 0;
