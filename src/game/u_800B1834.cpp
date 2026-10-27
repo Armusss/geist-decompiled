@@ -200,7 +200,7 @@ public:
     u8        pad240[0x394];
     float     radius;            // 0x5d4
     u8        pad5D8[0x2C];
-    int     (*callback)(Owner*); // 0x604
+    int     (*callback)(Owner*, int); // 0x604
     u8        pad608[0x300];
     void*     target;            // 0x908
 };
@@ -268,7 +268,7 @@ void OwnerUpdateSlots(Owner* owner)
             slot->actorId = -1;
             slot->state = 0;
         } else if ((slot->flags & 1) != 0) {
-            if (slot->actorId == -1 || owner->callback == 0 || owner->callback(owner) != 0) {
+            if (slot->actorId == -1 || owner->callback == 0 || owner->callback(owner, slot->actorId) != 0) {
                 OwnerMsg msg;
                 SendMsg(slot->actorId, 0x400, &msg);
                 u32 kind = (u32)slot->actorId >> 24;
@@ -768,7 +768,7 @@ extern "C" int fn_800B26B8(Owner* owner)
         if ((slot->flags & 1) == 0) {
             continue;
         }
-        if (slot->actorId != -1 && owner->callback != 0 && owner->callback(owner) == 0) {
+        if (slot->actorId != -1 && owner->callback != 0 && owner->callback(owner, slot->actorId) == 0) {
             continue;
         }
 
@@ -906,7 +906,7 @@ extern "C" void fn_800B2E34(void* owner_, int a, int b)
     pos[2] = (float)owner->cellZ;
 
     int active;
-    if (slot->actorId == -1 || owner->callback == 0 || owner->callback(owner) != 0) {
+    if (slot->actorId == -1 || owner->callback == 0 || owner->callback(owner, slot->actorId) != 0) {
         active = 1;
     } else {
         active = 0;
@@ -992,7 +992,7 @@ extern "C" void fn_800B3164(void* owner_, int a, int b)
     OwnerSlot* slot = &owner->slots[2];
 
     int active;
-    if (slot->actorId == -1 || owner->callback == 0 || owner->callback(owner) != 0) {
+    if (slot->actorId == -1 || owner->callback == 0 || owner->callback(owner, slot->actorId) != 0) {
         active = 1;
     } else {
         active = 0;
@@ -1079,7 +1079,7 @@ void OwnerUpdateSlot1(Owner* owner)
     OwnerSlot* slot = &owner->slots[1];
     OwnerQuery msg;
     if ((slot->flags & 1) != 0) {
-        if (slot->actorId == -1 || owner->callback == 0 || owner->callback(owner) != 0) {
+        if (slot->actorId == -1 || owner->callback == 0 || owner->callback(owner, slot->actorId) != 0) {
             SendMsg(slot->actorId, 0x400, &msg);
             int kind = (u32)slot->actorId >> 24;
             if ((kind == 2 || kind == 0x13) && msg.unk0C == 0) {
@@ -1087,9 +1087,8 @@ void OwnerUpdateSlot1(Owner* owner)
                 BitClear(&slot->flags, 0);
                 BitClear(&slot->flags, 1);
             } else if ((slot->flags & 4) != 0) {
-                float limit = lbl_804D6D40;
                 slot->timer -= owner->dt;
-                if (slot->timer <= limit) {
+                if (slot->timer <= 0.0f) {
                     BitClear(&slot->flags, 0);
                     BitClear(&slot->flags, 2);
                 }
@@ -1327,7 +1326,7 @@ struct SightOwner {
     u8    pad5D8[0x24];
     void* field5fc;                  // 0x5fc
     u8    pad600[0x04];
-    int (*callback)(SightOwner*);    // 0x604
+    int (*callback)(SightOwner*, int); // 0x604
     u8    pad608[0x300];
     void* target;                    // 0x908
 };
@@ -1482,7 +1481,7 @@ int OwnerFindSightTarget(Owner* ownerPtr, int* actorId, float* outPos,
             continue;
         }
         if (record->actor != -1 && owner->callback != 0 &&
-            owner->callback(owner) == 0) {
+            owner->callback(owner, record->actor) == 0) {
             continue;
         }
 
@@ -1837,7 +1836,7 @@ int OwnerFindSoundTarget(Owner* ownerPtr, int* actorId, float* pos, float* outPo
             continue;
         }
         if (record->actor != -1 && owner->callback != 0 &&
-            owner->callback(owner) == 0) {
+            owner->callback(owner, record->actor) == 0) {
             continue;
         }
 
