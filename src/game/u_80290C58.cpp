@@ -1961,11 +1961,12 @@ extern float lbl_804DA644;
 // 0x802940CC: pick the behaviour state that follows the target value check.
 int HostPickBehaviourState(void* owner)
 {
-    if (owner == 0) {
+    Host* host = (Host*)owner;
+
+    if (host == 0) {
         return 0;
     }
 
-    Host* host = (Host*)owner;
     HostBehaviour* behaviour = host->behaviour;
 
     void* target = FollowGetTargetObj(host->field270);
@@ -1976,16 +1977,16 @@ int HostPickBehaviourState(void* owner)
     float value = OwnerValue((Owner*)host, target);
 
     if (host->i220 != 0) {
-        return 12 - ((behaviour->flags >> 1) & 1);
+        return (behaviour->flags & 2) ? 11 : 12;
     }
 
     if ((behaviour->flags & 4) == 0 && behaviour->state != 8 &&
         behaviour->state != 9 && behaviour->state != 10 &&
         behaviour->field34 < 0.0f) {
-        if (lbl_804DA640 < value) {
+        if (value > lbl_804DA640) {
             return 8;
         }
-        if (lbl_804DA618 < value) {
+        if (value > lbl_804DA618) {
             return 9;
         }
         if (fn_8029B3B0(host, 0x766a16b4) != 0) {
@@ -1996,7 +1997,7 @@ int HostPickBehaviourState(void* owner)
     if (value < lbl_804DA63C) {
         return 2;
     }
-    if (lbl_804DA624 < value) {
+    if (value > lbl_804DA624) {
         return 1;
     }
     if (behaviour->state != 4) {
