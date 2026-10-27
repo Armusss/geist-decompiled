@@ -186,3 +186,13 @@ reserve f0 for the whole function (if/else form, `r = 0.0f` in the if branch).
   `lha`/`lhz` or `extsh` diffs.
 - **Not fixable in a free function:** retail calling `~Buffer(this, 0)` means the caller is itself a derived
   destructor; model the class, don't fake the call.
+- **Float literals, not lbl_ externs.** Writing `0.0f`/`600.0f` where a draft read a `.sdata2` lbl_ extern changes
+  float-load scheduling; it is also what the original source did (the constants come from the source once the
+  unit's data is split).
+- **Return types from the tail.** `cntlzw; srwi r3,r0,5` is a `bool` return; a trailing `rlwinm ...,24,31` means the
+  declared return type is wrong (u8/char).
+- **Small static inlines.** Repeated release/lock/loop code is often a small inline helper; inlining changes register
+  ranking where declaration permutations cannot.
+- **A parameter copied into a local of a different type** (`void* buf` -> `u8* data`) is not merged into the
+  parameter, which changes its register rank.
+- **Word arrays at a byte offset:** `((u32*)(p + 0x24))[i / 32]`, not `*(u32*)(p + 0x24 + ...)`.
