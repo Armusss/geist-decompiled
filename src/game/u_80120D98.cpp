@@ -1612,7 +1612,7 @@ struct HazardTargetProbe {
 };
 
 // Engine/actor helpers used by the target tracking code below.
-extern "C" s32 fn_800A1F94();
+extern "C" s32 fn_800A1F94(u32 handle);
 void* FollowGetTargetObj(void* range);
 float OwnerValue(Owner* owner, Vec3* vec);
 f32 OwnerValue(Owner*, void*);
@@ -1737,7 +1737,7 @@ s32 HazardTrackListUpdateMain(HazardTrackActor* self, HazardTrackOwner* owner) {
 
     HazardTargetList* list = owner->list;
 
-    if ((list->state >> 24) == 0x13 && fn_800A1F94() == 0) {
+    if ((list->state >> 24) == 0x13 && fn_800A1F94(list->state) == 0) {
         list->state = -1;
         RangeResetPending(self->pad270);
         return 1;
@@ -1881,7 +1881,7 @@ s32 HazardTrackListUpdateAlt(HazardTrackActor* self, HazardTrackOwner* owner) {
 
     HazardTargetList* list = owner->list;
 
-    if ((list->state >> 24) == 0x13 && fn_800A1F94() == 0) {
+    if ((list->state >> 24) == 0x13 && fn_800A1F94(list->state) == 0) {
         list->state = -1;
         RangeResetPending(self->pad270);
         return 1;
