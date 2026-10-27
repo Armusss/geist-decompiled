@@ -206,7 +206,7 @@ void fn_80211470(float dt, void* arr, int stride, int n);
 void fn_800A8500(Actor* a);
 void fn_8009F44C(int* v, Actor* a, int* out);
 void fn_8016E13C(void* st, int* v, int a);
-void fn_801D55CC(void);
+void fn_801D55CC(u32 handle);
 void fn_80210D80(void* arr, int stride, int n, int tex, int a, void* tabA, void* tabB);
 void fn_800A0EF0(Mtx34* out, Node* n);
 void fn_800A025C(float* out, Mtx34* m, int axis);
@@ -494,7 +494,7 @@ void CrabInit(int owner, Actor* a) {
             b->flag = -1;
             b->hitDelay = -1.0f;
             if (a->i5F4 != 0) {
-                fn_801D55CC();
+                fn_801D55CC(a->i5F4);
                 a->i5F4 = 0;
             }
             ConditionSetBit(a->st, 0x2D, 1);
@@ -527,13 +527,15 @@ void CrabRender(Actor* a) {
 int CrabAnimEventA(int key, Actor* a) {
     CrabBeh* b = a->beh;
 
-    if (key == 0x1B83833F) {
+    switch (key) {
+    case 0x1B83833F:
         if (b->state == 5) {
             ConditionSetBit(a->st, 0x30, 0);
         }
         lbl_803C43A8[b->state].leave(a, b->next);
         lbl_803C43A8[b->next].enter(a);
-        fn_80162610(a, a->animState, 0x1B83833F);
+        fn_80162610(a, a->animState, key);
+        break;
     }
     return 1;
 }
@@ -542,10 +544,12 @@ int CrabAnimEventA(int key, Actor* a) {
 int CrabAnimEventB(int key, Actor* a) {
     CrabBeh* b = a->beh;
 
-    if (key == 0x1B83833F) {
-        fn_80162610(a, a->animState, 0);
+    switch (key) {
+    case 0x1B83833F:
+        fn_80162610(a, a->animState, 0x1B83833F);
         lbl_803C43A8[b->state].leave(a, b->next);
         lbl_803C43A8[b->next].enter(a);
+        break;
     }
     return 1;
 }
