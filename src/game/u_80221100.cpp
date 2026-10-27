@@ -92,11 +92,11 @@ struct Actor;
 // Growable pointer array base class (out of line ctor/dtor).
 class Buffer {
 public:
+    Buffer();
+    virtual ~Buffer();
     u32 unk04;     // 0x04
     u32 size;      // 0x08 (bytes used)
     u8* data;      // 0x0c
-    Buffer();
-    virtual ~Buffer();
 };
 
 extern "C" void fn_8028B960(void* object);
