@@ -1424,8 +1424,8 @@ void HostDriveSetAnim(Actor* a) {
     }
 }
 
-// 0x80290B80: per-frame tick of the owner (animation actors and slot updates).
-int HostDriveTick(Actor* a) {
+// 0x80290B80 (HostDriveTick; kept as fn_80290B80 because u_80290C58 calls it by that name): per-frame tick of the owner (animation actors and slot updates).
+extern "C" int fn_80290B80(Actor* a) {
     if (a == 0) {
         return 0;
     }
