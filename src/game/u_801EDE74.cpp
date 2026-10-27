@@ -194,50 +194,49 @@ void* FxFind(const char*);
 // aim/zoom factor carried across both helper calls.
 void PlayerGunZoomUpdate(void* pv, float f)
 {
-    PlayerObj* p = (PlayerObj*)pv;
     int prevMode;
     int mode;
 
-    PlayerResetGunTimer(p);
-    p->field638 = 1;
-    p->field7b4 &= ~1u;
-    fn_800769A0(p, f);
-    PlayerSelectCollisionUpdate(p, f);
+    PlayerResetGunTimer(pv);
+    ((PlayerObj*)pv)->field638 = 1;
+    ((PlayerObj*)pv)->field7b4 &= ~1u;
+    fn_800769A0(pv, f);
+    PlayerSelectCollisionUpdate(pv, f);
 
     if (fn_80049940() != 0) {
-        PlayerSetValue4(&p->field7a4, 2);
-    } else if (PlayerGetHeldSlotIndex(p) != 0) {
-        PlayerSetValue4(&p->field7a4, 2);
+        PlayerSetValue4(&((PlayerObj*)pv)->field7a4, 2);
+    } else if (PlayerGetHeldSlotIndex(pv) != 0) {
+        PlayerSetValue4(&((PlayerObj*)pv)->field7a4, 2);
     } else {
-        PlayerSetValue4(&p->field7a4, 1);
+        PlayerSetValue4(&((PlayerObj*)pv)->field7a4, 1);
     }
 
-    PlayerInHost((Actor*)p);
-    prevMode = p->field7e0;
+    PlayerInHost((Actor*)pv);
+    prevMode = ((PlayerObj*)pv)->field7e0;
 
-    if ((p->field328 == 1 || p->field328 == 3) &&
-        p->field314 != 2 && p->field314 != 1) {
-        if (p->field7a4 == 1) {
-            PlayerSetHeldSlotMode(p, 2);
+    if ((((PlayerObj*)pv)->field328 == 1 || ((PlayerObj*)pv)->field328 == 3) &&
+        ((PlayerObj*)pv)->field314 != 2 && ((PlayerObj*)pv)->field314 != 1) {
+        if (((PlayerObj*)pv)->field7a4 == 1) {
+            PlayerSetHeldSlotMode(pv, 2);
             goto done;
         }
-        PlayerResetGunTimer(p);
-        if (p->field7e0 == 0)
-            p->field7e0 = 3;
+        PlayerResetGunTimer(pv);
+        if (((PlayerObj*)pv)->field7e0 == 0)
+            ((PlayerObj*)pv)->field7e0 = 3;
         else
-            p->field7e0 = 0;
+            ((PlayerObj*)pv)->field7e0 = 0;
     }
 
-    switch (p->field7e0) {
+    switch (((PlayerObj*)pv)->field7e0) {
     case 0:
-        CameraSetFov(p->field184, (float)((ZoomSource*)p->field26c8)->field104);
+        CameraSetFov(((PlayerObj*)pv)->field184, (float)((ZoomSource*)((PlayerObj*)pv)->field26c8)->field104);
         break;
     case 3:
-        CameraSetFov(p->field184, kZoomInFov);
+        CameraSetFov(((PlayerObj*)pv)->field184, kZoomInFov);
         break;
     }
-    if (p->field7e0 != prevMode) {
-        if (prevMode < p->field7e0)
+    if (((PlayerObj*)pv)->field7e0 != prevMode) {
+        if (prevMode < ((PlayerObj*)pv)->field7e0)
             FxStart(FxFind("zoom_out"), 0, 0);
         else
             FxStart(FxFind("zoom_level1"), 0, 0);
@@ -478,45 +477,44 @@ void PlayerSetupHeldItemState(void* pv)
 // plays zoom_out / zoom_level1 when the state changed this frame.
 void PlayerGunZoomModeUpdate(void* pv, float f)
 {
-    PlayerObj* p = (PlayerObj*)pv;
     int prevMode;
     int mode;
 
-    p->field638 = 1;
-    p->field7b4 &= ~1u;
-    fn_800769A0(p, f);
-    PlayerSelectCollisionUpdate(p, f);
+    ((PlayerObj*)pv)->field638 = 1;
+    ((PlayerObj*)pv)->field7b4 &= ~1u;
+    fn_800769A0(pv, f);
+    PlayerSelectCollisionUpdate(pv, f);
 
-    prevMode = p->field7e0;
-    if ((p->field328 == 1 || p->field328 == 3) &&
-        p->field314 != 2 && p->field314 != 1) {
-        if (p->field7a4 == 1) {
-            PlayerSetHeldSlotMode(p, 2);
+    prevMode = ((PlayerObj*)pv)->field7e0;
+    if ((((PlayerObj*)pv)->field328 == 1 || ((PlayerObj*)pv)->field328 == 3) &&
+        ((PlayerObj*)pv)->field314 != 2 && ((PlayerObj*)pv)->field314 != 1) {
+        if (((PlayerObj*)pv)->field7a4 == 1) {
+            PlayerSetHeldSlotMode(pv, 2);
             goto done;
         }
-        PlayerResetGunTimer(p);
-        if (p->field7e0 == 0)
-            p->field7e0 = 3;
+        PlayerResetGunTimer(pv);
+        if (((PlayerObj*)pv)->field7e0 == 0)
+            ((PlayerObj*)pv)->field7e0 = 3;
         else
-            p->field7e0 = 0;
+            ((PlayerObj*)pv)->field7e0 = 0;
     }
 
-    switch (p->field7e0) {
+    switch (((PlayerObj*)pv)->field7e0) {
     case 0:
-        CameraSetFov(p->field184, (float)((ZoomSource*)p->field26c8)->field104);
+        CameraSetFov(((PlayerObj*)pv)->field184, (float)((ZoomSource*)((PlayerObj*)pv)->field26c8)->field104);
         break;
     case 3:
-        CameraSetFov(p->field184, kZoomInFov);
+        CameraSetFov(((PlayerObj*)pv)->field184, kZoomInFov);
         break;
     }
-    if (p->field7e0 != prevMode) {
-        if (prevMode < p->field7e0)
+    if (((PlayerObj*)pv)->field7e0 != prevMode) {
+        if (prevMode < ((PlayerObj*)pv)->field7e0)
             FxStart(FxFind("zoom_out"), 0, 0);
         else
             FxStart(FxFind("zoom_level1"), 0, 0);
     }
 done:
-    PlayerSetValue4(&p->field7a4, 3);
+    PlayerSetValue4(&((PlayerObj*)pv)->field7a4, 3);
 }
 
 // 0x801EE8A4: gun/held-item state setup. Sends the two hashed item-name
@@ -578,46 +576,45 @@ void PlayerSetupGunItemState(void* pv)
 // state changed this frame and finally pushes held-slot mode 3.
 void PlayerGunZoomSwitchUpdate(void* pv, float f)
 {
-    PlayerObj* p = (PlayerObj*)pv;
     int prevMode;
     int mode;
 
-    p->field638 = 1;
-    p->field7b4 &= ~1u;
-    fn_800769A0(p, f);
-    PlayerSelectCollisionUpdate(p, f);
+    ((PlayerObj*)pv)->field638 = 1;
+    ((PlayerObj*)pv)->field7b4 &= ~1u;
+    fn_800769A0(pv, f);
+    PlayerSelectCollisionUpdate(pv, f);
 
-    prevMode = p->field7e0;
+    prevMode = ((PlayerObj*)pv)->field7e0;
 
-    if ((p->field328 == 1 || p->field328 == 3) &&
-        p->field314 != 2 && p->field314 != 1) {
-        if (p->field7a4 == 1) {
-            PlayerSetHeldSlotMode(p, 2);
+    if ((((PlayerObj*)pv)->field328 == 1 || ((PlayerObj*)pv)->field328 == 3) &&
+        ((PlayerObj*)pv)->field314 != 2 && ((PlayerObj*)pv)->field314 != 1) {
+        if (((PlayerObj*)pv)->field7a4 == 1) {
+            PlayerSetHeldSlotMode(pv, 2);
             goto done;
         }
-        PlayerResetGunTimer(p);
-        if (p->field7e0 == 0)
-            p->field7e0 = 3;
+        PlayerResetGunTimer(pv);
+        if (((PlayerObj*)pv)->field7e0 == 0)
+            ((PlayerObj*)pv)->field7e0 = 3;
         else
-            p->field7e0 = 0;
+            ((PlayerObj*)pv)->field7e0 = 0;
     }
 
-    switch (p->field7e0) {
+    switch (((PlayerObj*)pv)->field7e0) {
     case 0:
-        CameraSetFov(p->field184, (float)((ZoomSource*)p->field26c8)->field104);
+        CameraSetFov(((PlayerObj*)pv)->field184, (float)((ZoomSource*)((PlayerObj*)pv)->field26c8)->field104);
         break;
     case 3:
-        CameraSetFov(p->field184, kZoomInFov);
+        CameraSetFov(((PlayerObj*)pv)->field184, kZoomInFov);
         break;
     }
-    if (p->field7e0 != prevMode) {
-        if (prevMode < p->field7e0)
+    if (((PlayerObj*)pv)->field7e0 != prevMode) {
+        if (prevMode < ((PlayerObj*)pv)->field7e0)
             FxStart(FxFind("zoom_out"), 0, 0);
         else
             FxStart(FxFind("zoom_level1"), 0, 0);
     }
 done:
-    PlayerSetValue4(&p->field7a4, 3);
+    PlayerSetValue4(&((PlayerObj*)pv)->field7a4, 3);
 }
 
 // 0x801EEC68: gun/held-item state setup for the item-in-hand mode. Sends two
@@ -1079,45 +1076,44 @@ extern "C" void* lbl_804D3328;
 // frame and finally pushes held-slot value 3. Names are descriptive guesses.
 void PlayerGunZoomStateUpdate(void* pv, float f)
 {
-    PlayerObj* p = (PlayerObj*)pv;
     int prevMode;
     int mode;
 
-    p->field638 = 1;
-    p->field7b4 &= ~1u;
-    fn_800769A0(p, f);
-    PlayerSelectCollisionUpdate(p, f);
+    ((PlayerObj*)pv)->field638 = 1;
+    ((PlayerObj*)pv)->field7b4 &= ~1u;
+    fn_800769A0(pv, f);
+    PlayerSelectCollisionUpdate(pv, f);
 
-    prevMode = p->field7e0;
-    if ((p->field328 == 1 || p->field328 == 3) &&
-        p->field314 != 2 && p->field314 != 1) {
-        if (p->field7a4 == 1) {
-            PlayerSetHeldSlotMode(p, 2);
+    prevMode = ((PlayerObj*)pv)->field7e0;
+    if ((((PlayerObj*)pv)->field328 == 1 || ((PlayerObj*)pv)->field328 == 3) &&
+        ((PlayerObj*)pv)->field314 != 2 && ((PlayerObj*)pv)->field314 != 1) {
+        if (((PlayerObj*)pv)->field7a4 == 1) {
+            PlayerSetHeldSlotMode(pv, 2);
             goto done;
         }
-        PlayerResetGunTimer(p);
-        if (p->field7e0 == 0)
-            p->field7e0 = 3;
+        PlayerResetGunTimer(pv);
+        if (((PlayerObj*)pv)->field7e0 == 0)
+            ((PlayerObj*)pv)->field7e0 = 3;
         else
-            p->field7e0 = 0;
+            ((PlayerObj*)pv)->field7e0 = 0;
     }
 
-    switch (p->field7e0) {
+    switch (((PlayerObj*)pv)->field7e0) {
     case 0:
-        CameraSetFov(p->field184, (float)((ZoomSource*)p->field26c8)->field104);
+        CameraSetFov(((PlayerObj*)pv)->field184, (float)((ZoomSource*)((PlayerObj*)pv)->field26c8)->field104);
         break;
     case 3:
-        CameraSetFov(p->field184, kZoomInFov);
+        CameraSetFov(((PlayerObj*)pv)->field184, kZoomInFov);
         break;
     }
-    if (p->field7e0 != prevMode) {
-        if (prevMode < p->field7e0)
+    if (((PlayerObj*)pv)->field7e0 != prevMode) {
+        if (prevMode < ((PlayerObj*)pv)->field7e0)
             FxStart(FxFind("zoom_out"), 0, 0);
         else
             FxStart(FxFind("zoom_level1"), 0, 0);
     }
 done:
-    PlayerSetValue4(&p->field7a4, 3);
+    PlayerSetValue4(&((PlayerObj*)pv)->field7a4, 3);
 }
 
 // 0x801EFD8C: held-item zoom state setup. Sends the item-name query to the
