@@ -815,16 +815,19 @@ void RulesStart(Game* g) {
 
 // 0x8023E334: reset the rules state.
 void RulesInit() {
-    int i;
-
     lbl_804D5480 = 1;
     memset(&lbl_804A28A0, 0, 0x50);
-    for (i = 0; i < 8; i++) {
-        lbl_803BE4A0.a[i] = 0;
-    }
+    lbl_803BE4A0.a[0] = 0;
     lbl_804A28A0.phase = 0;
     lbl_804A28A0.fade = 3000.0f;
+    lbl_803BE4A0.a[1] = 0;
     lbl_804A28A0.timeLeft = 1000.0f * (float)lbl_803BE310.timeLimit;
+    lbl_803BE4A0.a[2] = 0;
+    lbl_803BE4A0.a[3] = 0;
+    lbl_803BE4A0.a[4] = 0;
+    lbl_803BE4A0.a[5] = 0;
+    lbl_803BE4A0.a[6] = 0;
+    lbl_803BE4A0.a[7] = 0;
 }
 
 // 0x8023E3D8: end the match and clear the per-player state.
