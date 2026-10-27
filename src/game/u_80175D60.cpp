@@ -666,7 +666,7 @@ void GunAimStateSwitch80176D4C(Owner* owner, Beh* beh) {
     }
     result = Fn800F7DEC(o->field8EC, o->field8F0, 0xf829db93, OwnerId(owner), 0);
     switch (result) {
-    case 0xc0bfcf7e:
+    case 0xc0becf7e:
         b->field04 = 7;
         break;
     case 0x04a3e183:
@@ -3601,7 +3601,8 @@ struct GunTrailBlock8017B060 {
 // Growing array of live trail effects; the size at 0x08 is in bytes and the
 // entries are 4-byte pointers.
 struct GunTrailList8017B060 {
-    unsigned char unk00[8];             // 0x00
+    virtual ~GunTrailList8017B060();    // 0x00: vtable
+    unsigned int unk04;                 // 0x04
     unsigned int size;                  // 0x08
     void* data;                         // 0x0c
 };
@@ -3797,30 +3798,14 @@ extern "C" void fn_8017B488(float dt) {
     }
 }
 
-// The live-effect list is a polymorphic container; slot 2 of its vtable
-// releases the container itself.
-struct GunTrailListVt8017B6C0 {
-    void** vtable;                      // 0x00
-    unsigned int unk04;                 // 0x04
-    unsigned int size;                  // 0x08
-    void* data;                         // 0x0c
-};
-
-typedef void (*GunTrailListRelease8017B6C0)(void* list, int free);
-
 // Frees every live trail effect and destroys their container
 // (address 0x8017B6C0). Name is a guess.
 extern "C" void fn_8017B6C0(void) {
-    GunTrailListVt8017B6C0* list;
-
     while ((lbl_804D5048->size >> 2) != 0) {
         VFree(*(void**)lbl_804D5048->data);
         fn_8028B35C(lbl_804D5048, lbl_804D5048->data, 4);
     }
-    list = (GunTrailListVt8017B6C0*)lbl_804D5048;
-    if (list != 0) {
-        ((GunTrailListRelease8017B6C0)list->vtable[2])(list, 1);
-    }
+    delete lbl_804D5048;
 }
 
 // Shared byte-buffer base class: its destructor is out of line (0x8028B9C0) and the
