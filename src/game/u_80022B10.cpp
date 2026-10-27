@@ -985,18 +985,24 @@ s32 BitsetCount(u32* bits, int n, int flag) {
 }
 
 s32 BitFind(u32* bits, int n, int flag) {
+    int i;
+    int j;
+    s32 w;
+    int words;
+    s32 idx;
+
     if (flag)
         flag = 1;
-    int words = n / 32 + 1;
-    for (int i = 0; i < words; i++) {
-        s32 w = bits[i];
+    words = n / 32 + 1;
+    for (i = 0; i < words; i++) {
+        w = bits[i];
         if (flag != 1 || w == 0) {
             if (w == 0xffffffff)
                 continue;
         }
-        for (int j = 0; j < 32; j++) {
+        for (j = 0; j < 32; j++) {
             if ((s32)(w & (1u << j)) == flag) {
-                s32 idx = i * 32 + j;
+                idx = i * 32 + j;
                 if (idx >= n)
                     return -2;
                 return idx;
