@@ -131,11 +131,11 @@ void fn_8034070C(void* slot, int arg);
 u32 fn_802872F4(void);
 
 // VM/stream-heap state shared with VM.c (.sdata/.sbss).
-extern int lbl_804D3790;
-extern int lbl_804D3794;
-extern int lbl_804D5648;
-extern s8 lbl_804D564C;
-extern u32 lbl_804D5650;
+int lbl_804D3790 = 1;
+int lbl_804D3794 = 1;
+int lbl_804D5648;
+s8 lbl_804D564C;
+u32 lbl_804D5650;
 extern u8* lbl_804D565C;
 extern u32 lbl_804D5664;
 extern u8* lbl_804D5678;
@@ -269,20 +269,22 @@ int DogMeleeMsg(EffectObj* obj, int msg, int arg, void* data, float dt) {
     case 0x96224FCC: {
         float* m;
         int fx;
+        int id;
 
         if (b->fx1 != -1) {
             fn_8016EEF4(b->fx1);
             b->fx1 = -1;
         }
         m = &b->msg.x;
+        id = def->fx1;
         if (m) {
             pos5[0] = (int)b->msg.x;
             pos5[1] = (int)b->msg.y;
             pos5[2] = (int)b->msg.z;
-            fx = (int)fn_8016F120(def->fx1, pos5);
+            fx = (int)fn_8016F120(id, pos5);
             fn_8016F118(fx, 0, 100000);
         } else {
-            fx = (int)FxStart(def->fx1, 0, 0);
+            fx = (int)FxStart(id, 0, 0);
         }
         b->fx1 = fx;
         b->state = 3;
@@ -314,17 +316,19 @@ int DogMeleeMsg(EffectObj* obj, int msg, int arg, void* data, float dt) {
         return 1;
     case 0x4E424290: {
         float* m;
+        int id;
 
         if (b->fx2 != -1) {
             fn_8016EEF4(b->fx2);
             b->fx2 = -1;
         }
         m = &b->msg.x;
+        id = def->fx2;
         if (m) {
-            b->fx2 = (int)fn_8016F25C(def->fx2, m, DogMeleeFxNotify, &b->fx2);
+            b->fx2 = (int)fn_8016F25C(id, &b->msg.x, DogMeleeFxNotify, &b->fx2);
             fn_8016F118(b->fx2, 0, 100000);
         } else {
-            b->fx2 = (int)FxStart(def->fx2, 0, 0);
+            b->fx2 = (int)FxStart(id, 0, 0);
         }
         b->state = 4;
     }
