@@ -71,7 +71,7 @@ struct Owner {
     int  unk21c;                    // 0x21c
     int  unk220;                    // 0x220
     u8   unk224[0x22c - 0x224];     // 0x224
-    int  unk22c;                    // 0x22c
+    u32  unk22c;                    // 0x22c
     u8   unk230[0x240 - 0x230];     // 0x230
     f32  unk240;                    // 0x240
     f32  unk244;                    // 0x244
@@ -959,7 +959,7 @@ int ActorFollowTargetDetach(Owner* self)
 
 // True while the actor has no follow-offset condition pending: the follow
 // target scan runs every frame regardless of the offset state.
-u32 HasFollowCondition(Owner* self)
+bool HasFollowCondition(Owner* self)
 {
     if (self == 0)
         return 0;
