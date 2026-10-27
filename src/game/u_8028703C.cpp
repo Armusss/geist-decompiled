@@ -240,14 +240,14 @@ void AramAllocPageBuffer(void)
 // Returns the ARAM residency flag of the 4 KB page containing `addr`.
 u32 AramPageIsResident(u32 addr)
 {
-    return lbl_804D569C[addr >> 12] >> 31;
+    return lbl_804D569C[(addr >> 12) & 0x1FFF] >> 31;
 }
 
 // Sets the resident/allocation bit of the page descriptor for `handle`.
 // Kept under its placeholder name because VM.c calls it.
 extern "C" void fn_8028750C(u32 handle)
 {
-    lbl_804D569C[handle >> 12] |= 0x80000000;
+    lbl_804D569C[(handle >> 12) & 0x1FFF] |= 0x80000000;
 }
 
 // Reports a virtual address that was never handed out by VMAlloc, then halts.
