@@ -863,12 +863,10 @@ extern "C" int fn_800B2D00(void* unused, u32 handle)
     u8* actor = *(u8**)query;
     switch (handle >> 24) {
     case 0x13:
-        if (!HasCondition(actor + 0x270, 0x0b)) {
-            if (*(int*)(query + 0x0c) != 0) {
-                return 1;
-            }
+        if (HasCondition(actor + 0x270, 0x0b) || *(int*)(query + 0x0c) == 0) {
+            return 0;
         }
-        return 0;
+        return 1;
     case 0x02:
         return *(int*)(query + 0x0c) != 0;
     }
@@ -1643,10 +1641,10 @@ extern "C" int fn_800B42E0(float value, float* pos, int actor, int priority, u32
 extern "C" int fn_800B466C(u32* p, u32 value)
 {
     u32 current = p[0];
-    if (current != 0 && current == value) {
-        return 0;
+    if (current == 0 || current != value) {
+        return 1;
     }
-    return 1;
+    return 0;
 }
 
 // Sound-data block written back into the global tables: the leading word is
@@ -2579,8 +2577,10 @@ extern "C" int fn_800B6CAC(u32* object, u32 id)
     if (object == 0) {
         return 0;
     }
-    for (int i = 0; i < 4; i++) {
-        if (object[0x5a0 / 4 + i] == id) {
+    int i;
+    for (i = 0; i < 4; i++) {
+        u32 h = object[0x5a0 / 4 + i];
+        if (h == id) {
             object[0x5a0 / 4 + i] = 0;
             return 1;
         }
