@@ -35,13 +35,10 @@ public:
 
 class Buffer : public BufferBase {
 public:
-    virtual void Unk00();
-    virtual void Unk04();
-    virtual void Unk08();
     virtual void Prepare();
     virtual int Query();
     virtual void Fill(int offset, int size);
-    virtual void Unk18(int data); // 0x18: called with the backing store
+    virtual void Unk18(int data, u32 state); // 0x18: called with the backing store
     virtual int GetSpan();
     virtual ~Buffer();
     Buffer();
@@ -52,7 +49,7 @@ public:
     char* mStart; // 0x04: text source the store is built from
     int mSize;  // 0x08
     int unk0C;  // 0x0C
-    int mState; // 0x10
+    u32 mState; // 0x10
 };
 
 // String: a Buffer whose text source (mStart) and length (mSize) describe an
@@ -393,7 +390,7 @@ public:
     virtual void Prepare();
     virtual int Query();
     virtual void Fill(int offset, int size); // 0x14: clear the newly added store
-    virtual void Unk18(int data);            // 0x18: not identified yet
+    virtual void Unk18(int data, u32 state); // 0x18: not identified yet
     virtual int GetSpan();                   // 0x1C: bytes the next reserve needs
     void Set(int start, int size);
     void Clear();
@@ -402,7 +399,7 @@ public:
     int mStart; // 0x04
     int mSize;  // 0x08
     int unk0C;  // 0x0C
-    int mState; // 0x10
+    u32 mState; // 0x10
 };
 
 // fn_8028B23C: constructor; installs the vtable and clears the range.
@@ -621,7 +618,7 @@ extern "C" void fn_8028B960(void* buffer)
     ScreenEffectSlot* self = (ScreenEffectSlot*)buffer;
 
     if (self->mState != 0) {
-        self->Unk18(self->unk0C);
+        self->Unk18(self->unk0C, self->mState);
         VFree((void*)self->unk0C);
     }
     ScreenEffectSlotResetPending(self);
@@ -641,7 +638,7 @@ Buffer::~Buffer()
 
     if (!skip) {
         if (mState != 0) {
-            Unk18(unk0C);
+            Unk18(unk0C, mState);
             VFree((void*)unk0C);
         }
         ScreenEffectSlotResetPending(this);
@@ -772,7 +769,7 @@ public:
     virtual void Prepare();
     virtual int Query();
     virtual void Fill(int offset, int size);
-    virtual void Unk18(int data);
+    virtual void Unk18(int data, u32 state);
     virtual int GetSpan();
     virtual ~ScreenEffectBuffer();
 };
