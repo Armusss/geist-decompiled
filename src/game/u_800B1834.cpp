@@ -1926,8 +1926,8 @@ extern "C" int fn_800B4F98(u8* object)
     if (object == 0) {
         return 0;
     }
-    float rest = lbl_804D6DA4;
-    float idle = lbl_804D6DA0;
+    float rest = 0.0f;
+    float idle = 100.0f;
     *(u32*)(object + 0x26c) = 0;
     *(float*)(object + 0x260) = idle;
     *(u32*)(object + 0x268) = 4;

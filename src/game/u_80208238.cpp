@@ -1371,12 +1371,12 @@ void BatsqueekDrawTriggerBoxes(void)
     Vec3 box[2];
     BatsqueekDebugLink link;
 
-    box[0].x = lbl_804D9380;
-    box[0].y = lbl_804D9380;
-    box[0].z = lbl_804D9380;
-    box[1].x = lbl_804D9384;
-    box[1].y = lbl_804D9384;
-    box[1].z = lbl_804D9384;
+    box[0].x = -24.0f;
+    box[0].y = -24.0f;
+    box[0].z = -24.0f;
+    box[1].x = 24.0f;
+    box[1].y = 24.0f;
+    box[1].z = 24.0f;
 
     LinkInfoInit(&link);
 

@@ -739,7 +739,9 @@ int StoneMenSetPendingState(Actor* actor, int pending)
     ctrl->pending = pending;
     if (ctrl->state == 3)
         fn_8029B070(actor, 0x31992E8D);
-    return pending == 8;
+    if (pending == 8)
+        return 1;
+    return 0;
 }
 
 // Records the requested pending state in the control block and clears
