@@ -233,8 +233,8 @@ void RetinalUpdate(Actor* a, float dt) {
 
 static inline int RetinalGhostQuery(int ghost, int* ok) {
     QueryMsg q;
-    *(int*)&q.result = 0;
     q.hash = 0x00251E4A;
+    *(int*)&q.result = 0;
     q.unk8 = 0;
     *ok = SendMsg(ghost, 0x41E, &q);
     return *(int*)&q.result;
@@ -248,9 +248,8 @@ static inline int RetinalOnQuery(void* data) {
 
     if (ActorPlayAnim(actor->handle, StrHash("QUERY", ((u32*)data)[2]), ((int*)data)[1])) return 1;
 
-    ghost = actor->ghost;
-    if (ghost != -1) {
-        ghost = RetinalGhostQuery(ghost, &ok);
+    if (actor->ghost != -1) {
+        ghost = RetinalGhostQuery(actor->ghost, &ok);
         if (ok && ghost == 1) return 1;
     }
 
