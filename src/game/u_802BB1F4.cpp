@@ -1767,7 +1767,7 @@ u32 FshSveZoneCheckOwner(void* node, Owner* owner, s32* out)
     if (OwnerId(owner) != -1) {
         q.owner = (s32)owner;
         ((FshOwnerObj*)owner)->msg(0x401, &q);
-        if (lbl_804DACE0 < q.result)
+        if (q.result > lbl_804DACE0)
             *out = 1;
     }
     return 1;
