@@ -974,11 +974,11 @@ int MarkLookupEntryFlag(int id)
         return -1;
     }
     unsigned int entry = fn_80243448(fn_80242BA4(lbl_804D53A8), fn_80213970, key);
-    if (entry == 0) {
-        return -1;
+    if (entry != 0) {
+        *(unsigned int*)(entry + 0x1c) |= 0x10;
+        return 1;
     }
-    *(unsigned int*)(entry + 0x1c) |= 0x10;
-    return 1;
+    return -1;
 }
 
 // Reads the word at offset 0x14 of the holder referenced by the actor's entry.

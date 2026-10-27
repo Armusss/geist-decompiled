@@ -805,13 +805,13 @@ int StoneMenStateUpdate(void* owner)
     Actor* self = (Actor*)owner;
     StateControl* ctrl = self->control;
 
-    if (!HasCondition(self->conditions, 9) ||
-        HasCondition(self->conditions, 10) ||
-        HasCondition(self->conditions, 11)) {
-        StoneMenUpdate(owner);
-        return ctrl->state;
+    if (HasCondition(self->conditions, 9) &&
+        !HasCondition(self->conditions, 10) &&
+        !HasCondition(self->conditions, 11)) {
+        return 8;
     }
-    return 8;
+    StoneMenUpdate(owner);
+    return ctrl->state;
 }
 
 // Charge-state tick: while the entry conditions hold, clears the stun flag

@@ -3873,11 +3873,10 @@ extern "C" u32 fn_800BA84C(int index)
 // Store `value` into entry `index` of the 13-entry global table.
 extern "C" void fn_800BA878(int index, u32 value)
 {
-    if (index >= 0 && index < 13) {
-        lbl_8039B728[index] = value;
-    } else {
+    if (index < 0 || index >= 13) {
         return;
     }
+    lbl_8039B728[index] = value;
 }
 
 // Reset the group tables and tear down the related subsystems.
