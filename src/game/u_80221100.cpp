@@ -655,7 +655,9 @@ void BeesDestroy(Actor* a)
 
 void BeesInit(Actor* a)
 {
-    if (fn_80049940() == 0) {
+    if (fn_80049940() != 0) {
+        a->bees = 0;
+    } else {
         BeesState* s = new BeesState;
         a->bees = s;
         s->state = 0;
@@ -690,8 +692,6 @@ void BeesInit(Actor* a)
         s->unk78 = 0.5f;
         s->unk7c = 5.0f;
         lbl_804D3464 = AssetFind(0xF1754BF2, 0x21C5E0);
-    } else {
-        a->bees = 0;
     }
 }
 
