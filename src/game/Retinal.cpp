@@ -448,29 +448,28 @@ int RetinalTrigger(void* data) {
             {
                 float x2 = (d->progress - 320.0f) + d->delta;
                 float lo2 = -320.0f;
+                float maxX;
                 float hi2;
-                float minX, maxX;
                 int b1, b2, b3;
+                float h, l;
                 float u1, u2;
                 if (x2 - lo2 > 200.0f) lo2 = x2 - 200.0f;
-                minX = -320.0f / gAspectScale;
                 maxX = 320.0f / gAspectScale;
-                if (lo2 < minX) {
-                    lo2 = minX;
+                if (lo2 < (-320.0f / gAspectScale)) {
+                    lo2 = (-320.0f / gAspectScale);
                 } else if (lo2 > maxX) {
                     lo2 = maxX;
                 }
-                minX = x2 < minX ? minX : (x2 > maxX ? maxX : x2);
-                hi2 = minX;
+                hi2 = x2 < (-320.0f / gAspectScale) ? (-320.0f / gAspectScale) : (x2 > maxX ? maxX : x2);
                 b1 = 255 - (int)(255.0f * ((hi2 - lo2) / 600.0f));
                 b2 = 255 - (int)(255.0f * (((float)(d->progress - 320) - hi2) / 600.0f));
                 b3 = 255.0f * ((hi2 - lo2) / 200.0f);
                 u1 = (lo2 + maxX) / (640.0f / gAspectScale);
                 u2 = (hi2 + maxX) / (640.0f / gAspectScale);
                 DrawSetTexture(actor->info->glowTexture);
-                float l = 320.0f + lo2;
+                l = 320.0f + lo2;
                 DrawVertex(b1, b1, b1, 0, l, 0.0f, u1, 1.0f);
-                float h = 320.0f + hi2;
+                h = 320.0f + hi2;
                 DrawVertex(b2, b2, b2, b3, h, 0.0f, u2, 1.0f);
                 DrawVertex(b2, b2, b2, b3, h, 480.0f, u2, 0.0f);
                 DrawVertex(b1, b1, b1, 0, l, 480.0f, u1, 0.0f);
