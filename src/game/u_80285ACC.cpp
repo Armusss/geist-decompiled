@@ -198,12 +198,9 @@ void DogMeleeUpdate(EffectObj* obj, float dt) {
         SendMsg(b->arg, 0x400, &q);
         t = (TargetPos*)q.target;
         TargetToPos(pos, t);
-        pct = 0.0f;
         {
             float rate = b->timer / 1500.0f;
-            if (rate > pct) {
-                pct = rate;
-            }
+            pct = (rate > 0.0f) ? rate : 0.0f;
         }
         fn_80122108(q.target, q.arg, pos, 0xB3082735, 1.0f, 1000.0f, 1000.0f * pct,
                     1000.0f * pct, 0.75f, 0.4f, 1.0f, q.arg);
