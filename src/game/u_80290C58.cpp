@@ -629,7 +629,7 @@ int HostLungeUpdate(void* owner)
 }
 
 // 0x80291A38: check callback of the carrier's lunge state.
-u32 HostLungeCheck(void* owner)
+bool HostLungeCheck(void* owner)
 {
     if (owner == 0) {
         return 0;
@@ -1326,12 +1326,12 @@ int HostChaseEnter(void* owner)
 }
 
 // 0x80292E08: non-zero when the host's behaviour sub-mode is 2.
-u32 HostBehaviourIsSubModeTwo(Host* host)
+bool HostBehaviourIsSubModeTwo(Host* host)
 {
     if (host == 0) {
         return 0;
     }
-    return __cntlzw(2 - host->behaviour->field18) >> 5;
+    return host->behaviour->field18 == 2;
 }
 
 // 0x80292E30: cancel the host's movement state: the movement helper is
