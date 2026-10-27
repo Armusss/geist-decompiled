@@ -237,6 +237,8 @@ struct FxPosMsg {
 struct FxFlagMsg {
     int unk0;
     int flag;
+    int unk8;
+    int unkC;
 };
 
 // 0xC10: animation/callback registration message.
@@ -964,6 +966,8 @@ void HostDeathCallback(int msg, void* data) {
 
 // 0x802DDC8C: reset every host-specific field (and reload the shared effect assets).
 void HostReset(Actor* a) {
+    FxFlagMsg msg;
+
     a->state = 0;
     a->state2 = 0;
     a->unk970 = 255.0f;
@@ -1003,7 +1007,6 @@ void HostReset(Actor* a) {
     if (sFxTarget == -1) {
         sFxTarget = AssetFind(0x760CB725, 0x769B4279);
         if (sFxTarget != -1) {
-            FxFlagMsg msg;
             msg.flag = 1;
             SendMsg(sFxTarget, 0x7203, &msg);
         }
@@ -1011,7 +1014,6 @@ void HostReset(Actor* a) {
     if (sFxTarget2 == -1) {
         sFxTarget2 = AssetFind(0x000110A6, 0x0E9C3BBB);
         if (sFxTarget2 != -1) {
-            FxFlagMsg msg;
             msg.flag = 1;
             SendMsg(sFxTarget2, 0x7203, &msg);
         }
