@@ -219,7 +219,7 @@ extern "C" void fn_800C9C68(Actor* actor);
 extern "C" void fn_801AB4BC(void);
 int FSHSVEFrameUpdate(Actor* actor);
 int FSHSVEZoneNodeProbe(int node, Owner* owner, int* out);
-int FSHSVETargetBlocksFollow(Actor* actor, u32 targetId);
+bool FSHSVETargetBlocksFollow(Actor* actor, u32 targetId);
 
 // Shared runtime helpers (C++ mangled names in the retail binary).
 void* VAlloc(int size);
@@ -1533,7 +1533,7 @@ extern "C" void* memset(void* dst, int c, u32 size);
 // Name is a descriptive guess: queries the current follow target (packed owner
 // id, kind in the high byte) and reports whether its state blocks the follow
 // behaviour.
-int FSHSVETargetBlocksFollow(Actor* actor, u32 targetId)
+bool FSHSVETargetBlocksFollow(Actor* actor, u32 targetId)
 {
     FollowTargetInfo info;
 

@@ -233,7 +233,7 @@ void* VAlloc(int size);
 int AssetFind(u32 id, u32 index);
 extern "C" void* memset(void* dst, int val, u32 n);
 extern "C" void fn_800CC984();
-u32 GeistA28A4DogFetchMsgCheck(int self, u32 msg);
+bool GeistA28A4DogFetchMsgCheck(int self, u32 msg);
 extern "C" void fn_800B2E34(int actor, int a, int b);
 extern "C" void fn_800B3164(int actor, int a, int b);
 extern "C" void fn_800CECCC(int actor);
@@ -357,23 +357,32 @@ int GeistA28A4DogFetchCheck(int actor)
 
 // Dog-fetch state message check: asks the target at +0x130's actor object
 // whether the message can be accepted in the current state.
-u32 GeistA28A4DogFetchMsgCheck(int self, u32 msg)
+// 0x400 reply block written by the queried actor's message handler.
+struct DogFetchTargetInfo {
+    void* obj;          // 0x00
+    int unk04;          // 0x04
+    int unk08;          // 0x08
+    int unk0C;          // 0x0C
+    int unk10[4];       // 0x10
+};
+
+bool GeistA28A4DogFetchMsgCheck(int self, u32 msg)
 {
     int obj = *(int*)(self + 0x130);
-    int buf[8];
+    DogFetchTargetInfo info;
 
-    memset(buf, 0, 0x20);
-    if (SendMsg(msg, 0x400, buf) == 0 || buf[0] == 0)
+    memset(&info, 0, sizeof(info));
+    if (SendMsg(msg, 0x400, &info) == 0 || info.obj == 0)
         return 0;
     if (*(int*)(obj + 0x10) != -1)
         return (msg >> 24) == 0x4a;
     switch (msg >> 24) {
     case 0x13:
-        if (HasCondition((void*)(buf[0] + 0x270), 0xb) == 0 && buf[3] != 0)
-            return 1;
-        return 0;
+        if (HasCondition((u8*)info.obj + 0x270, 0xb) != 0 || info.unk0C == 0)
+            return 0;
+        return 1;
     case 2:
-        return (u32)(-buf[3] | buf[3]) >> 31;
+        return info.unk0C != 0;
     }
     return 1;
 }
