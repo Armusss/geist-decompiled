@@ -92,7 +92,6 @@ struct Actor;
 // Growable pointer array base class (out of line ctor/dtor).
 class Buffer {
 public:
-    void* vtable;  // 0x00
     u32 unk04;     // 0x04
     u32 size;      // 0x08 (bytes used)
     u8* data;      // 0x0c
@@ -251,24 +250,27 @@ extern "C" float fn_80221100(Actor* actor)  // BeesSpeedScale; called by other u
 int BeesSetTimeMsg(Msg* m)
 {
     BeesState* s = m->actor->bees;
-    if (m->msg == 0x530BE0C7) {
+    switch (m->msg) {
+    case 0x530BE0C7:
         s->unk38 = (float)m->value;
         s->timer = 0.0f;
         return 1;
+    default:
+        return 0;
     }
-    return 0;
 }
 
 int BeesGetTimeMsg(Msg* m)
 {
     BeesState* s = m->actor->bees;
-    if (m->msg == 0x530BE0C7) {
+    switch (m->msg) {
+    case 0x530BE0C7:
         m->value = (int)s->unk38;
         return 1;
+    default:
+        return 0;
     }
-    return 0;
 }
-
 
 // Non-zero test and approximate normalize.
 inline int VecNonZero(const Vec3* v)
