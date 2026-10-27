@@ -674,7 +674,8 @@ struct ActorMsgData {
 };
 
 // Message 0: queues the flame particles for drawing and draws the fire ball's shadow.
-inline int ImpFireBallShadow(FireActor* a, ImpFireBall* f, ActorMsgData* d) {
+inline int ImpFireBallShadow(FireActor* a, ImpFireBall* f, void* data) {
+    ActorMsgData* d = (ActorMsgData*)data;
     Mtx34 m;
     IVec3 pos;
     IBox box;
@@ -698,15 +699,15 @@ inline int ImpFireBallShadow(FireActor* a, ImpFireBall* f, ActorMsgData* d) {
 }
 
 int ImpFireBallMsg(FireActor* self, int msg, void* data, int arg) {
-    FireActor* a = *(FireActor**)data;
-    ImpFireBall* f = a->fire;
     ActorMsgData* d = (ActorMsgData*)data;
+    FireActor* a = d->actor;
+    ImpFireBall* f = a->fire;
 
     switch (msg) {
     case 0x407:
         return 1;
     case 0:
-        return ImpFireBallShadow(a, f, d);
+        return ImpFireBallShadow(a, f, data);
     case 1:
         return 0;
     case 3:
@@ -714,7 +715,7 @@ int ImpFireBallMsg(FireActor* self, int msg, void* data, int arg) {
         return 0;
     case 0x41E:
     default:
-        return ActorDefaultMsg((Actor*)self, msg, data, arg);
+        return ActorDefaultMsg((Actor*)self, msg, d, arg);
     }
 }
 
