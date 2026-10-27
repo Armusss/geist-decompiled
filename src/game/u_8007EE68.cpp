@@ -410,13 +410,11 @@ void fn_8007F064(int layer, int id) {
 
 int FontRun(Font* f, float dt);
 
-void fn_8007F0D4(float dt) {
-    FontNode* n;
+static inline void FontResetNodes(void) {
     FontNode* prev;
     int i;
 
-    prev = 0;
-    for (i = 0; i < 32; i++) {
+    for (i = 0, prev = 0; i < 32; i++) {
         sNodes[i].next = prev;
         prev = &sNodes[i];
     }
@@ -428,6 +426,13 @@ void fn_8007F0D4(float dt) {
         sQueues[i].tail = 0;
     }
     sFreeNode = prev;
+}
+
+void fn_8007F0D4(float dt) {
+    FontNode* n;
+    int i;
+
+    FontResetNodes();
 
     i = sFontList;
     while (i != -1) {
