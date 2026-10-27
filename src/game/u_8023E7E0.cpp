@@ -548,23 +548,23 @@ int HostRideDState2Update(void* owner) {
         return 3;
     }
     v = OwnerValue((Owner*)a, target);
-    if (v <= (float)a->c4->fC8 && v <= (float)b->i10 && FollowLineCheckActorDist(a, target, 0.8f) != 0) {
-        b->f4 = 0.0f;
-    } else {
+    if (v > (float)a->c4->fC8 || v > (float)b->i10 || FollowLineCheckActorDist(a, target, 0.8f) == 0) {
         b->f4 += a->dt;
         if (b->f4 > 5000.0f || b->i10 == 0) {
             return 3;
         }
+    } else {
+        b->f4 = 0.0f;
     }
     if (MemFlagIsSet(a->st, 3) == 0) {
         return 3;
     }
     if (fn_80162940(a->unk894, 1) != 0 && fn_80162940(a->unk894, 4) != 0) {
         v = OwnerValue((Owner*)a, target);
-        if (v >= (float)sRideThresh) {
-            fn_80162610(a, a->unk894, 1);
-        } else {
+        if (v < (float)sRideThresh) {
             fn_80162610(a, a->unk894, 2);
+        } else {
+            fn_80162610(a, a->unk894, 1);
         }
     }
     return b->state;
