@@ -20,7 +20,7 @@ struct HandleEntry {
 };
 
 extern HandleEntry lbl_8040DF00[];
-extern u32 lbl_804D4324[];
+extern u32 lbl_804D4324[1];
 
 // Returns the value stored for a valid channel handle, otherwise 0.
 // fn_8003B98C
@@ -31,7 +31,7 @@ extern "C" s32 fn_8003B98C(s16 handle)
     if (handle == -1)
         return 0;
     index = handle & 0xFFF;
-    if (index != 0)
+    if (index >= 1)
         return 0;
     if ((lbl_804D4324[index / 32] & (1 << (handle & 0x1F))) == 0)
         return 0;
@@ -49,13 +49,12 @@ extern "C" void fn_8003BA00(s16 handle)
     if (handle == -1)
         return;
     index = handle & 0xFFF;
-    if (index != 0)
+    if (index >= 1)
         return;
     if ((lbl_804D4324[index / 32] & (1 << (handle & 0x1F))) == 0)
         return;
-    if (((handle >> 12) & 7) != (lbl_8040DF00[index].channel & 7))
-        return;
-    lbl_8040DF00[index].value = 1;
+    if (((handle >> 12) & 7) == (lbl_8040DF00[index].channel & 7))
+        lbl_8040DF00[index].value = 1;
 }
 
 // fn_8003BA70 (placeholder name kept: called from other units as fn_8003BA70).
@@ -68,7 +67,7 @@ extern "C" void fn_8003BA70(s16 handle)
     if (handle == -1)
         return;
     index = handle & 0xFFF;
-    if (index != 0)
+    if (index >= 1)
         return;
     if ((lbl_804D4324[index / 32] & (1 << (handle & 0x1F))) == 0)
         return;
@@ -504,13 +503,12 @@ extern "C" void fn_8003C308(s16 handle)
     if (handle == -1)
         return;
     index = handle & 0xFFF;
-    if (index != 0)
+    if (index >= 1)
         return;
     if ((lbl_804D4324[index / 32] & (1 << (handle & 0x1F))) == 0)
         return;
-    if (((handle >> 12) & 7) != (lbl_8040DF00[index].channel & 7))
-        return;
-    FreeHandleChannel(handle);
+    if (((handle >> 12) & 7) == (lbl_8040DF00[index].channel & 7))
+        FreeHandleChannel(handle);
 }
 
 // ---- Async stream slot setup ---------------------------------------------
