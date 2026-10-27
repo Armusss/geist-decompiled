@@ -8,11 +8,11 @@ typedef unsigned char u8;
 
 extern "C" {
 void* memcpy(void* dst, const void* src, unsigned long n);
-
-// Bit-set helpers in another file, not named yet.
-int fn_80025C14(u32* mask, int value, int count); // find a clear bit
-void fn_80025CFC(u32* mask, int bit);             // clear a bit
 }
+
+// Bit-set helpers (u_80022B10.cpp).
+int BitsetFirstClear(u32* bits, int words, int n); // find a clear bit
+void BitClear(u32* bits, int idx);                 // clear a bit
 
 struct Queue {
     int size;
@@ -166,26 +166,10 @@ int QueueSkip(u32 q, int n) {
     return i;
 }
 
-inline int QueueWrite(u32 q, const u8* src, int n, u32 overwrite) {
-    int i;
-
-    for (i = 0; i < n && (sQueues[q].free > 0 || overwrite); i++) {
-        memcpy(sQueues[q].write, src, sQueues[q].size);
-        src += sQueues[q].size;
-        sQueues[q].write += sQueues[q].size;
-        if (sQueues[q].write >= sQueues[q].end) {
-            sQueues[q].write = sQueues[q].begin;
-        }
-        sQueues[q].free--;
-    }
-    if (sQueues[q].free < 0) {
-        sQueues[q].free = 0;
-    }
-    return i;
-}
-
 int QueuePush(u32 q, const void* src, int n, u32 flags) {
     u32 mode;
+    const u8* p;
+    int i;
 
     if (!QueueValid(q) || n < 0) {
         return 0;
@@ -201,7 +185,20 @@ int QueuePush(u32 q, const void* src, int n, u32 flags) {
     } else {
         mode = sQueues[q].flags;
     }
-    return QueueWrite(q, (const u8*)src, n, mode & 4);
+    p = (const u8*)src;
+    for (i = 0; i < n && (sQueues[q].free > 0 || (mode & 4)); i++) {
+        memcpy(sQueues[q].write, p, sQueues[q].size);
+        p += sQueues[q].size;
+        sQueues[q].write += sQueues[q].size;
+        if (sQueues[q].write >= sQueues[q].end) {
+            sQueues[q].write = sQueues[q].begin;
+        }
+        sQueues[q].free--;
+    }
+    if (sQueues[q].free < 0) {
+        sQueues[q].free = 0;
+    }
+    return i;
 }
 
 void QueueFree(u32 q) {
@@ -216,7 +213,7 @@ void QueueFree(u32 q) {
     sQueues[q].read = 0;
     sQueues[q].begin = 0;
     sQueues[q].end = 0;
-    fn_80025CFC(sQueueMask, q);
+    BitClear(sQueueMask, q);
     sQueueCount--;
 }
 
@@ -229,7 +226,7 @@ int QueueCreate(u8* buffer, int size, int capacity, u32 flags) {
     if (sQueueCount >= 16) {
         return -1;
     }
-    q = fn_80025C14(sQueueMask, 1, 16);
+    q = BitsetFirstClear(sQueueMask, 1, 16);
     if (q != -1) {
         sQueues[q].size = size;
         sQueues[q].flags = 0;
