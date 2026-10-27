@@ -297,13 +297,13 @@ int PossessableInit(Actor* actor) {
 // actor update.
 void PossessableUpdate(Actor* actor, float dt) {
     PossessionInfo* info = actor->possess;
-    if (info->unk14 <= lbl_804D93F4) {
+    if (info->unk14 <= 600.0f) {
         info->unk14 += dt;
     }
-    float zero = lbl_804D93E8;
-    if (info->unk28 != zero) {
+    float zero = 0.0f;
+    if (zero != info->unk28) {
         info->unk24 += dt;
-        if (info->unk28 <= info->unk24) {
+        if (info->unk24 >= info->unk28) {
             info->unk28 = zero;
             info->unk24 = zero;
         }
@@ -1391,19 +1391,19 @@ void PossessSelectGunUpdate(PlayerSelectObj* obj, float dt)
     obj->unk7B4 &= ~1u;
     fn_800769A0(obj, dt);
     PlayerSelectCollisionUpdate(obj, dt);
-    if (PlayerGetHeldSlotIndex(obj) == 0) {
-        PlayerSetValue4(&obj->unk7A4, 1);
-    } else {
+    if (PlayerGetHeldSlotIndex(obj) != 0) {
         PlayerSetValue4(&obj->unk7A4, 2);
+    } else {
+        PlayerSetValue4(&obj->unk7A4, 1);
     }
     PlayerInHost((Actor*)obj);
     if (obj->unk328 == 1) {
         unsigned int flags = obj->unk7B4;
 
-        if ((flags & 0x80000) == 0)
-            obj->unk7B4 = flags | 0x80000;
-        else
+        if ((flags & 0x80000) != 0)
             obj->unk7B4 = flags & ~0x80000;
+        else
+            obj->unk7B4 = flags | 0x80000;
     }
 }
 
