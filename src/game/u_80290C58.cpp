@@ -185,12 +185,11 @@ void AnimBankUnref(unsigned short bank, unsigned short anim);
 
 extern s32 lbl_804D3804;
 extern s32 lbl_804D3808;
-extern float lbl_804DA5EC;
+
 extern float lbl_804DA5F0;
 extern float lbl_804DA600;
 extern float lbl_804DA604;
 extern float lbl_804DA608;
-extern float lbl_804DA634;
 extern float lbl_804DA638;
 
 int HasCondition(void* state, int condition);
@@ -215,7 +214,7 @@ int HostHandleMessage(int msg, void* payload)
                 behaviour->flags |= 0x80;
                 if ((behaviour->flags & 0x40) != 0 && (behaviour->flags & 1) != 0) {
                     behaviour->flags &= ~1;
-                    behaviour->timer = lbl_804DA5EC;
+                    behaviour->timer = 0.0f;
                     fn_802997B0(host, lbl_804D3808);
                 }
             }
@@ -226,7 +225,7 @@ int HostHandleMessage(int msg, void* payload)
                 behaviour->flags &= ~0x40;
                 if ((behaviour->flags & 1) == 0 && (behaviour->flags & 0x80) == 0) {
                     behaviour->flags |= 1;
-                    behaviour->timer = lbl_804DA5EC;
+                    behaviour->timer = 0.0f;
                     fn_802997B0(host, lbl_804D3804);
                 }
             } else {
@@ -238,12 +237,12 @@ int HostHandleMessage(int msg, void* payload)
             if (data->value == 0) {
                 if ((behaviour->flags & 1) == 0 && (behaviour->flags & 0x80) == 0) {
                     behaviour->flags |= 1;
-                    behaviour->timer = lbl_804DA5EC;
+                    behaviour->timer = 0.0f;
                     fn_802997B0(host, lbl_804D3804);
                 }
             } else if ((behaviour->flags & 0x40) != 0 && (behaviour->flags & 1) != 0) {
                 behaviour->flags &= ~1;
-                behaviour->timer = lbl_804DA5EC;
+                behaviour->timer = 0.0f;
                 fn_802997B0(host, lbl_804D3808);
             }
             return 1;
@@ -254,7 +253,7 @@ int HostHandleMessage(int msg, void* payload)
     if (msg < 0x41d) {
         if (msg == 0x400) {
             data->hash = OwnerId((Owner*)host);
-            data->value = lbl_804DA5EC < host->field904;
+            data->value = 0.0f < host->field904;
             bool firing = ((behaviour->flags & 1) != 0) || ((behaviour->flags & 4) != 0);
             data->f10 = (float)firing;
             data->f14 = lbl_804DA5F0;
@@ -343,7 +342,7 @@ int HostUpdateBehaviour(void* owner)
         if ((behaviour->flags & 4) != 0) {
             fn_80162658(weapon, (u8*)weapon + 0x894);
         }
-        if (lbl_804DA5EC != host->field904) {
+        if (0.0f != host->field904) {
             host->f5c8 = lbl_804DA600 / (lbl_804DA604 * host->field904);
             if (lbl_804DA608 < host->f5c8) {
                 host->f5c8 = lbl_804DA608;
@@ -365,10 +364,10 @@ int HostUpdateBehaviour(void* owner)
 
     host->i288 = 0;
     host->i26c = 0;
-    host->f28c = lbl_804DA5EC;
-    host->f240 = lbl_804DA5EC;
-    host->f244 = lbl_804DA5EC;
-    host->f248 = lbl_804DA5EC;
+    host->f28c = 0.0f;
+    host->f240 = 0.0f;
+    host->f244 = 0.0f;
+    host->f248 = 0.0f;
     return 1;
 }
 
@@ -451,12 +450,12 @@ void HostInitBehaviour(void* owner)
     // Retail stores zero to 0x08 a second time here.
     behaviour->field08 = 0;
     behaviour->field24 = -1;
-    behaviour->timer = lbl_804DA5EC;
-    behaviour->field20 = lbl_804DA5EC;
+    behaviour->timer = 0.0f;
+    behaviour->field20 = 0.0f;
     behaviour->field1c = host->field904;
-    behaviour->field2c = lbl_804DA5EC;
+    behaviour->field2c = 0.0f;
     behaviour->mode = 0;
-    behaviour->field14 = lbl_804DA5EC;
+    behaviour->field14 = 0.0f;
     behaviour->field04 = -1;
     behaviour->target = -1;
     behaviour->weapon = 0;
@@ -492,9 +491,9 @@ void HostInitBehaviour(void* owner)
         float py = (float)host->i28;
         float pz = (float)host->i2c;
         FxTransform transform;
-        px = lbl_804DA5EC;
-        py = lbl_804DA5EC;
-        pz = lbl_804DA5EC;
+        px = 0.0f;
+        py = 0.0f;
+        pz = 0.0f;
         fn_8016D6A8(&transform);
 
         behaviour->target = fn_800A2DE8(params, 0, 0, 0);
@@ -667,7 +666,7 @@ int HostLungeAction(void* owner)
     u32 flags = current->flags;
     if ((flags & 1) == 0 && (flags & 0x80) == 0) {
         current->flags = flags | 1;
-        current->timer = lbl_804DA5EC;
+        current->timer = 0.0f;
         fn_802997B0(host, lbl_804D3804);
     }
 
@@ -698,7 +697,7 @@ int HostApproachAction(void* owner)
     u32 flags = current->flags;
     if ((flags & 1) == 0 && (flags & 0x80) == 0) {
         current->flags = flags | 1;
-        current->timer = lbl_804DA5EC;
+        current->timer = 0.0f;
         fn_802997B0(host, lbl_804D3804);
     }
 
@@ -726,7 +725,7 @@ int HostCarryWaitAction(void* owner)
     u32 flags = current->flags;
     if ((flags & 1) == 0 && (flags & 0x80) == 0) {
         current->flags = flags | 1;
-        current->timer = lbl_804DA5EC;
+        current->timer = 0.0f;
         fn_802997B0(host, lbl_804D3804);
     }
 
@@ -839,7 +838,7 @@ int HostTimerCountdownUpdate(void* owner)
 
     fn_800CCFE8(host, &behaviour->field08, 500);
     behaviour->field14 = behaviour->field14 - host->field138 / host->field91c;
-    if (behaviour->field14 <= lbl_804DA5EC) {
+    if (behaviour->field14 <= 0.0f) {
         if (rand() % 1000 < 500) {
             if (lbl_803C2B38[behaviour->state].check(host) != 0) {
                 lbl_803C2B38[5].action(host);
@@ -986,10 +985,10 @@ int HostFleeExitState(void* owner)
     u32 flags = current->flags;
     if ((flags & 0x40) != 0 && (flags & 1) != 0) {
         current->flags = flags & 0xfffffffe;
-        current->timer = lbl_804DA5EC;
+        current->timer = 0.0f;
         fn_802997B0(host, lbl_804D3808);
     }
-    behaviour->timer = lbl_804DA5EC;
+    behaviour->timer = 0.0f;
     return 1;
 }
 
@@ -1012,7 +1011,7 @@ int HostFleeEnterState(void* owner)
 
     float random = (float)rand();
     behaviour->field14 = lbl_804DA614 * (random / lbl_804DA610) + lbl_804DA614;
-    behaviour->timer = lbl_804DA5EC;
+    behaviour->timer = 0.0f;
 
     fn_800BBCA8(host);
 
@@ -1020,10 +1019,10 @@ int HostFleeEnterState(void* owner)
     u32 flags = current->flags;
     if ((flags & 0x40) != 0 && (flags & 1) != 0) {
         current->flags = flags & 0xfffffffe;
-        current->timer = lbl_804DA5EC;
+        current->timer = 0.0f;
         fn_802997B0(host, lbl_804D3808);
     }
-    behaviour->field2c = lbl_804DA5EC;
+    behaviour->field2c = 0.0f;
 
     fn_800B6D04(host, (void (*)(void))HostFollowTargetDirection);
     return 1;
@@ -1086,7 +1085,7 @@ int HostFollowLineUpdate(void* owner)
 
     float value = OwnerValue((Owner*)host, target);
     behaviour->field34 = behaviour->field34 - host->field138 / host->field91c;
-    if (behaviour->field34 < lbl_804DA5EC) {
+    if (behaviour->field34 < 0.0f) {
         if (FollowLineCheckActorDist(host, target, lbl_804DA5F0) != 0) {
             return 1;
         }
@@ -1094,11 +1093,11 @@ int HostFollowLineUpdate(void* owner)
     if (lbl_804DA61C < value) {
         FollowLineCheck(host, target);
         behaviour->field14 = behaviour->field14 - host->field138 / host->field91c;
-        return behaviour->field14 <= lbl_804DA5EC;
+        return behaviour->field14 <= 0.0f;
     }
-    host->f240 = lbl_804DA5EC;
-    host->f244 = lbl_804DA5EC;
-    host->f248 = lbl_804DA5EC;
+    host->f240 = 0.0f;
+    host->f244 = 0.0f;
+    host->f248 = 0.0f;
     return 1;
 }
 
@@ -1124,7 +1123,6 @@ extern "C" int  fn_8000DDD0(void);
 
 extern float lbl_804DA62C;
 extern float lbl_804DA630;
-extern float lbl_804DA634;
 
 // 0x80292784: enter action of the follow-line behaviour state (state 5).
 bool HostFollowLineAction(void* owner)
@@ -1191,7 +1189,7 @@ int HostFollowLineCheckUpdate(void* owner)
 
     if ((behaviour->flags & 4) == 0) {
         behaviour->field34 = behaviour->field34 - host->field138 / host->field91c;
-        if (behaviour->field34 < lbl_804DA5EC &&
+        if (behaviour->field34 < 0.0f &&
             FollowLineCheckActorDist(host, target, lbl_804DA5F0) != 0) {
             return 1;
         }
@@ -1228,14 +1226,14 @@ int HostFollowLineCheckUpdate(void* owner)
             }
         }
         behaviour->field14 = behaviour->field14 - host->field138 / host->field91c;
-        if (behaviour->field14 <= lbl_804DA5EC) {
-            behaviour->field14 = lbl_804DA634;
+        if (behaviour->field14 <= 0.0f) {
+            behaviour->field14 = 500.0f;
             behaviour->flags |= 0x10;
         }
     } else {
         fn_800CCFE8(host, &behaviour->field08, 500);
         behaviour->field14 = behaviour->field14 - host->field138 / host->field91c;
-        if (behaviour->field14 <= lbl_804DA5EC ||
+        if (behaviour->field14 <= 0.0f ||
             FollowLineCheckActorDist(host, target, lbl_804DA5F0) != 0) {
             fn_800BC56C(host, target);
             host->i288 = 1;
@@ -1244,7 +1242,7 @@ int HostFollowLineCheckUpdate(void* owner)
             }
             behaviour->field08 = 0;
             behaviour->flags &= ~0x10;
-            behaviour->field14 = lbl_804DA634;
+            behaviour->field14 = 500.0f;
         }
     }
 
@@ -1253,12 +1251,12 @@ int HostFollowLineCheckUpdate(void* owner)
         u32 flags = current->flags;
         if ((flags & 0x40) != 0 && (flags & 1) != 0) {
             current->flags = flags & ~1;
-            current->timer = lbl_804DA5EC;
+            current->timer = 0.0f;
             fn_802997B0(host, lbl_804D3808);
         }
     }
 
-    if (lbl_804DA5EC < behaviour->field20 && (behaviour->flags & 4) == 0 &&
+    if (0.0f < behaviour->field20 && (behaviour->flags & 4) == 0 &&
         fn_8000DDD0() % 1000 < 300) {
         if (lbl_803C2B38[behaviour->state].check(host) != 0) {
             lbl_803C2B38[5].action(host);
@@ -1290,7 +1288,7 @@ int HostChaseExit(void* owner)
         u32 flags = current->flags;
         if ((flags & 1) == 0 && (flags & 0x80) == 0) {
             current->flags = flags | 1;
-            current->timer = lbl_804DA5EC;
+            current->timer = 0.0f;
             fn_802997B0(host, lbl_804D3804);
         }
     }
@@ -1310,7 +1308,7 @@ int HostChaseEnter(void* owner)
     HostBehaviour* behaviour = host->behaviour;
 
     behaviour->state = 4;
-    behaviour->field14 = lbl_804DA634;
+    behaviour->field14 = 500.0f;
     ConditionUpdateBit(host->field270, 4, 1);
 
     host->i288 = 1;
@@ -1368,7 +1366,7 @@ int HostBehaviourActivate(void* owner)
     behaviour->field18 = 1;
     if ((behaviour->flags & 1) == 0 && (behaviour->flags & 0x80) == 0) {
         behaviour->flags |= 1;
-        behaviour->timer = lbl_804DA5EC;
+        behaviour->timer = 0.0f;
         fn_802997B0(owner, lbl_804D3804);
     }
     return 1;
@@ -1434,7 +1432,7 @@ int HostEngageTargetUpdate(void* owner)
         }
     } else {
         behaviour->field34 = behaviour->field34 - host->field138 / host->field91c;
-        if (behaviour->field34 < lbl_804DA5EC &&
+        if (behaviour->field34 < 0.0f &&
             FollowLineCheckActorDist(host, target, lbl_804DA5F0) != 0) {
             return 1;
         }
@@ -1445,7 +1443,7 @@ int HostEngageTargetUpdate(void* owner)
     }
 
     behaviour->field14 = behaviour->field14 - host->field138 / host->field91c;
-    if (behaviour->field14 <= lbl_804DA5EC) {
+    if (behaviour->field14 <= 0.0f) {
         return 1;
     }
 
@@ -1460,7 +1458,7 @@ int HostEngageTargetUpdate(void* owner)
         }
     }
 
-    if (behaviour->field20 > lbl_804DA5EC && (behaviour->flags & 4) == 0) {
+    if (behaviour->field20 > 0.0f && (behaviour->flags & 4) == 0) {
         if (Rand() % 1000 < 400) {
             if (lbl_803C2B38[behaviour->state].check(host) != 0) {
                 lbl_803C2B38[5].action(host);
@@ -1491,7 +1489,7 @@ int HostActionAttackResume(void* owner)
         u32 flags = behaviour->flags;
         if ((flags & 1) == 0 && (flags & 0x80) == 0) {
             behaviour->flags = flags | 1;
-            behaviour->timer = lbl_804DA5EC;
+            behaviour->timer = 0.0f;
             fn_802997B0(host, lbl_804D3804);
         }
     }
@@ -1511,7 +1509,7 @@ int HostActionFollowStart(void* owner)
     void* target;
 
     behaviour->state = 1;
-    behaviour->field14 = lbl_804DA634;
+    behaviour->field14 = 500.0f;
     ConditionUpdateBit(host->field270, 4, 1);
     host->i288 = 1;
 
@@ -1521,7 +1519,7 @@ int HostActionFollowStart(void* owner)
         u32 flags = behaviour->flags;
         if ((flags & 0x40) != 0 && (flags & 1) != 0) {
             behaviour->flags = flags & ~1u;
-            behaviour->timer = lbl_804DA5EC;
+            behaviour->timer = 0.0f;
             fn_802997B0(host, lbl_804D3808);
         }
     }
@@ -1769,7 +1767,7 @@ int HostFollowLineCarryUpdate(void* owner)
 
     if ((behaviour->flags & 4) == 0) {
         behaviour->field34 = behaviour->field34 - host->field138 / host->field91c;
-        if (behaviour->field34 < lbl_804DA5EC &&
+        if (behaviour->field34 < 0.0f &&
             FollowLineCheckActorDist(host, target, lbl_804DA5F0) != 0) {
             return 1;
         }
@@ -1848,13 +1846,13 @@ int HostFollowLineCarryUpdate(void* owner)
         u32 flags = current->flags;
         if ((flags & 0x40) != 0 && (flags & 1) != 0) {
             current->flags = flags & ~1u;
-            current->timer = lbl_804DA5EC;
+            current->timer = 0.0f;
             fn_802997B0(host, lbl_804D3808);
         }
     }
 
     behaviour->field14 = behaviour->field14 - host->field138 / host->field91c;
-    if (behaviour->field14 <= lbl_804DA5EC) {
+    if (behaviour->field14 <= 0.0f) {
         return 1;
     }
     return OwnerValue((Owner*)host, target) < lbl_804DA624;
@@ -1880,7 +1878,7 @@ int HostCarrierReleaseState(void* owner)
         u32 flags = current->flags;
         if ((flags & 1) == 0 && (flags & 0x80) == 0) {
             current->flags = flags | 1;
-            current->timer = lbl_804DA5EC;
+            current->timer = 0.0f;
             fn_802997B0(host, lbl_804D3804);
         }
     }
@@ -1982,7 +1980,7 @@ int HostPickBehaviourState(void* owner)
 
     if ((behaviour->flags & 4) == 0 && behaviour->state != 8 &&
         behaviour->state != 9 && behaviour->state != 10 &&
-        behaviour->field34 < lbl_804DA5EC) {
+        behaviour->field34 < 0.0f) {
         if (lbl_804DA640 < value) {
             return 8;
         }
@@ -2010,7 +2008,6 @@ int HostPickBehaviourState(void* owner)
     return 2;
 }
 
-extern float lbl_804DA648;
 extern "C" void fn_8001ED98(void* position, u32 flags,
                             int (*callback)(void*, void*), void* context,
                             int arg);
@@ -2030,19 +2027,19 @@ int HostAddLinkOffset(void* object, void* data);
 float HostAccumLinkDirection(void* owner, float* out)
 {
     if (owner == 0 || out == 0) {
-        return lbl_804DA5EC;
+        return 0.0f;
     }
 
     Host* host = (Host*)owner;
     if (host == 0) {
-        return lbl_804DA5EC;
+        return 0.0f;
     }
 
     HostLinkOffset offset;
     offset.owner = host;
-    offset.x = lbl_804DA5EC;
-    offset.y = lbl_804DA5EC;
-    offset.z = lbl_804DA5EC;
+    offset.x = 0.0f;
+    offset.y = 0.0f;
+    offset.z = 0.0f;
 
     FollowGetTargetObj(host->field270);
     fn_8001ED98(&host->i24, 0x300, HostAddLinkOffset, &offset, 0);
@@ -2050,7 +2047,7 @@ float HostAccumLinkDirection(void* owner, float* out)
     *out = offset.x;
     out[1] = offset.y;
     out[2] = offset.z;
-    fn_800E1098(lbl_804DA648, out, out);
+    fn_800E1098(180.0f, out, out);
     return lbl_804DA5F0;
 }
 
@@ -2090,22 +2087,22 @@ int HostAddLinkOffset(void* object, void* data)
 float HostFollowTargetDirection(void* owner, float* out)
 {
     if (owner == 0 || out == 0) {
-        return lbl_804DA5EC;
+        return 0.0f;
     }
 
     Host* host = (Host*)owner;
     if (host == 0) {
-        return lbl_804DA5EC;
+        return 0.0f;
     }
 
     Host* target = (Host*)FollowGetTargetObj(host->field270);
     if (target == 0) {
-        return lbl_804DA5EC;
+        return 0.0f;
     }
 
     out[0] = (float)(host->i24 - target->i24);
     out[1] = (float)(host->i28 - target->i28);
     out[2] = (float)(host->i2c - target->i2c);
-    fn_800E1098(lbl_804DA648, out, out);
+    fn_800E1098(180.0f, out, out);
     return lbl_804DA5F0;
 }
