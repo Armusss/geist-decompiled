@@ -515,9 +515,9 @@ bool ResetActorVelocityAndCondition(void* selfPtr)
     if (a == 0) {
         return false;
     }
-    a->unk240 = lbl_804DA9F0;
-    a->unk244 = lbl_804DA9F0;
-    a->unk248 = lbl_804DA9F0;
+    a->unk240 = 0.0f;
+    a->unk244 = 0.0f;
+    a->unk248 = 0.0f;
     ConditionSetBit(a->cond, 0, 0);
     return true;
 }
