@@ -953,15 +953,15 @@ float HostDriveSnap(Actor* a, float* out) {
 }
 
 // 0x8028F484: animation-event callback (states 0, 1, 4, 5).
-int HostDriveAnimEvent(int key, void* owner) {
-    Actor* a;
+int HostDriveAnimEvent(int key, Actor* a) {
     Beh* b;
+    void* self;
 
-    if (owner == 0) {
+    if (a == 0) {
         return 0;
     }
-    a = (Actor*)owner;
     b = a->beh;
+    self = a;
     switch (key) {
     case 0x1B83833F:
         lbl_803C2AA8[b->state].leave(a, b->next);
@@ -970,7 +970,7 @@ int HostDriveAnimEvent(int key, void* owner) {
     case 0x239807:
     case 0x4A5C9FC:
     case 0x46341C3A:
-        fn_800CB8BC(a, a->type, b->unk10, a->i26C);
+        fn_800CB8BC((Actor*)self, ((Actor*)self)->type, b->unk10, ((Actor*)self)->i26C);
         break;
     }
     return 1;
