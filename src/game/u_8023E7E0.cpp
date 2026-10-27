@@ -490,7 +490,11 @@ int HostRideDState3Enter(void* owner) {
     a->i288 = 0;
     ConditionSetBit(a->st, 0x13, 1);
     ConditionUpdateBit(a->st, 4, 1);
-    b->f4 = ((float)rand() / 32767.0f) * (float)(sRideTimeHi - sRideTimeLo) + (float)sRideTimeLo;
+    {
+        float r = (float)rand() / 32767.0f;
+        float range = sRideTimeHi - sRideTimeLo;
+        b->f4 = range * r + sRideTimeLo;
+    }
     kind = fn_800B26B8(a);
     if (kind != 4) {
         void* target;
