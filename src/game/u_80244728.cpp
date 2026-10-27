@@ -984,17 +984,15 @@ int FoeLeaveAttack(Actor* a) {
     ConditionUpdateBit(a->flags, 4, 1);
     b->unk20 = 0.0f;
     b->unk30 = 0;
-    if (a->health <= 0.667f * (float)a->info->maxHealth) {
-        if (a->health <= 0.333f * (float)a->info->maxHealth) {
-            b->timerA = 250.0f;
-            b->timerB = 12000.0f;
-        } else {
-            b->timerA = 800.0f;
-            b->timerB = 8000.0f;
-        }
-    } else {
+    if (a->health > 0.667f * (float)a->info->maxHealth) {
         b->timerA = 1600.0f;
         b->timerB = 9000.0f;
+    } else if (a->health > 0.333f * (float)a->info->maxHealth) {
+        b->timerA = 800.0f;
+        b->timerB = 8000.0f;
+    } else {
+        b->timerA = 250.0f;
+        b->timerB = 12000.0f;
     }
     return 1;
 }
@@ -1066,11 +1064,11 @@ int FoeEnterFire(Actor* a) {
 }
 
 // 0x80246830: leave check for the fire state.
-int FoeLeaveFire(Actor* a) {
+u32 FoeLeaveFire(Actor* a) {
     if (MemFlagIsSet(a->flags, 5) != 0) {
         return 1;
     }
-    return HasCondition(a->flags, 0x30) == 0;
+    return !HasCondition(a->flags, 0x30);
 }
 
 // 0x80246888: states with nothing to check.
@@ -1395,47 +1393,51 @@ int FoeUpdateState0(Actor* a) {
     if (a == 0) {
         return 0;
     }
-    if (0.0f < a->beh->hp) {
-        if (a->unk220 == 0) {
-            idx = fn_800B26B8(a);
-            if (idx == 4) {
-                ConditionUpdateBit(a->flags, 4, 0);
-                RangeResetPending(a->flags);
-            } else if (fn_800B1EF4(a, idx) == 0) {
-                return 1;
-            }
-            fn_800BBCA8(a);
-            return 0;
-        }
+    if (a->beh->hp <= 0.0f) {
         return 1;
     }
-    return 1;
+    if (a->unk220 != 0) {
+        return 1;
+    }
+    idx = fn_800B26B8(a);
+    if (idx != 4) {
+        if (fn_800B1EF4(a, idx) == 0) {
+            return 1;
+        }
+    } else {
+        ConditionUpdateBit(a->flags, 4, 0);
+        RangeResetPending(a->flags);
+    }
+    fn_800BBCA8(a);
+    return 0;
 }
 
 // 0x80247C10: leave check that always succeeds.
 int FoeLeaveAlways(void) { return 1; }
 
 // 0x80247C18: enter state 0.
-int FoeEnterState0(Actor* a) {
+int FoeEnterState0(void* p) {
+    Actor* a;
     FoeBeh* b;
     int idx;
-    int target;
-    if (a == 0) {
+    Target* target;
+    if (p == 0) {
         return 0;
     }
+    a = (Actor*)p;
     b = a->beh;
     a->unk288 = 0;
     idx = fn_800B26B8(a);
-    if (idx == 4) {
-        RangeResetPending(a->flags);
-    } else {
-        char tmp[0x18];
-        fn_800B261C(a, idx, &target);
-        if (target == 0 || SendMsg(*(int*)(target + 0x38), 0x400, tmp) == 0 || (*(u32*)(tmp + 0x1C) & 2) == 0) {
-            RangeResetPending(a->flags);
+    if (idx != 4) {
+        char tmp[0x28];
+        fn_800B261C(a, idx, (int*)&target);
+        if (target != 0 && SendMsg(target->id, 0x400, tmp) != 0 && (*(u32*)(tmp + 0x18) & 2) != 0) {
+            FollowSetTargetObj(a->flags, target);
         } else {
-            FollowSetTargetObj(a->flags, (void*)target);
+            RangeResetPending(a->flags);
         }
+    } else {
+        RangeResetPending(a->flags);
     }
     ConditionUpdateBit(a->flags, 3, 0);
     b->state = 0;
