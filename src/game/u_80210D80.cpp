@@ -208,9 +208,9 @@ void DrawParticlePoints(float* pts, int stride, int count, int texture, void* ar
     float* p = pts;
     for (int i = 0; i < count; i++) {
         float y = p[1];
-        if (zero < y) {
+        if (y > zero) {
             float x = p[0];
-            if (zero < x) {
+            if (x > zero) {
                 DrawPoint(p + 2, r, g, b, a);
             }
         }
