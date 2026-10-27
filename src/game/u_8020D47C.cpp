@@ -44,7 +44,7 @@ struct PossessOwner {
 
 // Possession record hung off an actor at 0xA4.
 struct PossessionInfo {
-    int owner;                        // 0x00, freed with VFree on destroy
+    void* owner;                      // 0x00, freed with VFree on destroy
     int handle;                       // 0x04
     int unk8;                         // 0x08
     int unkC;                         // 0x0C
@@ -232,7 +232,7 @@ extern "C" int fn_8020D4BC(Actor* actor) {
     if (actor == 0 || actor->possess == 0) {
         return 0;
     }
-    return actor->possess->owner;
+    return (int)actor->possess->owner;
 }
 
 // Releases the possession record hung off the actor and the payload it owns.
@@ -242,7 +242,7 @@ void PossessableDestroy(Actor* actor) {
         fn_800F86A0(info->handle);
         info->handle = -1;
         if (info->owner != 0) {
-            VFree((void*)info->owner);
+            VFree(info->owner);
             info->owner = 0;
         }
         VFree(actor->possess);
@@ -393,7 +393,7 @@ int PossessableMsg(Actor* actor, int msg, void* data, int arg) {
         if (owner == 0 || info == 0 || info->owner == 0) {
             result = 0;
         } else {
-            m->value = info->owner;
+            m->value = (int)info->owner;
             result = 1;
         }
         break;
@@ -1049,7 +1049,7 @@ int PossessStateEvent(void* data)
             info->owner = 0;
         }
         state = (PossessState*)VAlloc(0x178);
-        info->owner = (int)state;
+        info->owner = state;
         memset(state, 0, 0x178);
 
         state->unk00 = src->unk00;
