@@ -496,7 +496,7 @@ int ConditionSetBit(void* cond, int bit, int set)
         BitClear((unsigned long*)((char*)cond + 0x2c), bit);
         return 1;
     }
-    *(unsigned long*)((char*)cond + 0x2c + (bit / 32) * 4) |= 1 << (bit & 0x1f);
+    ((unsigned long*)((char*)cond + 0x2c))[bit / 32] |= 1 << (bit & 0x1f);
     return 1;
 }
 
@@ -509,7 +509,7 @@ int HasCondition(void* cond, int bit)
     if (cond == 0) {
         return 0;
     }
-    mask = 1 << (bit & 0x1f) & *(unsigned long*)((char*)cond + 0x2c + (bit / 32) * 4);
+    mask = 1 << (bit & 0x1f) & ((unsigned long*)((char*)cond + 0x2c))[bit / 32];
     return (-mask | mask) >> 31;
 }
 
@@ -523,7 +523,7 @@ int ConditionUpdateBit(void* cond, int bit, int set)
     if (set == 0) {
         BitClear((unsigned long*)((char*)cond + 0x24), bit);
     } else {
-        *(unsigned long*)((char*)cond + 0x24 + (bit / 32) * 4) |= 1 << (bit & 0x1f);
+        ((unsigned long*)((char*)cond + 0x24))[bit / 32] |= 1 << (bit & 0x1f);
     }
     return 1;
 }
@@ -537,7 +537,7 @@ int MemFlagIsSet(void* bits, int index)
     if (bits == 0) {
         return 0;
     }
-    set = (unsigned int)(1 << (index & 31)) & *(unsigned int*)((char*)bits + 0x24 + (index / 32) * 4);
+    set = (unsigned int)(1 << (index & 31)) & ((unsigned int*)((char*)bits + 0x24))[index / 32];
     return (-set | set) >> 31;
 }
 
