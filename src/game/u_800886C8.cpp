@@ -2566,25 +2566,20 @@ int FxDrawTexMesh(void* owner, void* data, void* frameData)
 // remainder values from it. Names are descriptive guesses.
 void AdvanceScaledCounter(int* counter, int delta)
 {
-    int divisor;
-
     *counter = *counter + delta;
     counter[8] = 0;
     counter[7] = 0;
-    divisor = counter[1];
-    if (divisor != 0 && counter[4] != 0)
+    if (counter[1] != 0 && counter[4] != 0)
     {
-        counter[7] = counter[4] * (((*counter - (*counter / divisor) * divisor) * 0x1000) / divisor);
+        counter[7] = counter[4] * (((*counter % counter[1]) * 0x1000) / counter[1]);
     }
-    divisor = counter[2];
-    if (divisor != 0 && counter[5] != 0)
+    if (counter[2] != 0 && counter[5] != 0)
     {
-        counter[8] = counter[5] * (((*counter - (*counter / divisor) * divisor) * 0x1000) / divisor);
+        counter[8] = counter[5] * (((*counter % counter[2]) * 0x1000) / counter[2]);
     }
-    divisor = counter[3];
-    if (divisor != 0 && counter[6] != 0)
+    if (counter[3] != 0 && counter[6] != 0)
     {
-        counter[9] = counter[6] * (((*counter - (*counter / divisor) * divisor) * 0x1000) / divisor);
+        counter[9] = counter[6] * (((*counter % counter[3]) * 0x1000) / counter[3]);
     }
 }
 
