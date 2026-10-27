@@ -43,9 +43,9 @@ A good build ends with `build/GITE01/main.dol: OK`.
 - **Libraries:** 201 of 203 units build from C and match: Dolphin SDK 77/77, MusyX 26/26, zlib 12/12,
   Runtime 8/8, MSL C 51/52, MetroTRK 27/28.
 - **Game code** (CodeWarrior GC/1.3.2, C++) is split into 220 provisional units; file boundaries are corrected
-  as files get matched. 60 are fully matched, each verified byte-identical in the linked DOL, and 107 more are
+  as files get matched. 63 are fully matched, each verified byte-identical in the linked DOL, and 104 more are
   partly matched (orange on the progress map): they have C source and some of their functions already compile
-  to the original bytes. Across the game code, 1,545 of 7,123 functions match. STATUS.md has the per-unit queue.
+  to the original bytes. Across the game code, 1,549 of 7,123 functions match. STATUS.md has the per-unit queue.
 - There's no symbol map on the disc, so names are descriptive guesses except for SDK/runtime functions that
   were recognised by signature. Placeholders are `fn_`/`lbl_` followed by the address.
 - `loader.rel` is left out: its imports from main.dol use ELF-style section indices with absolute addresses,

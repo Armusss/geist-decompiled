@@ -601,7 +601,7 @@ config.libs = [
             Object(Matching, "game/u_8007E1E8.cpp"),  # split-screen text helpers
             Object(Matching, "game/u_8007E8F8.cpp"),  # object lookup tables
             Object(NonMatching, "game/u_8007EE68.cpp"),  # guess
-            Object(NonMatching, "game/u_80080714.cpp"),  # ring-buffer queues
+            Object(Matching, "game/u_80080714.cpp"),  # ring-buffer queues
             Object(NonMatching, "game/u_80080F88.cpp"),  # guess
             Object(NonMatching, "game/Script.c"),  # guess
             Object(Matching, "game/u_80085CDC.cpp"),  # guess
@@ -739,10 +739,10 @@ config.libs = [
             Object(Matching, "game/ThermoBeh.cpp"),  # thermostat behaviour (split from Thermostat.cpp)
             Object(Matching, "game/Thermostat.cpp"),  # thermostat gauge actor
             Object(NonMatching, "game/Retinal.cpp"),  # (helper-game-b)
-            Object(NonMatching, "game/u_80268528.cpp"),  # split from u_80267558
+            Object(Matching, "game/u_80268528.cpp"),  # split from u_80267558
             Object(NonMatching, "game/u_80268780.cpp"),  # guess
             Object(Matching, "game/Timer.cpp"),  # per-level timer hooks
-            Object(NonMatching, "game/u_8026A158.cpp"),  # guess
+            Object(Matching, "game/u_8026A158.cpp"),  # guess
             Object(NonMatching, "game/u_8026A37C.cpp"),  # guess
             Object(NonMatching, "game/u_8026C200.cpp"),  # guess
             Object(NonMatching, "game/u_802766F0.cpp"),  # guess

@@ -18,7 +18,7 @@ published; generate your own from your copy of the game if you want it.
 | ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | stopped: DeepSeek balance $0.78 | running |
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | stopped: DeepSeek balance at $1.50 (stop margin) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | stopped | running |
-| opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | resumed: smallest/easiest partly matched units (u_8012071C, u_800E9418, VMem, u_80254F54, ...) | paused |
+| opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | easiest-partials pass done 2026-10-27: u_80080714, u_8026A158, u_80268528 matched and flipped | idle |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
@@ -110,8 +110,6 @@ u_8028703C 8/22 (ds-1 draft): 5 TODO functions incl. fn_8028787C (0x608), fn_802
 u_800B1834 38/94 (ds-3 draft, 3 runs): 19 TODO; register-rotation and branch-layout diffs noted in commit history
 u_8020A650 1/4 (ds-2 draft): BuildModel 814 diffs (0xCDC bytes), DestroyVtObject 24, InitNameTables
 u_802C8900 0/5 (ds-1 draft): all five functions 80-396 diffs; ActorFxEmitterUpdate's String/SendMsg(0x41D) else-branch layout is approximated
-u_80268528 2/3: HermitSpitQuery 46 diffs; flipping needs the .sdata2 float 0x804DA138 (200.0f) in this unit
-u_8026A158 3/4: AmmoRefillMsg 110 diffs (retail uses a switch on msg, 0x50 frame with r30; try the lazy name-hash idiom from matching-tricks.md)
 u_80150300: rename the Ghidra-style locals (iVar1, uVar2, ...; 98 uses) to real names
 u_800A6F18 12/64 (ds-2 draft): 14 TODO functions
 u_8009DE94 14/90 (ds-1 draft): 4 TODO; 42 shared math/AI helpers keep fn_ names (descriptive names in comments) until callers are relinked
@@ -119,6 +117,7 @@ u_8006C604 19/61 (ds-3 draft): 9 TODO functions incl. fn_80074018 (0xD50), fn_80
 u_80120D98 12/49 (ds-1 draft): HazardTargetAimDir TODO; HazardTrackTarget 155, TrackListUpdate 137; Clear vtable slot vs base class; lbl_8039EED8 needs a struct type (0x14C entries)
 u_8011818C 15/49 (ds-2 draft): fn_8011F66C (0x660) and fn_8011FCEC (0x674) not drafted; ItemSetupNearest/StatusEvent etc. have large diffs
 - u_800D32E8 16/50 (emitters/pads, ds-3 3 runs): 34 left.
+- opus-1 easiest-partials pass (2026-10-27): **u_80080714** (QueuePush: copy loop written out in the caller with a typed `p` local), **u_8026A158** (AmmoRefillMsg: switch + seeded StrHash inline, QueryMsg/AnimMsg structs, gAmmoRefillType descriptor), **u_80268528** (HermitSpitQuery: case blocks in retail order) matched; the Lead split their data (.bss 0x8042D890-0x8042DA90 + .sbss 0x804D4610-0x804D4618; .rodata 0x8034ADD8-0x8034ADF0 + .data 0x803C0360-0x803C0390; .sdata2 0x804DA138-0x804DA13C) and flipped all three (AUDIT OK). Still register-only: StatGetDebug 6 (sStats base r5 vs format r4; 48 print-inline orders tried), VMem::Init 9, SAMReadCallback r28/r29, GhostGunUpdate 9, GunHostState13Enter 21 (a slot inline fixes r29 but addresses a+9924). GunNodeFn1 matches with an extra int parameter passed through to fn1, but that changes its mangled name (GunNodeFn1__FP5Actorf to __FP5Actorif, also in the .data tables at 0x80394190): needs a Lead call. SaveCommand (32) and the two-left units not reached.
 - opus-1 close1 (2026-10-26): u_800E9418 18/19 (GunNodeFn1 4: retail keeps r4 free, maybe a pass-through int argument on the fn1 type); u_800E0CB8 Vec3 helpers 0/5 exact, all within 5-14 (the 5 pre-stwu loads look out of reach for 1.3.2; GC/2.0 also puts stwu first); fn_800E1098 is declared with the wrong argument order in u_80153C10, u_802D439C, u_80064FD4, u_80243B0C (real: Vec3* out, Vec3* in, float length). u_80251CB8 32/35: ImpMsg 3 and ImpInit 2 are a one-byte string-pool offset (retail has an extra 0 byte after SCAN at lbl_8034A660), ImpFireUpdate 43.
 - u_8013A3D4 21/28 (trail buffers / 3D lines, ds-1 2 runs): 7 left.
 - u_80153C10 8/22 (ghost possession, ds-2 2 runs): GhostPossessEnd/Tick/Notify, fn_801554E0, GhostPossessAttempt (0x5A4-0xB50 bytes) barely started; frame-size differences.
@@ -254,7 +253,6 @@ u_8011818C 15/49 (ds-2 draft): fn_8011F66C (0x660) and fn_8011FCEC (0x674) not d
 - Earlier helper leftovers (from helper-game-a and helper-game-b, both archived 2026-10-18):
   - main.cpp 9/11 (LevelSelect, ProgressiveSelect)
   - SpiritGun 5/6, Homing 1/2 (type-name hash register swap)
-  - u_80080714 9/11 (QueueForEach, QueuePush)
   - u_800E0CB8 0/5 (pre-stwu loads; no compiler reproduces them)
   - VMem 8/9 (Init)
   - Thermostat 15/20 (late param-copy pattern)

@@ -137,6 +137,8 @@ game/u_8007EE68.cpp:
 
 game/u_80080714.cpp:
 	.text       start:0x80080714 end:0x80080F88
+	.bss        start:0x8042D890 end:0x8042DA90
+	.sbss       start:0x804D4610 end:0x804D4618
 
 game/u_80080F88.cpp:
 	.text       start:0x80080F88 end:0x80083360
@@ -808,6 +810,7 @@ game/Retinal.cpp:
 
 game/u_80268528.cpp:
 	.text       start:0x80268528 end:0x80268780
+	.sdata2     start:0x804DA138 end:0x804DA13C
 
 game/u_80268780.cpp:
 	.text       start:0x80268780 end:0x8026A0F0
@@ -819,6 +822,8 @@ game/Timer.cpp:
 
 game/u_8026A158.cpp:
 	.text       start:0x8026A158 end:0x8026A37C
+	.rodata     start:0x8034ADD8 end:0x8034ADF0
+	.data       start:0x803C0360 end:0x803C0390
 
 game/u_8026A37C.cpp:
 	.text       start:0x8026A37C end:0x8026C200
