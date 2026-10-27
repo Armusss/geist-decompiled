@@ -62,10 +62,11 @@ struct TrailDesc {
     float f2c;
     u32 hashB;
     u8 r, g, b;
+    u8 pad[1];
 };
 
 struct SpawnDesc {
-    int x, y, z;
+    Vec3 pos;
     u8 pad[0x1c - 0xc];
     u32 type;
     u8 pad2[0x38 - 0x20];
@@ -711,9 +712,9 @@ void BeesSpawn(Actor* actor, BeesState* s, int count)
     float py = (float)actor->pos[1];
     float pz = (float)actor->pos[2];
     SpawnDesc sd;
+    TrailDesc td;
     FxMsgA fa;
     FxMsgB fb;
-    TrailDesc td;
     int n;
     memset(&sd, 0, 0x38);
     sd.type = AssetFind(0x87DE5E6A, 0xC414C358);
@@ -771,9 +772,7 @@ void BeesSpawn(Actor* actor, BeesState* s, int count)
         b->steer.x = 0.0f;
         b->steer.y = 0.0f;
         b->steer.z = 0.0f;
-        sd.x = (int)b->pos.x;
-        sd.y = (int)b->pos.y;
-        sd.z = (int)b->pos.z;
+        sd.pos = b->pos;
         b->actor = (Actor*)fn_800C7E80(&sd);
         if (b->actor == 0) {
             VFree(*(void**)(s->bees.data + s->bees.size - 4));
