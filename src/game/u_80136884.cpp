@@ -143,7 +143,7 @@ int fn_800498D0(Actor* a);                                    // 0x800498D0
 void fn_80048BA8(Actor* a, void* buf, int mode);              // 0x80048BA8
 int SendMsg(int to, int msg, void* data);                     // 0x800265D4
 void FxStart(void* fx, int a, int b);                         // 0x8016F390
-int fn_80175EFC(void);                                        // 0x80175EFC
+int fn_80175EFC(int id);                                      // 0x80175EFC
 void fn_80155A84(void* p, int a, int b);                      // 0x80155A84
 int rand(void);
 }
@@ -347,10 +347,10 @@ void PlayerGunLeaveState(void* p, float f) {
     fn_800769A0(a, f);
     PlayerSelectCollisionUpdate(a, f);
     if (a->fieldC4 == -1) {
-        if (a->field7D0 == 0) {
-            PlayerSetValue4(&a->type, 1);
-        } else {
+        if (a->field7D0 != 0) {
             PlayerSetValue4(&a->type, 3);
+        } else {
+            PlayerSetValue4(&a->type, 1);
         }
     } else {
         PlayerSetValue4(&a->type, 0x16);
@@ -380,7 +380,7 @@ void PlayerGunReactivate(void* p) {
     a->field638 = 1;
     a->flags &= ~1;
     PlayerSetValue4(&a->type, 0x15);
-    if (a->field279C == -1 || fn_80175EFC() != 0) {
+    if (a->field279C == -1 || fn_80175EFC(a->field279C) != 0) {
         PlayerSetValue4(&a->type, 3);
         fn_80155A84(&a->field26E0, a->field26E8, 1);
     }

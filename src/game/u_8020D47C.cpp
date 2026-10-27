@@ -1256,10 +1256,10 @@ void PossessSelectCollisionUpdate(void* self, float dt)
     fn_800769A0(self, dt);
     PlayerSelectCollisionUpdate(self, dt);
     if (obj->unkC4 == -1) {
-        if (obj->unk7D0 == 0)
-            PlayerSetValue4(&obj->unk7A4, 1);
-        else
+        if (obj->unk7D0 != 0)
             PlayerSetValue4(&obj->unk7A4, 3);
+        else
+            PlayerSetValue4(&obj->unk7A4, 1);
     } else {
         PlayerSetValue4(&obj->unk7A4, 0x16);
     }
@@ -1296,7 +1296,7 @@ void PossessAimStateCommit(PossessAimState* state)
 }
 
 extern "C" void PlayerResetGunTimer(void* obj);
-extern "C" int fn_80175EFC(void);
+extern "C" int fn_80175EFC(int id);
 extern "C" void fn_80155A84(void* self, void* data, int flag);
 
 // Resets the gun timer, clears the select-state slot and picks the idle or
@@ -1307,7 +1307,7 @@ void PossessSelectResetGun(PlayerSelectObj* obj)
     obj->unk638 = 1;
     obj->unk7B4 &= ~1u;
     PlayerSetValue4(&obj->unk7A4, 0x15);
-    if (obj->unk279C == -1 || fn_80175EFC() != 0) {
+    if (obj->unk279C == -1 || fn_80175EFC(obj->unk279C) != 0) {
         PlayerSetValue4(&obj->unk7A4, 3);
         fn_80155A84(&obj->unk26E0, (void*)obj->unk26E8, 1);
     }

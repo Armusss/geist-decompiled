@@ -139,7 +139,7 @@ void PlayerResetGunTimer(void* player);
 int HasCondition(void* list, int id);
 
 extern "C" void* fn_800A384C(void* host);
-extern "C" int fn_80175EFC();
+extern "C" int fn_80175EFC(int id);
 extern "C" void fn_80155A84(void* anim, void* param, int flag);
 
 extern "C" void fn_800769A0(void* player, float seek);
@@ -251,10 +251,10 @@ void PlayerBatsqueekExitUpdate(Player* player, float seek)
 
     if (player->field0C4 == -1)
     {
-        if (player->field7D0 == 0)
-            PlayerSetValue4(&player->field7A4, 1);
-        else
+        if (player->field7D0 != 0)
             PlayerSetValue4(&player->field7A4, 3);
+        else
+            PlayerSetValue4(&player->field7A4, 1);
     }
     else
     {
@@ -284,10 +284,10 @@ void PlayerBatsqueekResetMode(Player* player)
     player->flags7B4 &= ~1u;
     PlayerSetValue4(&player->field7A4, 0x15);
 
-    if (player->field279C == -1 || fn_80175EFC() != 0)
+    if (player->field279C == -1 || fn_80175EFC(player->field279C) != 0)
     {
         PlayerSetValue4(&player->field7A4, 3);
-        fn_80155A84(player->field26E0, player->field26E8, 1);
+        fn_80155A84((void*)&player->field26E0, player->field26E8, 1);
     }
 }
 

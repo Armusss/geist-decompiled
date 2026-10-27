@@ -1671,17 +1671,17 @@ void PlayerModeUpdate(void* self, f32 dt)
     PlayerSelectCollisionUpdate(self, dt);
 
     if (p->mode == -1) {
-        if (p->field7d0 == 0)
-            PlayerSetValue4(&p->action, 1);
-        else
+        if (p->field7d0 != 0)
             PlayerSetValue4(&p->action, 3);
+        else
+            PlayerSetValue4(&p->action, 1);
     } else {
         PlayerSetValue4(&p->action, 0x16);
     }
 }
 
 extern "C" void fn_80155A84(void* state, u32 value, int flags);
-extern "C" int fn_80175EFC(void);
+extern "C" int fn_80175EFC(int id);
 void PlayerResetGunTimer(void* self);
 
 // Clears the per-frame mode fields and restores the pending mode values
@@ -1708,7 +1708,7 @@ void PlayerSetupGunAction(void* self)
     p->field638 = 1;
     p->flags &= ~1u;
     PlayerSetValue4(&p->action, 0x15);
-    if (p->field279c == -1 || fn_80175EFC() != 0) {
+    if (p->field279c == -1 || fn_80175EFC(p->field279c) != 0) {
         PlayerSetValue4(&p->action, 3);
         fn_80155A84(p->sub26e0, p->field26e8, 1);
     }
