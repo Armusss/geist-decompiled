@@ -26,13 +26,11 @@ extern "C" float fn_802A2080(void);
 void VFree(void* p);
 
 struct ActiveObject {
-    virtual void Unk00();
-    virtual void Unk04();
     virtual void Release(int flag);                                   // 0x8
     virtual void Unk0C();
     virtual void Unk10();
-    virtual void Unk14();
-    virtual void Unk18();
+    virtual void Unk14(int anim, void* mtx, char* name);
+    virtual void Unk18(int flag);
     virtual u32 Unk1C();
     virtual void Unk20();
     virtual void Unk24();
@@ -41,12 +39,12 @@ struct ActiveObject {
     virtual void Apply(Vec3* pos, float scale, Vec3* vel, int kind);  // 0x30
 };
 
-static inline bool ActiveIsRegistered(void* p) {
-    if (p == 0) return false;
+static inline int ActiveIsRegistered(void* p) {
+    if (p == 0) return 0;
     for (ActiveEntry* e = lbl_804D5220; e != 0; e = e->next) {
-        if (e->value == p) return true;
+        if (e->value == p) return 1;
     }
-    return false;
+    return 0;
 }
 
 // Applies a distance-scaled velocity to a registered active object.
@@ -70,7 +68,7 @@ extern "C" void fn_801E0FD0(void** slot) {
             ((ActiveObject*)obj)->Release(1);
         }
         ActiveEntry* cur = lbl_804D5220;
-        if (cur->value == obj) {
+        if (obj == cur->value) {
             lbl_804D5220 = cur->next;
             VFree(cur);
         } else {
@@ -102,16 +100,16 @@ extern "C" u32 fn_801E10D8(void* obj) {
 }
 
 // Runs the cleanup hook of a registered active object.
-extern "C" void fn_801E1150(void* obj) {
+extern "C" void fn_801E1150(void* obj, int flag) {
     if (ActiveIsRegistered(obj)) {
-        ((ActiveObject*)obj)->Unk18();
+        ((ActiveObject*)obj)->Unk18(flag);
     }
 }
 
 // Calls the update hook of a registered active object.
-extern "C" void fn_801E11C0(void* obj) {
+extern "C" void fn_801E11C0(void* obj, int anim, void* mtx, char* name) {
     if (ActiveIsRegistered(obj)) {
-        ((ActiveObject*)obj)->Unk14();
+        ((ActiveObject*)obj)->Unk14(anim, mtx, name);
     }
 }
 
@@ -180,8 +178,6 @@ extern "C" void fn_801E1354(void) {
 
 // View of a registered object that exposes the float-feed hook at vtable +0x10.
 struct ActiveAnimObject {
-    virtual void Unk00();
-    virtual void Unk04();
     virtual void Unk08();
     virtual void Unk0C();
     virtual void Unk10(float value, int flag);  // 0x10
@@ -205,10 +201,11 @@ extern "C" void fn_801E1400(void) {
 extern "C" void fn_801E1420(void) {
     ActiveEntry* entry = lbl_804D5220;
     while (entry != 0) {
-        ActiveEntry* next = entry->next;
+        ActiveEntry* next;
         if (entry->value != 0) {
             ((ActiveObject*)entry->value)->Release(1);
         }
+        next = entry->next;
         VFree(entry);
         entry = next;
     }
@@ -278,8 +275,6 @@ struct Mtx34 {
 
 // View of an object that answers the "0x400" virtual query (vtable +0x30).
 struct BarrierMsgSource {
-    virtual void Unk00();
-    virtual void Unk04();
     virtual void Unk08();
     virtual void Unk0C();
     virtual void Unk10();
