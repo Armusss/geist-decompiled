@@ -227,16 +227,6 @@ void VecToAngles(IVec3* out, IVec3* in);
 void RotateVec(IVec3* out, IVec3* in);
 void WrapAngle(IVec3* out, IVec3* in);
 
-inline int Query(int target, int msg, u32 hash) {
-    QueryMsg m;
-
-    m.hash = hash;
-    *(int*)&m.result = 0;
-    m.unk8 = 0;
-    SendMsg(target, msg, &m);
-    return *(int*)&m.result;
-}
-
 // 0x8016C244: per-frame update.
 int CollectUpdate(void* p) {
     Mtx34 mtx;
@@ -613,7 +603,15 @@ void CollectInit(Actor* o) {
     st->pos.x = 0.0f;
     st->pos.y = 0.0f;
     st->pos.z = 0.0f;
-    found = Query(0x4B000000, 0x41E, 0xC355E8EE);
+    {
+        QueryMsg m;
+
+        m.hash = 0xC355E8EE;
+        *(int*)&m.result = 0;
+        m.unk8 = 0;
+        SendMsg(0x4B000000, 0x41E, &m);
+        found = *(int*)&m.result;
+    }
     ConditionSetBit(o->cond, 0xB, found == 0);
     ConditionSetBit(o->cond, 1, 1);
     ConditionUpdateBit(o->cond, 6, 0);
