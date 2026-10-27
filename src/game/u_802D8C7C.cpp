@@ -595,11 +595,13 @@ void ActorStateInit(Owner* self)
 int ActorStateCanContinue(Owner* self)
 {
     void* target;
+    int index;
 
     if (self == 0)
         return 0;
 
-    if (fn_800B26B8(self) != 4 && fn_800B1EF4(self) == 0)
+    index = fn_800B26B8(self);
+    if (index != 4 && fn_800B1EF4(self, index) == 0)
         return 1;
 
     if (self->unk220 == 2) {
