@@ -1913,6 +1913,16 @@ void fn_8007F0D4(float dt);
 // 0x80157610: per-frame ghost-system update, installed as the callback of
 // fn_80088700.  Runs the frame's audio/effect passes, ticks every active ghost
 // slot, then refreshes the camera placement and the audio listener.
+// Runs the per-frame update hook of every active ghost slot.
+static inline void GhostSlotsUpdate(float dt) {
+    for (int i = 0; i < lbl_804D4E20; i++) {
+        GhostSlot* slot = lbl_803A5968[i];
+        if (slot->active != 0 && slot->update != 0) {
+            slot->update(dt);
+        }
+    }
+}
+
 int GhostFrameUpdate(float dt, void* p) {
     GhostActor* owner = (GhostActor*)p;
     fn_8008910C();
@@ -1926,14 +1936,7 @@ int GhostFrameUpdate(float dt, void* p) {
     fn_801E0880(dt);
     fn_800C6C28(dt);
     fn_80005A64(dt);
-    GhostSlot* slot;
-    int i;
-    for (i = 0; i < lbl_804D4E20; i++) {
-        slot = lbl_803A5968[i];
-        if (slot->active != 0 && slot->update != 0) {
-            slot->update(dt);
-        }
-    }
+    GhostSlotsUpdate(dt);
     Mtx34 mtx;
     PlacementToMatrix(&mtx, (Place*)fn_800C6414(0));
     fn_8016ED08(&mtx);
