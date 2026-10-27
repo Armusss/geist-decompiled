@@ -480,7 +480,7 @@ void PlayerGunResumeState(void* p) {
     if (a->flags & 1) {
         a->flags &= ~1;
     } else {
-        a->flags |= 0x20000;
+        a->field50 |= 0x20000;
         a->field78 = 1;
     }
 }
