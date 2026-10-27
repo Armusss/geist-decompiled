@@ -538,9 +538,10 @@ int FontCreate(FontDesc* d, FontCallback cb, void* cbdata) {
     if (i == 41) {
         return -1;
     }
-    if ((index = sFreeFont) == -1) {
+    if (sFreeFont == -1) {
         return -1;
     }
+    index = sFreeFont;
     sFreeFont = sFonts[index].next;
     sFonts[index].code = (FontInst*)sFontCode[index];
     sFonts[index].pc = 0;
