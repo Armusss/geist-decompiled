@@ -19,6 +19,7 @@ published; generate your own from your copy of the game if you want it.
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | stopped: DeepSeek balance at $1.50 (stop margin) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | stopped | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | near-miss sweep 3 done 2026-10-27: +61 functions (1,658 -> 1,719) | idle |
+| sonnet-1 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-1` / `ds/sonnet-1` | done 2026-10-27: renamed u_80150300's Ghidra-style locals (rename only, udiff identical) | idle |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
@@ -110,7 +111,6 @@ u_8028703C 8/22 (ds-1 draft): 5 TODO functions incl. fn_8028787C (0x608), fn_802
 u_800B1834 38/94 (ds-3 draft, 3 runs): 19 TODO; register-rotation and branch-layout diffs noted in commit history
 u_8020A650 1/4 (ds-2 draft): BuildModel 814 diffs (0xCDC bytes), DestroyVtObject 24, InitNameTables
 u_802C8900 0/5 (ds-1 draft): all five functions 80-396 diffs; ActorFxEmitterUpdate's String/SendMsg(0x41D) else-branch layout is approximated
-u_80150300: rename the Ghidra-style locals (iVar1, uVar2, ...; 98 uses) to real names
 u_800A6F18 12/64 (ds-2 draft): 14 TODO functions
 u_8009DE94 14/90 (ds-1 draft): 4 TODO; 42 shared math/AI helpers keep fn_ names (descriptive names in comments) until callers are relinked
 u_8006C604 19/61 (ds-3 draft): 9 TODO functions incl. fn_80074018 (0xD50), fn_80074D68 (0x7F8); PlayerUpdateGunMotion stack-buffer layout for ActorGetMatrix needs review
