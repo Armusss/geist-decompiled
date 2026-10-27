@@ -496,9 +496,8 @@ int ImpFireBallSpawn(int owner, ImpThrow* t, int n) {
     float step;
     ImpFireBall* f;
     FireActor* a;
-    int j;
     int i;
-    FlameParticle* p;
+    int j;
     int target = -1;
     FlameParticle* base;
 
@@ -516,14 +515,12 @@ int ImpFireBallSpawn(int owner, ImpThrow* t, int n) {
         return 0;
     }
     if (SendMsg(owner, 0x400, &q) != 0 && q.actor != 0) {
-        int h = q.actor->handle;
-
-        switch (HandleKind(h)) {
+        switch (HandleKind(q.actor->handle)) {
         case 0x13:
             target = q.actor->target;
             break;
         case 2:
-            Query(&target, h, 0x41E, 0xDFF3097A);
+            Query(&target, q.actor->handle, 0x41E, 0xDFF3097A);
             break;
         }
     } else {
@@ -553,12 +550,11 @@ int ImpFireBallSpawn(int owner, ImpThrow* t, int n) {
         base = (FlameParticle*)f->pad58;
 
         for (i = 0; i < 2; i++) {
-            p = base;
             step = sFlameLife[i] / sFlameCounts[i];
 
             for (j = 0; j < sFlameCounts[i]; j++) {
-                fn_80211638(p, &f->t, 0, 0, 0, 250.0f - j * step, sFlameLife[i], 360.0f * (rand() / 32767.0f), 0.0f);
-                p++;
+                float r = rand() / 32767.0f;
+                fn_80211638(&base[j], &f->t, 0, 0, 0, 250.0f - j * step, sFlameLife[i], 360.0f * r, 0.0f);
             }
             base += sFlameCounts[i];
         }
