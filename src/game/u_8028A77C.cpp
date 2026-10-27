@@ -143,7 +143,8 @@ int ScreenEffectMessage(void* p);
 // fn_8028A910: message callback; only message 0x5F03 is understood.
 int GeistCommMessage(int a, int msg, int p)
 {
-    if (msg == 0x5F03) {
+    switch (msg) {
+    case 0x5F03:
         return ScreenEffectMessage((void*)p);
     }
     return 0;
