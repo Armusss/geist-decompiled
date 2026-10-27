@@ -3708,14 +3708,14 @@ void NeoAgentSystemInit(void)
     lbl_804D479C = 4;
 }
 
-// TODO fn_800A5558 (0x458 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800A5558(void) {}
+// TODO fn_800A5558 (0x458 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800A5558(void);
 
-// TODO fn_800A59B0 (0x6A4 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800A59B0(void) {}
+// TODO fn_800A59B0 (0x6A4 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800A59B0(void);
 
-// TODO fn_800A6054 (0x144 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800A6054(void) {}
+// TODO fn_800A6054 (0x144 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800A6054(void);
 
-// TODO fn_800A6198 (0xD80 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800A6198(int slot, void* data) {}
+// TODO fn_800A6198 (0xD80 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800A6198(int slot, void* data);

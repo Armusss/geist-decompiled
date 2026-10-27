@@ -3928,20 +3928,20 @@ int PlayerSlideByVar(void* owner)
     return 1;
 }
 
-// TODO fn_80073E80 (0x198 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_80073E80(void) {}
+// TODO fn_80073E80 (0x198 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_80073E80(void);
 
-// TODO fn_80074018 (0xD50 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_80074018(void*, int) {}
+// TODO fn_80074018 (0xD50 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_80074018(void*, int);
 
-// TODO fn_80074D68 (0x7F8 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_80074D68(void) {}
+// TODO fn_80074D68 (0x7F8 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_80074D68(void);
 
-// TODO fn_80075560 (0x384 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_80075560(float dt, void* owner) {}
+// TODO fn_80075560 (0x384 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_80075560(float dt, void* owner);
 
-// TODO fn_800758E4 (0x668 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800758E4(void) {}
+// TODO fn_800758E4 (0x668 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800758E4(void);
 
 // Clears the gun-motion flag bits of a player and resets two model offsets
 // (name is a guess; offsets and masks are transcribed from retail).
@@ -3959,11 +3959,11 @@ void PlayerResetGunMotionFlags(void* owner)
     *(float*)(p + 0x618) = zero;
 }
 
-// TODO fn_80075F94 (0xA0C bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_80075F94(float dt, void* owner, float* vec) {}
+// TODO fn_80075F94 (0xA0C bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_80075F94(float dt, void* owner, float* vec);
 
-// TODO fn_800769A0 (0x6D0 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800769A0(void) {}
+// TODO fn_800769A0 (0x6D0 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800769A0(void);
 
 // Resets the gun-motion vector and the aim offset of a player
 // (name is a guess; offsets are transcribed from retail).
@@ -3994,8 +3994,8 @@ int PlayerGunVecNonZero(void* owner)
     return 0;
 }
 
-// TODO fn_800770F8 (0x1E8 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800770F8(void) {}
+// TODO fn_800770F8 (0x1E8 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800770F8(void);
 
 // Returns the address of the gun-motion vector of a player (name is a guess).
 float* PlayerGetGunVec(void* owner)
@@ -4018,5 +4018,5 @@ void PlayerInitGhostFx(void)
     lbl_804D2990.speed[1] = FxFind("Ghost_Speed_02_L");
 }
 
-// TODO fn_80077330 (0x3CC bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_80077330(void) {}
+// TODO fn_80077330 (0x3CC bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_80077330(void);

@@ -2770,8 +2770,8 @@ int ItemWearMessage(WearOwner* owner, ExtraMsg* msg)
     return 1;
 }
 
-// TODO fn_8011F66C (0x660 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8011F66C(void) {}
+// TODO fn_8011F66C (0x660 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_8011F66C(void);
 
 // State-machine callback: writes a type code into the item's info block.
 int ItemSetInfoType(int value, void* arg)
@@ -2786,8 +2786,8 @@ int ItemSetInfoType(int value, void* arg)
     return 1;
 }
 
-// TODO fn_8011FCEC (0x674 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8011FCEC(void) {}
+// TODO fn_8011FCEC (0x674 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_8011FCEC(void);
 
 // Per-frame item update: runs the current item state's callbacks, keeps the
 // zone and the attachment position in sync and refreshes the carried state.

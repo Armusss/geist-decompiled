@@ -2173,38 +2173,38 @@ extern "C" int fn_800AB604(int msg, int* data) { return 0; }
 // TODO fn_800AD314 (0xB90 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
 extern "C" int fn_800AD314(int object, int* data) { return 0; }
 
-// TODO fn_800ADEA4 (0x204 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800ADEA4(void) {}
+// TODO fn_800ADEA4 (0x204 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800ADEA4(void);
 
-// TODO fn_800AE0A8 (0x8EC bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800AE0A8(void) {}
+// TODO fn_800AE0A8 (0x8EC bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800AE0A8(void);
 
-// TODO fn_800AE994 (0x1D4 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800AE994(void) {}
+// TODO fn_800AE994 (0x1D4 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800AE994(void);
 
-// TODO fn_800AEB68 (0x374 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800AEB68(void) {}
+// TODO fn_800AEB68 (0x374 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800AEB68(void);
 
-// TODO fn_800AEEDC (0x2BC bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800AEEDC(void) {}
+// TODO fn_800AEEDC (0x2BC bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800AEEDC(void);
 
-// TODO fn_800AF198 (0x438 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800AF198(void) {}
+// TODO fn_800AF198 (0x438 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800AF198(void);
 
-// TODO fn_800AF5D0 (0x750 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800AF5D0(void) {}
+// TODO fn_800AF5D0 (0x750 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800AF5D0(void);
 
-// TODO fn_800AFD20 (0x28 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800AFD20(void) {}
+// TODO fn_800AFD20 (0x28 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800AFD20(void);
 
-// TODO fn_800AFD48 (0x448 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800AFD48(void) {}
+// TODO fn_800AFD48 (0x448 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800AFD48(void);
 
-// TODO fn_800B0190 (0xCD8 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800B0190(void) {}
+// TODO fn_800B0190 (0xCD8 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800B0190(void);
 
-// TODO fn_800B0E68 (0x690 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800B0E68(void) {}
+// TODO fn_800B0E68 (0x690 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800B0E68(void);
 
-// TODO fn_800B14F8 (0x33C bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_800B14F8(void) {}
+// TODO fn_800B14F8 (0x33C bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_800B14F8(void);

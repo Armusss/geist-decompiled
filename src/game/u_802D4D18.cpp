@@ -1060,6 +1060,4 @@ int RideEnterIdleType(void* argp)
 // resulting bone matrix back to the model. Called from the actor tick paths.
 // TODO RideHostUpdate (0x924 bytes): the DeepSeek draft did not compile (unknown RideActor fields); the
 // empty body keeps the file building (unit is NonMatching).
-void RideHostUpdate(void* argp)
-{
-}
+void RideHostUpdate(void* argp);

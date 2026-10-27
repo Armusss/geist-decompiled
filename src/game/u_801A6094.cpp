@@ -2171,7 +2171,5 @@ void DogActorUpdateMove(Actor* actor) {
     ModelSetMatrix(actor->animHandle, &place.m, (char*)actor->placement);
 }
 
-// TODO fn_801AA570 (0x838 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_801AA570(void)
-{
-}
+// TODO fn_801AA570 (0x838 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_801AA570(void);

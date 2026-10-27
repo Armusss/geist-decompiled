@@ -134,15 +134,11 @@ void AramTransferPage(u32 addr)
     }
 }
 
-// TODO fn_8028703C (0xB4 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8028703C(void)
-{
-}
+// TODO fn_8028703C (0xB4 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_8028703C(void);
 
-// TODO fn_802870F0 (0x1F4 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_802870F0(void)
-{
-}
+// TODO fn_802870F0 (0x1F4 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_802870F0(void);
 
 // Reads the pending page count of the last ARAM transfer.
 u32 AramGetPendingPageCount(void)
@@ -747,18 +743,11 @@ int AramPageUpdateNodeState(u32 handle, int* data)
     return 1;
 }
 
-// TODO fn_8028787C (0x608 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_8028787C(u32 id, u32 handle, int* data, int flag)
-{
-}
+// TODO fn_8028787C (0x608 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_8028787C(u32 id, u32 handle, int* data, int flag);
 
-// TODO fn_80287E84 (0x34 bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" void fn_80287E84(void* arg)
-{
-}
+// TODO fn_80287E84 (0x34 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" void fn_80287E84(void* arg);
 
-// TODO fn_80287EB8 (0x32C bytes): not drafted yet; the empty body keeps the file building (unit is NonMatching).
-extern "C" int fn_80287EB8(u32 handle, int* data)
-{
-    return 0;
-}
+// TODO fn_80287EB8 (0x32C bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
+extern "C" int fn_80287EB8(u32 handle, int* data);
