@@ -15,8 +15,8 @@ published; generate your own from your copy of the game if you want it.
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
-| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | u_800886C8 (balance-guarded) | running |
-| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80175D60 (balance-guarded) | running |
+| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | idle (budget: one worker finishes u_80175D60) | running |
+| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | u_80175D60: drafting the 57 TODOs (58/137 so far) | running |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | stopped (two-worker round) | running |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | Paused (session usage); partial work on its branch | paused |
 
@@ -67,6 +67,8 @@ Queries use out-parameter inlines: `Query(&r, ...)`.
 - The callbacks in u_80161F40's gBehTypes are typed `(void*, void*)`.
 
 **Opus queue** (handed-off functions, plus anything a worker failed twice; the Lead finishes these):
+u_80175D60 58/137: GunAimStateSwitch80176D4C 1, fn_80175EE4/fn_80178D4C/fn_8017AB10 2
+u_800886C8 23/70 (ds-1 draft, screen FX): FxScreenRecordCopyMode 6
 u_801A6094 12/49 (ds-2 draft, AI state machine): ActorGetFleeState 3, DogActorCancelFollow 11; fn_801AA570 (0x838) TODO
 u_802BB1F4 8/35 (ds-1 draft, FshSve states): ZoneCheckOwner 2, FollowTargetReset 17, ClearHeld 19
 u_802AE27C 4/32 (ds-2 draft, BehParams/ghost actor): GhostStateCheck 5, StateChangeMsg 8, ResetActorVelocityAndCondition 11
