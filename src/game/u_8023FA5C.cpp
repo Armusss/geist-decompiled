@@ -1083,9 +1083,9 @@ int HydraEnterBehaviourState7(Actor* actor)
     if (beh->mState == 6 && actor->mModel != -1) {
         HideEndMsg msg;
 
-        msg.mOut0 = 0;
         msg.mModel = actor->mModel;
         msg.mHash = 0x37bd5bdd;
+        msg.mOut0 = 0;
         SendMsg(actor->mModel, 0xC14, &msg);
     }
     beh->mState = 7;
