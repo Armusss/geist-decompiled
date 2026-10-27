@@ -706,10 +706,10 @@ void HuntBotEnter(void* screenp) {
 void HuntBotInit(void) {
     lbl_804D4D48 = 1;
     memset(&lbl_8046D5B8, 0, 0x50);
-    lbl_8046D5B8.unk4 = 1000.0f * (float)lbl_803A4028.startTime;
-    sFlagA[0] = 0;
     lbl_8046D5B8.state = 0;
     lbl_8046D5B8.timer = 3000.0f;
+    lbl_8046D5B8.unk4 = 1000.0f * (float)lbl_803A4028.startTime;
+    sFlagA[0] = 0;
     sFlagA[1] = 0;
     sFlagA[2] = 0;
     sFlagA[3] = 0;
