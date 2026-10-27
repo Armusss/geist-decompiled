@@ -15,11 +15,11 @@ published; generate your own from your copy of the game if you want it.
 | Who | Worktree / branch | Assignment | State |
 |---|---|---|---|
 | Lead (Opus, main session) | `geist-matching` / `main` | Coordinates; audits and merges every worker result; compiler/flag questions, unit-boundary and data-split changes, anything needing Dolphin; Credits.cpp; the **Opus queue** below | coordinating |
-| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | stopped: DeepSeek balance $0.78 | running |
-| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | stopped: DeepSeek balance at $1.50 (stop margin) | running |
-| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | stopped | running |
+| ds-1 (DeepSeek Flash) | `~/geist-work/ds/ds-1` / `ds/ds-1` | retired 2026-10-27 (user): Sonnet drafts untouched units instead | retired |
+| ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | retired 2026-10-27 (user): Sonnet drafts untouched units instead | retired |
+| ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | retired 2026-10-27 (user): Sonnet drafts untouched units instead | retired |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | near-miss sweep 4 done 2026-10-27: +22 functions (1,724 -> 1,746) | idle |
-| sonnet-1 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-1` / `ds/sonnet-1` | trial done 2026-10-27: drafted untouched u_80221100 (Bees), 5/8 in ~10 min | idle |
+| sonnet-1 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-1` / `ds/sonnet-1` | drafting untouched units smallest first: u_8023B96C, u_8028DA1C, u_802B4600 (trial: u_80221100 5/8 in ~10 min) | running |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
