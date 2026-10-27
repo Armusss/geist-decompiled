@@ -187,7 +187,6 @@ extern "C" void* memset(void* dst, int c, u32 n);
 void VFree(void* p);
 void* VAlloc(int size);
 int ActorInitBase(Actor* actor);
-extern float lbl_804D7018;
 int ActorTypeRegister(ActorType* type);
 bool ZoneSpawnActorMsg(Actor* actor, int msg, void* data);
 extern ActorType lbl_8039B9F0;
@@ -427,7 +426,7 @@ int ZoneRefreshPowerUp(Actor* actor) {
     state->posZ = (int)actor->info->posZ;
     state->unk08 = actor->info->unk20;
     if (actor->info->unk24 == 0x6C345908) {
-        float base = lbl_804D7018;
+        float base = 1000.0f;
 
         state->active = 1;
         state->timer = base * actor->info->scale;
