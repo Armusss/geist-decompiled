@@ -743,18 +743,15 @@ int HostTypeUpdateH(Actor* a) {
         ConditionSetBit(&a->i270, 4, 0);
         return 10;
     }
-    iVar2 = a->i26C;
-    if (s->unk38 != iVar2) {
-        iVar1 += iVar2 * 13;
-        return iVar1 + 3;
+    if (s->unk38 != a->i26C) {
+        return iVar1 + (a->i26C * 13 + 3);
     } else {
         if (s->unk34 != iVar1) {
-            iVar1 += iVar2 * 13;
-            return iVar1 + 3;
+            return iVar1 + (a->i26C * 13 + 3);
         } else {
             iVar2 = fn_8016325C(a->obj894);
             if (iVar2 == 6 || fn_8016325C(a->obj894) == 7) {
-                return iVar1 + a->i288 * 13 + 6;
+                return iVar1 + (a->i288 * 13 + 6);
             } else {
                 iVar2 = fn_8016325C(a->obj894);
                 if (iVar2 == 0) {
