@@ -1698,8 +1698,7 @@ int AnimBankActivate(unsigned short bankId, unsigned short groupId)
 
 // Look up bank `bankId`, group `groupId`, set `setId` and return the number of
 // animation entries in that set, or 0 if any level is missing.
-int AnimBankGetSetCount(unsigned short bankId, unsigned short groupId,
-                        unsigned short setId)
+int AnimBankGetSetCount(int bankId, int groupId, int setId)
 {
     AnimGroup* group;
     AnimSub* sub;

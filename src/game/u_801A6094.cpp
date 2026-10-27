@@ -249,7 +249,7 @@ void ActorPlayAnim(int anim, unsigned long flags, int arg);
 const char* OLTFindValue(unsigned long hash, int id);
 u8 ZoneClassifyDirection(void* obj, Vec3* vec);
 int MemFlagIsSet(void* cond, int bit);
-int AnimBankGetSetCount(unsigned short a, unsigned short b, unsigned short c);
+int AnimBankGetSetCount(int a, int b, int c);
 
 int GeistA28A4StateMessage(int msg, int* data) {
     ActorMsgData* m = (ActorMsgData*)data;

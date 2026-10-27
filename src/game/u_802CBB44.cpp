@@ -1333,7 +1333,7 @@ int ModelFindBone(int model, int asset);
 void BoneAddRotX(void* model, int bone, float angle);
 void SplineQuatRotateRamp(float angle, float* out, int boneA, int boneB,
                           unsigned long model);
-int AnimBankGetSetCount(unsigned short a, unsigned short b, unsigned short c);
+int AnimBankGetSetCount(int a, int b, int c);
 void AnimApply(int handle, char* name, int a, int b);
 void ModelSetMatrix(int model, Mtx34* mtx, char* name);
 void ActorGetMatrix(Mtx34* mtx, Actor* actor);

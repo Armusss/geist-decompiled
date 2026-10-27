@@ -1391,7 +1391,7 @@ void SkinnedActorUpdateModel(Actor* actor)
     ModelSetMatrix(actor->mSkin, &mtx, (char*)actor->mUnkF0);
 }
 
-int AnimBankGetSetCount(unsigned short, unsigned short, unsigned short);
+int AnimBankGetSetCount(int, int, int);
 extern "C" void fn_8008F230(float value, int handle, int, int);
 extern "C" void fn_8008F4E8(int handle, int);
 extern "C" void fn_8008F378(int handle);
