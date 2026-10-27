@@ -54,7 +54,7 @@ struct ClockMaterial
 
 extern ClockMaterial lbl_804A3BD8;
 
-extern "C" void VMDeallocPages(void* page);
+extern "C" void VMDeallocPages(void* addr, u32 size);
 extern "C" void GXSetZMode(int compare, int func, int updateEnable);
 extern "C" void GXSetTexCoordGen2(int dstCoord, int func, int srcParam, int mtx,
                                   int normalize, int postMtx);
@@ -87,7 +87,7 @@ void ClockFreeTexturePages()
     int i;
 
     for (i = 0; i < lbl_804D56C8; i++)
-        VMDeallocPages(lbl_804D56D0 + lbl_804D56D4 * i);
+        VMDeallocPages(lbl_804D56D0 + lbl_804D56D4 * i, lbl_804D56D4);
     lbl_804D56C8 = 0;
 }
 
@@ -423,7 +423,7 @@ extern "C" void GXSetTexCopySrc(int x, int y, u32 w, u32 h);
 extern "C" void GXSetTexCopyDst(u32 w, u32 h, u32 format, int toFb);
 extern "C" void GXCopyTex(void* dest, int clear);
 extern "C" void* GXGetTexObjData(void* obj);
-extern "C" void VMAllocPages(void* page);
+extern "C" void VMAllocPages(void* addr, u32 size);
 extern "C" void fn_8004320C(void* link, void* mtx);
 extern "C" void fn_800091D4(void* src, void* src2, void* dst, int flag);
 extern "C" void fn_80009848(float scale, void* mtx, void* src);
@@ -524,7 +524,7 @@ void fn_80288CE0(void* texId, ClockProximitySource* source, void* trigger,
     GXSetTexCopySrc(0, 0, 0x100, 0x100);
     GXSetTexCopyDst(0x100, 0x100, 0x20, 0);
     GXSetZMode(1, 7, 1);
-    VMAllocPages(lbl_804D56D0 + lbl_804D56D4 * lbl_804D56C8);
+    VMAllocPages(lbl_804D56D0 + lbl_804D56D4 * lbl_804D56C8, lbl_804D56D4);
     GXCopyTex(GXGetTexObjData(lbl_804A3288[lbl_804D56C8].texObj), 1);
 
     lbl_804D2568 = savedWidth;
