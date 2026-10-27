@@ -7,6 +7,11 @@ typedef unsigned char u8;
 typedef signed int s32;
 typedef unsigned int u32;
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
 class Actor;
 
 // Player actor fields touched by this unit (offsets from retail loads/stores).
@@ -223,14 +228,14 @@ void PlayerGunZoomUpdate(void* pv, float f)
             p->field7e0 = 0;
     }
 
-    mode = p->field7e0;
-    if (mode == 3) {
+    switch (p->field7e0) {
+    case 0:
+        CameraSetFov(p->field184, (float)((ZoomSource*)p->field26c8)->field104);
+        break;
+    case 3:
         CameraSetFov(p->field184, kZoomInFov);
-    } else if (mode == 0) {
-        ZoomSource* z = (ZoomSource*)p->field26c8;
-        CameraSetFov(p->field184, (float)z->field104);
+        break;
     }
-
     if (p->field7e0 != prevMode) {
         if (prevMode < p->field7e0)
             FxStart(FxFind("zoom_out"), 0, 0);
@@ -496,14 +501,14 @@ void PlayerGunZoomModeUpdate(void* pv, float f)
             p->field7e0 = 0;
     }
 
-    mode = p->field7e0;
-    if (mode == 3) {
+    switch (p->field7e0) {
+    case 0:
+        CameraSetFov(p->field184, (float)((ZoomSource*)p->field26c8)->field104);
+        break;
+    case 3:
         CameraSetFov(p->field184, kZoomInFov);
-    } else if (mode == 0) {
-        ZoomSource* z = (ZoomSource*)p->field26c8;
-        CameraSetFov(p->field184, (float)z->field104);
+        break;
     }
-
     if (p->field7e0 != prevMode) {
         if (prevMode < p->field7e0)
             FxStart(FxFind("zoom_out"), 0, 0);
@@ -597,14 +602,14 @@ void PlayerGunZoomSwitchUpdate(void* pv, float f)
             p->field7e0 = 0;
     }
 
-    mode = p->field7e0;
-    if (mode == 3) {
+    switch (p->field7e0) {
+    case 0:
+        CameraSetFov(p->field184, (float)((ZoomSource*)p->field26c8)->field104);
+        break;
+    case 3:
         CameraSetFov(p->field184, kZoomInFov);
-    } else if (mode == 0) {
-        ZoomSource* z = (ZoomSource*)p->field26c8;
-        CameraSetFov(p->field184, (float)z->field104);
+        break;
     }
-
     if (p->field7e0 != prevMode) {
         if (prevMode < p->field7e0)
             FxStart(FxFind("zoom_out"), 0, 0);
@@ -802,14 +807,14 @@ void PlayerGunZoomUpdateAlt(void* pv, float f)
             p->field7e0 = 0;
     }
 
-    mode = p->field7e0;
-    if (mode == 3) {
+    switch (p->field7e0) {
+    case 0:
+        CameraSetFov(p->field184, (float)((ZoomSource*)p->field26c8)->field104);
+        break;
+    case 3:
         CameraSetFov(p->field184, kZoomInFov);
-    } else if (mode == 0) {
-        ZoomSource* z = (ZoomSource*)p->field26c8;
-        CameraSetFov(p->field184, (float)z->field104);
+        break;
     }
-
     if (p->field7e0 != prevMode) {
         if (prevMode < p->field7e0)
             FxStart(FxFind("zoom_out"), 0, 0);
@@ -874,14 +879,14 @@ void PlayerGunZoomSetupUpdate(void* pv, float f)
             p->field7e0 = 0;
     }
 
-    mode = p->field7e0;
-    if (mode == 3) {
+    switch (p->field7e0) {
+    case 0:
+        CameraSetFov(p->field184, (float)((ZoomSource*)p->field26c8)->field104);
+        break;
+    case 3:
         CameraSetFov(p->field184, kZoomInFov);
-    } else if (mode == 0) {
-        ZoomSource* z = (ZoomSource*)p->field26c8;
-        CameraSetFov(p->field184, (float)z->field104);
+        break;
     }
-
     if (p->field7e0 != prevMode) {
         if (prevMode < p->field7e0)
             FxStart(FxFind("zoom_out"), 0, 0);
@@ -1097,14 +1102,14 @@ void PlayerGunZoomStateUpdate(void* pv, float f)
             p->field7e0 = 0;
     }
 
-    mode = p->field7e0;
-    if (mode == 3) {
+    switch (p->field7e0) {
+    case 0:
+        CameraSetFov(p->field184, (float)((ZoomSource*)p->field26c8)->field104);
+        break;
+    case 3:
         CameraSetFov(p->field184, kZoomInFov);
-    } else if (mode == 0) {
-        ZoomSource* z = (ZoomSource*)p->field26c8;
-        CameraSetFov(p->field184, (float)z->field104);
+        break;
     }
-
     if (p->field7e0 != prevMode) {
         if (prevMode < p->field7e0)
             FxStart(FxFind("zoom_out"), 0, 0);
