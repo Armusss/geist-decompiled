@@ -638,79 +638,79 @@ static inline int SeqIndex(int row, int base, int off) {
 
 int HostTypeUpdateF(Actor* a) {
     HostState* s;
-    int iVar1;
-    int iVar2;
+    int slotIdx;
+    int state;
 
     if (a == 0) {
         return 0;
     }
     s = a->state;
     fn_80152990(a);
-    iVar1 = HasCondition(&a->i270, 9);
-    if (iVar1 != 0 && HasCondition(&a->i270, 10) == 0 &&
+    slotIdx = HasCondition(&a->i270, 9);
+    if (slotIdx != 0 && HasCondition(&a->i270, 10) == 0 &&
         HasCondition(&a->i270, 11) == 0) {
         return 0xB;
     }
-    iVar1 = HasCondition(&a->i270, 4);
-    if ((iVar1 != 0) && HasCondition(&a->i270, 9) == 0 &&
+    slotIdx = HasCondition(&a->i270, 4);
+    if ((slotIdx != 0) && HasCondition(&a->i270, 9) == 0 &&
         (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
         ConditionSetBit(&a->i270, 4, 0);
         return 10;
     }
-    iVar1 = ZoneClassifyDirection(a, (Vec3*)a->pos);
-    if (iVar1 == 3) {
-        iVar1 = 0;
+    slotIdx = ZoneClassifyDirection(a, (Vec3*)a->pos);
+    if (slotIdx == 3) {
+        slotIdx = 0;
     }
-    iVar2 = fn_8016325C(a->obj894);
-    if (iVar2 == 4 || fn_8016325C(a->obj894) == 5) {
-        iVar1 = a->i288 * 13 + iVar1 + 3;
+    state = fn_8016325C(a->obj894);
+    if (state == 4 || fn_8016325C(a->obj894) == 5) {
+        slotIdx = a->i288 * 13 + slotIdx + 3;
     } else {
-        iVar2 = fn_8016325C(a->obj894);
-        if (iVar2 == 6 || fn_8016325C(a->obj894) == 7) {
-            iVar1 = a->i288 * 13 + iVar1 + 6;
+        state = fn_8016325C(a->obj894);
+        if (state == 6 || fn_8016325C(a->obj894) == 7) {
+            slotIdx = a->i288 * 13 + slotIdx + 6;
         } else {
-            iVar2 = a->i26C;
-            if (s->unk38 == iVar2) {
-                if (s->unk34 == iVar1) {
-                    iVar1 = s->index;
+            state = a->i26C;
+            if (s->unk38 == state) {
+                if (s->unk34 == slotIdx) {
+                    slotIdx = s->index;
                 } else {
-                    iVar1 = iVar1 + iVar2 * 13;
+                    slotIdx = slotIdx + state * 13;
                 }
             } else {
-                iVar1 = iVar1 + iVar2 * 13;
+                slotIdx = slotIdx + state * 13;
             }
         }
     }
-    return iVar1;
+    return slotIdx;
 }
 
 int HostTypeUpdateG(Actor* a) {
     HostState* s;
-    int iVar1;
-    int iVar2;
+    int slotIdx;
+    int state;
 
     if (a == 0) {
         return 0;
     }
     s = a->state;
-    iVar1 = ZoneClassifyDirection(a, (Vec3*)a->pos);
-    if (iVar1 == 3) {
-        iVar1 = 0;
+    slotIdx = ZoneClassifyDirection(a, (Vec3*)a->pos);
+    if (slotIdx == 3) {
+        slotIdx = 0;
     }
     fn_80152990(a);
-    iVar2 = HasCondition(&a->i270, 9);
-    if (iVar2 != 0 && HasCondition(&a->i270, 10) == 0 &&
+    state = HasCondition(&a->i270, 9);
+    if (state != 0 && HasCondition(&a->i270, 10) == 0 &&
         HasCondition(&a->i270, 11) == 0) {
         return 0xB;
     }
-    iVar2 = HasCondition(&a->i270, 4);
-    if ((iVar2 != 0) && HasCondition(&a->i270, 9) == 0 &&
+    state = HasCondition(&a->i270, 4);
+    if ((state != 0) && HasCondition(&a->i270, 9) == 0 &&
         (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
         ConditionSetBit(&a->i270, 4, 0);
         return 10;
     }
     if (fabsf(a->f284) < 1.0f) {
-        return iVar1 + (a->i26C * 13 + s->sub);
+        return slotIdx + (a->i26C * 13 + s->sub);
     }
     if (a->i288 != 0) {
         return a->i26C * 13 + 9;
@@ -720,87 +720,87 @@ int HostTypeUpdateG(Actor* a) {
 
 int HostTypeUpdateH(Actor* a) {
     HostState* s;
-    int iVar1;
-    int iVar2;
+    int slotIdx;
+    int state;
 
     if (a == 0) {
         return 0;
     }
     s = a->state;
     fn_80152990(a);
-    iVar1 = ZoneClassifyDirection(a, (Vec3*)a->pos);
-    if (iVar1 == 3) {
-        iVar1 = 0;
+    slotIdx = ZoneClassifyDirection(a, (Vec3*)a->pos);
+    if (slotIdx == 3) {
+        slotIdx = 0;
     }
-    iVar2 = HasCondition(&a->i270, 9);
-    if (iVar2 != 0 && HasCondition(&a->i270, 10) == 0 &&
+    state = HasCondition(&a->i270, 9);
+    if (state != 0 && HasCondition(&a->i270, 10) == 0 &&
         HasCondition(&a->i270, 11) == 0) {
         return 0xB;
     }
-    iVar2 = HasCondition(&a->i270, 4);
-    if ((iVar2 != 0) && HasCondition(&a->i270, 9) == 0 &&
+    state = HasCondition(&a->i270, 4);
+    if ((state != 0) && HasCondition(&a->i270, 9) == 0 &&
         (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
         ConditionSetBit(&a->i270, 4, 0);
         return 10;
     }
     if (s->unk38 != a->i26C) {
-        return iVar1 + (a->i26C * 13 + 3);
+        return slotIdx + (a->i26C * 13 + 3);
     } else {
-        if (s->unk34 != iVar1) {
-            return iVar1 + (a->i26C * 13 + 3);
+        if (s->unk34 != slotIdx) {
+            return slotIdx + (a->i26C * 13 + 3);
         } else {
-            iVar2 = fn_8016325C(a->obj894);
-            if (iVar2 == 6 || fn_8016325C(a->obj894) == 7) {
-                return iVar1 + (a->i288 * 13 + 6);
+            state = fn_8016325C(a->obj894);
+            if (state == 6 || fn_8016325C(a->obj894) == 7) {
+                return slotIdx + (a->i288 * 13 + 6);
             } else {
-                iVar2 = fn_8016325C(a->obj894);
-                if (iVar2 == 0) {
-                    return iVar1 + a->i288 * 13;
+                state = fn_8016325C(a->obj894);
+                if (state == 0) {
+                    return slotIdx + a->i288 * 13;
                 } else {
-                    iVar1 = s->index;
+                    slotIdx = s->index;
                 }
             }
         }
     }
-    return iVar1;
+    return slotIdx;
 }
 
 int HostTypeUpdateI(Actor* a) {
     HostState* s;
     float f;
-    int iVar2;
-    int iVar3;
+    int slotIdx;
+    int state;
 
     if (a == 0) {
         return 0;
     }
     s = a->state;
-    iVar2 = ZoneClassifyDirection(a, (Vec3*)a->pos);
-    if (iVar2 == 3) {
-        iVar2 = 0;
+    slotIdx = ZoneClassifyDirection(a, (Vec3*)a->pos);
+    if (slotIdx == 3) {
+        slotIdx = 0;
     }
     fn_80152990(a);
-    iVar3 = HasCondition(&a->i270, 9);
-    if (iVar3 != 0 && HasCondition(&a->i270, 10) == 0 &&
+    state = HasCondition(&a->i270, 9);
+    if (state != 0 && HasCondition(&a->i270, 10) == 0 &&
         HasCondition(&a->i270, 11) == 0) {
         return 0xB;
     }
-    iVar3 = HasCondition(&a->i270, 4);
-    if ((iVar3 != 0) && HasCondition(&a->i270, 9) == 0 &&
+    state = HasCondition(&a->i270, 4);
+    if ((state != 0) && HasCondition(&a->i270, 9) == 0 &&
         (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
         ConditionSetBit(&a->i270, 4, 0);
         return 10;
     }
     if (s->unk38 != a->i26C) {
-        return iVar2 + (a->i26C * 13 + 3);
+        return slotIdx + (a->i26C * 13 + 3);
     } else {
-        iVar3 = fn_8016325C(a->obj894);
-        if (iVar3 == 6 || fn_8016325C(a->obj894) == 7) {
-            return iVar2 + (a->i288 * 13 + 6);
+        state = fn_8016325C(a->obj894);
+        if (state == 6 || fn_8016325C(a->obj894) == 7) {
+            return slotIdx + (a->i288 * 13 + 6);
         } else {
-            iVar3 = fn_8016325C(a->obj894);
-            if (iVar3 == 0) {
-                return iVar2 + a->i288 * 13;
+            state = fn_8016325C(a->obj894);
+            if (state == 0) {
+                return slotIdx + a->i288 * 13;
             } else {
                 f = a->f284;
                 if (f < 0.0f) {
@@ -814,44 +814,44 @@ int HostTypeUpdateI(Actor* a) {
             }
         }
     }
-    return iVar2;
+    return slotIdx;
 }
 
 int HostTypeUpdateJ(Actor* a) {
     HostState* s;
     float f;
-    int iVar2;
-    int iVar3;
+    int slotIdx;
+    int state;
 
     if (a == 0) {
         return 0;
     }
     s = a->state;
     fn_80152990(a);
-    iVar3 = HasCondition(&a->i270, 9);
-    if (iVar3 != 0 && HasCondition(&a->i270, 10) == 0 &&
+    state = HasCondition(&a->i270, 9);
+    if (state != 0 && HasCondition(&a->i270, 10) == 0 &&
         HasCondition(&a->i270, 11) == 0) {
         return 0xB;
     }
-    iVar3 = HasCondition(&a->i270, 4);
-    if ((iVar3 != 0) && HasCondition(&a->i270, 9) == 0 &&
+    state = HasCondition(&a->i270, 4);
+    if ((state != 0) && HasCondition(&a->i270, 9) == 0 &&
         (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
         ConditionSetBit(&a->i270, 4, 0);
         return 10;
     }
-    iVar2 = ZoneClassifyDirection(a, (Vec3*)a->pos);
-    if (iVar2 == 3) {
-        iVar2 = 0;
+    slotIdx = ZoneClassifyDirection(a, (Vec3*)a->pos);
+    if (slotIdx == 3) {
+        slotIdx = 0;
     }
-    iVar3 = fn_8016325C(a->obj894);
-    if (iVar3 == 4 || fn_8016325C(a->obj894) == 5) {
-        return iVar2 + (a->i288 * 13 + 3);
+    state = fn_8016325C(a->obj894);
+    if (state == 4 || fn_8016325C(a->obj894) == 5) {
+        return slotIdx + (a->i288 * 13 + 3);
     } else {
-        iVar3 = fn_8016325C(a->obj894);
-        if (iVar3 == 6 || fn_8016325C(a->obj894) == 7) {
-            return iVar2 + (a->i288 * 13 + 6);
+        state = fn_8016325C(a->obj894);
+        if (state == 6 || fn_8016325C(a->obj894) == 7) {
+            return slotIdx + (a->i288 * 13 + 6);
         } else if (s->unk38 != a->i26C) {
-            return iVar2 + a->i26C * 13;
+            return slotIdx + a->i26C * 13;
         } else {
             f = a->f284;
             if (f < 0.0f) {
@@ -864,7 +864,7 @@ int HostTypeUpdateJ(Actor* a) {
             }
         }
     }
-    return iVar2;
+    return slotIdx;
 }
 
 int HostTypeUpdateK(Actor* a) {
