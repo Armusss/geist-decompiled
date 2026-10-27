@@ -113,7 +113,7 @@ struct Actor {
     char pad28C[0x2B0 - 0x28C];
     float targetHeading;    // 0x2B0
     char pad2B4[0x5F0 - 0x2B4];
-    int unk5F0;             // 0x5F0
+    void* unk5F0;           // 0x5F0
     char pad5F4[0x894 - 0x5F4];
     char sm[0x904 - 0x894]; // 0x894 sub state machine
     float unk904;           // 0x904
@@ -125,12 +125,12 @@ typedef int (*UpdateFn)(Actor*);
 typedef int (*HandlerFn)(int, Actor*);
 
 struct StateDef {
-    EnterFn enter;          // 0x00
-    LeaveFn canLeave;       // 0x04
-    UpdateFn update;        // 0x08
-    HandlerFn handler;      // 0x0C
-    const char* name;       // 0x10
-    u32 hash;               // 0x14
+    u32 hash;               // 0x00 animation set hash
+    EnterFn enter;          // 0x04
+    LeaveFn canLeave;       // 0x08
+    UpdateFn update;        // 0x0C
+    HandlerFn handler;      // 0x10
+    const char* name;       // 0x14
 };
 
 extern StateDef gCordStates[34];
@@ -484,6 +484,10 @@ void CordCreate(int unused, Actor* a) {
     a->beh = 0;
 }
 
+inline void CordHitFx(Actor* o, int fxId) {
+    fn_800CB8BC(o, (int)o->info, fxId, o->unk26C);
+}
+
 // 0x80249AAC: state handler (animation/hit events).
 int CordHandlerBasic(int msg, Actor* a) {
     CordBeh* b;
@@ -491,23 +495,16 @@ int CordHandlerBasic(int msg, Actor* a) {
         return 0;
     }
     b = a->beh;
-    if (msg == 0x1B83833F) {
+    switch (msg) {
+    case 0x1B83833F:
         gCordStates[b->state].canLeave(a, b->next);
         gCordStates[b->next].enter(a);
-    } else {
-        if (msg < 0x1B83833F) {
-            if (msg != 0x4A5C9FC) {
-                if (msg > 0x4A5C9FB) {
-                    return 1;
-                }
-                if (msg != 0x239807) {
-                    return 1;
-                }
-            }
-        } else if (msg != 0x46341C3A) {
-            return 1;
-        }
-        fn_800CB8BC(a, (int)a->info, b->fxId, a->unk26C);
+        break;
+    case 0x239807:
+    case 0x4A5C9FC:
+    case 0x46341C3A:
+        CordHitFx(a, b->fxId);
+        break;
     }
     return 1;
 }
@@ -533,98 +530,75 @@ int CordHandlerAttack(int msg, Actor* a) {
         return 0;
     }
     b = a->beh;
-    if (msg == 0x26772E) {
+    switch (msg) {
+    case 0x26772E:
         fn_8016F120(sCordFxMad, (char*)a + 0x24);
-        return 1;
+        break;
+    case 0x216D8D: {
+        u32 v[4] = {gCordVec0[0], gCordVec0[1], gCordVec0[2], gCordVec0[3]};
+        int anim = ModelAnimate(a->model, 0, 0);
+        int bone = fn_8003A1F0(a->model, (int)a->pose, anim);
+        b->fx = fn_8015A570(3.0f, 16.0f, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, -1);
+        b->sound = fn_80027A58(1, bone + sCordBone * 0x30 + 0x24, v, 0x180, 9);
+        fn_8016F120(sCordFxBeep, (char*)a + 0x24);
+        fn_8016F120(sCordFxPower, (char*)a + 0x24);
+        break;
     }
-    if (msg < 0x26772E) {
-        if (msg == 0x216D8D) {
-            u32 v[4] = {gCordVec0[0], gCordVec0[1], gCordVec0[2], gCordVec0[3]};
-            int anim = ModelAnimate(a->model, 0, 0);
-            int bone = fn_8003A1F0(a->model, (int)a->pose, anim);
-            b->fx = fn_8015A570(3.0f, 16.0f, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, -1);
-            b->sound = fn_80027A58(1, bone + sCordBone * 0x30 + 0x24, v, 0x180, 9);
-            fn_8016F120(sCordFxBeep, (char*)a + 0x24);
-            fn_8016F120(sCordFxPower, (char*)a + 0x24);
-            return 1;
+    case -0x7D6246D:
+    case 0x20EE36: {
+        EventMsg e;
+        if (b->fx != 0) {
+            fn_8015A10C(b->fx);
+            b->fx = 0;
         }
-        if (msg < 0x216D8D) {
-            if (msg != 0x20EE36) {
-                if (msg > 0x20EE35) {
-                    return 1;
-                }
-                if (msg != -0x7D6246D) {
-                    return 1;
-                }
-            }
-            if (b->fx != 0) {
-                fn_8015A10C(b->fx);
-                b->fx = 0;
-            }
-            if (b->sound != -1) {
-                fn_80027690(b->sound);
-                b->sound = -1;
-            }
-            if (fn_8016325C(a->sm) != 5) {
-                fn_80162610(a, a->sm, 0xD19E338);
-                fn_80162610(a, a->sm, 0x20EE36);
-                return 1;
-            }
-            {
-                EventMsg e;
-                e.value = fn_80162610(a, a->sm, 0xF829DB93);
-                if (e.value == -1) {
-                    return 1;
-                }
-                e.target = a->handle;
-                if (e.target == (u32)-1) {
-                    return 1;
-                }
-                e.key = 0x7603EBEB;
-                SendMsg(e.target, 0xC14, &e);
-            }
-            return 1;
+        if (b->sound != -1) {
+            fn_80027690(b->sound);
+            b->sound = -1;
         }
-        if (msg != 0x239807) {
-            return 1;
+        if (fn_8016325C(a->sm) != 5) {
+            fn_80162610(a, a->sm, 0xD19E338);
+            fn_80162610(a, a->sm, 0x20EE36);
+            break;
         }
-    } else {
-        if (msg == 0x1B83833F) {
-            gCordStates[b->state].canLeave(a, b->next);
-            gCordStates[b->next].enter(a);
-            if (fn_8016325C(a->sm) == 0) {
-                return 1;
-            }
-            fn_80162610(a, a->sm, 0x1B83833F);
-            return 1;
+        e.value = fn_80162610(a, a->sm, 0xF829DB93);
+        if (e.value == -1) {
+            break;
         }
-        if (msg < 0x1B83833F) {
-            if (msg != 0x4A5C9FC) {
-                if (msg > 0x4A5C9FB) {
-                    return 1;
-                }
-                if (msg != 0x45D9554) {
-                    return 1;
-                }
-                {
-                    PosQuery q;
-                    float v[3];
-                    float big;
-                    q.hash = sCordHash2;
-                    SendMsg(a->handle, 0x411, &q);
-                    big = 500.0f;
-                    v[0] = (float)q.pos[0];
-                    v[1] = (float)q.pos[1];
-                    v[2] = (float)q.pos[2];
-                    fn_80122108(256.0f, 256.0f, big, big, 0.75f, 0.4f, big, 0, a->handle, v, 0xB87F5DC2, a->handle);
-                }
-                return 1;
-            }
-        } else if (msg != 0x46341C3A) {
-            return 1;
+        e.target = a->handle;
+        if (e.target == -1) {
+            break;
         }
+        e.key = 0x7603EBEB;
+        SendMsg(e.target, 0xC14, &e);
+        break;
     }
-    fn_800CB8BC(a, (int)a->info, b->fxId, a->unk26C);
+    case 0x1B83833F:
+        gCordStates[b->state].canLeave(a, b->next);
+        gCordStates[b->next].enter(a);
+        if (fn_8016325C(a->sm) == 0) {
+            break;
+        }
+        fn_80162610(a, a->sm, 0x1B83833F);
+        break;
+    case 0x45D9554: {
+        PosQuery q;
+        float v[3];
+        float big;
+        q.hash = sCordHash2;
+        SendMsg(a->handle, 0x411, &q);
+        big = 500.0f;
+        v[0] = (float)q.pos[0];
+        v[1] = (float)q.pos[1];
+        v[2] = (float)q.pos[2];
+        fn_80122108(256.0f, 256.0f, big, big, 0.75f, 0.4f, big, 0, a->handle, v, 0xB87F5DC2, a->handle);
+        break;
+    }
+    case 0x239807:
+    case 0x4A5C9FC:
+    case 0x46341C3A:
+        CordHitFx(a, b->fxId);
+        break;
+    }
     return 1;
 }
 
@@ -633,8 +607,9 @@ int CordHitCallback(int msg, Actor* a) {
     if (a == 0) {
         return 0;
     }
-    if (msg == 0x20EE36) {
-    done:
+    switch (msg) {
+    case 0x20EE36:
+    case -0x7D6246D:
         if (fn_8016325C(a->sm) == 5) {
             EventMsg e;
             e.value = fn_80162610(a, a->sm, 0xF829DB93);
@@ -649,31 +624,17 @@ int CordHitCallback(int msg, Actor* a) {
             fn_80162610(a, a->sm, 0xD19E338);
             fn_80162610(a, a->sm, 0x20EE36);
         }
-    } else {
-        if (msg < 0x20EE36) {
-            if (msg == -0x7D6246D) {
-                goto done;
-            }
-            if (msg > -0x7D6246E) {
-                return 1;
-            }
-            if (msg != -0x7BC0BBB1) {
-                return 1;
-            }
-        } else if (msg != 0x3A821DDD) {
-            if (msg > 0x3A821DDC) {
-                return 1;
-            }
-            if (msg != 0x1B83833F) {
-                return 1;
-            }
-            if (fn_8016325C(a->sm) == 0) {
-                return 1;
-            }
-            fn_80162610(a, a->sm, 0x1B83833F);
-            return 1;
-        }
+        break;
+    case -0x7BC0BBB1:
+    case 0x3A821DDD:
         fn_80162610(a, a->sm, 5);
+        break;
+    case 0x1B83833F:
+        if (fn_8016325C(a->sm) == 0) {
+            break;
+        }
+        fn_80162610(a, a->sm, 0x1B83833F);
+        break;
     }
     return 1;
 }
@@ -1158,7 +1119,7 @@ int CordEnterLedge(Actor* a) {
     b->state = 0x16;
     b->next = 3;
     b->prevInput = 0;
-    CordPlayAnim(a, RandHalf());
+    CordPlayAnim(a, (float)rand() / 32767.0f > 0.5f ? 0 : 1);
     return 1;
 }
 
@@ -1656,7 +1617,7 @@ void CordPlayAnim(Actor* a, int variant) {
         fn_8008F378(a->unkD4);
         fn_8008F4EC(a->unkD4, 0);
     }
-    anim = fn_800A1BC8(a->info->unk14, a->info->unk1C, *(u32*)((char*)gCordStates + b->state * 0x18 - 4), variant, 0);
+    anim = fn_800A1BC8(a->info->unk14, a->info->unk1C, gCordStates[b->state].hash, variant, 0);
     if (fn_8008E7D0() != 0) {
         ConditionSetBit(a->flags, 0x1C, 0);
         if (HasCondition(a->flags, 0xE) == 0 && anim != b->anim) {
