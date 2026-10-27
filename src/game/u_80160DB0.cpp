@@ -229,11 +229,10 @@ int PickupBehGivePickup(int* owner, int id, int target, float* pos) {
 void PickupBehState7Update(void* owner, void* beh) {
     if (beh) {
         BehData* d = ((Beh*)beh)->data;
-        u32 flags = d->flags;
-        if ((flags & 0x20) == 0) {
+        if ((d->flags & 0x20) == 0) {
             return;
         }
-        if ((flags & 0x10) == 0) {
+        if ((d->flags & 0x10) == 0) {
             return;
         }
         d->next = 0;
@@ -244,11 +243,10 @@ void PickupBehState7Update(void* owner, void* beh) {
 void PickupBehState6Update(void* owner, void* beh) {
     if (beh) {
         BehData* d = ((Beh*)beh)->data;
-        u32 flags = d->flags;
-        if ((flags & 0x20) == 0) {
+        if ((d->flags & 0x20) == 0) {
             return;
         }
-        if ((flags & 0x10) == 0) {
+        if ((d->flags & 0x10) == 0) {
             return;
         }
         d->next = 0;
