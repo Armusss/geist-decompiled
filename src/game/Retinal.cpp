@@ -231,29 +231,31 @@ void RetinalUpdate(Actor* a, float dt) {
     ActorUpdate(a, dt);
 }
 
+static inline int RetinalGhostQuery(int ghost, int* ok) {
+    QueryMsg q;
+    *(int*)&q.result = 0;
+    q.hash = 0x00251E4A;
+    q.unk8 = 0;
+    *ok = SendMsg(ghost, 0x41E, &q);
+    return *(int*)&q.result;
+}
+
 static inline int RetinalOnQuery(void* data) {
     Actor* actor = ((Actor**)data)[0];
     RetinalData* d = actor->data;
     int ghost;
     int ok;
-    AnimMsg am;
 
     if (ActorPlayAnim(actor->handle, StrHash("QUERY", ((u32*)data)[2]), ((int*)data)[1])) return 1;
 
     ghost = actor->ghost;
     if (ghost != -1) {
-        {
-            QueryMsg q;
-            *(int*)&q.result = 0;
-            q.hash = 0x00251E4A;
-            q.unk8 = 0;
-            ok = SendMsg(ghost, 0x41E, &q);
-            ghost = *(int*)&q.result;
-        }
+        ghost = RetinalGhostQuery(ghost, &ok);
         if (ok && ghost == 1) return 1;
     }
 
     if (((u32*)data)[2] == 0x7C44EC3D && d->state == 0) {
+        AnimMsg am;
         ((u32*)data)[3] = 0xF21581DE;
         am.anim = ((u32*)data)[3];
         am.sound = actor->info->sound;
