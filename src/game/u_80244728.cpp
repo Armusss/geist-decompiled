@@ -102,7 +102,7 @@ struct Actor {
     int unk220;             // 0x220
     char pad224[4];
     int unk228;             // 0x228
-    int unk22C;             // 0x22C
+    void* unk22C;           // 0x22C
     char pad230[0x268 - 0x230];
     int unk268;             // 0x268
     int unk26C;             // 0x26C
@@ -1281,10 +1281,10 @@ int FoeUpdateChase(Actor* a) {
     }
     if (a->unk220 == 2) {
         a->unk10C = (void*)fn_800C748C;
-        if ((int)FollowGetTargetObj(a->flags) != a->unk22C || a->unk288 != a->unk21C) {
+        if (FollowGetTargetObj(a->flags) != a->unk22C || a->unk288 != a->unk21C) {
             if (a->unk21C != 0) {
                 a->unk288 = a->unk21C;
-                fn_800BC56C(a, a->unk22C);
+                fn_800BC56C(a, (int)a->unk22C);
             }
         }
         if (fn_800BAF40(a) == -1 && a->unk21C != 0) {
@@ -1306,7 +1306,7 @@ int FoeUpdateChase(Actor* a) {
             fn_800C725C(a, &msg);
             FollowSetTargetObj(a->flags, (void*)target);
             a->unk288 = a->unk21C;
-            fn_800BC56C(a, a->unk22C);
+            fn_800BC56C(a, (int)a->unk22C);
             b->targetId = msg.target;
             if ((float)rand() / 32767.0f < 0.33f) {
                 RangeResetPending(a->flags);
@@ -1339,10 +1339,10 @@ int FoeUpdateState1(Actor* a) {
     }
     idx = fn_800B26B8(a);
     if (idx != 4) {
-        float tmp[4];
-        fn_800B261C(a, idx, (int*)tmp);
+        int tmp[4];
+        fn_800B261C(a, idx, tmp);
         if (fn_800B1EF4(a, idx) == 0) {
-            if (fn_800B22F8(a, idx) < 3) {
+            if (fn_800B22F8(a, idx) <= 2) {
                 return 1;
             }
             fn_800B1F20(a, idx);
@@ -1353,11 +1353,11 @@ int FoeUpdateState1(Actor* a) {
     }
     if (a->unk220 == 2) {
         a->unk10C = (void*)fn_800C748C;
-        if ((int)FollowGetTargetObj(a->flags) != a->unk22C || a->unk288 != a->unk21C) {
+        if (FollowGetTargetObj(a->flags) != a->unk22C || a->unk288 != a->unk21C) {
             FollowSetTargetObj(a->flags, 0);
             if (a->unk21C != 0) {
                 a->unk288 = a->unk21C;
-                fn_800BC56C(a, a->unk22C);
+                fn_800BC56C(a, 0);
             }
         }
         if (fn_800BAF40(a) == -1 && a->unk21C != 0) {
