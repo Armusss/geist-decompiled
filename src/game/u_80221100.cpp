@@ -323,7 +323,7 @@ inline float VecNormalize(Vec3* v)
 }
 
 // Frees the swarm's bees and resets the counters.
-inline void BeesClear(BeesState* s)
+inline void BeesFreeAll(BeesState* s)
 {
     while ((s->bees.size >> 2) != 0) {
         Bee* b = *(Bee**)s->bees.data;
@@ -334,6 +334,11 @@ inline void BeesClear(BeesState* s)
         VFree(*(void**)s->bees.data);
         fn_8028B35C(&s->bees, (int)s->bees.data, 4);
     }
+}
+
+inline void BeesFreeReset(BeesState* s)
+{
+    BeesFreeAll(s);
     s->time = 0.0f;
     s->spawnTimer = 0.0f;
     s->flags &= ~1;
@@ -402,7 +407,11 @@ int BeesUpdate(Actor* a)
                     b->steer.z = b->pos.z - cz;
                 }
                 if (s->unk44 * s->unk44 < s->minDist) {
-                    BeesClear(s);
+                    BeesFreeAll(s);
+                    s->time = 0.0f;
+                    s->spawnTimer = 0.0f;
+                    s->flags &= ~1;
+                    s->flags &= ~2;
                     s->state = 0;
                 }
             }
@@ -643,10 +652,11 @@ int BeesUpdate(Actor* a)
 
 void BeesDestroy(Actor* a)
 {
-    BeesState* s = a->bees;
-    if (s != 0) {
+    void* state = a->bees;
+    if (state != 0) {
+        BeesState* s = (BeesState*)state;
         if ((s->bees.size >> 2) != 0) {
-            BeesClear(s);
+            BeesFreeReset(s);
         }
         delete s;
         a->bees = 0;
