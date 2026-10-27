@@ -1944,8 +1944,11 @@ void GunFxSpawnState8017883C(Owner* ownerArg, Beh* behArg) {
 // same owner/behaviour pair on to the shared behaviour advance.
 void BehPairUpdate80178AF8(Owner* owner, Beh* beh) {
     if (beh != 0) {
-        BehUpdate(owner, beh);
-        Fn8016295C(owner, beh);
+        void* o = owner;
+        void* b = beh;
+
+        BehUpdate((Owner*)o, (Beh*)b);
+        Fn8016295C((Owner*)o, (Beh*)b);
     }
 }
 
@@ -3298,23 +3301,20 @@ struct GunAimBeh8017AA48 {
 // Name is a guess: ends the aim behaviour and sets its 0x10/0x20 aim flags when
 // the owner answers the two aim messages with the done reply.
 void GunAimFlagsDone8017AA48(void* ownerArg, void* behArg) {
-    GunSpawnOwner8017A698* owner;
-    GunAimBeh8017AA48* beh;
+    if (behArg != 0) {
+        GunSpawnOwner8017A698* owner = (GunSpawnOwner8017A698*)ownerArg;
+        GunAimBeh8017AA48* beh = (GunAimBeh8017AA48*)behArg;
 
-    if (behArg == 0) {
-        return;
-    }
-    owner = (GunSpawnOwner8017A698*)ownerArg;
-    beh = (GunAimBeh8017AA48*)behArg;
-    beh->block->flags = 0;
-    BehDone(beh);
-    if (Fn800F7DEC(owner->field8EC, owner->field8F0, 0xe6b71bcc,
-                   OwnerId((Owner*)ownerArg), 0) == 0x04a3e183) {
-        beh->flags |= 0x10;
-    }
-    if (Fn800F7DEC(owner->field8EC, owner->field8F0, 0x968cbe3d,
-                   OwnerId((Owner*)ownerArg), 0) == 0x04a3e183) {
-        beh->flags |= 0x20;
+        beh->block->flags = 0;
+        BehDone(beh);
+        if (Fn800F7DEC(owner->field8EC, owner->field8F0, 0xe6b71bcc,
+                       OwnerId((Owner*)owner), 0) == 0x04a3e183) {
+            beh->flags |= 0x10;
+        }
+        if (Fn800F7DEC(owner->field8EC, owner->field8F0, 0x968cbe3d,
+                       OwnerId((Owner*)owner), 0) == 0x04a3e183) {
+            beh->flags |= 0x20;
+        }
     }
 }
 
