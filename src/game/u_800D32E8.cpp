@@ -1464,11 +1464,11 @@ extern "C" float lbl_804D70A4;
 extern "C" int EmitterParticleAdvance(Emitter* em, EmitterParticleState* particle,
                                       float t)
 {
-    if (particle->clock > lbl_804D705C) {
+    if (particle->clock > 0.0f) {
         if (lbl_804D70A4 != particle->clock)
             particle->clock -= t;
         EmitterSampleSpawnOffset(em, particle, &particle->data, 0, t);
-        if (particle->clock > lbl_804D705C)
+        if (particle->clock > 0.0f)
             return 1;
     }
     return 0;
@@ -1488,7 +1488,7 @@ int EmitterSampleSpawnOffset(Emitter* em, EmitterParticleState* particle,
                              EmitterSpawnData* src, u32 flags, float t)
 {
     return EmitterComputeSpawnOffset(em, particle, src, flags,
-                                     t / lbl_804D7060);
+                                     t / 1000.0f);
 }
 
 // Builds one particle's spawn position and direction from a spawn record.
