@@ -123,7 +123,7 @@ int FxLookupScrollType(const unsigned char* name)
 {
     union {
         unsigned char bytes[4];
-        unsigned int word;
+        int word;
     } key;
     int i;
 
@@ -135,7 +135,7 @@ int FxLookupScrollType(const unsigned char* name)
     key.bytes[2] = name[2];
     key.bytes[3] = name[3];
     for (i = 0; i < 26; i++) {
-        if (key.word == *(const unsigned int*)lbl_80398468[i].name) {
+        if (key.word == *(const int*)lbl_80398468[i].name) {
             return i;
         }
     }
