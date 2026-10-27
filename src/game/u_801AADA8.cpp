@@ -1114,8 +1114,9 @@ int FSHSVEFollowAbortState(Actor* actor)
     if (actor == 0) {
         return 0;
     }
+    FSHSVE* st = actor->unk130;
     actor->unk288 = 3;
-    actor->unk130->unk00 = 4;
+    st->unk00 = 4;
     ConditionUpdateBit(actor->unk270, 3, 1);
     RangeResetPending(actor->unk270);
     return 1;
@@ -1137,8 +1138,9 @@ int FSHSVEResetRangeState(Actor* actor)
     if (actor == 0) {
         return 0;
     }
+    FSHSVE* st = actor->unk130;
     actor->unk288 = 3;
-    actor->unk130->unk00 = 3;
+    st->unk00 = 3;
     ConditionUpdateBit(actor->unk270, 3, 1);
     RangeResetPending(actor->unk270);
     return 1;
@@ -1226,8 +1228,9 @@ int FSHSVEStateTwoEnter(Actor* actor)
     if (actor == 0) {
         return 0;
     }
+    FSHSVE* st = actor->unk130;
     actor->unk288 = 2;
-    actor->unk130->unk00 = 2;
+    st->unk00 = 2;
     ConditionUpdateBit(actor->unk270, 3, 1);
     RangeResetPending(actor->unk270);
     return 1;
