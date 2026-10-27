@@ -196,3 +196,12 @@ reserve f0 for the whole function (if/else form, `r = 0.0f` in the if branch).
 - **A parameter copied into a local of a different type** (`void* buf` -> `u8* data`) is not merged into the
   parameter, which changes its register rank.
 - **Word arrays at a byte offset:** `((u32*)(p + 0x24))[i / 32]`, not `*(u32*)(p + 0x24 + ...)`.
+- **Replace .sdata2 constants per function, not per unit.** Swapping a lbl_ float for its literal unit-wide can
+  disturb an unrelated function's scheduling (EmitterSubScaleParams 20 -> 27); change only the target functions
+  first. SDA2 base is 0x804DDE80 (r2), SDA base r13.
+- **Small arrays in .sbss/.sdata:** declare externs with their size (`lbl_804D5040[2]`) so they are addressed through
+  r13; a 1-word bitmap's range check is `index >= 1`.
+- **`cmpwi N; beq; bge; ... b`** is a switch; add the explicit case that shares the end label (`case 4: break;`) or
+  write a one-case switch.
+- **Pointer loads before a run of stores:** load the sub-struct pointer into a local first (`st = actor->unk130;`).
+- **Arithmetic association:** `dir + (row * 13 + k)` gives `mulli; add; addi`.
