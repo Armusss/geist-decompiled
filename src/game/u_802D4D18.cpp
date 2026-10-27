@@ -200,7 +200,7 @@ struct RideActor {
     u8  unk270[0x288 - 0x270];  // 0x270  condition/flag block
     s32 unk288;                 // 0x288  ride link word (0 = no ride target)
     u8  pad28C[0x5F0 - 0x28C];
-    s32 unk5F0;                 // 0x5F0  ride stream state handle (0 = none)
+    u32 unk5F0;                 // 0x5F0  ride stream state handle (0 = none)
     u8  unk5F4[0x904 - 0x5F4];  // 0x5F4  rest of the condition/flag block
     f32 unk904;                 // 0x904
 };
