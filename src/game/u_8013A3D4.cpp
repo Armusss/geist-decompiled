@@ -835,7 +835,7 @@ extern "C" f32 fn_800A1394(f32 angle);
 // Builds the 24-entry table of direction vectors used by DrawTrailStrip.
 void DrawTrailBuildDirections(void)
 {
-    f32 step = lbl_804D7AB8;
+    f32 step = 15.0f;
     f32 angle;
     int i;
 
