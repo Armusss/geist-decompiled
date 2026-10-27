@@ -1060,9 +1060,10 @@ void SoundListStopAll(SoundList* list)
 {
     if (list->entries != 0)
     {
-        int off = 0x28;
+        int off;
+        int i;
 
-        for (int i = 1; i < list->count; i++)
+        for (i = 1, off = 0x28; i < list->count; i++)
         {
             void* source = *(void**)(list->entries + off + 0x24);
 
@@ -1079,9 +1080,10 @@ void SoundListTeardown(SoundList* list)
 {
     if (list->entries != 0)
     {
-        int off = 0x28;
+        int off;
+        int i;
 
-        for (int i = 1; i < list->count; i++)
+        for (i = 1, off = 0x28; i < list->count; i++)
         {
             void* source = *(void**)(list->entries + off + 0x24);
 
@@ -1120,9 +1122,9 @@ int SoundListSourcesFinished(SoundList* list)
 }
 
 extern "C" void fn_801D513C(void* source, void* matrix);
-extern "C" void fn_801D53D4(void);
+extern "C" void fn_801D53D4(void* source);
 extern "C" void fn_801D5448(void* source);
-extern "C" void fn_801D550C(void);
+extern "C" void fn_801D550C(void* source);
 
 // Quaternion of a bone transform.
 struct Quat {
@@ -1159,19 +1161,22 @@ void SoundListApplySourceMode(SoundList* list, int mode)
     if (list->entries == 0)
         return;
 
-    int off = 0x28;
+    int off;
+    int i;
 
-    for (int i = 1; i < list->count; i++)
+    for (i = 1, off = 0x28; i < list->count; i++)
     {
-        if (*(void**)(list->entries + off + 0x24) != 0)
+        void* source = *(void**)(list->entries + off + 0x24);
+
+        if (source != 0)
         {
             if (mode != 0)
             {
-                fn_801D53D4();
+                fn_801D53D4(source);
             }
             else
             {
-                fn_801D550C();
+                fn_801D550C(source);
                 fn_801D5448(*(void**)(list->entries + off + 0x24));
             }
         }
