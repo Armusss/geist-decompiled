@@ -99,7 +99,16 @@ public:
     virtual ~Buffer();
 };
 
-class BeeList : public Buffer {
+extern "C" void fn_8028B960(void* object);
+
+// Intermediate class: its destructor releases the storage before the base destructor runs.
+class BeeBase : public Buffer {
+public:
+    BeeBase() {}
+    virtual ~BeeBase() { fn_8028B960(this); }
+};
+
+class BeeList : public BeeBase {
 public:
     BeeList() {}
     virtual ~BeeList() {}
@@ -118,7 +127,6 @@ void* fn_800C7E80(void* place);
 int fn_8028B3BC(BeeList* list, int offset, int size);
 void fn_8028B35C(BeeList* list, int data, int size);
 void fn_8028B2D4(BeeList* list);
-void fn_8028B960(void* object);
 int fn_801DE960(void* desc);
 }
 
@@ -151,7 +159,12 @@ struct Bee {
 };
 
 // The swarm state hung off the owner actor at +0x9ec (0xac bytes).
+void* VAlloc(int size);
+void VFree(void* p);
+
 struct BeesState {
+    static void* operator new(u32 size) { return VAlloc(size); }
+    static void operator delete(void* p) { VFree(p); }
     int state;               // 0x00
     float timer;             // 0x04
     u32 flags;               // 0x08
@@ -218,33 +231,36 @@ struct Msg {
     int value;      // 0x0c
 };
 
+inline float Clamp01(float t)
+{
+    float lo = 0.0f;
+    float hi = 1.0f;
+    float r;
+    if (t < lo) {
+        r = lo;
+    } else if (t > hi) {
+        r = hi;
+    } else {
+        r = t;
+    }
+    return r;
+}
+
 // Overall speed scale of the swarm, from the state's blend parameters.
 extern "C" float fn_80221100(Actor* actor)  // BeesSpeedScale; called by other units under this name
 {
     BeesState* s = actor->bees;
-    if (!(s->flags & 1)) {
-        return 1.0f;
-    }
-    {
+    float r;
+    if (s->flags & 1) {
         float a = s->unk64 * s->unk64;
         float t = (s->sumDist - a) / (s->unk6c * s->unk6c - a);
-        float u;
-        float v;
-        if (t < 0.0f) {
-            u = 0.0f;
-        } else if (t > 1.0f) {
-            u = 1.0f;
-        } else {
-            u = t;
-        }
-        v = s->time / (1000.0f * (float)s->unk74);
-        if (v < 0.0f) {
-            v = 0.0f;
-        } else if (v > 1.0f) {
-            v = 1.0f;
-        }
-        return (s->unk68 * (1.0f - u) + s->unk70 * u) * (s->unk78 * v + (1.0f - v));
+        float u = Clamp01(t);
+        float v = Clamp01(s->time / (1000.0f * (float)s->unk74));
+        r = (s->unk68 * (1.0f - u) + s->unk70 * u) * (s->unk78 * v + (1.0f - v));
+    } else {
+        r = 1.0f;
     }
+    return r;
 }
 
 int BeesSetTimeMsg(Msg* m)
@@ -304,19 +320,6 @@ inline float VecNormalize(Vec3* v)
     v->y = (float)(y * inv);
     v->z = (float)(z * inv);
     return __fres(inv);
-}
-
-inline float Clamp01(float t)
-{
-    float r;
-    if (t < 0.0f) {
-        r = 0.0f;
-    } else if (t > 1.0f) {
-        r = 1.0f;
-    } else {
-        r = t;
-    }
-    return r;
 }
 
 // Frees the swarm's bees and resets the counters.
@@ -653,7 +656,7 @@ void BeesDestroy(Actor* a)
 void BeesInit(Actor* a)
 {
     if (fn_80049940() == 0) {
-        BeesState* s = (BeesState*)VAlloc(0xac);
+        BeesState* s = new BeesState;
         a->bees = s;
         s->state = 0;
         s->timer = 0.0f;
