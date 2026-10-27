@@ -167,7 +167,7 @@ void TextProcessCommands(u8* buffer);
 // fn_801EAEAC
 extern "C" void fn_801EAEAC(void)
 {
-    if (lbl_803B4284[0] != 0) {
+    if ((char)lbl_803B4284[0] != 0) {
         GfxSetVtxDesc(3);
         fn_80008CA4();
         GfxSetMaterial(0);

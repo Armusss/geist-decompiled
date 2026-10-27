@@ -642,7 +642,7 @@ int PickupKeySlotProbe(int* slot, int* out) {
 // Collision-probe callback of the pickup key: accepts the probe result `probe` when its
 // first word is clear and copies the three hit coordinates out through `hit`.
 extern "C" int PickupKeyProbeHit(int* probe, int* hit) {
-    if (probe[0] == 0) {
+    if (*(unsigned int*)probe == 0) {
         hit[0] = probe[0xc];
         hit[1] = probe[0xd];
         hit[2] = probe[0xe];
