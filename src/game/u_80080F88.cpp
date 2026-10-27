@@ -760,7 +760,7 @@ int AnimTrackQueryCallback(void* obj, int* args) {
     if (q == 0) {
         return 0;
     }
-    if ((float)q->time * lbl_804D6820 <= lbl_804D4618) {
+    if (lbl_804D6820 * (float)q->time <= lbl_804D4618) {
         if (args[0] == -1) {
             args[0] = q->time;
             args[1] = 1;
