@@ -797,9 +797,10 @@ int ActorShouldCollect802B84C8(void* playerArg, void* ownerArg)
 // actor's +0x220 flag is set.
 int ActorGetSelectedId802B85D0(Actor* a)
 {
+    ExtraState* e = a->extra;
     if (a->i220 != 0)
         return 0;
-    return a->extra->unk00;
+    return e->unk00;
 }
 
 // Constant predicate (always true).
@@ -894,7 +895,8 @@ int ActorCollectExit802B88F0(Actor* a)
 int ActorCollectEnter802B8920(Actor* a)
 {
     a->extra->unk00 = 0;
-    fn_800BC56C(a, FollowGetTargetObj(a->mem270));
+    Actor* target = (Actor*)FollowGetTargetObj(a->mem270);
+    fn_800BC56C(a, target);
     ConditionSetBit(a->mem270, 0x24, 1);
     return 1;
 }
