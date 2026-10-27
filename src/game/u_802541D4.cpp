@@ -440,7 +440,7 @@ static ActorType sImpFireBallType = {
 };
 
 // Entry 0 is the fire ball's shadow model, entries 1-8 its flame textures.
-static SplineNameEntry sImpFireAssets[11] = {
+SplineNameEntry gImpFireAssets[11] = {
     { "P:\\Fear\\Data\\Common models\\blob_shadow\\blob_shadow.amf", 0x87DE5E6A, 0, 0 },
     { "P:\\Fear\\Data\\Common Models\\fire_collision_box\\flame1b.tga", 0xF2E2BEB8, 0, 0 },
     { "P:\\Fear\\Data\\Common Models\\fire_collision_box\\flame2b.tga", 0xF2E2BEB8, 0, 0 },
@@ -459,18 +459,18 @@ static float sFireDamage = 25.0f;
 inline void ImpFireBallLoadAssets(void) {
     u32 i;
 
-    fn_8003D8F4(SplineAssetResolve(sImpFireAssets, 9, 0));
+    fn_8003D8F4(SplineAssetResolve(gImpFireAssets, 9, 0));
     for (i = 1; i < 9; i++) {
-        fn_8000F874(SplineAssetResolve(sImpFireAssets, 9, i));
+        fn_8000F874(SplineAssetResolve(gImpFireAssets, 9, i));
     }
 }
 
 inline void ImpFireBallFreeAssets(void) {
     u32 i;
 
-    fn_8003D710(SplineAssetResolve(sImpFireAssets, 9, 0));
+    fn_8003D710(SplineAssetResolve(gImpFireAssets, 9, 0));
     for (i = 1; i < 9; i++) {
-        fn_8000F60C(SplineAssetResolve(sImpFireAssets, 9, i));
+        fn_8000F60C(SplineAssetResolve(gImpFireAssets, 9, i));
     }
 }
 
@@ -545,7 +545,7 @@ int ImpFireBallSpawn(int owner, ImpThrow* t, int n) {
     f->unk0 = a->unk8C;
     f->owner = owner;
     f->fx = fn_8016F120(FxFind("imp_flame"), &a->x);
-    SplineClearNameHashes(sImpFireAssets, 9);
+    SplineClearNameHashes(gImpFireAssets, 9);
     {
         base = (FlameParticle*)f->pad58;
 
@@ -694,7 +694,7 @@ inline int ImpFireBallShadow(FireActor* a, ImpFireBall* f, void* data) {
     box.min.x *= 0.33f;
     box.min.y *= 0.33f;
     box.min.z *= 0.33f;
-    fn_8003E8DC(SplineAssetResolve(sImpFireAssets, 9, 0), &box, &m, d->out);
+    fn_8003E8DC(SplineAssetResolve(gImpFireAssets, 9, 0), &box, &m, d->out);
     return 1;
 }
 
@@ -725,7 +725,7 @@ void ImpFireBallDraw(void* p) {
     int i;
 
     for (i = 0; i < 2; i++) {
-        fn_80210D80(base, sizeof(FlameParticle), sFlameCounts[i], SplineAssetResolve(sImpFireAssets, 9, i + 7), 0,
+        fn_80210D80(base, sizeof(FlameParticle), sFlameCounts[i], SplineAssetResolve(gImpFireAssets, 9, i + 7), 0,
                     &sFlameParams[i], &sFlameColors[i]);
         base += sFlameCounts[i];
     }

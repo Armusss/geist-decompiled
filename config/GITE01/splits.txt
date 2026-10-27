@@ -765,6 +765,10 @@ game/u_80251CB8.cpp:
 
 game/u_802541D4.cpp:
 	.text       start:0x802541D4 end:0x80254F54
+	.rodata     start:0x8034A718 end:0x8034A978
+	.data       start:0x803BEE18 end:0x803BF068
+	.sdata      start:0x804D3608 end:0x804D3620
+	.sdata2     start:0x804D9E50 end:0x804D9E98
 
 game/u_80254F54.cpp:
 	.text       start:0x80254F54 end:0x8025808C

@@ -1389,22 +1389,22 @@ void fn_8000F60C(int tex);
 void fn_8000F874(int tex);
 }
 
-extern SplineNameEntry lbl_803BEFB8[9];
+extern SplineNameEntry gImpFireAssets[11];
 
 void ImpFireAssetsFree(void) {
     u32 i;
 
-    fn_8003D710(SplineAssetResolve(lbl_803BEFB8, 9, 0));
+    fn_8003D710(SplineAssetResolve(gImpFireAssets, 9, 0));
     for (i = 1; i < 9; i++) {
-        fn_8000F60C(SplineAssetResolve(lbl_803BEFB8, 9, i));
+        fn_8000F60C(SplineAssetResolve(gImpFireAssets, 9, i));
     }
 }
 
 void ImpFireAssetsLoad(void) {
     u32 i;
 
-    fn_8003D8F4(SplineAssetResolve(lbl_803BEFB8, 9, 0));
+    fn_8003D8F4(SplineAssetResolve(gImpFireAssets, 9, 0));
     for (i = 1; i < 9; i++) {
-        fn_8000F874(SplineAssetResolve(lbl_803BEFB8, 9, i));
+        fn_8000F874(SplineAssetResolve(gImpFireAssets, 9, i));
     }
 }
