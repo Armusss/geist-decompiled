@@ -1363,8 +1363,11 @@ void GunFxSpawnUpdate80177A2C(Owner* ownerArg, Beh* behArg) {
 // state machine when a behaviour object is present (address 0x80177CE8).
 void GunAimBehUpdate80177CE8(void* owner, void* beh) {
     if (beh != 0) {
-        BehUpdate((Owner*)owner, (Beh*)beh);
-        Fn8016295C((Owner*)owner, (Beh*)beh);
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
+
+        BehUpdate(o, b);
+        Fn8016295C(o, b);
     }
 }
 
@@ -4140,11 +4143,19 @@ struct GunBlockClearBlk8017BCD0 {
 unsigned short GunBlockClear8017BCD0(void* p) {
     GunBlockClearBlk8017BCD0* b = (GunBlockClearBlk8017BCD0*)p;
 
-    if (b->id != 0xff676982 && b->id != 0xff676981) {
-        if (b->state != 4 && b->state < 4) {
-            b->state = 0;
-            b->id = 0;
-        }
+    if (b->id == 0xff676982 || b->id == 0xff676981) {
+        return b->state;
+    }
+    switch (b->state) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+        b->state = 0;
+        b->id = 0;
+        break;
+    case 4:
+        break;
     }
     return b->state;
 }
@@ -4154,11 +4165,17 @@ unsigned short GunBlockClear8017BCD0(void* p) {
 unsigned short GunBlockClear8017BD20(void* p) {
     GunBlockClearBlk8017BCD0* b = (GunBlockClearBlk8017BCD0*)p;
 
-    if (b->id != 0xff676982 && b->id != 0xff676981) {
-        if (b->state == 3 || (b->state < 3 && b->state == 0)) {
-            b->state = 0;
-            b->id = 0;
-        }
+    if (b->id == 0xff676982 || b->id == 0xff676981) {
+        return b->state;
+    }
+    switch (b->state) {
+    case 0:
+    case 3:
+        b->state = 0;
+        b->id = 0;
+        break;
+    case 4:
+        break;
     }
     return b->state;
 }
