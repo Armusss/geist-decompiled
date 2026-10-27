@@ -375,6 +375,18 @@ void FollowOffsetReset(void* self)
     st->offset.z = (float)*(int*)((char*)self + 0x2c);
 }
 
+// True when the follow block's lock flag (bit 21 of the word at +0x24) is set.
+static inline int FollowIsLocked(void* range)
+{
+    if (range == 0) {
+        return 0;
+    }
+    if ((*(unsigned long*)((char*)range + 0x24) & 0x200000) != 0) {
+        return 1;
+    }
+    return 0;
+}
+
 // Point the follow target at another object (mode 2).  A null block, or one
 // that carries the busy flag at +0x24, is left untouched.
 void FollowSetTargetObj(void* range, void* obj)
@@ -385,15 +397,7 @@ void FollowSetTargetObj(void* range, void* obj)
     if (range == 0) {
         return;
     }
-    if (range != 0) {
-        if ((*(unsigned long*)((char*)range + 0x24) & 0x200000) != 0) {
-            busy = 1;
-        } else {
-            busy = 0;
-        }
-    } else {
-        busy = 0;
-    }
+    busy = FollowIsLocked(range);
     if (busy) {
         return;
     }
@@ -409,19 +413,10 @@ void FollowSetTargetVec(void* range, Vec3* vec)
     FollowState* st;
     int busy;
 
-    if (range == 0) {
+    if (range == 0 || vec == 0) {
         return;
     }
-    if (vec == 0) {
-        return;
-    }
-    if (range == 0) {
-        busy = 0;
-    } else if ((*(unsigned long*)((char*)range + 0x24) & 0x200000) == 0) {
-        busy = 0;
-    } else {
-        busy = 1;
-    }
+    busy = FollowIsLocked(range);
     if (busy) {
         return;
     }
