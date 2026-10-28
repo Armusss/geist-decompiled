@@ -60,10 +60,11 @@ struct BossState {
     int hitPart;            // 0x34
     float hitTimer;         // 0x38
     float fade;             // 0x3C
-    u8 pad40[4];
+    float fade2;            // 0x40
+
     int mode;               // 0x44
     int slots[4];           // 0x48
-    int slotCount;          // 0x58
+    int phaseAngle;         // 0x58
     BossBuf list;           // 0x5C
     u8 pad70[4];
     float shotDelay;        // 0x74
@@ -295,7 +296,7 @@ int BossMsgHandler(int msg, BossMsg* m) {
                         for (i = 0; i < 4; i++) {
                             if (s->slots[i] == -1) {
                                 s->slots[i] = m->dmg;
-                                s->slotCount = 0;
+                                s->phaseAngle = 0;
                                 break;
                             }
                         }
@@ -821,4 +822,111 @@ int BossHitTick(Boss* b) {
         s->hitTimer = lbl_804D39FC;
     }
     return s->type;
+}
+
+extern "C" {
+double fn_800A127C(double a);
+double fn_800A1418(double a);
+int fn_80018AD4(int model, int node);
+}
+extern float lbl_804D3A04;
+extern float lbl_804D3A18;
+
+static inline int ClampByte(int v) {
+    if (v < 0)
+        return 0;
+    if (v < 0x100)
+        return v;
+    return 0xFF;
+}
+
+// Flash fraction for a hit-flash timer (0 = no flash, 1 = full).
+static inline float FlashFrac(float t) {
+    float f;
+    if (lbl_804D3A18 <= t) {
+        f = 1.0f;
+        if (lbl_804D3A14 - lbl_804D3A18 < t)
+            f = (lbl_804D3A14 - t) / lbl_804D3A18;
+    } else {
+        f = t / lbl_804D3A18;
+    }
+    return f;
+}
+
+// Tints the four parts and the heart: pulsing while armoured, red flash when hit.
+void BossUpdateParts(Boss* b, BossState* s) {
+    bool anyPart = false;
+    float pulseScale = 1.0f;
+    int pulse;
+    int i;
+    if (s->hitTimer < lbl_804D3A04) {
+        double w = fn_800A127C(45.0f * ((lbl_804D3A04 - s->hitTimer) / lbl_804D3A04));
+        pulseScale = (float)(14.0 * w + 1.0);
+    }
+    s->fade2 = 360.0f * 0.001f * *(float*)((u8*)b + 0x138) * pulseScale + s->fade2;
+    pulse = ClampByte((int)(127.0f * (float)(1.0 + fn_800A1418(s->fade2))));
+    s->phaseAngle = (int)(10.0f * 360.0f * 0.001f * *(float*)((u8*)b + 0x138) + (float)s->phaseAngle);
+    for (i = 0; i < 4; i++) {
+        int node = fn_80018AD4(b->model, lbl_803C4DF0[4 + i]);
+        bool active = false;
+        int r;
+        int g;
+        int bl;
+        if (s->slots[0] == node)
+            active = true;
+        else if (s->slots[1] == node)
+            active = true;
+        else if (s->slots[2] == node)
+            active = true;
+        else if (s->slots[3] == node)
+            active = true;
+        if (active) {
+            r = ClampByte((int)(127.0f * (float)(1.0 + fn_800A1418((float)s->phaseAngle))));
+            g = 0;
+            bl = 0;
+        } else {
+            int base;
+            float t;
+            if (s->partHp[i] <= 0.0f) {
+                base = 0;
+            } else {
+                anyPart = true;
+                base = pulse;
+            }
+            r = base;
+            g = base;
+            bl = base;
+            t = s->partFlash[i];
+            if (0.0f <= t) {
+                float f = FlashFrac(t);
+                float inv = 1.0f - f;
+                r = ClampByte((int)(255.0f * f + (float)base * inv));
+                g = ClampByte((int)((float)base * inv));
+                bl = ClampByte((int)((float)base * inv));
+            }
+        }
+        fn_80037EC0(b->model, lbl_803C4DF0[i], 1, r & 0xFF, g & 0xFF, bl & 0xFF, 0xFF);
+    }
+    if (anyPart) {
+        fn_80037EC0(b->model, lbl_804D3AB0, 1, 200, 200, 200, 0xFF);
+    } else {
+        int base = pulse;
+        int r;
+        int g;
+        int bl;
+        float t = s->heartFlash;
+        if (s->heartHp <= 0.0f)
+            base = 0;
+        r = base;
+        g = base;
+        bl = base;
+        if (0.0f <= t) {
+            float f = FlashFrac(t);
+            float inv = 1.0f - f;
+            r = ClampByte((int)(255.0f * f + (float)base * inv));
+            g = ClampByte((int)((float)base * inv));
+            bl = ClampByte((int)((float)base * inv));
+        }
+        fn_80037EC0(b->model, lbl_804D3AB0, 1, r & 0xFF, g & 0xFF, bl & 0xFF, 0xFF);
+    }
 }
