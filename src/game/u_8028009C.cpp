@@ -100,6 +100,7 @@ extern "C" void fn_80283A44(u32 event);
 extern "C" void fn_80283DC4(u32 value);
 extern "C" void fn_80284CB0(void);
 extern "C" void fn_802845CC(void);
+extern "C" void fn_802846F0(void);
 
 void ExtrasModelShow(int model, u8 alpha);
 
@@ -1080,10 +1081,227 @@ void fn_802845CC(void) {
     }
 }
 
+extern "C" {
+int VarExists(u32 table, u32 a, u32 b);                             // 0x800DF080
+int VarGroupObjCount(u32 table);                                    // 0x800DED98
+void SaveGetOptions(void* p, int n);                                // 0x800DEC54
+void* VAlloc(int size);
+void* memset(void* p, int c, u32 n);
+float fn_800D8BE4(int a, int b, int axis, int c);
+int FxFind(const char* name);                                       // 0x80170834
+}
+extern int gArrowTexUp;         // 0x804A3280
+extern int gArrowTexDown;       // 0x804A3284
+extern int gBonusUnlockCount;   // 0x804D5560
+extern u32* gBonusBitsB;        // 0x804D5564
+extern int gBonusCountB;        // 0x804D5568
+extern int gArtHidden;          // 0x804D5588
+extern int gMusicVisible;       // 0x804D55A8 (same word as gMusicTotal)
+extern int gMovieVisible;       // 0x804D55C0
+extern int gSecretVisible;      // 0x804D55D8
+extern int gCheatCount;         // 0x804D55E8
+
+// Builds the unlock bitsets of the extras menu (bonus, art, music, movies, secrets, cheats)
+// from the variable tables and looks up the menu sounds and arrow textures.
+void fn_802846F0(void) {
+    int bytes;
+    int i;
+    gMenuFxMove = FxFind("Navigate");
+    gMenuFxSelect = FxFind("Select");
+    gMenuFxBack = FxFind("Back");
+    gArrowTexR = AssetFind(0xF2E2BEB8, 0x3FD6348D);
+    gArrowTexL = AssetFind(0xF2E2BEB8, 0x1651D499);
+    gArrowTexUp = AssetFind(0xF2E2BEB8, 0xD141D32E);
+    gArrowTexDown = AssetFind(0xF2E2BEB8, 0x66979E2C);
+    if (gBonusBits == NULL && VarExists(0x5E130113, 0, 0) != 0) {
+        gBonusCount = VarGroupObjCount(0x5E130113);
+        bytes = ((gBonusCount + 0x1F) / 32) * 4;
+        gBonusCountB = gBonusCount;
+        gBonusCount2 = gBonusCount;
+        gBonusBits = (u32*)VAlloc(bytes);
+        gBonusBitsB = (u32*)VAlloc(bytes);
+        gBonusBits2 = (u32*)VAlloc(bytes);
+        for (i = 0; i < gBonusCount; i++) {
+            const char* d = VarObjData(0x5E130113, i);
+            if (d != NULL && *d != 0) {
+                gBonusUnlockCount++;
+            }
+        }
+        if (gBonusBits != NULL) {
+            memset(gBonusBits, 0, bytes);
+        }
+        if (gBonusBitsB != NULL) {
+            memset(gBonusBitsB, 0, bytes);
+        }
+        if (gBonusBits2 != NULL) {
+            memset(gBonusBits2, 0, bytes);
+        }
+    }
+    if (gArtBitsB == NULL && VarExists(0x80EDD05C, 0, 0) != 0) {
+        int skipped = 0;
+        gArtCountB = VarGroupObjCount(0x80EDD05C);
+        bytes = ((gArtCountB + 0x1F) / 32) * 4;
+        gArtCountA = gArtCountB;
+        gArtBitsB = (u32*)VAlloc(bytes);
+        gArtBitsA = (u32*)VAlloc(bytes);
+        for (i = 0; i < gArtCountB; i++) {
+            const char* d = VarObjData(0x80EDD05C, i);
+            if (d == NULL || *d == 0) {
+                int ev = GameEvent(0xBAA22E62, Fn800DF3B8(0x80EDD05C, i, 0x198917DC));
+                if (ev == -0x404C527A) {
+                    skipped++;
+                }
+            } else if (skipped < 1) {
+                gArtHidden++;
+            } else {
+                skipped++;
+            }
+        }
+        gArtCountB = gArtCountB - skipped;
+        if (gArtBitsB != NULL) {
+            memset(gArtBitsB, 0, bytes);
+        }
+        if (gArtBitsA != NULL) {
+            memset(gArtBitsA, 0, bytes);
+        }
+    }
+    if (gMusicBits == NULL && VarExists(0x258124CE, 0, 0) != 0) {
+        gMusicCount = VarGroupObjCount(0x258124CE);
+        bytes = ((gMusicCount + 0x1F) / 32) * 4;
+        gMusicBits = (u32*)VAlloc(bytes);
+        for (i = 0; i < gMusicCount; i++) {
+            const char* d = VarObjData(0x258124CE, i);
+            if (d != NULL && *d != 0) {
+                gMusicVisible++;
+            }
+        }
+        if (gMusicBits != NULL) {
+            memset(gMusicBits, 0, bytes);
+        }
+    }
+    if (gMovieBits == NULL && VarExists(0xD8E68AB7, 0, 0) != 0) {
+        gMovieCount = VarGroupObjCount(0xD8E68AB7);
+        bytes = ((gMovieCount + 0x1F) / 32) * 4;
+        gMovieBits = (u32*)VAlloc(bytes);
+        for (i = 0; i < gMovieCount; i++) {
+            const char* d = VarObjData(0xD8E68AB7, i);
+            if (d != NULL && *d != 0) {
+                gMovieVisible++;
+            }
+        }
+        if (gMovieBits != NULL) {
+            memset(gMovieBits, 0, bytes);
+        }
+        SaveGetOptions(gMovieBits, bytes);
+    }
+    if (gSecretBits == NULL && VarExists(0x5EB7A22E, 0, 0) != 0) {
+        gSecretCount = VarGroupObjCount(0x5EB7A22E);
+        bytes = ((gSecretCount + 0x1F) / 32) * 4;
+        gSecretBits = (u32*)VAlloc(bytes);
+        for (i = 0; i < gSecretCount; i++) {
+            const char* d = VarObjData(0x5EB7A22E, i);
+            if (d != NULL && *d != 0) {
+                gSecretVisible++;
+            }
+        }
+        if (gSecretBits != NULL) {
+            memset(gSecretBits, 0, bytes);
+        }
+    }
+    if (gCheatBits == NULL && VarExists(0x872E838C, 0, 0) != 0) {
+        gCheatCount = VarGroupObjCount(0x872E838C);
+        bytes = ((gCheatCount + 0x1F) / 32) * 4;
+        gCheatBits = (u32*)VAlloc(bytes);
+        if (gCheatBits != NULL) {
+            memset(gCheatBits, 0, bytes);
+        }
+    }
+}
+
 // Registers the extras message handler (type 99).
 // ExtrasMsgRegister
 void fn_80284CB0(void) {
     fn_80026660(99, (void*)fn_8027E954, 0);
+}
+
+extern int gPadStickTimer;      // 0x804D5614 (function static)
+extern int gPadDownEdge;        // 0x803C0CB0
+extern int gPadUpEdge;          // 0x803C0CB4
+
+// Turns the stick axes into edge-triggered up/down/left/right presses (0 idle, 1 pressed,
+// 2 held) with a repeat delay.
+void ExtrasPadUpdate(void) {
+    static int sRepeat = 0;             // 0x804D5614
+    float v;
+    if (gPadLeftEdge == 0) {
+        v = fn_800D8BE4(0, 0, 1, 0);
+        if (v < -0.65f) {
+            sRepeat = 0;
+            gPadLeftEdge = 1;
+        }
+    } else if (gPadLeftEdge == 1) {
+        v = fn_800D8BE4(0, 0, 1, 0);
+        if (v <= -0.55f) {
+            gPadLeftEdge = 2;
+        } else {
+            gPadLeftEdge = 0;
+        }
+    } else if (sRepeat > 10) {
+        gPadLeftEdge = 0;
+    }
+    if (gPadRightEdge == 0) {
+        v = fn_800D8BE4(0, 0, 1, 0);
+        if (0.65f < v) {
+            gPadRightEdge = 1;
+            sRepeat = 0;
+        }
+    } else if (gPadRightEdge == 1) {
+        v = fn_800D8BE4(0, 0, 1, 0);
+        if (0.55f <= v) {
+            gPadRightEdge = 2;
+        } else {
+            gPadRightEdge = 0;
+        }
+    } else if (sRepeat > 10) {
+        gPadRightEdge = 0;
+    }
+    if (gPadUpEdge == 0) {
+        v = fn_800D8BE4(0, 0, 2, 0);
+        if (v < -0.65f) {
+            gPadUpEdge = 1;
+        }
+    } else if (gPadUpEdge == 1) {
+        v = fn_800D8BE4(0, 0, 2, 0);
+        if (v <= -0.55f) {
+            gPadUpEdge = 2;
+        } else {
+            gPadUpEdge = 0;
+        }
+    } else {
+        v = fn_800D8BE4(0, 0, 2, 0);
+        if (-0.55f < v) {
+            gPadUpEdge = 0;
+        }
+    }
+    if (gPadDownEdge == 0) {
+        v = fn_800D8BE4(0, 0, 2, 0);
+        if (0.65f < v) {
+            gPadDownEdge = 1;
+        }
+    } else if (gPadDownEdge == 1) {
+        v = fn_800D8BE4(0, 0, 2, 0);
+        if (0.55f <= v) {
+            gPadDownEdge = 2;
+        } else {
+            gPadDownEdge = 0;
+        }
+    } else {
+        v = fn_800D8BE4(0, 0, 2, 0);
+        if (v < 0.55f) {
+            gPadDownEdge = 0;
+        }
+    }
+    sRepeat++;
 }
 
 extern "C" int FxFind(const char* name);        // 0x80170834
