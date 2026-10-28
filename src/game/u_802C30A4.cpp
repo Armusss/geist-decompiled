@@ -1026,3 +1026,95 @@ int BossEnterDie(Boss* b) {
 void BossForward88E0(void) {
     fn_80211A84();
 }
+
+extern "C" {
+void fn_8008F4E8(int anim, int a);
+void fn_8008F4EC(int anim, int a);
+void fn_8008F378(double a, int anim);
+int fn_800A1AC4(int a, int b, int c);
+int Rand(void);
+int fn_8008E7D0(int anim);
+}
+extern float lbl_804DAE6C;
+extern float lbl_804D3A00;
+
+// Starts the current state's animation, picking variant `pick` (or a random one if out of range).
+static inline void BossPlayStateAnim(Boss* b, int pick, bool randomize) {
+    if (b != NULL) {
+        BossState* s = b->state;
+        int anim = *(int*)((u8*)b + 0xD4);
+        int count;
+        if (fn_800A7AC4(&b->flags270, 0xC) != 0) {
+            fn_800A7A54(&b->flags270, 0xC, 0);
+            fn_800A7A54(&b->flags270, 0xE, 1);
+            fn_8008F4E8(anim, 0);
+            fn_8008F378(0.0, anim);
+            fn_8008F4EC(anim, 0);
+        }
+        count = fn_800A1AC4(*(int*)((u8*)b->cfg + 0x14), *(int*)((u8*)b->cfg + 0x1C), lbl_803C4E60[s->type * 6]);
+        if (count != 0) {
+            int idx;
+            if (randomize || pick < 0 || count <= pick) {
+                int r = Rand();
+                pick = r - (r / count) * count;
+            }
+            idx = fn_800A1BC8(*(int*)((u8*)b->cfg + 0x14), *(int*)((u8*)b->cfg + 0x1C), lbl_803C4E60[s->type * 6], pick, 0);
+            if (fn_8008E7D0(anim) != 0) {
+                fn_800A7A54(&b->flags270, 0x1C, 0);
+                if (fn_800A7AC4(&b->flags270, 0xE) == 0) {
+                    fn_8008F230(lbl_804DAE6C, anim, 0, 1);
+                } else {
+                    fn_800A7A54(&b->flags270, 0xE, 0);
+                    fn_8008F230(0.0, anim, 0, 0);
+                }
+                fn_80090974(1.0, anim, 0, idx, 9, (int)lbl_803C4E64[s->type].unk0C, (int)b);
+                s->anim = idx;
+            }
+        }
+    }
+}
+
+int BossEnterHurt(Boss* b) {
+    BossState* s = b->state;
+    s->type = 9;
+    if (b->health <= 0.0f)
+        s->next = 10;
+    else
+        s->next = 5;
+    BossPlayStateAnim(b, 0, true);
+    if (lbl_804D3ACC != -1) {
+        fn_8016EEF4(lbl_804D3ACC);
+        lbl_804D3ACC = -1;
+    }
+    FxStart(lbl_804D57C0, 0, 0);
+    return 1;
+}
+
+int BossEnterAttackB(Boss* b) {
+    BossState* s = b->state;
+    int pick;
+    s->type = 8;
+    s->next = 5;
+    pick = s->hitPart;
+    BossPlayStateAnim(b, pick, false);
+    s->hitTimer = lbl_804D3A00;
+    return 1;
+}
+
+int BossEnterAttackA(Boss* b) {
+    BossState* s = b->state;
+    int pick;
+    s->type = 7;
+    s->next = 5;
+    pick = s->hitPart;
+    BossPlayStateAnim(b, pick, false);
+    if (0.4f * (float)b->cfg->maxHealth <= b->health) {
+        if (0.7f * (float)b->cfg->maxHealth <= b->health)
+            s->hitTimer = lbl_804D39F4;
+        else
+            s->hitTimer = lbl_804D39F8;
+    } else {
+        s->hitTimer = lbl_804D39FC;
+    }
+    return 1;
+}
