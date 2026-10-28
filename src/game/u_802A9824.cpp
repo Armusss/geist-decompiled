@@ -155,7 +155,7 @@ inline void SetVar(int target, u32 hash, int value) {
 }
 
 struct AllyState {
-    int (*enter)(Actor* a);         // 0x00
+    int (*enter)(void* a);          // 0x00
     int (*canLeave)(Actor* a);      // 0x04
     int (*update)(Actor* a);        // 0x08
     const char* name;               // 0x0C
@@ -551,12 +551,14 @@ int AllyTrue3(Actor* a) {
     return 1;
 }
 
-int AllyEnterState4(Actor* a) {
+int AllyEnterState4(void* p) {
+    Actor* a;
     ActorInfoMsg info;
     int h;
-    if (a == NULL) {
+    if (p == NULL) {
         return 0;
     }
+    a = (Actor*)p;
     a->beh->state = 4;
     a->anim = 3;
     ConditionUpdateBit(a->conds, 4, 0);
@@ -1714,13 +1716,13 @@ int AllyStartMove(Actor* a, Actor* target) {
 
 
 AllyState gAllyStates[8] = {
-    { AllyEnterState0, AllyTrue5, AllyUpdateState1, "" },
-    { AllyEnterState1, AllyLeave, AllyUpdateState2, "" },
-    { AllyEnterState2, AllyExit, AllyUpdateState3, "" },
-    { AllyEnterState3, AllyTrue4, AllyUpdateState4, "" },
+    { (int (*)(void*))AllyEnterState0, AllyTrue5, AllyUpdateState1, "" },
+    { (int (*)(void*))AllyEnterState1, AllyLeave, AllyUpdateState2, "" },
+    { (int (*)(void*))AllyEnterState2, AllyExit, AllyUpdateState3, "" },
+    { (int (*)(void*))AllyEnterState3, AllyTrue4, AllyUpdateState4, "" },
     { AllyEnterState4, AllyTrue3, AllyUpdateState5, "" },
-    { AllyEnterState5, AllyTrue2, AllyUpdateState6, "" },
-    { AllyEnterState6, AllyTrue1, AllyUpdateFollow, "" },
-    { AllyEnterFollow, AllyReset, AllyUpdateWander, "" },
+    { (int (*)(void*))AllyEnterState5, AllyTrue2, AllyUpdateState6, "" },
+    { (int (*)(void*))AllyEnterState6, AllyTrue1, AllyUpdateFollow, "" },
+    { (int (*)(void*))AllyEnterFollow, AllyReset, AllyUpdateWander, "" },
 };
 

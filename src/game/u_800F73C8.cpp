@@ -150,7 +150,7 @@ extern DVDCommandBlock gStreamBlkAddr;  // 0x80457EE0
 extern DVDCommandBlock gStreamBlkErr;   // 0x80457EB0
 
 void StreamPrepared(void);
-void StreamErrorDone(char status);
+void StreamErrorDone(unsigned char status);
 void StreamAddrDone(u32 pos);
 
 // Calls the current entry's callback when it asked for event `bit`.
@@ -267,7 +267,7 @@ void StreamPrepared(void) {
 }
 
 // DVD error status callback.
-void StreamErrorDone(char status) {
+void StreamErrorDone(unsigned char status) {
     if (status != 0) {
         return;
     }
@@ -984,7 +984,7 @@ static inline int CamIndexOk(u32 handle) {
 
 // Base of the camera array plus 8 (the first object's second field).
 void* CameraTable(void) {
-    return (char*)gCams + 8;
+    return (char*)gCams + 0xC8;
 }
 
 // Turns the camera letterbox on or off.
@@ -1669,14 +1669,14 @@ int fn_800FD3EC(void) {
 }
 
 char* fn_800FD3FC(int i) {
-    if (i < 0 || i > 7) {
+    if (i < 0 || i >= 8) {
         i = 8;
     }
     return gTeamColors[i];
 }
 
 char* fn_800FD424(int i) {
-    if (i < 0 || i > 7) {
+    if (i < 0 || i >= 8) {
         i = 8;
     }
     return gTeamColors2[i];
@@ -1776,7 +1776,7 @@ const char* fn_800FD5C4(int c) {
 
 // Team of player slot `i` (-1 when out of range).
 int PlayerTeam(int i) {
-    if (i > -1 && i < gMinigame.count) {
+    if (i >= 0 && i < gMinigame.count) {
         return gMinigame.team[i];
     }
     return -1;
@@ -1794,7 +1794,7 @@ void MinigameSetTeam(int i, int team) {
 
 // Handle of player slot `i` (-1 when out of range).
 int fn_800FD6EC(int i) {
-    if (i > -1 && i < gMinigame.count) {
+    if (i >= 0 && i < gMinigame.count) {
         return gMinigame.handle[i];
     }
     return -1;
