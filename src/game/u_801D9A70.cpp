@@ -256,14 +256,14 @@ int CreatureWantsAttack(Creature* c) {
     }
 }
 
-bool CreatureClearFlags(Creature* c) {
-    if (c != NULL) {
-        fn_800A7028(&c->flags270);
-        fn_800A7B08(&c->flags270, 4, 0);
-        fn_800A7B08(&c->flags270, 9, 0);
-        fn_800A7B08(&c->flags270, 0x16, 0);
-    }
-    return c != NULL;
+int CreatureClearFlags(Creature* c) {
+    if (c == NULL)
+        return 0;
+    fn_800A7028(&c->flags270);
+    fn_800A7B08(&c->flags270, 4, 0);
+    fn_800A7B08(&c->flags270, 9, 0);
+    fn_800A7B08(&c->flags270, 0x16, 0);
+    return 1;
 }
 
 // Starts the retreat state when the target slot has someone to flee from.
@@ -311,13 +311,13 @@ bool CreatureShouldLeave(Creature* c) {
     return lbl_804D8CD4 < ai->time;
 }
 
-bool CreatureClearFlags2(Creature* c) {
-    if (c != NULL) {
-        fn_800A7028(&c->flags270);
-        fn_800A7B08(&c->flags270, 4, 0);
-        fn_800A7B08(&c->flags270, 9, 0);
-    }
-    return c != NULL;
+int CreatureClearFlags2(Creature* c) {
+    if (c == NULL)
+        return 0;
+    fn_800A7028(&c->flags270);
+    fn_800A7B08(&c->flags270, 4, 0);
+    fn_800A7B08(&c->flags270, 9, 0);
+    return 1;
 }
 
 // Starts the charge attack against the nearest target in range.
@@ -384,14 +384,14 @@ u32 CreatureCanChase(Creature* c) {
     return r;
 }
 
-bool CreatureClearFlags3(Creature* c) {
-    if (c != NULL) {
-        fn_800A7028(&c->flags270);
-        fn_800A7B08(&c->flags270, 4, 0);
-        fn_800A7B08(&c->flags270, 9, 0);
-        fn_800A7B08(&c->flags270, 0x16, 0);
-    }
-    return c != NULL;
+int CreatureClearFlags3(Creature* c) {
+    if (c == NULL)
+        return 0;
+    fn_800A7028(&c->flags270);
+    fn_800A7B08(&c->flags270, 4, 0);
+    fn_800A7B08(&c->flags270, 9, 0);
+    fn_800A7B08(&c->flags270, 0x16, 0);
+    return 1;
 }
 
 // Starts the ranged attack state.
@@ -475,16 +475,16 @@ int CreatureShootUpdate(Creature* c) {
     return 0;
 }
 
-bool CreatureStopChase(Creature* c) {
-    if (c != NULL) {
-        CreatureAi* ai = c->ai;
-        fn_800BBCA8(c);
-        fn_800A7028(&c->flags270);
-        fn_800A7B08(&c->flags270, 4, 0);
-        c->unk288 = 0;
-        ai->flags &= ~4;
-    }
-    return c != NULL;
+int CreatureStopChase(Creature* c) {
+    if (c == NULL)
+        return 0;
+    CreatureAi* ai = c->ai;
+    fn_800BBCA8(c);
+    fn_800A7028(&c->flags270);
+    fn_800A7B08(&c->flags270, 4, 0);
+    c->unk288 = 0;
+    ai->flags &= ~4;
+    return 1;
 }
 
 int CreatureStartApproach(Creature* c) {
@@ -510,17 +510,17 @@ int CreatureStartApproach(Creature* c) {
 extern "C" void fn_801DB48C(void) {
 }
 
-bool CreatureStopShoot(Creature* c) {
-    if (c != NULL) {
-        CreatureAi* ai = c->ai;
-        fn_800BBCA8(c);
-        fn_800A7028(&c->flags270);
-        fn_800A7B08(&c->flags270, 4, 0);
-        fn_800A7B08(&c->flags270, 0x16, 0);
-        c->unk288 = 0;
-        ai->flags &= ~4;
-    }
-    return c != NULL;
+int CreatureStopShoot(Creature* c) {
+    if (c == NULL)
+        return 0;
+    CreatureAi* ai = c->ai;
+    fn_800BBCA8(c);
+    fn_800A7028(&c->flags270);
+    fn_800A7B08(&c->flags270, 4, 0);
+    fn_800A7B08(&c->flags270, 0x16, 0);
+    c->unk288 = 0;
+    ai->flags &= ~4;
+    return 1;
 }
 
 int CreatureStartGuard(Creature* c) {
@@ -603,14 +603,14 @@ int CreatureHoldUpdate(Creature* c) {
     return 1;
 }
 
-bool CreatureStopHold(Creature* c) {
-    if (c != NULL) {
-        fn_800A7B08(&c->flags270, 4, 0);
-        fn_800A7B08(&c->flags270, 3, 0);
-        fn_800A7B08(&c->flags270, 0x16, 0);
-        fn_800A7028(&c->flags270);
-    }
-    return c != NULL;
+int CreatureStopHold(Creature* c) {
+    if (c == NULL)
+        return 0;
+    fn_800A7B08(&c->flags270, 4, 0);
+    fn_800A7B08(&c->flags270, 3, 0);
+    fn_800A7B08(&c->flags270, 0x16, 0);
+    fn_800A7028(&c->flags270);
+    return 1;
 }
 
 int CreatureStartSeek(Creature* c) {
