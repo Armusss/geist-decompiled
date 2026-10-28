@@ -154,6 +154,126 @@ int ShotMsg(int msg, int* m) {
     return 0;
 }
 
+// One vertex of a clip polygon.
+struct ClipVert {
+    float x, y, z;
+};
+
+extern float gClipPlanes[4][4];     // 0x8049F410: the four clip planes (normal, distance)
+extern "C" void DebugPrintf(const char* fmt, ...);      // 0x8000781C
+
+// Outcode of vertex `v` against the rectangle {minX, minZ, ?, maxX, ?, maxZ}.
+static inline u32 ClipOutcode(ClipVert* v, float* rect) {
+    u32 code = 0;
+    if (rect[0] <= v->x) {
+        if (rect[3] < v->x) {
+            code |= 2;
+        }
+    } else {
+        code |= 8;
+    }
+    if (rect[2] <= v->z) {
+        if (rect[5] < v->z) {
+            code |= 1;
+        }
+    } else {
+        code |= 4;
+    }
+    return code;
+}
+
+// Clips the shard's triangle against the screen rectangle: returns 1 when the clipped polygon
+// replaced it (type 0xA0, up to 6 vertices), 0 when it needs no clipping or is outside.
+int ShardClip(char* shard, float* rect) {
+    u32 any = 0;
+    u32 all = 15;
+    int cur = 0;
+    ClipVert buf[2][7];
+    u32 codes[6];
+    int n = (u8)shard[0xD5];
+    int i;
+    if (n == 0 || n > 6) {
+        DebugPrintf("ACK!!! vert ct : %d \n", n);
+    }
+    if (n != 3) {
+        return 0;
+    }
+    for (i = 0; i < 2; i++) {
+        buf[0][i + 1] = *(ClipVert*)(shard + 0x30 + i * 0xC);
+    }
+    buf[0][0] = *(ClipVert*)(shard + 0x30 + (n - 1) * 0xC);
+    for (i = 0; i < n; i++) {
+        codes[i] = ClipOutcode(&buf[0][i], rect);
+        any |= codes[i];
+        all &= codes[i];
+    }
+    if (any == 0) {
+        return 0;
+    }
+    if (all != 0) {
+        shard[0xD5] = 0;
+        return 0;
+    }
+    {
+        int plane;
+        int m = n;
+        for (plane = 0; plane < 4; plane++) {
+            ClipVert* in = buf[cur];
+            ClipVert* out = buf[cur ^ 1];
+            u32 bit = 1 << plane;
+            int outCount = 0;
+            for (i = 0; i < m; i++) {
+                codes[i] = ClipOutcode(&in[i], rect);
+            }
+            for (i = 0; i < m; i++) {
+                int next = i + 1;
+                if (next == m) {
+                    next = 0;
+                }
+                {
+                    u32 a = bit & codes[i];
+                    u32 b = bit & codes[next];
+                    if (a == 0 && b == 0) {
+                        out[++outCount] = in[next];
+                    } else if (a == 0 || b == 0) {
+                        float* pl = gClipPlanes[plane];
+                        float d0 = pl[2] * in[i].z + pl[0] * in[i].x + pl[1] * in[i].y;
+                        float d1 = pl[2] * in[next].z + pl[0] * in[next].x + pl[1] * in[next].y;
+                        float t = 0.0f;
+                        ClipVert p;
+                        if (d0 != d1) {
+                            t = (-pl[3] - d0) / (d1 - d0);
+                        }
+                        p.x = in[i].x + (in[next].x - in[i].x) * t;
+                        p.y = in[i].y + (in[next].y - in[i].y) * t;
+                        p.z = in[i].z + (in[next].z - in[i].z) * t;
+                        if (a == 0 && b != 0) {
+                            out[++outCount] = p;
+                        } else {
+                            out[++outCount] = p;
+                            out[++outCount] = in[next];
+                        }
+                        if (outCount > 6) {
+                            DebugPrintf("NOT ENOUGH ROOM! : %d \n", outCount);
+                            shard[0xD5] = 0;
+                            return 0;
+                        }
+                    }
+                }
+            }
+            out[0] = out[outCount];
+            cur ^= 1;
+            m = outCount;
+        }
+        for (i = 0; i < m; i++) {
+            *(ClipVert*)(shard + 0x30 + i * 0xC) = buf[cur][i + 1];
+        }
+        shard[0xD5] = (char)m;
+        shard[0xD4] = (char)0xA0;
+        return 1;
+    }
+}
+
 // Deletes every shard and then the shard array.
 // ShardArrayShutdown
 void fn_80233848(void) {
@@ -314,6 +434,137 @@ int ShardMsg(u32 id, int msg, int* m) {
     return 0;
 }
 
+extern float gShardGravity[3];      // 0x803BDA28
+extern float gShardSpread;          // 0x804D34CC
+extern "C" {
+void C_QUATSlerp(float* a, float* b, float t, float* out);          // 0x8030D4D0
+void PSQUATMultiply(float* a, float* b, float* out);                // 0x8030D420
+void fn_800A0030(float* out, void* m, float* v);
+void fn_800A025C(float* out, void* m, int col);
+void fn_800A0AC4(float* a, void* m);
+void fn_800A039C(float f, float* out, float* axis);
+void fn_800A0168(void* out, void* m);
+void fn_800A0EF0(void* m, float* q);
+int rand(void);
+}
+
+// Advances `count` shards (stride `stride`) by dt: gravity, spin, bounce on the floor `floorZ`
+// and merge-back when the pool is `flags & 1` (attached).  Returns the number still alive.
+int ShardUpdate(float dt, float floorZ, void* shards, int stride, int count, void* owner,
+                u32 flags, u32* hit) {
+    float zero = gShardZero;
+    char* sh = (char*)shards;
+    int alive = 0;
+    int k;
+    if (shards == NULL) {
+        return 0;
+    }
+    {
+        float damp = -(0.35f * ((float)rand() / 32767.0f));
+        float m[12];
+        ActorGetMatrix(m, owner);
+        for (k = 0; k < count; k++) {
+            float* f = (float*)sh;
+            if (zero < f[0x34]) {
+                f[0x33] += dt;
+                if (zero < f[0x33] && (sh[0xD7] & 8) == 0) {
+                    if ((flags & 1) == 0) {
+                        if ((sh[0xD7] & 1) != 0 && zero <= f[0x33]) {
+                            int i;
+                            int best = 0;
+                            float low;
+                            float off[3];
+                            float add[12];
+                            f[0x38] += (float)(int)hit[0] * gShardSpread;
+                            f[0x39] += (float)(int)hit[1] * gShardSpread;
+                            f[0x3A] += (float)(int)hit[2] * gShardSpread;
+                            for (i = 0; i < 12; i++) {
+                                f[i] = m[i];
+                            }
+                            sh[0xD7] &= ~1;
+                            low = f[0xE];
+                            for (i = 1; i < (u8)sh[0xD5]; i++) {
+                                if (f[0xE + i * 3] < low) {
+                                    best = i;
+                                    low = f[0xE + i * 3];
+                                }
+                            }
+                            off[0] = f[0xC + best * 3];
+                            off[1] = f[0xD + best * 3];
+                            off[2] = f[0xE + best * 3];
+                            for (i = 0; i < (u8)sh[0xD5]; i++) {
+                                f[0xC + i * 3] -= off[0];
+                                f[0xD + i * 3] -= off[1];
+                                f[0xE + i * 3] -= off[2];
+                            }
+                            fn_800A0168(add, f);
+                            fn_800A0030(off, add, off);
+                            f[9] += off[0];
+                            f[10] += off[1];
+                            f[11] += off[2];
+                        }
+                        if ((sh[0xD7] & 2) != 0) {
+                            float q[4];
+                            C_QUATSlerp(&f[0x2A], &f[0x2E], f[0x32], q);
+                            f[0x32] += dt / 1000.0f;
+                            fn_800A0EF0(f, q);
+                            if (gShardOne <= f[0x32]) {
+                                sh[0xD7] &= ~2;
+                                sh[0xD7] |= 4;
+                            }
+                        }
+                    }
+                    f[0x34] -= dt;
+                    f[0x38] += gShardGravity[0] * dt;
+                    f[0x39] += gShardGravity[1] * dt;
+                    f[0x3A] += gShardGravity[2] * dt;
+                    if ((flags & 1) == 0) {
+                        f[9] += f[0x38] * dt;
+                        f[10] += f[0x39] * dt;
+                        f[11] += f[0x3A] * dt;
+                        if (f[11] < floorZ) {
+                            f[11] = floorZ;
+                            if ((sh[0xD7] & 6) == 0) {
+                                float rel[3];
+                                float axis[3];
+                                float q[4];
+                                float side;
+                                sh[0xD7] |= 2;
+                                rel[0] = f[9] - m[9];
+                                rel[1] = f[10] - m[10];
+                                rel[2] = f[11] - m[11];
+                                fn_800A0030(axis, f, rel);
+                                side = (axis[1] <= zero) ? -1.0f : 1.0f;
+                                f[0x32] = zero;
+                                fn_800A025C(axis, f, 0);
+                                fn_800A0AC4(&f[0x2A], f);
+                                fn_800A039C(zero, q, axis);
+                                fn_800A039C(90.0f * side, q, axis);
+                                PSQUATMultiply(q, &f[0x2A], &f[0x2E]);
+                            }
+                            f[0x38] *= 0.85f;
+                            f[0x39] *= 0.85f;
+                            f[0x3A] *= damp;
+                        }
+                    } else {
+                        int i;
+                        float* v = f;
+                        for (i = 0; i < (u8)sh[0xD5]; i++) {
+                            v[0xC] += f[0x38] * dt;
+                            v[0xD] += f[0x39] * dt;
+                            v[0xE] += f[0x3A] * dt;
+                            v += 3;
+                        }
+                    }
+                }
+                alive++;
+            }
+            sh += stride;
+        }
+    }
+    return alive;
+}
+
 // Deferred draw callback for a pool.
 void ShardDrawFn(void* pool) {
     ShardPool* p = (ShardPool*)pool;
@@ -403,6 +654,97 @@ void AsyncDrawKick(void) {
             OSResumeThread(gAsyncThreadObj);
         } else {
             gAsyncRequest = 1;
+        }
+    }
+}
+
+struct GfxSnapshot {
+    float view[12];         // 0x804A0060
+    float proj[2];          // 0x804A0090: fov scales (filled from +0x34 / +0x40 of the camera)
+    float aspect;           // 0x804A0094
+};
+
+struct DrawJob {
+    int valid;              // 0x00
+    int data[11];           // 0x04
+};
+
+extern DrawJob gDrawJobs[0x40];     // 0x8049F460
+extern u32 gAsyncSnapView[12];      // 0x804A0060
+extern float gAsyncFovA;            // 0x804A0090
+extern float gAsyncFovB;            // 0x804A0094
+extern u8 gAsyncProj[0x1C];         // 0x804A009C
+extern u8 gAsyncView[0x18];         // 0x804A00B8
+extern u8 gAsyncMisc[0x18];         // 0x804A00D0
+extern void* gAsyncFifo;            // 0x804D5458
+extern "C" {
+u32* fn_800C5DD8(void);
+void fn_80008D7C(void);
+void GXFlush(void);
+void* GXGetGPFifo(void);
+void GXGetFifoPtrs(void* fifo, void** read, void** write);
+void fn_80009E44(int a, int b);
+void fn_80009398(float f, int n);
+void fn_800098B8(void* m);
+void fn_800092CC(void);
+void GXGetProjectionv(void* p);
+void GXGetViewportv(void* v);
+void fn_80008C78(void* p);
+void fn_80235114(DrawJob* j);
+void GXSetBreakPtCallback(void* cb);
+void GXEnableBreakPt(void* p);
+void fn_80234F88(void);
+}
+
+// Starts an async draw pass: snapshots the camera and replays the queued draw jobs.
+void fn_80234900(void) {
+    DrawJob* j = gDrawJobs;
+    int i;
+    void* rd;
+    void* wr;
+    if (gAsyncThread == 0 || gGfxDisabled != 0) {
+        return;
+    }
+    gAsyncActive = 0;
+    for (i = 0x40; i != 0; i--, j++) {
+        if (j->valid != 0) {
+            u32* cam;
+            gAsyncDone = 0;
+            gAsyncBusy = 0;
+            gAsyncRequest = 0;
+            gAsyncActive = 1;
+            cam = fn_800C5DD8();
+            for (i = 0; i < 12; i++) {
+                gAsyncSnapView[i] = cam[i];
+            }
+            gAsyncFovB = ((float*)cam)[0x10];
+            gAsyncFovA = ((float*)cam)[0xD];
+            fn_80008D7C();
+            GXFlush();
+            gAsyncFifo = GXGetGPFifo();
+            GXGetFifoPtrs(gAsyncFifo, &rd, &wr);
+            if (rd == wr) {
+                fn_80008D7C();
+                fn_80009E44(0, 1);
+                fn_80009398(gAsyncFovA, 2);
+                fn_80009398(gAsyncFovB, 3);
+                fn_800098B8(gAsyncSnapView);
+                fn_800092CC();
+                GXGetProjectionv(gAsyncProj);
+                GXGetViewportv(gAsyncView);
+                fn_80008C78(gAsyncMisc);
+                for (i = 0; i < 0x40; i++) {
+                    if (gDrawJobs[i].valid != 0) {
+                        fn_80235114(&gDrawJobs[i]);
+                    }
+                }
+                fn_80008D7C();
+                gAsyncActive = 0;
+                return;
+            }
+            GXSetBreakPtCallback((void*)fn_80234F88);
+            GXEnableBreakPt(wr);
+            return;
         }
     }
 }
