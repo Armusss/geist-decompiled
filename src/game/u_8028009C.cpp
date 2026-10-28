@@ -11,7 +11,20 @@ typedef unsigned char u8;
 
 #define NULL 0
 
+extern unsigned char __upper_map[256];
+inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
+
+inline u32 StrHash(u32 h, const char* s) {
+    const char* p;
+    for (p = s; *p != 0; p++) {
+        h = h * 31 + (unsigned char)toupper(*p);
+    }
+    h = h % 0xFFFFFFFF;
+    return h;
+}
+
 extern "C" {
+void* memset(void* p, int c, u32 n);
 void TextBegin(void);                               // 0x801ED0C8
 void TextSetMode(int m);                            // 0x801ED1A0
 void TextSetColor(int r, int g, int b, int a);      // 0x801ED1E4
@@ -66,6 +79,11 @@ extern int gMusicModel;         // 0x804D55B4
 extern int gArtSel;             // 0x804D5594
 extern int gArtBusy;            // 0x804D5598
 extern int gArtModel;           // 0x804D559C
+extern int gSecretSel;          // 0x804D55DC
+extern int gSecretBusy;         // 0x804D55E0
+extern int gBonusSel;           // 0x804D5574
+extern int gBonusBusy;          // 0x804D5578
+extern int gBonusModel;         // 0x804D557C
 extern int gMenuPage;           // 0x804D55F0
 extern int gMenuInPage;         // 0x804D55F4
 extern int gMenuFxMove;         // 0x804D5604
@@ -339,6 +357,8 @@ int fn_800C7E80(float* spawn);
 void fn_800C7B14(int model);
 void ActorRender(void);                                             // 0x800C7CE8
 float VarGetFloat(u32 table, int index, u32 key);                   // 0x800DF2C8
+void fn_80093424(void);
+void fn_800934D0(int id);
 }
 
 // Is list entry `i` of `table` hidden (no data record)?
@@ -348,8 +368,8 @@ static inline int ExtrasHidden(u32 table, int i) {
 }
 
 // Finds the first level whose gate matches the entry's game event: returns the gate index or -1.
-static inline int ExtrasGateFor(u32 table, int i) {
-    int ev = GameEvent(0xBAA22E62, Fn800DF3B8(table, i, 0x273D2D));
+static inline int ExtrasGateFor(u32 table, u32 key, int i) {
+    int ev = GameEvent(0xBAA22E62, Fn800DF3B8(table, i, key));
     int k;
     for (k = 0; k < 13; k++) {
         if (ev == (int)gLevelGates[k].event && k < gProgressLevel + 1) {
@@ -388,7 +408,7 @@ void ExtrasMoviePage(float dt) {
                 int i = gMovieSel;
                 int found = -1;
                 for (; i >= 0; i--) {
-                    if (ExtrasHidden(0xD8E68AB7, i) && ExtrasGateFor(0xD8E68AB7, i) != -1) {
+                    if (ExtrasHidden(0xD8E68AB7, i) && ExtrasGateFor(0xD8E68AB7, 0x273D2D, i) != -1) {
                         found = i;
                         break;
                     }
@@ -408,7 +428,7 @@ void ExtrasMoviePage(float dt) {
                     break;
                 }
             }
-            gMovieSel = ExtrasGateFor(0xD8E68AB7, i) == -1 ? i - 1 : i + 1;
+            gMovieSel = ExtrasGateFor(0xD8E68AB7, 0x273D2D, i) == -1 ? i - 1 : i + 1;
         }
         if (PadPressed(0, 0, 10) == 1 && gRepeatTimer > 10) {
             int i;
@@ -514,7 +534,7 @@ void ExtrasMusicPage(float dt) {
                 int i = gMusicSel;
                 int found = -1;
                 for (; i >= 0; i--) {
-                    if (ExtrasHidden(0x258124CE, i) && ExtrasGateFor(0x258124CE, i) != -1) {
+                    if (ExtrasHidden(0x258124CE, i) && ExtrasGateFor(0x258124CE, 0x273D2D, i) != -1) {
                         found = i;
                         break;
                     }
@@ -534,7 +554,7 @@ void ExtrasMusicPage(float dt) {
                     break;
                 }
             }
-            gMusicSel = ExtrasGateFor(0x258124CE, i) == -1 ? i - 1 : i + 1;
+            gMusicSel = ExtrasGateFor(0x258124CE, 0x273D2D, i) == -1 ? i - 1 : i + 1;
         }
         if (PadPressed(0, 0, 10) == 1 && gRepeatTimer > 10) {
             int i;
@@ -640,7 +660,7 @@ void ExtrasArtPage(float dt) {
                 int i = gArtSel;
                 int found = -1;
                 for (; i >= 0; i--) {
-                    if (ExtrasHidden(0x80EDD05C, i) && ExtrasGateFor(0x80EDD05C, i) != -1) {
+                    if (ExtrasHidden(0x80EDD05C, i) && ExtrasGateFor(0x80EDD05C, 0x198917DC, i) != -1) {
                         found = i;
                         break;
                     }
@@ -660,7 +680,7 @@ void ExtrasArtPage(float dt) {
                     break;
                 }
             }
-            gArtSel = ExtrasGateFor(0x80EDD05C, i) == -1 ? i - 1 : i + 1;
+            gArtSel = ExtrasGateFor(0x80EDD05C, 0x198917DC, i) == -1 ? i - 1 : i + 1;
         }
         if (PadPressed(0, 0, 10) == 1 && gRepeatTimer > 10) {
             int i;
@@ -737,6 +757,222 @@ void ExtrasArtPage(float dt) {
         float msg[2];
         msg[1] = dt;
         SendMsg(gArtModel, 0x414, msg);
+    }
+}
+
+// Bonus (weapon) list page: like the movie page, but the preview is a weapon firing its muzzle flash.
+void ExtrasBonusPage(float dt) {
+    int old = gBonusSel;
+    if (gBonusBits == NULL) {
+        gMenuInPage = 0;
+        return;
+    }
+    if (gBonusBusy == 0) {
+        if (gPadLeftEdge == 1) {
+            if (gBonusSel == -1) {
+                return;
+            }
+            gBonusSel--;
+            if (ExtrasHidden(0x5E130113, gBonusSel)) {
+                gBonusSel--;
+            }
+        }
+        if (gPadRightEdge == 1) {
+            if (gBonusSel == -1) {
+                return;
+            }
+            gBonusSel++;
+            if (gBonusSel < gBonusCount && ExtrasHidden(0x5E130113, gBonusSel)) {
+                int i = gBonusSel;
+                int found = -1;
+                for (; i >= 0; i--) {
+                    if (ExtrasHidden(0x5E130113, i) && ExtrasGateFor(0x5E130113, 0x198917DC, i) != -1) {
+                        found = i;
+                        break;
+                    }
+                }
+                if (found == -1) {
+                    gBonusSel--;
+                } else {
+                    gBonusSel++;
+                }
+            }
+        }
+        if (PadPressed(0, 0, 0xB) == 1 && gRepeatTimer > 10) {
+            int i;
+            gRepeatTimer = 0;
+            for (i = gBonusSel; i < gBonusCount - 1; i++) {
+                if (ExtrasHidden(0x5E130113, i)) {
+                    break;
+                }
+            }
+            gBonusSel = ExtrasGateFor(0x5E130113, 0x198917DC, i) == -1 ? i - 1 : i + 1;
+        }
+        if (PadPressed(0, 0, 10) == 1 && gRepeatTimer > 10) {
+            int i;
+            int seen = 0;
+            gRepeatTimer = 0;
+            for (i = gBonusSel; i >= 0; i--) {
+                if (ExtrasHidden(0x5E130113, i)) {
+                    if (seen) {
+                        gBonusSel = i + 1;
+                        break;
+                    }
+                    seen = 1;
+                }
+            }
+        }
+        gRepeatTimer++;
+        if (gBonusSel < 1) {
+            gBonusSel = 1;
+        } else if (gBonusSel > gBonusCount - 1) {
+            gBonusSel = gBonusCount - 1;
+        }
+        if (PadPressed(0, 0, 3) == 1 && gBonusSel != -1 && BitTest(gBonusBits, gBonusSel) != 0) {
+            int sel = gBonusSel;
+            float spawn[12];
+            float pos[3];
+            int act;
+            int fx[8];
+            int gun[2];
+            spawn[0] = 0.0f;
+            *(int*)&spawn[1] = Fn800DF3B8(0x5E130113, sel, 0x2D143A0B);
+            spawn[2] = 0.0f;
+            *(int*)&spawn[4] = Fn800DF3B8(0x5E130113, sel, 0x6F9E1166);
+            pos[2] = VarGetFloat(0x5E130113, sel, 0x5A);
+            pos[1] = VarGetFloat(0x5E130113, sel, 0x59);
+            pos[0] = VarGetFloat(0x5E130113, sel, 0x58);
+            Vec3Set(&spawn[8], VarGetFloat(0x5E130113, sel, 0x5A3309E2), VarGetFloat(0x5E130113, sel, 0x489CB20), 0.0f);
+            act = fn_800C7E80(pos);
+            if (act != 0) {
+                SendMsg(*(int*)(act + 0x38), 6, gun);
+            }
+            fn_800934D0(*(int*)&spawn[4]);
+            memset(fx, 0, 0x20);
+            SendMsg(*(int*)(act + 0x38), 0xC04, fx);
+            gun[0] = AssetFind(0xD9044CBB, StrHash(0, "MUZZLEFLASH"));
+            SendMsg(*(int*)(act + 0x38), 0xC02, gun);
+            gBonusModel = *(int*)(act + 0x38);
+            if (gBonusModel != 0) {
+                FxStart(gMenuFxSelect, 0, 0);
+                gBonusBusy = 1;
+            }
+        }
+        if (PadPressed(0, 0, 4) == 1) {
+            FxStart(gMenuFxBack, 0, 0);
+            gMenuInPage = 0;
+        }
+    } else {
+        if (PadPressed(0, 0, 4) == 1) {
+            gBonusBusy = 0;
+            FxStart(gMenuFxBack, 0, 0);
+            if (gBonusModel != 0) {
+                int m = gBonusModel;
+                int msg[2];
+                msg[1] = 0;
+                SendMsg(gBonusModel, 6, msg);
+                Fn800DF3B8(0x5E130113, gBonusSel, 0x6F9E1166);
+                fn_80093424();
+                fn_800C7B14(m);
+                ActorRender();
+            }
+            gBonusModel = 0;
+        }
+    }
+    if (old != gBonusSel) {
+        FxStart(gMenuFxMove, 0, 0);
+    }
+    if (gBonusModel != 0) {
+        float msg[2];
+        msg[1] = dt;
+        SendMsg(gBonusModel, 0x414, msg);
+    }
+}
+
+// Secrets page of the extras menu (same navigation as the list pages, no preview model).
+void ExtrasSecretPage(void) {
+    int old = gSecretSel;
+    if (gSecretBits == NULL) {
+        gMenuInPage = 0;
+        return;
+    }
+    if (gSecretBusy != 0) {
+        if (PadPressed(0, 0, 4) == 1) {
+            FxStart(gMenuFxBack, 0, 0);
+            gSecretBusy = 0;
+        }
+    } else {
+        if (gPadLeftEdge == 1) {
+            if (gSecretSel == -1) {
+                return;
+            }
+            gSecretSel--;
+            if (ExtrasHidden(0x5EB7A22E, gSecretSel)) {
+                gSecretSel--;
+            }
+        }
+        if (gPadRightEdge == 1) {
+            if (gSecretSel == -1) {
+                return;
+            }
+            gSecretSel++;
+            if (gSecretSel < gSecretCount && ExtrasHidden(0x5EB7A22E, gSecretSel)) {
+                int i = gSecretSel;
+                int found = -1;
+                for (; i >= 0; i--) {
+                    if (ExtrasHidden(0x5EB7A22E, i) && ExtrasGateFor(0x5EB7A22E, 0x273D2D, i) != -1) {
+                        found = i;
+                        break;
+                    }
+                }
+                if (found == -1) {
+                    gSecretSel--;
+                } else {
+                    gSecretSel++;
+                }
+            }
+        }
+        if (PadPressed(0, 0, 0xB) == 1 && gRepeatTimer > 10) {
+            int i;
+            gRepeatTimer = 0;
+            for (i = gSecretSel; i < gSecretCount - 1; i++) {
+                if (ExtrasHidden(0x5EB7A22E, i)) {
+                    break;
+                }
+            }
+            gSecretSel = ExtrasGateFor(0x5EB7A22E, 0x273D2D, i) == -1 ? i - 1 : i + 1;
+        }
+        if (PadPressed(0, 0, 10) == 1 && gRepeatTimer > 10) {
+            int i;
+            int seen = 0;
+            gRepeatTimer = 0;
+            for (i = gSecretSel; i >= 0; i--) {
+                if (ExtrasHidden(0x5EB7A22E, i)) {
+                    if (seen) {
+                        gSecretSel = i + 1;
+                        break;
+                    }
+                    seen = 1;
+                }
+            }
+        }
+        gRepeatTimer++;
+        if (gSecretSel < 1) {
+            gSecretSel = 1;
+        } else if (gSecretSel > gSecretCount - 1) {
+            gSecretSel = gSecretCount - 1;
+        }
+        if (PadPressed(0, 0, 3) == 1 && gSecretSel != -1 && BitTest(gSecretBits, gSecretSel) != 0) {
+            FxStart(gMenuFxSelect, 0, 0);
+            gSecretBusy = 1;
+        }
+        if (PadPressed(0, 0, 4) == 1) {
+            FxStart(gMenuFxBack, 0, 0);
+            gMenuInPage = 0;
+        }
+    }
+    if (old != gSecretSel) {
+        FxStart(gMenuFxMove, 0, 0);
     }
 }
 
@@ -960,7 +1196,7 @@ void ExtrasListDraw(u32 sel, int count, int (*iconFn)(u32), int alpha, u32 table
     }
     for (k = sel; k >= 0; k--) {
         if (ExtrasHidden(table, k)) {
-            if (ExtrasGateFor(table, k) != -1) {
+            if (ExtrasGateFor(table, nameKey, k) != -1) {
                 first = k;
             }
             break;
