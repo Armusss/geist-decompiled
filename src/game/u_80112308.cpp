@@ -230,3 +230,163 @@ int GfxSetSrcsAndColor(int* args, GfxMaterial* out) {
     }
     return GfxBlendNeeded();
 }
+
+// Per-frame light statistics and the light-array double buffer.
+extern int gLightStats[7];       // 0x8046B5B4..0x8046B5CC
+extern int gLightStats2[7];      // 0x8046B598..0x8046B5B0
+extern int gLightsLoaded;        // 0x804D4C78
+extern int gLightsFrame;         // 0x804D4C70
+extern int gLightsCalced;        // 0x804D4C74
+extern u8* gLightsBuf;           // 0x804D4C6C
+extern u8 gLightsPool[];         // 0x8045EA78
+extern "C" void fn_801145FC(void);
+extern "C" void fn_801140E8(int idx);
+extern "C" void fn_8011498C(void);
+
+// 0x80113A10: start a new lighting frame.
+void GfxLightsBeginFrame(void) {
+    gLightStats[6] = 0;
+    gLightStats[5] = 0;
+    gLightStats[4] = 0;
+    gLightStats[3] = 0;
+    gLightStats[2] = 0;
+    gLightStats[1] = 0;
+    gLightStats[0] = 0;
+    gLightsLoaded = 0;
+    gLightsFrame = (gLightsFrame + 1) & 3;
+    gLightsCalced = 0;
+    gLightsBuf = gLightsPool + gLightsFrame * 0x3200;
+    GXSetArray(GX_VA_NBT, gLightsBuf, 0x40);
+}
+
+// 0x80113ACC: clear the second statistics block.
+void GfxLightsClearStats(void) {
+    gLightStats2[0] = 0;
+    gLightStats2[1] = 0;
+    gLightStats2[2] = 0;
+    gLightStats2[3] = 0;
+    gLightStats2[4] = 0;
+    gLightStats2[5] = 0;
+    gLightStats2[6] = 0;
+}
+
+// 0x80114040: allocate/look up a light by id (1..200); returns slot or -1.
+int GfxLightSlot(int id) {
+    int bit = id - 1;
+    if (bit < 0 || bit >= 200) {
+        id = -1;
+    } else {
+        int word = bit >> 5;
+        u32 mask = 1 << (bit & 0x1F);
+        if ((mask & gLightStats[word]) == 0) {
+            gLightStats[word] |= mask;
+            gLightsLoaded++;
+            fn_801145FC();
+            fn_801140E8(id - 1);
+        }
+        id = id - 1;
+    }
+    return id;
+}
+
+// 0x8011496C: thunk.
+void GfxLightsFlush(void) {
+    fn_8011498C();
+}
+
+extern int gFbA;                 // 0x804D4C94
+extern int gFbB;                 // 0x804D4C98
+extern int gFbC;                 // 0x804D4C88
+extern int gFbD;                 // 0x804D4C8C
+extern u8* gFbBase;              // 0x804D4C90
+extern u8* gFbBase2;             // 0x804D4CA4
+extern "C" u8* fn_802869DC(int size);
+extern "C" void* fn_800A3990(void);
+extern "C" void fn_800C7B14(void);
+extern "C" float fn_8020D47C(void);
+extern int MemFlagIsSet(void* flags, int bit);
+extern void ConditionUpdateBit(void* flags, int bit, int on);
+
+// 0x80115E10: viewport rectangle as shorts.
+void GfxGetViewportRect(short* out) {
+    float vp[6];
+    GXGetViewportv(vp);
+    out[0] = (short)(int)vp[0];
+    out[2] = (short)(int)vp[1];
+    out[1] = (short)(int)(vp[0] + vp[2]);
+    out[3] = (short)(int)(vp[1] + vp[3]);
+}
+
+// 0x80115EA0: roll the saved counters forward.
+void GfxFbCommit(void) {
+    gFbA = gFbB;
+    gFbC = gFbD;
+}
+
+// 0x80115EB4: save or clear the counters.
+void GfxFbSave(int keep) {
+    if (keep != 0) {
+        gFbB = gFbA;
+        gFbD = gFbC;
+        return;
+    }
+    gFbB = 0;
+    gFbD = 0;
+}
+
+// 0x80115EE0: allocate the frame buffer pool.
+void GfxFbInit(void) {
+    gFbBase = fn_802869DC(0x14A000);
+    gFbBase2 = gFbBase + 0xA5000;
+    gFbA = 0;
+    gFbB = 0;
+    gFbD = 0;
+}
+
+struct CopyFilter {
+    u8 aa;                  // 0x00
+    u8 pattern[24];         // 0x01
+    u8 vf;                  // 0x19
+    u8 vfilter[7];          // 0x1A
+};
+extern CopyFilter gCopyFilters[];    // 0x8039ECE8
+
+// 0x80115F28: select a copy filter preset.
+void GfxSetCopyFilter(int i) {
+    GXSetCopyFilter(gCopyFilters[i].aa, (u8(*)[2])gCopyFilters[i].pattern, gCopyFilters[i].vf, gCopyFilters[i].vfilter);
+}
+
+// 0x80115F68: light brightness scale by owner type.
+float GfxOwnerBrightness(u32 id) {
+    id = id >> 24;
+    if (id == 0x13) {
+        void* a = fn_800A3990();
+        if (a == 0) {
+            return 0.0f;
+        }
+        if (MemFlagIsSet((char*)a + 0x270, 0x18) != 0) {
+            return 0.0f;
+        }
+        if (MemFlagIsSet((char*)a + 0x270, 0x19) == 0) {
+            return 1.0f;
+        }
+        return 0.5f;
+    }
+    if (id < 0x13 && id == 1) {
+        fn_800C7B14();
+        return fn_8020D47C();
+    }
+    return 0.0f;
+}
+
+// 0x8011600C: mark the player as lit / dark.
+void GfxMarkPlayerLit(float v) {
+    void* a = fn_800A3990();
+    if (a != 0) {
+        if (1.0f <= v) {
+            ConditionUpdateBit((char*)a + 0x270, 0x18, 1);
+        } else {
+            ConditionUpdateBit((char*)a + 0x270, 0x19, 1);
+        }
+    }
+}
