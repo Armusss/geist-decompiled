@@ -37,10 +37,13 @@ public:
     virtual void Release(char* p);
 };
 
+struct Boss;
+
 // Per-boss behaviour state (reached through Boss::state).
 struct BossState {
     int type;               // 0x00
-    u8 pad04[8];
+    int next;               // 0x04
+    u8 pad08[4];
     float partHp[4];        // 0x0C: arm / leg part health
     float heartHp;          // 0x1C
     float partFlash[4];     // 0x20
@@ -51,9 +54,25 @@ struct BossState {
     int mode;               // 0x44
     int slots[4];           // 0x48
     int slotCount;          // 0x58
-    u8 pad5C[0x20];
+    u8 pad5C[0x18];
+    float shotDelay;        // 0x74
+    int shotState;          // 0x78
     float stunHp;           // 0x7C
-    int stunState;          // 0x80
+    int attackA;            // 0x80
+    int attackB;            // 0x84
+    float attackC;          // 0x88
+    int hitIds[4];          // 0x8C
+    float hitTimers[4];     // 0x9C
+};
+
+// One row of the boss state table (24 bytes).
+struct BossStateOps {
+    void (*enter)(Boss* b);                 // 0x00
+    int (*canLeave)(Boss* b, int next);     // 0x04
+    int (*update)(Boss* b);                 // 0x08
+    void* unk0C;                            // 0x0C
+    const char* name;                       // 0x10
+    void* unk14;                            // 0x14
 };
 
 struct BossCfg {
@@ -135,6 +154,8 @@ void fn_80038AE8(int model, int id, int a, int b);
 void* memset(void* p, int c, u32 n);
 }
 extern const char* lbl_803C4E74[];
+extern "C" double __fabs(double);
+extern "C" float sqrtf(float);
 extern char lbl_8034BEE0[];
 int BossSetupHit(BossMsg* m);
 void BossHitFeedback(BossMsg* m);
@@ -381,9 +402,177 @@ int BossSetupHit(BossMsg* m) {
                     q.hash = 0xAA24D309;
                     SendMsg(*(int*)(player + 0x38), 0x41D, &q);
                 }
-                s->stunState = 0;
+                s->attackA = 0;
             }
         }
     }
     return 1;
+}
+
+extern "C" {
+void fn_8009F7A8(Mtx34* out, Vec3* dir);
+void MtxGetEuler(Vec3* out, Mtx34* m);
+void fn_800E1098(double scale, Vec3* in, Vec3* out);
+int fn_800C7E80(Vec3* pos);
+}
+
+// Spawns the hit spark for the hit in `m`, and records it in the boss's hit-effect slots.
+void BossHitFeedback(BossMsg* m) {
+    int* other = (int*)m->arg1;
+    BossState* s = m->boss->state;
+    int slot = -1;
+    Vec3 dir;
+    Vec3 pos;
+    Vec3 euler;
+    Mtx34 look;
+    int spawned;
+    float best;
+
+    dir.z = (float)(other[0x2C / 4] - ((int*)m)[8]);
+    dir.x = (float)(other[0x24 / 4] - ((int*)m)[6]);
+    dir.y = (float)(other[0x28 / 4] - ((int*)m)[7]);
+    best = 999989.0f;
+    if (((1.1920929e-07f < __fabs(dir.x)) ? 1 : 0) + ((1.1920929e-07f < __fabs(dir.y)) ? 1 : 0) + ((1.1920929e-07f < __fabs(dir.z)) ? 1 : 0) == 0) {
+        dir.x = 0.0f;
+        dir.y = 0.0f;
+        dir.z = 0.0f;
+    } else {
+        float inv = 1.0f / sqrtf(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
+        dir.x *= inv;
+        dir.y *= inv;
+        dir.z *= inv;
+    }
+    fn_8009F7A8(&look, &dir);
+    MtxGetEuler(&euler, &look);
+    dir.x = -dir.x;
+    dir.y = -dir.y;
+    dir.z = -dir.z;
+    pos.x = (float)((int*)m)[6];
+    pos.y = (float)((int*)m)[7];
+    pos.z = (float)((int*)m)[8];
+    fn_800E1098(2000.0f, &dir, &dir);
+    pos.x += dir.x;
+    pos.y += dir.y;
+    pos.z += dir.z;
+    spawned = fn_800C7E80(&pos);
+    if (spawned != 0) {
+        String s0;
+        struct {
+            int a;
+            int hash;
+            int c;
+        } q;
+        q.hash = 0x6220F224;
+        q.c = 0;
+        SendMsg(*(int*)(spawned + 0x38), 0x41D, &q);
+        {
+            float* timers = s->hitTimers;
+            if (timers[0] < best) {
+                slot = 0;
+                best = timers[0];
+            }
+            if (timers[1] < best) {
+                slot = 1;
+                best = timers[1];
+            }
+            if (timers[2] < best) {
+                slot = 2;
+                best = timers[2];
+            }
+            if (timers[3] < best)
+                slot = 3;
+        }
+        if (slot != -1) {
+            s->hitIds[slot] = *(int*)(spawned + 0x38);
+            s->hitTimers[slot] = 800.0f;
+        }
+    }
+}
+
+void VFree(void* p);
+extern "C" {
+void fn_800A7B08(void* set, int i, int v);
+void fn_8006DB74(double v);
+}
+extern BossStateOps lbl_803C4E64[];
+extern float lbl_804D3A48;
+extern int lbl_804D3A54;
+extern int lbl_804D3A58;
+extern int lbl_804D3A5C;
+extern int lbl_804D3A60;
+
+// Frees the boss's behaviour state.
+void BossFreeState(Boss* b) {
+    *(int*)((u8*)b + 0x110) = 0;
+    VFree(b->state);
+    b->state = NULL;
+}
+
+// Hurt-type messages: picks the attack set from the remaining health.
+int BossOnHurt(int msg, Boss* b) {
+    BossState* s;
+    if (b == NULL)
+        return 0;
+    s = b->state;
+    if (msg == 0x1B83833F) {
+        lbl_803C4E64[s->type].canLeave(b, s->next);
+        lbl_803C4E64[s->next].enter(b);
+    } else {
+        if (msg < 0x1B83833F) {
+            if (msg != 0x20EE36) {
+                if (msg < 0x20EE36) {
+                    if (msg != -0xD44A5E9)
+                        return 1;
+                } else if (msg != 0x26E045) {
+                    return 1;
+                }
+            }
+        } else if (msg != 0x3961ACD5) {
+            if (0x3961ACD4 < msg)
+                return 1;
+            if (msg != 0x395E188C)
+                return 1;
+        }
+        if (s->attackA == -1) {
+            float max = (float)b->cfg->maxHealth;
+            if (b->health <= 0.8f * max) {
+                if (b->health <= 0.5f * max) {
+                    s->attackA = lbl_804D3A5C;
+                    s->attackB = lbl_804D3A60;
+                    s->attackC = 0.0f;
+                } else {
+                    s->attackA = lbl_804D3A58;
+                    s->attackB = 0;
+                    s->attackC = 0.0f;
+                }
+            } else {
+                s->attackA = lbl_804D3A54;
+                s->attackB = 0;
+                s->attackC = 0.0f;
+            }
+        }
+    }
+    return 1;
+}
+
+int BossEnterState(Boss* b, int next) {
+    BossState* s = b->state;
+    s->next = next;
+    if (s->type == 6) {
+        fn_800A7B08(&b->flags270, 10, 1);
+        fn_80049948();
+        fn_8006DB74(lbl_804D3A48);
+        s->stunHp = lbl_804D3A08;
+    }
+    return 0;
+}
+
+int BossSetNext(Boss* b, int next) {
+    b->state->next = next;
+    fn_800A7A54(&b->flags270, 0, 0);
+    return 1;
+}
+
+int BossReturnZero(void) {
+    return 0;
 }
