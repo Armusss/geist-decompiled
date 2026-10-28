@@ -74,6 +74,27 @@ int CARDSetStatus(int chan, int fileNo, CARDStat* stat);
 int CARDFreeBlocks(int chan, int* bytesNotUsed, int* filesNotUsed);
 }
 
+// Functions called from other units under their placeholder names.
+struct CardSaveDesc;
+struct Actor;
+struct Beh;
+extern "C" int fn_802DDEDC(float dt, int msgId, int flag, int mode);
+extern "C" int fn_802DE64C(int msgId, int* out);
+extern "C" void fn_802E14B0(const char* fileName, const char* title, const char* subtitle, int size,
+                        int* buf, int dataSize, const void* icon, const void* banner,
+                        CardSaveDesc* desc);
+extern "C" int fn_802E1728(int* m, int flagB);
+extern "C" int fn_802E1B38(int* m);
+extern "C" int fn_802E1BBC(int* m, int op);
+extern "C" void fn_802E1C10(int* m);
+extern "C" void fn_802E1C1C(int* m);
+extern "C" void fn_802E1C48(int* m, int chan, CardSaveDesc* desc, void* workArea);
+extern "C" int fn_802E29F0(void);
+extern "C" int fn_802E29F8(Actor* a, Beh* beh, int msg);
+extern "C" int fn_802E2C30(Actor* a, Beh* beh);
+extern "C" int fn_802E2D98(void* unused, Beh* beh);
+extern "C" int fn_802E2DD0(Actor* a, Beh* beh);
+
 float LoadingTime(void);
 extern "C" {
 int fn_800059D0(int button);
@@ -101,7 +122,63 @@ struct CardMsg {
     CardChoice choice[5];   // 0x10
 };
 
-extern CardMsg gCardMsgs[2][25];    // 0x803C57F0 (one table per font encoding)
+// Message table, one block per font encoding (0x803C57F0).
+CardMsg gCardMsgs[2][25] = {
+    {  // language 0
+        { -16, "THE MEMORY CARD IN SLOT %s IS CORRUPTED AND\nNEEDS TO BE FORMATTED.\nDO YOU WANT TO FORMAT?", 3, 0, {{"RETRY",4},{"FORMAT MEMORY CARD",1},{"CONTINUE WITHOUT %s",2},{NULL,0},{NULL,0}} },
+        { -19, "THE MEMORY CARD IN SLOT %s IS DAMAGED\nAND CANNOT BE USED.", 2, 0, {{"RETRY",4},{"CONTINUE WITHOUT %s",3},{NULL,0},{NULL,0},{NULL,0}} },
+        { -18, "THE MEMORY CARD IN SLOT %s IS INCOMPATIBLE\nWITH THIS GAME AND CANNOT BE USED.", 2, 0, {{"RETRY",4},{"CONTINUE WITHOUT %s",3},{NULL,0},{NULL,0},{NULL,0}} },
+        { -17, "NO MEMORY CARD FOUND IN SLOT %s.  PLEASE\nINSERT A MEMORY CARD WITH AT LEAST 1 FILE\nAND 2 BLOCKS OF FREE SPACE TO SAVE GAME\nDATA.", 2, 0, {{"RETRY",4},{"CONTINUE WITHOUT %s",3},{NULL,0},{NULL,0},{NULL,0}} },
+        { -26, "THE GEIST FILE IN SLOT %s IS CORRUPT AND\nMUST BE DELETED.", 1, 0, {{"OKAY",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -27, "THERE IS RESTORABLE DATA ON THE MEMORY CARD\nIN SLOT %s. THIS DATA WILL BE RESTORED.", 1, 0, {{"OKAY",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -29, "THERE IS NOT ENOUGH SPACE ON THE MEMORY\nCARD IN SLOT %s.  GEIST REQUIRES 1 FILE AND 2\nBLOCKS TO CREATE A NEW SAVE FILE.", 3, 0, {{"RETRY",4},{"MANAGE MEMORY CARD",5},{"CONTINUE WITHOUT %s",3},{NULL,0},{NULL,0}} },
+        { -28, "THERE IS NOT ENOUGH SPACE ON THE MEMORY\nCARD IN SLOT %s.  GEIST REQUIRES 1 FILE AND 2\nBLOCKS TO CREATE A NEW SAVE FILE.", 3, 0, {{"RETRY",4},{"MANAGE MEMORY CARD (UNSAVED DATA WILL BE LOST)",5},{"CONTINUE WITHOUT %s",3},{NULL,0},{NULL,0}} },
+        { -38, "THE GEIST FILE ON THE MEMORY CARD IN SLOT %s\nIS CORRUPTED.  THIS FILE NEEDS TO BE DELETED.", 1, 0, {{"OKAY",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -39, "THE GEIST FILE CANNOT BE FOUND ON THE\nMEMORY CARD IN SLOT %s.", 2, 1, {{"OKAY",1},{"RETRY",4},{NULL,0},{NULL,0},{NULL,0}} },
+        { -37, "READ COMPLETE.", 1, 0, {{"OKAY",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -36, "READ FAILED.", 1, 0, {{"OKAY",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -15, "THE DEVICE IN SLOT %s IS NOT SUPPORTED.\nREPLACE WITH A MEMORY CARD.", 2, 0, {{"RETRY",4},{"CONTINUE WITHOUT %s",3},{NULL,0},{NULL,0},{NULL,0}} },
+        { -59, "DO YOU WANT TO OVERWRITE THE GEIST SAVE FILE\nON THE MEMORY CARD IN SLOT %s?", 2, 1, {{"YES",1},{"NO",2},{NULL,0},{NULL,0},{NULL,0}} },
+        { -58, "COMPLETED.", -1500, 0, {{NULL,0},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -57, "SAVE FAILED.", 1, 0, {{"OKAY",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -56, "THE MEMORY CARD IN SLOT %s IS DAMAGED\nAND CANNOT BE USED.", 2, 0, {{"RETRY",4},{"CONTINUE WITHOUT %s",3},{NULL,0},{NULL,0},{NULL,0}} },
+        { -14, "THE MEMORY CARD IN SLOT %s IS CORRUPTED AND\nNEEDS TO BE FORMATTED.\nDO YOU WANT TO FORMAT?", 3, 0, {{"RETRY",4},{"FORMAT MEMORY CARD",1},{"CONTINUE WITHOUT %s",3},{NULL,0},{NULL,0}} },
+        { -13, "FORMATTING THE MEMORY CARD IN SLOT %s WILL\nERASE ALL PREVIOUSLY SAVED DATA.  CONTINUE?", 2, 1, {{"YES",1},{"NO",2},{NULL,0},{NULL,0},{NULL,0}} },
+        { -12, "FAILED TO FORMAT THE MEMORY CARD. THE\nMEMORY CARD IS DAMAGED AND CANNOT BE USED.", 2, 0, {{"RETRY",4},{"CONTINUE WITHOUT %s",3},{NULL,0},{NULL,0},{NULL,0}} },
+        { -11, "FAILED TO FORMAT THE MEMORY CARD IN SLOT %s\nBECAUSE IT WAS REMOVED.  OPERATION WILL\nCONTINUE.", 1, 0, {{"OKAY",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -10, "FORMAT COMPLETE.", 1, 0, {{"OKAY",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -3, "FORMATTING MEMORY CARD IN SLOT %s\nPLEASE DO NOT TOUCH THE MEMORY CARD\nOR POWER BUTTON.", -100, 0, {{NULL,0},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -2, "WRITING TO THE MEMORY CARD.\nPLEASE DO NOT TOUCH THE MEMORY\nCARD IN SLOT %s OR POWER BUTTON.", -1500, 0, {{NULL,0},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -0x80, NULL, 0, 0, {{NULL,0},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+    },
+    {  // language 1
+        { -16, "\203X\203\215\203b\203g%s\202\314\203\201\203\202\203\212\201[\203J\201[\203h\202\315\n\203f\201[\203^\202\252\202\261\202\355\202\352\202\304\202\242\202\351\202\314\202\305\217\211\212\372\n\211\273\202\252\225K\227v\202\305\202\267", 2, 0, {{"\217\211\212\372\211\273\202\267\202\351",1},{"%s\202\265\202\310\202\242\202\305\216n\202\337\202\351",2},{NULL,0},{NULL,0},{NULL,0}} },
+        { -19, "\203X\203\215\203b\203g%s\202\311\202\263\202\263\202\301\202\304\202\242\202\351\n\202\340\202\314\202\315\202\261\202\355\202\352\202\304\202\242\202\351\202\314\202\305\n\216g\227p\202\305\202\253\202\334\202\271\202\361", 2, 0, {{"\203\212\203g\203\211\203C",4},{"%s\202\265\202\310\202\242\202\305\216n\202\337\202\351",3},{NULL,0},{NULL,0},{NULL,0}} },
+        { -18, "\203X\203\215\203b\203g%s\202\314\203\201\203\202\203\212\201[\203J\201[\203h\n\202\315\202\261\202\314\203Q\201[\203\200\202\305\202\315\216g\227p\202\305\202\253\202\334\n\202\271\202\361", 2, 0, {{"\203\212\203g\203\211\203C",4},{"%s\202\265\202\310\202\242\202\305\216n\202\337\202\351",3},{NULL,0},{NULL,0},{NULL,0}} },
+        { -17, "\203X\203\215\203b\203g%s\202\311\211\275\202\340\202\263\202\263\202\301\202\304\202\242\202\334\202\271\202\361", 2, 0, {{"\203\212\203g\203\211\203C",4},{"%s\202\265\202\310\202\242\202\305\216n\202\337\202\351",3},{NULL,0},{NULL,0},{NULL,0}} },
+        { -26, "\203X\203\215\203b\203g%s\202\314\203\201\203\202\203\212\203J\201[\203h\202\311\202\315\n\202\261\202\355\202\352\202\275\203f\201[\203^\202\252\221\266\215\335\202\265\202\334\202\267\n\202\261\202\314\203f\201[\203^\202\315\215\355\217\234\202\263\202\352\202\334\202\267", 1, 0, {{"\215\355\217\234",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -27, "\203X\203\215\203b\203g%s\202\314\203\201\203\202\203\212\201[\203J\201[\203h\202\311\n\202\315\217C\225\234\211\302\224\202\310\202\261\202\355\202\352\202\275\203f\201[\203^\202\252\n\221\266\215\335\202\265\202\334\202\267\201B\n\202\261\202\314\203f\201[\203^\202\360\217C\225\234\202\265\202\334\202\267\201B", 1, 0, {{"\217C\225\234",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -29, "There is not enough space on the Memory Card in\nSlot %s. GEIST requires 1 FILE and 2 blocks to\ncreate a new save file.", 3, 0, {{"Retry",4},{"Manage Memory Card",5},{"Continue without %s",3},{NULL,0},{NULL,0}} },
+        { -28, "\203X\203\215\203b\203g%s\202\314\203\201\203\202\203\212\201[\203J\201[\203h\202\311\202\315\n\217\225\252\202\310\213\363\202\253\227e\227\312\202\252\202\240\202\350\202\334\202\271\202\361\201B\n\202\261\202\314\203f\203\202\202\360\203Z\201[\203u\202\267\202\351\202\311\202\3151\202\302\202\314\n\213\363\202\253\203t\203@\203C\203\213\202\306\201A\202W\203u\203\215\203b\203N\202\314\213\363\202\253\n\227e\227\312\202\252\225K\227v\202\305\202\267\201B\n", 3, 0, {{"\203\212\203g\203\211\203C",4},{"\203\212\203Z\203b\203g\202\265\202\304\226{\221\314\203\201\203\202\203\212\201[\203J\201[\203h\n\211\346\226\312\202\326\201i\203Z\201[\203u\202\263\202\352\202\304\202\242\202\310\202\242\n\203f\201[\203^\202\315\216\270\202\355\202\352\202\334\202\267\201B)",5},{"%s\202\265\202\310\202\242\202\305\216n\202\337\202\351",3},{NULL,0},{NULL,0}} },
+        { -38, "\203X\203\215\203b\203g%s\202\314\203\201\203\202\203\212\203J\201[\203h\202\311\202\315\n\202\261\202\355\202\352\202\275\203f\201[\203^\202\252\221\266\215\335\202\265\202\334\202\267\n\202\261\202\314\203f\201[\203^\202\315\215\355\217\234\202\263\202\352\202\334\202\267", 1, 0, {{"\215\355\217\234",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -39, "\203X\203\215\203b\203g%s\202\311\202\315\203f\203\202\203t\203@\203C\203\213\202\252\n\221\266\215\335\202\265\202\334\202\271\202\361\201B\n", 2, 1, {{"\202\315\202\242",1},{"\203\212\203g\203\211\203C",4},{NULL,0},{NULL,0},{NULL,0}} },
+        { -37, "Read Complete.\n", 1, 0, {{"Okay",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -36, "Read Failed.", 1, 0, {{"Okay",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -15, "\203X\203\215\203b\203g%s\202\311\202\263\202\263\202\301\202\304\202\242\202\351\n\202\340\202\314\202\315\216g\227p\202\305\202\253\202\334\202\271\202\361", 2, 0, {{"\203\212\203g\203\211\203C",4},{"%\202\265\202\310\202\242\202\305\216n\202\337\202\351",3},{NULL,0},{NULL,0},{NULL,0}} },
+        { -59, "\203X\203\215\203b\203g%sGEIST\202\314\203t\203@\203C\203\213\202\360\n\217\343\217\221\202\253\202\265\202\334\202\267\202\251", 2, 1, {{"\202\315\202\242",1},{"\202\242\202\242\202\246",2},{NULL,0},{NULL,0},{NULL,0}} },
+        { -58, "Save Complete", -1500, 0, {{"Okay",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -56, "\203X\203\215\203b\203g%s\202\311\202\263\202\263\202\301\202\304\202\242\202\351\n\202\340\202\314\202\315\202\261\202\355\202\352\202\304\202\242\202\351\202\314\202\305\n\216g\227p\202\305\202\253\202\334\202\271\202\361", 2, 0, {{"\203\212\203g\203\211\203C",4},{"%s\202\265\202\310\202\242\202\305\216n\202\337\202\351",3},{NULL,0},{NULL,0},{NULL,0}} },
+        { -57, "Save Failed.", 1, 0, {{"Okay",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -14, "\203X\203\215\203b\203g%s\202\314\203\201\203\202\203\212\201[\203J\201[\203h\202\315\201A\221\274\202\314\n\203}\201[\203P\203b\203g\227p\202\311\203t\203H\201[\203}\203b\203g\202\263\202\352\202\304\202\242\n\202\334\202\267\201B", 3, 0, {{"\203\212\203g\203\211\203C",4},{"\203t\203H\201[\203}\203b\203g",1},{"%s\202\265\202\310\202\242\202\305\216n\202\337\202\351",3},{NULL,0},{NULL,0}} },
+        { -13, "\203X\203\215\203b\203g%s\202\314\203\201\203\202\203\212\201[\203J\201[\203h\202\360\n\217\211\212\372\211\273\202\265\202\334\202\267\202\251\201B\n", 2, 1, {{"\202\315\202\242",1},{"\202\242\202\242\202\246",2},{NULL,0},{NULL,0},{NULL,0}} },
+        { -12, "Failed to format the\nMemory Card in Slot %s.\n", 1, 0, {{"Okay",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -11, "Failed to format the\nMemory Card in Slot %s\nbecuase it was removed.\nOperation (%s) will continue.", 1, 0, {{"Okay",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -10, "FORMAT COMPLETE.", 1, 0, {{"OKAY",1},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -3, "\203X\203\215\203b\203g%s\202\314\203\201\203\202\203\212\201[\203J\201[\203h\202\360\203t\203H\201[\203}\203b\203g\222\206\202\305\202\267\201B\n\203\201\203\202\203\212\201[\203J\201[\203h\201A\202\340\202\265\202\255\202\315\223d\214\271\203X\203C\203b\203`\202\311\216\350\202\360\n\220G\202\352\202\310\202\242\202\305\202\255\202\276\202\263\202\242\201B\n", 0, 0, {{NULL,0},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -2, "Please Do Not Touch Memory Card\nin Slot %s or Power Button.", 0, 0, {{NULL,0},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+        { -0x80, NULL, 0, 0, {{NULL,0},{NULL,0},{NULL,0},{NULL,0},{NULL,0}} },
+    },
+};
 extern char gCardVerb[0x20];        // 0x804A4A88
 extern u32 gCardCrcTable[256];      // 0x804A4AA8
 extern Color4 gCardTextColor;       // 0x804D3D90
@@ -120,6 +197,31 @@ extern int sCardIsSaving;           // 0x804D5860
 extern int sCardSel;                // 0x804D5864
 extern int sCardOverwriteOk;        // 0x804D5828
 extern float gCardInputDelay;       // 0x804DB29C
+
+static inline u32 CardCrc(u32* data, u32 len) {
+    u32 crc = 0;
+    u32 i;
+    for (i = 0; i < len; i++) {
+        crc = (crc << 8) ^ gCardCrcTable[((crc >> 24) ^ (int)((char*)data)[i]) & 0xFF];
+    }
+    return crc;
+}
+
+static int CardVerifyCrc(u32* data, u32 size) {
+    u32 saved = *data;
+    *data = 0;
+    if ((int)data[1] < 1 || (int)data[2] < 1 || size < data[1] + data[2]) {
+        return 0;
+    }
+    {
+        u32 crc = CardCrc(data, data[1] + data[2]);
+        if (saved == crc) {
+            return 1;
+        }
+        OSReport("CRCVerifyCRC Error: CRCs doesn't match!!\nSaved CRC  = 0x%x\nActual CRC = 0x%x\n", saved, crc);
+        return 0;
+    }
+}
 
 static inline CardMsg* CardMsgFind(int id) {
     CardMsg* tbl = gCardMsgs[OSGetFontEncode() & 0xFFFF];
@@ -145,7 +247,7 @@ static inline int CardCountLines(const char* s) {
 // Shows message `msgId`; returns the chosen result (or 0 while undecided, 1 when a timed
 // message has run out).
 // CardMsgShow (called by other units under its placeholder name)
-extern "C" int fn_802DDEDC(float dt, int msgId, int flag, int mode) {
+int fn_802DDEDC(float dt, int msgId, int flag, int mode) {
     static int sShownId = 0;            // 0x804D5868
     static float sTimer = 0.0f;         // 0x804D5870
     static float sDelay = 0.0f;         // 0x804D5878
@@ -286,7 +388,7 @@ extern "C" int fn_802DDEDC(float dt, int msgId, int flag, int mode) {
 // Looks up message `msgId`: returns its choice count (1 for timed messages, with *out set to 1)
 // or 0 when missing; a single-choice message stores its result in *out.
 // CardMsgQuery (called by other units under its placeholder name)
-extern "C" int fn_802DE64C(int msgId, int* out) {
+int fn_802DE64C(int msgId, int* out) {
     CardMsg* msg = CardMsgFind(msgId);
     int count;
     if (msg == NULL) {
@@ -315,9 +417,9 @@ void CardCheckPrintState(int state) {
         case 0xD1: OSReport("CARD_GUIDE1_CHECK_STAT_OPEN_FILE\n"); break;
         case 0xD2: OSReport("CARD_GUIDE1_CHECK_STAT_OPEN_TEMP\n"); break;
         case 0xD3: OSReport("CARD_GUIDE1_CHECK_STAT_CHECK_TEMP\n"); break;
+        case 0xD6: OSReport("CARD_GUIDE1_CHECK_STAT_DELETE_TEMP\n"); break;
         case 0xD4: OSReport("CARD_GUIDE1_CHECK_STAT_DELETE_FILE\n"); break;
         case 0xD5: OSReport("CARD_GUIDE1_CHECK_STAT_RESTORE_TEMP\n"); break;
-        case 0xD6: OSReport("CARD_GUIDE1_CHECK_STAT_DELETE_TEMP\n"); break;
         case 0xD7: OSReport("CARD_GUIDE1_CHECK_STAT_SPACE\n"); break;
         case 4: OSReport("CARD_GUIDE1_RTRN_REBOOT\n"); break;
         case 2: OSReport("CARD_GUIDE1_RTRN_CONTINUE\n"); break;
@@ -370,78 +472,17 @@ int CardGuide1CheckFile(CardCheck* c, int flagB) {
     int bytesFree;
     int filesFree;
     CARDFileInfo info;
+    CARDFileInfo tmpInfo;
     CARDStat stat;
     int need;
 
     c->flagB = flagB;
     CardCheckPrintState(c->state);
     switch (c->state) {
-    case 4:
-        c->state = 0xD0;
-        return 4;
-    case -0x1A:
-        if (c->mode == 1) {
-            c->state = 0xD6;
-        } else {
-            c->state = -0x1A;
-        }
-        return -0x1A;
-    case -0x1C:
-        if (c->mode == 3) {
-            c->state = 2;
-        } else if (c->mode == 5) {
-            c->state = 4;
-        } else if (c->mode == 4) {
-            c->state = 0xD0;
-        } else {
-            c->state = -0x1C;
-        }
-        return -0x1C;
-    case -0x1B:
-        if (c->mode == 1) {
-            c->state = 0xD4;
-        } else {
-            c->state = -0x1B;
-        }
-        return -0x1B;
-    case -0x1D:
-        if (c->mode == 3) {
-            c->state = 2;
-        } else if (c->mode == 5) {
-            c->state = 4;
-        } else if (c->mode == 4) {
-            c->state = 0xD0;
-        } else {
-            c->state = -0x1D;
-        }
-        return -0x1D;
-    case 1:
-        c->state = 0xD0;
-        if (c->fileNo == -1) {
-            return 3;
-        }
-        return 1;
-    case 0:
-        c->state = 0xD0;
-        return 0;
-    case 2:
-        c->state = 0xD0;
-        return 2;
-    case 0xD4:
-        if (c->fileNo == -1) {
-            r = 0;
-        } else {
-            r = CARDFastDelete(c->chan, c->fileNo);
-        }
-        OSReport(" CARDFastDelete(): %d \n", r);
-        if (r == 0) {
-            c->state = 0xD5;
-        } else if (r < 0 && r > -2) {
-            c->state = 0xD4;
-        } else {
-            OSReport("Unexpected Error %d \n", r);
-            c->state = 0;
-        }
+    case 0xD0:
+        strcpy(c->name, (const char*)c->desc);
+        sprintf(c->tmpName, "%c%s", 0x21, c->name);
+        c->state = 0xD1;
         return -1;
     case 0xD1:
         memset(&info, 0, sizeof(info));
@@ -463,26 +504,10 @@ int CardGuide1CheckFile(CardCheck* c, int flagB) {
         OSReport("Unexpected Error %d \n", r);
         c->state = 0;
         return -1;
-    case 0xD3:
-        r = CARDGetStatus(c->chan, c->tmpFileNo, &stat);
-        OSReport(" CARDGetStatus(): %d \n", r);
-        if (r == 0) {
-            if (stat.length - 0x40U < stat.commentAddr) {
-                c->state = 0xD6;
-            } else {
-                c->state = 0xD4;
-            }
-        } else if (r < 0 && r > -2) {
-            c->state = 0xD3;
-        } else {
-            OSReport("Unexpected Error %d \n", r);
-            c->state = 0;
-        }
-        return -1;
     case 0xD2:
-        r = CARDOpen(c->chan, c->tmpName, &info);
+        r = CARDOpen(c->chan, c->tmpName, &tmpInfo);
         if (r == 0) {
-            c->tmpFileNo = info.fileNo;
+            c->tmpFileNo = tmpInfo.fileNo;
         } else {
             c->tmpFileNo = -1;
         }
@@ -504,39 +529,37 @@ int CardGuide1CheckFile(CardCheck* c, int flagB) {
             c->state = 0;
         }
         return -1;
-    case 0xD0:
-        strcpy(c->name, (const char*)c->desc);
-        sprintf(c->tmpName, "%c%s", 0x21, c->name);
-        c->state = 0xD1;
+    case 0xD3:
+        r = CARDGetStatus(c->chan, c->tmpFileNo, &stat);
+        OSReport(" CARDGetStatus(): %d \n", r);
+        if (r == 0) {
+            if (stat.length - 0x40U < stat.commentAddr) {
+                c->state = 0xD6;
+            } else {
+                c->state = 0xD4;
+            }
+        } else if (r < 0 && r > -2) {
+            c->state = 0xD3;
+        } else {
+            OSReport("Unexpected Error %d \n", r);
+            c->state = 0;
+        }
         return -1;
-    case 0xD7:
-        if (c->flagB == 0) {
-            c->state = 1;
-            return -1;
+    case 0xD4:
+        if (c->fileNo == -1) {
+            r = 0;
+        } else {
+            r = CARDFastDelete(c->chan, c->fileNo);
         }
-        r = CARDFreeBlocks(c->chan, &bytesFree, &filesFree);
-        need = c->desc->size;
-        OSReport(" CARDFreeBlocks(): %d \n", r);
-        if (r != -3 && r > -4) {
-            if (r == 0) {
-                if (filesFree > 0 && need <= bytesFree) {
-                    c->state = 1;
-                    return -1;
-                }
-                if (c->flagA != 0) {
-                    c->state = -0x1C;
-                    return -1;
-                }
-                c->state = -0x1D;
-                return -1;
-            }
-            if (r < 0 && r > -2) {
-                c->state = 0xD7;
-                return -1;
-            }
+        OSReport(" CARDFastDelete(): %d \n", r);
+        if (r == 0) {
+            c->state = 0xD5;
+        } else if (r < 0 && r > -2) {
+            c->state = 0xD4;
+        } else {
+            OSReport("Unexpected Error %d \n", r);
+            c->state = 0;
         }
-        OSReport("Unexpected Error %d \n", r);
-        c->state = 0;
         return -1;
     case 0xD5:
         r = CARDRename(c->chan, c->tmpName, c->name);
@@ -569,6 +592,86 @@ int CardGuide1CheckFile(CardCheck* c, int flagB) {
             c->state = 0;
         }
         return -1;
+    case 0xD7:
+        if (c->flagB == 0) {
+            c->state = 1;
+            return -1;
+        }
+        r = CARDFreeBlocks(c->chan, &bytesFree, &filesFree);
+        need = c->desc->size;
+        OSReport(" CARDFreeBlocks(): %d \n", r);
+        if (r != -3 && r > -4) {
+            if (r == 0) {
+                if (filesFree > 0 && need <= bytesFree) {
+                    c->state = 1;
+                    return -1;
+                }
+                if (c->flagA != 0) {
+                    c->state = -0x1C;
+                    return -1;
+                }
+                c->state = -0x1D;
+                return -1;
+            }
+            if (r < 0 && r > -2) {
+                c->state = 0xD7;
+                return -1;
+            }
+        }
+        OSReport("Unexpected Error %d \n", r);
+        c->state = 0;
+        return -1;
+    case -0x1A:
+        if (c->mode == 1) {
+            c->state = 0xD6;
+        } else {
+            c->state = -0x1A;
+        }
+        return -0x1A;
+    case -0x1B:
+        if (c->mode == 1) {
+            c->state = 0xD4;
+        } else {
+            c->state = -0x1B;
+        }
+        return -0x1B;
+    case -0x1D:
+        if (c->mode == 3) {
+            c->state = 2;
+        } else if (c->mode == 5) {
+            c->state = 4;
+        } else if (c->mode == 4) {
+            c->state = 0xD0;
+        } else {
+            c->state = -0x1D;
+        }
+        return -0x1D;
+    case -0x1C:
+        if (c->mode == 3) {
+            c->state = 2;
+        } else if (c->mode == 5) {
+            c->state = 4;
+        } else if (c->mode == 4) {
+            c->state = 0xD0;
+        } else {
+            c->state = -0x1C;
+        }
+        return -0x1C;
+    case 4:
+        c->state = 0xD0;
+        return 4;
+    case 1:
+        c->state = 0xD0;
+        if (c->fileNo == -1) {
+            return 3;
+        }
+        return 1;
+    case 2:
+        c->state = 0xD0;
+        return 2;
+    case 0:
+        c->state = 0xD0;
+        return 0;
     }
     OSPanic("MemCard.c", 0xC09, "Illegal state in CARDGuide1CheckFile\n");
     return 0;
@@ -870,7 +973,7 @@ void CardSavePrintState(int state) {
         case 5: OSReport("CARD_GUIDE1_RTRN_NO_OVERWRITE\n"); break;
         case -0x3B: OSReport("CARD_GUIDE1_SAVE_MESG_OVERWRITE\n"); break;
         case -0x3A: OSReport("CARD_GUIDE1_SAVE_MESG_DONE\n"); break;
-        case -0x39:
+        case -0x39: OSReport("CARD_GUIDE1_SAVE_MESG_FAILED\n"); break;
         case -0x38: OSReport("CARD_GUIDE1_SAVE_MESG_FAILED\n"); break;
         default: OSPanic("MemCard.c", 0x887, "DebugPrint case not supported"); break;
         }
@@ -896,15 +999,6 @@ struct CardSave {
     int fileNo;             // 0x198
     int useTemp;            // 0x19C
 };
-
-static inline u32 CardCrc(u32* data, u32 len) {
-    u32 crc = 0;
-    u32 i;
-    for (i = 0; i < len; i++) {
-        crc = (crc << 8) ^ gCardCrcTable[((crc >> 24) ^ (int)((char*)data)[i]) & 0xFF];
-    }
-    return crc;
-}
 
 int CardGuide1SaveFile(CardSave* c) {
     int r;
@@ -1205,22 +1299,6 @@ struct CardRead {
     int corrupt;            // 0x94
 };
 
-static inline int CardVerifyCrc(u32* data, u32 size) {
-    u32 saved = *data;
-    *data = 0;
-    if ((int)data[1] < 1 || (int)data[2] < 1 || size < data[1] + data[2]) {
-        return 0;
-    }
-    {
-        u32 crc = CardCrc(data, data[1] + data[2]);
-        if (saved == crc) {
-            return 1;
-        }
-        OSReport("CRCVerifyCRC Error: CRCs doesn't match!! Saved CRC  = 0x%x Actual CRC = 0x%x \n", saved, crc);
-        return 0;
-    }
-}
-
 int CardGuide1ReadFile(CardRead* c) {
     int r;
 
@@ -1367,9 +1445,9 @@ int CardGuide1ReadFile(CardRead* c) {
 
 // Fills a save buffer (title, subtitle, banner, icon and payload) and its description.
 // CardSaveBufferInit (called by other units under its placeholder name)
-extern "C" void fn_802E14B0(const char* fileName, const char* title, const char* subtitle, int size,
-                        int* buf, int dataSize, const void* icon, const void* banner,
-                        CardSaveDesc* desc) {
+void fn_802E14B0(const char* fileName, const char* title, const char* subtitle, int size,
+                 int* buf, int dataSize, const void* icon, const void* banner,
+                 CardSaveDesc* desc) {
     *buf = 0;
     buf[2] = dataSize;
     buf[1] = 0x204C;
@@ -1456,7 +1534,7 @@ void CardInitStatCheck(int* m) {
 
 // Top-level card state machine: dispatches to the Fig2 / check / save / read contexts.
 // CardGuide1Init (called by other units under its placeholder name)
-extern "C" int fn_802E1728(int* m, int flagB) {
+int fn_802E1728(int* m, int flagB) {
     int r = CARDProbe(m[0]);
     int state;
     if (m[3] != (int)0xDEADF00D && r != m[3]) {
@@ -1578,7 +1656,7 @@ extern "C" int fn_802E1728(int* m, int flagB) {
 
 // Detects a card swap; returns 1 when the card state changed.
 // CardChanged (called by other units under its placeholder name)
-extern "C" int fn_802E1B38(int* m) {
+int fn_802E1B38(int* m) {
     int r = CARDProbe(m[0]);
     if (m[3] == (int)0xDEADF00D || r == m[3]) {
         return 0;
@@ -1594,7 +1672,7 @@ extern "C" int fn_802E1B38(int* m) {
 
 // Starts an operation on an idle manager.
 // CardStartOp (called by other units under its placeholder name)
-extern "C" int fn_802E1BBC(int* m, int op) {
+int fn_802E1BBC(int* m, int op) {
     if (m[0x14 / 4] != 0) {
         return 0;
     }
@@ -1609,13 +1687,13 @@ extern "C" int fn_802E1BBC(int* m, int op) {
 }
 
 // CardSetBusy (called by other units under its placeholder name)
-extern "C" void fn_802E1C10(int* m) {
+void fn_802E1C10(int* m) {
     m[0xA8 / 4] = 1;
 }
 
 // Resets the state of the sub-machines.
 // CardResetStates (called by other units under its placeholder name)
-extern "C" void fn_802E1C1C(int* m) {
+void fn_802E1C1C(int* m) {
     m[4 / 4] = 0xA1;
     m[0x24 / 4] = 0xB0;
     m[0x40 / 4] = 0xD0;
@@ -1625,7 +1703,7 @@ extern "C" void fn_802E1C1C(int* m) {
 
 // Builds the CRC32 table and sets up the manager for `chan`.
 // CardMgrInit (called by other units under its placeholder name)
-extern "C" void fn_802E1C48(int* m, int chan, CardSaveDesc* desc, void* workArea) {
+void fn_802E1C48(int* m, int chan, CardSaveDesc* desc, void* workArea) {
     u32 i;
     u32 v;
     u32* p = gCardCrcTable;
@@ -2048,7 +2126,7 @@ void AimBehReset(void* unused, Actor* a) {
 }
 
 // AimBehFalse (called by other units under its placeholder name)
-extern "C" int fn_802E29F0(void) {
+int fn_802E29F0(void) {
     return 0;
 }
 
@@ -2059,7 +2137,7 @@ static inline void AimEnter(Actor* a, BehData* d) {
 }
 
 // AimBehMsg (called by other units under its placeholder name)
-extern "C" int fn_802E29F8(Actor* a, Beh* beh, int msg) {
+int fn_802E29F8(Actor* a, Beh* beh, int msg) {
     BehData* d;
     if (beh == NULL) {
         return 0;
@@ -2108,7 +2186,7 @@ extern "C" int fn_802E29F8(Actor* a, Beh* beh, int msg) {
 }
 
 // AimBehTick (called by other units under its placeholder name)
-extern "C" int fn_802E2C30(Actor* a, Beh* beh) {
+int fn_802E2C30(Actor* a, Beh* beh) {
     BehData* d;
     if (beh == NULL) {
         return 0;
@@ -2139,7 +2217,7 @@ extern "C" int fn_802E2C30(Actor* a, Beh* beh) {
 }
 
 // AimBehFree (called by other units under its placeholder name)
-extern "C" int fn_802E2D98(void* unused, Beh* beh) {
+int fn_802E2D98(void* unused, Beh* beh) {
     if (beh != NULL) {
         VFree(beh->data);
     }
@@ -2147,7 +2225,7 @@ extern "C" int fn_802E2D98(void* unused, Beh* beh) {
 }
 
 // AimBehInit (called by other units under its placeholder name)
-extern "C" int fn_802E2DD0(Actor* a, Beh* beh) {
+int fn_802E2DD0(Actor* a, Beh* beh) {
     BehData* d;
     if (beh == NULL) {
         return 0;
