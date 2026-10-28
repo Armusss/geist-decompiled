@@ -27,8 +27,11 @@ struct SceneNode {
     u32 flags;              // 0x018
     u8 pad1C[0xCC];
     Vec3 pos;               // 0x0E8
+    u8 padF4[4];
     Vec3 vel;               // 0x0F8
+    u8 pad104[4];
     Vec3 accel;             // 0x108
+    u8 pad114[4];
     Vec3 rotAdd;            // 0x118
     u8 pad124[0x1C];
     float prevA;            // 0x140
@@ -112,7 +115,7 @@ void SceneNodeSetPinned(SceneNode* n, int pinned) {
     n->flags |= 8;
 }
 
-u32 SceneNodeNotLocked(SceneNode* n) {
+u8 SceneNodeNotLocked(SceneNode* n) {
     return (n->flags >> 2 & 1) ^ 1;
 }
 
@@ -129,15 +132,11 @@ void SceneNodeSnapPrev(SceneNode* n) {
 int SceneNodeListGet(SceneNode* n, int index) {
     ListLink* l = n->list;
     int i = 0;
-    while (true) {
-        if (l == NULL)
-            return 0;
+    for (; l != NULL; l = l->next, i++) {
         if (i == index)
-            break;
-        l = l->next;
-        i++;
+            return l->value;
     }
-    return l->value;
+    return 0;
 }
 
 int SceneNodeListCount(SceneNode* n) {
