@@ -278,7 +278,7 @@ static inline void BossPlayStateAnim(Boss* b, int pick, bool randomize) {
             fn_800A7A54(&b->flags270, 0xC, 0);
             fn_800A7A54(&b->flags270, 0xE, 1);
             fn_8008F4E8(anim, 0);
-            fn_8008F378(0.0, anim);
+            fn_8008F378(0.0f, anim);
             fn_8008F4EC(anim, 0);
         }
         count = fn_800A1AC4(*(int*)((u8*)b->cfg + 0x14), *(int*)((u8*)b->cfg + 0x1C), lbl_803C4E60[s->type * 6]);
@@ -295,9 +295,9 @@ static inline void BossPlayStateAnim(Boss* b, int pick, bool randomize) {
                     fn_8008F230(lbl_804DAE6C, anim, 0, 1);
                 } else {
                     fn_800A7A54(&b->flags270, 0xE, 0);
-                    fn_8008F230(0.0, anim, 0, 0);
+                    fn_8008F230(0.0f, anim, 0, 0);
                 }
-                fn_80090974(1.0, anim, 0, idx, 9, (int)lbl_803C4E64[s->type].unk0C, (int)b);
+                fn_80090974(1.0f, anim, 0, idx, 9, (int)lbl_803C4E64[s->type].unk0C, (int)b);
                 s->anim = idx;
             }
         }
@@ -422,7 +422,7 @@ int BossMsgHandler(int msg, BossMsg* m) {
                     fn_8003F15C(v, model, a, b->skin, p, 0);
                     return 1;
                 }
-                fn_8003F15C(1.0, model, a, b->skin, p, 0);
+                fn_8003F15C(1.0f, model, a, b->skin, p, 0);
                 return 1;
             }
         } else if (msg == 6) {
@@ -1058,7 +1058,7 @@ int BossUpdateIdle(Boss* b) {
 int BossUpdateWalk(Boss* b) {
     BossState* s = b->state;
     BossRefreshStates(b);
-    if (5.0f <= __fabs(*(float*)((u8*)b + 0x284)))
+    if (__fabs(*(float*)((u8*)b + 0x284)) >= 5.0f)
         return s->type;
     return 0;
 }
@@ -1102,16 +1102,16 @@ int BossEnterDie(Boss* b) {
     s->type = 10;
     s->next = 11;
     fn_800A7A54(&b->flags270, 0xE, 1);
-    fn_8008F230(0.0, *(int*)((u8*)b + 0xD4), 0, 1);
+    fn_8008F230(0.0f, *(int*)((u8*)b + 0xD4), 0, 1);
     *(int*)((u8*)b + 0x220) = 4;
     fn_800A7A54(&b->flags270, 0xD, 1);
     anim = fn_800A1BC8(*(int*)((u8*)b->cfg + 0x14), *(int*)((u8*)b->cfg + 0x1C), lbl_803C4E60[s->type * 6], 0, 0);
-    fn_80090974(1.0, *(int*)((u8*)b + 0xD4), 0, anim, 0x58, (int)lbl_803C4E64[s->type].unk0C, (int)b);
+    fn_80090974(1.0f, *(int*)((u8*)b + 0xD4), 0, anim, 0x58, (int)lbl_803C4E64[s->type].unk0C, (int)b);
     s->anim = anim;
     fn_800A7028(&b->flags270);
     fn_800A7A54(&b->flags270, 0xC, 1);
     fn_800A7A54(&b->flags270, 0xD, 1);
-    fn_800913EC(0.0, *(int*)((u8*)b + 0xD4), 0);
+    fn_800913EC(0.0f, *(int*)((u8*)b + 0xD4), 0);
     if (lbl_804D3AC8 != -1) {
         fn_8016EEF4(lbl_804D3AC8);
         lbl_804D3AC8 = -1;
