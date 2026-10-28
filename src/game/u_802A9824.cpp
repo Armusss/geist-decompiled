@@ -173,7 +173,8 @@ int HasCondition(void* conds, int bit);
 int MemFlagIsSet(void* flags, int bit);
 int ActorPlayAnim(int handle, u32 hash, int arg);
 void ActorAimOffset2D(void* actor, float* pos, float* a, float* b);
-float OwnerValue(void* owner, void* other = 0);
+float OwnerValue(void* owner);
+float OwnerValue(void* owner, void* other);
 void ActorGetMatrix(Mtx34* m, void* actor);
 void EulerNormalize(Vec3* dst, Vec3* src);
 
@@ -226,7 +227,7 @@ void fn_8016D440(float* out, Vec3* v);
 void fn_8016D4EC(Vec3* out, float* e);
 }
 int AllyTargetFilter(int first, int second, Actor* a);
-int AllyPickFilter(int id, Actor* self);
+bool AllyPickFilter(int id, Actor* self);
 int AllyNearCallback(Actor* a, Actor* b);
 int AllyStartMove(Actor* a, Actor* target);
 int AllyPickState(Actor* a);
@@ -425,7 +426,10 @@ int AllyTrue1(Actor* a) {
 }
 
 int AllyEnterState6(Actor* a) {
-    if (a != NULL) {
+    if (a == NULL) {
+        return 0;
+    }
+    {
         a->beh->state = 6;
         a->anim = 0;
         RangeResetPending(a->conds);
@@ -433,7 +437,7 @@ int AllyEnterState6(Actor* a) {
         ConditionUpdateBit(a->conds, 4, 0);
         ConditionUpdateBit(a->conds, 3, 0);
     }
-    return a != NULL;
+    return 1;
 }
 
 int AllyUpdateState6(Actor* a) {
@@ -508,7 +512,10 @@ int AllyTrue2(Actor* a) {
 }
 
 int AllyEnterState5(Actor* a) {
-    if (a != NULL) {
+    if (a == NULL) {
+        return 0;
+    }
+    {
         a->beh->state = 5;
         a->anim = 0;
         RangeResetPending(a->conds);
@@ -516,7 +523,7 @@ int AllyEnterState5(Actor* a) {
         ConditionUpdateBit(a->conds, 4, 1);
         ConditionUpdateBit(a->conds, 3, 0);
     }
-    return a != NULL;
+    return 1;
 }
 
 int AllyUpdateState5(Actor* a) {
@@ -1551,12 +1558,12 @@ int AllyPickState(Actor* a) {
     return (a->mode == 5) + 1;
 }
 
-int AllyPickFilter(int id, Actor* self) {
+bool AllyPickFilter(int id, Actor* self) {
     ActorInfoMsg info;
     if (SendMsg(id, 0x400, &info) == 0 || info.actor == NULL) {
         return 0;
     }
-    return !(OwnerValue(self) < 4000.0f);
+    return !(OwnerValue(self, info.actor) < 4000.0f);
 }
 
 int AllyNearCallback(Actor* a, Actor* b) {
