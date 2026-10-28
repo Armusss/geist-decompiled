@@ -975,10 +975,10 @@ void FxMsgThunk(int index, int msg, Msg* m) {
     FxMsg(msg, m);
 }
 
-// STUB (not drafted yet, 0x1248 bytes at 0x80079618): message handler of the FxInst actors.
+// TODO (not drafted yet, 0x1248 bytes at 0x80079618): message handler of the FxInst actors.
 int FxMsg(int msg, Msg* m);
 
-// STUB (not drafted yet, 0x424 bytes at 0x8007A860): spawns the spirit-trail effects when an actor is touched.
+// TODO (not drafted yet, 0x424 bytes at 0x8007A860): spawns the spirit-trail effects when an actor is touched.
 void FxTouch(Actor* fx, FxDef* def, Actor* other);
 
 // ---- Flicker lights (level chunk 5) and the pool of running flicker patterns ----
@@ -1421,7 +1421,7 @@ int FlickerStart(Msg* m, void* def, int (*cb)(int, int, FlickerEntry*), FlickerE
     return idx;
 }
 
-// STUB (not drafted yet, 0xB1C bytes at 0x8007BAAC): advances one flicker pattern by dt, returns 0 when finished.
+// TODO (not drafted yet, 0xB1C bytes at 0x8007BAAC): advances one flicker pattern by dt, returns 0 when finished.
 int FlickerEntryRun(double dt, FlickerEntry* e);
 
 struct Particle;

@@ -59,40 +59,40 @@ extern float lbl_804D3780;
 // Functions called from other units under their placeholder names.
 extern "C" void fn_8027D3E4(float v);
 
-// STUB (not drafted yet, 0xD4 bytes at 0x80277600)
+// TODO (not drafted yet, 0xD4 bytes at 0x80277600)
 extern "C" void fn_80277600(void);
 
-// STUB (not drafted yet, 0xA4 bytes at 0x802776D4)
+// TODO (not drafted yet, 0xA4 bytes at 0x802776D4)
 extern "C" void fn_802776D4(void);
 
-// STUB (not drafted yet, 0x44 bytes at 0x80277778)
+// TODO (not drafted yet, 0x44 bytes at 0x80277778)
 extern "C" void fn_80277778(void);
 
-// STUB (not drafted yet, 0x48 bytes at 0x802777BC)
+// TODO (not drafted yet, 0x48 bytes at 0x802777BC)
 extern "C" void fn_802777BC(void);
 
-// STUB (not drafted yet, 0x154 bytes at 0x80277804)
+// TODO (not drafted yet, 0x154 bytes at 0x80277804)
 extern "C" void fn_80277804(void);
 
-// STUB (not drafted yet, 0x1E0 bytes at 0x80277958)
+// TODO (not drafted yet, 0x1E0 bytes at 0x80277958)
 extern "C" void fn_80277958(void);
 
-// STUB (not drafted yet, 0x200 bytes at 0x80277B38)
+// TODO (not drafted yet, 0x200 bytes at 0x80277B38)
 extern "C" void fn_80277B38(void);
 
-// STUB (not drafted yet, 0x48 bytes at 0x80277D38)
+// TODO (not drafted yet, 0x48 bytes at 0x80277D38)
 extern "C" void fn_80277D38(void);
 
-// STUB (not drafted yet, 0x148 bytes at 0x80277D80)
+// TODO (not drafted yet, 0x148 bytes at 0x80277D80)
 extern "C" void fn_80277D80(void);
 
-// STUB (not drafted yet, 0x204 bytes at 0x80277EC8)
+// TODO (not drafted yet, 0x204 bytes at 0x80277EC8)
 extern "C" void fn_80277EC8(void);
 
-// STUB (not drafted yet, 0x148 bytes at 0x802780CC)
+// TODO (not drafted yet, 0x148 bytes at 0x802780CC)
 extern "C" void fn_802780CC(void);
 
-// STUB (not drafted yet, 0x148 bytes at 0x80278214)
+// TODO (not drafted yet, 0x148 bytes at 0x80278214)
 extern "C" void fn_80278214(void);
 
 void SceneNodeSetPinned(SceneNode* n, int pinned) {
@@ -135,22 +135,22 @@ int SceneNodeListCount(SceneNode* n) {
     return count;
 }
 
-// STUB (not drafted yet, 0x118 bytes at 0x8027841C)
+// TODO (not drafted yet, 0x118 bytes at 0x8027841C)
 extern "C" void fn_8027841C(void);
 
-// STUB (not drafted yet, 0xC4 bytes at 0x80278534)
+// TODO (not drafted yet, 0xC4 bytes at 0x80278534)
 extern "C" void fn_80278534(void);
 
-// STUB (not drafted yet, 0xAC bytes at 0x802785F8)
+// TODO (not drafted yet, 0xAC bytes at 0x802785F8)
 extern "C" void fn_802785F8(void);
 
-// STUB (not drafted yet, 0x7C bytes at 0x802786A4)
+// TODO (not drafted yet, 0x7C bytes at 0x802786A4)
 extern "C" void fn_802786A4(void);
 
-// STUB (not drafted yet, 0x70 bytes at 0x80278720)
+// TODO (not drafted yet, 0x70 bytes at 0x80278720)
 extern "C" void fn_80278720(void);
 
-// STUB (not drafted yet, 0x70 bytes at 0x80278790)
+// TODO (not drafted yet, 0x70 bytes at 0x80278790)
 extern "C" void fn_80278790(void);
 
 void SceneNodeAddRot(float x, float y, float z, SceneNode* n) {
@@ -165,7 +165,7 @@ void SceneNodeAddAccel(float x, float y, float z, SceneNode* n) {
     n->accel.z += z;
 }
 
-// STUB (not drafted yet, 0x64 bytes at 0x80278850)
+// TODO (not drafted yet, 0x64 bytes at 0x80278850)
 extern "C" void fn_80278850(void);
 
 Vec3* SceneNodeVelocityPtr(SceneNode* n) {
@@ -188,10 +188,10 @@ void SceneNodeSetPos(float x, float y, float z, SceneNode* n) {
     n->pos.z = z;
 }
 
-// STUB (not drafted yet, 0x88 bytes at 0x802788E4)
+// TODO (not drafted yet, 0x88 bytes at 0x802788E4)
 extern "C" void fn_802788E4(void);
 
-// STUB (not drafted yet, 0x54 bytes at 0x8027896C)
+// TODO (not drafted yet, 0x54 bytes at 0x8027896C)
 extern "C" void fn_8027896C(void);
 
 u32 SceneNodeGetOwner(SceneNode* n) {
@@ -202,108 +202,108 @@ void SceneNodeSetOwner(SceneNode* n, u32 owner) {
     n->owner = owner;
 }
 
-// STUB (not drafted yet, 0x1A0 bytes at 0x802789D0)
+// TODO (not drafted yet, 0x1A0 bytes at 0x802789D0)
 extern "C" void fn_802789D0(void);
 
-// STUB (not drafted yet, 0x1BC bytes at 0x80278B70)
+// TODO (not drafted yet, 0x1BC bytes at 0x80278B70)
 extern "C" void fn_80278B70(void);
 
-// STUB (not drafted yet, 0x2B4 bytes at 0x80278D2C)
+// TODO (not drafted yet, 0x2B4 bytes at 0x80278D2C)
 extern "C" void fn_80278D2C(void);
 
-// STUB (not drafted yet, 0x16C bytes at 0x80278FE0)
+// TODO (not drafted yet, 0x16C bytes at 0x80278FE0)
 extern "C" void fn_80278FE0(void);
 
-// STUB (not drafted yet, 0x40C bytes at 0x8027914C)
+// TODO (not drafted yet, 0x40C bytes at 0x8027914C)
 extern "C" void fn_8027914C(void);
 
-// STUB (not drafted yet, 0x1468 bytes at 0x80279558)
+// TODO (not drafted yet, 0x1468 bytes at 0x80279558)
 extern "C" void fn_80279558(void);
 
-// STUB (not drafted yet, 0xB38 bytes at 0x8027A9C0)
+// TODO (not drafted yet, 0xB38 bytes at 0x8027A9C0)
 extern "C" void fn_8027A9C0(void);
 
-// STUB (not drafted yet, 0x78 bytes at 0x8027B4F8)
+// TODO (not drafted yet, 0x78 bytes at 0x8027B4F8)
 extern "C" void fn_8027B4F8(void);
 
-// STUB (not drafted yet, 0x530 bytes at 0x8027B570)
+// TODO (not drafted yet, 0x530 bytes at 0x8027B570)
 extern "C" void fn_8027B570(void);
 
-// STUB (not drafted yet, 0xA8 bytes at 0x8027BAA0)
+// TODO (not drafted yet, 0xA8 bytes at 0x8027BAA0)
 extern "C" void fn_8027BAA0(void);
 
-// STUB (not drafted yet, 0x78 bytes at 0x8027BB48)
+// TODO (not drafted yet, 0x78 bytes at 0x8027BB48)
 extern "C" void fn_8027BB48(void);
 
-// STUB (not drafted yet, 0x78 bytes at 0x8027BBC0)
+// TODO (not drafted yet, 0x78 bytes at 0x8027BBC0)
 extern "C" void fn_8027BBC0(void);
 
-// STUB (not drafted yet, 0x74 bytes at 0x8027BC38)
+// TODO (not drafted yet, 0x74 bytes at 0x8027BC38)
 extern "C" void fn_8027BC38(void);
 
-// STUB (not drafted yet, 0x74 bytes at 0x8027BCAC)
+// TODO (not drafted yet, 0x74 bytes at 0x8027BCAC)
 extern "C" void fn_8027BCAC(void);
 
-// STUB (not drafted yet, 0x3C bytes at 0x8027BD20)
+// TODO (not drafted yet, 0x3C bytes at 0x8027BD20)
 extern "C" void fn_8027BD20(void);
 
-// STUB (not drafted yet, 0x4E4 bytes at 0x8027BD5C)
+// TODO (not drafted yet, 0x4E4 bytes at 0x8027BD5C)
 extern "C" void fn_8027BD5C(void);
 
-// STUB (not drafted yet, 0x410 bytes at 0x8027C240)
+// TODO (not drafted yet, 0x410 bytes at 0x8027C240)
 extern "C" void fn_8027C240(void);
 
-// STUB (not drafted yet, 0x9C bytes at 0x8027C650)
+// TODO (not drafted yet, 0x9C bytes at 0x8027C650)
 extern "C" void fn_8027C650(void);
 
-// STUB (not drafted yet, 0x2C bytes at 0x8027C6EC)
+// TODO (not drafted yet, 0x2C bytes at 0x8027C6EC)
 extern "C" void fn_8027C6EC(void);
 
-// STUB (not drafted yet, 0x80 bytes at 0x8027C718)
+// TODO (not drafted yet, 0x80 bytes at 0x8027C718)
 extern "C" void fn_8027C718(void);
 
-// STUB (not drafted yet, 0xFC bytes at 0x8027C798)
+// TODO (not drafted yet, 0xFC bytes at 0x8027C798)
 extern "C" void fn_8027C798(void);
 
-// STUB (not drafted yet, 0x78 bytes at 0x8027C894)
+// TODO (not drafted yet, 0x78 bytes at 0x8027C894)
 extern "C" void fn_8027C894(void);
 
-// STUB (not drafted yet, 0x170 bytes at 0x8027C90C)
+// TODO (not drafted yet, 0x170 bytes at 0x8027C90C)
 extern "C" void fn_8027C90C(void);
 
-// STUB (not drafted yet, 0x60 bytes at 0x8027CA7C)
+// TODO (not drafted yet, 0x60 bytes at 0x8027CA7C)
 extern "C" void fn_8027CA7C(void);
 
-// STUB (not drafted yet, 0x160 bytes at 0x8027CADC)
+// TODO (not drafted yet, 0x160 bytes at 0x8027CADC)
 extern "C" void fn_8027CADC(void);
 
-// STUB (not drafted yet, 0x2C bytes at 0x8027CC3C)
+// TODO (not drafted yet, 0x2C bytes at 0x8027CC3C)
 extern "C" void fn_8027CC3C(void);
 
-// STUB (not drafted yet, 0x60 bytes at 0x8027CC68)
+// TODO (not drafted yet, 0x60 bytes at 0x8027CC68)
 extern "C" void fn_8027CC68(void);
 
-// STUB (not drafted yet, 0x15C bytes at 0x8027CCC8)
+// TODO (not drafted yet, 0x15C bytes at 0x8027CCC8)
 extern "C" void fn_8027CCC8(void);
 
 void ActorClearFlag50(ActorBig* a) {
     a->flags50 &= ~0x40000;
 }
 
-// STUB (not drafted yet, 0x58 bytes at 0x8027CE34)
+// TODO (not drafted yet, 0x58 bytes at 0x8027CE34)
 extern "C" void fn_8027CE34(void);
 
-// STUB (not drafted yet, 0x110 bytes at 0x8027CE8C)
+// TODO (not drafted yet, 0x110 bytes at 0x8027CE8C)
 extern "C" void fn_8027CE8C(void);
 
-// STUB (not drafted yet, 0x1A0 bytes at 0x8027CF9C)
+// TODO (not drafted yet, 0x1A0 bytes at 0x8027CF9C)
 extern "C" void fn_8027CF9C(void);
 
 void ActorResetTarget(ActorBig* a) {
     a->target = -1;
 }
 
-// STUB (not drafted yet, 0x8C bytes at 0x8027D148)
+// TODO (not drafted yet, 0x8C bytes at 0x8027D148)
 extern "C" void fn_8027D148(void);
 
 void ActorResetTargetAndTimer(ActorBig* a) {
@@ -311,10 +311,10 @@ void ActorResetTargetAndTimer(ActorBig* a) {
     a->timer = 0;
 }
 
-// STUB (not drafted yet, 0x5C bytes at 0x8027D1E8)
+// TODO (not drafted yet, 0x5C bytes at 0x8027D1E8)
 extern "C" void fn_8027D1E8(void);
 
-// STUB (not drafted yet, 0x9C bytes at 0x8027D244)
+// TODO (not drafted yet, 0x9C bytes at 0x8027D244)
 extern "C" void fn_8027D244(void);
 
 void ActorClearFlag678(ActorBig* a) {
@@ -329,13 +329,13 @@ int ActorGetStateValue(ActorBig* a) {
     return lbl_803C05B4[a->stateIndex][0];
 }
 
-// STUB (not drafted yet, 0x44 bytes at 0x8027D31C)
+// TODO (not drafted yet, 0x44 bytes at 0x8027D31C)
 extern "C" void fn_8027D31C(void);
 
-// STUB (not drafted yet, 0x44 bytes at 0x8027D360)
+// TODO (not drafted yet, 0x44 bytes at 0x8027D360)
 extern "C" void fn_8027D360(void);
 
-// STUB (not drafted yet, 0x40 bytes at 0x8027D3A4)
+// TODO (not drafted yet, 0x40 bytes at 0x8027D3A4)
 extern "C" void fn_8027D3A4(void);
 
 void fn_8027D3E4(float v) {

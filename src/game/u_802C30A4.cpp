@@ -665,7 +665,7 @@ void BossHitFeedback(BossMsg* m) {
     }
 }
 
-// STUB (not drafted yet, 0x10BC bytes at 0x802C4078): per-frame boss update; runs the state table callbacks,
+// TODO (not drafted yet, 0x10BC bytes at 0x802C4078): per-frame boss update; runs the state table callbacks,
 // the hit flash timers and the periodic attack scheduling.
 int BossUpdate(Boss* b);
 

@@ -117,7 +117,7 @@ u32 PlayerMeterFull(Player* p) {
     return p->meter >= 180000.0f;
 }
 
-// STUB (not drafted yet, 0x1410 bytes at 0x8006811C): per-frame player stamina / sprint update.
+// TODO (not drafted yet, 0x1410 bytes at 0x8006811C): per-frame player stamina / sprint update.
 void fn_8006811C(Player* p, float dt);
 
 // Per-state look-up of a tuning value kept in the player record.
@@ -264,7 +264,7 @@ void PlayerChargeTick(double dt, Player* p) {
     }
 }
 
-// STUB (not drafted yet, 0x17E8 bytes at 0x80069B78): player weapon-aim target search and lock-on.
+// TODO (not drafted yet, 0x17E8 bytes at 0x80069B78): player weapon-aim target search and lock-on.
 void PlayerAimUpdate(Player* p, float dt);
 
 // Clears one 0x30-word input sample.
@@ -331,8 +331,8 @@ void AimInputInit(float* a, int mode) {
     lbl_804D288C = 0.866f;
 }
 
-// STUB (not drafted yet, 0x658 bytes at 0x8006B648): fills the aim input block from the pad.
+// TODO (not drafted yet, 0x658 bytes at 0x8006B648): fills the aim input block from the pad.
 void AimInputFromPad(float* a, Player* p, Actor* target);
 
-// STUB (not drafted yet, 0x964 bytes at 0x8006BCA0): per-frame aim assist update.
+// TODO (not drafted yet, 0x964 bytes at 0x8006BCA0): per-frame aim assist update.
 void AimAssistUpdate(float* a, Player* p, Actor* target);

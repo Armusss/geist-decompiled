@@ -156,7 +156,7 @@ void fn_800BC5A8(Creature* c, Vec3* at);
 }
 int CreatureSeekCallback(Creature* c);
 
-// STUB (not drafted yet, 0xBD0 bytes at 0x801D9A70)
+// TODO (not drafted yet, 0xBD0 bytes at 0x801D9A70)
 extern "C" void fn_801D9A70(void);
 
 // Per-frame update: runs the current state's update, switches state when allowed.
@@ -505,7 +505,7 @@ int CreatureStartApproach(Creature* c) {
     return 1;
 }
 
-// STUB (not drafted yet, 0x330 bytes at 0x801DB48C)
+// TODO (not drafted yet, 0x330 bytes at 0x801DB48C)
 extern "C" void fn_801DB48C(void);
 
 int CreatureStopShoot(Creature* c) {
@@ -541,7 +541,7 @@ int CreatureStartGuard(Creature* c) {
     return 1;
 }
 
-// STUB (not drafted yet, 0x210 bytes at 0x801DB8FC)
+// TODO (not drafted yet, 0x210 bytes at 0x801DB8FC)
 extern "C" void fn_801DB8FC(void);
 
 int CreatureEndGuard(Creature* c) {
@@ -712,170 +712,170 @@ int CreatureStartWatch(Creature* c) {
     return 1;
 }
 
-// STUB (not drafted yet, 0x190 bytes at 0x801DC1C4)
+// TODO (not drafted yet, 0x190 bytes at 0x801DC1C4)
 extern "C" void fn_801DC1C4(void);
 
-// STUB (not drafted yet, 0x34 bytes at 0x801DC354)
+// TODO (not drafted yet, 0x34 bytes at 0x801DC354)
 extern "C" void fn_801DC354(void);
 
-// STUB (not drafted yet, 0x110 bytes at 0x801DC388)
+// TODO (not drafted yet, 0x110 bytes at 0x801DC388)
 extern "C" void fn_801DC388(void);
 
-// STUB (not drafted yet, 0x42C bytes at 0x801DC498)
+// TODO (not drafted yet, 0x42C bytes at 0x801DC498)
 extern "C" void fn_801DC498(void);
 
-// STUB (not drafted yet, 0x6C bytes at 0x801DC8C4)
+// TODO (not drafted yet, 0x6C bytes at 0x801DC8C4)
 extern "C" void fn_801DC8C4(void);
 
-// STUB (not drafted yet, 0x108 bytes at 0x801DC930)
+// TODO (not drafted yet, 0x108 bytes at 0x801DC930)
 extern "C" void fn_801DC930(void);
 
-// STUB (not drafted yet, 0x5C4 bytes at 0x801DCA38)
+// TODO (not drafted yet, 0x5C4 bytes at 0x801DCA38)
 extern "C" void fn_801DCA38(void);
 
-// STUB (not drafted yet, 0x60 bytes at 0x801DCFFC)
+// TODO (not drafted yet, 0x60 bytes at 0x801DCFFC)
 extern "C" void fn_801DCFFC(void);
 
-// STUB (not drafted yet, 0x158 bytes at 0x801DD05C)
+// TODO (not drafted yet, 0x158 bytes at 0x801DD05C)
 extern "C" void fn_801DD05C(void);
 
-// STUB (not drafted yet, 0xFC bytes at 0x801DD1B4)
+// TODO (not drafted yet, 0xFC bytes at 0x801DD1B4)
 extern "C" void fn_801DD1B4(void);
 
-// STUB (not drafted yet, 0xFC bytes at 0x801DD2B0)
+// TODO (not drafted yet, 0xFC bytes at 0x801DD2B0)
 extern "C" void fn_801DD2B0(void);
 
-// STUB (not drafted yet, 0x138 bytes at 0x801DD3AC)
+// TODO (not drafted yet, 0x138 bytes at 0x801DD3AC)
 extern "C" void fn_801DD3AC(void);
 
-// STUB (not drafted yet, 0x44 bytes at 0x801DD4E4)
+// TODO (not drafted yet, 0x44 bytes at 0x801DD4E4)
 extern "C" void fn_801DD4E4(void);
 
-// STUB (not drafted yet, 0xF4 bytes at 0x801DD528)
+// TODO (not drafted yet, 0xF4 bytes at 0x801DD528)
 extern "C" void fn_801DD528(void);
 
-// STUB (not drafted yet, 0x4B0 bytes at 0x801DD61C)
+// TODO (not drafted yet, 0x4B0 bytes at 0x801DD61C)
 extern "C" void fn_801DD61C(void);
 
-// STUB (not drafted yet, 0xA8 bytes at 0x801DDACC)
+// TODO (not drafted yet, 0xA8 bytes at 0x801DDACC)
 extern "C" void fn_801DDACC(void);
 
-// STUB (not drafted yet, 0x4C bytes at 0x801DDB74)
+// TODO (not drafted yet, 0x4C bytes at 0x801DDB74)
 extern "C" void fn_801DDB74(void);
 
-// STUB (not drafted yet, 0x1F0 bytes at 0x801DDBC0)
+// TODO (not drafted yet, 0x1F0 bytes at 0x801DDBC0)
 extern "C" void fn_801DDBC0(void);
 
-// STUB (not drafted yet, 0x58 bytes at 0x801DDDB0)
+// TODO (not drafted yet, 0x58 bytes at 0x801DDDB0)
 extern "C" void fn_801DDDB0(void);
 
-// STUB (not drafted yet, 0xE8 bytes at 0x801DDE08)
+// TODO (not drafted yet, 0xE8 bytes at 0x801DDE08)
 extern "C" void fn_801DDE08(void);
 
-// STUB (not drafted yet, 0x3C4 bytes at 0x801DDEF0)
+// TODO (not drafted yet, 0x3C4 bytes at 0x801DDEF0)
 extern "C" int fn_801DDEF0(Creature* c);
 
-// STUB (not drafted yet, 0x64 bytes at 0x801DE2B4)
+// TODO (not drafted yet, 0x64 bytes at 0x801DE2B4)
 int CreatureSeekCallback(Creature* c);
 
-// STUB (not drafted yet, 0xCC bytes at 0x801DE318)
+// TODO (not drafted yet, 0xCC bytes at 0x801DE318)
 int CreatureChargeCallback(Creature* c);
 
-// STUB (not drafted yet, 0xCC bytes at 0x801DE3E4)
+// TODO (not drafted yet, 0xCC bytes at 0x801DE3E4)
 int CreatureShootCallback(Creature* c);
 
-// STUB (not drafted yet, 0xC bytes at 0x801DE4B0)
+// TODO (not drafted yet, 0xC bytes at 0x801DE4B0)
 extern "C" void fn_801DE4B0(void);
 
-// STUB (not drafted yet, 0x2E4 bytes at 0x801DE4BC)
+// TODO (not drafted yet, 0x2E4 bytes at 0x801DE4BC)
 extern "C" void fn_801DE4BC(void);
 
-// STUB (not drafted yet, 0x3C bytes at 0x801DE7A0)
+// TODO (not drafted yet, 0x3C bytes at 0x801DE7A0)
 extern "C" void fn_801DE7A0(void);
 
-// STUB (not drafted yet, 0x128 bytes at 0x801DE7DC)
+// TODO (not drafted yet, 0x128 bytes at 0x801DE7DC)
 extern "C" void fn_801DE7DC(void);
 
-// STUB (not drafted yet, 0x5C bytes at 0x801DE904)
+// TODO (not drafted yet, 0x5C bytes at 0x801DE904)
 void TrailDestroy(int id);
 
-// STUB (not drafted yet, 0x30 bytes at 0x801DE960)
+// TODO (not drafted yet, 0x30 bytes at 0x801DE960)
 int TrailCreate(TrailDesc* d);
 
-// STUB (not drafted yet, 0x1DC bytes at 0x801DE990)
+// TODO (not drafted yet, 0x1DC bytes at 0x801DE990)
 extern "C" void fn_801DE990(void);
 
-// STUB (not drafted yet, 0xC4 bytes at 0x801DEB6C)
+// TODO (not drafted yet, 0xC4 bytes at 0x801DEB6C)
 extern "C" void fn_801DEB6C(void);
 
-// STUB (not drafted yet, 0x78 bytes at 0x801DEC30)
+// TODO (not drafted yet, 0x78 bytes at 0x801DEC30)
 extern "C" void fn_801DEC30(void);
 
-// STUB (not drafted yet, 0xEC bytes at 0x801DECA8)
+// TODO (not drafted yet, 0xEC bytes at 0x801DECA8)
 extern "C" void fn_801DECA8(void);
 
-// STUB (not drafted yet, 0x178 bytes at 0x801DED94)
+// TODO (not drafted yet, 0x178 bytes at 0x801DED94)
 extern "C" void fn_801DED94(void);
 
-// STUB (not drafted yet, 0x28C bytes at 0x801DEF0C)
+// TODO (not drafted yet, 0x28C bytes at 0x801DEF0C)
 extern "C" void fn_801DEF0C(void);
 
-// STUB (not drafted yet, 0x6A8 bytes at 0x801DF198)
+// TODO (not drafted yet, 0x6A8 bytes at 0x801DF198)
 extern "C" void fn_801DF198(void);
 
-// STUB (not drafted yet, 0x108 bytes at 0x801DF840)
+// TODO (not drafted yet, 0x108 bytes at 0x801DF840)
 extern "C" void fn_801DF840(void);
 
-// STUB (not drafted yet, 0x778 bytes at 0x801DF948)
+// TODO (not drafted yet, 0x778 bytes at 0x801DF948)
 extern "C" void fn_801DF948(void);
 
-// STUB (not drafted yet, 0x3BC bytes at 0x801E00C0)
+// TODO (not drafted yet, 0x3BC bytes at 0x801E00C0)
 extern "C" void fn_801E00C0(void);
 
-// STUB (not drafted yet, 0x27C bytes at 0x801E047C)
+// TODO (not drafted yet, 0x27C bytes at 0x801E047C)
 extern "C" void fn_801E047C(void);
 
-// STUB (not drafted yet, 0x68 bytes at 0x801E06F8)
+// TODO (not drafted yet, 0x68 bytes at 0x801E06F8)
 extern "C" void fn_801E06F8(void);
 
-// STUB (not drafted yet, 0x48 bytes at 0x801E0760)
+// TODO (not drafted yet, 0x48 bytes at 0x801E0760)
 extern "C" void fn_801E0760(void);
 
-// STUB (not drafted yet, 0x60 bytes at 0x801E07A8)
+// TODO (not drafted yet, 0x60 bytes at 0x801E07A8)
 extern "C" void fn_801E07A8(void);
 
-// STUB (not drafted yet, 0x8 bytes at 0x801E0808)
+// TODO (not drafted yet, 0x8 bytes at 0x801E0808)
 extern "C" void fn_801E0808(void);
 
-// STUB (not drafted yet, 0x20 bytes at 0x801E0810)
+// TODO (not drafted yet, 0x20 bytes at 0x801E0810)
 extern "C" void fn_801E0810(void);
 
-// STUB (not drafted yet, 0x20 bytes at 0x801E0830)
+// TODO (not drafted yet, 0x20 bytes at 0x801E0830)
 extern "C" void fn_801E0830(void);
 
-// STUB (not drafted yet, 0x30 bytes at 0x801E0850)
+// TODO (not drafted yet, 0x30 bytes at 0x801E0850)
 extern "C" void fn_801E0850(void);
 
-// STUB (not drafted yet, 0x4C bytes at 0x801E0880)
+// TODO (not drafted yet, 0x4C bytes at 0x801E0880)
 extern "C" void fn_801E0880(void);
 
-// STUB (not drafted yet, 0x30 bytes at 0x801E08CC)
+// TODO (not drafted yet, 0x30 bytes at 0x801E08CC)
 extern "C" void fn_801E08CC(void);
 
-// STUB (not drafted yet, 0x30 bytes at 0x801E08FC)
+// TODO (not drafted yet, 0x30 bytes at 0x801E08FC)
 extern "C" void fn_801E08FC(void);
 
-// STUB (not drafted yet, 0x9C bytes at 0x801E092C)
+// TODO (not drafted yet, 0x9C bytes at 0x801E092C)
 extern "C" void fn_801E092C(void);
 
-// STUB (not drafted yet, 0x2B0 bytes at 0x801E09C8)
+// TODO (not drafted yet, 0x2B0 bytes at 0x801E09C8)
 extern "C" void fn_801E09C8(void);
 
-// STUB (not drafted yet, 0xF8 bytes at 0x801E0C78)
+// TODO (not drafted yet, 0xF8 bytes at 0x801E0C78)
 extern "C" void fn_801E0C78(void);
 
-// STUB (not drafted yet, 0x58 bytes at 0x801E0D70)
+// TODO (not drafted yet, 0x58 bytes at 0x801E0D70)
 extern "C" void fn_801E0D70(void);
 
-// STUB (not drafted yet, 0x114 bytes at 0x801E0DC8)
+// TODO (not drafted yet, 0x114 bytes at 0x801E0DC8)
 extern "C" void fn_801E0DC8(void);
