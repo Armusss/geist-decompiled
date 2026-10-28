@@ -44,6 +44,12 @@ struct Player {
     float charge;           // 0x600
 };
 
+// Functions called from other units under their placeholder names.
+extern "C" void fn_8006811C(Player* p, float dt);
+extern "C" void fn_800699A8(Player* p);
+extern "C" float fn_800699B8(Player* p);
+extern "C" void fn_8006B360(u32* s);
+
 extern float lbl_804D2880;
 extern float lbl_804D2884;
 extern float lbl_804D2888;
@@ -68,6 +74,14 @@ void fn_80163918(double a, double b, double c, double d, double e, Player* p, vo
 void ActorGetMatrix(Mtx34* m, Actor* a);
 extern "C" void fn_800A0030(void* out, void* m, void* v);
 int TargetSlotUsable(int** slot, int* arg);
+
+int RepelPush(float strength, float swirl, float lift, float inner, float outer, Player* self, Vec3* pos, int arg);
+
+// ---- Pad-driven aim / panic input records ----
+
+extern int lbl_804D4500;
+extern int lbl_804D4504;
+extern "C" int fn_80170834(const char* name);
 
 // Sets the walk-bob amplitude curve.
 void PlayerSetBobAmplitude(float x) {
@@ -114,6 +128,10 @@ u32 PlayerMeterFull(Player* p) {
     return 180000.0f <= p->meter;
 }
 
+// STUB (not drafted yet, 0x1410 bytes at 0x8006811C): per-frame player stamina / sprint update.
+void fn_8006811C(Player* p, float dt) {
+}
+
 // Per-state look-up of a tuning value kept in the player record.
 u32 PlayerStateValue(int unused, int state) {
     int p = fn_80049840();
@@ -129,8 +147,6 @@ u32 PlayerStateValue(int unused, int state) {
     }
     return 1;
 }
-
-int RepelPush(float strength, float swirl, float lift, float inner, float outer, Player* self, Vec3* pos, int arg);
 
 // Pushes `self` away from the position of `other`.
 int ActorRepel(Actor* self, Actor* other, float strength, float swirl, float lift, float inner, float outer) {
@@ -205,12 +221,12 @@ int RepelPush(float strength, float swirl, float lift, float inner, float outer,
     return 0;
 }
 
-void PlayerResetNegScale(Player* p) {
+void fn_800699A8(Player* p) {
     p->negScale = -lbl_804D44F8;
 }
 
 // Stamina as a fraction: negative stamina scales by one constant, positive by another.
-float PlayerStaminaFraction(Player* p) {
+float fn_800699B8(Player* p) {
     double r;
     if (0.0f <= p->stamina) {
         if (fn_80049940() == 0) {
@@ -258,4 +274,80 @@ void PlayerChargeTick(double dt, Player* p) {
         p->charge = 0.0f;
         p->ratio = 0.0f;
     }
+}
+
+// STUB (not drafted yet, 0x17E8 bytes at 0x80069B78): player weapon-aim target search and lock-on.
+void PlayerAimUpdate(Player* p, float dt) {
+}
+
+// Clears one 0x30-word input sample.
+void fn_8006B360(u32* s) {
+    int i;
+    for (i = 0; i < 0x26; i++)
+        s[i] = 0;
+    for (i = 0; i < 3; i++)
+        s[0x23 + i] = 0;
+    s[0x26] = 0;
+    s[0x27] = 0;
+    s[0x28] = 0;
+    s[0x29] = 0;
+    s[0x2A] = 0;
+    s[0x2B] = 0;
+}
+
+void AimNoop(void) {
+}
+
+// Resets the whole aim input block (0x310 bytes) and caches the "panic" effect ids.
+void AimInputInit(float* a, int mode) {
+    int i;
+    for (i = 0; i < 0x26; i++) {
+        a[i] = 0.0f;
+        a[0x2C + i] = 99999.0f;
+        a[0x52 + i] = 0.0f;
+        ((int*)a)[0x78 + i] = 1;
+    }
+    for (i = 0; i < 6; i++) {
+        a[0x26 + i] = 0.0f;
+        a[0xB1 + i] = 0.0f;
+        ((int*)a)[0x9E + i] = 1;
+    }
+    ((int*)a)[0xB7] = 0;
+    a[0xB8] = 9999999.0f;
+    ((int*)a)[0xB9] = -1;
+    ((int*)a)[0xBA] = -1;
+    a[0xBB] = 0.0f;
+    ((int*)a)[0xBC] = 1;
+    ((int*)a)[0xA4] = 0;
+    ((int*)a)[0xA6] = mode;
+    a[0xA7] = 0.0f;
+    a[0xA8] = 0.0f;
+    a[0xA9] = 0.0f;
+    a[0xBE] = 0.0f;
+    ((int*)a)[0xBF] = -1;
+    a[0xC0] = 700.0f;
+    a[0xC1] = 800.0f;
+    a[0xC2] = 0.0f;
+    a[0xC3] = 0.0f;
+    a[0xBD] = -lbl_804D44F8;
+    a[0xAD] = 0.0f;
+    a[0xAE] = 0.0f;
+    a[0xAF] = 0.0f;
+    a[0xB0] = 2000.0f;
+    lbl_804D4500 = fn_80170834("panic_1");
+    lbl_804D4504 = fn_80170834("panic_2");
+    lbl_804D44F8 = 250.0f;
+    lbl_804D44FC = 800.0f;
+    lbl_804D2880 = 0.65f;
+    lbl_804D2884 = 0.25f;
+    lbl_804D2888 = 0.2f;
+    lbl_804D288C = 0.866f;
+}
+
+// STUB (not drafted yet, 0x658 bytes at 0x8006B648): fills the aim input block from the pad.
+void AimInputFromPad(float* a, Player* p, Actor* target) {
+}
+
+// STUB (not drafted yet, 0x964 bytes at 0x8006BCA0): per-frame aim assist update.
+void AimAssistUpdate(float* a, Player* p, Actor* target) {
 }
