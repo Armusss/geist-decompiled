@@ -33,8 +33,8 @@ extern int sWeatherAssetD;      // 0x804D4A74
 extern int sWeatherAssetE;      // 0x804D4A78
 extern int sWeatherAssetF;      // 0x804D4A7C
 extern int sWeatherZero;        // 0x804D4A80
-extern int sWeatherSlotA[];     // 0x80457BEC: current type per [zone*3 + slot]
-extern int sWeatherSlotB[];     // 0x80457C1C: previous type
+extern int sWeatherSlotA[][3];     // 0x80457BEC: current type per [zone*3 + slot]
+extern int sWeatherSlotB[][3];     // 0x80457C1C: previous type
 extern int sWeatherZoneMode[];  // 0x80457BDC
 extern int sWeatherTypeIds[];   // 0x8039CDC8
 extern int sWeatherCur;         // 0x804D4AAC
@@ -55,7 +55,7 @@ extern int sWeatherB0;          // 0x804D4AB0
 extern int sWeatherAssetG;      // 0x804D4B38
 extern int sWeatherTable[128];  // 0x80457C4C
 extern int sWeatherInit;        // 0x804D4B4C
-extern u8 sWeatherInitDone;     // 0x804D4B50
+extern char sWeatherInitDone;    // 0x804D4B50
 extern int sWeatherEnabled;     // 0x804D2C74
 
 extern int sStreamState;        // 0x804D4B64
@@ -155,7 +155,7 @@ void WeatherLatchInit(void) {
 
 // 0x800F60B8: type id of the current weather in a zone slot.
 int WeatherGetTypeId(int zone, int slot) {
-    return sWeatherTypeIds[sWeatherSlotA[zone * 3 + slot]];
+    return sWeatherTypeIds[sWeatherSlotA[zone][slot]];
 }
 
 // 0x800F60E4: set the weather of a zone slot by type id.
@@ -167,22 +167,22 @@ void WeatherSetByTypeId(int zone, int slot, int id) {
     sWeatherUnk4190 = 0;
     do {
         if (id == p[0]) {
-            sWeatherSlotB[zone * 3 + slot] = sWeatherSlotA[zone * 3 + slot];
-            sWeatherSlotA[zone * 3 + slot] = i;
+            sWeatherSlotB[zone][slot] = sWeatherSlotA[zone][slot];
+            sWeatherSlotA[zone][slot] = i;
             if (zone == 0 && slot == 0) {
                 sWeatherCur = i;
             }
         }
         if (id == p[1]) {
-            sWeatherSlotB[zone * 3 + slot] = sWeatherSlotA[zone * 3 + slot];
-            sWeatherSlotA[zone * 3 + slot] = i + 1;
+            sWeatherSlotB[zone][slot] = sWeatherSlotA[zone][slot];
+            sWeatherSlotA[zone][slot] = i + 1;
             if (zone == 0 && slot == 0) {
                 sWeatherCur = i + 1;
             }
         }
         if (id == p[2]) {
-            sWeatherSlotB[zone * 3 + slot] = sWeatherSlotA[zone * 3 + slot];
-            sWeatherSlotA[zone * 3 + slot] = i + 2;
+            sWeatherSlotB[zone][slot] = sWeatherSlotA[zone][slot];
+            sWeatherSlotA[zone][slot] = i + 2;
             if (zone == 0 && slot == 0) {
                 sWeatherCur = i + 2;
             }
@@ -195,7 +195,7 @@ void WeatherSetByTypeId(int zone, int slot, int id) {
         sWeatherLevel = 1000.0f;
     }
     fn_8009425C();
-    if (sWeatherSlotA[zone * 3 + slot] == 0x17) {
+    if (sWeatherSlotA[zone][slot] == 0x17) {
         fn_800F9468(1);
     } else {
         fn_800F9468(0);
@@ -227,9 +227,13 @@ void WeatherBuildTable(void) {
 // 0x800F6804: clear all weather slots.
 void WeatherReset(void) {
     int i;
-    for (i = 0; i < 12; i++) {
-        sWeatherSlotA[i] = 0;
-        sWeatherSlotB[i] = 0;
+    for (i = 0; i < 4; i++) {
+        sWeatherSlotA[i][0] = 0;
+        sWeatherSlotB[i][0] = 0;
+        sWeatherSlotA[i][1] = 0;
+        sWeatherSlotB[i][1] = 0;
+        sWeatherSlotA[i][2] = 0;
+        sWeatherSlotB[i][2] = 0;
     }
     for (i = 0; i < 4; i++) {
         sWeatherZoneMode[i] = 0;
