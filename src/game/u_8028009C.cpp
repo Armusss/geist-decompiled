@@ -60,6 +60,12 @@ extern int gExtrasModel;        // 0x804D55CC
 extern int gExtrasCam;          // 0x804D55EC
 extern int gHudLines;           // 0x804D7BD0
 extern float gExtrasZoom;       // 0x804D3788
+extern int gMusicSel;           // 0x804D55AC
+extern int gMusicBusy;          // 0x804D55B0
+extern int gMusicModel;         // 0x804D55B4
+extern int gArtSel;             // 0x804D5594
+extern int gArtBusy;            // 0x804D5598
+extern int gArtModel;           // 0x804D559C
 extern int gMenuPage;           // 0x804D55F0
 extern int gMenuInPage;         // 0x804D55F4
 extern int gMenuFxMove;         // 0x804D5604
@@ -315,6 +321,189 @@ void ExtrasHudDraw(int alpha) {
     }
 }
 
+struct LevelGate {
+    u32 event;              // game event that unlocks the entry
+    int level;              // first level whose progress is needed
+};
+
+extern LevelGate gLevelGates[13];       // 0x8034B0D8
+extern int gProgressLevel;              // 0x804D55F8
+extern int gRepeatTimer;                // 0x804D5600
+extern int gPadLeftEdge;                // 0x803C0CA8
+extern int gPadRightEdge;               // 0x803C0CAC
+
+extern "C" {
+void Vec3Set(float* v, float x, float y, float z);                  // 0x8016D67C
+int fn_800C7E80(float* spawn);
+void fn_800C7B14(int model);
+void ActorRender(void);                                             // 0x800C7CE8
+float VarGetFloat(u32 table, int index, u32 key);                   // 0x800DF2C8
+}
+
+// Is list entry `i` of `table` hidden (no data record)?
+static inline int ExtrasHidden(u32 table, int i) {
+    const char* d = VarObjData(table, i);
+    return d == NULL || *d == 0;
+}
+
+// Finds the first level whose gate matches the entry's game event: returns the gate index or -1.
+static inline int ExtrasGateFor(u32 table, int i) {
+    int ev = GameEvent(0xBAA22E62, Fn800DF3B8(table, i, 0x273D2D));
+    int k;
+    for (k = 0; k < 13; k++) {
+        if (ev == (int)gLevelGates[k].event && k < gProgressLevel + 1) {
+            return k;
+        }
+    }
+    return -1;
+}
+
+// One page of the extras list menu (movies, music, concept art): moves the highlight with the
+// pad skipping locked rows, starts the preview model of the chosen entry and shows it.
+static inline void ExtrasListPage(float dt, u32 table, u32 evTable, u32 nameKey, u32* bits, int count,
+                                  int& sel, int& busy, int& model) {
+    int old = sel;
+    if (bits == NULL) {
+        gMenuInPage = 0;
+        return;
+    }
+    if (busy == 0) {
+        if (gPadLeftEdge == 1) {
+            if (sel == -1) {
+                return;
+            }
+            sel--;
+            if (ExtrasHidden(table, sel)) {
+                sel--;
+            }
+        }
+        if (gPadRightEdge == 1) {
+            if (sel == -1) {
+                return;
+            }
+            sel++;
+            if (sel < count && ExtrasHidden(table, sel)) {
+                int i = sel;
+                int found = -1;
+                for (; i >= 0; i--) {
+                    if (ExtrasHidden(table, i) && ExtrasGateFor(table, i) != -1) {
+                        found = i;
+                        break;
+                    }
+                }
+                if (found == -1) {
+                    sel--;
+                } else {
+                    sel++;
+                }
+            }
+        }
+        if (PadPressed(0, 0, 0xB) == 1 && gRepeatTimer > 10) {
+            int i;
+            gRepeatTimer = 0;
+            for (i = sel; i < count - 1; i++) {
+                if (ExtrasHidden(table, i)) {
+                    break;
+                }
+            }
+            sel = ExtrasGateFor(table, i) == -1 ? i - 1 : i + 1;
+        }
+        if (PadPressed(0, 0, 10) == 1 && gRepeatTimer > 10) {
+            int i;
+            int seen = 0;
+            gRepeatTimer = 0;
+            for (i = sel; i >= 0; i--) {
+                if (ExtrasHidden(table, i)) {
+                    if (seen) {
+                        sel = i + 1;
+                        break;
+                    }
+                    seen = 1;
+                }
+            }
+        }
+        gRepeatTimer++;
+        if (sel < 1) {
+            sel = 1;
+        } else if (sel > count - 1) {
+            sel = count - 1;
+        }
+        if (PadPressed(0, 0, 3) == 1 && sel != -1 && BitTest(bits, sel) != 0) {
+            int ev = GameEvent(evTable, Fn800DF3B8(table, sel, nameKey));
+            if (ev == 0) {
+                model = 0;
+            } else {
+                float spawn[12];
+                float pos[3];
+                spawn[0] = 0.0f;
+                spawn[1] = 0.0f;
+                *(int*)&spawn[2] = ev;
+                pos[2] = VarGetFloat(table, sel, 0x5A);
+                pos[1] = VarGetFloat(table, sel, 0x59);
+                pos[0] = VarGetFloat(table, sel, 0x58);
+                Vec3Set(&spawn[6], VarGetFloat(table, sel, 0x5A3309E2), VarGetFloat(table, sel, 0x489CB20), 0.0f);
+                {
+                    int act = fn_800C7E80(pos);
+                    if (act == 0) {
+                        model = 0;
+                    } else {
+                        SendMsg(*(int*)(act + 0x38), 6, spawn);
+                        model = *(int*)(act + 0x38);
+                    }
+                }
+            }
+            if (model != 0) {
+                busy = 1;
+                FxStart(gMenuFxSelect, 0, 0);
+            }
+        }
+        if (PadPressed(0, 0, 4) == 1) {
+            FxStart(gMenuFxBack, 0, 0);
+            gMenuInPage = 0;
+        }
+    } else {
+        if (PadPressed(0, 0, 4) == 1) {
+            busy = 0;
+            FxStart(gMenuFxBack, 0, 0);
+            if (model != 0) {
+                int m = model;
+                int msg[2];
+                msg[1] = 0;
+                SendMsg(model, 6, msg);
+                fn_800C7B14(m);
+                ActorRender();
+            }
+            model = 0;
+        }
+    }
+    if (old != sel) {
+        FxStart(gMenuFxMove, 0, 0);
+    }
+    if (model != 0) {
+        float msg[2];
+        msg[1] = dt;
+        SendMsg(model, 0x414, msg);
+    }
+}
+
+// Movie list page.
+void ExtrasMoviePage(float dt) {
+    ExtrasListPage(dt, 0xD8E68AB7, 0x2F9DF01F, 0xD83EE6B4, gMovieBits, gMovieCount, gMovieSel, gMovieBusy,
+                   gExtrasModel);
+}
+
+// Music list page.
+void ExtrasMusicPage(float dt) {
+    ExtrasListPage(dt, 0x258124CE, 0x2F9DF01F, 0xD83EE6B4, gMusicBits, gMusicCount, gMusicSel, gMusicBusy,
+                   gMusicModel);
+}
+
+// Concept art list page.
+void ExtrasArtPage(float dt) {
+    ExtrasListPage(dt, 0x80EDD05C, 0x2F9DF01F, 0xD83EE6B4, gArtBitsB, gArtCountB, gArtSel, gArtBusy,
+                   gArtModel);
+}
+
 // Is the concept-art entry with game event `event` unlocked? (1 when it is not in the list.)
 // ArtIsUnlocked
 u32 fn_802837C4(int event) {
@@ -509,6 +698,108 @@ void SecretShow(u32 idx) {
         AssetFind(0xF2E2BEB8, 0x6983CAD1);
     } else {
         AssetFind(0xF2E2BEB8, 0x52BE59C3);
+    }
+}
+
+extern "C" {
+void Draw2DBegin(void);                                             // 0x8013C6F0
+void Draw2DEnd(void);                                               // 0x8013C6C4
+void DrawTexQuad(int tex, float x0, float y0, float x1, float y1, u8 r, u8 g, u8 b, u8 a);  // 0x8013C308
+void GhostShotDrawSprite(float a, float b, float c, float d, int tex, int x, int y, int w, int h,
+                         u8 r, u8 g, u8 bl, u8 al);                 // 0x8018F880
+void TextDrawStr(const char* s);                                    // 0x801EB188
+int sprintf(char* s, const char* fmt, ...);
+}
+extern int gArrowTexL;          // 0x804A3278
+extern int gArrowTexR;          // 0x804A327C
+
+// Draws one window of a list page: the title of the current entry, up to six rows with their
+// icons (`iconFn`), the "This Level (n of m)" counter and the scroll arrows.
+void ExtrasListDraw(u32 sel, int count, int (*iconFn)(u32), int alpha, u32 table, u32 nameKey,
+                    u32* bits) {
+    u32 first = 0xFFFFFFFF;
+    int k;
+    if (iconFn == NULL) {
+        return;
+    }
+    for (k = sel; k >= 0; k--) {
+        if (ExtrasHidden(table, k)) {
+            if (ExtrasGateFor(table, k) != -1) {
+                first = k;
+            }
+            break;
+        }
+    }
+    {
+        u32 len = 0;
+        int total = 0;
+        int have = 0;
+        if (first != 0xFFFFFFFF) {
+            int more = 0;
+            u32 i;
+            u32 start;
+            u32 end = count;
+            u32 a8;
+            Draw2DBegin();
+            TextBegin();
+            TextSetMode(0);
+            TextSetColor(0xFF, 0xFF, 0xFF, 0xFF);
+            TextSetSize(0xD);
+            TextSetBox(0xA5, 0xFF, 0x1A4, 0x1C4);
+            TextDraw(StrGetIndex(Fn800DF3B8(table, first, nameKey), &len), len);
+            start = first + 1;
+            i = start;
+            while ((int)i < count && !ExtrasHidden(table, i)) {
+                total++;
+                if (BitTest(bits, i) != 0) {
+                    have++;
+                }
+                i++;
+            }
+            if ((int)(sel - start) > 4 && total > 5) {
+                start = sel - 2;
+            }
+            if ((int)(start + 6) < (int)end) {
+                end = start + 6;
+            }
+            a8 = (u32)(((alpha * 0xFF) / 0xFF)) & 0xFF;
+            for (i = start; (int)i < (int)end; i++) {
+                int y = (i - start) * 0x28;
+                if (ExtrasHidden(table, i)) {
+                    break;
+                }
+                if (i == sel) {
+                    DrawTexQuad(-3, (float)(y + 0x13E), 418.0f, (float)(y + 0x162), 454.0f, 0xFF, 0xFF, 0xFF, a8);
+                }
+                DrawTexQuad(iconFn(i), (float)(y + 0x140), 420.0f, (float)(y + 0x160), 452.0f, 0xFF, 0xFF,
+                            0xFF, a8);
+            }
+            if (total > 0) {
+                char buf[68];
+                sprintf(buf, "This Level (%d of %d)    Item Number %d", have, total, sel - first);
+                TextBegin();
+                TextSetMode(0);
+                TextSetColor(0xFF, 0xFF, 0xFF, 0xFF);
+                TextSetSize(0xD);
+                TextSetBox(0xA5, 600, 0x17C, 400);
+                TextDrawStr(buf);
+            }
+            if ((int)i < (int)end) {
+                int ev = GameEvent(0xBAA22E62, Fn800DF3B8(table, i, nameKey));
+                if (ev != (int)gLevelGates[gProgressLevel + 1].event) {
+                    more = 1;
+                }
+            }
+            Draw2DEnd();
+            if (more) {
+                GhostShotDrawSprite(0.0f, 0.0f, 0.0f, 0.0f, gArrowTexL, 600, 0x1B8, 0x2E, 0x1B, 0xFF, 0xFF,
+                                    0xFF, 0xFF);
+            }
+            if (first != 0) {
+                GhostShotDrawSprite(0.0f, 0.0f, 0.0f, 0.0f, gArrowTexR, 0x118, 0x1B8, 0x2E, 0x1B, 0xFF, 0xFF,
+                                    0xFF, 0xFF);
+            }
+        }
     }
 }
 
