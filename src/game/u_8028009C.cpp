@@ -130,6 +130,292 @@ static inline void BitSet(u32* bits, int i) {
     bits[i / 32] |= 1 << (i & 0x1F);
 }
 
+extern "C" {
+void GhostShotDrawBeam(float a, float b, float c, float d, float e, int tex, int x0, int y0, int x1,
+                       int y1, u8 r, u8 g, u8 bl, u8 al);           // 0x8018F56C
+const char* StrFindKeySkip(u32 key);                                // 0x80086364
+int sprintf(char* s, const char* fmt, ...);
+void TextDrawStr(const char* s);                                    // 0x801EB188
+void Draw2DBegin(void);                                             // 0x8013C6F0
+void Draw2DEnd(void);                                               // 0x8013C6C4
+void DrawTexQuad(int tex, float x0, float y0, float x1, float y1, u8 r, u8 g, u8 b, u8 a);  // 0x8013C308
+}
+void BonusShow(u32 idx);
+void ArtShow(u32 idx);
+void MusicPlay(u32 idx);
+void MoviePlay(u32 idx);
+void SecretShow(u32 idx);
+void ExtrasListDraw(u32 sel, int count, int (*iconFn)(u32), int alpha, u32 table, u32 nameKey,
+                    u32* bits);
+void ExtrasHudDraw(int alpha);
+extern int gMenuReady;          // 0x804D5550
+extern int gWideScreen;         // 0x804D4008
+extern int gBonusUnlockCount;   // 0x804D5560
+extern int gArtHidden;          // 0x804D5588
+extern int gMusicVisible;       // 0x804D55A8
+extern int gMovieVisible;       // 0x804D55C0
+extern int gSecretVisible;      // 0x804D55D8
+extern int gArrowTexUp;         // 0x804A3280
+extern int gArrowTexDown;       // 0x804A3284
+extern float gOne2;             // 0x804DA418
+extern float gZero2;            // 0x804DA41C
+
+// Draws the extras menu: the arrows and the five category percentages on the left, the
+// highlight bar for the current page and then the page itself.
+int ExtrasMenuDraw(int unused, int alpha) {
+    static int sRowX = 10;              // 0x804D5624
+    static int sRowY = 0x94;            // 0x804D562C
+    static int sFade = 0;               // 0x804D5634
+    static int sPageFlags = 0;          // 0x804D563C
+    static u8 sTitleFade = 0;           // 0x804D5641
+    char buf[256];
+    char cbuf[64];
+    int pct;
+    int selBonus = gBonusBusy;
+    int selArt = gArtBusy;
+    int selMusic = gMusicBusy;
+    int selMovie = gMovieBusy;
+    int selSecret = gSecretBusy;
+    signed char fade;
+
+    if (fn_80007138() == 0) {
+        gMenuReady = 1;
+    } else if (gMenuReady == 0) {
+        sTitleFade = 10;
+        return 1;
+    }
+    fade = sTitleFade + 3;
+    sTitleFade = 0xFF;
+    if (fade > 4) {
+        sTitleFade = fade;
+    }
+    if (gWideScreen == 0) {
+        GhostShotDrawBeam(gOne2, gZero2, gZero2, gZero2, gZero2, gArrowTexUp, 400, 0x1C2, 0x1DD, 0x5A,
+                          0xFF, 0xFF, 0xFF, sTitleFade);
+        GhostShotDrawBeam(gOne2, gZero2, gZero2, gZero2, gZero2, gArrowTexDown, 0x50, 0xF0, 0x8E, 0x1E0,
+                          0xFF, 0xFF, 0xFF, sTitleFade);
+    } else {
+        GhostShotDrawBeam(gOne2, gZero2, gZero2, gZero2, gZero2, gArrowTexUp, 400, 0x1C2, 0x26C, 0x5A,
+                          0xFF, 0xFF, 0xFF, sTitleFade);
+        GhostShotDrawBeam(gOne2, gZero2, gZero2, gZero2, gZero2, gArrowTexDown, 0x50, 0xF0, 200, 0x1E0,
+                          0xFF, 0xFF, 0xFF, sTitleFade);
+    }
+    TextBegin();
+    TextSetMode(2);
+    TextSetSize(0xD);
+    TextSetColor(0xFF, 0xFF, 0xFF, sTitleFade);
+    TextSetBox(10, 0xA0, 0x15E, 0x1A4);
+    pct = (gBonusBits == NULL) ? 0 : (BitsetCount(gBonusBits, gBonusCount, 1) * 100) / gBonusUnlockCount;
+    sprintf(buf, "%s\n%d%", StrFindKeySkip(0x98280222), pct);
+    TextDrawStr(buf);
+    TextSetBox(10, 0xA0, 0x10E, 0x154);
+    pct = (gArtBitsB == NULL) ? 0 : (BitsetCount(gArtBitsB, gArtCountB, 1) * 100) / gArtHidden;
+    sprintf(buf, "%s\n%d%", StrFindKeySkip(0x89C6C9AB), pct);
+    TextDrawStr(buf);
+    TextSetBox(10, 0xA0, 0xBE, 0x104);
+    pct = (gMusicBits == NULL || gMusicTotal == 0) ? 0 : (BitsetCount(gMusicBits, gMusicCount, 1) * 100) / gMusicTotal;
+    sprintf(buf, "%s\n%d%", StrFindKeySkip(0x1AA0E630), pct);
+    TextDrawStr(buf);
+    TextSetBox(10, 0xA0, 0x6E, 0xB4);
+    pct = (gMovieBits == NULL || gMovieVisible == 0) ? 0 : (BitsetCount(gMovieBits, gMovieCount, 1) * 100) / gMovieVisible;
+    sprintf(buf, "%s\n%d%", StrFindKeySkip(0x695DB0A5), pct);
+    TextDrawStr(buf);
+    TextSetBox(10, 0xA0, 0x1E, 100);
+    if (gSecretBits == NULL) {
+        pct = 0;
+    } else {
+        pct = (int)(float)((BitsetCount(gSecretBits, gSecretCount, 1) * 100) / gSecretVisible);
+    }
+    sprintf(buf, "%s\n%d%", StrFindKeySkip(0x98CCA33D), pct);
+    TextDrawStr(buf);
+    Draw2DBegin();
+    DrawTexQuad(-3, (float)sRowX, (float)(gMenuPage * -0x50 + 0x15E), (float)sRowY,
+                (float)(gMenuPage * -0x50 + 0x160), 0x2C, 0x8F, 0x6D, sTitleFade);
+    DrawTexQuad(-3, (float)sRowX, (float)(gMenuPage * -0x50 + 0x1A4), (float)sRowY,
+                (float)(gMenuPage * -0x50 + 0x1A2), 0x2C, 0x8F, 0x6D, sTitleFade);
+    DrawTexQuad(-3, (float)sRowY, (float)(gMenuPage * -0x50 + 0x15E), (float)(sRowY + 2),
+                (float)(gMenuPage * -0x50 + 0x1A4), 0x2C, 0x8F, 0x6D, sTitleFade);
+    Draw2DEnd();
+    if (gMenuInPage == 0) {
+        sFade = 0;
+        sPageFlags = 0;
+    } else if (gMenuPage == 0) {
+        if (fn_80007138() != 0) {
+            sFade = 0;
+        }
+        if (selBonus == 1) {
+            if ((sPageFlags & 2) == 0) {
+                sFade = 0;
+                sPageFlags = 2;
+            } else {
+                int f = sFade + 1;
+                sFade = 0xFF;
+                if (f < 0x100) {
+                    sFade = f;
+                }
+            }
+        } else {
+            sFade = 0;
+        }
+        ExtrasListDraw(gBonusSel, gBonusCount, (int (*)(u32))BonusShow, alpha, 0x5E130113, 0x198917DC,
+                       gBonusBits);
+        if (gBonusBits == NULL) {
+            gMenuInPage = 0;
+        } else if (gBonusBusy != 0) {
+            u32 len = 0;
+            int title = Fn800DF3B8(0x5E130113, gBonusSel, 0x198917DC);
+            if (title >= 0) {
+                TextBegin();
+                TextSetMode(0);
+                TextSetColor(0xFF, 0xFF, 0xFF, ((sFade * 0xFF) / 0xFF) & 0xFF);
+                TextSetSize(0xD);
+                TextSetBox(400, 0x262, 0x14, 0x168);
+                TextDraw(StrGetIndex(title, &len), len);
+            }
+            ExtrasModelShow(gBonusModel, sFade);
+        }
+    } else if (gMenuPage == 1) {
+        if (fn_80007138() != 0) {
+            sFade = 0;
+        }
+        if (selArt == 1) {
+            if ((sPageFlags & 4) == 0) {
+                sFade = 0;
+                sPageFlags = 4;
+            } else {
+                int f = sFade + 1;
+                sFade = 0xFF;
+                if (f < 0x100) {
+                    sFade = f;
+                }
+            }
+        } else {
+            sFade = 0;
+        }
+        ExtrasListDraw(gArtSel, gArtCountB, (int (*)(u32))ArtShow, alpha, 0x80EDD05C, 0x198917DC, gArtBitsB);
+        if (gArtBitsB == NULL) {
+            gMenuInPage = 0;
+        } else if (gArtBusy != 0) {
+            u32 len = 0;
+            int title = Fn800DF3B8(0x80EDD05C, gArtSel, 0x198917DC);
+            if (title >= 0) {
+                TextBegin();
+                TextSetMode(0);
+                TextSetColor(0xFF, 0xFF, 0xFF, ((sFade * 0xFF) / 0xFF) & 0xFF);
+                TextSetSize(0xD);
+                TextSetBox(400, 0x262, 0x50, 0x168);
+                TextDraw(StrGetIndex(title, &len), len);
+            }
+            ExtrasModelShow(gArtModel, sFade);
+        }
+    } else if (gMenuPage == 2) {
+        if (fn_80007138() != 0) {
+            sFade = 0;
+        }
+        if (selMusic == 1) {
+            if ((sPageFlags & 0x20) == 0) {
+                sFade = 0;
+                sPageFlags = 0x20;
+            } else {
+                int f = sFade + 1;
+                sFade = 0xFF;
+                if (f < 0x100) {
+                    sFade = f;
+                }
+            }
+        } else {
+            sFade = 0;
+        }
+        ExtrasListDraw(gMusicSel, gMusicCount, (int (*)(u32))MusicPlay, alpha, 0x258124CE, 0x273D2D, gMusicBits);
+        if (gMusicBits == NULL) {
+            gMenuInPage = 0;
+        } else if (gMusicBusy != 0) {
+            u32 len = 0;
+            int title = Fn800DF3B8(0x258124CE, gMusicSel, 0x273D2D);
+            if (title >= 0) {
+                u32 heard;
+                if (gMusicBits == NULL || gMusicTotal == 0) {
+                    heard = 0;
+                } else {
+                    heard = BitsetCount(gMusicBits, gMusicCount, 1);
+                }
+                sprintf(cbuf, "\n\n(%d of %d)", heard, gMusicTotal);
+                TextBegin();
+                TextSetMode(0);
+                TextSetColor(0xFF, 0xFF, 0xFF, ((sFade * 0xFF) / 0xFF) & 0xFF);
+                TextSetSize(0xD);
+                TextSetBox(400, 0x26C, 0x50, 0x168);
+                TextDraw(StrGetIndex(title, &len), len);
+                TextDrawStr(cbuf);
+            }
+            ExtrasModelShow(gMusicModel, sFade);
+        }
+    } else if (gMenuPage == 3) {
+        if (fn_80007138() != 0) {
+            sFade = 0;
+        }
+        if (selMovie == 1) {
+            if ((sPageFlags & 0x10) == 0) {
+                sFade = 0;
+                sPageFlags = 0x10;
+            } else {
+                int f = sFade + 1;
+                sFade = 0xFF;
+                if (f < 0x100) {
+                    sFade = f;
+                }
+            }
+        } else {
+            sFade = 0;
+        }
+        ExtrasListDraw(gMovieSel, gMovieCount, (int (*)(u32))MoviePlay, alpha, 0xD8E68AB7, 0x273D2D, gMovieBits);
+        ExtrasHudDraw(sFade);
+    } else if (gMenuPage == 4) {
+        if (fn_80007138() != 0) {
+            sFade = 0;
+        }
+        if (selSecret == 1) {
+            if ((sPageFlags & 8) == 0) {
+                sFade = 0;
+                sPageFlags = 8;
+            } else {
+                int f = sFade + 1;
+                sFade = 0xFF;
+                if (f < 0x100) {
+                    sFade = f;
+                }
+            }
+        } else {
+            sFade = 0;
+        }
+        ExtrasListDraw(gSecretSel, gSecretCount, (int (*)(u32))SecretShow, alpha, 0x5EB7A22E, 0x273D2D,
+                       gSecretBits);
+        if (gSecretBits == NULL) {
+            gMenuInPage = 0;
+        } else if (gSecretBusy != 0) {
+            u32 len = 0;
+            int a = Fn800DF3B8(0x5EB7A22E, gSecretSel, 0x7EC7D68D);
+            int b = Fn800DF3B8(0x5EB7A22E, gSecretSel, 0x273D2D);
+            if (b >= 0 && a >= 0) {
+                u8 al = ((sFade * 0xFF) / 0xFF) & 0xFF;
+                TextBegin();
+                TextSetMode(0);
+                TextSetColor(0xFF, 0xFF, 0xFF, al);
+                TextSetSize(0xD);
+                TextSetBox(0xF0, 0x262, 100, 0x14A);
+                TextDraw(StrGetIndex(a, &len), len);
+                TextBegin();
+                TextSetMode(0);
+                TextSetColor(0xFF, 0xFF, 0xFF, al);
+                TextSetSize(0xD);
+                TextSetBox(0xF0, 0x262, 100, 0x12A);
+                TextDraw(StrGetIndex(b, &len), len);
+            }
+        }
+    }
+    return 1;
+}
+
 // Page dispatcher of the extras menu: pad up/down moves between pages, A enters one.
 void ExtrasMenuUpdate(float dt) {
     int old = gMenuPage;
