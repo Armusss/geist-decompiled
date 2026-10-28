@@ -55,6 +55,12 @@ struct Mtx34 {
 
 struct Actor;
 
+// Controller record at Actor + 0x5EC.
+struct OwnerRec {
+    u8 pad00[0xBC];
+    int controller;         // 0xBC: handle of the controlling actor (-1 when none)
+};
+
 // Reply of the 0x400 "get actor info" message.
 struct ActorInfoMsg {
     Actor* actor;           // 0x00
@@ -128,7 +134,7 @@ struct Actor {
     char conds[0x288 - 0x270]; // 0x270
     int anim;               // 0x288
     u8 pad28C[0x5EC - 0x28C];
-    Actor* owner;           // 0x5EC
+    OwnerRec* owner;        // 0x5EC
     u8 pad5F0[0x91C - 0x5F0];
     float timeScale;        // 0x91C
 };
@@ -353,7 +359,7 @@ int AllyUpdateFollow(Actor* a) {
     if (a->mode != 0) {
         return 1;
     }
-    if (a->owner->handle == -1) {
+    if (a->owner->controller == -1) {
         return 1;
     }
     {
@@ -386,8 +392,8 @@ int AllyUpdateFollow(Actor* a) {
             } else if (OwnerValue(a, target) < gAllyNear) {
                 HitMsg hit;
                 int owner;
-                ActorPlayAnim(a->owner->handle, 0xCF0164E2, a->handle);
-                owner = a->owner->handle;
+                ActorPlayAnim(a->owner->controller, 0xCF0164E2, a->handle);
+                owner = a->owner->controller;
                 if (owner != -1) {
                     QueryMsg q;
                     q.unk8 = 0;
@@ -480,7 +486,7 @@ int AllyUpdateState6(Actor* a) {
         Actor* t;
         a->anim = 3;
         t = FollowGetTargetObj(a->conds);
-        if (t != NULL && SendMsg(t->handle, 0x400, &info) != 0 && info.actor != NULL) {
+        if (t != NULL && SendMsg(t->handle, 0x400, &info) != 0 && info.unk0C != 0) {
             int r = QueryVar(t->handle, 0x1C1A4CC9, &v);
             if (r != 0 && v == -1) {
                 float p[3];
@@ -528,23 +534,30 @@ int AllyEnterState5(Actor* a) {
 
 int AllyUpdateState5(Actor* a) {
     ActorInfoMsg info;
-    if (a->mode == 0 && a->owner->handle != -1) {
-        Actor* t;
-        fn_800B26B8(a);
+    Actor* t;
+    if (a->mode != 0) {
+        return 1;
+    }
+    if (a->owner->controller == -1) {
+        return 1;
+    }
+    fn_800B26B8(a);
+    t = FollowGetTargetObj(a->conds);
+    if (t == NULL || SendMsg(t->handle, 0x400, &info) == 0 || info.unk0C == 0) {
+        return 1;
+    }
+    SendMsg(a->owner->controller, 0x400, &info);
+    if ((info.flags & 2) == 0) {
+        fn_80116E30(a);
+        return 1;
+    }
+    if (fn_800BAF40(a) == -1) {
         t = FollowGetTargetObj(a->conds);
-        if (t != NULL && SendMsg(t->handle, 0x400, &info) != 0 && info.actor != NULL) {
-            SendMsg(a->owner->handle, 0x400, &info);
-            if ((info.flags & 2) != 0) {
-                if (fn_800BAF40(a) == -1 && FollowGetTargetObj(a->conds) != NULL) {
-                    fn_800BC56C(a, NULL);
-                }
-                return 0;
-            }
-            fn_80116E30(a);
-            return 1;
+        if (t != NULL) {
+            fn_800BC56C(a, t);
         }
     }
-    return 1;
+    return 0;
 }
 
 int AllyTrue3(Actor* a) {
@@ -595,7 +608,7 @@ int AllyUpdateState4(Actor* a) {
             RangeResetPending(a->conds);
             return 1;
         }
-        if (SendMsg(t->handle, 0x400, &info) == 0 || info.actor == NULL) {
+        if (SendMsg(t->handle, 0x400, &info) == 0 || info.unk0C == 0) {
             a->unk268 = 4;
             RangeResetPending(a->conds);
             return 1;
@@ -716,7 +729,7 @@ int AllyUpdateState3(Actor* a) {
     ActorInfoMsg info;
     int v;
     b->timer -= a->dt;
-    if (t == NULL || SendMsg(t->handle, 0x400, &info) == 0 || info.actor == NULL) {
+    if (t == NULL || SendMsg(t->handle, 0x400, &info) == 0 || info.unk0C == 0) {
         return 1;
     }
     if (QueryVar(t->handle, 0x1C1A4CC9, &v) != 0 && v != -1) {
@@ -785,7 +798,7 @@ int AllyEnterState2(Actor* a) {
     if (a->mode == 5 && a->other != NULL) {
         ActorInfoMsg info;
         if (SendMsg(a->other->handle, 0x400, &info) != 0) {
-            if (info.actor == NULL) {
+            if (info.unk0C == 0) {
                 a->mode = 0;
                 return 0;
             }
@@ -958,7 +971,7 @@ int AllyHit(int* m);                // message 0xC14 handler (defined below)
 // draws the glow bones.
 static inline int AllyDraw(Actor* a, int* m) {
     AllyBeh* b = a->beh;
-    u32 owner = (u32)a->owner->handle;
+    u32 owner = (u32)a->owner->controller;
     if (owner == 0xFFFFFFFF || owner >> 24 == 0x13) {
         if (b->targetId == -1) {
             float fade = *(float*)((int*)b + 0xE);
@@ -1009,7 +1022,7 @@ int AllyMsg(int msg, int* m) {
         if (MemFlagIsSet(a->conds, 0xB) != 0) {
             return 1;
         }
-        if (m[2] == 0x3CA34BD6 && a->owner->handle != -1) {
+        if (m[2] == 0x3CA34BD6 && a->owner->controller != -1) {
             m[3] = 0x1379C466;
             return 1;
         }
@@ -1065,12 +1078,12 @@ int AllyMsg(int msg, int* m) {
         }
         return 0;
     case 2:
-        if (a->owner->handle != -1 && ((Actor*)m[3])->handle == a->owner->handle) {
+        if (a->owner->controller != -1 && ((Actor*)m[3])->handle == a->owner->controller) {
             return 0xFFF0BDC1;
         }
         return 0;
     case 4:
-        if (a->owner->handle != -1 && ((Actor*)m[7])->handle == a->owner->handle) {
+        if (a->owner->controller != -1 && ((Actor*)m[7])->handle == a->owner->controller) {
             return 0xFFF0BDC1;
         }
         return 0;
@@ -1082,7 +1095,7 @@ int AllyMsg(int msg, int* m) {
         m[3] = (0.0f < *(float*)((char*)a + 0x904));
         ((float*)m)[4] = 1.0f;
         ((float*)m)[5] = 1.0f;
-        m[6] = (a->owner->handle == -1) ? 1 : 2;
+        m[6] = (a->owner->controller == -1) ? 1 : 2;
         m[7] = 0;
         return 1;
     case 0x407:
@@ -1092,7 +1105,7 @@ int AllyMsg(int msg, int* m) {
         if (MemFlagIsSet(a->conds, 10) != 0) {
             return 1;
         }
-        if ((u32)a->owner->handle == 0xFFFFFFFF) {
+        if ((u32)a->owner->controller == 0xFFFFFFFF) {
             if (m[5] != 0x403548D0) {
                 return 1;
             }
@@ -1105,10 +1118,10 @@ int AllyMsg(int msg, int* m) {
                 }
                 *(float*)((int*)b + 0xE) = gAllyFade;
             }
-        } else if ((u32)a->owner->handle >> 24 == 2) {
+        } else if ((u32)a->owner->controller >> 24 == 2) {
             return 1;
         }
-        return m[2] == a->owner->handle;
+        return m[2] == a->owner->controller;
     case 0x409:
         if (ActorPlayAnim(fn_800A3A40(a), m[3], m[2]) != 0) {
             return 1;
@@ -1245,7 +1258,7 @@ int AllyUpdate(Actor* a) {
     if (0.0f <= *(float*)((int*)b + 0xE)) {
         *(float*)((int*)b + 0xE) -= a->dt;
     }
-    if (a->owner->handle == -1 && b->targetId == -1) {
+    if (a->owner->controller == -1 && b->targetId == -1) {
         float step = a->dt / a->timeScale;
         float k = step / fn_802A2080();
         float cur = fn_802A2080();
@@ -1289,7 +1302,7 @@ int AllyUpdate(Actor* a) {
             b->state = AllyPickState(a);
             gAllyStates[b->state].enter(a);
         }
-        owner = (u32)a->owner->handle;
+        owner = (u32)a->owner->controller;
         if (owner == 0xFFFFFFFF) {
             if (b->targetId != -1) {
                 SendMsg(b->targetId, 0x400, NULL);
@@ -1300,7 +1313,7 @@ int AllyUpdate(Actor* a) {
         } else if (owner >> 24 == 2) {
             /* follow the owner's position, lifted by 200 */
         }
-        if (a->owner->handle == -1 && b->unk04 > 0.0f) {
+        if (a->owner->controller == -1 && b->unk04 > 0.0f) {
             b->unk04 = b->unk04 - a->dt;
         }
         canGo = gAllyStates[b->state].update(a);
@@ -1319,7 +1332,7 @@ int AllyUpdate(Actor* a) {
                     ConditionSetBit(a->conds, 0x42, 0);
                 }
             }
-            if (a->owner->handle == -1) {
+            if (a->owner->controller == -1) {
                 int i;
                 for (i = 0; i < ActorCount(); i++) {
                     Actor* o = (Actor*)ActorGet(i);
@@ -1515,7 +1528,7 @@ int AllyPickState(Actor* a) {
     b = a->beh;
     slot = fn_800B26B8(a);
     if (a->mode == 0) {
-        u32 owner = (u32)a->owner->handle;
+        u32 owner = (u32)a->owner->controller;
         if (owner == 0xFFFFFFFF) {
             if (slot != 4) {
                 Actor* t;
