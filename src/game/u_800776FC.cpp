@@ -161,7 +161,7 @@ void* memset(void* p, int c, u32 n);
 void fn_80026680(int kind, void* cb, int arg);
 void fn_80026660(int kind, void* cb, int arg);
 void fn_800070C0(void* p);
-void fn_80007088(void* p, int n);
+void FileFlushBuffer(void* p, int n);
 void fn_800070E0(void* p, int n);
 }
 
@@ -521,8 +521,8 @@ void LightFxLoad(int unused, void* data) {
             lbl_804D4564 = (LightDef*)(hdr + 8);
             for (i = 0; i < lbl_804D4560->count; i++) {
                 LightDef* d = &lbl_804D4564[i];
-                fn_80007088(&d->pos, 0xC);
-                fn_80007088(&d->rot, 0xC);
+                FileFlushBuffer(&d->pos, 0xC);
+                FileFlushBuffer(&d->rot, 0xC);
                 fn_800070C0(&d->f18);
                 fn_800070C0(&d->f1C);
                 fn_800070C0(&d->f20);
@@ -768,3 +768,202 @@ int LightFxSetPlace(Msg* m) {
 }
 
 void fn_8007902C(void) {}
+
+// ---- Second effect kind (level chunk 9/10): "spirit trail" markers, 0x64 bytes per instance ----
+
+// Definition in the level chunk (0x4C bytes).
+struct FxDef {
+    Vec3 pos;               // 0x00
+    Vec3 rot;               // 0x0C
+    int bounds[6];          // 0x18
+    u32 hash30;             // 0x30
+    u32 hash34;             // 0x34
+    u32 hash38;             // 0x38
+    u32 hash3C;             // 0x3C
+    u32 kind40;             // 0x40
+    u32 hash44;             // 0x44
+    u32 select48;           // 0x48
+};
+
+struct FxInst {
+    Actor base;             // 0x00
+    u8 pad50[4];
+    u32 kind50;             // 0x50
+    u8 rgba[4];             // 0x54
+    float f58;              // 0x58
+    int h5C;                // 0x5C
+    int h60;                // 0x60
+};
+
+class Buffer {
+public:
+    Buffer();
+    virtual ~Buffer();
+    int pad04;
+    int size;               // 0x08
+    int* data;              // 0x0C
+};
+
+class FxList : public Buffer {
+public:
+    virtual ~FxList();
+};
+
+extern int lbl_804D4570;
+extern FxInst* lbl_804D4574;
+extern int lbl_804D4578;
+extern FxList* lbl_804D457C;
+
+extern "C" {
+int fn_80022D80(void* actor);
+void fn_80022D98(void* actor, int v);
+void fn_8009F028(void* m, void* euler);
+}
+int FxMsg(int msg, Msg* m);
+void FxListLoad(int unused, void* data);
+void FxMsgThunk(int index, int msg, Msg* m);
+double __fabs(double);
+int SaveIsBusy(void);
+void ActorFn80022D98(Actor* a, int v);
+
+FxList::~FxList() {}
+
+void FxListFree(void) {
+    if (lbl_804D4574 != NULL)
+        VFree(lbl_804D4574);
+    if (lbl_804D457C != NULL)
+        delete lbl_804D457C;
+}
+
+// Per-frame update of every instance: sends the 0x801 update message and fades f58 toward zero.
+int FxListUpdate(double dt) {
+    int i;
+    for (i = 0; i < lbl_804D4578; i++) {
+        FxInst* inst = &lbl_804D4574[i];
+        bool active = false;
+        if (inst != NULL &&
+            ((inst->base.flags4C & 0x40) != 0 || (inst->base.flags4C & 1) != 0 || (inst->base.id >> 24) == 0xC))
+            active = true;
+        if (!active)
+            continue;
+        if ((inst->base.flags4C & 0x400) == 0) {
+            if (fn_80022D80(inst) != 0) {
+                struct { Actor* a; int unused; float dt; } msg;
+                msg.dt = (float)dt;
+                msg.unused = 0;
+                msg.a = &inst->base;
+                inst->base.handler(0x801, &msg);
+                if (0.0f != inst->f58) {
+                    if (dt < __fabs((double)inst->f58)) {
+                        float sign = 1.0f;
+                        if (inst->f58 < 0.0f)
+                            sign = -1.0f;
+                        inst->f58 = -(float)(dt * sign - inst->f58);
+                    } else {
+                        inst->f58 = 0.0f;
+                    }
+                }
+                fn_80022E8C(inst);
+            }
+        } else {
+            inst->base.flags4C &= ~0x400;
+        }
+    }
+    return 1;
+}
+
+void FxListBroadcast(void) {
+    int i;
+    int msg = 0x800;
+    if (SaveIsBusy() != 0)
+        msg = 0x803;
+    for (i = 0; i < lbl_804D4578; i++) {
+        struct { Actor* a; } data;
+        data.a = &lbl_804D4574[i].base;
+        data.a->handler(msg, &data);
+    }
+}
+
+int FxMsgCallback(void* a, void* b);
+int FxStateTick(void* a);
+
+void FxListSpawnAll(void) {
+    int i;
+    if (lbl_804D4578 != 0)
+        lbl_804D4574 = (FxInst*)VAlloc(lbl_804D4578 * sizeof(FxInst));
+    for (i = 0; i < lbl_804D4578; i++) {
+        FxDef* def = &((FxDef*)lbl_804D4570)[i];
+        FxInst* inst = &lbl_804D4574[i];
+        Mtx34 mt;
+        fn_8009F028(&mt, &def->rot);
+        mt.m[2][1] = def->pos.x;
+        mt.m[2][2] = def->pos.y;
+        mt.m[2][3] = def->pos.z;
+        inst->kind50 = 0x101AB;
+        inst->rgba[0] = 0xFF;
+        inst->rgba[1] = 0xFF;
+        inst->rgba[2] = 0xFF;
+        inst->rgba[3] = 0xFF;
+        inst->f58 = 0.0f;
+        inst->h60 = -1;
+        ActorFn8002378C(&inst->base, (i & 0xFFFFFF) | 0xA000000, (int)&mt, (int)FxMsg, (int)def->bounds,
+                        (int)def->bounds, def->hash3C);
+        ActorFn800231A8(&inst->base);
+        if ((inst->base.flags4C & 0x10000) != 0)
+            ActorFn80022D98(&inst->base, 0);
+        {
+            int a = fn_8007EB34(0xFFFFFFFF, def->hash34);
+            int b = fn_8007EB34(0xF1754BF2, def->hash38);
+            fn_80212814(inst->base.id, a, b, 1, 0, 0);
+        }
+        if (def->kind40 == 0x1F85A947)
+            inst->h5C = fn_8007EB34(0x92234D44, def->hash44);
+        else
+            inst->h5C = -1;
+        if (SelectionSetTest(def->select48) == 0) {
+            ActorRefreshHostState(&inst->base, 0);
+            ObjSendC00(inst, 0);
+        }
+    }
+}
+
+int FxListInit(void) {
+    FxList* list;
+    lbl_804D4570 = 0;
+    lbl_804D4574 = NULL;
+    lbl_804D4578 = 0;
+    list = new FxList;
+    lbl_804D457C = list;
+    fn_80026680(10, (void*)FxListLoad, 0);
+    fn_80026660(10, (void*)FxMsgThunk, 0);
+    return 1;
+}
+
+// Level chunk 10 loader: byte-swaps the definitions in place.
+void FxListLoad(int unused, void* data) {
+    short* hdr = (short*)data;
+    int i;
+    fn_800070E0(hdr, 0x10);
+    if (hdr[0] == 9) {
+        lbl_804D4570 = (int)(hdr + 16);
+        lbl_804D4578 = hdr[1];
+        for (i = 0; i < lbl_804D4578; i++) {
+            FxDef* d = &((FxDef*)lbl_804D4570)[i];
+            FileFlushBuffer(d->bounds, 0x18);
+            FileFlushBuffer(&d->rot, 0xC);
+            FileFlushBuffer(&d->pos, 0xC);
+            fn_800070C0(&d->hash30);
+            fn_800070C0(&d->hash34);
+            fn_800070C0(&d->hash38);
+            fn_800070C0(&d->hash3C);
+            fn_800070C0(&d->kind40);
+            fn_800070C0(&d->hash44);
+            fn_800070C0(&d->select48);
+        }
+    }
+}
+
+void FxMsgThunk(int index, int msg, Msg* m) {
+    m->actor = &lbl_804D4574[index].base;
+    FxMsg(msg, m);
+}
