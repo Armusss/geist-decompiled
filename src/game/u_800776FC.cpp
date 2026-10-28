@@ -967,3 +967,219 @@ void FxMsgThunk(int index, int msg, Msg* m) {
     m->actor = &lbl_804D4574[index].base;
     FxMsg(msg, m);
 }
+
+// ---- Flicker lights (level chunk 5) and the pool of running flicker patterns ----
+
+struct FadeTask {
+    int fx;                 // 0x00
+    int level;              // 0x04
+    int fadeIn;             // 0x08
+};
+
+extern int lbl_804D29A0;
+extern int lbl_804D29A4;
+
+extern "C" {
+void fn_8016EEF4(int fx);
+void fn_8016F018(int fx, int level);
+void fn_8028BC2C(void* p);
+void fn_8028BC28(void* a, void* b, u32 c);
+int FxStart(int a, int b, int c);
+int fn_8016F390(int a, int b, int c);
+int fn_8003A1C0(int v);
+int fn_8003A18C(int v);
+int fn_8003ADD4(void* m, int a, int b, int c, int d);
+int fn_8003E620(int a, int b, int c, int d, void* e, void* f);
+void fn_8003E5AC(void);
+void fn_8003E5B0(void);
+void fn_8003D8F4(int v);
+int ModelBoneCount(int v);
+int fn_802F6B10(const char* a, const char* b);
+double fmod(double a, double b);
+void* memcpy(void* d, const void* s, u32 n);
+}
+void ActorGetMatrix(Mtx34* m, Actor* a);
+int TimerAdd(int a, float (*cb)(void*), void* arg, float delay);
+
+// Fades a music/fx handle in or out each tick; returns the delay until the next call.
+float FadeTaskTick(void* p) {
+    FadeTask* t = (FadeTask*)p;
+    int v;
+    if (t->fadeIn == 0) {
+        t->level -= 400;
+        v = lbl_804D29A4;
+        if (lbl_804D29A4 < t->level)
+            v = t->level;
+        t->level = v;
+        if (t->level == 0) {
+            fn_8016EEF4(t->fx);
+            VFree(t);
+            return 0.0f;
+        }
+        fn_8016F018(t->fx, t->level);
+        return 100.0f;
+    }
+    t->level += 400;
+    v = lbl_804D29A0;
+    if (t->level < lbl_804D29A0)
+        v = t->level;
+    t->level = v;
+    fn_8016F018(t->fx, t->level);
+    if (t->level == 0x1000) {
+        VFree(t);
+        return 0.0f;
+    }
+    return 100.0f;
+}
+
+int ReturnZero(void) {
+    return 0;
+}
+
+struct ListObj {
+    u8 pad[4];
+};
+
+void FlickerBufClear(void* begin, void* end);
+void FlickerBufNop(void* begin, void* end);
+
+void FlickerBufConstruct(void* self, void* begin, u32 size) {
+    fn_8028BC2C(begin);
+    FlickerBufClear(begin, (u8*)begin + (size & ~7));
+}
+
+void FlickerBufDestruct(void* self, void* begin, u32 size) {
+    FlickerBufNop(begin, (u8*)begin + (size & ~7));
+    fn_8028BC28(self, begin, size);
+}
+
+int ReturnEight(void) {
+    return 8;
+}
+
+void FlickerBufClear(void* begin, void* end) {
+    int* p = (int*)begin;
+    int* e = (int*)end;
+    if (p >= e)
+        return;
+    do {
+        if (p != NULL) {
+            p[0] = 0;
+            p[1] = 0;
+        }
+        p += 2;
+    } while (p < e);
+}
+
+void FlickerBufNop(void* begin, void* end) {
+    u32 b = (u32)begin;
+    u32 e = (u32)end;
+    if (e <= b)
+        return;
+    do {
+    } while (--e > b + 7 - b);
+}
+
+extern int lbl_804D4584;
+extern u8* lbl_804D4580;
+extern u32* lbl_804D4588;
+extern int lbl_804D458C;
+extern int lbl_804D4590;
+
+void FlickerResetCount(void) {
+    lbl_804D4584 = 0;
+}
+
+// Draws the shadow casters of every flicker light queued since the last frame.
+void FlickerFlushQueue(void) {
+    if (lbl_804D4590 != 0) {
+        int w;
+        int base = 0;
+        for (w = 0; w < lbl_804D458C; w++) {
+            u32 bits = lbl_804D4588[w];
+            if (bits != 0) {
+                int bit;
+                u8* ent = lbl_804D4580 + base * 0x90;
+                for (bit = 0; bit < 32; bit++, ent += 0x90) {
+                    if ((1 << bit) & bits) {
+                        int* e = (int*)ent;
+                        int p1[3];
+                        int p2[3];
+                        Mtx34 mt;
+                        int model;
+                        int r;
+                        p1[0] = e[0x6C / 4];
+                        p1[1] = e[0x70 / 4];
+                        p1[2] = e[0x74 / 4];
+                        p2[0] = e[0x7C / 4];
+                        p2[1] = e[0x84 / 4];
+                        p2[2] = e[0x80 / 4];
+                        ActorGetMatrix(&mt, (Actor*)ent);
+                        model = ModelBoneCount(e[0x5C / 4]);
+                        r = fn_8003ADD4(&mt, e[0x5C / 4], 0, 0, model);
+                        fn_8003E620(e[0x5C / 4], r, model, e[0x64 / 4], p1, p2);
+                    }
+                }
+                lbl_804D4588[w] = 0;
+            }
+            base += 32;
+        }
+        lbl_804D4590 = 0;
+    }
+    fn_8003E5AC();
+}
+
+void FlickerEndFrame(void) {
+    fn_8003E5B0();
+}
+
+// One running pattern (0x44 bytes) in the flicker pool.
+struct FlickerEntry {
+    int key;                // 0x00
+    char* buf;              // 0x04
+    int pos;                // 0x08
+    int len;                // 0x0C
+    int params[6];          // 0x10
+    int (*cb)(int, int, FlickerEntry*); // 0x28
+    FlickerEntry* cbArg;    // 0x2C
+    int target;             // 0x30
+    int cbData;             // 0x34
+    int next;               // 0x38
+    int prev;               // 0x3C
+    int owner;              // 0x40
+};
+
+struct FlickerPattern {
+    const char* name;
+    const char* data;
+    int len;
+};
+
+extern FlickerEntry lbl_80423870[16];
+extern char lbl_80423CB0[16][700];
+extern FlickerPattern lbl_80395154[11];
+extern int lbl_804D4594;
+extern int lbl_804D4598;
+
+int FlickerEntryRun(double dt, FlickerEntry* e);
+
+int FlickerUpdateAll(double dt) {
+    int i = lbl_804D4598;
+    while (i != -1) {
+        FlickerEntry* e = &lbl_80423870[i];
+        int next = e->next;
+        if (FlickerEntryRun(dt, e) == 0) {
+            e->buf = NULL;
+            if (lbl_804D4598 == i)
+                lbl_804D4598 = e->next;
+            else
+                lbl_80423870[e->prev].next = e->next;
+            if (e->next != -1)
+                lbl_80423870[e->next].prev = e->prev;
+            e->next = lbl_804D4594;
+            lbl_804D4594 = i;
+        }
+        i = next;
+    }
+    return 1;
+}
