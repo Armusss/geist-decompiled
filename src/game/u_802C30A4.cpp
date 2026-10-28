@@ -39,6 +39,15 @@ public:
 
 struct Boss;
 
+class BossBuf : public Buffer {
+public:
+    BossBuf() {}
+    virtual ~BossBuf() {}
+    virtual void Release(char* p);
+};
+
+inline void* operator new(unsigned long, void* p) { return p; }
+
 // Per-boss behaviour state (reached through Boss::state).
 struct BossState {
     int type;               // 0x00
@@ -50,11 +59,13 @@ struct BossState {
     float heartFlash;       // 0x30
     int hitPart;            // 0x34
     float hitTimer;         // 0x38
-    u8 pad3C[8];
+    float fade;             // 0x3C
+    u8 pad40[4];
     int mode;               // 0x44
     int slots[4];           // 0x48
     int slotCount;          // 0x58
-    u8 pad5C[0x18];
+    BossBuf list;           // 0x5C
+    u8 pad70[4];
     float shotDelay;        // 0x74
     int shotState;          // 0x78
     float stunHp;           // 0x7C
@@ -115,7 +126,7 @@ struct BossMsg {
     int hitNode;            // 0x40
 };
 
-extern int lbl_803C4E10[4];
+extern int lbl_803C4DF0[28];   // node / bone ids: 0x803C4DF0 .. 0x803C4E5C
 extern int lbl_804D3AB4;
 extern int lbl_804D3AC0;
 extern int lbl_804D3ACC;
@@ -347,7 +358,7 @@ int BossSetupHit(BossMsg* m) {
             } else {
                 int i;
                 for (i = 0; i < 4; i++) {
-                    if (node == lbl_803C4E10[i]) {
+                    if (node == lbl_803C4DF0[8 + i]) {
                         if (s->partHp[i] <= 0.0f)
                             return 1;
                         FxStart(fn_80170834("finalboss_parthit"), 0, 0);
@@ -575,4 +586,239 @@ int BossSetNext(Boss* b, int next) {
 
 int BossReturnZero(void) {
     return 0;
+}
+
+extern int lbl_804D3A9C, lbl_804D3AA0, lbl_804D3AA4, lbl_804D3AA8, lbl_804D3AAC, lbl_804D3AB0;
+extern int lbl_804D3AB8, lbl_804D3ABC, lbl_804D3AC4, lbl_804D3AC8;
+extern int lbl_804D57B0, lbl_804D57B8, lbl_804D57BC, lbl_804D57C0;
+extern float lbl_804D3A64, lbl_804D3A68;
+extern "C" {
+void* VAlloc(int size);
+void fn_80090634(int anim, int a, int b, int c);
+int rand(void);
+int fn_8008E5CC(int a, int b);
+void fn_80037EC0(int model, int node, int a, int r, int g, int b, int al);
+void fn_800381F8(int model, int a, int r, int g, int b, int al);
+void fn_800CDD10(void);
+}
+extern int lbl_804D39F0;
+void BossRefreshStates(Boss* b);
+void BossUpdateParts(Boss* b, BossState* s);
+void BossPartInit(Boss* b);
+
+// Installs the boss behaviour on actor `b` and resolves all the model node / effect ids it uses.
+void BossInit(int unused, Boss* b) {
+    BossState* s;
+    if (b == NULL)
+        return;
+    *(void**)((u8*)b + 0x110) = (void*)BossMsgHandler;
+    *(void**)((u8*)b + 0x118) = (void*)fn_800CDD10;
+    s = (BossState*)VAlloc(sizeof(BossState));
+    if (s == NULL) {
+        b->state = NULL;
+    } else {
+        new (&s->list) BossBuf;
+        s->type = 0;
+        s->next = 0;
+        s->shotDelay = (lbl_804D3A68 - lbl_804D3A64) * ((float)rand() / 32767.0f) + lbl_804D3A64;
+        s->stunHp = lbl_804D3A08;
+        s->attackA = 0;
+        s->attackC = 0.0f;
+        s->attackB = 0;
+        s->heartFlash = 0.0f;
+        s->hitIds[0] = -1;
+        s->hitTimers[0] = -1.0f;
+        s->hitIds[1] = -1;
+        s->hitTimers[1] = -1.0f;
+        s->hitIds[2] = -1;
+        s->hitTimers[2] = -1.0f;
+        s->hitIds[3] = -1;
+        s->hitTimers[3] = -1.0f;
+        memset(s->slots, 0xFF, 0x10);
+        lbl_804D3A9C = fn_8007EB34(0xF1754BF2, 0x450B2BB);
+        lbl_804D3AA0 = fn_8007EB34(0xF1754BF2, 0x4A53FC1);
+        lbl_804D3AA4 = fn_8007EB34(0xF1754BF2, 0x930D5E58);
+        lbl_804D3AA8 = fn_8007EB34(0xF1754BF2, 0x8C73DFA9);
+        lbl_804D3AAC = fn_8007EB34(0xD9044CBB, 0xBF47ABB4);
+        lbl_803C4DF0[0] = fn_8007EB34(0xD9044CBB, 0x25357BEE);
+        lbl_803C4DF0[1] = fn_8007EB34(0xD9044CBB, 0x7E9E82);
+        lbl_803C4DF0[2] = fn_8007EB34(0xD9044CBB, 0xB49CC4C1);
+        lbl_803C4DF0[3] = fn_8007EB34(0xD9044CBB, 0x824BB112);
+        lbl_803C4DF0[4] = fn_8007EB34(0xF1754BF2, 0x25357BEE);
+        lbl_803C4DF0[5] = fn_8007EB34(0xF1754BF2, 0x7E9E82);
+        lbl_803C4DF0[6] = fn_8007EB34(0xF1754BF2, 0xB49CC4C1);
+        lbl_803C4DF0[7] = fn_8007EB34(0xF1754BF2, 0x824BB112);
+        lbl_803C4DF0[8] = fn_8007EB34(0xD9044CBB, 0x25357BEE);
+        lbl_803C4DF0[9] = fn_8007EB34(0xD9044CBB, 0x7E9E82);
+        lbl_803C4DF0[10] = fn_8007EB34(0xD9044CBB, 0xB49CC4C1);
+        lbl_803C4DF0[11] = fn_8007EB34(0xD9044CBB, 0xB6135425);
+        lbl_804D3AB0 = fn_8007EB34(0xD9044CBB, 0x8FAF0157);
+        lbl_804D3AB4 = fn_8007EB34(0xD9044CBB, 0x3D36D22A);
+        {
+            int i;
+            for (i = 0; i < 9; i++)
+                lbl_803C4DF0[12 + i] = fn_8007EB34(0xD9044CBB, 0x81F567 + i);
+            for (i = 0; i < 7; i++)
+                lbl_803C4DF0[21 + i] = fn_8007EB34(0xD9044CBB, 0x81F585 + i);
+        }
+        lbl_804D3AC4 = fn_8007EB34(0xD9044CBB, 0x2DF40732);
+        lbl_804D3AC0 = fn_8007EB34(0x87DE5E6A, 0x1159B855);
+        lbl_804D3AB8 = fn_80170834("demon_fire");
+        lbl_804D3ABC = fn_80170834("demon_death");
+        lbl_804D57B0 = fn_80170834("finalboss_wind");
+        lbl_804D57B4 = fn_80170834("finalboss_heart");
+        lbl_804D57B8 = fn_80170834("finalboss_phaseout");
+        lbl_804D57BC = fn_80170834("finalboss_phasein");
+        lbl_804D57C0 = fn_80170834("finalboss_pain");
+        lbl_804D3AC8 = -1;
+        lbl_804D3ACC = -1;
+        b->state = s;
+        BossPartInit(b);
+        fn_800A7B08(&b->flags270, 10, 1);
+        fn_80090634(*(int*)((u8*)b + 0xD4), 0, 0, 0);
+        lbl_803C4E64[s->type].enter(b);
+    }
+}
+
+// Per-frame update for the "dying" state: fades the body parts out.
+int BossFadeTick(Boss* b) {
+    BossState* s = b->state;
+    BossRefreshStates(b);
+    if (s->type == 10) {
+        double t = fn_8008E5CC(*(int*)((u8*)b + 0xD4), 0);
+        if (0.1f <= t) {
+            if (t <= 0.8f) {
+                s->fade = 1.0f;
+                fn_80037EC0(b->model, lbl_804D3AAC, 1, 0xFF, 0xFF, 0xFF, 0xFF);
+            } else {
+                float v = 5.0f * (float)(t - 0.8f);
+                float c = 0.0f;
+                int a;
+                int i;
+                if (0.0f <= v) {
+                    c = v;
+                    if (1.0f < v)
+                        c = 1.0f;
+                }
+                s->fade = 1.0f - c;
+                a = (int)(255.0f * s->fade);
+                if (a < 0)
+                    a = 0;
+                else if (a >= 0x100)
+                    a = 0xFF;
+                for (i = 0; i < 4; i++)
+                    fn_80037EC0(b->model, lbl_803C4DF0[i], 0, 0xFF, 0xFF, 0xFF, 0xFF);
+                fn_80037EC0(b->model, lbl_804D3AB0, 0, 0xFF, 0xFF, 0xFF, 0xFF);
+                fn_80037EC0(b->model, lbl_804D3AAC, 0, 0xFF, 0xFF, 0xFF, 0xFF);
+                fn_800381F8(b->model, 1, 0xFF, 0xFF, 0xFF, a & 0xFF);
+            }
+        } else {
+            float v = (float)(10.0 * t);
+            int a;
+            float c = 0.0f;
+            if (0.0f <= v) {
+                c = v;
+                if (1.0f < v)
+                    c = 1.0f;
+            }
+            s->fade = c;
+            a = (int)(s->fade * (float)(0xFF - lbl_804D39F0));
+            if (a < 0)
+                a = 0;
+            else if (a >= 0x100)
+                a = 0xFF;
+            fn_80037EC0(b->model, lbl_804D3AAC, 1, 0xFF, 0xFF, 0xFF, a & 0xFF);
+            BossPartInit(b);
+        }
+    }
+    b->phaseTimer = 0.0f;
+    return s->type;
+}
+
+// Fade-out tick (state 6): hides the body as the animation advances.
+int BossStunTick(Boss* b) {
+    BossState* s = b->state;
+    BossRefreshStates(b);
+    if (s->type == 6) {
+        double t = fn_8008E5CC(*(int*)((u8*)b + 0xD4), 0);
+        int a;
+        s->fade = (float)(1.0 - t);
+        a = (int)-(s->fade * (float)(0xFF - lbl_804D39F0) - 255.0f);
+        if (a < 0)
+            a = 0;
+        else if (a >= 0x100)
+            a = 0xFF;
+        fn_80037EC0(b->model, lbl_804D3AAC, 1, 0xFF, 0xFF, 0xFF, a & 0xFF);
+    }
+    BossUpdateParts(b, s);
+    return s->type;
+}
+
+// Chooses the next state while the boss is idle between attacks.
+int BossIdleNext(Boss* b) {
+    BossState* s = b->state;
+    BossRefreshStates(b);
+    if (fn_800A7AC4(&b->flags270, 4) == 0) {
+        if (0.0f < s->heartHp) {
+            if (fn_800A7B78(&b->flags270, 10) == 0)
+                s->hitTimer -= *(float*)((u8*)b + 0x138);
+            if (0.0f < s->hitTimer) {
+                BossUpdateParts(b, s);
+                return s->type;
+            }
+            return 6;
+        }
+        return 6;
+    }
+    fn_800A7A54(&b->flags270, 4, 0);
+    if (0.0f < b->health) {
+        if (0.0f < s->heartHp) {
+            bool any = false;
+            if (s->partHp[0] <= 0.0f) {
+                if (s->partHp[1] <= 0.0f) {
+                    if (s->partHp[2] <= 0.0f) {
+                        if (0.0f < s->partHp[3])
+                            any = true;
+                    } else {
+                        any = true;
+                    }
+                } else {
+                    any = true;
+                }
+            } else {
+                any = true;
+            }
+            if (any)
+                return 7;
+            return 8;
+        }
+        return 9;
+    }
+    return 10;
+}
+
+int BossHitTick(Boss* b) {
+    BossState* s = b->state;
+    BossRefreshStates(b);
+    if (s->type == 4) {
+        double t = fn_8008E5CC(*(int*)((u8*)b + 0xD4), 0);
+        int a;
+        s->fade = (float)t;
+        a = (int)-(s->fade * (float)(0xFF - lbl_804D39F0) - 255.0f);
+        if (a < 0)
+            a = 0;
+        else if (a >= 0x100)
+            a = 0xFF;
+        fn_80037EC0(b->model, lbl_804D3AAC, 1, 0xFF, 0xFF, 0xFF, a & 0xFF);
+    }
+    BossUpdateParts(b, s);
+    if (0.4f * (float)b->cfg->maxHealth <= b->health) {
+        if (0.7f * (float)b->cfg->maxHealth <= b->health)
+            s->hitTimer = lbl_804D39F4;
+        else
+            s->hitTimer = lbl_804D39F8;
+    } else {
+        s->hitTimer = lbl_804D39FC;
+    }
+    return s->type;
 }
