@@ -667,9 +667,7 @@ void BossHitFeedback(BossMsg* m) {
 
 // STUB (not drafted yet, 0x10BC bytes at 0x802C4078): per-frame boss update; runs the state table callbacks,
 // the hit flash timers and the periodic attack scheduling.
-int BossUpdate(Boss* b) {
-    return 0;
-}
+int BossUpdate(Boss* b);
 
 // Frees the boss's behaviour state.
 void BossFreeState(Boss* b) {
