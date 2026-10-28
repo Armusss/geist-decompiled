@@ -1647,6 +1647,78 @@ int TeamBaseCreate(TeamBase* a) {
     return 1;
 }
 
+extern float gTeamActiveMs;     // 0x804D74BC (3000.0)
+extern float gTeamAnimSpeed;    // 0x804D74C0 (1.0)
+extern int gTeamAnimId;         // 0x804D4BC0
+extern "C" {
+void fn_80090390(int a, int b);
+void fn_80090B74(float f, int a, int b, int c, int d);
+int EmitterCreate(void* desc);                                      // 0x800D3D88
+}
+
+// Switches the pad on: lights the node of the current team colour and creates the six
+// emitters that spray it.
+void TeamBaseActivate(TeamBase* a) {
+    TeamBaseData* d = a->data;
+    int i;
+    int team;
+    char* e;
+    for (i = 0; i < 8; i++) {
+        if (i == d->team) {
+            ModelNodeSetup(a->model, SplineAssetResolve(gTeamNames, 8, i), 0, 1);
+        }
+    }
+    team = d->team;
+    if (team == 2) {
+        ModelNodeSetup(a->model, gTeamNodeTop[2], 1, 1);
+        ModelNodeSetup(a->model, gTeamNodeTop[6], 1, 1);
+    } else if (team < 2) {
+        if (team == 0) {
+            ModelNodeSetup(a->model, gTeamNodeTop[0], 1, 1);
+            ModelNodeSetup(a->model, gTeamNodeTop[4], 1, 1);
+        } else if (team >= 0) {
+            ModelNodeSetup(a->model, gTeamNodeTop[1], 1, 1);
+            ModelNodeSetup(a->model, gTeamNodeTop[5], 1, 1);
+        } else {
+            ModelNodeSetup(a->model, gTeamNodeTop[3], 1, 1);
+            ModelNodeSetup(a->model, gTeamNodeTop[7], 1, 1);
+        }
+    } else {
+        ModelNodeSetup(a->model, gTeamNodeTop[3], 1, 1);
+        ModelNodeSetup(a->model, gTeamNodeTop[7], 1, 1);
+    }
+    d->cooldown = gTeamActiveMs;
+    fn_80090390(*(int*)((char*)a + 0x110), 0);
+    fn_80090B74(gTeamAnimSpeed, *(int*)((char*)a + 0x110), 0, gTeamAnimId, 0);
+    e = (char*)d;
+    for (i = 0; i < 6; i++) {
+        switch (d->team) {
+        case 2:
+            e[0xF0] = 0x31;
+            e[0xF1] = (char)0xE2;
+            e[0xF2] = 0x49;
+            break;
+        case 0:
+            e[0xF0] = 0x33;
+            e[0xF1] = 0x36;
+            e[0xF2] = (char)0xE2;
+            break;
+        case 1:
+            e[0xF0] = (char)0xD5;
+            e[0xF1] = 0x22;
+            e[0xF2] = 0x23;
+            break;
+        case 3:
+            e[0xF0] = (char)0xF0;
+            e[0xF1] = (char)0xF3;
+            e[0xF2] = 0x5F;
+            break;
+        }
+        d->slot[i] = EmitterCreate(e + 0x24);
+        e += 0xEC;
+    }
+}
+
 // ---- minigame engine / player teams ------------------------------------------------------
 
 struct GameType {
