@@ -1183,3 +1183,289 @@ int FlickerUpdateAll(double dt) {
     }
     return 1;
 }
+
+// Flicker light definition in the level chunk (0x90 bytes).
+struct FlickerDef {
+    Actor base;             // 0x00 (the actor is constructed in place)
+    u8 pad50[0x3C];
+    int model5C;            // 0x5C
+    int unk60;              // 0x60
+    u8 pad64[0x2C];
+};
+
+int FlickerActorMsg(int msg, Msg* m);
+void FlickerLoad(int unused, void* data);
+int FlickerMsgThunk(int index, int msg, Msg* m);
+int FlickerStart(Msg* m, void* def, int (*cb)(int, int, FlickerEntry*), FlickerEntry* cbArg);
+int FlickerNotify(int a, int b, FlickerEntry* e);
+
+// (Re)creates every flicker light actor from the chunk.
+void FlickerSpawnAll(void) {
+    int i;
+    int off = 0;
+    for (i = 0; i < lbl_804D4584; i++, off += 0x90) {
+        int* d = (int*)(lbl_804D4580 + off);
+        int w[20];
+        int k;
+        for (k = 0; k < 14; k++)
+            w[k] = d[k];
+        w[14] = d[0xE];
+        w[15] = fn_8003A1C0(d[0x17]);
+        w[16] = fn_8003A18C(d[0x17]);
+        w[19] = d[0x13];
+        ActorFn8002378C((Actor*)d, (i & 0xFFFFFF) | 0x6000000, (int)w, (int)FlickerActorMsg, w[15], w[16], w[19]);
+        ActorFn800231A8((Actor*)d);
+        ActorFn80022D98((Actor*)d, d[0x18]);
+        if (SelectionSetTest(d[0x23]) == 0) {
+            ActorRefreshHostState((Actor*)d, 0);
+            ObjSendC00(d, 0);
+        }
+    }
+    if (lbl_804D4588 != NULL) {
+        int k;
+        for (k = 0; k < lbl_804D458C; k++)
+            lbl_804D4588[k] = 0;
+    }
+    lbl_804D4590 = 0;
+}
+
+int FlickerInit(void) {
+    int i;
+    lbl_804D4584 = 0;
+    lbl_804D458C = 0;
+    lbl_804D4580 = NULL;
+    lbl_804D4588 = NULL;
+    fn_80026680(6, (void*)FlickerLoad, 0);
+    fn_80026660(6, (void*)FlickerMsgThunk, 0);
+    lbl_804D4590 = 0;
+    memset(lbl_80423870, 0, sizeof(lbl_80423870));
+    for (i = 0; i < 15; i++) {
+        lbl_80423870[i].next = i + 1;
+        lbl_80423870[i].prev = i - 1;
+    }
+    lbl_80423870[15].next = -1;
+    lbl_804D4594 = 0;
+    lbl_804D4598 = -1;
+    return 1;
+}
+
+void FlickerLoad(int unused, void* data) {
+    short* hdr = (short*)data;
+    int i;
+    fn_800070E0(hdr, 0x10);
+    if (hdr[0] == 5) {
+        int off = 0;
+        lbl_804D4580 = (u8*)(hdr + 16);
+        lbl_804D4584 = (u16)hdr[1];
+        for (i = 0; i < lbl_804D4584; i++, off += 0x90) {
+            FileFlushBuffer(lbl_804D4580 + off, 0x50);
+            fn_800070C0(lbl_804D4580 + off + 0x5C);
+            FileFlushBuffer(lbl_804D4580 + off + 0x50, 0xC);
+            FileFlushBuffer(lbl_804D4580 + off + 0x60, 0x20);
+        }
+        lbl_804D4588 = (u32*)(hdr + lbl_804D4584 * 0x90 + 16);
+        lbl_804D458C = lbl_804D4584 / 32 + 1;
+        FileFlushBuffer(lbl_804D4588, lbl_804D458C * 4);
+    }
+}
+
+// Unlinks pattern `i` from the active list and returns it to the free list.
+static void FlickerRelease(int i) {
+    FlickerEntry* e = &lbl_80423870[i];
+    e->buf = NULL;
+    if (lbl_804D4598 == i)
+        lbl_804D4598 = e->next;
+    else
+        lbl_80423870[e->prev].next = e->next;
+    if (e->next != -1)
+        lbl_80423870[e->next].prev = e->prev;
+    e->next = lbl_804D4594;
+    lbl_804D4594 = i;
+}
+
+int FlickerLightMsg(int msg, Msg* m);
+
+int FlickerMsgThunk(int index, int msg, Msg* m) {
+    int* w = (int*)m;
+    if (msg == 0x6001) {
+        FlickerRelease(w[1]);
+    } else if (msg > 0x6000 || msg < 0x6000) {
+        m->actor = (Actor*)(lbl_804D4580 + index * 0x90);
+        return FlickerLightMsg(msg, m);
+    } else if (w[1] == -1) {
+        w[12] = FlickerStart(m, lbl_804D4580 + index * 0x90, NULL, NULL);
+    } else {
+        w[12] = FlickerStart(m, lbl_804D4580 + index * 0x90, FlickerNotify, NULL);
+        lbl_80423870[w[12]].cbArg = &lbl_80423870[w[12]];
+        lbl_80423870[w[12]].cbData = w[2];
+    }
+    return 1;
+}
+
+// Message handler shared by the flicker light actors.
+int FlickerLightMsg(int msg, Msg* m) {
+    u8* a = (u8*)m->actor;
+    u32* flags = &m->actor->flags4C;
+    if (msg == 0xC00) {
+        *(int*)(a + 0x60) = m->arg1;
+        ActorFn80022D98(m->actor, *(int*)(a + 0x60));
+        return 1;
+    }
+    if (msg == 6) {
+        fn_8003D8F4(*(int*)(a + 0x5C));
+        return 1;
+    }
+    if (msg == 0) {
+        int idx = ((int)(a - lbl_804D4580)) / 0x90;
+        lbl_804D4588[idx / 32] |= 1 << (idx % 32);
+        lbl_804D4590++;
+        return 1;
+    }
+    if (msg == 0x3001) {
+        *flags &= ~1;
+        return 1;
+    }
+    if (msg == 0x3000) {
+        *flags |= 1;
+        return 1;
+    }
+    return 0;
+}
+
+int FlickerActorMsg(int msg, Msg* m) {
+    return FlickerLightMsg(msg, m);
+}
+
+// Notifies the owning actor that a pattern finished or advanced.
+int FlickerNotify(int a, int b, FlickerEntry* e) {
+    struct { int z; int a; int b; int data; int out; } n;
+    n.z = 0;
+    n.data = e->cbData;
+    n.out = 0;
+    n.a = a;
+    n.b = b;
+    SendMsg(e->target, 0x6002, &n);
+    return n.out;
+}
+
+// Starts a pattern described by message `m`; returns the pool index or -1.
+int FlickerStart(Msg* m, void* def, int (*cb)(int, int, FlickerEntry*), FlickerEntry* cbArg) {
+    int* w = (int*)m;
+    u32 k;
+    int idx;
+    FlickerEntry* e;
+    int cur;
+    int prev;
+
+    for (k = 0; k < 11; k++) {
+        if (fn_802F6B10((const char*)w[5], lbl_80395154[k].name) == 0)
+            break;
+    }
+    if (k == 11)
+        return -1;
+    idx = lbl_804D4594;
+    if (idx == -1)
+        return -1;
+    e = &lbl_80423870[idx];
+    lbl_804D4594 = e->next;
+    e->buf = lbl_80423CB0[idx];
+    e->pos = 0;
+    e->key = w[3];
+    memcpy(e->buf, lbl_80395154[k].data, lbl_80395154[k].len);
+    e->len = lbl_80395154[k].len;
+    e->params[0] = w[6];
+    e->params[1] = w[7];
+    e->params[2] = w[8];
+    e->params[3] = w[9];
+    e->params[4] = w[10];
+    e->params[5] = w[11];
+    e->cb = cb;
+    e->cbArg = cbArg;
+    e->target = w[1];
+    e->owner = (int)def;
+    cur = lbl_804D4598;
+    if (cur == -1) {
+        lbl_804D4598 = idx;
+        lbl_80423870[idx].prev = -1;
+        lbl_80423870[idx].next = -1;
+        return idx;
+    }
+    for (;;) {
+        if (lbl_80423870[cur].key < w[3]) {
+            lbl_80423870[idx].prev = lbl_80423870[cur].prev;
+            if (lbl_80423870[idx].prev == -1)
+                lbl_804D4598 = idx;
+            lbl_80423870[cur].prev = idx;
+            lbl_80423870[idx].next = cur;
+            return idx;
+        }
+        prev = cur;
+        cur = lbl_80423870[cur].next;
+        if (cur == -1)
+            break;
+    }
+    lbl_80423870[prev].next = idx;
+    lbl_80423870[idx].prev = prev;
+    lbl_80423870[idx].next = -1;
+    return idx;
+}
+
+struct Particle {
+    Vec3 pos;               // 0x00
+    Vec3 rot;               // 0x0C
+    Vec3 vel;               // 0x18
+    Vec3 spin;              // 0x24
+    void (*custom)(double dt, Particle* p, Vec3* newPos, Vec3* newVel, Vec3* newRot); // 0x3C
+};
+
+// Integrates a particle for dt; mask bit 1 keeps rotation, 2 keeps velocity, 4 keeps position.
+int ParticleStep(double dt, Particle* p, u32 mask) {
+    Vec3 pos;
+    Vec3 vel;
+    Vec3 rot;
+    if (p == NULL)
+        return 0;
+    if ((mask & 2) == 0) {
+        vel.x = (float)((double)p->spin.x * dt + (double)p->vel.x);
+        vel.y = (float)((double)p->spin.y * dt + (double)p->vel.y);
+        vel.z = (float)((double)p->spin.z * dt + (double)p->vel.z);
+    } else {
+        vel = p->vel;
+    }
+    if ((mask & 4) == 0) {
+        if ((mask & 2) == 0) {
+            float half = (float)(dt * 0.5f);
+            pos.x = half * (p->vel.x + vel.x) + p->pos.x;
+            pos.y = half * (p->vel.y + vel.y) + p->pos.y;
+            pos.z = half * (p->vel.z + vel.z) + p->pos.z;
+        } else {
+            pos.x = (float)((double)p->vel.x * dt + (double)p->pos.x);
+            pos.y = (float)((double)p->vel.y * dt + (double)p->pos.y);
+            pos.z = (float)((double)p->vel.z * dt + (double)p->pos.z);
+        }
+    } else {
+        pos = p->pos;
+    }
+    if ((mask & 1) == 0) {
+        rot.x = (float)((double)((float*)p)[9] * dt + (double)p->rot.x);
+        rot.y = (float)((double)((float*)p)[10] * dt + (double)p->rot.y);
+        rot.z = (float)((double)((float*)p)[11] * dt + (double)p->rot.z);
+        rot.x = (float)fmod((double)(2048.0f + rot.x), 5.5) - 2048.0f;
+        rot.y = (float)fmod((double)(2048.0f + rot.y), 5.5) - 2048.0f;
+        rot.z = (float)fmod((double)(2048.0f + rot.z), 5.5) - 2048.0f;
+    } else {
+        rot = p->rot;
+    }
+    if (p->custom == NULL) {
+        p->vel = vel;
+        p->pos = pos;
+        p->rot = rot;
+    } else {
+        p->custom(dt, p, &pos, &vel, &rot);
+    }
+    return 1;
+}
+
+int ParticleStepScaled(double dt, Particle* p, u32 mask) {
+    return ParticleStep(dt / 1000.0f, p, mask);
+}
