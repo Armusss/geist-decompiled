@@ -246,7 +246,7 @@ void WeatherReset(void) {
     sWeatherBase = 100.0f;
 }
 
-// 0x800F6CFC: set the stream volumes.
+// 0x800F6CFC: set the stream volumes (kept as fn_800F6CFC in symbols.txt: called by u_800DFE3C).
 void StreamSetVolumes(u8 left, int right) {
     sStreamVolR = (u8)right;
     sStreamVolL = left;
@@ -256,6 +256,9 @@ void StreamSetVolumes(u8 left, int right) {
     }
 }
 
+// kept as fn_800F6D44 in symbols.txt
 int StreamGetUnk58(void) { return sStreamUnk58; }
+// kept as fn_800F6D4C in symbols.txt
 int StreamGetState(void) { return sStreamState; }
+// kept as fn_800F6F34 in symbols.txt
 void StreamSetUnk68(int v) { sStreamUnk68 = v; }

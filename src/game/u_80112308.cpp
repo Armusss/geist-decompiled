@@ -256,7 +256,7 @@ void GfxLightsBeginFrame(void) {
     gLightsFrame = (gLightsFrame + 1) & 3;
     gLightsCalced = 0;
     gLightsBuf = gLightsPool + gLightsFrame * 0x3200;
-    GXSetArray(GX_VA_NBT, gLightsBuf, 0x40);
+    GXSetArray((GXAttr)24, gLightsBuf, 0x40);
 }
 
 // 0x80113ACC: clear the second statistics block.
@@ -334,7 +334,7 @@ void GfxFbSave(int keep) {
     gFbD = 0;
 }
 
-// 0x80115EE0: allocate the frame buffer pool.
+// 0x80115EE0: allocate the frame buffer pool (kept as fn_80115EE0 in symbols.txt: called elsewhere).
 void GfxFbInit(void) {
     gFbBase = fn_802869DC(0x14A000);
     gFbBase2 = gFbBase + 0xA5000;
