@@ -52,7 +52,7 @@ inline void* operator new(unsigned long, void* p) { return p; }
 struct BossState {
     int type;               // 0x00
     int next;               // 0x04
-    u8 pad08[4];
+    int anim;               // 0x08
     float partHp[4];        // 0x0C: arm / leg part health
     float heartHp;          // 0x1C
     float partFlash[4];     // 0x20
@@ -503,6 +503,7 @@ void BossHitFeedback(BossMsg* m) {
 
 void VFree(void* p);
 extern "C" {
+void fn_8016EEF4(int fx);
 void fn_800A7B08(void* set, int i, int v);
 void fn_8006DB74(double v);
 }
@@ -929,4 +930,99 @@ void BossUpdateParts(Boss* b, BossState* s) {
         }
         fn_80037EC0(b->model, lbl_804D3AB0, 1, r & 0xFF, g & 0xFF, bl & 0xFF, 0xFF);
     }
+}
+
+extern "C" {
+void fn_80090974(double a, int anim, int b, int c, int d, int e, int f);
+int fn_8016325C(void* p);
+int fn_8008DE4C(int anim, int a, int b, int c);
+void fn_800A7068(void* p);
+int fn_800C5654(int to, u32 msg, int from);
+void fn_8008F230(double a, int anim, int b, int c);
+int fn_800A1BC8(int a, int b, int c, int d, int e);
+void fn_800A7028(void* set);
+void fn_800913EC(double a, int anim, int b);
+void fn_80211A84(void);
+}
+extern float lbl_804DAEA4;
+extern float lbl_804DAEA8;
+extern int lbl_803C4E60[];
+
+int BossUpdateIdle(Boss* b) {
+    BossState* s = b->state;
+    BossRefreshStates(b);
+    return s->type;
+}
+
+int BossUpdateWalk(Boss* b) {
+    BossState* s = b->state;
+    BossRefreshStates(b);
+    if (5.0f <= __fabs(*(float*)((u8*)b + 0x284)))
+        return s->type;
+    return 0;
+}
+
+// Picks the locomotion state from the input flags.
+int BossPickMove(Boss* b) {
+    BossState* s = b->state;
+    BossRefreshStates(b);
+    if (fn_800A7AC4(&b->flags270, 0x31) == 0) {
+        if (__fabs(*(float*)((u8*)b + 0x284)) <= lbl_804DAEA4) {
+            if (fn_800A7AC4(&b->flags270, 0x2E) == 0) {
+                if (fn_8016325C((u8*)b + 0x894) == 4)
+                    return 2;
+                return s->type;
+            }
+            return 4;
+        }
+        return 1;
+    }
+    return 3;
+}
+
+int BossEnterDeath(Boss* b) {
+    BossState* s = b->state;
+    s->type = 11;
+    s->next = 11;
+    b->phaseTimer = lbl_804DAEA8;
+    fn_8008DE4C(*(int*)((u8*)b + 0xD4), 0, s->anim, 0x18);
+    *(void**)((u8*)b + 0x10C) = (void*)fn_800A7068;
+    b->phase = 6;
+    if (fn_800A7AC4(&b->flags270, 10) == 0) {
+        fn_800A7A54(&b->flags270, 10, 1);
+        fn_800C5654(*(int*)((u8*)b + 0x38), 0xDC04E3D5, *(int*)((u8*)b + 0x38));
+    }
+    return 1;
+}
+
+int BossEnterDie(Boss* b) {
+    BossState* s = b->state;
+    int anim;
+    s->type = 10;
+    s->next = 11;
+    fn_800A7A54(&b->flags270, 0xE, 1);
+    fn_8008F230(0.0, *(int*)((u8*)b + 0xD4), 0, 1);
+    *(int*)((u8*)b + 0x220) = 4;
+    fn_800A7A54(&b->flags270, 0xD, 1);
+    anim = fn_800A1BC8(*(int*)((u8*)b->cfg + 0x14), *(int*)((u8*)b->cfg + 0x1C), lbl_803C4E60[s->type * 6], 0, 0);
+    fn_80090974(1.0, *(int*)((u8*)b + 0xD4), 0, anim, 0x58, (int)lbl_803C4E64[s->type].unk0C, (int)b);
+    s->anim = anim;
+    fn_800A7028(&b->flags270);
+    fn_800A7A54(&b->flags270, 0xC, 1);
+    fn_800A7A54(&b->flags270, 0xD, 1);
+    fn_800913EC(0.0, *(int*)((u8*)b + 0xD4), 0);
+    if (lbl_804D3AC8 != -1) {
+        fn_8016EEF4(lbl_804D3AC8);
+        lbl_804D3AC8 = -1;
+    }
+    if (lbl_804D3ACC != -1) {
+        fn_8016EEF4(lbl_804D3ACC);
+        lbl_804D3ACC = -1;
+    }
+    FxStart(lbl_804D3ABC, 0, 0);
+    return 1;
+}
+
+void BossForward88E0(void) {
+    fn_80211A84();
 }
