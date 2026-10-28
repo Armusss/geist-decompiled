@@ -56,6 +56,7 @@ struct Mtx34 {
     float m[12];
 };
 
+float sqrtf(float x);
 extern "C" {
 int SendMsg(int to, int msg, void* data);
 void* memset(void* p, int c, u32 n);
@@ -117,21 +118,23 @@ inline int QueryVar(int target, u32 hash) {
 
 // Rivet state (Actor + 0xA4, 0xF8 bytes).
 struct RivetData {
-    int placed[9];          // 0x00 ids of the rivets placed so far
+    int placed[9];          // 0x00 required order of the rivet ids
     int count;              // 0x24
-    int unk28;              // 0x28
+    int cursor;             // 0x28: index into `placed` being asked for
     int have[9];            // 0x2C per slot: bone exists
-    u8 pad50[0x74 - 0x50];
-    int mode;               // 0x74
-    int result;             // 0x78
+    float glow[9];          // 0x50 glow fade timers
+    int mode;               // 0x74: selected rivet
+    int result;             // 0x78: tick interval
     int state;              // 0x7C
-    int unk80;              // 0x80
-    u8 pad84[4];
-    int unk88;              // 0x88
-    u8 pad8C[0xEC - 0x8C];
-    float unkEC;            // 0xEC
-    float unkF0;            // 0xF0
-    u8 padF4[4];
+    int unk80;              // 0x80: free-play flag
+    float timer;            // 0x84
+    int unk88;              // 0x88: player id
+    float saved[12];        // 0x8C: start placement
+    float euler[9];         // 0xBC: target rotation
+    float vec[3];           // 0xE0: target position
+    float duration;         // 0xEC
+    float elapsed;          // 0xF0
+    int outcome;            // 0xF4
 };
 
 struct RivetActor {
@@ -147,6 +150,411 @@ struct RivetActor {
 };
 
 extern float gRivetZero;        // 0x804D95E0
+
+extern int gRivetBusyFlag;      // 0x804D5400
+extern float gRivetT0;          // 0x804D95E4 (1000.0)
+extern float gRivetT1;          // 0x804D95E8 (500.0)
+extern float gRivetOne;         // 0x804D95EC
+extern float gRivetT2;          // 0x804D95F0 (1300.0)
+extern float gRivetT3;          // 0x804D95F4 (600.0)
+extern float gRivetT4;          // 0x804D95F8 (900.0)
+extern float gRivetT5;          // 0x804D95FC (2000.0)
+extern float gRivetFadeK;       // 0x804D9600 (-255.0)
+extern "C" {
+void* PlayerGetPossessor(int i);
+int PadPressed(int pad, int kind, int button);
+void PlayerSetHeldSlotMode(void* p, int v);
+void PlayerResetGunTimer(void* p);
+void fn_8006811C(void* p, u32 hash);
+int TimerAdd(float t, void* fn, void* arg, float f);
+int fn_800498D0(void* p);
+void ActorUpdate(float dt, void* a);
+void fn_800A0AC4(float* q, void* m);
+void fn_800A0EF0(void* m, float* q);
+void MtxGetEuler(float* e, void* m);
+void C_QUATSlerp(float* a, float* b, float t, float* out);
+void fn_8009FAC0(void* m, float* e);
+int ActorPlayAnim(int handle, u32 hash, int arg);
+int Fn800F7DEC(int a, int b, int c, int d, void* e);
+void fn_80037EC0(int model, int node, int a, int r, int g, int b, int al);
+void ModelNodeSetup(int model, int node, int a, int b);
+int FxStart(int a, int b, int c);
+void PlacementToMatrix(void* a, void* m);
+void fn_8009ED70(void* out, void* in);
+void fn_800A0328(void* m);
+int fn_8001F0DC(void* a, int* pos, u32 mask, int b, int c, int d, int* out, int e);
+void fn_8016D440(float* out, float* v);
+}
+double RivetPlayerBusy(void* player);
+int RivetSelect(RivetData* d, RivetActor* a);
+
+// Shows rivet node `i` hidden/lit-up setup used when a round ends.
+static inline void RivetNodesReset(RivetData* d, RivetActor* a) {
+    float zero = gRivetZero;
+    int i;
+    for (i = 0; i < 9; i++) {
+        int node = AssetFind(0xD9044CBB, i + 0x732D446F);
+        if (node >= 0) {
+            fn_80037EC0(a->model, node, 1, 0xFF, 0xFF, 0xFF, 0xFF);
+            ModelNodeSetup(a->model, node, 0, 0);
+        }
+        d->glow[i] = zero;
+    }
+}
+
+// Releases the controlled player after a round: sets its hold mode and schedules the busy flag.
+static inline void RivetReleasePlayer(char* pl) {
+    PlayerSetHeldSlotMode(pl, 9);
+    fn_8006811C(pl, 0x1F309F82);
+    TimerAdd(gRivetT0, (void*)RivetPlayerBusy, pl, 0.0f);
+}
+
+// Eases the controlled player toward the target pose; returns 0 when finished.
+static inline int RivetEasePlayer(RivetData* d, float dt) {
+    float dur = d->duration;
+    if (d->elapsed == dur) {
+        return 0;
+    } else {
+        float t = d->elapsed + dt;
+        char* pl;
+        if (t < dur) {
+            dur = t;
+        }
+        d->elapsed = dur;
+        pl = (char*)PlayerGetPossessor(d->unk88);
+        if (pl == NULL) {
+            return 0;
+        }
+        {
+            float k = gRivetOne;
+            float qa[4];
+            float qb[4];
+            float qc[4];
+            float m[12];
+            float e[3];
+            float r = d->elapsed / d->duration;
+            float inv;
+            if (r < k) {
+                k = r;
+            }
+            *(float*)(pl + 0x650) = gRivetZero;
+            *(float*)(pl + 0x654) = gRivetZero;
+            *(float*)(pl + 0x658) = gRivetZero;
+            inv = gRivetOne - k;
+            fn_800A0AC4(qa, d->saved);
+            fn_800A0AC4(qb, d->euler);
+            C_QUATSlerp(qa, qb, k, qc);
+            *(float*)(pl + 0x67C) = d->saved[9] * inv + d->vec[0] * k;
+            *(float*)(pl + 0x680) = d->saved[10] * inv + d->vec[1] * k;
+            *(float*)(pl + 0x684) = d->saved[11] * inv + d->vec[2] * k;
+            fn_800A0EF0(m, qc);
+            MtxGetEuler(e, m);
+            *(float*)(pl + 0x1F0) = e[0];
+            *(float*)(pl + 0x690) = e[2];
+            fn_8009FAC0(m, (float*)(pl + 0x688));
+            m[9] = *(float*)(pl + 0x67C);
+            m[10] = *(float*)(pl + 0x680);
+            m[11] = *(float*)(pl + 0x684);
+            PlacementToMatrix(pl, m);
+            return 1;
+        }
+    }
+}
+
+// Starts the pose ease toward rivet `idx` (state 1).
+static inline void RivetStartEase(RivetData* d, RivetActor* a, char* pl, int idx, int fromNode,
+                                  int toNode) {
+    float from[12];
+    float to[12];
+    QueryMsg q;
+    float delta[3];
+    int fb[3];
+    int hit;
+    float fl;
+    q.unk8 = 0;
+    q.hash = AssetFind(0xF1754BF2, fromNode);
+    if (SendMsg(a->handle, 0x411, &q) == 0) {
+        fn_800A0328(from);
+    } else {
+        fn_8009ED70(from, &q);
+    }
+    q.hash = AssetFind(0xF1754BF2, toNode);
+    if (SendMsg(a->handle, 0x411, &q) == 0) {
+        fn_800A0328(to);
+    } else {
+        fn_8009ED70(to, &q);
+    }
+    fb[0] = (int)to[9];
+    fb[1] = (int)to[10];
+    fb[2] = (int)to[11];
+    fl = (float)fn_8001F0DC(a, fb, 0x80000000, 0, 0, 0, &hit, 0);
+    if (hit != 0) {
+        to[11] = fl + *(float*)(pl + 0x64C) + (*(float*)(pl + 0x1EC) - (float)*(int*)(pl + 0x2C));
+    }
+    delta[0] = from[9] - to[9];
+    delta[1] = from[10] - to[10];
+    delta[2] = from[11] - to[11];
+    fn_8016D440(to, delta);
+    fn_8009FAC0(d->euler, to);
+    d->vec[0] = to[9];
+    d->vec[1] = to[10];
+    d->vec[2] = to[11];
+    d->duration = gRivetT1;
+    d->elapsed = gRivetZero;
+    {
+        int i;
+        for (i = 0; i < 12; i++) {
+            d->saved[i] = *(float*)(pl + 0x1C0 + i * 4);
+        }
+        d->saved[9] = (float)*(int*)(pl + 0x24);
+        d->saved[10] = (float)*(int*)(pl + 0x28);
+        d->saved[11] = (float)*(int*)(pl + 0x2C);
+    }
+    (void)idx;
+}
+
+// Main update of the rivet puzzle: drives the round state machine (show the pattern, wait for
+// the player's input, judge it) and fades the rivet glows.
+void RivetUpdate(float dt, RivetActor* a) {
+    RivetData* d = a->data;
+    int i;
+    if (d != NULL) {
+        char* pl;
+        switch (d->state) {
+        case 1:
+            pl = (char*)PlayerGetPossessor(d->unk88);
+            if (pl != NULL) {
+                fn_8006811C(pl, 0xDD028756);
+                PlayerResetGunTimer(pl);
+                *(int*)(pl + 0x26D8) = 0;
+                if (*(int*)(pl + 0x7D0) == 0) {
+                    PlayerSetHeldSlotMode(pl, 2);
+                }
+            }
+            d->timer = gRivetZero;
+            d->cursor = 0;
+            d->state = 2;
+            d->outcome = 0;
+            if (d->have[4] == 0) {
+                int pick = 0;
+                if (d->have[0] == 0 && (pick = 1, d->have[1] == 0) && (pick = 2, d->have[2] == 0) &&
+                    (pick = 3, d->have[3] == 0) && (pick = 5, d->have[5] == 0) &&
+                    (pick = 6, d->have[6] == 0) && (pick = 7, d->have[7] == 0) &&
+                    (pick = 8, d->have[8] == 0)) {
+                    pick = 9;
+                }
+                if (pick == 9) {
+                    pl = (char*)PlayerGetPossessor(d->unk88);
+                    if (pl != NULL) {
+                        RivetReleasePlayer(pl);
+                    }
+                    d->state = 0;
+                } else {
+                    char* p2 = (char*)PlayerGetPossessor(d->unk88);
+                    if (p2 != NULL) {
+                        d->mode = pick;
+                        RivetStartEase(d, a, p2, pick, 0x429A14B6, pick + 0x144E4B52);
+                    }
+                }
+            } else {
+                pl = (char*)PlayerGetPossessor(d->unk88);
+                if (pl != NULL) {
+                    d->mode = 4;
+                    RivetStartEase(d, a, pl, 4, 0x429A14B6, 0x144E4B56);
+                }
+            }
+            break;
+        case 2:
+            if (!RivetEasePlayer(d, dt)) {
+                d->timer = gRivetT2;
+                d->state = 0xB;
+            }
+            break;
+        case 3:
+            d->timer += dt;
+            if ((float)d->result < d->timer) {
+                d->timer -= (float)d->result;
+                ModelNodeSetup(a->model, AssetFind(0xD9044CBB, d->placed[d->cursor] + 0x5EDEF91D), 0, 0);
+                ModelNodeSetup(a->model, AssetFind(0xD9044CBB, d->placed[d->cursor] - 0x29273EC3), 0, 0);
+                d->cursor++;
+                if (d->cursor < d->count) {
+                    ModelNodeSetup(a->model, AssetFind(0xD9044CBB, d->placed[d->cursor] + 0x5EDEF91D), 1, 0);
+                    ModelNodeSetup(a->model, AssetFind(0xD9044CBB, d->placed[d->cursor] - 0x29273EC3), 1, 0);
+                    FxStart(AssetFind(0x92234D44, 0xF307998F), 0, 0);
+                } else {
+                    d->timer = gRivetZero;
+                    d->cursor = 0;
+                    d->state = 4;
+                }
+            }
+            break;
+        case 4:
+            if (d->outcome == -1) {
+                d->state = 7;
+                break;
+            }
+            if (d->outcome == 1) {
+                d->state = 6;
+                break;
+            }
+            if (!RivetEasePlayer(d, dt)) {
+                int handled = 0;
+                pl = (char*)PlayerGetPossessor(d->unk88);
+                if (pl != NULL) {
+                    PlayerResetGunTimer(pl);
+                    if (PadPressed(*(int*)(pl + 0x58C), 0, 10) == 1 ||
+                        PadPressed(*(int*)(pl + 0x58C), 0, 11) == 1) {
+                        int hA = QueryVar(*(int*)(pl + 0x38), 0x2DA8293C);
+                        int hB = QueryVar(*(int*)(pl + 0x38), 0xDFF3097A);
+                        if (Fn800F7DEC(hA, hB, 0xF829DB93, fn_800498D0(pl), 0) != 0x4A3E183) {
+                            d->state = 0xC;
+                            d->timer = gRivetZero;
+                        } else {
+                            PlayerSetHeldSlotMode(pl, 8);
+                            d->state = 5;
+                            handled = 1;
+                            d->timer = gRivetT3;
+                        }
+                    }
+                }
+                if (!handled) {
+                    RivetSelect(d, a);
+                }
+            }
+            pl = (char*)PlayerGetPossessor(d->unk88);
+            if (pl != NULL && PadPressed(*(int*)(pl + 0x58C), 0, 4) != 0) {
+                SendMsg(d->unk88, 0x40C, NULL);
+                pl = (char*)PlayerGetPossessor(d->unk88);
+                if (pl != NULL) {
+                    RivetReleasePlayer(pl);
+                }
+                if (d->unk80 == 0) {
+                    RivetNodesReset(d, a);
+                }
+                d->state = 0;
+            }
+            break;
+        case 5: {
+            float t = d->timer - dt;
+            float z = gRivetZero;
+            if (z < t) {
+                z = t;
+            }
+            d->timer = z;
+            if (gRivetZero == d->timer) {
+                if (d->unk80 == 0) {
+                    if (d->mode + 0x144E4B52 == d->placed[d->cursor]) {
+                        d->glow[d->mode] = gRivetT4;
+                        d->cursor++;
+                        if (d->cursor == d->count) {
+                            d->outcome = 1;
+                        }
+                        ActorPlayAnim(a->handle, 0x4A601EE, a->handle);
+                    } else {
+                        d->outcome = -1;
+                    }
+                } else {
+                    d->glow[d->mode] = gRivetT4;
+                    ActorPlayAnim(a->handle, 0x4A601EE, a->handle);
+                }
+                d->state = 4;
+                gRivetBusyFlag = 0;
+            } else {
+                gRivetBusyFlag = 1;
+            }
+            break;
+        }
+        case 6:
+            d->state = 8;
+            d->timer = gRivetT5;
+            break;
+        case 7:
+            d->state = 9;
+            d->timer = gRivetT5;
+            break;
+        case 8:
+            d->timer -= dt;
+            if (d->timer < gRivetZero) {
+                pl = (char*)PlayerGetPossessor(d->unk88);
+                if (pl != NULL) {
+                    RivetReleasePlayer(pl);
+                }
+                d->state = 10;
+                ActorPlayAnim(a->handle, 0xBB80CBE3, a->handle);
+            }
+            break;
+        case 9:
+            d->timer -= dt;
+            if (d->timer < gRivetZero) {
+                pl = (char*)PlayerGetPossessor(d->unk88);
+                if (pl != NULL) {
+                    RivetReleasePlayer(pl);
+                }
+                RivetNodesReset(d, a);
+                d->state = 0;
+                ActorPlayAnim(a->handle, 0x20CF1E, a->handle);
+            }
+            break;
+        case 10:
+            if (d->unk80 != 0) {
+                d->state = 0;
+            }
+            break;
+        case 0xB:
+            d->timer -= dt;
+            if (d->timer < gRivetZero) {
+                if (d->unk80 == 0) {
+                    d->timer = gRivetZero;
+                    d->state = 3;
+                    ModelNodeSetup(a->model, AssetFind(0xD9044CBB, d->placed[0] + 0x5EDEF91D), 1, 0);
+                    ModelNodeSetup(a->model, AssetFind(0xD9044CBB, d->placed[0] - 0x29273EC3), 1, 0);
+                    FxStart(AssetFind(0x92234D44, 0xF307998F), 0, 0);
+                } else {
+                    d->timer = gRivetZero;
+                    d->cursor = 0;
+                    d->state = 4;
+                }
+            }
+            break;
+        case 0xC: {
+            char* p2 = (char*)PlayerGetPossessor(d->unk88);
+            pl = (char*)PlayerGetPossessor(d->unk88);
+            if (pl != NULL) {
+                RivetReleasePlayer(pl);
+            }
+            RivetNodesReset(d, a);
+            if (p2 != NULL) {
+                PlayerSetHeldSlotMode(p2, 0xB);
+            }
+            d->state = 0;
+            ActorPlayAnim(a->handle, 0xA6D68DCD, a->handle);
+            break;
+        }
+        }
+    }
+    {
+        float zero = gRivetZero;
+        for (i = 0; i < 9; i++) {
+            if (zero < d->glow[i]) {
+                float v = d->glow[i] - dt;
+                float c = zero;
+                int node;
+                if (zero < v) {
+                    c = v;
+                }
+                node = AssetFind(0xD9044CBB, i + 0x732D446F);
+                if (node >= 0) {
+                    int lvl;
+                    ModelNodeSetup(a->model, node, 1, 0);
+                    lvl = (int)(gRivetFadeK * (c / gRivetT4));
+                    fn_80037EC0(a->model, node, 1, 0xFF, (lvl + 0xFF) & 0xFF, (lvl + 0xFF) & 0xFF, 0xFF);
+                }
+                d->glow[i] = c;
+            }
+        }
+    }
+    ActorUpdate(dt, a);
+}
 
 // Sets the "busy" flag of a player object (0x26D8) and returns 0.
 double RivetPlayerBusy(void* player) {
@@ -168,8 +576,8 @@ static inline int RivetReset(RivetActor* a) {
     d->state = 0;
     d->unk88 = 0;
     d->result = 0;
-    d->unkEC = gRivetZero;
-    d->unkF0 = gRivetZero;
+    d->duration = gRivetZero;
+    d->elapsed = gRivetZero;
     for (i = 0; i < 9; i++) {
         int node = AssetFind(0xD9044CBB, i + 0x732D446F);
         if (node >= 0) {
@@ -231,6 +639,115 @@ void DebugText(const char* s, ...);
 }
 
 int RivetVarSet(int* m);
+
+extern float gRivetPos[9][3];   // 0x80349B34: rivet positions (relative to the panel)
+extern double gRivetBias;       // 0x804D9608
+extern float gRivetSpeed;       // 0x804D9610
+extern "C" {
+void* PlayerGetPossessor(int i);                                    // 0x80049888
+int PadPressed(int pad, int kind, int button);                      // 0x800DC930
+int fn_8001F0DC(void* a, int* pos, u32 mask, int b, int c, int d, int* out, int e);
+void fn_800A0328(void* m);
+void fn_8009ED70(void* out, void* in);
+void fn_8016D440(float* out, float* v);
+void fn_8009FAC0(void* m, float* e);
+}
+
+// Rivet selection: moves the cursor over the 3x3 rivet grid with the pad, eases the cursor
+// model to the chosen rivet and returns 1 when the selection changed.
+int RivetSelect(RivetData* d, RivetActor* a) {
+    char* pl = (char*)PlayerGetPossessor(d->unk88);
+    if (pl != NULL) {
+        int sel = d->mode;
+        u32 flip = *(u32*)(pl + 0x254) & 1;
+        int pad = *(int*)(pl + 0x58C);
+        int next;
+        if ((PadPressed(pad, 0, flip) != 0 || PadPressed(pad, 2, flip + 6) != 0) && sel > 2) {
+            sel -= 3;
+        }
+        if ((PadPressed(pad, 0, flip == 0) != 0 || PadPressed(pad, 2, (flip != 0) + 7) != 0) &&
+            sel < 6) {
+            sel += 3;
+        }
+        if ((PadPressed(pad, 0, 5) != 0 || PadPressed(pad, 2, 2) != 0) && sel != (sel / 3) * 3) {
+            sel -= 1;
+        }
+        if ((PadPressed(pad, 0, 6) != 0 || PadPressed(pad, 2, 3) != 0) && sel % 3 != 2) {
+            sel += 1;
+        }
+        if (sel < 0) {
+            next = 0;
+        } else {
+            next = 9;
+            if (sel < 10) {
+                next = sel;
+            }
+        }
+        if (d->have[next] != 0 && d->mode != next && next >= 0 && next < 9) {
+            float pos[9][3];
+            float dist2;
+            float dist;
+            int i;
+            for (i = 0; i < 9; i++) {
+                pos[i][0] = gRivetPos[i][0];
+                pos[i][1] = gRivetPos[i][1];
+                pos[i][2] = gRivetPos[i][2];
+            }
+            dist = gRivetZero;
+            dist2 = (pos[d->mode][2] - pos[next][2]) * (pos[d->mode][2] - pos[next][2]) +
+                    (pos[d->mode][0] - pos[next][0]) * (pos[d->mode][0] - pos[next][0]) +
+                    (pos[d->mode][1] - pos[next][1]) * (pos[d->mode][1] - pos[next][1]);
+            if (dist < dist2) {
+                dist = sqrtf(dist2);
+            }
+            if (PlayerGetPossessor(d->unk88) != NULL) {
+                char* p2 = pl;
+                float from[12];
+                float to[12];
+                float delta[3];
+                int fb[3];
+                int hit;
+                d->mode = next;
+                {
+                    QueryMsg q;
+                    q.unk8 = 0;
+                    q.hash = AssetFind(0xF1754BF2, 0x429A14B6);
+                    if (SendMsg(a->handle, 0x411, &q) == 0) {
+                        fn_800A0328(from);
+                    } else {
+                        fn_8009ED70(from, &q);
+                    }
+                    q.hash = AssetFind(0xF1754BF2, next + 0x144E4B52);
+                    if (SendMsg(a->handle, 0x411, &q) == 0) {
+                        fn_800A0328(to);
+                    } else {
+                        fn_8009ED70(to, &q);
+                    }
+                }
+                fb[0] = (int)from[9];
+                fb[1] = (int)from[10];
+                fb[2] = (int)from[11];
+                hit = fn_8001F0DC(a, fb, 0x80000000, 0, 0, 0, &hit, 0);
+                if (hit != 0) {
+                    to[11] = (float)hit + *(float*)(p2 + 0x64C) +
+                             (*(float*)(p2 + 0x1EC) - (float)*(int*)(p2 + 0x2C));
+                }
+                delta[0] = to[9] - from[9];
+                delta[1] = to[10] - from[10];
+                delta[2] = to[11] - from[11];
+                fn_8016D440(from, delta);
+                fn_8009FAC0((char*)d + 0xBC, from);
+                *(float*)((char*)d + 0xE0) = from[9];
+                *(float*)((char*)d + 0xE4) = from[10];
+                *(float*)((char*)d + 0xE8) = from[11];
+                d->duration = (float)(gRivetSpeed * dist);
+                d->elapsed = gRivetZero;
+            }
+            return 1;
+        }
+    }
+    return 0;
+}
 
 // Message handler of the rivet actor: draws the status text (message 0), answers variable
 // queries and the 0x409 "attach" command.
