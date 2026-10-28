@@ -488,3 +488,104 @@ int CreatureStartApproach(Creature* c) {
         c->unk220 = 0;
     return 1;
 }
+
+bool CreatureStopShoot(Creature* c) {
+    if (c != NULL) {
+        CreatureAi* ai = c->ai;
+        fn_800BBCA8(c);
+        fn_800A7028(&c->flags270);
+        fn_800A7B08(&c->flags270, 4, 0);
+        fn_800A7B08(&c->flags270, 0x16, 0);
+        c->unk288 = 0;
+        ai->flags &= ~4;
+    }
+    return c != NULL;
+}
+
+int CreatureStartGuard(Creature* c) {
+    CreatureAi* ai;
+    int target;
+    if (c == NULL)
+        return 0;
+    ai = c->ai;
+    target = fn_800A7A18(&c->flags270);
+    if (target == 0)
+        return 0;
+    c->unk288 = 0;
+    ai->state = 12;
+    ai->flags &= ~4;
+    fn_800A7B08(&c->flags270, 4, 1);
+    fn_800A7B08(&c->flags270, 3, 0);
+    fn_800A7B08(&c->flags270, 0x16, 1);
+    if (c->unk220 == 4)
+        c->unk220 = 0;
+    return 1;
+}
+
+extern float lbl_804D8CB4;
+
+int CreatureEndGuard(Creature* c) {
+    if (c == NULL)
+        return 0;
+    {
+        u32 f = c->ai->flags;
+        if ((f & 0x20) == 0)
+            return 0;
+        c->ai->flags = f & ~0x20;
+        fn_800A7028(&c->flags270);
+        fn_800A7B08(&c->flags270, 4, 0);
+        fn_800A7B08(&c->flags270, 0x16, 0);
+        return 1;
+    }
+}
+
+int CreatureStartHold(Creature* c) {
+    CreatureAi* ai;
+    if (c == NULL)
+        return 0;
+    ai = c->ai;
+    if (fn_800A7A18(&c->flags270) == 0)
+        return 0;
+    c->unk288 = 0;
+    ai->state = 9;
+    ai->flags &= ~0x20;
+    ai->time = lbl_804D8CA8;
+    fn_800A7B08(&c->flags270, 4, 1);
+    fn_800A7B08(&c->flags270, 0x16, 1);
+    fn_800A7B08(&c->flags270, 3, 0);
+    if (c->unk220 == 4)
+        c->unk220 = 0;
+    return 1;
+}
+
+int CreatureHoldUpdate(Creature* c) {
+    CreatureAi* ai;
+    int slot;
+    int who[1];
+    if (c == NULL)
+        return 0;
+    ai = c->ai;
+    slot = fn_800B26B8(c);
+    if (slot == 4)
+        return 1;
+    fn_800B261C(c, slot, who);
+    if (who[0] == fn_800A7A18(&c->flags270) && fn_800B22F8(c, slot) > 2 && (fn_800B1ED4(c, slot) & 0x10) == 0 &&
+        (ai->flags & 0x10) == 0) {
+        if (lbl_804D8CB4 < ai->time) {
+            fn_800B1AB8(lbl_804D8CD8, c, slot, 1);
+            return 1;
+        }
+        return 0;
+    }
+    return 1;
+}
+
+bool CreatureStopHold(Creature* c) {
+    if (c != NULL) {
+        fn_800A7B08(&c->flags270, 4, 0);
+        fn_800A7B08(&c->flags270, 3, 0);
+        fn_800A7B08(&c->flags270, 0x16, 0);
+        fn_800A7028(&c->flags270);
+    }
+    return c != NULL;
+}
