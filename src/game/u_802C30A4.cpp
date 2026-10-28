@@ -1217,3 +1217,35 @@ int BossEnterMove(Boss* b) {
     BossPlayStateAnim(b, pick, false);
     return 1;
 }
+
+int BossEnterWalk(Boss* b) {
+    BossState* s = b->state;
+    s->type = 2;
+    s->next = 0;
+    BossPlayStateAnim(b, 0, true);
+    return 1;
+}
+
+int BossEnterRun(Boss* b) {
+    if (b != NULL) {
+        BossState* s = b->state;
+        s->type = 1;
+        s->next = 1;
+        BossPlayStateAnim(b, 0, true);
+        return 1;
+    }
+    return 0;
+}
+
+int BossEnterIdleBase(Boss* b) {
+    if (b != NULL) {
+        BossState* s = b->state;
+        s->type = 0;
+        s->next = 0;
+        BossPlayStateAnim(b, 0, true);
+        s->fade = 0.0f;
+        fn_80037EC0(b->model, lbl_804D3AAC, 0, 0xFF, 0xFF, 0xFF, 0xFF);
+        return 1;
+    }
+    return 0;
+}
