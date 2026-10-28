@@ -358,64 +358,65 @@ static inline int ExtrasGateFor(u32 table, int i) {
     return -1;
 }
 
-// One page of the extras list menu (movies, music, concept art): moves the highlight with the
-// pad skipping locked rows, starts the preview model of the chosen entry and shows it.
-static inline void ExtrasListPage(float dt, u32 table, u32 evTable, u32 nameKey, u32* bits, int count,
-                                  int& sel, int& busy, int& model) {
-    int old = sel;
-    if (bits == NULL) {
+// Pages of the extras list menu (movies, music, concept art).  Each moves the highlight with
+// the pad skipping locked rows, starts the preview model of the chosen entry and shows it.
+
+// Movie list page: moves the highlight with the pad skipping locked rows, starts the preview model of the chosen entry and shows it.
+void ExtrasMoviePage(float dt) {
+    int old = gMovieSel;
+    if (gMovieBits == NULL) {
         gMenuInPage = 0;
         return;
     }
-    if (busy == 0) {
+    if (gMovieBusy == 0) {
         if (gPadLeftEdge == 1) {
-            if (sel == -1) {
+            if (gMovieSel == -1) {
                 return;
             }
-            sel--;
-            if (ExtrasHidden(table, sel)) {
-                sel--;
+            gMovieSel--;
+            if (ExtrasHidden(0xD8E68AB7, gMovieSel)) {
+                gMovieSel--;
             }
         }
         if (gPadRightEdge == 1) {
-            if (sel == -1) {
+            if (gMovieSel == -1) {
                 return;
             }
-            sel++;
-            if (sel < count && ExtrasHidden(table, sel)) {
-                int i = sel;
+            gMovieSel++;
+            if (gMovieSel < gMovieCount && ExtrasHidden(0xD8E68AB7, gMovieSel)) {
+                int i = gMovieSel;
                 int found = -1;
                 for (; i >= 0; i--) {
-                    if (ExtrasHidden(table, i) && ExtrasGateFor(table, i) != -1) {
+                    if (ExtrasHidden(0xD8E68AB7, i) && ExtrasGateFor(0xD8E68AB7, i) != -1) {
                         found = i;
                         break;
                     }
                 }
                 if (found == -1) {
-                    sel--;
+                    gMovieSel--;
                 } else {
-                    sel++;
+                    gMovieSel++;
                 }
             }
         }
         if (PadPressed(0, 0, 0xB) == 1 && gRepeatTimer > 10) {
             int i;
             gRepeatTimer = 0;
-            for (i = sel; i < count - 1; i++) {
-                if (ExtrasHidden(table, i)) {
+            for (i = gMovieSel; i < gMovieCount - 1; i++) {
+                if (ExtrasHidden(0xD8E68AB7, i)) {
                     break;
                 }
             }
-            sel = ExtrasGateFor(table, i) == -1 ? i - 1 : i + 1;
+            gMovieSel = ExtrasGateFor(0xD8E68AB7, i) == -1 ? i - 1 : i + 1;
         }
         if (PadPressed(0, 0, 10) == 1 && gRepeatTimer > 10) {
             int i;
             int seen = 0;
             gRepeatTimer = 0;
-            for (i = sel; i >= 0; i--) {
-                if (ExtrasHidden(table, i)) {
+            for (i = gMovieSel; i >= 0; i--) {
+                if (ExtrasHidden(0xD8E68AB7, i)) {
                     if (seen) {
-                        sel = i + 1;
+                        gMovieSel = i + 1;
                         break;
                     }
                     seen = 1;
@@ -423,37 +424,37 @@ static inline void ExtrasListPage(float dt, u32 table, u32 evTable, u32 nameKey,
             }
         }
         gRepeatTimer++;
-        if (sel < 1) {
-            sel = 1;
-        } else if (sel > count - 1) {
-            sel = count - 1;
+        if (gMovieSel < 1) {
+            gMovieSel = 1;
+        } else if (gMovieSel > gMovieCount - 1) {
+            gMovieSel = gMovieCount - 1;
         }
-        if (PadPressed(0, 0, 3) == 1 && sel != -1 && BitTest(bits, sel) != 0) {
-            int ev = GameEvent(evTable, Fn800DF3B8(table, sel, nameKey));
+        if (PadPressed(0, 0, 3) == 1 && gMovieSel != -1 && BitTest(gMovieBits, gMovieSel) != 0) {
+            int ev = GameEvent(0x2F9DF01F, Fn800DF3B8(0xD8E68AB7, gMovieSel, 0xD83EE6B4));
             if (ev == 0) {
-                model = 0;
+                gExtrasModel = 0;
             } else {
                 float spawn[12];
                 float pos[3];
                 spawn[0] = 0.0f;
                 spawn[1] = 0.0f;
                 *(int*)&spawn[2] = ev;
-                pos[2] = VarGetFloat(table, sel, 0x5A);
-                pos[1] = VarGetFloat(table, sel, 0x59);
-                pos[0] = VarGetFloat(table, sel, 0x58);
-                Vec3Set(&spawn[6], VarGetFloat(table, sel, 0x5A3309E2), VarGetFloat(table, sel, 0x489CB20), 0.0f);
+                pos[2] = VarGetFloat(0xD8E68AB7, gMovieSel, 0x5A);
+                pos[1] = VarGetFloat(0xD8E68AB7, gMovieSel, 0x59);
+                pos[0] = VarGetFloat(0xD8E68AB7, gMovieSel, 0x58);
+                Vec3Set(&spawn[6], VarGetFloat(0xD8E68AB7, gMovieSel, 0x5A3309E2), VarGetFloat(0xD8E68AB7, gMovieSel, 0x489CB20), 0.0f);
                 {
                     int act = fn_800C7E80(pos);
                     if (act == 0) {
-                        model = 0;
+                        gExtrasModel = 0;
                     } else {
                         SendMsg(*(int*)(act + 0x38), 6, spawn);
-                        model = *(int*)(act + 0x38);
+                        gExtrasModel = *(int*)(act + 0x38);
                     }
                 }
             }
-            if (model != 0) {
-                busy = 1;
+            if (gExtrasModel != 0) {
+                gMovieBusy = 1;
                 FxStart(gMenuFxSelect, 0, 0);
             }
         }
@@ -463,45 +464,279 @@ static inline void ExtrasListPage(float dt, u32 table, u32 evTable, u32 nameKey,
         }
     } else {
         if (PadPressed(0, 0, 4) == 1) {
-            busy = 0;
+            gMovieBusy = 0;
             FxStart(gMenuFxBack, 0, 0);
-            if (model != 0) {
-                int m = model;
+            if (gExtrasModel != 0) {
+                int m = gExtrasModel;
                 int msg[2];
                 msg[1] = 0;
-                SendMsg(model, 6, msg);
+                SendMsg(gExtrasModel, 6, msg);
                 fn_800C7B14(m);
                 ActorRender();
             }
-            model = 0;
+            gExtrasModel = 0;
         }
     }
-    if (old != sel) {
+    if (old != gMovieSel) {
         FxStart(gMenuFxMove, 0, 0);
     }
-    if (model != 0) {
+    if (gExtrasModel != 0) {
         float msg[2];
         msg[1] = dt;
-        SendMsg(model, 0x414, msg);
+        SendMsg(gExtrasModel, 0x414, msg);
     }
 }
 
-// Movie list page.
-void ExtrasMoviePage(float dt) {
-    ExtrasListPage(dt, 0xD8E68AB7, 0x2F9DF01F, 0xD83EE6B4, gMovieBits, gMovieCount, gMovieSel, gMovieBusy,
-                   gExtrasModel);
-}
-
-// Music list page.
+// Music list page (same layout as the movie page).
 void ExtrasMusicPage(float dt) {
-    ExtrasListPage(dt, 0x258124CE, 0x2F9DF01F, 0xD83EE6B4, gMusicBits, gMusicCount, gMusicSel, gMusicBusy,
-                   gMusicModel);
+    int old = gMusicSel;
+    if (gMusicBits == NULL) {
+        gMenuInPage = 0;
+        return;
+    }
+    if (gMusicBusy == 0) {
+        if (gPadLeftEdge == 1) {
+            if (gMusicSel == -1) {
+                return;
+            }
+            gMusicSel--;
+            if (ExtrasHidden(0x258124CE, gMusicSel)) {
+                gMusicSel--;
+            }
+        }
+        if (gPadRightEdge == 1) {
+            if (gMusicSel == -1) {
+                return;
+            }
+            gMusicSel++;
+            if (gMusicSel < gMusicCount && ExtrasHidden(0x258124CE, gMusicSel)) {
+                int i = gMusicSel;
+                int found = -1;
+                for (; i >= 0; i--) {
+                    if (ExtrasHidden(0x258124CE, i) && ExtrasGateFor(0x258124CE, i) != -1) {
+                        found = i;
+                        break;
+                    }
+                }
+                if (found == -1) {
+                    gMusicSel--;
+                } else {
+                    gMusicSel++;
+                }
+            }
+        }
+        if (PadPressed(0, 0, 0xB) == 1 && gRepeatTimer > 10) {
+            int i;
+            gRepeatTimer = 0;
+            for (i = gMusicSel; i < gMusicCount - 1; i++) {
+                if (ExtrasHidden(0x258124CE, i)) {
+                    break;
+                }
+            }
+            gMusicSel = ExtrasGateFor(0x258124CE, i) == -1 ? i - 1 : i + 1;
+        }
+        if (PadPressed(0, 0, 10) == 1 && gRepeatTimer > 10) {
+            int i;
+            int seen = 0;
+            gRepeatTimer = 0;
+            for (i = gMusicSel; i >= 0; i--) {
+                if (ExtrasHidden(0x258124CE, i)) {
+                    if (seen) {
+                        gMusicSel = i + 1;
+                        break;
+                    }
+                    seen = 1;
+                }
+            }
+        }
+        gRepeatTimer++;
+        if (gMusicSel < 1) {
+            gMusicSel = 1;
+        } else if (gMusicSel > gMusicCount - 1) {
+            gMusicSel = gMusicCount - 1;
+        }
+        if (PadPressed(0, 0, 3) == 1 && gMusicSel != -1 && BitTest(gMusicBits, gMusicSel) != 0) {
+            int ev = GameEvent(0x2F9DF01F, Fn800DF3B8(0x258124CE, gMusicSel, 0xD83EE6B4));
+            if (ev == 0) {
+                gMusicModel = 0;
+            } else {
+                float spawn[12];
+                float pos[3];
+                spawn[0] = 0.0f;
+                spawn[1] = 0.0f;
+                *(int*)&spawn[2] = ev;
+                pos[2] = VarGetFloat(0x258124CE, gMusicSel, 0x5A);
+                pos[1] = VarGetFloat(0x258124CE, gMusicSel, 0x59);
+                pos[0] = VarGetFloat(0x258124CE, gMusicSel, 0x58);
+                Vec3Set(&spawn[6], VarGetFloat(0x258124CE, gMusicSel, 0x5A3309E2), VarGetFloat(0x258124CE, gMusicSel, 0x489CB20), 0.0f);
+                {
+                    int act = fn_800C7E80(pos);
+                    if (act == 0) {
+                        gMusicModel = 0;
+                    } else {
+                        SendMsg(*(int*)(act + 0x38), 6, spawn);
+                        gMusicModel = *(int*)(act + 0x38);
+                    }
+                }
+            }
+            if (gMusicModel != 0) {
+                gMusicBusy = 1;
+                FxStart(gMenuFxSelect, 0, 0);
+            }
+        }
+        if (PadPressed(0, 0, 4) == 1) {
+            FxStart(gMenuFxBack, 0, 0);
+            gMenuInPage = 0;
+        }
+    } else {
+        if (PadPressed(0, 0, 4) == 1) {
+            gMusicBusy = 0;
+            FxStart(gMenuFxBack, 0, 0);
+            if (gMusicModel != 0) {
+                int m = gMusicModel;
+                int msg[2];
+                msg[1] = 0;
+                SendMsg(gMusicModel, 6, msg);
+                fn_800C7B14(m);
+                ActorRender();
+            }
+            gMusicModel = 0;
+        }
+    }
+    if (old != gMusicSel) {
+        FxStart(gMenuFxMove, 0, 0);
+    }
+    if (gMusicModel != 0) {
+        float msg[2];
+        msg[1] = dt;
+        SendMsg(gMusicModel, 0x414, msg);
+    }
 }
 
-// Concept art list page.
+// Concept art list page (same layout as the movie page).
 void ExtrasArtPage(float dt) {
-    ExtrasListPage(dt, 0x80EDD05C, 0x2F9DF01F, 0xD83EE6B4, gArtBitsB, gArtCountB, gArtSel, gArtBusy,
-                   gArtModel);
+    int old = gArtSel;
+    if (gArtBitsB == NULL) {
+        gMenuInPage = 0;
+        return;
+    }
+    if (gArtBusy == 0) {
+        if (gPadLeftEdge == 1) {
+            if (gArtSel == -1) {
+                return;
+            }
+            gArtSel--;
+            if (ExtrasHidden(0x80EDD05C, gArtSel)) {
+                gArtSel--;
+            }
+        }
+        if (gPadRightEdge == 1) {
+            if (gArtSel == -1) {
+                return;
+            }
+            gArtSel++;
+            if (gArtSel < gArtCountB && ExtrasHidden(0x80EDD05C, gArtSel)) {
+                int i = gArtSel;
+                int found = -1;
+                for (; i >= 0; i--) {
+                    if (ExtrasHidden(0x80EDD05C, i) && ExtrasGateFor(0x80EDD05C, i) != -1) {
+                        found = i;
+                        break;
+                    }
+                }
+                if (found == -1) {
+                    gArtSel--;
+                } else {
+                    gArtSel++;
+                }
+            }
+        }
+        if (PadPressed(0, 0, 0xB) == 1 && gRepeatTimer > 10) {
+            int i;
+            gRepeatTimer = 0;
+            for (i = gArtSel; i < gArtCountB - 1; i++) {
+                if (ExtrasHidden(0x80EDD05C, i)) {
+                    break;
+                }
+            }
+            gArtSel = ExtrasGateFor(0x80EDD05C, i) == -1 ? i - 1 : i + 1;
+        }
+        if (PadPressed(0, 0, 10) == 1 && gRepeatTimer > 10) {
+            int i;
+            int seen = 0;
+            gRepeatTimer = 0;
+            for (i = gArtSel; i >= 0; i--) {
+                if (ExtrasHidden(0x80EDD05C, i)) {
+                    if (seen) {
+                        gArtSel = i + 1;
+                        break;
+                    }
+                    seen = 1;
+                }
+            }
+        }
+        gRepeatTimer++;
+        if (gArtSel < 1) {
+            gArtSel = 1;
+        } else if (gArtSel > gArtCountB - 1) {
+            gArtSel = gArtCountB - 1;
+        }
+        if (PadPressed(0, 0, 3) == 1 && gArtSel != -1 && BitTest(gArtBitsB, gArtSel) != 0) {
+            int ev = GameEvent(0x2F9DF01F, Fn800DF3B8(0x80EDD05C, gArtSel, 0xD83EE6B4));
+            if (ev == 0) {
+                gArtModel = 0;
+            } else {
+                float spawn[12];
+                float pos[3];
+                spawn[0] = 0.0f;
+                spawn[1] = 0.0f;
+                *(int*)&spawn[2] = ev;
+                pos[2] = VarGetFloat(0x80EDD05C, gArtSel, 0x5A);
+                pos[1] = VarGetFloat(0x80EDD05C, gArtSel, 0x59);
+                pos[0] = VarGetFloat(0x80EDD05C, gArtSel, 0x58);
+                Vec3Set(&spawn[6], VarGetFloat(0x80EDD05C, gArtSel, 0x5A3309E2), VarGetFloat(0x80EDD05C, gArtSel, 0x489CB20), 0.0f);
+                {
+                    int act = fn_800C7E80(pos);
+                    if (act == 0) {
+                        gArtModel = 0;
+                    } else {
+                        SendMsg(*(int*)(act + 0x38), 6, spawn);
+                        gArtModel = *(int*)(act + 0x38);
+                    }
+                }
+            }
+            if (gArtModel != 0) {
+                gArtBusy = 1;
+                FxStart(gMenuFxSelect, 0, 0);
+            }
+        }
+        if (PadPressed(0, 0, 4) == 1) {
+            FxStart(gMenuFxBack, 0, 0);
+            gMenuInPage = 0;
+        }
+    } else {
+        if (PadPressed(0, 0, 4) == 1) {
+            gArtBusy = 0;
+            FxStart(gMenuFxBack, 0, 0);
+            if (gArtModel != 0) {
+                int m = gArtModel;
+                int msg[2];
+                msg[1] = 0;
+                SendMsg(gArtModel, 6, msg);
+                fn_800C7B14(m);
+                ActorRender();
+            }
+            gArtModel = 0;
+        }
+    }
+    if (old != gArtSel) {
+        FxStart(gMenuFxMove, 0, 0);
+    }
+    if (gArtModel != 0) {
+        float msg[2];
+        msg[1] = dt;
+        SendMsg(gArtModel, 0x414, msg);
+    }
 }
 
 // Is the concept-art entry with game event `event` unlocked? (1 when it is not in the list.)
