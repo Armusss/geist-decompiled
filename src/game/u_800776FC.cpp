@@ -55,6 +55,13 @@ struct Msg {
     int arg7;               // 0x1C
 };
 
+// Functions called from other units under their placeholder names.
+struct Particle;
+extern "C" void fn_8007902C(void);
+extern "C" void fn_8007AE7C(void);
+extern "C" void fn_8007AFBC(void);
+extern "C" int fn_8007C5C8(double dt, Particle* p, u32 mask);
+
 // One light placed in a level (0x3C bytes in the chunk).
 struct LightDef {
     Vec3 pos;               // 0x00
@@ -826,14 +833,14 @@ double __fabs(double);
 int SaveIsBusy(void);
 void ActorFn80022D98(Actor* a, int v);
 
-FxList::~FxList() {}
-
 void FxListFree(void) {
     if (lbl_804D4574 != NULL)
         VFree(lbl_804D4574);
     if (lbl_804D457C != NULL)
         delete lbl_804D457C;
 }
+
+FxList::~FxList() {}
 
 // Per-frame update of every instance: sends the 0x801 update message and fades f58 toward zero.
 int FxListUpdate(double dt) {
@@ -968,6 +975,14 @@ void FxMsgThunk(int index, int msg, Msg* m) {
     FxMsg(msg, m);
 }
 
+// STUB (not drafted yet, 0x1248 bytes at 0x80079618): message handler of the FxInst actors.
+int FxMsg(int msg, Msg* m) {
+    return 0;
+}
+
+// STUB (not drafted yet, 0x424 bytes at 0x8007A860): spawns the spirit-trail effects when an actor is touched.
+void FxTouch(Actor* fx, FxDef* def, Actor* other) {}
+
 // ---- Flicker lights (level chunk 5) and the pool of running flicker patterns ----
 
 struct FadeTask {
@@ -1091,7 +1106,7 @@ void FlickerResetCount(void) {
 }
 
 // Draws the shadow casters of every flicker light queued since the last frame.
-void FlickerFlushQueue(void) {
+void fn_8007AE7C(void) {
     if (lbl_804D4590 != 0) {
         int w;
         int base = 0;
@@ -1129,7 +1144,7 @@ void FlickerFlushQueue(void) {
     fn_8003E5AC();
 }
 
-void FlickerEndFrame(void) {
+void fn_8007AFBC(void) {
     fn_8003E5B0();
 }
 
@@ -1193,7 +1208,7 @@ struct FlickerDef {
     u8 pad64[0x2C];
 };
 
-int FlickerActorMsg(int msg, Msg* m);
+int FlickerLightMsg(int msg, Msg* m);
 void FlickerLoad(int unused, void* data);
 int FlickerMsgThunk(int index, int msg, Msg* m);
 int FlickerStart(Msg* m, void* def, int (*cb)(int, int, FlickerEntry*), FlickerEntry* cbArg);
@@ -1213,7 +1228,7 @@ void FlickerSpawnAll(void) {
         w[15] = fn_8003A1C0(d[0x17]);
         w[16] = fn_8003A18C(d[0x17]);
         w[19] = d[0x13];
-        ActorFn8002378C((Actor*)d, (i & 0xFFFFFF) | 0x6000000, (int)w, (int)FlickerActorMsg, w[15], w[16], w[19]);
+        ActorFn8002378C((Actor*)d, (i & 0xFFFFFF) | 0x6000000, (int)w, (int)FlickerLightMsg, w[15], w[16], w[19]);
         ActorFn800231A8((Actor*)d);
         ActorFn80022D98((Actor*)d, d[0x18]);
         if (SelectionSetTest(d[0x23]) == 0) {
@@ -1270,7 +1285,7 @@ void FlickerLoad(int unused, void* data) {
 }
 
 // Unlinks pattern `i` from the active list and returns it to the free list.
-static void FlickerRelease(int i) {
+static inline void FlickerRelease(int i) {
     FlickerEntry* e = &lbl_80423870[i];
     e->buf = NULL;
     if (lbl_804D4598 == i)
@@ -1330,10 +1345,6 @@ int FlickerLightMsg(int msg, Msg* m) {
         return 1;
     }
     return 0;
-}
-
-int FlickerActorMsg(int msg, Msg* m) {
-    return FlickerLightMsg(msg, m);
 }
 
 // Notifies the owning actor that a pattern finished or advanced.
@@ -1410,6 +1421,14 @@ int FlickerStart(Msg* m, void* def, int (*cb)(int, int, FlickerEntry*), FlickerE
     return idx;
 }
 
+// STUB (not drafted yet, 0xB1C bytes at 0x8007BAAC): advances one flicker pattern by dt, returns 0 when finished.
+int FlickerEntryRun(double dt, FlickerEntry* e) {
+    return 0;
+}
+
+struct Particle;
+int ParticleStep(double dt, Particle* p, u32 mask);
+
 struct Particle {
     Vec3 pos;               // 0x00
     Vec3 rot;               // 0x0C
@@ -1417,6 +1436,10 @@ struct Particle {
     Vec3 spin;              // 0x24
     void (*custom)(double dt, Particle* p, Vec3* newPos, Vec3* newVel, Vec3* newRot); // 0x3C
 };
+
+int fn_8007C5C8(double dt, Particle* p, u32 mask) {
+    return ParticleStep(dt / 1000.0f, p, mask);
+}
 
 // Integrates a particle for dt; mask bit 1 keeps rotation, 2 keeps velocity, 4 keeps position.
 int ParticleStep(double dt, Particle* p, u32 mask) {
@@ -1466,6 +1489,3 @@ int ParticleStep(double dt, Particle* p, u32 mask) {
     return 1;
 }
 
-int ParticleStepScaled(double dt, Particle* p, u32 mask) {
-    return ParticleStep(dt / 1000.0f, p, mask);
-}
