@@ -1041,9 +1041,9 @@ void fn_800F9578(u32 handle, int v) {
 
 // Sets the field of view of camera `handle`.
 void CameraSetFov(int handle, float fov) {
-    int i = handle & 0xFFFFFF;
-    if (i >= 0 && i < 16) {
-        gCams[i].fov = fov;
+    handle &= 0xFFFFFF;
+    if (handle >= 0 && handle < 16) {
+        gCams[handle].fov = fov;
     }
     fn_800C6E88();
 }

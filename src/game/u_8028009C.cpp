@@ -12,6 +12,25 @@ typedef unsigned char u8;
 #define NULL 0
 
 extern "C" {
+void TextBegin(void);                               // 0x801ED0C8
+void TextSetMode(int m);                            // 0x801ED1A0
+void TextSetColor(int r, int g, int b, int a);      // 0x801ED1E4
+void TextSetSize(int n);                            // 0x801ED2A0
+void TextSetBox(int a, int b, int c, int d);        // 0x801ED3FC
+void TextDraw(const char* s, u32 len);              // 0x801EB11C
+const char* StrFindKey(u32 key, u32* len);          // 0x80086234
+const char* StrGetIndex(int idx, u32* len);         // 0x800862F0
+int* fn_8014FEE4(int i);
+int VarObjKey(u32 table, int index);                // 0x800DF160
+int fn_80007138(void);
+void fn_800C6834(int ctl);
+void fn_800C5FB4(float f, int a);
+void DeferFlush3(void);                             // 0x800F0ED4
+void DeferFlush4(void);                             // 0x800F0DFC
+void fn_80009E10(void);
+void fn_80008F64(void);
+void fn_800C6664(int ctl);
+int SendMsg(int to, int msg, void* data);
 int Fn800DF814(u32 key, int value);                 // 0x800DF814: index of a record by name
 int Fn800DF3B8(u32 key, int index, u32 field);      // 0x800DF3B8: record field
 char* VarObjData(u32 key, int index);               // 0x800DF8A4
@@ -34,6 +53,13 @@ void fn_80283310(float dt);
 void fn_80284CE0(void);
 }
 
+extern int gMovieCount;         // 0x804D55BC
+extern int gMovieSel;           // 0x804D55C4
+extern int gMovieBusy;          // 0x804D55C8
+extern int gExtrasModel;        // 0x804D55CC
+extern int gExtrasCam;          // 0x804D55EC
+extern int gHudLines;           // 0x804D7BD0
+extern float gExtrasZoom;       // 0x804D3788
 extern int gMenuPage;           // 0x804D55F0
 extern int gMenuInPage;         // 0x804D55F4
 extern int gMenuFxMove;         // 0x804D5604
@@ -67,6 +93,9 @@ extern "C" void fn_80283864(u32 event);
 extern "C" void fn_80283A44(u32 event);
 extern "C" void fn_80283DC4(u32 value);
 extern "C" void fn_80284CB0(void);
+extern "C" void fn_802845CC(void);
+
+void ExtrasModelShow(int model, u8 alpha);
 
 static inline int BitTest(u32* bits, int i) {
     return (1 << (i & 0x1F)) & bits[i / 32];
@@ -213,6 +242,79 @@ void MusicMarkUnlocked(int key) {
     }
 }
 
+// Draws the movie / music hint list in the corner and, while a movie is selected, its title.
+void ExtrasHudDraw(int alpha) {
+    static int sFade = 0;               // 0x804D561C
+    int y = 0x17C;
+    int played;
+    if (gMovieBits == NULL || gMovieCount == 0) {
+        played = 0;
+    } else {
+        played = BitsetCount(gMovieBits, gMovieCount, 1);
+    }
+    if (gMovieBits == NULL) {
+        gMenuInPage = 0;
+    } else if (gMovieBusy == 0) {
+        int i;
+        int fade = sFade + 1;
+        sFade = 0xFF;
+        if (fade < 0x100) {
+            sFade = fade;
+        }
+        for (i = 0; i < gHudLines - 1; i++) {
+            int* line = fn_8014FEE4(i);
+            u32 len = 0;
+            int left = line[2] - played;
+            if (line == NULL) {
+                break;
+            }
+            if (left < 3) {
+                int a;
+                TextBegin();
+                TextSetMode(0);
+                a = (sFade * 0xFF) / 0xFF;
+                TextSetColor(0xFF, 0xFF, 0xFF, a & 0xFF);
+                TextSetSize(0xD);
+                TextSetBox(0xA5, 0x28A, 0, y);
+                if (left == 1) {
+                    TextSetColor(0xFF, 0xFF, 0, ((sFade * 0xFF) / 0xFF) & 0xFF);
+                    TextDraw(StrFindKey(0x4B2687A6, &len), len);
+                    y -= 0x14;
+                    TextBegin();
+                    TextSetMode(0);
+                    TextSetColor(0x28, 0x9D, 0x5A, ((sFade * 0xFF) / 0xFF) & 0xFF);
+                    TextSetSize(0xD);
+                    TextSetBox(0xA5, 0x28A, 0, y);
+                } else if (left == 2) {
+                    TextSetColor(0xFF, 0xFF, 0, ((sFade * 0xFF) / 0xFF) & 0xFF);
+                    TextDraw(StrFindKey(0xDA18CB28, &len), len);
+                    y -= 0x14;
+                    TextBegin();
+                    TextSetMode(0);
+                    TextSetColor(0x28, 0x9D, 0x5A, ((sFade * 0xFF) / 0xFF) & 0xFF);
+                    TextSetSize(0xD);
+                    TextSetBox(0xA5, 0x28A, 0, y);
+                }
+                TextDraw(StrFindKey(line[4], &len), len);
+                y -= 0x14;
+            }
+        }
+    } else {
+        u32 len = 0;
+        int title = Fn800DF3B8(0xD8E68AB7, gMovieSel, 0x273D2D);
+        sFade = 0;
+        if (title >= 0) {
+            TextBegin();
+            TextSetMode(0);
+            TextSetColor(0xFF, 0xFF, 0xFF, ((alpha * 0xFF) / 0xFF) & 0xFF);
+            TextSetSize(0xD);
+            TextSetBox(400, 0x262, 0x50, 0x168);
+            TextDraw(StrGetIndex(title, &len), len);
+        }
+        ExtrasModelShow(gExtrasModel, alpha);
+    }
+}
+
 // Is the concept-art entry with game event `event` unlocked? (1 when it is not in the list.)
 // ArtIsUnlocked
 u32 fn_802837C4(int event) {
@@ -338,10 +440,12 @@ u32 Bonus2IsUnlocked(int event) {
 
 void Bonus2MarkUnlocked(u32 event) {
     u32 i;
-    int found = -1;
+    int field;
+    char* data;
+    u32 found = -1;
     for (i = 0; (int)i < gBonusCount2; i++) {
-        int field = Fn800DF3B8(0x5E130113, i, 0xDF714172);
-        char* data = VarObjData(0x5E130113, i);
+        field = Fn800DF3B8(0x5E130113, i, 0xDF714172);
+        data = VarObjData(0x5E130113, i);
         if (event == GameEvent(0x78198479, field)) {
             if (data != NULL && *data != 0) {
                 BitSet(gBonusBits2, i);
@@ -358,10 +462,12 @@ void Bonus2MarkUnlocked(u32 event) {
 // BonusMarkUnlocked
 void fn_80283DC4(u32 value) {
     u32 i;
-    int found = -1;
+    int field;
+    char* data;
+    u32 found = -1;
     for (i = 0; (int)i < gBonusCount; i++) {
-        int field = VarGetHash(0x5E130113, i, 0xDF714172);
-        char* data = VarObjData(0x5E130113, i);
+        field = VarGetHash(0x5E130113, i, 0xDF714172);
+        data = VarObjData(0x5E130113, i);
         if (field == value) {
             if (data != NULL && *data != 0) {
                 BitSet(gBonusBits, i);
@@ -377,11 +483,14 @@ void fn_80283DC4(u32 value) {
 
 void SecretMarkUnlocked(u32 event) {
     u32 i;
-    int found = -1;
+    int field;
+    int ev;
+    char* data;
+    u32 found = -1;
     for (i = 0; (int)i < gSecretCount; i++) {
-        int field = Fn800DF3B8(0x5EB7A22E, i, 0x273D2D);
-        int ev = GameEvent(0xBAA22E62, field);
-        char* data = VarObjData(0x5EB7A22E, i);
+        field = Fn800DF3B8(0x5EB7A22E, i, 0x273D2D);
+        ev = GameEvent(0xBAA22E62, field);
+        data = VarObjData(0x5EB7A22E, i);
         if (ev == event) {
             if (data != NULL && *data != 0) {
                 BitSet(gSecretBits, i);
@@ -400,6 +509,48 @@ void SecretShow(u32 idx) {
         AssetFind(0xF2E2BEB8, 0x6983CAD1);
     } else {
         AssetFind(0xF2E2BEB8, 0x52BE59C3);
+    }
+}
+
+// Shows the 3D model of the selected extra with the given alpha.
+void ExtrasModelShow(int model, u8 alpha) {
+    if (fn_80007138() == 0 && model != 0) {
+        int msg[0x88];
+        fn_800C6834(gExtrasCam);
+        fn_800C5FB4(gExtrasZoom, 0);
+        SendMsg(model, 0, msg);
+        DeferFlush3();
+        DeferFlush4();
+        fn_80009E10();
+        fn_80008F64();
+        fn_800C6664(gExtrasCam);
+    }
+}
+
+// Tells every unlocked music track and movie object to appear (message 0xC00).
+void fn_802845CC(void) {
+    int i;
+    if (gMusicBits != NULL) {
+        for (i = 0; i < gMusicCount; i++) {
+            if (BitTest(gMusicBits, i) != 0) {
+                int key = VarObjKey(0x258124CE, i);
+                int h = AssetFind(0x110A6, key);
+                int msg[2];
+                msg[1] = 0;
+                SendMsg(h, 0xC00, msg);
+            }
+        }
+    }
+    if (gMovieBits != NULL) {
+        for (i = 0; i < gMovieCount; i++) {
+            if (BitTest(gMovieBits, i) != 0) {
+                int key = VarObjKey(0xD8E68AB7, i);
+                int h = AssetFind(0x110A6, key);
+                int msg[2];
+                msg[1] = 0;
+                SendMsg(h, 0xC00, msg);
+            }
+        }
     }
 }
 
