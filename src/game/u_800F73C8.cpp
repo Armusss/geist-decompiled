@@ -44,6 +44,7 @@ extern "C" int fn_800F9614(u32 handle);
 extern "C" void fn_800F96E0(u32 handle);
 extern "C" u32 fn_800F9724(int owner, int id);
 extern "C" u32 fn_800FC3B8(int id);
+extern "C" int fn_800FC764(u32 who, int arg);
 extern "C" char* fn_800FD334(int i);
 extern "C" int fn_800FD3DC(void);
 extern "C" int fn_800FD3EC(void);
@@ -1942,21 +1943,6 @@ int SysCheckMemory(void) {
     return 0;
 }
 
-// Is the current level one of the four deathmatch-style maps?
-int MinigameIsArenaMap(void) {
-    int id = fn_800B705C();
-    if (id != 0xD5B0588) {
-        if (id < 0xD5B0588) {
-            if (id != -0x5B49449E && (id > -0x5B49449F || id != -0x5D3DBB55)) {
-                return 0;
-            }
-        } else if (id != 0x5BE2B379) {
-            return 0;
-        }
-    }
-    return 1;
-}
-
 static inline int PlayerSlotOf(u32 handle) {
     int i;
     int n;
@@ -1979,6 +1965,140 @@ static inline int PlayerSlotOf(u32 handle) {
              *(int*)((char*)PlayerGetPossessor(0) + 0x2740) == 0);
     return -1;
 }
+
+void MinigameStreakUp(u32 handle);
+void MinigameStreakDown(u32 handle);
+
+extern "C" {
+int fn_802A1D04(void);
+int HuntBotPickable(u32 who);                                       // 0x80142864
+u32 fn_800B8B64(int a, int b, int c, void* fn, int d);
+u32 fn_800B8D68(u32 a, u32 b, int c);
+void fn_8009F190(void* out, void* in);
+void VecSwapXY2(void* a, void* b);                                  // 0x8016D18C
+}
+int MinigameIsArenaMap(void);
+
+// Finds a target or spawn point for actor `who` and links the two (variable 0x7C18FE9E on
+// both, spawn command 0xC07).  Returns 1 when one was found.
+int fn_800FC764(u32 who, int arg) {
+    u32 found = 0xFFFFFFFF;
+    u32 pick;
+    if (who == 0xFFFFFFFF) {
+        return 0;
+    }
+    MinigameStreakDown(who);
+    if (fn_802A1D04() == 3) {
+        if (HuntBotPickable(who) != 0) {
+            int msg[2];
+            msg[0] = 1;
+            msg[1] = 8;
+            SendMsg(who, 0x40D, msg);
+            return 1;
+        }
+        if (who != 0xFFFFFFFF) {
+            int m[4];
+            m[1] = arg;
+            m[2] = 0x4B000000;
+            m[3] = 0x6C345908;
+            if (SendMsg(who, 0xC14, m) == 0) {
+                return 0;
+            }
+        } else {
+            return 0;
+        }
+    } else {
+        if (who != 0xFFFFFFFF) {
+            int m[4];
+            m[1] = arg;
+            m[2] = 0x4B000000;
+            m[3] = 0x6C345908;
+            if (SendMsg(who, 0xC14, m) == 0) {
+                return 0;
+            }
+        } else {
+            return 0;
+        }
+    }
+    if (who >> 24 == 2 || who >> 24 == 0x13) {
+        int mode = fn_802A1D04();
+        if (mode == 1 || mode == 2) {
+            int slot = PlayerSlotOf(who);
+            int team;
+            if (slot < 0 || gMinigame.count <= slot) {
+                team = -1;
+            } else {
+                team = gMinigame.team[slot];
+            }
+            if (team < 8 && team >= 0) {
+                found = fn_800B8B64(0, 0, 1, (void*)MinigameIsArenaMap, 0);
+            }
+        } else if (fn_802A1D04() == 3) {
+            int info[8];
+            SendMsg(who, 0x400, info);
+            if ((info[6] & 2) == 0) {
+                found = fn_800B8D68(0, 0x612B26A, 1);
+            } else {
+                found = fn_800B8D68(0, 0xBAA51EE3, 1);
+            }
+        }
+    }
+    pick = found;
+    if (found == 0xFFFFFFFF) {
+        int holder = GetVarInt(who, 0x7C18FE9E);
+        int ok = 1;
+        if (ok) {
+            int back = GetVarInt(holder, 0x7C18FE9E);
+            int mode = GetVarInt(holder, 0x040EFE5F);
+            if (back == (int)who) {
+                pick = holder;
+            } else if (mode == 0) {
+                int alt = GetVarInt(holder, 0x03D3B158);
+                pick = found;
+                if (alt != 0) {
+                    pick = fn_800B8D68(0, alt, 1);
+                }
+            } else {
+                pick = fn_800B8D68(mode, 0, 1);
+            }
+        }
+    }
+    if (pick == 0xFFFFFFFF) {
+        return 0;
+    }
+    {
+        char info[0x44];
+        char mtx[0x24];
+        float v[3];
+        int msg[4];
+        SendMsg(pick, 0x402, info);
+        msg[3] = 3;
+        fn_8009F190(v, mtx);
+        VecSwapXY2(v, v);
+        SendMsg(who, 0xC07, msg);
+        SetVarInt(who, 0x7C18FE9E, pick);
+        SetVarInt(pick, 0x7C18FE9E, who);
+        SetVarInt(pick, 0x33032FA9, 1);
+        MinigameStreakUp(who);
+        return 1;
+    }
+}
+
+// Is the current level one of the four deathmatch-style maps?
+int MinigameIsArenaMap(void) {
+    int id = fn_800B705C();
+    if (id != 0xD5B0588) {
+        if (id < 0xD5B0588) {
+            if (id != -0x5B49449E && (id > -0x5B49449F || id != -0x5D3DBB55)) {
+                return 0;
+            }
+        } else if (id != 0x5BE2B379) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 
 
 // Awards a "kill streak" step to the player `handle` when the match counters allow it.
