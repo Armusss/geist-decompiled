@@ -227,10 +227,10 @@ void LightFxApplyOffset(void* desc, int* m) {
     Desc* d = (Desc*)desc;
     int v[3];
     int t[3];
-    if ((d->flags & 1) == 0) {
-        v[0] = d->amount / 0x8000;
-    } else {
+    if (d->flags & 1) {
         v[0] = -d->amount / 0x8000;
+    } else {
+        v[0] = d->amount / 0x8000;
     }
     v[1] = d->amount / 4096;
     v[2] = -d->amount / 0x2000;
@@ -1089,10 +1089,12 @@ void FlickerBufClear(void* begin, void* end) {
 void FlickerBufNop(void* begin, void* end) {
     u32 b = (u32)begin;
     u32 e = (u32)end;
+    u32 n = (e + 7 - b) >> 3;
     if (e <= b)
         return;
     do {
-    } while (--e > b + 7 - b);
+        n--;
+    } while (n != 0);
 }
 
 extern int lbl_804D4584;
