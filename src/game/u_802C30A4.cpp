@@ -66,7 +66,7 @@ struct BossState {
     int slots[4];           // 0x48
     int phaseAngle;         // 0x58
     BossBuf list;           // 0x5C
-    u8 pad70[4];
+    float maxFloat70;       // 0x70
     float shotDelay;        // 0x74
     int shotState;          // 0x78
     float stunHp;           // 0x7C
@@ -1116,5 +1116,104 @@ int BossEnterAttackA(Boss* b) {
     } else {
         s->hitTimer = lbl_804D39FC;
     }
+    return 1;
+}
+
+void BossStartIntro(Boss* b);
+
+int BossEnterStun(Boss* b) {
+    BossState* s = b->state;
+    s->type = 6;
+    s->next = 0;
+    BossPlayStateAnim(b, 0, true);
+    fn_800A7A54(&b->flags270, 0x2F, 0);
+    BossStartIntro(b);
+    FxStart(lbl_804D57BC, 0, 0);
+    if (lbl_804D3ACC != -1) {
+        fn_8016EEF4(lbl_804D3ACC);
+        lbl_804D3ACC = -1;
+    }
+    return 1;
+}
+
+int BossEnterIdle(Boss* b) {
+    BossState* s = b->state;
+    if (s->type != 5)
+        fn_800C5654(*(int*)((u8*)b + 0x38), 0xBAC4B348, *(int*)((u8*)b + 0x38));
+    s->type = 5;
+    s->next = 5;
+    BossPlayStateAnim(b, 0, true);
+    s->fade = 1.0f;
+    fn_80037EC0(b->model, lbl_804D3AAC, 1, 0xFF, 0xFF, 0xFF, lbl_804D39F0 & 0xFF);
+    return 1;
+}
+
+extern "C" void fn_8028B35C(BossBuf* list, void* where, int n);
+extern float lbl_804D3A0C;
+extern float lbl_804D3A44;
+extern float lbl_804DAEAC;
+extern float lbl_804DAEB0;
+extern float lbl_804DAEB4;
+
+int BossEnterPhaseOut(Boss* b) {
+    BossState* s = b->state;
+    int i;
+    s->type = 4;
+    s->next = 5;
+    BossPlayStateAnim(b, 0, true);
+    fn_800A7A54(&b->flags270, 0x2F, 1);
+    fn_800A7A54(&b->flags270, 0x2E, 0);
+    fn_800A7A54(&b->flags270, 4, 0);
+    fn_800A7B08(&b->flags270, 10, 0);
+    s->partHp[0] = lbl_804D3A0C;
+    s->partFlash[0] = -1.0f;
+    s->partHp[1] = lbl_804D3A0C;
+    s->partFlash[1] = -1.0f;
+    s->partHp[2] = lbl_804D3A0C;
+    s->partFlash[2] = -1.0f;
+    s->partHp[3] = lbl_804D3A0C;
+    s->partFlash[3] = -1.0f;
+    s->heartHp = (float)lbl_804D3A10;
+    s->heartFlash = -1.0f;
+    s->fade2 = 0.0f;
+    while ((u32)s->list.mLength >> 2 != 0) {
+        int target = *(int*)s->list.mUnk0C;
+        struct {
+            int a;
+            int hash;
+            int c;
+        } q;
+        String name;
+        q.hash = 0x1FF464;
+        q.c = 0;
+        SendMsg(target, 0x41D, &q);
+        fn_8028B35C(&s->list, (void*)s->list.mUnk0C, 4);
+    }
+    fn_80049948();
+    fn_8006DB74(lbl_804D3A44);
+    s->maxFloat70 = lbl_804DAEAC;
+    fn_80038AE8(b->model, fn_8007EB34(0xD9044CBB, 0xFE64CE60), 1, 1);
+    fn_80038AE8(b->model, fn_8007EB34(0xD9044CBB, 0xFE64CF1A), 1, 1);
+    fn_80038AE8(b->model, fn_8007EB34(0xD9044CBB, 0x20FA84FF), 1, 1);
+    fn_80038AE8(b->model, fn_8007EB34(0xD9044CBB, 0x20FA85B9), 1, 1);
+    FxStart(lbl_804D57B8, 0, 0);
+    return 1;
+}
+
+int BossEnterMove(Boss* b) {
+    BossState* s = b->state;
+    int pick;
+    s->type = 3;
+    s->next = 0;
+    if (lbl_804DAEB0 * (float)b->cfg->maxHealth <= b->health) {
+        if (lbl_804DAEB4 * (float)b->cfg->maxHealth <= b->health)
+            pick = 0;
+        else
+            pick = 1;
+    } else {
+        pick = 2;
+    }
+    s->attackA = -1;
+    BossPlayStateAnim(b, pick, false);
     return 1;
 }
