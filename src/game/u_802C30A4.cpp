@@ -170,8 +170,180 @@ extern "C" double __fabs(double);
 extern "C" float sqrtf(float);
 extern char lbl_8034BEE0[];
 int BossSetupHit(BossMsg* m);
+void BossPartInit(Boss* b);
 void BossHitFeedback(BossMsg* m);
-void BossShutdown(Boss* b);
+
+
+extern "C" {
+void fn_8009F7A8(Mtx34* out, Vec3* dir);
+void MtxGetEuler(Vec3* out, Mtx34* m);
+void fn_800E1098(double scale, Vec3* in, Vec3* out);
+int fn_800C7E80(Vec3* pos);
+}
+
+void VFree(void* p);
+extern "C" {
+void fn_8016EEF4(int fx);
+void fn_800A7B08(void* set, int i, int v);
+void fn_8006DB74(double v);
+}
+extern BossStateOps lbl_803C4E64[];
+extern float lbl_804D3A48;
+extern int lbl_804D3A54;
+extern int lbl_804D3A58;
+extern int lbl_804D3A5C;
+extern int lbl_804D3A60;
+
+extern int lbl_804D3A9C, lbl_804D3AA0, lbl_804D3AA4, lbl_804D3AA8, lbl_804D3AAC, lbl_804D3AB0;
+extern int lbl_804D3AB8, lbl_804D3ABC, lbl_804D3AC4, lbl_804D3AC8;
+extern int lbl_804D57B0, lbl_804D57B8, lbl_804D57BC, lbl_804D57C0;
+extern float lbl_804D3A64, lbl_804D3A68;
+extern "C" {
+void* VAlloc(int size);
+void fn_80090634(int anim, int a, int b, int c);
+int rand(void);
+int fn_8008E5CC(int a, int b);
+void fn_80037EC0(int model, int node, int a, int r, int g, int b, int al);
+void fn_800381F8(int model, int a, int r, int g, int b, int al);
+void fn_800CDD10(void);
+}
+extern int lbl_804D39F0;
+void BossRefreshStates(Boss* b);
+void BossUpdateParts(Boss* b, BossState* s);
+void BossPartInit(Boss* b);
+
+extern "C" {
+double fn_800A127C(double a);
+double fn_800A1418(double a);
+int fn_80018AD4(int model, int node);
+}
+extern float lbl_804D3A04;
+extern float lbl_804D3A18;
+
+static inline int ClampByte(int v) {
+    if (v < 0)
+        return 0;
+    if (v < 0x100)
+        return v;
+    return 0xFF;
+}
+
+// Flash fraction for a hit-flash timer (0 = no flash, 1 = full).
+static inline float FlashFrac(float t) {
+    float f;
+    if (lbl_804D3A18 <= t) {
+        f = 1.0f;
+        if (lbl_804D3A14 - lbl_804D3A18 < t)
+            f = (lbl_804D3A14 - t) / lbl_804D3A18;
+    } else {
+        f = t / lbl_804D3A18;
+    }
+    return f;
+}
+
+extern "C" {
+void fn_80090974(double a, int anim, int b, int c, int d, int e, int f);
+int fn_8016325C(void* p);
+int fn_8008DE4C(int anim, int a, int b, int c);
+void fn_800A7068(void* p);
+int fn_800C5654(int to, u32 msg, int from);
+void fn_8008F230(double a, int anim, int b, int c);
+int fn_800A1BC8(int a, int b, int c, int d, int e);
+void fn_800A7028(void* set);
+void fn_800913EC(double a, int anim, void* b);
+void fn_80211A84(void);
+}
+extern float lbl_804DAEA4;
+extern float lbl_804DAEA8;
+extern int lbl_803C4E60[];
+
+extern "C" {
+void fn_8008F4E8(int anim, int a);
+void fn_8008F4EC(int anim, int a);
+void fn_8008F378(double a, int anim);
+int fn_800A1AC4(int a, int b, int c);
+int Rand(void);
+int fn_8008E7D0(int anim);
+}
+extern float lbl_804DAE6C;
+extern float lbl_804D3A00;
+
+// Starts the current state's animation, picking variant `pick` (or a random one if out of range).
+static inline void BossPlayStateAnim(Boss* b, int pick, bool randomize) {
+    if (b != NULL) {
+        BossState* s = b->state;
+        int anim = *(int*)((u8*)b + 0xD4);
+        int count;
+        if (fn_800A7AC4(&b->flags270, 0xC) != 0) {
+            fn_800A7A54(&b->flags270, 0xC, 0);
+            fn_800A7A54(&b->flags270, 0xE, 1);
+            fn_8008F4E8(anim, 0);
+            fn_8008F378(0.0, anim);
+            fn_8008F4EC(anim, 0);
+        }
+        count = fn_800A1AC4(*(int*)((u8*)b->cfg + 0x14), *(int*)((u8*)b->cfg + 0x1C), lbl_803C4E60[s->type * 6]);
+        if (count != 0) {
+            int idx;
+            if (randomize || pick < 0 || count <= pick) {
+                int r = Rand();
+                pick = r - (r / count) * count;
+            }
+            idx = fn_800A1BC8(*(int*)((u8*)b->cfg + 0x14), *(int*)((u8*)b->cfg + 0x1C), lbl_803C4E60[s->type * 6], pick, 0);
+            if (fn_8008E7D0(anim) != 0) {
+                fn_800A7A54(&b->flags270, 0x1C, 0);
+                if (fn_800A7AC4(&b->flags270, 0xE) == 0) {
+                    fn_8008F230(lbl_804DAE6C, anim, 0, 1);
+                } else {
+                    fn_800A7A54(&b->flags270, 0xE, 0);
+                    fn_8008F230(0.0, anim, 0, 0);
+                }
+                fn_80090974(1.0, anim, 0, idx, 9, (int)lbl_803C4E64[s->type].unk0C, (int)b);
+                s->anim = idx;
+            }
+        }
+    }
+}
+
+
+extern "C" void fn_8028B35C(BossBuf* list, void* where, int n);
+extern float lbl_804D3A0C;
+extern float lbl_804D3A44;
+extern float lbl_804DAEAC;
+extern float lbl_804DAEB0;
+extern float lbl_804DAEB4;
+
+extern "C" {
+int fn_802D1640(double a, double b, double c, double d, double e, double f, double g, double h, Boss* owner, unsigned* mask,
+                u32 hash, unsigned flag, int one);
+void* fn_8028B3BC(BossBuf* list, void* where, int n);
+}
+extern int lbl_804D3A3C;
+extern int lbl_804D3A40;
+extern float lbl_804D3A1C, lbl_804D3A20, lbl_804D3A24, lbl_804D3A28, lbl_804D3A2C, lbl_804D3A30, lbl_804D3A34;
+extern float lbl_804D3A4C, lbl_804D3A50;
+
+struct PlaceF {
+    float v[12];
+};
+
+extern "C" {
+void fn_801BE4B8(Boss* b);
+int fn_8008E964(int anim);
+int fn_8008EA9C(int anim, int a);
+double fn_800CC2D0(Boss* b, int a, int c, int d);
+void fn_800A0168(void* a, void* b);
+void fn_800A0030(void* out, void* a, void* b);
+void ActorGetMatrix(Mtx34* m, Boss* a);
+int AnimApply(int anim, char* bone, int a, int b);
+void EulerNormalize(Vec3* a, Vec3* b);
+void Vec3Set(Vec3* v, float x, float y, float z);
+void MtxGetEuler(Vec3* out, Mtx34* m);
+void MtxSetEuler(Mtx34* m, Vec3* rot);
+void PlacementToMatrix(Mtx34* m, PlaceF* p);
+void ModelSetMatrix(int model, Mtx34* m, char* bone);
+void BoneGetMatrix(Mtx34* m, void* b);
+}
+extern float lbl_804DAEC0;
 
 // Message handler of the final boss actor.
 int BossMsgHandler(int msg, BossMsg* m) {
@@ -271,7 +443,7 @@ int BossMsgHandler(int msg, BossMsg* m) {
     } else {
         if (msg == 0xC00) {
             if (m->arg1 != 0)
-                BossShutdown(m->boss);
+                BossPartInit(m->boss);
             return 0;
         }
         if (msg < 0xC00) {
@@ -315,7 +487,6 @@ int BossMsgHandler(int msg, BossMsg* m) {
     }
     return 0;
 }
-
 
 // Applies a hit message to the boss: heart, parts and stun damage; plays hit sounds.
 int BossSetupHit(BossMsg* m) {
@@ -421,13 +592,6 @@ int BossSetupHit(BossMsg* m) {
     return 1;
 }
 
-extern "C" {
-void fn_8009F7A8(Mtx34* out, Vec3* dir);
-void MtxGetEuler(Vec3* out, Mtx34* m);
-void fn_800E1098(double scale, Vec3* in, Vec3* out);
-int fn_800C7E80(Vec3* pos);
-}
-
 // Spawns the hit spark for the hit in `m`, and records it in the boss's hit-effect slots.
 void BossHitFeedback(BossMsg* m) {
     int* other = (int*)m->arg1;
@@ -501,18 +665,11 @@ void BossHitFeedback(BossMsg* m) {
     }
 }
 
-void VFree(void* p);
-extern "C" {
-void fn_8016EEF4(int fx);
-void fn_800A7B08(void* set, int i, int v);
-void fn_8006DB74(double v);
+// STUB (not drafted yet, 0x10BC bytes at 0x802C4078): per-frame boss update; runs the state table callbacks,
+// the hit flash timers and the periodic attack scheduling.
+int BossUpdate(Boss* b) {
+    return 0;
 }
-extern BossStateOps lbl_803C4E64[];
-extern float lbl_804D3A48;
-extern int lbl_804D3A54;
-extern int lbl_804D3A58;
-extern int lbl_804D3A5C;
-extern int lbl_804D3A60;
 
 // Frees the boss's behaviour state.
 void BossFreeState(Boss* b) {
@@ -520,93 +677,6 @@ void BossFreeState(Boss* b) {
     VFree(b->state);
     b->state = NULL;
 }
-
-// Hurt-type messages: picks the attack set from the remaining health.
-int BossOnHurt(int msg, Boss* b) {
-    BossState* s;
-    if (b == NULL)
-        return 0;
-    s = b->state;
-    if (msg == 0x1B83833F) {
-        lbl_803C4E64[s->type].canLeave(b, s->next);
-        lbl_803C4E64[s->next].enter(b);
-    } else {
-        if (msg < 0x1B83833F) {
-            if (msg != 0x20EE36) {
-                if (msg < 0x20EE36) {
-                    if (msg != -0xD44A5E9)
-                        return 1;
-                } else if (msg != 0x26E045) {
-                    return 1;
-                }
-            }
-        } else if (msg != 0x3961ACD5) {
-            if (0x3961ACD4 < msg)
-                return 1;
-            if (msg != 0x395E188C)
-                return 1;
-        }
-        if (s->attackA == -1) {
-            float max = (float)b->cfg->maxHealth;
-            if (b->health <= 0.8f * max) {
-                if (b->health <= 0.5f * max) {
-                    s->attackA = lbl_804D3A5C;
-                    s->attackB = lbl_804D3A60;
-                    s->attackC = 0.0f;
-                } else {
-                    s->attackA = lbl_804D3A58;
-                    s->attackB = 0;
-                    s->attackC = 0.0f;
-                }
-            } else {
-                s->attackA = lbl_804D3A54;
-                s->attackB = 0;
-                s->attackC = 0.0f;
-            }
-        }
-    }
-    return 1;
-}
-
-int BossEnterState(Boss* b, int next) {
-    BossState* s = b->state;
-    s->next = next;
-    if (s->type == 6) {
-        fn_800A7B08(&b->flags270, 10, 1);
-        fn_80049948();
-        fn_8006DB74(lbl_804D3A48);
-        s->stunHp = lbl_804D3A08;
-    }
-    return 0;
-}
-
-int BossSetNext(Boss* b, int next) {
-    b->state->next = next;
-    fn_800A7A54(&b->flags270, 0, 0);
-    return 1;
-}
-
-int BossReturnZero(void) {
-    return 0;
-}
-
-extern int lbl_804D3A9C, lbl_804D3AA0, lbl_804D3AA4, lbl_804D3AA8, lbl_804D3AAC, lbl_804D3AB0;
-extern int lbl_804D3AB8, lbl_804D3ABC, lbl_804D3AC4, lbl_804D3AC8;
-extern int lbl_804D57B0, lbl_804D57B8, lbl_804D57BC, lbl_804D57C0;
-extern float lbl_804D3A64, lbl_804D3A68;
-extern "C" {
-void* VAlloc(int size);
-void fn_80090634(int anim, int a, int b, int c);
-int rand(void);
-int fn_8008E5CC(int a, int b);
-void fn_80037EC0(int model, int node, int a, int r, int g, int b, int al);
-void fn_800381F8(int model, int a, int r, int g, int b, int al);
-void fn_800CDD10(void);
-}
-extern int lbl_804D39F0;
-void BossRefreshStates(Boss* b);
-void BossUpdateParts(Boss* b, BossState* s);
-void BossPartInit(Boss* b);
 
 // Installs the boss behaviour on actor `b` and resolves all the model node / effect ids it uses.
 void BossInit(int unused, Boss* b) {
@@ -682,6 +752,75 @@ void BossInit(int unused, Boss* b) {
     }
 }
 
+// Hurt-type messages: picks the attack set from the remaining health.
+int BossOnHurt(int msg, Boss* b) {
+    BossState* s;
+    if (b == NULL)
+        return 0;
+    s = b->state;
+    if (msg == 0x1B83833F) {
+        lbl_803C4E64[s->type].canLeave(b, s->next);
+        lbl_803C4E64[s->next].enter(b);
+    } else {
+        if (msg < 0x1B83833F) {
+            if (msg != 0x20EE36) {
+                if (msg < 0x20EE36) {
+                    if (msg != -0xD44A5E9)
+                        return 1;
+                } else if (msg != 0x26E045) {
+                    return 1;
+                }
+            }
+        } else if (msg != 0x3961ACD5) {
+            if (0x3961ACD4 < msg)
+                return 1;
+            if (msg != 0x395E188C)
+                return 1;
+        }
+        if (s->attackA == -1) {
+            float max = (float)b->cfg->maxHealth;
+            if (b->health <= 0.8f * max) {
+                if (b->health <= 0.5f * max) {
+                    s->attackA = lbl_804D3A5C;
+                    s->attackB = lbl_804D3A60;
+                    s->attackC = 0.0f;
+                } else {
+                    s->attackA = lbl_804D3A58;
+                    s->attackB = 0;
+                    s->attackC = 0.0f;
+                }
+            } else {
+                s->attackA = lbl_804D3A54;
+                s->attackB = 0;
+                s->attackC = 0.0f;
+            }
+        }
+    }
+    return 1;
+}
+
+int BossEnterState(Boss* b, int next) {
+    BossState* s = b->state;
+    s->next = next;
+    if (s->type == 6) {
+        fn_800A7B08(&b->flags270, 10, 1);
+        fn_80049948();
+        fn_8006DB74(lbl_804D3A48);
+        s->stunHp = lbl_804D3A08;
+    }
+    return 0;
+}
+
+int BossSetNext(Boss* b, int next) {
+    b->state->next = next;
+    fn_800A7A54(&b->flags270, 0, 0);
+    return 1;
+}
+
+int BossReturnZero(void) {
+    return 0;
+}
+
 // Per-frame update for the "dying" state: fades the body parts out.
 int BossFadeTick(Boss* b) {
     BossState* s = b->state;
@@ -734,6 +873,13 @@ int BossFadeTick(Boss* b) {
         }
     }
     b->phaseTimer = 0.0f;
+    return s->type;
+}
+
+int BossUpdateAndReturn(Boss* b) {
+    BossState* s = b->state;
+    BossRefreshStates(b);
+    BossUpdateParts(b, s);
     return s->type;
 }
 
@@ -825,35 +971,6 @@ int BossHitTick(Boss* b) {
     return s->type;
 }
 
-extern "C" {
-double fn_800A127C(double a);
-double fn_800A1418(double a);
-int fn_80018AD4(int model, int node);
-}
-extern float lbl_804D3A04;
-extern float lbl_804D3A18;
-
-static inline int ClampByte(int v) {
-    if (v < 0)
-        return 0;
-    if (v < 0x100)
-        return v;
-    return 0xFF;
-}
-
-// Flash fraction for a hit-flash timer (0 = no flash, 1 = full).
-static inline float FlashFrac(float t) {
-    float f;
-    if (lbl_804D3A18 <= t) {
-        f = 1.0f;
-        if (lbl_804D3A14 - lbl_804D3A18 < t)
-            f = (lbl_804D3A14 - t) / lbl_804D3A18;
-    } else {
-        f = t / lbl_804D3A18;
-    }
-    return f;
-}
-
 // Tints the four parts and the heart: pulsing while armoured, red flash when hit.
 void BossUpdateParts(Boss* b, BossState* s) {
     bool anyPart = false;
@@ -932,22 +1049,6 @@ void BossUpdateParts(Boss* b, BossState* s) {
     }
 }
 
-extern "C" {
-void fn_80090974(double a, int anim, int b, int c, int d, int e, int f);
-int fn_8016325C(void* p);
-int fn_8008DE4C(int anim, int a, int b, int c);
-void fn_800A7068(void* p);
-int fn_800C5654(int to, u32 msg, int from);
-void fn_8008F230(double a, int anim, int b, int c);
-int fn_800A1BC8(int a, int b, int c, int d, int e);
-void fn_800A7028(void* set);
-void fn_800913EC(double a, int anim, int b);
-void fn_80211A84(void);
-}
-extern float lbl_804DAEA4;
-extern float lbl_804DAEA8;
-extern int lbl_803C4E60[];
-
 int BossUpdateIdle(Boss* b) {
     BossState* s = b->state;
     BossRefreshStates(b);
@@ -1023,57 +1124,6 @@ int BossEnterDie(Boss* b) {
     return 1;
 }
 
-void BossForward88E0(void) {
-    fn_80211A84();
-}
-
-extern "C" {
-void fn_8008F4E8(int anim, int a);
-void fn_8008F4EC(int anim, int a);
-void fn_8008F378(double a, int anim);
-int fn_800A1AC4(int a, int b, int c);
-int Rand(void);
-int fn_8008E7D0(int anim);
-}
-extern float lbl_804DAE6C;
-extern float lbl_804D3A00;
-
-// Starts the current state's animation, picking variant `pick` (or a random one if out of range).
-static inline void BossPlayStateAnim(Boss* b, int pick, bool randomize) {
-    if (b != NULL) {
-        BossState* s = b->state;
-        int anim = *(int*)((u8*)b + 0xD4);
-        int count;
-        if (fn_800A7AC4(&b->flags270, 0xC) != 0) {
-            fn_800A7A54(&b->flags270, 0xC, 0);
-            fn_800A7A54(&b->flags270, 0xE, 1);
-            fn_8008F4E8(anim, 0);
-            fn_8008F378(0.0, anim);
-            fn_8008F4EC(anim, 0);
-        }
-        count = fn_800A1AC4(*(int*)((u8*)b->cfg + 0x14), *(int*)((u8*)b->cfg + 0x1C), lbl_803C4E60[s->type * 6]);
-        if (count != 0) {
-            int idx;
-            if (randomize || pick < 0 || count <= pick) {
-                int r = Rand();
-                pick = r - (r / count) * count;
-            }
-            idx = fn_800A1BC8(*(int*)((u8*)b->cfg + 0x14), *(int*)((u8*)b->cfg + 0x1C), lbl_803C4E60[s->type * 6], pick, 0);
-            if (fn_8008E7D0(anim) != 0) {
-                fn_800A7A54(&b->flags270, 0x1C, 0);
-                if (fn_800A7AC4(&b->flags270, 0xE) == 0) {
-                    fn_8008F230(lbl_804DAE6C, anim, 0, 1);
-                } else {
-                    fn_800A7A54(&b->flags270, 0xE, 0);
-                    fn_8008F230(0.0, anim, 0, 0);
-                }
-                fn_80090974(1.0, anim, 0, idx, 9, (int)lbl_803C4E64[s->type].unk0C, (int)b);
-                s->anim = idx;
-            }
-        }
-    }
-}
-
 int BossEnterHurt(Boss* b) {
     BossState* s = b->state;
     s->type = 9;
@@ -1119,15 +1169,13 @@ int BossEnterAttackA(Boss* b) {
     return 1;
 }
 
-void BossStartIntro(Boss* b);
-
 int BossEnterStun(Boss* b) {
     BossState* s = b->state;
     s->type = 6;
     s->next = 0;
     BossPlayStateAnim(b, 0, true);
     fn_800A7A54(&b->flags270, 0x2F, 0);
-    BossStartIntro(b);
+    BossPartInit(b);
     FxStart(lbl_804D57BC, 0, 0);
     if (lbl_804D3ACC != -1) {
         fn_8016EEF4(lbl_804D3ACC);
@@ -1147,13 +1195,6 @@ int BossEnterIdle(Boss* b) {
     fn_80037EC0(b->model, lbl_804D3AAC, 1, 0xFF, 0xFF, 0xFF, lbl_804D39F0 & 0xFF);
     return 1;
 }
-
-extern "C" void fn_8028B35C(BossBuf* list, void* where, int n);
-extern float lbl_804D3A0C;
-extern float lbl_804D3A44;
-extern float lbl_804DAEAC;
-extern float lbl_804DAEB0;
-extern float lbl_804DAEB4;
 
 int BossEnterPhaseOut(Boss* b) {
     BossState* s = b->state;
@@ -1248,4 +1289,236 @@ int BossEnterIdleBase(Boss* b) {
         return 1;
     }
     return 0;
+}
+
+// Rebuilds the boss's ring of orbiting effects (one set per heart segment).
+void BossPartInit(Boss* b) {
+    BossState* s = b->state;
+    int i;
+    while ((u32)s->list.mLength >> 2 != 0) {
+        int target = *(int*)s->list.mUnk0C;
+        struct {
+            int a;
+            int hash;
+            int c;
+        } q;
+        String name;
+        q.hash = 0x1FF464;
+        q.c = 0;
+        SendMsg(target, 0x41D, &q);
+        fn_8028B35C(&s->list, (void*)s->list.mUnk0C, 4);
+    }
+    for (i = 0; i < lbl_804D3A40; i++) {
+        unsigned mask[3];
+        float centerY;
+        int r;
+        int k;
+        double speed;
+        int fx;
+        mask[0] = 0;
+        mask[1] = *(unsigned*)((u8*)b + 0x84);
+        mask[2] = *(unsigned*)((u8*)b + 0x88);
+        centerY = *(float*)((u8*)b + 0x8C) + lbl_804D3A2C * (float)i + lbl_804D3A1C;
+        r = Rand();
+        for (k = 0; k < lbl_804D3A3C; k++) {
+            int bit = (r % 24 + k) % 24;
+            mask[bit >> 5] |= 1 << (bit & 31);
+        }
+        speed = (lbl_804D3A50 - lbl_804D3A4C) * ((float)rand() / 32767.0f) + lbl_804D3A4C;
+        if (Rand() & 1)
+            speed = (float)(speed * -1.0);
+        fx = fn_802D1640(lbl_804D3A20, lbl_804D3A24, 3400.0, lbl_804D3A34, 0.0, lbl_804D3A28, speed, lbl_804D3A30, b, mask + 1,
+                         0xF62EAC61, mask[0], 1);
+        *(int*)fn_8028B3BC(&s->list, (void*)(s->list.mUnk0C + s->list.mLength), 4) = fx;
+        {
+            struct {
+                int a;
+                int hash;
+                int c;
+            } q2;
+            String name2;
+            q2.hash = 0xCD52CF56;
+            q2.c = 0;
+            SendMsg(((int*)s->list.mUnk0C)[i], 0x41D, &q2);
+        }
+    }
+    s->maxFloat70 = 1000.0f * (lbl_804D3A2C / lbl_804D3A30);
+}
+
+// Moves the boss from the root-motion of its current animation and its pad input, and refreshes
+// the model matrix.
+void BossRefreshStates(Boss* b) {
+    int* bone = *(int**)((u8*)b + 0xF0);
+    float dt = *(float*)((u8*)b + 0x138);
+    int anim = *(int*)((u8*)b + 0xD4);
+    int model = b->model;
+    float delta[3];
+    float* d = delta;
+    Mtx34 rot;
+    Mtx34 rot2;
+    Vec3 e;
+    Mtx34 place;
+    float* pitch = (float*)((u8*)b + 0x254);
+    float* yaw = (float*)((u8*)b + 0x24C);
+
+    if (bone == NULL)
+        return;
+    if (fn_8008E964(anim) == 0 && fn_800A7AC4(&b->flags270, 0xC) != 0)
+        return;
+    fn_801BE4B8(b);
+    fn_800913EC(dt, anim, delta);
+    {
+        int pose = fn_8003AA9C(model, (int)bone, 1);
+        AnimApply(anim, (char*)bone, pose, b->skin);
+    }
+    if (fn_800A7AC4(&b->flags270, 0xD) == 0 && fn_800A7AC4(&b->flags270, 0xC) == 0) {
+        double ground = fn_800CC2D0(b, 0, 0, 0);
+        float in1 = *(float*)((u8*)b + 0x284);
+        float in2 = *(float*)((u8*)b + 0x27C);
+        float turn = *(float*)((u8*)b->cfg + 0xC4);
+        float maxPitch = *(float*)((u8*)b->cfg + 8);
+        if (-999999.0 != ground)
+            *(float*)((u8*)b + 0x8C) = (float)(ground + ((float*)bone)[0x18 / 4]);
+        *(int*)((u8*)b + 0x2C) = (int)*(float*)((u8*)b + 0x8C);
+        ((float*)bone)[0x10 / 4] = 0.0f;
+        ((float*)bone)[0x14 / 4] = 0.0f;
+        ((float*)bone)[0x18 / 4] = 0.0f;
+        if (in1 <= 1.1920929e-07f) {
+            if (in1 < -1.0f) {
+                float lim = -((turn * dt) / 1000.0f);
+                float v = in1;
+                if (in1 < lim)
+                    v = lim;
+                *pitch += v;
+            }
+        } else {
+            float lim = (turn * dt) / 1000.0f;
+            float v = in1;
+            if (lim < in1)
+                v = lim;
+            *pitch += v;
+        }
+        if (in2 <= 1.1920929e-07f) {
+            if (in2 < -1.0f) {
+                float lim = -((0.4f * turn * dt) / 1000.0f);
+                float v = in2;
+                if (v < lim)
+                    v = lim;
+                *yaw += v;
+            }
+        } else {
+            float lim = (0.4f * turn * dt) / 1000.0f;
+            float v = in2;
+            if (lim < in2)
+                v = lim;
+            *yaw += v;
+        }
+        {
+            float c = *yaw;
+            float lo = -maxPitch;
+            float r = lo;
+            if (lo <= c) {
+                r = c;
+                if (maxPitch < c)
+                    r = maxPitch;
+            }
+            *yaw = r;
+        }
+        if (1.1920929e-07f < __fabs(in1))
+            *(int*)((u8*)b + 0x258) = *(int*)((u8*)b + 0x2B0);
+        if (fn_800A7AC4(&b->flags270, 0) != 0) {
+            ActorGetMatrix(&rot, b);
+            fn_800A0168(&rot, &rot);
+            fn_800A0030(delta, &rot, delta);
+            if (dt <= 0.0f) {
+                ((float*)b)[0x240 / 4] = 0.0f;
+                ((float*)b)[0x244 / 4] = 0.0f;
+                ((float*)b)[0x248 / 4] = 0.0f;
+            } else {
+                float inv = 1000.0f / dt;
+                ((float*)b)[0x240 / 4] = d[0] * inv;
+                ((float*)b)[0x244 / 4] = d[1] * inv;
+                ((float*)b)[0x248 / 4] = 0.0f;
+            }
+        }
+        EulerNormalize((Vec3*)yaw, (Vec3*)yaw);
+        Vec3Set(&e, *pitch, 0.0f, 0.0f);
+        EulerNormalize(&e, &e);
+        MtxSetEuler(&place, &e);
+        place.m[2][1] = (float)*(int*)((u8*)b + 0x24);
+        place.m[2][2] = (float)*(int*)((u8*)b + 0x28);
+        place.m[2][3] = (float)*(int*)((u8*)b + 0x2C);
+        PlacementToMatrix((Mtx34*)b, (PlaceF*)&place);
+        ActorGetMatrix(&rot2, b);
+        fn_800A0168(&rot2, &rot2);
+        d[1] = 0.0f;
+        d[2] = 0.0f;
+        fn_800A0030(delta, &rot2, delta);
+        place.m[2][1] += d[0];
+        place.m[2][2] += d[1];
+        place.m[2][3] += d[2];
+        ModelSetMatrix(model, &place, (char*)bone);
+    } else if (fn_800A7AC4(&b->flags270, 0xC) == 0) {
+        *yaw = 0.0f;
+        {
+            double ground = fn_800CC2D0(b, 0, 0, 0);
+            if (-999999.0 != ground) {
+                *(float*)((u8*)b + 0x8C) = (float)(ground + ((float*)bone)[0x18 / 4]);
+                ((float*)bone)[0x18 / 4] = 0.0f;
+            }
+        }
+        *(int*)((u8*)b + 0x2C) = (int)*(float*)((u8*)b + 0x8C);
+        ActorGetMatrix(&rot, b);
+        fn_800A0168(&rot, &rot);
+        fn_800A0030(delta, &rot, delta);
+        if (dt <= 0.0f) {
+            ((float*)b)[0x240 / 4] = 0.0f;
+            ((float*)b)[0x244 / 4] = 0.0f;
+            ((float*)b)[0x248 / 4] = 0.0f;
+        } else {
+            float inv = 1000.0f / dt;
+            ((float*)b)[0x240 / 4] = d[0] * inv;
+            ((float*)b)[0x244 / 4] = d[1] * inv;
+            ((float*)b)[0x248 / 4] = 0.0f;
+        }
+        Vec3Set(&e, *pitch, 0.0f, 0.0f);
+        EulerNormalize(&e, &e);
+        MtxSetEuler(&place, &e);
+        place.m[2][1] = (float)*(int*)((u8*)b + 0x24);
+        place.m[2][2] = (float)*(int*)((u8*)b + 0x28);
+        place.m[2][3] = (float)*(int*)((u8*)b + 0x2C);
+        PlacementToMatrix((Mtx34*)b, (PlaceF*)&place);
+        ModelSetMatrix(model, &place, (char*)bone);
+    } else {
+        fn_800CC2D0(b, 0, 0, 0);
+        if (fn_8008EA9C(anim, 0) != 0) {
+            if (fn_800A7AC4(&b->flags270, 0xC) == 0) {
+                Vec3Set(&e, *pitch, 0.0f, 0.0f);
+                EulerNormalize(&e, &e);
+                MtxSetEuler(&place, &e);
+                place.m[2][1] = (float)*(int*)((u8*)b + 0x24);
+                place.m[2][2] = (float)*(int*)((u8*)b + 0x28);
+                place.m[2][3] = (float)*(int*)((u8*)b + 0x2C);
+                PlacementToMatrix((Mtx34*)b, (PlaceF*)&place);
+            } else {
+                BoneGetMatrix(&place, bone);
+                MtxGetEuler((Vec3*)yaw, &place);
+                *pitch -= lbl_804DAEC0;
+                EulerNormalize((Vec3*)yaw, (Vec3*)yaw);
+                *(float*)((u8*)b + 0x258) = 0.0f;
+                PlacementToMatrix((Mtx34*)b, (PlaceF*)&place);
+                *(int*)((u8*)b + 0x84) = bone[0x10 / 4];
+                *(int*)((u8*)b + 0x88) = bone[0x14 / 4];
+                *(int*)((u8*)b + 0x8C) = bone[0x18 / 4];
+                *(int*)((u8*)b + 0x24) = (int)((float*)bone)[0x10 / 4];
+                *(int*)((u8*)b + 0x28) = (int)((float*)bone)[0x14 / 4];
+                *(int*)((u8*)b + 0x2C) = (int)((float*)bone)[0x18 / 4];
+            }
+        }
+        ModelSetMatrix(model, NULL, (char*)bone);
+    }
+}
+
+void BossForward88E0(void) {
+    fn_80211A84();
 }
