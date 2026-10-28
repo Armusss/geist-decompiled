@@ -159,7 +159,8 @@ struct Actor {
     float f244;         // 0x244
     float f248;         // 0x248
     Vec3 euler;         // 0x24C
-    char pad258[0x18];
+    float f258;         // 0x258
+    char pad25C[0x14];
     char conditions[0xC];   // 0x270
     float f27C;         // 0x27C
     char pad280[4];
@@ -810,7 +811,7 @@ int ShellUpdateH(Actor* a) {
         return 0;
     }
     ShellBeh* b = a->beh;
-    a->euler.z = 0.0f;
+    a->f258 = 0.0f;
     a->f2B0 = 0.0f;
     ShellCrabStep(a);
     return b->state;
@@ -1488,7 +1489,7 @@ int ShellEnter03(Actor* a) {
 
     b->state = 3;
     b->next = 4;
-    a->euler.z = 0.0f;
+    a->f258 = 0.0f;
     a->f2B0 = 0.0f;
     ShellCrabSetAnim(a, 0x410);
     return 1;
