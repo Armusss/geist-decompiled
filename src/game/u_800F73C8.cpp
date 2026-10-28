@@ -432,7 +432,7 @@ int EffectRowClass(int row) {
 
 void fn_800F7A90(u32 row) {
     u32 id;
-    if ((int)row < 0 || gEffectRows->bytes >> 4 <= row) {
+    if ((int)row < 0 || (gEffectRows->bytes >> 4) <= row) {
         id = 0;
     } else {
         id = ((EffectRow*)gEffectRows->data)[row].id;
@@ -945,11 +945,11 @@ int EffectEmitterInit(void) {
 struct CamObj {
     u8 pad00[0x34];
     float fov;              // 0x34
-    u8 pad38[0x60 - 0x38];
-    int ctl;                // 0x60
-    int ctl2;               // 0x64
-    int unk68;              // 0x68
-    u8 pad6C[0xF8 - 0x6C];
+    u8 pad38[0xC0 - 0x38];
+    int ctl;                // 0xC0
+    int ctl2;               // 0xC4
+    int unkC8;              // 0xC8
+    u8 padCC[0xF8 - 0xCC];
     int ownerId;            // 0xF8
     int flagA;              // 0xFC
     int flagB;              // 0x100
@@ -957,7 +957,7 @@ struct CamObj {
     u8 pad108[0x124 - 0x108];
 };
 
-extern CamObj gCams[16];        // 0x8045C7D0 - 0x60 ... (object base 0x8045C770)
+extern CamObj gCams[16];        // 0x8045C770
 extern int gCamLetterbox;       // 0x804D4B98
 extern int gCamCount;           // 0x804D4B9C
 extern float gCamNeg1;          // 0x804D7498
@@ -978,8 +978,8 @@ void CamObjUpdate(float dt, CamObj* c);
 void CamObjEase(CamObj* c, int a, int b, int d, int e);
 int CamMsg(u32 handle, int msg, int* data);
 
-static inline int CamIndexOk(u32 handle) {
-    return (handle & 0xFFFFFF) < 0x10;
+static inline int CamIdx(u32 handle) {
+    return (int)(handle & 0xFFFFFF);
 }
 
 // Base of the camera array plus 8 (the first object's second field).
@@ -990,26 +990,26 @@ void* CameraTable(void) {
 // Turns the camera letterbox on or off.
 void fn_800F9468(int on) {
     if (fn_802A1D04() == 0) {
-        if (on == 0) {
-            gCamLetterbox = 0;
-            fn_802A1EBC(0);
-        } else {
+        if (on != 0) {
             gCamLetterbox = 1;
             fn_802A1EBC(9);
+        } else {
+            gCamLetterbox = 0;
+            fn_802A1EBC(0);
         }
     }
 }
 
 // Controller handle of camera `handle`, or -1.
 int fn_800F94C8(u32 handle) {
-    if ((handle & 0xFFFFFF) > 0xF) {
+    if (CamIdx(handle) < 0 || CamIdx(handle) >= 16) {
         return -1;
     }
     return gCams[handle & 0xFFFFFF].ctl;
 }
 
 void fn_800F94F8(u32 handle, short v) {
-    if ((handle & 0xFFFFFF) < 0x10) {
+    if (CamIdx(handle) >= 0 && CamIdx(handle) < 16) {
         gCams[handle & 0xFFFFFF].flagB = v;
     }
 }
@@ -1034,21 +1034,22 @@ void CamObjEase(CamObj* c, int a, int b, int d, int force) {
 }
 
 void fn_800F9578(u32 handle, int v) {
-    if ((handle & 0xFFFFFF) < 0x10) {
+    if (CamIdx(handle) >= 0 && CamIdx(handle) < 16) {
         gCams[handle & 0xFFFFFF].flagA = v;
     }
 }
 
 // Sets the field of view of camera `handle`.
 void CameraSetFov(int handle, float fov) {
-    if (((u32)handle & 0xFFFFFF) < 0x10) {
-        gCams[(u32)handle & 0xFFFFFF].fov = fov;
+    int i = handle & 0xFFFFFF;
+    if (i >= 0 && i < 16) {
+        gCams[i].fov = fov;
     }
     fn_800C6E88();
 }
 
 float fn_800F95E4(u32 handle) {
-    if ((handle & 0xFFFFFF) > 0xF) {
+    if (CamIdx(handle) < 0 || CamIdx(handle) >= 16) {
         return gCamNeg1;
     }
     return gCams[handle & 0xFFFFFF].fov;
@@ -1056,7 +1057,7 @@ float fn_800F95E4(u32 handle) {
 
 int fn_800F9614(u32 handle) {
     int r;
-    if ((handle & 0xFFFFFF) < 0x10) {
+    if (CamIdx(handle) >= 0 && CamIdx(handle) < 16) {
         r = (int)gCams[handle & 0xFFFFFF].fov;
     } else {
         r = -1;
@@ -1065,19 +1066,19 @@ int fn_800F9614(u32 handle) {
 }
 
 void CameraActivate(u32 handle) {
-    if ((handle & 0xFFFFFF) < 0x10) {
+    if (CamIdx(handle) >= 0 && CamIdx(handle) < 16) {
         fn_800C6560(gCams[handle & 0xFFFFFF].ctl);
     }
 }
 
 void CameraDeactivate(u32 handle) {
-    if ((handle & 0xFFFFFF) < 0x10) {
+    if (CamIdx(handle) >= 0 && CamIdx(handle) < 16) {
         fn_800C6760(gCams[handle & 0xFFFFFF].ctl);
     }
 }
 
 void fn_800F96E0(u32 handle) {
-    if ((handle & 0xFFFFFF) < 0x10) {
+    if (CamIdx(handle) >= 0 && CamIdx(handle) < 16) {
         fn_800C6834(gCams[handle & 0xFFFFFF].ctl);
     }
 }

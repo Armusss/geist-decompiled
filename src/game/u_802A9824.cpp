@@ -323,9 +323,9 @@ int AllyReset(Actor* a) {
 }
 
 int AllyEnterFollow(Actor* a) {
-    AllyBeh* b;
     Actor* target;
     int slot;
+    AllyBeh* b;
     if (a == NULL) {
         return 0;
     }
@@ -690,9 +690,9 @@ int AllyTrue4(Actor* a) {
 }
 
 int AllyEnterState3(Actor* a) {
-    AllyBeh* b;
     Actor* t;
     int slot;
+    AllyBeh* b;
     if (a == NULL) {
         return 0;
     }
