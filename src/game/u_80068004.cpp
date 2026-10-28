@@ -60,7 +60,7 @@ extern float lbl_804D44FC;
 extern float lbl_804D28A8;
 
 extern "C" {
-double fn_800A1418(double x);
+float fn_800A1418(float x);
 int fn_80049840(void);
 int fn_80049940(void);
 double fn_800E1020(Vec3* v);
@@ -85,30 +85,19 @@ extern "C" int fn_80170834(const char* name);
 
 // Sets the walk-bob amplitude curve.
 void PlayerSetBobAmplitude(float x) {
-    float v;
-    if (x < 0.0f)
-        v = 0.866f;
-    else
-        v = fn_800A1418(x);
-    lbl_804D288C = v;
+    lbl_804D288C = (x >= 0.0f) ? fn_800A1418(x) : 0.866f;
 }
 
 void PlayerSetTuneC(float x) {
-    if (x < 0.0f)
-        x = 0.2f;
-    lbl_804D2888 = x;
+    lbl_804D2888 = (x >= 0.0f) ? x : 0.2f;
 }
 
 void PlayerSetTuneB(float x) {
-    if (x < 0.0f)
-        x = 0.25f;
-    lbl_804D2884 = x;
+    lbl_804D2884 = (x >= 0.0f) ? x : 0.25f;
 }
 
 void PlayerSetTuneA(float x) {
-    if (x < 0.0f)
-        x = 0.65f;
-    lbl_804D2880 = x;
+    lbl_804D2880 = (x >= 0.0f) ? x : 0.65f;
 }
 
 void PlayerSetUnk5F8(Player* p, int v) {
@@ -125,7 +114,7 @@ void PlayerSetUnk5F0(Player* p, u32 v) {
 
 // 1 when the meter holds at least 180000.
 u32 PlayerMeterFull(Player* p) {
-    return 180000.0f <= p->meter;
+    return p->meter >= 180000.0f;
 }
 
 // STUB (not drafted yet, 0x1410 bytes at 0x8006811C): per-frame player stamina / sprint update.
