@@ -99,7 +99,10 @@ struct Rico {
     RicoData* data;            // 0x130
     u8 pad134[0x138 - 0x134];  // 0x134
     float dt;                  // 0x138
-    u8 pad13C[0x26C - 0x13C];  // 0x13C
+    u8 pad13C[0x24C - 0x13C];  // 0x13C
+    Vec3 euler;                // 0x24C
+    float unk258;              // 0x258
+    u8 pad25C[0x26C - 0x25C];  // 0x25C
     int unk26C;                // 0x26C
     u8 cond[0x288 - 0x270];    // 0x270 condition bits
     int unk288;                // 0x288
@@ -126,6 +129,18 @@ void EulerNormalize(Vec3* out, Vec3* in);                      // 0x8016D55C
 double __fabs(double);
 extern "C" int SendMsg(int to, int msg, void* data);   // 0x800265D4
 extern int lbl_804D54E0;
+extern float lbl_804D3674;
+extern float lbl_804D3670;   // 500
+extern float lbl_804D3644;   // 66
+extern float lbl_804D3648;   // 6.6
+extern float lbl_804D365C;   // 5
+extern float lbl_804D36AC;   // 8000
+extern float lbl_804D36B0;   // 18000
+extern float lbl_804D36B4;   // 5000
+extern float lbl_804D36B8;   // 12000
+extern "C" int rand(void);   // 0x802F2CFC
+extern "C" int fn_800BBCA8(void* actor);
+extern "C" int fn_800B26B8(void);
 extern int lbl_804D3694;
 extern float lbl_804D3640;   // sdata float globals
 extern int lbl_804D3698;
@@ -193,7 +208,7 @@ int RicoExitAttack(Rico* a) {
     return 1;
 }
 
-int RicoEnterState10(Rico* a) {
+int RicoEnterStateA(Rico* a) {
     RicoData* d = a->data;
     d->state = 10;
     a->unk288 = 0;
@@ -415,4 +430,188 @@ int RicoEnterState3(Rico* a) {
     ConditionUpdateBit(a->cond, 3, 0);
     ConditionSetBit(a->cond, 0x30, 1);
     return 1;
+}
+
+static inline float Lerp(float lo, float hi, float t) {
+    float d = hi - lo;
+    return lo + d * t;
+}
+
+int RicoEnterIdle(Rico* a) {
+    ConditionUpdateBit(a->cond, 4, 0);
+    ConditionUpdateBit(a->cond, 3, 0);
+    ConditionUpdateBit(a->cond, 0x25, 1);
+    fn_80162610(a, a->beh, 0);
+    return 1;
+}
+
+int RicoEnterState2(Rico* a) {
+    RicoData* d = a->data;
+    ConditionUpdateBit(a->cond, 4, 1);
+    ConditionUpdateBit(a->cond, 3, 0);
+    ConditionSetBit(a->cond, 6, 0);
+    ConditionUpdateBit(a->cond, 0x25, 0);
+    d->unk84 = 0.0f;
+    d->unk50 = 0;
+    if (d->unk58 != 0) {
+        a->aimAngle = 0.0f;
+        a->unk258 = 0.0f;
+    }
+    if (d->unk58 == 0) {
+        if (a->unk904 < 0.5f * (float)a->info->unk30) {
+            d->unk70 = Lerp(lbl_804D36B4, lbl_804D36B8, (float)rand() / 32767.0f);
+        } else {
+            d->unk70 = Lerp(lbl_804D36AC, lbl_804D36B0, (float)rand() / 32767.0f);
+        }
+        if (d->state != 3) {
+            d->unk74 = 0.0f;
+        }
+    }
+    d->state = 2;
+    d->unk6C = 5000.0f;
+    lbl_804D3674 = 0.5f;
+    if (0.7f * (float)a->info->unk30 < a->unk904) {
+        lbl_804D3674 = 0.0f;
+    }
+    return 1;
+}
+
+int RicoExitState1(Rico* a) {
+    RicoData* d = a->data;
+    ConditionUpdateBit(a->cond, 4, 0);
+    ConditionUpdateBit(a->cond, 3, 0);
+    ConditionSetBit(a->cond, 0x39, 0);
+    fn_80162610(a, a->beh, 0);
+    d->flags &= ~0x40;
+    d->flags &= ~0x80;
+    d->unk54++;
+    d->unk80 = 0;
+    return 1;
+}
+
+int RicoEnterState1(Rico* a) {
+    RicoData* d = a->data;
+    d->state = 1;
+    ConditionUpdateBit(a->cond, 4, 1);
+    ConditionUpdateBit(a->cond, 3, 0);
+    ConditionSetBit(a->cond, 6, 0);
+    d->unk68 = 0.0f;
+    d->unk84 = 0.0f;
+    d->unk74 = 0.0f;
+    a->aimAngle = 0.0f;
+    a->unk258 = 0.0f;
+    return 1;
+}
+
+int RicoCheckBehavior(Rico* a) {
+    int r;
+    if (a == 0) {
+        r = 0;
+    } else if (a->data->unk08 <= 0.0f) {
+        r = 1;
+    } else if (fn_800B26B8() == 4) {
+        fn_800BBCA8(a);
+        r = 0;
+    } else {
+        r = 1;
+    }
+    return r;
+}
+
+int RicoClearAim(Rico* a) {
+    ConditionUpdateBit(a->cond, 4, 0);
+    return 1;
+}
+
+bool RicoResetState(Rico* a) {
+    if (a != 0) {
+        RicoData* d = a->data;
+        a->unk288 = 0;
+        ConditionUpdateBit(a->cond, 3, 0);
+        d->state = 0;
+    }
+    return a != 0;
+}
+
+// Update of state 6: climbs a.unk904 (health-like value) back toward the recovery target.
+int RicoUpdateState6(Rico* a) {
+    RicoData* d = a->data;
+    if (HasCondition(a->cond, 5) == 0) {
+        d->unk78 = 0.0f;
+        d->unk34 = 0;
+        return 1;
+    }
+    if (d->flags & 0x4000) {
+        a->unk904 = 0.001f * (lbl_804D3670 * a->dt) + a->unk904;
+        float top = 0.7f * (float)a->info->unk30;
+        float scale;
+        if (a->unk904 > top) {
+            scale = 0.2f;
+        } else {
+            scale = 0.1f;
+        }
+        if (a->unk904 >= (float)a->info->unk30 * scale + d->unk7C) {
+            if (a->unk904 > top) {
+                scale = 0.2f;
+            } else {
+                scale = 0.1f;
+            }
+            a->unk904 = (float)a->info->unk30 * scale + d->unk7C;
+            d->unk0C = d->unk04 / 6.0f;
+            d->unk10 = d->unk04 / 6.0f;
+            d->unk14 = d->unk04 / 6.0f;
+            d->unk18 = d->unk04 / 6.0f;
+            d->unk1C = d->unk04 / 6.0f;
+            d->unk20 = d->unk04 / 6.0f;
+            d->unk78 = 0.0f;
+            d->unk34 = 0;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// Update of state 4: turns toward the player at a ramping speed.
+int RicoUpdateState4(void* p) {
+    Rico* a = (Rico*)p;
+    RicoData* d = a->data;
+    Player* pl = GetPlayer();
+    Vec3 v;
+    v.x = (float)pl->x;
+    v.y = (float)pl->y;
+    v.z = (float)pl->z;
+    float ang = ActorAngleToPos(a, &v);
+    if (d->unk64 < lbl_804D3644) {
+        d->unk64 = 0.001f * a->dt * lbl_804D3648 + d->unk64;
+        if (d->unk64 > lbl_804D3644) {
+            d->unk64 = lbl_804D3644;
+        }
+    }
+    if (d->unk08 <= 0.0f) {
+        ConditionSetBit(a->cond, 0x34, 0);
+        ConditionSetBit(a->cond, 0x35, 0);
+        return 1;
+    } else {
+        if (HasCondition(a->cond, 0x36) == 0) {
+            return 0;
+        }
+        if (((HasCondition(a->cond, 0x35) != 0 && ang < 0.0f) ||
+             (HasCondition(a->cond, 0x34) != 0 && ang > 0.0f)) &&
+            __fabs(ang) > lbl_804D365C) {
+            float step = 0.001f * (d->unk64 * a->dt);
+            if (ang < 0.0f) {
+                step = -step;
+            }
+            if (__fabs(step) > __fabs(ang)) {
+                step = ang;
+            }
+            a->euler.z = a->euler.z + step;
+            EulerNormalize(&a->euler, &a->euler);
+        } else {
+            ConditionSetBit(a->cond, 0x34, 0);
+            ConditionSetBit(a->cond, 0x35, 0);
+            return 1;
+        }
+    }
+    return 0;
 }
