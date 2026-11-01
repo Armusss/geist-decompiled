@@ -170,6 +170,12 @@ extern float lbl_804D3654;   // 500
 extern "C" void fn_800B261C(void* actor, int kind, Actor** out);
 extern "C" int fn_800BBCA8(void* actor);
 extern "C" int fn_800B26B8(void);
+extern "C" void fn_800B1F20(void* actor, int kind);
+extern "C" void fn_800B2418(float dist, void* actor, int kind);
+extern int lbl_804D3680;     // 1
+extern int lbl_804D3684;     // 3
+extern int lbl_804D369C;     // 5
+extern int lbl_804D36A0;     // 3
 int AssetFind(u32 bank, u32 key);                    // 0x8007EB34
 int GameEvent(int type, int id);                                // 0x8007EA84
 void* FxFind(const char* name);                     // 0x80170834
@@ -248,8 +254,6 @@ extern "C" void fn_8025AD90();
 extern "C" int fn_8025CCAC(Rico* a);
 // TODO (not drafted yet, 0x80C bytes at 0x8025D9E8): state update
 extern "C" int fn_8025D9E8(Rico* a);
-// TODO (not drafted yet, 0x3D4 bytes at 0x8025E420): state selector (called from the update)
-extern "C" int fn_8025E420(Rico* a);
 // TODO (not drafted yet, 0x2B8 bytes at 0x8025E7F4): per-frame helper
 extern "C" int fn_8025E7F4(Rico* a);
 // TODO (not drafted yet, 0x24C bytes at 0x8025EAAC): actor callback installed at +0x10C
@@ -937,4 +941,99 @@ int RicoCheckState3(void* p) {
     }
     ConditionSetBit(a->cond, 0x30, 0);
     return 1;
+}
+
+// State selector: picks the next AI state from the flags, health and target.
+int RicoSelectState(void* p) {
+    Actor* target = 0;
+    Rico* a;
+    RicoData* d;
+    int result;
+    if (p == 0) {
+        return 0;
+    }
+    a = (Rico*)p;
+    d = a->data;
+    int kind = fn_800B26B8();
+    if (kind != 4) {
+        fn_800B261C(a, kind, &target);
+    }
+    if ((d->flags & 2) == 0) {
+        float scale;
+        if (a->unk904 > 0.7f * (float)a->info->unk30) {
+            scale = 0.2f;
+        } else {
+            scale = 0.1f;
+        }
+        if (d->unk78 >= (float)a->info->unk30 * scale) {
+            int n = d->unk60;
+            if ((n == lbl_804D3680 && (d->flags & 0x200) == 0) || (n == lbl_804D3684 && (d->flags & 0x400) == 0) ||
+                n == lbl_804D3688) {
+                if ((d->flags & 0x200) == 0) {
+                    d->flags |= 0x200;
+                } else {
+                    d->flags |= 0x400;
+                }
+                result = 8;
+                d->unk78 = 0.0f;
+                d->unk60 = d->unk60 + 1;
+            } else {
+                result = 6;
+            }
+        } else if (HasCondition(a->cond, 0x30) != 0 || d->state == 6) {
+            ConditionSetBit(a->cond, 0x30, 1);
+            if (d->state != 2) {
+                d->unk74 = 0.0f;
+            }
+            result = 3;
+        } else {
+            if ((d->flags & 0x1000) != 0) {
+                result = 7;
+            } else if (d->state == 7) {
+                if ((d->flags & 0x800) != 0) {
+                    result = 5;
+                    d->flags &= ~0x800;
+                } else if ((float)rand() / 32767.0f < lbl_804D3674) {
+                    result = 1;
+                } else {
+                    d->unk58 = 1;
+                    d->unk74 = 0.0f;
+                    NotifyState(a, 3, 0x665BF55F);
+                    d->unk70 = 8000.0f;
+                    d->flags |= 0x2000;
+                    ConditionSetBit(a->cond, 0x3A, 1);
+                    ConditionUpdateBit(a->cond, 0x25, 1);
+                    int r = (int)((float)(lbl_804D369C - lbl_804D36A0 + 1) * ((float)rand() / 32767.0f) +
+                                  (float)lbl_804D36A0);
+                    lbl_804D3694 = lbl_804D36A0;
+                    if (lbl_804D36A0 <= r) {
+                        lbl_804D3694 = r;
+                        if (lbl_804D369C < r) {
+                            lbl_804D3694 = lbl_804D369C;
+                        }
+                    }
+                    result = 2;
+                }
+            } else if ((d->flags & 0x2000) != 0) {
+                result = 5;
+                d->flags &= ~0x2000;
+            } else if (kind == 4) {
+                result = 0;
+            } else {
+                fn_800B1F20(a, kind);
+                fn_800B2418(100000.0f, a, kind);
+                FollowSetTargetObj(a->cond, target);
+                result = 2;
+            }
+        }
+    } else if (HasCondition(a->cond, 0x33) == 0) {
+        if (0.0f < d->unk08) {
+            result = 8;
+        } else {
+            result = 6;
+        }
+    } else {
+        result = 10;
+    }
+    return result;
 }
