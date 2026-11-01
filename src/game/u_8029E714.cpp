@@ -44,6 +44,55 @@ struct CondObj {
     char conditions[0xC];   // 0x270
 };
 
+// Host-like game object: the offsets the state helpers below touch.
+struct HostObj {
+    char pad00[0x24];
+    int pos24;          // 0x24
+    int pos28;          // 0x28
+    int pos2C;          // 0x2C
+    char pad30[0x20];
+    u32 flags50;        // 0x50
+    char pad54[0x24];
+    int i78;            // 0x78
+    char pad7C[0xB4];
+    int* ptr130;        // 0x130
+    char pad134[0x13C];
+    char conditions[0x10];  // 0x270
+    char pad280[0x3B8];
+    int i638;           // 0x638
+    char pad63C[0x168];
+    char sub7A4[0x10];  // 0x7A4
+    u32 flags7B4;       // 0x7B4
+    char pad7B8[0xDC];
+    char anim894[0x1E4C];   // 0x894
+    char sub26E0[8];    // 0x26E0
+    int i26E8;          // 0x26E8
+    char pad26EC[0xB0];
+    int i279C;          // 0x279C
+};
+
+extern "C" {
+void fn_80162610(void* obj, void* anim, u32 id);
+int fn_80175EFC(void);
+void fn_80155A84(void* a, int b, int c);
+void fn_800769A0(void);
+void fn_8003F15C(float scale, int model, void* mtx, int a, int b, int c);
+}
+void PlayerSelectCollisionUpdate(void* o, float dt);   // 0x80072058
+void PlayerSetValue4(void* sub, int v);                 // 0x8006D17C
+void PlayerResetGunTimer(void* p);                      // 0x8006D76C
+void DashUpdate(Actor* a);                              // 0x80243DC8
+void ActorGetMatrix(void* m, Actor* a);                 // 0x8009ED70
+int ConditionUpdateBit(void* cond, int bit, int set);   // 0x800A7B08
+extern float lbl_804DA8C4;
+extern float lbl_804DA8E8;
+extern float lbl_804DA7C0;
+
+struct HostObjFx {
+    char pad00[0xC8];
+    int model;          // 0xC8
+};
+
 // Two stacked list classes, each with its own vtable (0x803C38F0 / 0x803C3910).
 class EffectListBase : public Buffer {
 public:
@@ -233,16 +282,54 @@ bool CondObjNotBusy(CondObj* o) {
     return HasCondition(o->conditions, 0x2C) == 0;
 }
 
-// TODO (not drafted yet, 0x74 bytes at 0x802A068C): not analysed
+bool HostResetFloat(HostObj* o) {
+    if (o == 0) {
+        return false;
+    }
+    *(float*)(o->ptr130 + 4) = lbl_804DA7C0;
+    ConditionUpdateBit(o->conditions, 4, 1);
+    fn_80162610(o, o->anim894, 0);
+    fn_8029B070(o, 0x73B1E248);
+    return true;
+}
+
 // TODO (not drafted yet, 0x170 bytes at 0x802A0700): not analysed
 // TODO (not drafted yet, 0x300 bytes at 0x802A0870): not analysed
-// TODO (not drafted yet, 0x84 bytes at 0x802A0B70): not analysed
+bool HostResetFloatB(HostObj* o) {
+    if (o == 0) {
+        return false;
+    }
+    *(float*)(o->ptr130 + 4) = lbl_804DA7C0;
+    ConditionUpdateBit(o->conditions, 4, 0);
+    ConditionSetBit(o->conditions, 0x2A, 0);
+    fn_80162610(o, o->anim894, 0);
+    fn_8029B070(o, 0x73B1E248);
+    return true;
+}
+
 // TODO (not drafted yet, 0x138 bytes at 0x802A0BF4): not analysed
 // TODO (not drafted yet, 0x528 bytes at 0x802A0D2C): not analysed
-// TODO (not drafted yet, 0x68 bytes at 0x802A1254): not analysed
+bool HostReset(HostObj* o) {
+    if (o == 0) {
+        return false;
+    }
+    ConditionUpdateBit(o->conditions, 4, 0);
+    fn_80162610(o, o->anim894, 0);
+    fn_8029B070(o, 0x73B1E248);
+    return true;
+}
+
 // TODO (not drafted yet, 0x15C bytes at 0x802A12BC): not analysed
 // TODO (not drafted yet, 0xF8 bytes at 0x802A1418): not analysed
-// TODO (not drafted yet, 0x58 bytes at 0x802A1510): not analysed
+bool HostClearBits(HostObj* o) {
+    if (o == 0) {
+        return false;
+    }
+    ConditionUpdateBit(o->conditions, 4, 0);
+    ConditionUpdateBit(o->conditions, 0x16, 0);
+    return true;
+}
+
 // TODO (not drafted yet, 0xD4 bytes at 0x802A1568): not analysed
 // TODO (not drafted yet, 0x6C8 bytes at 0x802A163C): not analysed
 extern "C" void MusicPause();
@@ -366,9 +453,23 @@ void EmptyRangeLoopB(void* begin, void* end) {
 // TODO (not drafted yet, 0x84 bytes at 0x802A3EFC): not analysed
 // TODO (not drafted yet, 0x250 bytes at 0x802A3F80): not analysed
 // TODO (not drafted yet, 0x9C bytes at 0x802A41D0): not analysed
-// TODO (not drafted yet, 0x58 bytes at 0x802A426C): not analysed
+void HostFxA(int unused, HostObjFx* o) {
+    if (o->model != -1) {
+        char m[0x30];
+        ActorGetMatrix(m, (Actor*)o);
+        fn_8003F15C(lbl_804DA8C4, o->model, m, 1, 0, 0);
+    }
+}
+
 // TODO (not drafted yet, 0x4DC bytes at 0x802A42C4): not analysed
-// TODO (not drafted yet, 0x58 bytes at 0x802A47A0): not analysed
+void HostFxB(int unused, HostObjFx* o) {
+    if (o->model != -1) {
+        char m[0x30];
+        ActorGetMatrix(m, (Actor*)o);
+        fn_8003F15C(lbl_804DA8E8, o->model, m, 1, 0, 0);
+    }
+}
+
 // TODO (not drafted yet, 0x9C bytes at 0x802A47F8): not analysed
 struct ResetObj {
     char pad00[0x8C];
@@ -393,11 +494,31 @@ void ObjRestoreSaved(ResetObj* o) {
     }
 }
 
-// TODO (not drafted yet, 0x80 bytes at 0x802A48C0): not analysed
+void HostStateEnterD(HostObj* o) {
+    PlayerResetGunTimer(o);
+    o->i638 = 1;
+    o->flags7B4 &= 0xFFFFFFFE;
+    PlayerSetValue4(o->sub7A4, 0x15);
+    if (o->i279C == -1 || fn_80175EFC() != 0) {
+        PlayerSetValue4(o->sub7A4, 3);
+        fn_80155A84(o->sub26E0, o->i26E8, 1);
+    }
+}
+
 // TODO (not drafted yet, 0xFC bytes at 0x802A4940): not analysed
 // TODO (not drafted yet, 0xBC bytes at 0x802A4A3C): not analysed
 // TODO (not drafted yet, 0x170 bytes at 0x802A4AF8): not analysed
-// TODO (not drafted yet, 0x5C bytes at 0x802A4C68): not analysed
+void HostStateEnterB(HostObj* o) {
+    PlayerResetGunTimer(o);
+    o->i638 = 1;
+    if ((o->flags7B4 & 1) == 0) {
+        o->flags50 |= 0x20000;
+        o->i78 = 1;
+    } else {
+        o->flags7B4 &= 0xFFFFFFFE;
+    }
+}
+
 // TODO (not drafted yet, 0x160 bytes at 0x802A4CC4): not analysed
 extern "C" void fn_80155A84(void* a, int b, int c);
 struct BigObj {
@@ -410,7 +531,15 @@ void BigObjSubInit(BigObj* o) {
     fn_80155A84(o->sub, o->i26E8, 1);
 }
 
-// TODO (not drafted yet, 0x5C bytes at 0x802A4E50): not analysed
+void HostStateEnterC(HostObj* o) {
+    PlayerResetGunTimer(o);
+    o->i638 = 1;
+    o->flags7B4 &= 0xFFFFFFFE;
+    o->flags50 |= 0x20000;
+    o->i78 = 1;
+    PlayerSetValue4(o->sub7A4, 0x13);
+}
+
 // TODO (not drafted yet, 0x15C bytes at 0x802A4EAC): not analysed
 struct FlagObj {
     char pad00[0x50];
@@ -421,20 +550,58 @@ void ObjFlagsClear40000(FlagObj* o) {
     o->flags &= 0xFFFBFFFF;
 }
 
-// TODO (not drafted yet, 0x58 bytes at 0x802A5018): not analysed
+void HostStateEnterA(HostObj* o, float dt) {
+    PlayerResetGunTimer(o);
+    o->i638 = 1;
+    o->flags7B4 &= 0xFFFFFFFE;
+    PlayerSelectCollisionUpdate(o, dt);
+}
+
 // TODO (not drafted yet, 0x110 bytes at 0x802A5070): not analysed
-// TODO (not drafted yet, 0x6C bytes at 0x802A5180): not analysed
+void HostStateEnter180(HostObj* o, float dt) {
+    o->i638 = 1;
+    o->flags7B4 &= 0xFFFFFFFE;
+    fn_800769A0();
+    PlayerSelectCollisionUpdate(o, dt);
+    DashUpdate((Actor*)o);
+    PlayerSetValue4(o->sub7A4, 3);
+}
+
 // TODO (not drafted yet, 0x1B8 bytes at 0x802A51EC): not analysed
-// TODO (not drafted yet, 0x6C bytes at 0x802A53A4): not analysed
+void HostStateEnter3A4(HostObj* o, float dt) {
+    o->i638 = 1;
+    o->flags7B4 &= 0xFFFFFFFE;
+    fn_800769A0();
+    PlayerSelectCollisionUpdate(o, dt);
+    DashUpdate((Actor*)o);
+    PlayerSetValue4(o->sub7A4, 3);
+}
+
 // TODO (not drafted yet, 0x1B8 bytes at 0x802A5410): not analysed
 void ActorPlayAnimD39F() {
     int h = fn_800498D0();
     ActorPlayAnim(0x2000000, 0xD39F69B4, h);
 }
 
-// TODO (not drafted yet, 0x6C bytes at 0x802A55FC): not analysed
+void HostStateEnter5FC(HostObj* o, float dt) {
+    o->i638 = 1;
+    o->flags7B4 &= 0xFFFFFFFE;
+    fn_800769A0();
+    PlayerSelectCollisionUpdate(o, dt);
+    DashUpdate((Actor*)o);
+    PlayerSetValue4(o->sub7A4, 1);
+}
+
 // TODO (not drafted yet, 0x140 bytes at 0x802A5668): not analysed
-// TODO (not drafted yet, 0x6C bytes at 0x802A57A8): not analysed
+void HostStateEnter7A8(HostObj* o, float dt) {
+    o->i638 = 1;
+    o->flags7B4 &= 0xFFFFFFFE;
+    fn_800769A0();
+    PlayerSelectCollisionUpdate(o, dt);
+    PlayerSetValue4(o->sub7A4, 3);
+    DashUpdate((Actor*)o);
+}
+
 // TODO (not drafted yet, 0x10C bytes at 0x802A5814): not analysed
 // TODO (not drafted yet, 0x288 bytes at 0x802A5920): not analysed
 // TODO (not drafted yet, 0xB4 bytes at 0x802A5BA8): not analysed
@@ -445,7 +612,15 @@ void ActorPlayAnim8B3A() {
     ActorPlayAnim(0x2000000, 0x8B3A27A3, h);
 }
 
-// TODO (not drafted yet, 0x6C bytes at 0x802A64A0): not analysed
+void HostStateEnter4A0(HostObj* o, float dt) {
+    o->i638 = 1;
+    o->flags7B4 &= 0xFFFFFFFE;
+    fn_800769A0();
+    PlayerSelectCollisionUpdate(o, dt);
+    DashUpdate((Actor*)o);
+    PlayerSetValue4(o->sub7A4, 3);
+}
+
 // TODO (not drafted yet, 0x140 bytes at 0x802A650C): not analysed
 // TODO (not drafted yet, 0x520 bytes at 0x802A664C): not analysed
 // TODO (not drafted yet, 0xBC bytes at 0x802A6B6C): not analysed
