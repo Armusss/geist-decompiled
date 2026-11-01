@@ -80,6 +80,14 @@ struct AiTarget {
     u8 conditions[4]; // 0x270
 };
 
+// Current / next state of a character (a Player-style state record).
+struct AiStateRec {
+    int cur;         // 0x00
+    int next;        // 0x04
+    int unk8;        // 0x08
+    int unkC;        // 0x0C
+};
+
 // Enemy character actor (descriptive guess; only the fields used in this file).
 struct Actor {
     u8 pad00[0x38];
@@ -90,7 +98,8 @@ struct Actor {
     int model;       // 0x58
     u8 pad5C[0x78 - 0x5C];
     int hold;        // 0x78
-    u8 pad7C[0x8C - 0x7C];
+    int unk7C;       // 0x7C
+    u8 pad80[0x8C - 0x80];
     void* cb8C;      // 0x8C
     u8 pad90[0x98 - 0x90];
     int anim98;      // 0x98
@@ -106,16 +115,33 @@ struct Actor {
     int animFlagFC;  // 0xFC
     u8 pad100[0x11C - 0x100];
     int anim11C;     // 0x11C
-    u8 pad120[0x638 - 0x120];
+    u8 pad120[0x2F4 - 0x120];
+    u8 sub2F4[0x20]; // 0x2F4
+    int unk314;      // 0x314
+    int unk318;      // 0x318
+    u8 pad31C[4];
+    u32 flags320;    // 0x320
+    u8 pad324[4];
+    int unk328;      // 0x328
+    u8 pad32C[0x38C - 0x32C];
+    float f38C;      // 0x38C
+    float f390;      // 0x390
+    float f394;      // 0x394
+    float f398;      // 0x398
+    u8 pad39C[0x638 - 0x39C];
     int unk638;      // 0x638
-    u8 pad63C[0x73C - 0x63C];
+    u8 pad63C[0x678 - 0x63C];
+    u32 flags678;    // 0x678
+    u8 pad67C[0x73C - 0x67C];
     int variant;     // 0x73C
     u8 pad740[0x7A4 - 0x740];
-    u8 state7A4[0x10]; // 0x7A4
+    AiStateRec state;   // 0x7A4
     u32 flags7B4;    // 0x7B4
     u8 pad7B8[0x7D0 - 0x7B8];
     int unk7D0;      // 0x7D0
-    u8 pad7D4[0x14FC - 0x7D4];
+    int unk7D4;      // 0x7D4
+    float unk7D8;    // 0x7D8
+    u8 pad7DC[0x14FC - 0x7DC];
     float unk14FC;   // 0x14FC
     u8 pad1500[0x1D04 - 0x1500];
     u8 unk1D04[0x26B0 - 0x1D04];
@@ -136,6 +162,18 @@ void PlayerSelectCollisionUpdate(void* a, float dt);
 extern "C" void fn_800769A0(void* a, float dt);
 int PlayerInHost(Actor* a);
 void PlayerSetHeldSlotIndex(void* a, int slot);
+void PlayerSetHeldSlotMode(void* a, int mode);
+extern "C" int fn_8012B1F4(Actor* a);
+extern "C" int fn_802A1D04();
+extern "C" int fn_800C5210(int to, int msg, void* data);
+
+struct MsgQuery {
+    int result;      // 0x00
+    u32 hash;        // 0x04
+    int pad08;       // 0x08
+    int handle;      // 0x0C
+};
+extern "C" void fn_800699A8(void* a);
 void PlayerSetActionMode(void* a, int mode);
 void DashUpdate(Actor* a);
 int HasCondition(void* conditions, int id);
@@ -145,6 +183,7 @@ int ModelBoneNodeChain(int model, int bone, int* out, int n);
 int Fn800F7DEC(int a, int b, int c, int d, void* e);
 int Fn800F7F5C(int a, int b, int c, int d, void* e, float f);
 extern "C" int fn_80175EFC(int v);
+extern "C" int rand();
 extern "C" void fn_80155A84(void* a, void* b, int c);
 extern "C" int fn_800A1BC8(int a, int b, int c, int d, int e);
 extern "C" void* fn_800A384C(void* t);
@@ -162,8 +201,10 @@ struct AnimRow {
     int byVariant[15];
 };
 extern AnimRow lbl_8039F7C8[];
+extern AnimRow lbl_803A00D0[];
+int PlayerGunAction(int action, void* p);
 extern int lbl_8046D1F0[];
-extern "C" void fn_8012B4C8(Actor* a);
+extern "C" int fn_8012B4C8(int action, void* p);
 
 // TODO (not drafted yet, 0x590 bytes at 0x80127D80): game logic
 extern "C" void fn_80127D80();
@@ -234,12 +275,12 @@ void AiState80128EC8(Actor* a, float dt) {
     PlayerSelectCollisionUpdate(a, dt);
     if (a->animC4 == -1) {
         if (a->unk7D0 != 0) {
-            PlayerSetValue4(a->state7A4, 3);
+            PlayerSetValue4(&a->state, 3);
         } else {
-            PlayerSetValue4(a->state7A4, 1);
+            PlayerSetValue4(&a->state, 1);
         }
     } else {
-        PlayerSetValue4(a->state7A4, 0x16);
+        PlayerSetValue4(&a->state, 0x16);
     }
 }
 
@@ -258,9 +299,9 @@ void AiState80128F90(Actor* a) {
     PlayerResetGunTimer(a);
     a->unk638 = 1;
     a->flags7B4 &= ~1;
-    PlayerSetValue4(a->state7A4, 0x15);
+    PlayerSetValue4(&a->state, 0x15);
     if (a->unk279C == -1 || fn_80175EFC(a->unk279C) != 0) {
-        PlayerSetValue4(a->state7A4, 3);
+        PlayerSetValue4(&a->state, 3);
         fn_80155A84(a->sub26E0, a->target, 1);
     }
 }
@@ -285,7 +326,7 @@ void AiState80129010(Actor* a) {
     a->animFlagA4 = 0x19;
     a->animF0 = fn_800A1BC8(set->a14, set->a1C, lbl_8039F7C8[21].byVariant[v], ride, 0);
     a->animFlagFC = 0x19;
-    PlayerSetValue4(a->state7A4, 0x15);
+    PlayerSetValue4(&a->state, 0x15);
 }
 
 void AiState8012910C(Actor* a, float dt) {
@@ -298,7 +339,7 @@ void AiState8012910C(Actor* a, float dt) {
     a->flags7B4 &= ~1;
     fn_800769A0(a, dt);
     PlayerSelectCollisionUpdate(a, dt);
-    PlayerSetValue4(a->state7A4, 2);
+    PlayerSetValue4(&a->state, 2);
     PlayerInHost(a);
     Fn800F7DEC(id1, id2, 0x20EE36, fn_800498D0(a), 0);
     DashUpdate(a);
@@ -382,7 +423,7 @@ void AiState801295E4(Actor* a) {
     a->flags7B4 &= ~1;
     a->flags |= 0x20000;
     a->hold = 1;
-    PlayerSetValue4(a->state7A4, 0x13);
+    PlayerSetValue4(&a->state, 0x13);
 }
 
 void AiState80129640(Actor* a) {
@@ -459,7 +500,7 @@ void AiState80129A18(Actor* a, float dt) {
     fn_800769A0(a, dt);
     PlayerSelectCollisionUpdate(a, dt);
     DashUpdate(a);
-    PlayerSetValue4(a->state7A4, 3);
+    PlayerSetValue4(&a->state, 3);
 }
 
 void AiState80129A84(Actor* a) {
@@ -490,7 +531,7 @@ void AiState80129C7C(Actor* a, float dt) {
     PlayerSelectCollisionUpdate(a, dt);
     DashUpdate(a);
     fn_8012AF68(a);
-    PlayerSetValue4(a->state7A4, 3);
+    PlayerSetValue4(&a->state, 3);
 }
 
 void AiState80129CF0(Actor* a) {
@@ -524,7 +565,7 @@ void AiState80129F1C(Actor* a, float dt) {
     fn_800769A0(a, dt);
     PlayerSelectCollisionUpdate(a, dt);
     DashUpdate(a);
-    PlayerSetValue4(a->state7A4, 1);
+    PlayerSetValue4(&a->state, 1);
 }
 
 void AiState80129F88(Actor* a) {
@@ -546,7 +587,7 @@ void AiState8012A0C8(Actor* a, float dt) {
     a->flags7B4 &= ~1;
     fn_800769A0(a, dt);
     PlayerSelectCollisionUpdate(a, dt);
-    PlayerSetValue4(a->state7A4, 3);
+    PlayerSetValue4(&a->state, 3);
     DashUpdate(a);
 }
 
@@ -565,7 +606,7 @@ void AiState8012A1E8(Actor* a, float dt) {
     a->flags7B4 &= ~1;
     fn_800769A0(a, dt);
     PlayerSelectCollisionUpdate(a, dt);
-    PlayerSetValue4(a->state7A4, 10);
+    PlayerSetValue4(&a->state, 10);
     DashUpdate(a);
     fn_8012AF68(a);
 }
@@ -605,7 +646,7 @@ void AiState8012A678(Actor* a, float dt) {
     fn_800769A0(a, dt);
     PlayerSelectCollisionUpdate(a, dt);
     DashUpdate(a);
-    PlayerSetValue4(a->state7A4, 3);
+    PlayerSetValue4(&a->state, 3);
 }
 
 void AiState8012A6E4(Actor* a) {
@@ -622,31 +663,266 @@ void AiState8012A6E4(Actor* a) {
     FxStart((void*)lbl_804D2E40, 0, 0);
 }
 
-// TODO (not drafted yet, 0x200 bytes at 0x8012A824): game logic
-extern "C" void fn_8012A824();
+void AiState8012A824(Actor* a, float dt) {
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    fn_800769A0(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
+    if (a->flags678 & 0x80) {
+        a->flags678 &= ~0x80;
+        PlayerSetActionMode(a, 1);
+    }
+    PlayerSetValue4(&a->state, 1);
+    a->unk7D0 = 0;
+    DashUpdate(a);
+    if (fn_8012B1F4(a) == 0 && fn_8012AF68(a) == 0) {
+        int id1;
+        int id2;
+        QueryGet(&id1, a->handle, 0x2DA8293C);
+        QueryGet(&id2, a->handle, 0xDFF3097A);
+        if (a->flags320 & 1) {
+            PlayerResetGunTimer(a);
+            int r = Fn800F7DEC(id1, id2, 0x20EE36, fn_800498D0(a), 0);
+            if (a->unk7D0 == 0) {
+                if (r != 0x11D2C025) {
+                    PlayerSetHeldSlotMode(a, 2);
+                }
+            } else {
+                PlayerSetHeldSlotMode(a, 9);
+            }
+            fn_800699A8(a->sub2F4);
+        }
+    }
+}
 
-// TODO (not drafted yet, 0x1AC bytes at 0x8012AA24): game logic
-extern "C" void fn_8012AA24();
+void AiState8012AA24(Actor* a) {
+    int id1;
+    int id2;
+    QueryGet(&id1, a->handle, 0x2DA8293C);
+    QueryGet(&id2, a->handle, 0xDFF3097A);
+    Fn800F7DEC(id1, id2, 0x20EE36, fn_800498D0(a), 0);
+    int idx = PlayerInHost(a);
+    int v = a->variant;
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a18, lbl_8039F7C8[1].byVariant[v], 0, 0);
+    a->animFlagA4 = 1;
+    a->animF0 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a1C, lbl_8039F7C8[1].byVariant[v], 0, 0);
+    a->cbE4 = (void*)fn_8012B4C8;
+    a->animFlagFC = 1;
+    a->unk7D0 = 0;
+}
 
 void AiState8012ABD0(Actor* a) {
     PlayerResetGunTimer(a);
 }
 
-// TODO (not drafted yet, 0x20C bytes at 0x8012ABF0): game logic
-extern "C" void fn_8012ABF0();
+void AiState8012ABF0(Actor* a) {
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    a->unk7D0 = 1;
+    PlayerSetValue4(&a->state, 3);
+    DashUpdate(a);
+    if (fn_8012B1F4(a) == 0 && fn_8012AF68(a) == 0) {
+        int id1;
+        int id2;
+        QueryGet(&id1, a->handle, 0x2DA8293C);
+        QueryGet(&id2, a->handle, 0xDFF3097A);
+        if (a->flags320 & 1) {
+            PlayerResetGunTimer(a);
+            int r = Fn800F7DEC(id1, id2, 0x20EE36, fn_800498D0(a), 0);
+            if (a->unk7D0 == 0) {
+                if (r != 0x11D2C025) {
+                    PlayerSetHeldSlotMode(a, 2);
+                }
+            } else {
+                PlayerSetHeldSlotMode(a, 9);
+            }
+            fn_800699A8(a->sub2F4);
+        }
+    }
+    if (a->f394 != 0.0f || a->f38C != 0.0f || a->f390 != 0.0f || a->f398 != 0.0f || a->unk328 != 0) {
+        PlayerSetActionMode(a, 3);
+    }
+}
 
-// TODO (not drafted yet, 0x16C bytes at 0x8012ADFC): game logic
-extern "C" void fn_8012ADFC();
+void AiState8012ADFC(Actor* a) {
+    if ((float)rand() / 32767.0f >= 0.5f) {
+        a->unk7D4 = 0;
+    } else {
+        a->unk7D4 = 1;
+    }
+    int idx = PlayerInHost(a);
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a18, lbl_8039F7C8[0].byVariant[0], a->unk7D4, 0);
+    if (a->anim98 == -1) {
+        a->unk7D4 = 0;
+        a->anim98 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a18, lbl_8039F7C8[0].byVariant[0], a->unk7D4, 0);
+    }
+    a->cb8C = (void*)fn_8012B4C8;
+    a->animFlagA4 = 1;
+    a->animF0 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a1C, lbl_8039F7C8[0].byVariant[0], a->unk7D4, 0);
+    if (a->animF0 == -1) {
+        a->unk7D4 = 0;
+        a->animF0 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a1C, lbl_8039F7C8[0].byVariant[0], a->unk7D4, 0);
+    }
+    a->cbE4 = (void*)fn_8012B4C8;
+    a->animFlagFC = 1;
+}
 
-// TODO (not drafted yet, 0x28C bytes at 0x8012AF68): game logic
+int fn_8012AF68(Actor* a) {
+    int id1;
+    int id2;
+    QueryGet(&id1, a->handle, 0x2DA8293C);
+    QueryGet(&id2, a->handle, 0xDFF3097A);
+    if (a->unk318 >= 1) {
+        int r = Fn800F7DEC(id1, id2, 0x20EE36, fn_800498D0(a), 0);
+        if (a->state.cur == 1 && r == 0x4A3E183) {
+            PlayerSetHeldSlotMode(a, 2);
+            return 1;
+        }
+        r = Fn800F7DEC(id1, id2, 0xF829DB93, fn_800498D0(a), 0);
+        PlayerResetGunTimer(a);
+        if (r == 0x4A3E183) {
+            fn_80048BA8(a, a->unk1D04, 1);
+            Fn800F7F5C(id1, id2, 0xF829DB93, fn_800498D0(a), a->unk1D04, a->unk14FC);
+            return 1;
+        }
+        if (r < 0x4A3E183) {
+            if (r != -0x3F413082) {
+                return 0;
+            }
+        } else if (r != 0x11D2C025) {
+            return 0;
+        }
+        if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
+            BotQuerySet(a->handle, 0x7FFCFD4F, 0x91A0CEF7);
+        }
+    } else {
+        if (a->state.cur == 8) {
+            PlayerSetHeldSlotMode(a, 3);
+        }
+    }
+    return 0;
+}
 
-// TODO (not drafted yet, 0x2D4 bytes at 0x8012B1F4): game logic
-extern "C" void fn_8012B1F4();
+int fn_8012B1F4(Actor* a) {
+    int id1;
+    int id2;
+    QueryGet(&id1, a->handle, 0x2DA8293C);
+    QueryGet(&id2, a->handle, 0xDFF3097A);
+    if (a->unk314 >= 1) {
+        int r = Fn800F7DEC(id1, id2, 0x20EE36, fn_800498D0(a), 0);
+        if (a->state.cur == 1 && r == 0x4A3E183) {
+            PlayerSetHeldSlotMode(a, 2);
+            return 1;
+        }
+        PlayerResetGunTimer(a);
+        if (r == 0x11D2C025) {
+            if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
+                BotQuerySet(a->handle, 0x7FFCFD4F, 0x91A0CEF7);
+            }
+            if (a->state.cur == 5) {
+                PlayerSetHeldSlotMode(a, 3);
+            }
+        } else if (r < 0x11D2C025) {
+            if (r == 0x4A3E183) {
+                if (a->state.cur != 5) {
+                    PlayerSetHeldSlotMode(a, 5);
+                    return 1;
+                }
+            } else if (r < 0x4A3E183 && r == -0x3F413082) {
+                if (Fn800F7DEC(id1, id2, 0xE6B71BCC, fn_800498D0(a), 0) == 0x4A3E183) {
+                    PlayerSetHeldSlotMode(a, 10);
+                    return 1;
+                }
+            }
+        } else if (r == 0x3DA260F7 && a->state.cur == 5) {
+            PlayerSetHeldSlotMode(a, 3);
+        }
+    } else {
+        if (a->state.cur == 5) {
+            PlayerSetHeldSlotMode(a, 3);
+        }
+    }
+    return 0;
+}
 
-// TODO (not drafted yet, 0x43C bytes at 0x8012B4C8): game logic
+int fn_8012B4C8(int action, void* p) {
+    Actor* a = (Actor*)p;
+    int id1;
+    int id2;
+    MsgQuery q;
+    q.handle = a->handle;
+    q.hash = action;
+    if (fn_800C5210(q.handle, 0xC06, &q) == 1) {
+        return 0;
+    }
+    QueryGet(&id1, a->handle, 0x2DA8293C);
+    QueryGet(&id2, a->handle, 0xDFF3097A);
+    switch (action) {
+    case 0x1B83833F:
+        switch (a->state.cur) {
+        case 5: {
+            int r = Fn800F7DEC(id1, id2, 0x20EE36, fn_800498D0(a), 0);
+            if (r == 0x11D2C025) {
+                PlayerSetActionMode(a, 1);
+            } else {
+                PlayerSetActionMode(a, 10);
+            }
+            return 0;
+        }
+        case 8: {
+            int r = Fn800F7DEC(id1, id2, 0xF829DB93, fn_800498D0(a), 0);
+            if (r != 0x4A3E183) {
+                PlayerSetHeldSlotMode(a, 3);
+            } else {
+                PlayerSetActionMode(a, a->state.next);
+            }
+            return 0;
+        }
+        case 2: {
+            int r = Fn800F7DEC(id1, id2, 0x20EE36, fn_800498D0(a), 0);
+            if (r == -0x3F413082) {
+                fn_80048BA8(a, a->unk1D04, 1);
+                Fn800F7F5C(id1, id2, 0xE6B71BCC, fn_800498D0(a), a->unk1D04, a->unk14FC);
+            }
+            PlayerSetActionMode(a, a->state.next);
+            return 0;
+        }
+        case 0xD:
+            a->flags7B4 |= 0x20000;
+            return 0;
+        }
+        PlayerSetActionMode(a, a->state.next);
+        return 0;
+    case 0x20EE36:
+        fn_80048BA8(a, a->unk1D04, 1);
+        Fn800F7F5C(id1, id2, 0x20EE36, fn_800498D0(a), a->unk1D04, a->unk14FC);
+        return 0;
+    case 0xE6B71BCC:
+        fn_80048BA8(a, a->unk1D04, 1);
+        Fn800F7F5C(id1, id2, 0xE6B71BCC, fn_800498D0(a), a->unk1D04, a->unk14FC);
+        return 0;
+    case 0x968CBE3D:
+        fn_80048BA8(a, a->unk1D04, 1);
+        Fn800F7F5C(id1, id2, 0x968CBE3D, fn_800498D0(a), a->unk1D04, a->unk14FC);
+        return 0;
+    case 0xF829DB93:
+        fn_80048BA8(a, a->unk1D04, 1);
+        Fn800F7F5C(id1, id2, 0xF829DB93, fn_800498D0(a), a->unk1D04, a->unk14FC);
+        break;
+    case 0x9791AF51:
+    case 0x96224FCC:
+    case 0x0D19E338:
+    case 0x42E50A3D:
+        fn_80048BA8(a, a->unk1D04, 1);
+        Fn800F7F5C(id1, id2, action, fn_800498D0(a), a->unk1D04, a->unk14FC);
+        break;
+    }
+    return 0;
+}
 
-// TODO (not drafted yet, 0x1C bytes at 0x8012B904): game logic
-extern "C" void fn_8012B904();
+int AiState8012B904(Actor* a) {
+    return lbl_8039F7C8[a->state.cur].byVariant[14];
+}
 
 // TODO (not drafted yet, 0x44 bytes at 0x8012B920): game logic
 extern "C" void fn_8012B920();
@@ -915,29 +1191,125 @@ extern "C" void fn_801342AC();
 // TODO (not drafted yet, 0xA0 bytes at 0x801343A8): game logic
 extern "C" void fn_801343A8();
 
-// TODO (not drafted yet, 0x170 bytes at 0x80134448): game logic
-extern "C" void fn_80134448();
+void AiState80134448(Actor* a) {
+    int idx = PlayerInHost(a);
+    int v = a->variant;
+    a->hold = 0;
+    a->flags &= ~0x20000;
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a18, lbl_803A00D0[20].byVariant[v], 0, 0);
+    a->cb8C = (void*)PlayerGunAction;
+    a->animFlagA4 = 1;
+    a->animF0 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a1C, lbl_803A00D0[20].byVariant[v], 0, 0);
+    a->animFlagFC = 1;
+    QueryMsg m;
+    m.hash = 0x8783452;
+    SendMsg(a->host->handle, 0x41E, &m);
+    if (*(int*)&m.result != 0) {
+        PlayerSetHeldSlotIndex(a, 0);
+        if (a->anim98 == -1) {
+            PlayerSetActionMode(a, 1);
+        }
+    } else {
+        PlayerSetHeldSlotIndex(a, 1);
+        if (a->anim98 == -1) {
+            PlayerSetActionMode(a, 3);
+        }
+    }
+}
 
-// TODO (not drafted yet, 0x5C bytes at 0x801345B8): game logic
-extern "C" void fn_801345B8();
+void AiState801345B8(Actor* a) {
+    PlayerResetGunTimer(a);
+    a->unk638 = 1;
+    if (a->flags7B4 & 1) {
+        a->flags7B4 &= ~1;
+    } else {
+        a->flags |= 0x20000;
+        a->hold = 1;
+    }
+}
 
-// TODO (not drafted yet, 0x160 bytes at 0x80134614): game logic
-extern "C" void fn_80134614();
+void AiState80134614(Actor* a) {
+    int idx;
+    AiTarget* t;
+    AiAnimSet* set;
+    int ride;
 
-// TODO (not drafted yet, 0x2C bytes at 0x80134774): game logic
-extern "C" void fn_80134774();
+    ride = 0;
+    t = a->target;
+    if ((int)(t->handle >> 24) == 0x13) {
+        set = (AiAnimSet*)fn_800A384C(t);
+        if (HasCondition(t->conditions, 0xB) != 0) {
+            ride = 1;
+        }
+    }
+    idx = PlayerInHost(a);
+    int v = a->variant;
+    a->anim98 = fn_800A1BC8(set->a14, set->a18, lbl_803A00D0[19].byVariant[v], ride, 0);
+    a->cb8C = (void*)PlayerGunAction;
+    a->animFlagA4 = 0x19;
+    a->animF0 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a1C, lbl_803A00D0[19].byVariant[v], 0, 0);
+    a->animFlagFC = 0x19;
+    QueryMsg m;
+    m.hash = 0x8783452;
+    SendMsg(a->target->handle, 0x41E, &m);
+    if (*(int*)&m.result != 0) {
+        PlayerSetHeldSlotIndex(a, 0);
+    } else {
+        PlayerSetHeldSlotIndex(a, 1);
+    }
+}
 
-// TODO (not drafted yet, 0x5C bytes at 0x801347A0): game logic
-extern "C" void fn_801347A0();
+void AiState80134774(Actor* a) {
+    fn_80155A84(a->sub26E0, a->target, 1);
+}
 
-// TODO (not drafted yet, 0x15C bytes at 0x801347FC): game logic
-extern "C" void fn_801347FC();
+void AiState801347A0(Actor* a) {
+    PlayerResetGunTimer(a);
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    a->flags |= 0x20000;
+    a->hold = 1;
+    PlayerSetValue4(&a->state, 0x13);
+}
 
-// TODO (not drafted yet, 0x10 bytes at 0x80134958): game logic
-extern "C" void fn_80134958();
+void AiState801347FC(Actor* a) {
+    AiAnimSet* set;
+    int idx = PlayerInHost(a);
+    AiTarget* t = a->target;
+    int v = a->variant;
+    int ride = 0;
+    if ((int)(t->handle >> 24) == 0x13) {
+        set = (AiAnimSet*)fn_800A384C(t);
+        if (HasCondition(t->conditions, 0xB) != 0) {
+            ride = 1;
+        }
+    }
+    a->anim98 = fn_800A1BC8(set->a14, set->a18, lbl_803A00D0[18].byVariant[v], ride, 0);
+    a->cb8C = (void*)PlayerGunAction;
+    a->animFlagA4 = 0x59;
+    AiAnimSet* set2 = a->set[idx];
+    a->animF0 = fn_800A1BC8(set2->a14, set2->a1C, lbl_803A00D0[18].byVariant[v], 0, 0);
+    a->animFlagFC = 0x59;
+    QueryMsg m;
+    m.hash = 0x8783452;
+    SendMsg(a->target->handle, 0x41E, &m);
+    if (*(int*)&m.result != 0) {
+        PlayerSetHeldSlotIndex(a, 0);
+    } else {
+        PlayerSetHeldSlotIndex(a, 1);
+    }
+}
 
-// TODO (not drafted yet, 0x58 bytes at 0x80134968): game logic
-extern "C" void fn_80134968();
+void AiState80134958(Actor* a) {
+    a->flags &= ~0x40000;
+}
+
+void AiState80134968(Actor* a, float dt) {
+    PlayerResetGunTimer(a);
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    PlayerSelectCollisionUpdate(a, dt);
+}
 
 // TODO (not drafted yet, 0x110 bytes at 0x801349C0): game logic
 extern "C" void fn_801349C0();
