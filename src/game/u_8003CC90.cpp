@@ -63,32 +63,38 @@ void fn_8004256C(u32 id, int flag);
 
 typedef unsigned char u8;
 
-struct ModelMeshRec {
-    char pad00[0x20];
-    u32 word20;         // 0x20
-    char pad24[0x0C];
-};
+struct ModelMesh;
 
 // Mesh table view of a model entry: mesh count at +4, mesh array (0x30 bytes each) at +0x2C.
 struct ModelEntryMesh {
     int texCount;       // 0x00
     int meshCount;      // 0x04
     char pad08[0x24];
-    ModelMeshRec* meshes;   // 0x2C
+    ModelMesh* meshes;      // 0x2C
 };
 
 // Mesh and primitive records as read by the skinning code.
-struct ModelMesh {
-    char pad00[0x1C];
-    int bone;           // 0x1C
-};
-
 struct ModelPrim {
-    char pad00[8];
-    int count;          // 0x08
-    char pad0C[8];
+    int tex;            // 0x00: texture id
+    char pad04[4];
+    int count;          // 0x08: vertex count
+    char pad0C[4];
+    int nIds;           // 0x10
     u8* recs;           // 0x14: 13-byte vertex records, big-endian vertex index at +12
     float* verts;       // 0x18
+    char pad1C[0x0C];
+    unsigned short* ids;    // 0x28
+    char pad2C[4];
+};
+
+struct ModelMesh {
+    ModelPrim* prims;   // 0x00
+    char pad04[8];
+    int nPrims;         // 0x0C
+    char pad10[0x0C];
+    int bone;           // 0x1C: bone index / texture override (-1: none)
+    u32 word20;         // 0x20
+    char pad24[0x0C];
 };
 
 // Queued model draw request.
@@ -261,7 +267,61 @@ void fn_8003D8F4(u32 id) {
     }
 }
 
-// TODO (not drafted yet, 0x22C bytes at 0x8003D988): unknown
+extern "C" u32 fn_80010000(int id);
+extern "C" int fn_8003D988(float* box, u32 id);
+extern "C" void fn_80008C00(const char* msg);
+extern float lbl_804D6220;
+extern float lbl_804D6224;
+
+// (ModelMirrorBounds) Computes the bounding box (min xyz, max xyz) of the mirror-textured primitives of a model;
+// returns the mirror texture id, -1 when there is no model data, -2 on error.
+int fn_8003D988(float* box, u32 id) {
+    int tex = -1;
+    if ((int)(id & 0xFFFF) < lbl_804D4350) {
+        ModelEntry* e = &lbl_804D4340[id & 0xFFFF];
+        ModelMesh* mesh = e->hasData == 0 ? 0 : (ModelMesh*)e->data;
+        if (mesh != 0) {
+            bool found = false;
+            box[0] = lbl_804D6220;
+            box[1] = lbl_804D6220;
+            box[2] = lbl_804D6220;
+            box[3] = lbl_804D6224;
+            box[4] = lbl_804D6224;
+            box[5] = lbl_804D6224;
+            for (int m = 0; m < ((ModelEntryMesh*)e)->meshCount; m++) {
+                for (int p = 0; p < mesh->nPrims; p++) {
+                    ModelPrim* prim = &mesh->prims[p];
+                    if ((fn_80010000(prim->tex) & 0x20000) != 0) {
+                        if (tex == -1) {
+                            tex = prim->tex;
+                        } else if (tex != prim->tex) {
+                            fn_80008C00("Model uses more than one mirror texture");
+                            return -2;
+                        }
+                        found = true;
+                        for (int v = 0; v < prim->count; v++) {
+                            u8* rec = prim->recs + v * 13;
+                            float* pt = prim->verts + ((rec[12] << 8) | rec[13]) * 3;
+                            box[0] = pt[0] < box[0] ? pt[0] : box[0];
+                            box[1] = pt[1] < box[1] ? pt[1] : box[1];
+                            box[2] = pt[2] < box[2] ? pt[2] : box[2];
+                            box[3] = box[3] < pt[0] ? pt[0] : box[3];
+                            box[4] = box[4] < pt[1] ? pt[1] : box[4];
+                            box[5] = box[5] < pt[2] ? pt[2] : box[5];
+                        }
+                    }
+                }
+                mesh++;
+            }
+            if (!found) {
+                return -2;
+            }
+            return tex;
+        }
+    }
+    return -1;
+}
+
 
 void ModelSaveBlockA(int* src) {
     for (int i = 0; i < 15; i++) {
@@ -290,7 +350,52 @@ void ModelSaveBlockB(int* src) {
     }
 }
 
-// TODO (not drafted yet, 0x17C bytes at 0x8003DF80): unknown
+// Collects the distinct texture ids used by mesh `mesh` of model `id` into `out` (at most `max`).
+extern "C" int fn_80037C20(u32 id);
+int ModelCollectTextures(u32 id, int mesh, u32* out, int max) {
+    id &= 0xFFFF;
+    if ((int)id < lbl_804D4350) {
+        int count = 0;
+        if (mesh < 0 || fn_80037C20(id) < mesh) {
+            return 0;
+        }
+        ModelEntry* e = &lbl_804D4340[id];
+        ModelMesh* meshes = e->hasData == 0 ? 0 : (ModelMesh*)e->data;
+        if (meshes == 0) {
+            return 0;
+        }
+        ModelMesh* m = &meshes[mesh];
+        if (m->bone != -1) {
+            out[0] = m->bone;
+            return 1;
+        }
+        u32* dst = out;
+        for (int p = 0; p < m->nPrims; p++) {
+            ModelPrim* prim = &m->prims[p];
+            for (int k = 0; k < prim->nIds; k++) {
+                int n = 0;
+                u32* q = out;
+                for (int left = count; left > 0; left--) {
+                    if (*q == prim->ids[k]) {
+                        break;
+                    }
+                    q++;
+                    n++;
+                }
+                if (n == count) {
+                    count++;
+                    *dst++ = prim->ids[k];
+                    if (max <= count) {
+                        return count;
+                    }
+                }
+            }
+        }
+        return count;
+    }
+    return 0;
+}
+
 // Skins the vertices of one primitive with the bone matrix of its mesh and offsets them by the
 // matrix translation; writes `stride` floats apart into `out`.
 void fn_8003E0FC(ModelMesh* mesh, ModelPrim* prim, void* mats, float* out, int stride) {
@@ -385,7 +490,60 @@ void ModelStatsReset() {
     lbl_804D4390 = 0;
 }
 
-// TODO (not drafted yet, 0x19C bytes at 0x800408D8)
+struct ModelParams {
+    int w0;
+    float f4, f8, fC;
+    int w10, w14, w18, w1C, w20, w24, w28, w2C, w30, w34, w38;
+};
+
+extern GXColor lbl_8040E154[0x800];
+extern int lbl_804D433C;
+extern int lbl_804D4344;
+extern int lbl_804D4348;
+extern int lbl_804D2698;
+int FileAddHandler(int type, int (*fn)(void*, int, void*), void* arg);
+extern "C" void fn_80043270(void);
+void ShadowResetAll();
+void fn_80234AD8();
+int FxLookupScrollType(const u8* name);
+
+// Resets the model table and its colour/parameter caches and registers the stream handler.
+void ModelTableInit() {
+    GXColor* c = lbl_8040E154;
+    int i;
+    lbl_804D4360 = 0;
+    lbl_804D435C = 0;
+    *(ModelParams*)lbl_8040E018 = *(ModelParams*)lbl_80393E08;
+    for (i = 0; i < 0x100; i++) {
+        c[0].r = c[0].g = c[0].b = 0;
+        c[0].a = 0xFF;
+        c[1].r = c[1].g = c[1].b = 0;
+        c[1].a = 0xFF;
+        c[2].r = c[2].g = c[2].b = 0;
+        c[2].a = 0xFF;
+        c[3].r = c[3].g = c[3].b = 0;
+        c[3].a = 0xFF;
+        c[4].r = c[4].g = c[4].b = 0;
+        c[4].a = 0xFF;
+        c[5].r = c[5].g = c[5].b = 0;
+        c[5].a = 0xFF;
+        c[6].r = c[6].g = c[6].b = 0;
+        c[6].a = 0xFF;
+        c[7].r = c[7].g = c[7].b = 0;
+        c[7].a = 0xFF;
+        c += 8;
+    }
+    lbl_804D433C = 0;
+    lbl_804D4340 = 0;
+    lbl_804D4344 = 0;
+    lbl_804D4348 = 0;
+    lbl_804D4350 = 0;
+    FileAddHandler(0x2B, (int (*)(void*, int, void*))fn_80043270, 0);
+    ShadowResetAll();
+    fn_80234AD8();
+    lbl_804D2698 = FxLookupScrollType((const u8*)"EXPAND");
+}
+
 // Queues the model draw described by the request, adding the "queued" flag.
 void ModelDrawQueue(ModelDraw* d) {
     fn_80040AE0(d->model, d->anim, d->xf, d->v48, d->v4C, d->flag, d->pos, d->hasSkin != 0 ? d->skin : 0, d->extra,
