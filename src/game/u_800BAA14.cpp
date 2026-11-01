@@ -141,6 +141,14 @@ extern "C" int fn_800B9388(u32 id, int skipUnused);
 extern "C" int fn_800B949C(u32 id, u32* out, int max, int includeUnused);
 
 float NavLinkCost(int from, int to, int arg, void* ctx, SearchState* state); // 0x800BECC8
+// TODO (not drafted yet, 0x1C4 bytes at 0x800BEB04): search cost callback, distance to a target position
+float NavTargetLinkCost(int from, int to, int arg, void* ctx, SearchState* state);
+// TODO (not drafted yet, 0x2C0 bytes at 0x800BC2AC): steer toward a position along the route table
+extern "C" int fn_800BC2AC(Actor* actor, Vec3* target);
+// TODO (not drafted yet, 0x700 bytes at 0x800BF66C): follow the graph route
+void NavGraphTrack(Actor* actor);
+// TODO (not drafted yet, 0x6F0 bytes at 0x800BFD6C): follow the route table
+void NavRouteTrack(Actor* actor);
 // TODO (not drafted yet, 0x5D8 bytes at 0x800BE52C): search cost callback for route following
 float NavRouteCost(int from, int to, int arg, void* ctx, SearchState* state);
 
@@ -216,8 +224,7 @@ extern "C" int fn_800BAF78(Vec3* out, int route, int leg, int index) {
     return 0;
 }
 
-// TODO (not drafted yet, 0x150 bytes at 0x800BC01C): steer toward a target position
-extern "C" int fn_800BC01C(Actor* actor, Vec3* target);
+extern "C" int fn_800BC01C(void* owner, Vec3* target);
 
 // NavSteerToActor: steer toward another actor's position.
 extern "C" int fn_800BBF9C(Actor* actor, Actor* target) {
@@ -367,6 +374,95 @@ int NavStopTest(int node, int ctxp, SearchState* state) {
         u32 a = GraphGetNodeData(gNavGraph, node);
         u32 b = GraphGetNodeData(gNavGraph, state->parent->node);
         return ctx->test(b, a, ctx->arg);
+    }
+    return 0;
+}
+
+// NavTrack: advance the actor along its current route.
+int NavTrack(Actor* actor) {
+    if (actor == 0) {
+        return 0;
+    }
+    if (actor->navMode == 0) {
+        if (gRoutes == 0) {
+            return 0;
+        }
+        if (actor->navRoute != -1) {
+            NavRouteTrack(actor);
+        }
+    } else {
+        if (gNavGraph == 0) {
+            return 0;
+        }
+        NavGraphTrack(actor);
+    }
+    return 1;
+}
+
+// NavSteerTo: plan a route to a position; returns 1 when one was found.
+extern "C" int fn_800BC01C(void* owner, Vec3* target) {
+    if (((Actor*)owner)->navMode == 0) {
+        return fn_800BC2AC((Actor*)owner, target);
+    } else if (((Actor*)owner)->navMode == 1) {
+        Actor* actor = (Actor*)owner;
+        int b, a;
+        if (owner == 0 || target == 0) {
+            return 0;
+        }
+        if (actor->navLinkA == -1 && actor->navLinkB == -1 &&
+            GraphFindBestLink(gNavGraph, NavLinkCost, actor, &actor->navLinkA, &actor->navLinkB) == 0) {
+            return 0;
+        }
+        if (GraphFindBestLink(gNavGraph, NavTargetLinkCost, target, &a, &b)) {
+            int to;
+            int link = actor->navLinkB;
+            if (a == link) {
+                to = b;
+            } else if (b == link) {
+                to = a;
+            } else if (a == actor->navLinkA) {
+                to = b;
+            } else {
+                to = a;
+            }
+            if (GraphSearchTo(gNavGraph, 2, link, to, actor, NavRouteCost, 0, &actor->query) != 1e9f) {
+                return 1;
+            }
+        }
+        return 0;
+    }
+    return 0;
+}
+
+// NavSteerToGraph: graph-only variant of NavSteerTo.
+int NavSteerToGraph(void* owner, void* targetPos) {
+    Actor* actor;
+    Vec3* target;
+    int a, b;
+    if (owner == 0 || targetPos == 0) {
+        return 0;
+    }
+    actor = (Actor*)owner;
+    target = (Vec3*)targetPos;
+    if (actor->navLinkA == -1 && actor->navLinkB == -1 &&
+        GraphFindBestLink(gNavGraph, NavLinkCost, actor, &actor->navLinkA, &actor->navLinkB) == 0) {
+        return 0;
+    }
+    if (GraphFindBestLink(gNavGraph, NavTargetLinkCost, target, &a, &b) != 0) {
+        int to;
+        int link = actor->navLinkB;
+        if (a == link) {
+            to = b;
+        } else if (b == link) {
+            to = a;
+        } else if (a == actor->navLinkA) {
+            to = b;
+        } else {
+            to = a;
+        }
+        if (GraphSearchTo(gNavGraph, 2, link, to, actor, NavRouteCost, 0, &actor->query) != 1e9f) {
+            return 1;
+        }
     }
     return 0;
 }
