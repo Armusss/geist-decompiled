@@ -59,9 +59,11 @@ struct Waypoint {
 struct Actor {
     u8 unk0[0x24];          // 0x00
     IVec3 pos;              // 0x24
-    u8 unk30[0x2c0 - 0x30]; // 0x30
+    u8 unk30[0x84 - 0x30];  // 0x30
+    Vec3 worldPos;          // 0x84
+    u8 unk90[0x2c0 - 0x90]; // 0x90
     int navMode;            // 0x2c0 (0 = route table, 1 = graph)
-    u8 unk2c4[4];           // 0x2c4
+    int navCurRoute;        // 0x2c4
     int navLinkA;           // 0x2c8
     int navLinkB;           // 0x2cc
     int navRoute;           // 0x2d0
@@ -137,7 +139,11 @@ extern int gNavGraphB;       // 0x804D2B98
 extern int gNavGraph;        // 0x804D2B9C
 extern RouteTable* gRoutes;  // 0x804D4848
 extern RouteInfo* gRouteList[]; // 0x804499D0
-extern u32 gRouteBlocks[][2];   // 0x80449BD0 (0x80 pairs: id, heap block)
+struct RouteBlock {
+    int count;
+    int* list;
+};
+extern RouteBlock gRouteBlocks[]; // 0x80449BD0 (0x80 entries: member count, heap list)
 extern u32 gRouteItems[];       // 0x80449FD0
 extern RouteTable* gItems;      // 0x804D484C
 
@@ -156,11 +162,14 @@ float GraphSearchTo(u32 graph, int mode, int start, int goal, void* ctx, SearchC
                     SearchCostFn estimate, GraphQuery* query);
 void* VAlloc(int size);
 extern "C" int SendMsg(int to, int msg, void* data);
+struct Owner;
+int OwnerId(Owner* o);
+// TODO (not drafted yet, 0x384 bytes at 0x800C2B0C): distance from a position to a route's path
+extern "C" int fn_800C2B0C(Vec3* pos, RouteInfo* route, float* outDist);
 extern "C" int fn_800B9388(u32 id, int skipUnused);
 extern "C" int fn_800B949C(u32 id, u32* out, int max, int includeUnused);
 
 float NavLinkCost(int from, int to, int arg, void* ctx, SearchState* state); // 0x800BECC8
-// TODO (not drafted yet, 0x1C4 bytes at 0x800BEB04): search cost callback, distance to a target position
 float NavTargetLinkCost(int from, int to, int arg, void* ctx, SearchState* state);
 // TODO (not drafted yet, 0x2C0 bytes at 0x800BC2AC): steer toward a position along the route table
 extern "C" int fn_800BC2AC(Actor* actor, Vec3* target);
@@ -310,8 +319,8 @@ RouteBounds* NavRouteBounds(int route) {
 extern "C" void fn_800BF428() {
     int i;
     for (i = 0; i < 128; i++) {
-        if (gRouteBlocks[i][1] != 0) {
-            VFree((void*)gRouteBlocks[i][1]);
+        if (gRouteBlocks[i].list != 0) {
+            VFree(gRouteBlocks[i].list);
         }
     }
     if (gNavGraphB != -1) {
@@ -615,4 +624,155 @@ int NavRouteEvent(int msg, RouteMsg* data) {
     }
     }
     return 0;
+}
+
+// NavTargetLinkCost: squared distance from a position to the segment between two graph nodes (-1 if the
+// position projects outside the segment).
+float NavTargetLinkCost(int from, int to, int arg, void* ctx, SearchState* state) {
+    Actor* node;
+    Actor* a;
+    Vec3* p = (Vec3*)ctx;
+    if (SendMsg(GraphGetNodeData(gNavGraph, from), 0x400, &node) == 0) {
+        return -1.0f;
+    }
+    a = node;
+    if (SendMsg(GraphGetNodeData(gNavGraph, to), 0x400, &node) == 0) {
+        return -1.0f;
+    }
+    {
+        float ay = a->pos.y;
+        float dy = node->pos.y - ay;
+        float ey = p->y - ay;
+        float ax = a->pos.x;
+        float dx = node->pos.x - ax;
+        float ex = p->x - ax;
+        float az = a->pos.z;
+        float dz = node->pos.z - az;
+        float ez = p->z - az;
+        float t = (dz * ez + dx * ex + dy * ey) / (dz * dz + dx * dx + dy * dy);
+        if (t < 0.0f) {
+            return ey * ey + ex * ex + ez * ez;
+        }
+        if (t > 1.0f) {
+            return -1.0f;
+        }
+        ey -= dy * t;
+        ex -= dx * t;
+        ez -= dz * t;
+        return ey * ey + ex * ex + ez * ez;
+    }
+}
+
+// NavFindRoute: index of the route whose box contains the position (best-scoring), or -1.
+extern "C" int fn_800BF2D0(Vec3* pos) {
+    int ix;
+    int iy;
+    int iz;
+    RouteInfo** w;
+    int i;
+    int best = -999999;
+    int found = -1;
+    Vec3 p;
+    float dist;
+    if (pos == 0) {
+        return -1;
+    }
+    if (gRoutes == 0) {
+        return -1;
+    }
+    p.x = pos->x;
+    ix = (int)p.x;
+    p.y = pos->y;
+    iy = (int)p.y;
+    p.z = pos->z + 200.0f;
+    iz = (int)p.z;
+    for (i = 0, w = gRouteList; i < gRoutes->count; i++, w++) {
+        RouteInfo* r = *w;
+        if ((((ix - r->bounds.min[0]) | (iy - r->bounds.min[1]) | (iz - r->bounds.min[2]) |
+              (r->bounds.max[0] - ix) | (r->bounds.max[1] - iy)) >> 31) == 0 &&
+            fn_800C2B0C(&p, r, &dist) != 0 && dist > (float)best) {
+            best = (int)dist;
+            found = i;
+        }
+    }
+    return found;
+}
+
+// RouteScan: inline copy of the route search used by NavUpdateRoute.
+static inline int RouteScan(Vec3* pos) {
+    Vec3 p;
+    float dist;
+    RouteInfo** w;
+    int iz;
+    int iy;
+    int ix;
+    int i;
+    int best = -999999;
+    int found = -1;
+    if (pos == 0) {
+        return -1;
+    }
+    if (gRoutes == 0) {
+        return -1;
+    }
+    p.x = pos->x;
+    ix = (int)p.x;
+    p.y = pos->y;
+    iy = (int)p.y;
+    p.z = pos->z + 200.0f;
+    iz = (int)p.z;
+    for (i = 0, w = gRouteList; i < gRoutes->count; i++, w++) {
+        RouteInfo* r = *w;
+        if ((((ix - r->bounds.min[0]) | (iy - r->bounds.min[1]) | (iz - r->bounds.min[2]) |
+              (r->bounds.max[0] - ix) | (r->bounds.max[1] - iy)) >> 31) == 0 &&
+            fn_800C2B0C(&p, r, &dist) != 0 && dist > (float)best) {
+            best = (int)dist;
+            found = i;
+        }
+    }
+    return found;
+}
+
+// NavUpdateRoute: track which route an actor is in, keeping the per-route member lists current.
+int NavUpdateRoute(void* owner) {
+    Actor* actor;
+    int route;
+    int cur;
+    int id;
+    int i;
+    if (owner == 0) {
+        return -1;
+    }
+    actor = (Actor*)owner;
+    route = RouteScan(&actor->worldPos);
+    cur = actor->navCurRoute;
+    if (route != cur && route != -1) {
+        id = OwnerId((Owner*)actor);
+        if (id != -1 && cur >= 0 && cur < gRoutes->count) {
+            for (i = 0; i < gRouteBlocks[cur].count; i++) {
+                if (id == gRouteBlocks[cur].list[i]) {
+                    gRouteBlocks[cur].list[i] = -1;
+                    break;
+                }
+            }
+        }
+        id = OwnerId((Owner*)actor);
+        if (id != -1 && route >= 0 && route < gRoutes->count) {
+            int slot = -1;
+            for (i = 0; i < gRouteBlocks[route].count; i++) {
+                if (id == gRouteBlocks[route].list[i]) {
+                    goto done;
+                }
+                if (gRouteBlocks[route].list[i] == -1 && slot == -1) {
+                    slot = i;
+                }
+            }
+            if (slot != -1) {
+                gRouteBlocks[route].list[slot] = id;
+            }
+        }
+    }
+done:
+    actor->navCurRoute = route;
+    return actor->navCurRoute;
 }
