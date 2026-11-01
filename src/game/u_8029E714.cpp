@@ -170,16 +170,43 @@ void fn_802A3BEC() {}
 // TODO (not drafted yet, 0x58 bytes at 0x802A1510): not analysed
 // TODO (not drafted yet, 0xD4 bytes at 0x802A1568): not analysed
 // TODO (not drafted yet, 0x6C8 bytes at 0x802A163C): not analysed
-// TODO (not drafted yet, 0x30 bytes at 0x802A1D14): not analysed
+extern "C" void MusicPause();
+extern "C" void fn_8016F6A0(int v);
+extern "C" void fn_80170E60(int v);
+void AudioPauseAll() {
+    MusicPause();
+    fn_8016F6A0(0);
+    fn_80170E60(0);
+}
+
 // TODO (not drafted yet, 0x9C bytes at 0x802A1DEC): not analysed
-// TODO (not drafted yet, 0x8 bytes at 0x802A1E88): not analysed
+extern void* lbl_804D3858;
+void* LevelSlotCurrent() {
+    return lbl_804D3858;
+}
+
 // TODO (not drafted yet, 0x2C bytes at 0x802A1E90): not analysed
 // TODO (not drafted yet, 0x4C bytes at 0x802A1EBC): not analysed
 // TODO (not drafted yet, 0x98 bytes at 0x802A1F08): not analysed
-// TODO (not drafted yet, 0x2C bytes at 0x802A1FAC): not analysed
-// TODO (not drafted yet, 0xC bytes at 0x802A1FD8): not analysed
+extern "C" char* strcpy(char* dst, const char* src);
+void LevelNameSet(const char* name) {
+    strcpy(lbl_804A4598, name);
+}
+
+extern char lbl_804A4698[];
+char* LevelNameBuffer2() {
+    return lbl_804A4698;
+}
+
 // TODO (not drafted yet, 0x40 bytes at 0x802A1FE4): not analysed
-// TODO (not drafted yet, 0x1C bytes at 0x802A205C): not analysed
+extern float lbl_804DA820;
+float TimeScaleValue() {
+    if (lbl_804D3868 != 0) {
+        return lbl_804D3864;
+    }
+    return lbl_804DA820;
+}
+
 // TODO (not drafted yet, 0xA8 bytes at 0x802A20A4): not analysed
 // TODO (not drafted yet, 0xC4 bytes at 0x802A214C): not analysed
 // TODO (not drafted yet, 0x428 bytes at 0x802A2210): not analysed
@@ -199,9 +226,20 @@ void fn_802A3BEC() {}
 // TODO (not drafted yet, 0x68 bytes at 0x802A3DA4): not analysed
 // TODO (not drafted yet, 0x48 bytes at 0x802A3E0C): not analysed
 // TODO (not drafted yet, 0x60 bytes at 0x802A3E54): not analysed
-// TODO (not drafted yet, 0x8 bytes at 0x802A3EB4): not analysed
-// TODO (not drafted yet, 0x20 bytes at 0x802A3EBC): not analysed
-// TODO (not drafted yet, 0x20 bytes at 0x802A3EDC): not analysed
+int ReturnFour() {
+    return 4;
+}
+
+void EmptyRangeLoopA(void* begin, void* end) {
+    for (char* p = (char*)begin; p < (char*)end; p += 4) {
+    }
+}
+
+void EmptyRangeLoopB(void* begin, void* end) {
+    for (char* p = (char*)begin; p < (char*)end; p += 4) {
+    }
+}
+
 // TODO (not drafted yet, 0x84 bytes at 0x802A3EFC): not analysed
 // TODO (not drafted yet, 0x250 bytes at 0x802A3F80): not analysed
 // TODO (not drafted yet, 0x9C bytes at 0x802A41D0): not analysed
@@ -209,17 +247,57 @@ void fn_802A3BEC() {}
 // TODO (not drafted yet, 0x4DC bytes at 0x802A42C4): not analysed
 // TODO (not drafted yet, 0x58 bytes at 0x802A47A0): not analysed
 // TODO (not drafted yet, 0x9C bytes at 0x802A47F8): not analysed
-// TODO (not drafted yet, 0x2C bytes at 0x802A4894): not analysed
+struct ResetObj {
+    char pad00[0x8C];
+    int i8C;            // 0x8C
+    char pad90[8];
+    int i98;            // 0x98
+    char pad9C[0x28];
+    int iC4;            // 0xC4
+    char padC8[0x28];
+    int iF0;            // 0xF0
+    char padF4[0x28];
+    int i11C;           // 0x11C
+};
+
+void ObjRestoreSaved(ResetObj* o) {
+    o->i8C = 0;
+    if (o->iC4 != -1) {
+        o->i98 = o->iC4;
+    }
+    if (o->i11C != -1) {
+        o->iF0 = o->i11C;
+    }
+}
+
 // TODO (not drafted yet, 0x80 bytes at 0x802A48C0): not analysed
 // TODO (not drafted yet, 0xFC bytes at 0x802A4940): not analysed
 // TODO (not drafted yet, 0xBC bytes at 0x802A4A3C): not analysed
 // TODO (not drafted yet, 0x170 bytes at 0x802A4AF8): not analysed
 // TODO (not drafted yet, 0x5C bytes at 0x802A4C68): not analysed
 // TODO (not drafted yet, 0x160 bytes at 0x802A4CC4): not analysed
-// TODO (not drafted yet, 0x2C bytes at 0x802A4E24): not analysed
+extern "C" void fn_80155A84(void* a, int b, int c);
+struct BigObj {
+    char pad00[0x26E0];
+    char sub[8];        // 0x26E0
+    int i26E8;          // 0x26E8
+};
+
+void BigObjSubInit(BigObj* o) {
+    fn_80155A84(o->sub, o->i26E8, 1);
+}
+
 // TODO (not drafted yet, 0x5C bytes at 0x802A4E50): not analysed
 // TODO (not drafted yet, 0x15C bytes at 0x802A4EAC): not analysed
-// TODO (not drafted yet, 0x10 bytes at 0x802A5008): not analysed
+struct FlagObj {
+    char pad00[0x50];
+    u32 flags;          // 0x50
+};
+
+void ObjFlagsClear40000(FlagObj* o) {
+    o->flags &= 0xFFFBFFFF;
+}
+
 // TODO (not drafted yet, 0x58 bytes at 0x802A5018): not analysed
 // TODO (not drafted yet, 0x110 bytes at 0x802A5070): not analysed
 // TODO (not drafted yet, 0x6C bytes at 0x802A5180): not analysed
@@ -240,7 +318,11 @@ void fn_802A3BEC() {}
 // TODO (not drafted yet, 0x140 bytes at 0x802A650C): not analysed
 // TODO (not drafted yet, 0x520 bytes at 0x802A664C): not analysed
 // TODO (not drafted yet, 0xBC bytes at 0x802A6B6C): not analysed
-// TODO (not drafted yet, 0x20 bytes at 0x802A6C28): not analysed
+void PlayerResetGunTimer(void* p);
+void GunTimerResetForward(void* p) {
+    PlayerResetGunTimer(p);
+}
+
 // TODO (not drafted yet, 0x510 bytes at 0x802A6C48): not analysed
 // TODO (not drafted yet, 0x27C bytes at 0x802A7158): not analysed
 // TODO (not drafted yet, 0x338 bytes at 0x802A73D4): not analysed
