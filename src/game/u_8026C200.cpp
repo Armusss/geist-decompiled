@@ -860,3 +860,88 @@ void MatTransMulVec(float* out, float* R, float* v)
     out[1] = r9 * v2 + r1 * v0 + r5 * v1;
     out[2] = r10 * v2 + r2 * v0 + r6 * v1;
 }
+
+// TODO (not drafted yet, 0x1A4 bytes at 0x80272060): box against plane
+extern "C" int fn_80272060(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
+
+// TODO (not drafted yet, 0x238 bytes at 0x80272204): box-box helper (separating axis tests)
+extern "C" void fn_80272204(void);
+
+// TODO (not drafted yet, 0x654 bytes at 0x8027243C): closest points between a line segment and a box
+extern "C" void fn_8027243C(float* p1, float* p2, float* c, float* R, float* side, float* lret, float* bret);
+
+// TODO (not drafted yet, 0x640 bytes at 0x80272A90): closest points between two box segments
+extern "C" void fn_80272A90(void);
+
+// 0x802730D0: closest approach of two lines (dLineClosestApproach)
+void LineClosestApproach(float* pa, float* ua, float* pb, float* ub, float* alpha, float* beta)
+{
+    float uaub = ua[0] * ub[0] + ua[1] * ub[1] + ua[2] * ub[2];
+    float q1 = ua[0] * (pb[0] - pa[0]) + ua[1] * (pb[1] - pa[1]) + ua[2] * (pb[2] - pa[2]);
+    float q2 = -(ub[0] * (pb[0] - pa[0]) + ub[1] * (pb[1] - pa[1]) + ub[2] * (pb[2] - pa[2]));
+    float d = 1.0f - uaub * uaub;
+
+    if (d <= 0.0001f) {
+        *alpha = 0.0f;
+        *beta = 0.0f;
+    } else {
+        d = 1.0f / d;
+        *alpha = (q1 + uaub * q2) * d;
+        *beta = (uaub * q1 + q2) * d;
+    }
+}
+
+// 0x8027317C: collides two spheres (dCollideSpheres)
+int CollideSpheres(float r1, float r2, float* p1, float* p2, ContactGeom* c)
+{
+    float d = SqrtF((p1[0] - p2[0]) * (p1[0] - p2[0]) + (p1[1] - p2[1]) * (p1[1] - p2[1])
+                    + (p1[2] - p2[2]) * (p1[2] - p2[2]));
+
+    if (d > r1 + r2) {
+        return 0;
+    }
+    if (d <= 0.0f) {
+        c->pos[0] = p1[0];
+        c->pos[1] = p1[1];
+        c->pos[2] = p1[2];
+        c->normal[0] = 1.0f;
+        c->normal[1] = 0.0f;
+        c->normal[2] = 0.0f;
+        c->depth = r1 + r2;
+    } else {
+        float inv = 1.0f / d;
+        float k = 0.5f * ((r2 - r1) - d);
+
+        c->normal[0] = inv * (p1[0] - p2[0]);
+        c->normal[1] = inv * (p1[1] - p2[1]);
+        c->normal[2] = inv * (p1[2] - p2[2]);
+        c->pos[0] = c->normal[0] * k + p1[0];
+        c->pos[1] = c->normal[1] * k + p1[1];
+        c->pos[2] = c->normal[2] * k + p1[2];
+        c->depth = (r1 + r2) - d;
+    }
+    return 1;
+}
+
+// TODO (not drafted yet, 0x160 bytes at 0x8027337C): ODE message (varargs formatting through the debug console)
+extern "C" void fn_8027337C(int num, const char* msg, ...);
+
+// TODO (not drafted yet, 0x164 bytes at 0x802734DC): ODE internal error (varargs formatting, then aborts)
+extern "C" void fn_802734DC(int num, const char* msg, ...);
+
+typedef void (*OdeErrorHandler)(int num, const char* msg, void* ap);
+
+static OdeErrorHandler sErrorHandler;    // 0x804D5524
+static OdeErrorHandler sMessageHandler;  // 0x804D5520
+
+// 0x80273640: sets the error handler (dSetErrorHandler)
+void SetErrorHandler(OdeErrorHandler fn)
+{
+    sErrorHandler = fn;
+}
+
+// 0x80273648: sets the message handler (dSetMessageHandler)
+void SetMessageHandler(OdeErrorHandler fn)
+{
+    sMessageHandler = fn;
+}
