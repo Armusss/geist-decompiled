@@ -97,12 +97,31 @@ struct RouteLeg {
     u8 unk20[0x10];
 };
 
+struct RouteBounds {
+    int min[3]; // 0x00
+    int max[3]; // 0x0c
+};
+
 struct RouteInfo {
-    u8 unk0[0x50];
-    u8 unk50[0x24];
-    int unk74;
-    u8 unk78[8];
-    RouteLeg* legs; // 0x80
+    u8 unk0[0x38];     // 0x00
+    u32 id;            // 0x38
+    u8 unk3c[0x14];    // 0x3c
+    RouteBounds bounds; // 0x50
+    u8 unk68[0xc];     // 0x68
+    int unk74;         // 0x74
+    u8 unk78[8];       // 0x78
+    RouteLeg* legs;    // 0x80
+    int unk84;         // 0x84
+    u32 flags;         // 0x88
+    u8 unk8c[0xc];     // 0x8c
+};
+
+// Message block passed to the route/item message handlers.
+struct RouteMsg {
+    RouteInfo* route; // 0x00
+    int tag;          // 0x04
+    int unk8;         // 0x08
+    int value;        // 0x0c
 };
 
 struct RouteTable {
@@ -277,14 +296,14 @@ extern "C" int fn_800BEF9C(int route) {
 }
 
 // NavRouteBounds: pointer to a route's bounding box.
-u8* NavRouteBounds(int route) {
+RouteBounds* NavRouteBounds(int route) {
     if (gRoutes == 0) {
         return 0;
     }
     if (route < 0 || route >= gRoutes->count) {
         return 0;
     }
-    return gRouteList[route]->unk50;
+    return &gRouteList[route]->bounds;
 }
 
 // NavShutdown: release route blocks and graphs.
@@ -463,6 +482,137 @@ int NavSteerToGraph(void* owner, void* targetPos) {
         if (GraphSearchTo(gNavGraph, 2, link, to, actor, NavRouteCost, 0, &actor->query) != 1e9f) {
             return 1;
         }
+    }
+    return 0;
+}
+
+// NavItemMsg: message handler for the item records (0x80449FD0 table).
+int NavItemMsg(int index, int msg, RouteMsg* out) {
+    int result = 0;
+    if (index < 0 || index > gItems->count) {
+        return 0;
+    }
+    out->route = (RouteInfo*)gRouteItems[index];
+    if (out == 0) {
+        return result;
+    }
+    if (gItems == 0) {
+        return result;
+    }
+    if (msg == 0xC00) {
+        return result;
+    }
+    return result;
+}
+
+// NavItemEvent
+int NavItemEvent(int msg, void* data) {
+    int result = 0;
+    if (data != 0) {
+        if (gItems != 0) {
+            switch (msg) {
+            case 0xC00:
+                result = 0;
+                break;
+            default:
+                result = 0;
+                break;
+            }
+        }
+    }
+    return result;
+}
+
+// NavRouteMsg: message handler for the route records; gets and sets the route flags.
+int NavRouteMsg(int index, int msg, RouteMsg* out) {
+    if (index < 0 || gRoutes->count < index) {
+        return 0;
+    }
+    out->route = gRouteList[index];
+    if (out == 0 || gRoutes == 0) {
+        return 0;
+    }
+    switch (msg) {
+    case 0xC00: {
+        RouteInfo* route = out->route;
+        if (out->tag != 0) {
+            route->flags |= 1;
+            GraphSetNode(gNavGraphB, route->id & 0xFFFFFF, 0, 1);
+        } else {
+            route->flags &= ~1;
+            GraphSetNode(gNavGraphB, route->id & 0xFFFFFF, 0, 0);
+        }
+        return 1;
+    }
+    case 0x41E: {
+        RouteInfo* route = out->route;
+        if (out->tag != 0x5E79B514) {
+            return 0;
+        }
+        if (route->flags & 2) {
+            out->value = 1;
+        } else {
+            out->value = 0;
+        }
+        return 1;
+    }
+    case 0x41D: {
+        RouteInfo* route = out->route;
+        if (out->tag != 0x5E79B514) {
+            return 0;
+        }
+        if (out->value == 0) {
+            route->flags &= ~2;
+        } else {
+            route->flags |= 2;
+        }
+        return 1;
+    }
+    }
+    return 0;
+}
+
+// NavRouteEvent: same handler through a message callback (the route is already in the block).
+int NavRouteEvent(int msg, RouteMsg* data) {
+    if (data == 0 || gRoutes == 0) {
+        return 0;
+    }
+    switch (msg) {
+    case 0xC00: {
+        RouteInfo* route = data->route;
+        if (data->tag != 0) {
+            route->flags |= 1;
+            GraphSetNode(gNavGraphB, route->id & 0xFFFFFF, 0, 1);
+        } else {
+            route->flags &= ~1;
+            GraphSetNode(gNavGraphB, route->id & 0xFFFFFF, 0, 0);
+        }
+        return 1;
+    }
+    case 0x41E: {
+        RouteInfo* route = data->route;
+        if (data->tag != 0x5E79B514) {
+            return 0;
+        }
+        if (route->flags & 2) {
+            data->value = 1;
+        } else {
+            data->value = 0;
+        }
+        return 1;
+    }
+    case 0x41D: {
+        RouteInfo* route = data->route;
+        if (data->tag != 0x5E79B514) {
+            return 0;
+        }
+        if (data->value == 0) {
+            route->flags &= ~2;
+        } else {
+            route->flags |= 2;
+        }
+        return 1;
+    }
     }
     return 0;
 }
