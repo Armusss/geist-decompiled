@@ -5,6 +5,8 @@
 // drafted so far; the rest are declared with TODO comments.
 // Names are descriptive guesses; unmatched against retail so far.
 
+#include <dolphin/gx.h>
+
 typedef unsigned long u32;
 typedef unsigned short u16;
 
@@ -59,6 +61,80 @@ void fn_8009C87C(void);
 void fn_8004256C(u32 id, int flag);
 }
 
+typedef unsigned char u8;
+
+struct ModelMeshRec {
+    char pad00[0x20];
+    u32 word20;         // 0x20
+    char pad24[0x0C];
+};
+
+// Mesh table view of a model entry: mesh count at +4, mesh array (0x30 bytes each) at +0x2C.
+struct ModelEntryMesh {
+    int texCount;       // 0x00
+    int meshCount;      // 0x04
+    char pad08[0x24];
+    ModelMeshRec* meshes;   // 0x2C
+};
+
+// Mesh and primitive records as read by the skinning code.
+struct ModelMesh {
+    char pad00[0x1C];
+    int bone;           // 0x1C
+};
+
+struct ModelPrim {
+    char pad00[8];
+    int count;          // 0x08
+    char pad0C[8];
+    u8* recs;           // 0x14: 13-byte vertex records, big-endian vertex index at +12
+    float* verts;       // 0x18
+};
+
+// Queued model draw request.
+struct ModelDraw {
+    int model;          // 0x000
+    int anim;           // 0x004
+    int flag;           // 0x008
+    char xf[0x48 - 0x0C];   // 0x00C
+    int v48;            // 0x048
+    int v4C;            // 0x04C
+    char pos[0x5C - 0x50];  // 0x050
+    char skin[0x25C - 0x5C];    // 0x05C
+    int hasSkin;        // 0x25C
+    int flags;          // 0x260
+    int extra;          // 0x264
+};
+
+extern "C" {
+void fn_80096390(int a, void* b);
+void fn_8010D024(void);
+void fn_8010CF00(void);
+void fn_80042BB4(void* m);
+void fn_80040AE0(int model, int anim, void* xf, int v48, int v4C, int flag, void* pos, void* skin, int extra, int flags);
+void fn_800A0100(float* m);
+void fn_800A0094(float* out, float* in);
+void fn_8003E0FC(struct ModelMesh* mesh, struct ModelPrim* prim, void* mats, float* out, int stride);
+void fn_8004320C(float* src, float* dst);
+}
+void GfxSetVtxDesc(int v);                  // 0x80008DAC
+void GfxSetBlendMode(int a, int b, int c, int d);   // 0x801D8A10
+void GfxSetCullMode(int mode);              // 0x80008B44
+
+extern int lbl_804D437C;
+extern int lbl_804D4380;
+extern int lbl_804D4384;
+extern int lbl_804D4388;
+extern int lbl_804D438C;
+extern int lbl_804D4390;
+extern GXColor lbl_804D6208;
+extern int lbl_804D4334;
+extern int lbl_804D4338;
+extern int lbl_804D4378;
+extern int lbl_804D435C;
+extern int lbl_804D4360;
+extern int lbl_804D269C;
+extern int lbl_80393E08[][15];
 extern ModelEntry* lbl_804D4340;
 extern int lbl_804D4350;
 extern int lbl_804D4354;
@@ -215,9 +291,40 @@ void ModelSaveBlockB(int* src) {
 }
 
 // TODO (not drafted yet, 0x17C bytes at 0x8003DF80): unknown
-// TODO (not drafted yet, 0xCC bytes at 0x8003E0FC): unknown
+// Skins the vertices of one primitive with the bone matrix of its mesh and offsets them by the
+// matrix translation; writes `stride` floats apart into `out`.
+void fn_8003E0FC(ModelMesh* mesh, ModelPrim* prim, void* mats, float* out, int stride) {
+    float* m = (float*)((char*)mats + mesh->bone * 0x30);
+    int off = 0;
+    int i;
+    fn_800A0100(m);
+    for (i = 0; i < prim->count; i++) {
+        float* v = out + off;
+        u8* rec = prim->recs + i * 13;
+        fn_800A0094(v, prim->verts + ((rec[12] << 8) | rec[13]) * 3);
+        off += stride;
+        v[0] += m[9];
+        v[1] += m[10];
+        v[2] += m[11];
+    }
+}
+
 // TODO (not drafted yet, 0x2CC bytes at 0x8003E1C8): unknown
-// TODO (not drafted yet, 0x118 bytes at 0x8003E494): unknown
+// Per-frame bookkeeping: clears the frame counters, advances the clock and reloads the render
+// parameter block when the selected set changed.
+void ModelFrameBegin(float dt) {
+    lbl_804D4334 = 0;
+    lbl_804D4378 += (int)dt;
+    lbl_804D4338 = 0;
+    if (lbl_804D435C != lbl_804D4360) {
+        lbl_804D4360 = lbl_804D435C;
+        for (int i = 0; i < 15; i++) {
+            lbl_8040E018[i] = lbl_80393E08[lbl_804D435C][i];
+        }
+    }
+    lbl_804D269C = (fn_80049940() == 0);
+}
+
 void fn_8003E5AC(void) {}
 
 void fn_8003E5B0() {
@@ -253,25 +360,146 @@ void fn_8003F0D4(u32 id) {
 // TODO (not drafted yet, 0x414 bytes at 0x8003FB58): unknown
 // TODO (not drafted yet, 0x694 bytes at 0x8003FF6C): unknown
 // 0x80040600 (4 bytes) is another empty function; 0x80040604 .. 0x8004393C: not drafted yet:
-// TODO (not drafted yet, 0x58 bytes at 0x80040604)
+// Returns word 8 of mesh `mesh` of model `id`, or 0 when out of range.
+u32 ModelMeshWord(u32 id, int mesh) {
+    int idx = id & 0xFFFF;
+    ModelEntryMesh* e;
+    if (idx < 0 || !(idx < lbl_804D4350)) {
+        return 0;
+    }
+    e = (ModelEntryMesh*)&lbl_804D4340[idx];
+    if (mesh >= 0 && mesh < e->meshCount) {
+        return e->meshes[mesh].word20;
+    }
+    return 0;
+}
+
 // TODO (not drafted yet, 0x25C bytes at 0x8004065C)
-// TODO (not drafted yet, 0x20 bytes at 0x800408B8)
+// Clears the per-frame model statistics counters.
+void ModelStatsReset() {
+    lbl_804D4380 = 0;
+    lbl_804D437C = 0;
+    lbl_804D4384 = 0;
+    lbl_804D4388 = 0;
+    lbl_804D438C = 0;
+    lbl_804D4390 = 0;
+}
+
 // TODO (not drafted yet, 0x19C bytes at 0x800408D8)
-// TODO (not drafted yet, 0x6C bytes at 0x80040A74)
+// Queues the model draw described by the request, adding the "queued" flag.
+void ModelDrawQueue(ModelDraw* d) {
+    fn_80040AE0(d->model, d->anim, d->xf, d->v48, d->v4C, d->flag, d->pos, d->hasSkin != 0 ? d->skin : 0, d->extra,
+                d->flags | 4);
+}
+
 // TODO (not drafted yet, 0xDBC bytes at 0x80040AE0)
 // TODO (not drafted yet, 0x2C8 bytes at 0x8004189C)
 // TODO (not drafted yet, 0x22C bytes at 0x80041B64)
 // TODO (not drafted yet, 0x504 bytes at 0x80041D90)
 // TODO (not drafted yet, 0x2D8 bytes at 0x80042294)
 // TODO (not drafted yet, 0x398 bytes at 0x8004256C)
-// TODO (not drafted yet, 0x8C bytes at 0x80042904)
-// TODO (not drafted yet, 0xB8 bytes at 0x80042990)
-// TODO (not drafted yet, 0xB8 bytes at 0x80042A48)
-// TODO (not drafted yet, 0xB4 bytes at 0x80042B00)
+// Draws the model in the plain opaque pass.
+void ModelDrawOpaque(void* m) {
+    fn_80096390(0xFF, 0);
+    GfxSetVtxDesc(7);
+    fn_8010D024();
+    GfxSetBlendMode(0, 1, 1, 3);
+    GXSetZMode(1, GX_LEQUAL, 0);
+    GfxSetCullMode(0);
+    GXSetDstAlpha(1, 0);
+    fn_80042BB4(m);
+    GXSetDstAlpha(0, 0);
+}
+
+// Two-sided draw, back faces first (colour from the model at +0x2C).
+void ModelDrawBackFront(void* m) {
+    fn_80096390(0xFF, (char*)m + 0x2C);
+    GfxSetVtxDesc(7);
+    fn_8010D024();
+    GfxSetBlendMode(1, 1, 1, 3);
+    GXSetZMode(1, GX_ALWAYS, 0);
+    GfxSetCullMode(2);
+    GXSetDstAlpha(1, 0);
+    fn_80042BB4(m);
+    GXSetZMode(1, GX_GREATER, 0);
+    GfxSetCullMode(1);
+    GXSetDstAlpha(1, 0xFF);
+    fn_80042BB4(m);
+    GXSetDstAlpha(0, 0);
+}
+
+// Two-sided draw, front faces first.
+void ModelDrawFrontBack(void* m) {
+    fn_80096390(0, (char*)m + 0x2C);
+    GfxSetVtxDesc(7);
+    fn_8010D024();
+    GfxSetBlendMode(1, 1, 1, 3);
+    GXSetZMode(1, GX_ALWAYS, 0);
+    GfxSetCullMode(2);
+    GXSetDstAlpha(1, 0xFF);
+    fn_80042BB4(m);
+    GXSetZMode(1, GX_GREATER, 0);
+    GfxSetCullMode(1);
+    GXSetDstAlpha(1, 0);
+    fn_80042BB4(m);
+    GXSetDstAlpha(0, 0);
+}
+
+// Two-pass draw with a constant TEV konst colour.
+void ModelDrawKonst(void* m) {
+    GXColor konst = lbl_804D6208;
+    fn_80096390(0x7F, (char*)m + 0x2C);
+    GXSetZMode(1, GX_GREATER, 0);
+    GfxSetVtxDesc(7);
+    GXColor kc = konst;
+    GXSetTevKColor(GX_KCOLOR0, kc);
+    fn_8010CF00();
+    GfxSetBlendMode(1, 1, 1, 3);
+    GfxSetCullMode(2);
+    fn_80042BB4(m);
+    GfxSetBlendMode(3, 1, 1, 3);
+    GfxSetCullMode(1);
+    fn_80042BB4(m);
+}
+
 // TODO (not drafted yet, 0x364 bytes at 0x80042BB4)
 // TODO (not drafted yet, 0x290 bytes at 0x80042F18)
-// TODO (not drafted yet, 0x64 bytes at 0x800431A8)
-// TODO (not drafted yet, 0x64 bytes at 0x8004320C)
+// Expands a packed 3x3 rotation + translation (12 floats) into a 3x4 matrix.
+void MtxExpandPacked(float* src, float* dst) {
+    float a = src[1], b = src[2], c = src[3], d = src[4], e = src[5], f = src[6], g = src[7], h = src[8];
+    float tx = src[9], ty = src[10], tz = src[11];
+    dst[0] = src[0];
+    dst[1] = a;
+    dst[2] = b;
+    dst[3] = tx;
+    dst[4] = c;
+    dst[5] = d;
+    dst[6] = e;
+    dst[7] = ty;
+    dst[8] = f;
+    dst[9] = g;
+    dst[10] = h;
+    dst[11] = tz;
+}
+
+// Same, transposing the rotation.
+void fn_8004320C(float* src, float* dst) {
+    float a = src[3], b = src[6], c = src[1], d = src[4], e = src[7], f = src[2], g = src[5], h = src[8];
+    float tx = src[9], ty = src[10], tz = src[11];
+    dst[0] = src[0];
+    dst[1] = a;
+    dst[2] = b;
+    dst[3] = tx;
+    dst[4] = c;
+    dst[5] = d;
+    dst[6] = e;
+    dst[7] = ty;
+    dst[8] = f;
+    dst[9] = g;
+    dst[10] = h;
+    dst[11] = tz;
+}
+
 // TODO (not drafted yet, 0x28C bytes at 0x80043270)
 // TODO (not drafted yet, 0x440 bytes at 0x800434FC)
 // TODO (not drafted yet, 0xF94 bytes at 0x8004393C)
