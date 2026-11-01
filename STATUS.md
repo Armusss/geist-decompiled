@@ -19,7 +19,11 @@ published; generate your own from your copy of the game if you want it.
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | retired 2026-10-27 (user): Sonnet drafts untouched units instead | retired |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | retired 2026-10-27 (user): Sonnet drafts untouched units instead | retired |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | near-miss sweep 4 done 2026-10-27: +22 functions (1,724 -> 1,746); paused | paused |
-| sonnet-1 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-1` / `ds/sonnet-1` | batch 5 done 2026-10-27 (+79 functions, 2,005 -> 2,084); PAUSED by the user (weekly usage) | paused |
+| sonnet-1 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-1` / `ds/sonnet-1` | 2026-11-01: second full pass over batch 5 (u_8025ECF8, u_8000F2F0, u_8003CC90, u_8029E714) | running |
+| sonnet-2 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-2` / `ds/sonnet-2` | 2026-11-01: u_80259AB0, u_80161FF4, u_8008DCDC | running |
+| sonnet-3 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-3` / `ds/sonnet-3` | 2026-11-01: u_8026C200, u_800C5028, u_80142E88 | running |
+| sonnet-4 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-4` / `ds/sonnet-4` | 2026-11-01: u_800BAA14, u_802154B0 | running |
+| sonnet-5 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-5` / `ds/sonnet-5` | 2026-11-01: u_80127D80, u_801AE50C (the two biggest) | running |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
