@@ -45,7 +45,7 @@ struct RicoData {
     int unk58;         // 0x58
     int unk5C;         // 0x5C
     int unk60;         // 0x60
-    int unk64;         // 0x64
+    float unk64;       // 0x64
     float unk68;       // 0x68
     float unk6C;       // 0x6C
     float unk70;       // 0x70
@@ -69,6 +69,14 @@ struct RicoData {
 struct RicoInfo {
     u8 pad00[0x30];  // 0x00
     int unk30;       // 0x30
+};
+
+// Player object (only the integer world position).
+struct Player {
+    u8 pad00[0x24];  // 0x00
+    int x;           // 0x24
+    int y;           // 0x28
+    int z;           // 0x2C
 };
 
 // The actor (only the fields this file touches).
@@ -112,9 +120,14 @@ void ConditionUpdateBit(void* cond, int bit, int on);           // 0x800A7B08
 void* VAlloc(int size);                                         // 0x8009DA68
 void VFree(void* p);                                            // 0x8009DA3C
 
+Player* GetPlayer();                                           // 0x80049948
+float ActorAngleToPos(void* actor, Vec3* pos);                 // 0x800AA9FC
+void EulerNormalize(Vec3* out, Vec3* in);                      // 0x8016D55C
+double __fabs(double);
 extern "C" int SendMsg(int to, int msg, void* data);   // 0x800265D4
 extern int lbl_804D54E0;
 extern int lbl_804D3694;
+extern float lbl_804D3640;   // sdata float globals
 extern int lbl_804D3698;
 
 // TODO (not drafted yet, 0x688 bytes at 0x80259AB0): actor message handler
@@ -321,7 +334,7 @@ bool RicoNotCond37(Rico* a) {
     return HasCondition(a->cond, 0x37) == 0;
 }
 
-int RicoExitState37(Rico* a) {
+int RicoExitCond37(Rico* a) {
     RicoData* d = a->data;
     ConditionSetBit(a->cond, 0x37, 0);
     d->unk28 = 0;
@@ -330,5 +343,76 @@ int RicoExitState37(Rico* a) {
     ConditionSetBit(a->cond, 0x3A, 0);
     lbl_804D3694 = lbl_804D3698;
     NotifyState(a, 1, 0x665BF55F);
+    return 1;
+}
+
+// Enter state 5: turn toward the player.
+int RicoEnterState5(void* p) {
+    Rico* a = (Rico*)p;
+    RicoData* d = a->data;
+    Player* pl = GetPlayer();
+    Vec3 v;
+    v.x = (float)pl->x;
+    v.y = (float)pl->y;
+    v.z = (float)pl->z;
+    ActorAngleToPos(a, &v);
+    d->state = 5;
+    a->unk288 = 0;
+    ConditionSetBit(a->cond, 0x37, 1);
+    ConditionUpdateBit(a->cond, 4, 0);
+    ConditionUpdateBit(a->cond, 3, 0);
+    return 1;
+}
+
+int RicoExitState4(Rico* a) {
+    RicoData* d = a->data;
+    ConditionSetBit(a->cond, 6, 0);
+    d->unk28 = 0;
+    d->unk4C = 0;
+    d->unk58 = 0;
+    ConditionSetBit(a->cond, 0x3A, 0);
+    lbl_804D3694 = lbl_804D3698;
+    NotifyState(a, 1, 0x665BF55F);
+    return 1;
+}
+
+int RicoEnterState4(void* p) {
+    Rico* a = (Rico*)p;
+    RicoData* d = a->data;
+    Player* pl = GetPlayer();
+    Vec3 v;
+    v.x = (float)pl->x;
+    v.y = (float)pl->y;
+    v.z = (float)pl->z;
+    float ang = ActorAngleToPos(a, &v);
+    d->state = 4;
+    a->unk288 = 0;
+    d->unk64 = lbl_804D3640;
+    if (ang < 0.0f) {
+        ConditionSetBit(a->cond, 0x35, 1);
+        ConditionSetBit(a->cond, 0x34, 0);
+    } else {
+        ConditionSetBit(a->cond, 0x35, 0);
+        ConditionSetBit(a->cond, 0x34, 1);
+    }
+    ConditionUpdateBit(a->cond, 4, 0);
+    ConditionUpdateBit(a->cond, 3, 0);
+    return 1;
+}
+
+int RicoExitState3(Rico* a) {
+    RicoData* d = a->data;
+    ConditionSetBit(a->cond, 6, 0);
+    ConditionSetBit(a->cond, 0x30, 0);
+    d->unk28 = 0;
+    return 1;
+}
+
+int RicoEnterState3(Rico* a) {
+    a->data->state = 3;
+    a->unk288 = 0;
+    NotifyState(a, 0, 0xA4FC335D);
+    ConditionUpdateBit(a->cond, 3, 0);
+    ConditionSetBit(a->cond, 0x30, 1);
     return 1;
 }
