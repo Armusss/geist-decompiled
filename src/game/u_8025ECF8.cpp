@@ -6,6 +6,7 @@
 // Names are descriptive guesses; unmatched against retail so far.
 
 typedef unsigned long u32;
+typedef unsigned char u8;
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
@@ -50,11 +51,32 @@ public:
     int mOwned;
 };
 
+void* VAlloc(int size);                                         // 0x8009DA68
+void VFree(void* p);                                            // 0x8009DA3C
+extern "C" void fn_8028B960(void* p);
+extern "C" void fn_800225C8(void* out, void* a, void* b);
+
+// Name buffer of the crab: two stacked classes, each with its own vtable (0x803C0060 / 0x803C0080).
 class String : public Buffer {
 public:
     String();                                  // 0x8028C500
     String(const char* s);                     // 0x8028C400
-    virtual void Release(char* p);
+    String(const String& a, const String& b) { fn_800225C8(this, (void*)&a, (void*)&b); }
+    virtual ~String() {}
+};
+
+class ShellNameBase : public Buffer {
+public:
+    ShellNameBase() {}
+    virtual ~ShellNameBase() { fn_8028B960(this); }
+    static void* operator new(unsigned long n) { return VAlloc(n); }
+    static void operator delete(void* p) { VFree(p); }
+};
+
+class ShellName : public ShellNameBase {
+public:
+    ShellName() {}
+    virtual ~ShellName() {}
 };
 
 struct Actor;
@@ -68,10 +90,9 @@ struct ShellBeh {
     int animD;          // 0x10
     int animE;          // 0x14
     char pad18[0x28 - 0x18];
-    float f28;          // 0x28
-    float f2C;          // 0x2C
-    float f30;          // 0x30
-    char pad34[0x3C - 0x34];
+    float blend[3];     // 0x28
+    float* rate;        // 0x34
+    float* ceil;        // 0x38
     int i3C;            // 0x3C
     int i40;            // 0x40
     int state;          // 0x44
@@ -89,7 +110,7 @@ struct ShellBeh {
     float timer;        // 0x74
     float limit;        // 0x78
     int i7C;            // 0x7C
-    char pad80[0x84 - 0x80];
+    float f80;          // 0x80
     float f84;          // 0x84
     float f88;          // 0x88
     float f8C;          // 0x8C
@@ -97,7 +118,7 @@ struct ShellBeh {
     float f94;          // 0x94
     float f98;          // 0x98
     char pad9C[4];
-    String* name;       // 0xA0
+    ShellName* name;   // 0xA0
     float fA4;          // 0xA4
     float posX;         // 0xA8
     float posY;         // 0xAC
@@ -120,7 +141,10 @@ struct ShellData {
 
 // Second per-type block (at actor+0xC8).
 struct ShellData2 {
-    char pad0[0x2C];
+    char pad0[0x18];
+    float f18;          // 0x18
+    float f1C;          // 0x1C
+    char pad20[0x0C];
     float heading;      // 0x2C
 };
 
@@ -148,7 +172,7 @@ struct Actor {
     char padF4[0x14];
     int unk108;         // 0x108
     char pad10C[4];
-    int (*cb110)(int, void*);   // 0x110
+    int (*cb110)(Actor*);       // 0x110
     char pad114[4];
     void (*cb118)(void);        // 0x118
     char pad11C[0x18];
@@ -269,13 +293,11 @@ extern u32 lbl_804A2A00[10];
 extern u32 lbl_804D3760;
 extern u32 lbl_804D3764;
 extern u32 lbl_804D3768;
-int ShellCrabMsg(int msg, void* data);
+int ShellCrabMsg(int msg, int* data);
+int ShellCrabUpdate(Actor* a);
 
 
-// TODO (not drafted yet, 0x430 bytes at 0x8025ECF8): spawn the two roll-dust emitters
-// TODO (not drafted yet, 0x4DC bytes at 0x8025F128): per-frame effects
-// TODO (not drafted yet, 0x6FC bytes at 0x8025F604): message handler
-// TODO (not drafted yet, 0x78 bytes at 0x8025FDA0): String-derived class deleting destructor
+int ShellRollDustStart(Actor* a, Vec3* euler);
 // TODO (not drafted yet, 0x6DC bytes at 0x802600AC): state machine driver
 // TODO (not drafted yet, 0x4D4 bytes at 0x80260788): state machine event
 void ShellCrabFree(Actor* a);
@@ -366,16 +388,530 @@ int ShellEnter00(Actor* a);
 // TODO (not drafted yet, 0xD70 bytes at 0x80264D5C): per-frame step (state update, movement, effects)
 // TODO (not drafted yet, 0x7B8 bytes at 0x80265ACC): animation setup for a state
 int ShellCrabHitCb(u32 unused, Actor* other, Actor* self);
-// TODO (not drafted yet, 0x68 bytes at 0x802663E4): String-derived class destructor
-// TODO (not drafted yet, 0x48 bytes at 0x8026644C): array construct helper
-// TODO (not drafted yet, 0x60 bytes at 0x80266494): array destruct helper
-// TODO (not drafted yet, 0x8 bytes at 0x802664F4): returns 8
-// TODO (not drafted yet, 0x20 bytes at 0x802664FC): array loop helper
-// TODO (not drafted yet, 0x20 bytes at 0x8026651C): array loop helper
-// TODO (not drafted yet, 0x6C bytes at 0x8026653C): static table init
+void ShellNameArrayClear(void* begin, void* end);
+void ShellNameArrayNop(void* begin, void* end);
+extern "C" void fn_8028BC2C(void* self);
+extern "C" void fn_8028BC28(void* self, void* begin, u32 size);
+
+// Array helpers for the 8-byte-element name table (compiler-style construct/destruct loops).
+void ShellNameArrayConstruct(void* self, void* begin, u32 size) {
+    fn_8028BC2C(self);
+    ShellNameArrayClear(begin, (char*)begin + (size & ~7));
+}
+
+void ShellNameArrayDestruct(void* self, void* begin, u32 size) {
+    ShellNameArrayNop(begin, (char*)begin + (size & ~7));
+    fn_8028BC28(self, begin, size);
+}
+
+int ShellReturnEight(void) {
+    return 8;
+}
+
+void ShellNameArrayClear(void* begin, void* end) {
+    for (char* p = (char*)begin; p < (char*)end; p += 8) {
+    }
+}
+
+void ShellNameArrayNop(void* begin, void* end) {
+    for (char* p = (char*)begin; p < (char*)end; p += 8) {
+    }
+}
+
+// Static initialiser: derives two direction vectors from the constant table at 0x803BFB40.
+struct ShellTables {
+    char pad0[0xD8];
+    Vec3 a;         // 0xD8
+    Vec3 b;         // 0xE4
+    Vec3 aScaled;   // 0xF0
+    Vec3 bScaled;   // 0xFC
+};
+extern ShellTables lbl_803BFA68;
+
+inline void VecDivide(Vec3* out, const Vec3* v, float f) {
+    out->x = v->x / f;
+    out->y = v->y / f;
+    out->z = v->z / f;
+}
+
+void ShellTablesInit(void) {
+    VecDivide(&lbl_803BFA68.aScaled, &lbl_803BFA68.a, 0.1f);
+    VecDivide(&lbl_803BFA68.bScaled, &lbl_803BFA68.b, 0.3f);
+}
 
 void ShellCrabStep(Actor* a);
 void ShellCrabSetAnim(Actor* a, int flags);
+
+// One emitter spawn group and one particle record, as read by EmitterCreate.
+struct ShellEmitGroup {
+    u32 asset;          // 0x00
+    int alpha;          // 0x04
+};
+
+struct ShellParticle {
+    Vec3 pos;           // 0x00
+    float f0C;          // 0x0C
+    float f10;          // 0x10
+    float f14;          // 0x14
+    float f18;          // 0x18
+    int i1C;            // 0x1C
+    float f20;          // 0x20
+    float f24;          // 0x24
+};
+
+// Particle emitter description (0xEC bytes) passed to EmitterCreate.
+struct ShellEmitter {
+    Vec3 pos;                   // 0x00
+    float rot[4];               // 0x0C
+    int i1C;                    // 0x1C
+    int i20;                    // 0x20
+    float f24;                  // 0x24
+    int groupCount;             // 0x28
+    ShellEmitGroup groups[8];   // 0x2C
+    float f6C;                  // 0x6C
+    float f70;                  // 0x70
+    float f74;                  // 0x74
+    float f78;                  // 0x78
+    int i7C;                    // 0x7C
+    float f80;                  // 0x80
+    float f84;                  // 0x84
+    int i88;                    // 0x88
+    float f8C;                  // 0x8C
+    float f90;                  // 0x90
+    float f94;                  // 0x94
+    int i98;                    // 0x98
+    int count9C;                // 0x9C
+    ShellParticle* listA0;      // 0xA0
+    int countA4;                // 0xA4
+    ShellParticle* listA8;      // 0xA8
+    float fAC[8];               // 0xAC
+    u8 color0[4];               // 0xCC
+    u8 color1[4];               // 0xD0
+    int iD4;                    // 0xD4
+    int iD8;                    // 0xD8
+    int iDC;                    // 0xDC
+    int iE0;                    // 0xE0
+    int iE4;                    // 0xE4
+    int iE8;                    // 0xE8
+};
+
+extern ShellParticle lbl_804A2A14;
+extern ShellParticle lbl_804A2A40;
+u32 EmitterCreate(ShellEmitter* e);                             // 0x800D3D88
+void EmitterSetEnabled(u32 e, int on);                          // 0x800D3430
+extern "C" void BoneSetMatrix(float* out, Mtx34* m);            // 0x800A0AC4
+extern "C" void fn_8009F7A8(Mtx34* out, Vec3* v);
+extern "C" void fn_800A025C(Vec3* out, Mtx34* m, int col);
+extern "C" void fn_800A02C0(Mtx34* m, Vec3* v, int col);
+extern "C" void* fn_8028B3BC(void* buf, int at, int size);
+extern float lbl_804D9FD0;
+extern float lbl_804D9FD4;
+extern float lbl_804D9FD8;
+
+struct ShellHandleRec {
+    u32 handle;
+    int unk;
+};
+
+// Spawns the two roll-dust emitters at the actor's feet and records their handles.
+int ShellRollDustStart(Actor* a, Vec3* euler) {
+    ShellBeh* b = a->beh;
+    Mtx34 m;
+    Vec3 right;
+    Vec3 up;
+    Vec3 p;
+    ShellEmitter e;
+    ShellEmitter e2;
+    float h = fn_800CC2D0(a, 0, 0, 0);
+    ShellHandleRec* rec;
+    u32 handle;
+    int i;
+
+    fn_8009F7A8(&m, euler);
+    fn_800A025C(&right, &m, 1);
+    fn_800A025C(&up, &m, 2);
+    right.x *= lbl_804D9FD8;
+    right.y *= lbl_804D9FD8;
+    right.z *= lbl_804D9FD8;
+    fn_800A02C0(&m, &right, 2);
+    fn_800A02C0(&m, &up, 1);
+    p.x = a->f84;
+    p.y = a->f88;
+    p.z = a->f8C;
+    p.z = h;
+    e.pos = p;
+    BoneSetMatrix(e.rot, &m);
+    e.i1C = 0;
+    e.i20 = 2;
+    e.f24 = lbl_804D9FD4;
+    e.groupCount = 3;
+    e.groups[0].asset = lbl_804D3760;
+    e.groups[0].alpha = 0xFF;
+    e.groups[1].asset = lbl_804D3764;
+    e.groups[1].alpha = 0xFF;
+    e.groups[2].asset = lbl_804D3768;
+    e.groups[2].alpha = 0xFF;
+    e.f6C = 20.0f;
+    e.f70 = 20.0f;
+    e.f74 = 25.175f;
+    e.f78 = 33.755f;
+    e.i7C = 0x3C;
+    e.f80 = 7.0f;
+    e.f84 = 1.0f;
+    e.i88 = 0x10;
+    e.f8C = 0.0f;
+    e.f90 = 1.0f;
+    e.f94 = 450.0f;
+    e.i98 = 0;
+    e.count9C = 1;
+    e.listA0 = &lbl_804A2A14;
+    lbl_804A2A14.pos = p;
+    lbl_804A2A14.f0C = -1.0f;
+    lbl_804A2A14.f10 = 0.0f;
+    lbl_804A2A14.f14 = 0.0f;
+    lbl_804A2A14.f18 = 0.0f;
+    lbl_804A2A14.i1C = 0;
+    lbl_804A2A14.f20 = 8.009f;
+    lbl_804A2A14.f24 = 0.0f;
+    e.countA4 = 0;
+    for (i = 0; i < 8; i++) {
+        e.fAC[i] = 0.0f;
+    }
+    e.color0[0] = 0x96;
+    e.color0[1] = 0xA0;
+    e.color0[2] = 0x96;
+    e.color0[3] = 0xFF;
+    e.color1[0] = 0x96;
+    e.color1[1] = 0xA0;
+    e.color1[2] = 0x96;
+    e.color1[3] = 0xFF;
+    e.iD4 = -1;
+    e.iD8 = -1;
+    e.iDC = 0;
+    e.iE0 = 0;
+    e.iE4 = 0;
+    handle = EmitterCreate(&e);
+    EmitterSetEnabled(handle, 1);
+    rec = (ShellHandleRec*)fn_8028B3BC(b->name, b->name->mUnk0C + b->name->mLength, 8);
+    rec->handle = handle;
+    rec->unk = 0;
+
+    e2.pos = p;
+    BoneSetMatrix(e2.rot, &m);
+    e2.i1C = 0;
+    e2.i20 = 2;
+    e2.f24 = lbl_804D9FD4;
+    e2.groupCount = 3;
+    e2.groups[0].asset = lbl_804D3760;
+    e2.groups[0].alpha = 0xFF;
+    e2.groups[1].asset = lbl_804D3764;
+    e2.groups[1].alpha = 0xFF;
+    e2.groups[2].asset = lbl_804D3768;
+    e2.groups[2].alpha = 0xFF;
+    e2.f6C = 20.0f;
+    e2.f70 = 20.0f;
+    e2.f74 = 25.175f;
+    e2.f78 = 33.755f;
+    e2.i7C = 0x14;
+    e2.f80 = 17.0f;
+    e2.f84 = 1.0f;
+    e2.i88 = 0x10;
+    e2.f8C = 0.0f;
+    e2.f90 = 1.0f;
+    e2.f94 = 3984.0f;
+    e2.i98 = 0;
+    e2.count9C = 1;
+    e2.listA0 = &lbl_804A2A40;
+    lbl_804A2A40.pos = p;
+    lbl_804A2A40.f0C = -1.0f;
+    lbl_804A2A40.f10 = 0.0f;
+    lbl_804A2A40.f14 = 0.0f;
+    lbl_804A2A40.f18 = 0.0f;
+    lbl_804A2A40.i1C = 0;
+    lbl_804A2A40.f20 = 12.253f;
+    lbl_804A2A40.f24 = 0.0f;
+    e2.countA4 = 0;
+    for (i = 0; i < 8; i++) {
+        e2.fAC[i] = 0.0f;
+    }
+    e2.color0[0] = 0x96;
+    e2.color0[1] = 0xA0;
+    e2.color0[2] = 0x96;
+    e2.color0[3] = 0xFF;
+    e2.color1[0] = 0x96;
+    e2.color1[1] = 0xA0;
+    e2.color1[2] = 0x96;
+    e2.color1[3] = 0xFF;
+    e2.iD4 = -1;
+    e2.iD8 = -1;
+    e2.iDC = 0;
+    e2.iE0 = 0;
+    e2.iE4 = 0;
+    handle = EmitterCreate(&e2);
+    EmitterSetEnabled(handle, 1);
+    rec = (ShellHandleRec*)fn_8028B3BC(b->name, b->name->mUnk0C + b->name->mLength, 8);
+    rec->handle = handle;
+    rec->unk = 0;
+    return 0;
+}
+
+extern "C" {
+void EmitterDestroy(int handle);                                // 0x800D3694
+void fn_8028B35C(void* buf, int at, int size);
+void fn_8000F550(short* ids, int n);
+void fn_8028C188(Buffer* b, char* data, int len);
+}
+int fn_8007EF48(int, int, const char*, int, int, int, int, int, int, int);
+int fn_8007EE6C(int, int, int, int, int, int);
+void TextureLoad(short* ids, int n);                            // 0x8000F738
+extern int lbl_804D375C;
+
+// Releases every emitter handle in the name buffer, the voice fx and the font text.
+static inline void ShellReleaseEffects(ShellBeh* b) {
+    while (((u32)b->name->mLength >> 3) != 0) {
+        EmitterDestroy(*(int*)b->name->mUnk0C);
+        fn_8028B35C(b->name, b->name->mUnk0C, 8);
+    }
+    if (b->fx != -1) {
+        fn_8016EEF4(b->fx);
+        b->fx = -1;
+    }
+    if (b->i7C != -1) {
+        FontRelease(b->i7C);
+        b->i7C = -1;
+    }
+}
+
+// Appends "<state name>\n" to the debug text in the message.
+static inline void ShellAppendStateName(int* data, ShellBeh* b) {
+    String first(lbl_803BFB70[b->state].name);
+    String second("\n");
+    String joined(first, second);
+    fn_8028C188((Buffer*)&data[3], joined.mData, joined.mLength);
+}
+
+// Actor message handler.
+int ShellCrabMsg(int msg, int* data) {
+    switch (msg) {
+    case 0x41E: {
+        ShellBeh* b = ((Actor*)data[0])->beh;
+        if (data[1] == (int)0xAD8576FA) {
+            ShellAppendStateName(data, b);
+            return 0;
+        }
+        return 0;
+    }
+    case 0x41D:
+        if (data[1] == -0x6DEECEFA) {
+            ((Actor*)data[0])->beh->i40 = 1;
+            return 1;
+        }
+        return 0;
+    case 0xC14: {
+        int key = data[3];
+        Actor* a = (Actor*)data[0];
+        ShellBeh* b = a->beh;
+        switch (key) {
+        case 0x4C96D432: {
+            int* blk = (int*)VAlloc(8);
+            int h = fn_800A1BC8(a->data->i14, a->data->i1C, 0xA55895E6, data[1], 0);
+            blk[0] = (int)a;
+            blk[1] = data[1] + 3;
+            fn_8008F4F0(1.0f, a->anim, data[1] + 3);
+            fn_80090974(1.0f, a->anim, data[1] + 3, h, 0x10, (void*)ShellCrabAnimCb, blk);
+            return 1;
+        }
+        case 0x1F1BB10B:
+            b->flags |= 2;
+            return 1;
+        case -0x5B03CCA3:
+            return 1;
+        case 0x7BDA2B92:
+            if (b->i7C == -1) {
+                float rx = (float)rand() / 32767.0f;
+                float ry = (float)rand() / 32767.0f;
+                int y = (int)(20.0f * ry + 0.5f * 20.0f);
+                int x = (int)(20.0f * rx + 0.5f * 20.0f);
+                b->i7C = fn_8007EF48(-1, 0, "Blur", y, x, 0, 0, 0, 0, 0);
+            }
+            b->f80 = 20.0f;
+            return 1;
+        case 0x665BF55F:
+            if (data[1] != 0) {
+                lbl_804D375C = data[1];
+            }
+            return 1;
+        }
+        return 0;
+    }
+    case 6: {
+        short ids[3];
+        ids[0] = lbl_804D3760;
+        ids[1] = lbl_804D3764;
+        ids[2] = lbl_804D3768;
+        if (data[1] == 0) {
+            fn_8000F550(ids, 3);
+        } else {
+            TextureLoad(ids, 3);
+        }
+        return 0;
+    }
+    case 0x3000: {
+        ShellReleaseEffects(((Actor*)data[0])->beh);
+        return 0;
+    }
+    case 0xC00: {
+        ShellBeh* b = ((Actor*)data[0])->beh;
+        if (data[1] == 0) {
+            while (((u32)b->name->mLength >> 3) != 0) {
+                EmitterDestroy(*(int*)b->name->mUnk0C);
+                fn_8028B35C(b->name, b->name->mUnk0C, 8);
+            }
+        }
+        if (b->fx != -1) {
+            fn_8016EEF4(b->fx);
+            b->fx = -1;
+        }
+        if (b->i7C != -1) {
+            FontRelease(b->i7C);
+            b->i7C = -1;
+        }
+        return 0;
+    }
+    }
+    return 0;
+}
+
+extern "C" {
+int fn_8008EA9C(int anim, int slot);
+void fn_80090390(int anim, int slot);
+void fn_80037EC0(int model, u32 hash, int a, int r, int g, int bl, int al);
+void fn_800E1098(float limit, Vec3* out, Vec3* in);
+}
+
+static inline float ShellRandJitter(float scale) {
+    float r = (float)rand() / 32767.0f;
+    float v = 0.5f * scale + scale * r;
+    return v > 1.0f ? v : 1.0f;
+}
+
+// Per-frame update: eases the tint and voice effects, trails the player, ages the dust emitters,
+// eases the three blend weights and picks the next state.
+int ShellCrabUpdate(Actor* a) {
+    ShellBeh* b = a->beh;
+    int next = -1;
+    int i;
+    int tint;
+
+    if (b->i54 < b->i50) {
+        b->i54 = (int)(0.5f * a->dt + (float)b->i54);
+        if (b->i50 < b->i54) {
+            b->i54 = b->i50;
+        }
+    } else if (b->i50 < b->i54) {
+        b->i54 = (int)-(0.5f * a->dt - (float)b->i54);
+        if (b->i54 < b->i50) {
+            b->i54 = b->i50;
+        }
+    }
+    if (b->i7C != -1) {
+        b->f80 = -(0.001f * a->dt * 50.0f - b->f80);
+        if (0.0f <= b->f80) {
+            float v1 = ShellRandJitter(b->f80);
+            float v2 = ShellRandJitter(b->f80);
+            fn_8007EE6C(b->i7C, (int)v2, (int)v1, 0, 0, 0);
+        } else {
+            FontRelease(b->i7C);
+            b->i7C = -1;
+        }
+    }
+    tint = (0xFF - b->i54) & 0xFF;
+    fn_80037EC0(a->model, b->hash4C, 1, 0xFF, tint, tint, 0xFF);
+    if (b->state != 0x28 && b->state != 0x2E && b->state != 0x2A && b->state != 0x2C &&
+        b->state != 0x2B && b->state != 0x2D && b->state != 0x29 && b->state != 0x24) {
+        Vec3 d;
+        float lim;
+        d.x = a->data2->f18 - a->f84;
+        d.y = a->data2->f1C - a->f88;
+        d.z = 0.0f;
+        lim = 0.001f * a->dt * 100.0f;
+        if (lim < fn_800E1020(&d)) {
+            fn_800E1098(lim, &d, &d);
+        }
+        a->f84 += d.x;
+        a->f88 += d.y;
+        a->f8C += d.z;
+        a->i24 = (int)a->f84;
+        a->i28 = (int)a->f88;
+        a->i2C = (int)a->f8C;
+    }
+    {
+        ShellBeh* nb = a->beh;
+        int* rec;
+        for (rec = (int*)(nb->name->mUnk0C); rec != (int*)(nb->name->mUnk0C + nb->name->mLength); rec += 2) {
+            rec[1] = (int)((float)rec[1] + a->dt);
+        }
+        while (((u32)nb->name->mLength >> 3) != 0) {
+            int* first = (int*)nb->name->mUnk0C;
+            if ((float)first[1] <= 600.0f) {
+                break;
+            }
+            EmitterDestroy(first[0]);
+            fn_8028B35C(nb->name, nb->name->mUnk0C, 8);
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        if (fn_8008EA9C(a->anim, i + 2) == 1 && b->blend[i] < b->ceil[i]) {
+            float v = (float)(0.001 * (double)a->dt * (double)b->rate[i] + (double)b->blend[i]);
+            b->blend[i] = v;
+            if (b->blend[i] >= b->ceil[i]) {
+                b->blend[i] = b->ceil[i];
+            }
+            fn_8008F4F0(b->blend[i], a->anim, i + 2);
+        } else if (fn_8008EA9C(a->anim, i + 2) == 2) {
+            b->blend[i] = (float)(0.001 * (double)a->dt * -(double)b->rate[i] + (double)b->blend[i]);
+            if (b->blend[i] > 0.0f) {
+                fn_8008F4F0(b->blend[i], a->anim, i + 2);
+            } else {
+                b->blend[i] = 0.0f;
+                fn_80090390(a->anim, i + 2);
+            }
+        }
+    }
+    if (b->state != 0x2F && b->state != 0x30) {
+        if (HasCondition(a->conditions, 9) == 0) {
+            if (HasCondition(a->conditions, 4) == 0 || HasCondition(a->conditions, 9) != 0 ||
+                HasCondition(a->conditions, 10) != 0) {
+                if (b->state != 2 && HasCondition(a->conditions, 0xD) != 0) {
+                    ShellCrabStep(a);
+                    next = b->state;
+                }
+            } else if (b->state == 0) {
+                ConditionSetBit(a->conditions, 4, 0);
+                next = 2;
+            } else if (b->state == 0x24) {
+                ConditionSetBit(a->conditions, 4, 0);
+                next = (b->flags & 4) ? 0x29 : 0x25;
+            } else if ((u32)(b->state - 0x2B) > 1) {
+                ConditionSetBit(a->conditions, 4, 0);
+            }
+        } else {
+            ConditionSetBit(a->conditions, 10, 1);
+            next = 0x2F;
+            if (b->fx != -1) {
+                fn_8016EEF4(b->fx);
+                b->fx = -1;
+            }
+        }
+    }
+    if (next < 0 || next == b->state) {
+        next = lbl_803BFB70[b->state].update(a);
+    }
+    if (next >= 0 && next != b->state && lbl_803BFB70[b->state].setState(a, next) != 0) {
+        lbl_803BFB70[next].enter(a);
+    }
+    return 1;
+}
 
 // Detach the sound handle, free the String and the state block (message 0x401).
 void ShellCrabFree(Actor* a) {
@@ -631,7 +1167,7 @@ void ShellCrabInit(int owner, Actor* a) {
         return;
     }
     a->beh = b;
-    a->cb110 = ShellCrabMsg;
+    a->cb110 = ShellCrabUpdate;
     a->cb118 = fn_800CDD10;
     b->owner = owner;
     b->f5C = 0.0f;
@@ -651,15 +1187,15 @@ void ShellCrabInit(int owner, Actor* a) {
     b->f8C = 0.0f;
     b->i40 = 0;
     b->i58 = 0;
-    b->name = new String();
+    b->name = new ShellName();
     b->animA = -1;
     b->animB = -1;
     b->animC = -1;
     b->animD = -1;
     b->animE = -1;
-    b->f28 = 0.0f;
-    b->f2C = 0.0f;
-    b->f30 = 0.0f;
+    b->blend[0] = 0.0f;
+    b->blend[1] = 0.0f;
+    b->blend[2] = 0.0f;
     for (int i = 0; i < 10; i++) {
         lbl_804A2A00[i] = AssetFind(0x57F77CF9, lbl_803C0008[i]);
     }
