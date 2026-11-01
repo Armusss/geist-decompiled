@@ -5,7 +5,59 @@
 // Names are descriptive guesses; unmatched against retail so far.
 
 typedef unsigned long u32;
+typedef unsigned short u16;
 struct Actor;
+
+// Growable buffer base used by the list classes below (code at 0x8028B1E4-0x8028C5xx).
+class Buffer {
+public:
+    Buffer();                                  // 0x8028BA9C
+    virtual ~Buffer();                         // 0x8028B9C0
+    virtual void Release(char* p);
+
+    char* mData;
+    int mLength;
+    int mUnk0C;
+    int mOwned;
+};
+
+void* VAlloc(int size);                                         // 0x8009DA68
+void VFree(void* p);                                            // 0x8009DA3C
+u32 AssetFind(u32 table, u32 key);                              // 0x8007EB34
+void TextureLoad(short* ids, int n);                            // 0x8000F738
+int HasCondition(void* conditions, int which);                  // 0x800A7AC4
+int ConditionSetBit(void* cond, int bit, int set);              // 0x800A7A54
+int ActorPlayAnim(int actor, u32 anim, int arg);                // 0x800C5654
+extern "C" void fn_8028B960(void* p);
+extern "C" void fn_8028BC2C(void* self);
+extern "C" void fn_8028BC28(void* self, void* begin, u32 size);
+extern "C" int fn_800498D0(void);
+extern "C" void fn_800BBCA8(void* o);
+extern "C" void fn_8029B070(void* o, int v);
+extern "C" void fn_800C9ED0(void* o);
+extern "C" void fn_8016EDD4(int v);
+extern "C" char* strncpy(char* dst, const char* src, u32 n);
+
+// Condition-carrying object (the condition block sits at +0x270).
+struct CondObj {
+    char pad00[0x270];
+    char conditions[0xC];   // 0x270
+};
+
+// Two stacked list classes, each with its own vtable (0x803C38F0 / 0x803C3910).
+class EffectListBase : public Buffer {
+public:
+    EffectListBase() {}
+    virtual ~EffectListBase() { fn_8028B960(this); }
+    static void* operator new(unsigned long n) { return VAlloc(n); }
+    static void operator delete(void* p) { VFree(p); }
+};
+
+class EffectList : public EffectListBase {
+public:
+    EffectList() {}
+    virtual ~EffectList() {}
+};
 
 extern int lbl_804D5728;
 extern float lbl_804D5720;
@@ -146,7 +198,15 @@ void fn_802A3BEC() {}
 // TODO (not drafted yet, 0xA4 bytes at 0x8029F854): not analysed
 // TODO (not drafted yet, 0xE0 bytes at 0x8029F8F8): not analysed
 // TODO (not drafted yet, 0x88 bytes at 0x8029F9D8): not analysed
-// TODO (not drafted yet, 0x50 bytes at 0x8029FA60): not analysed
+bool CondObjClearFlag2A(CondObj* o) {
+    if (o == 0) {
+        return false;
+    }
+    ConditionSetBit(o->conditions, 0x2A, 0);
+    fn_800BBCA8(o);
+    return true;
+}
+
 // TODO (not drafted yet, 0xC0 bytes at 0x8029FAB0): not analysed
 // TODO (not drafted yet, 0x16C bytes at 0x8029FB70): not analysed
 // TODO (not drafted yet, 0x94 bytes at 0x8029FCDC): not analysed
@@ -155,9 +215,24 @@ void fn_802A3BEC() {}
 // TODO (not drafted yet, 0xA4 bytes at 0x802A01F0): not analysed
 // TODO (not drafted yet, 0xE4 bytes at 0x802A0294): not analysed
 // TODO (not drafted yet, 0x1C0 bytes at 0x802A0378): not analysed
-// TODO (not drafted yet, 0x4C bytes at 0x802A0538): not analysed
+bool CondObjActivate(CondObj* o) {
+    if (o == 0) {
+        return false;
+    }
+    fn_8029B070(o, 0x13E6B);
+    fn_800BBCA8(o);
+    return true;
+}
+
 // TODO (not drafted yet, 0xBC bytes at 0x802A0584): not analysed
-// TODO (not drafted yet, 0x4C bytes at 0x802A0640): not analysed
+bool CondObjNotBusy(CondObj* o) {
+    if (o == 0) {
+        return false;
+    }
+    fn_800C9ED0(o);
+    return HasCondition(o->conditions, 0x2C) == 0;
+}
+
 // TODO (not drafted yet, 0x74 bytes at 0x802A068C): not analysed
 // TODO (not drafted yet, 0x170 bytes at 0x802A0700): not analysed
 // TODO (not drafted yet, 0x300 bytes at 0x802A0870): not analysed
@@ -186,7 +261,16 @@ void* LevelSlotCurrent() {
 }
 
 // TODO (not drafted yet, 0x2C bytes at 0x802A1E90): not analysed
-// TODO (not drafted yet, 0x4C bytes at 0x802A1EBC): not analysed
+extern "C" char lbl_803C32B8[];
+extern "C" void* fn_802A1EBC(u32 index);
+void* fn_802A1EBC(u32 index) {
+    if ((int)index >= 0 && index < 10) {
+        lbl_804D3858 = lbl_803C32B8 + index * 0x60;
+        fn_8016EDD4(*(int*)lbl_804D3858);
+    }
+    return lbl_804D3858;
+}
+
 // TODO (not drafted yet, 0x98 bytes at 0x802A1F08): not analysed
 extern "C" char* strcpy(char* dst, const char* src);
 void LevelNameSet(const char* name) {
@@ -198,7 +282,11 @@ char* LevelNameBuffer2() {
     return lbl_804A4698;
 }
 
-// TODO (not drafted yet, 0x40 bytes at 0x802A1FE4): not analysed
+void LevelName2Set(const char* name) {
+    strncpy(lbl_804A4698, name, 0x1F);
+    lbl_804A4698[0x1F] = 0;
+}
+
 extern float lbl_804DA820;
 float TimeScaleValue() {
     if (lbl_804D3868 != 0) {
@@ -211,7 +299,11 @@ float TimeScaleValue() {
 // TODO (not drafted yet, 0xC4 bytes at 0x802A214C): not analysed
 // TODO (not drafted yet, 0x428 bytes at 0x802A2210): not analysed
 // TODO (not drafted yet, 0x410 bytes at 0x802A2638): not analysed
-// TODO (not drafted yet, 0x34 bytes at 0x802A2A48): not analysed
+extern "C" void fn_802A2210(int a, int b, int* c, int d);
+void ActorMsgForward(int a, int* b) {
+    fn_802A2210(*(int*)(*b + 0x38), a, b, 0);
+}
+
 // TODO (not drafted yet, 0x218 bytes at 0x802A2A7C): not analysed
 // TODO (not drafted yet, 0x95C bytes at 0x802A2C94): not analysed
 // TODO (not drafted yet, 0x98 bytes at 0x802A35F0): not analysed
@@ -219,13 +311,44 @@ float TimeScaleValue() {
 // TODO (not drafted yet, 0xEC bytes at 0x802A3778): not analysed
 // TODO (not drafted yet, 0x254 bytes at 0x802A3864): not analysed
 // TODO (not drafted yet, 0xBC bytes at 0x802A3AB8): not analysed
-// TODO (not drafted yet, 0x78 bytes at 0x802A3B74): not analysed
 // TODO (not drafted yet, 0xF0 bytes at 0x802A3BF0): not analysed
-// TODO (not drafted yet, 0x70 bytes at 0x802A3CE0): not analysed
-// TODO (not drafted yet, 0x54 bytes at 0x802A3D50): not analysed
-// TODO (not drafted yet, 0x68 bytes at 0x802A3DA4): not analysed
-// TODO (not drafted yet, 0x48 bytes at 0x802A3E0C): not analysed
-// TODO (not drafted yet, 0x60 bytes at 0x802A3E54): not analysed
+struct TexKey {
+    u32 key;
+    short id;
+    short pad;
+};
+extern "C" TexKey lbl_803C3678[4];
+extern "C" void fn_802A3CE0(void);
+
+// Resolves and loads the four effect textures.
+void fn_802A3CE0(void) {
+    u32 i = 0;
+    do {
+        lbl_803C3678[i].id = AssetFind(0xF2E2BEB8, lbl_803C3678[i].key);
+        TextureLoad(&lbl_803C3678[i].id, 1);
+        i++;
+    } while (i != 4);
+}
+
+extern EffectList* lbl_804D5750;
+extern "C" void fn_802A3D50(void);
+void fn_802A3D50(void) {
+    lbl_804D5750 = new EffectList();
+}
+
+void EmptyRangeLoopA(void* begin, void* end);
+void EmptyRangeLoopB(void* begin, void* end);
+
+void EffectListArrayConstruct(void* self, void* begin, u32 size) {
+    fn_8028BC2C(self);
+    EmptyRangeLoopA(begin, (char*)begin + (size & ~3));
+}
+
+void EffectListArrayDestruct(void* self, void* begin, u32 size) {
+    EmptyRangeLoopB(begin, (char*)begin + (size & ~3));
+    fn_8028BC28(self, begin, size);
+}
+
 int ReturnFour() {
     return 4;
 }
@@ -304,7 +427,11 @@ void ObjFlagsClear40000(FlagObj* o) {
 // TODO (not drafted yet, 0x1B8 bytes at 0x802A51EC): not analysed
 // TODO (not drafted yet, 0x6C bytes at 0x802A53A4): not analysed
 // TODO (not drafted yet, 0x1B8 bytes at 0x802A5410): not analysed
-// TODO (not drafted yet, 0x34 bytes at 0x802A55C8): not analysed
+void ActorPlayAnimD39F() {
+    int h = fn_800498D0();
+    ActorPlayAnim(0x2000000, 0xD39F69B4, h);
+}
+
 // TODO (not drafted yet, 0x6C bytes at 0x802A55FC): not analysed
 // TODO (not drafted yet, 0x140 bytes at 0x802A5668): not analysed
 // TODO (not drafted yet, 0x6C bytes at 0x802A57A8): not analysed
@@ -313,7 +440,11 @@ void ObjFlagsClear40000(FlagObj* o) {
 // TODO (not drafted yet, 0xB4 bytes at 0x802A5BA8): not analysed
 // TODO (not drafted yet, 0x61C bytes at 0x802A5C5C): not analysed
 // TODO (not drafted yet, 0x1F4 bytes at 0x802A6278): not analysed
-// TODO (not drafted yet, 0x34 bytes at 0x802A646C): not analysed
+void ActorPlayAnim8B3A() {
+    int h = fn_800498D0();
+    ActorPlayAnim(0x2000000, 0x8B3A27A3, h);
+}
+
 // TODO (not drafted yet, 0x6C bytes at 0x802A64A0): not analysed
 // TODO (not drafted yet, 0x140 bytes at 0x802A650C): not analysed
 // TODO (not drafted yet, 0x520 bytes at 0x802A664C): not analysed
