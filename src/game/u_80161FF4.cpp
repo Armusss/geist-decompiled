@@ -9,6 +9,11 @@ typedef unsigned char u8;
 struct Owner;
 struct Beh;
 
+struct Actor {
+    u8 pad00[0x38];  // 0x00
+    int id;          // 0x38
+};
+
 typedef int (*BehFunc)(Owner* owner, Beh* beh, int arg);
 
 // Behaviour slot, embedded in the owner (Owner + 0x894).
@@ -36,13 +41,53 @@ struct Owner {
     Beh beh;               // 0x894
 };
 
-struct Actor {
-    u8 pad00[0x38];  // 0x00
-    int id;          // 0x38
+
+// HUD owner block (only the fields used here).
+struct Hud {
+    u8 pad0000[0x1500];       // 0x0000
+    float unk1500;            // 0x1500
+    u8 pad1504[0x1510 - 0x1504];  // 0x1504
+    int unk1510;              // 0x1510
+    u8 pad1514[0x1590 - 0x1514];  // 0x1514
+    int unk1590[4];           // 0x1590
+    int unk15A0[4];           // 0x15A0
+    u8 pad15B0[0x26E4 - 0x15B0];  // 0x15B0
+    Actor* unk26E4;           // 0x26E4
+    u8 pad26E8[0x2730 - 0x26E8];  // 0x26E8
+    float unk2730;            // 0x2730
+    float unk2734;            // 0x2734
+};
+
+// HUD element (only the fields used here).
+struct HudElem {
+    u8 pad00[0x10];           // 0x00
+    float unk10;              // 0x10
+    float unk14[4];           // 0x14
+    float unk24;              // 0x24
+    float unk28;              // 0x28
+    float unk2C;              // 0x2C
+    float unk30;              // 0x30
+    float unk34;              // 0x34
+    float unk38;              // 0x38
+    u8 pad3C[0x50 - 0x3C];    // 0x3C
+    float unk50;              // 0x50
+    u8 pad54[0x58 - 0x54];    // 0x54
+    float unk58;              // 0x58
+    float unk5C;              // 0x5C
+    u8 pad60[0x84 - 0x60];    // 0x60
+    int unk84;                // 0x84
 };
 
 int HasCondition(void* cond, int bit);                          // 0x800A7AC4
 Actor* FollowGetTargetObj(void* cond);                          // 0x800A7A18
+int PlayerInHost(Actor* a);                                     // 0x80049750
+struct SplineNameEntry;
+int SplineAssetResolve(SplineNameEntry* names, int a, int b);   // 0x80101FC8
+extern "C" void fn_8000F60C(int id);
+extern "C" void fn_8000F874(int id);
+extern "C" void fn_8016A3D0(int a, int b, int c, int d, int e);
+extern SplineNameEntry lbl_803A7B58[];
+extern int lbl_804D2F90;
 
 // Sets the argument slot of a behaviour.
 extern "C" int fn_801625AC(Owner* owner, Beh* beh, int value);
@@ -215,4 +260,160 @@ int BehReset(Beh* beh) {
     beh->targetKind = 0;
     beh->target.id = -1;
     return 1;
+}
+
+// Reads the HUD word at +0x1510.
+int HudGetUnk1510(Hud* hud) {
+    return hud->unk1510;
+}
+
+// Writes the HUD word at +0x1510.
+void HudSetUnk1510(Hud* hud, int value) {
+    hud->unk1510 = value;
+}
+
+// TODO (not drafted yet, 0x38 bytes at 0x80163554): calls Fn8008E33C(lbl_8046DFC8, 0) when the id is valid (that call passes no float)
+
+// Shows one of two HUD prompts.
+extern "C" void fn_8016359C(int on);
+void fn_8016359C(int on) {
+    if (on != 0) {
+        fn_8016A3D0(0x12, 0xFF, -1, 0, 0);
+    } else {
+        fn_8016A3D0(0x11, 0xFF, -1, 0, 0);
+    }
+}
+
+// Sets four HUD words at +0x15A0.
+extern "C" void fn_80163810(Hud* hud, int a, int b, int c, int d);
+void fn_80163810(Hud* hud, int a, int b, int c, int d) {
+    hud->unk15A0[0] = a;
+    hud->unk15A0[1] = b;
+    hud->unk15A0[2] = c;
+    hud->unk15A0[3] = d;
+}
+
+// Sets four HUD words at +0x1590.
+extern "C" void fn_80163824(Hud* hud, int a, int b, int c, int d);
+void fn_80163824(Hud* hud, int a, int b, int c, int d) {
+    hud->unk1590[0] = a;
+    hud->unk1590[1] = b;
+    hud->unk1590[2] = c;
+    hud->unk1590[3] = d;
+}
+
+// Resets the element's timer value.
+void HudElemSetTimer(Hud* hud, HudElem* e) {
+    if (hud == 0) {
+        return;
+    }
+    if (e == 0) {
+        return;
+    }
+    e->unk50 = 1500.0f;
+}
+
+// Switches the element's texture; -2 picks the default arrow texture.
+extern "C" void fn_80163854(Hud* hud, HudElem* e, int tex);
+void fn_80163854(Hud* hud, HudElem* e, int tex) {
+    if (hud != 0 && e != 0) {
+        if (tex == -2) {
+            tex = SplineAssetResolve(lbl_803A7B58, 2, 1);
+        }
+        if (e->unk84 != tex) {
+            if (e->unk84 != -1) {
+                fn_8000F60C(e->unk84);
+                e->unk84 = -1;
+            }
+            e->unk84 = tex;
+            fn_8000F874(e->unk84);
+        }
+    }
+}
+
+// Sets the element's position and default scale/alpha.
+void HudElemSetPos(float x, float y, float z, Hud* hud, HudElem* e) {
+    if (hud == 0) {
+        return;
+    }
+    if (e == 0) {
+        return;
+    }
+    e->unk24 = x;
+    e->unk28 = y;
+    e->unk2C = z;
+    e->unk30 = 0.2f;
+    e->unk34 = 0.2f;
+    e->unk38 = 500.0f;
+}
+
+// Sets the element's position and size from five values.
+extern "C" void fn_80163918(float a, float b, float c, float d, float e, Hud* hud, HudElem* el);
+void fn_80163918(float a, float b, float c, float d, float e, Hud* hud, HudElem* el) {
+    if (hud == 0) {
+        return;
+    }
+    if (el == 0) {
+        return;
+    }
+    el->unk24 = a;
+    el->unk28 = b;
+    el->unk2C = c;
+    el->unk30 = d;
+    el->unk34 = d;
+    el->unk38 = e;
+}
+
+// Sets one of the element's array slots to the default value.
+void HudElemSetSlot(Hud* hud, HudElem* e, int index) {
+    if (hud == 0) {
+        return;
+    }
+    if (e == 0) {
+        return;
+    }
+    e->unk14[index] = 1000.0f;
+}
+
+// Picks the element's base value from the HUD owner state.
+void HudElemInit(Hud* hud, HudElem* e) {
+    if (hud != 0 && e != 0) {
+        if (lbl_804D2F90 != 0) {
+            if (PlayerInHost((Actor*)hud) != 0) {
+                if (hud->unk2734 > 0.0f) {
+                    e->unk10 = hud->unk2730;
+                } else {
+                    e->unk10 = 100.0f;
+                }
+            } else {
+                e->unk10 = hud->unk1500;
+            }
+        } else if (PlayerInHost((Actor*)hud) != 0 && ((u32)hud->unk26E4->id >> 24) != 1) {
+            e->unk10 = hud->unk2730;
+        } else {
+            e->unk10 = hud->unk1500;
+        }
+        e->unk5C = e->unk10;
+        e->unk58 = 0.0f;
+    }
+}
+
+// Returns -1 without a block, 1 when both words are set, else 0.
+int HudBlockReady(void* unused, int* block) {
+    if (block == 0) {
+        return -1;
+    }
+    u8 r = 0;
+    if (block[0] != 0 && block[1] != 0) {
+        r = 1;
+    }
+    return r;
+}
+
+// Stores a word into the block.
+void HudBlockSet(void* unused, int* block, int value) {
+    if (block == 0) {
+        return;
+    }
+    block[0] = value;
 }
