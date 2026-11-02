@@ -269,10 +269,12 @@ int CollectUpdate(void* p) {
             out.y = (float)iy;
             out.z = (float)iz;
             if (fn_800BB218(o, o->f2c4, &pos, &out, o, &scale, &unk1, &unk2, o->f900)) {
-                float sx = (float)vec.x * scale;
-                float sy = (float)vec.y * scale;
-                float sz = (float)vec.z * scale;
-
+                float sx = (float)vec.x;
+                float sy = (float)vec.y;
+                float sz = (float)vec.z;
+                sx *= scale;
+                sy *= scale;
+                sz *= scale;
                 out.x = pos.x + sx;
                 out.y = pos.y + sy;
                 out.z = pos.z + sz;
@@ -322,10 +324,12 @@ int CollectEnter(void* p) {
         out.z = (float)iz;
     }
     if (fn_800BB218(o, o->f2c4, &pos, &out, o, &scale, &unk1, &unk2, o->f900)) {
-        float sx = (float)vec.x * scale;
-        float sy = (float)vec.y * scale;
-        float sz = (float)vec.z * scale;
-
+        float sx = (float)vec.x;
+        float sy = (float)vec.y;
+        float sz = (float)vec.z;
+        sx *= scale;
+        sy *= scale;
+        sz *= scale;
         out.x = pos.x + sx;
         out.y = pos.y + sy;
         out.z = pos.z + sz;
