@@ -94,14 +94,14 @@ int OptionGet3()
 // 0x80145B90: changes a volume by steps of four (0-100)
 void VolumeAdjustA(int steps)
 {
-    int v = fn_80170C30() + steps * 4;
+    int v = steps * 4 + fn_80170C30();
     int c;
 
     if (v < 0) {
         c = 0;
     } else {
         c = 100;
-        if (v < 101) {
+        if (v <= 100) {
             c = v;
         }
     }
@@ -117,14 +117,14 @@ int VolumeGetA()
 // 0x80145C04: changes the second volume by steps of four (0-100)
 void VolumeAdjustB(int steps)
 {
-    int v = fn_80170CBC() + steps * 4;
+    int v = steps * 4 + fn_80170CBC();
     int c;
 
     if (v < 0) {
         c = 0;
     } else {
         c = 100;
-        if (v < 101) {
+        if (v <= 100) {
             c = v;
         }
     }
