@@ -12,32 +12,83 @@ typedef float f32;
 
 struct Beh;
 
-// Per-actor state control block (actor + 0x130).
+// Per-actor state control block (actor + 0x130), 0x88 bytes.
 struct StateBlock {
     /*0x00*/ int state;
-    /*0x04*/ u8 unk04[0x10 - 0x04];
+    /*0x04*/ f32 timer;
+    /*0x08*/ s16 field08;
+    /*0x0A*/ s16 field0A;
+    /*0x0C*/ f32 a[8];
+    /*0x2C*/ f32 b[8];
+    /*0x4C*/ f32 c[8];
+    /*0x6C*/ f32 hitTimer;
+    /*0x70*/ u8 unk70[0x74 - 0x70];
+    /*0x74*/ int field74;
+    /*0x78*/ f32 field78;
+    /*0x7C*/ int field7C;
+    /*0x80*/ int field80;
+    /*0x84*/ int field84;
 };
 
 // Partial layout of the actor class (only the offsets used here).
 struct Actor {
-    /*0x000*/ u8 unk000[0x104];
-    /*0x104*/ int field104;
+    /*0x000*/ u8 unk000[0x84];
+    /*0x084*/ f32 pos[3];
+    /*0x090*/ u8 unk090[0xCC - 0x90];
+    /*0x0CC*/ int model;
+    /*0x0D0*/ u8 unk0D0[0xFC - 0xD0];
+    /*0x0FC*/ void* field0FC;
+    /*0x100*/ u8 unk100[0x104 - 0x100];
+    /*0x104*/ void* field104;
     /*0x108*/ u8 unk108[0x130 - 0x108];
     /*0x130*/ StateBlock* block;
-    /*0x134*/ u8 unk134[0x270 - 0x134];
+    /*0x134*/ u8 unk134[0x138 - 0x134];
+    /*0x138*/ f32 dt;
+    /*0x13C*/ u8 unk13C[0x270 - 0x13C];
     /*0x270*/ u8 conditions[0x18];
     /*0x288*/ int field288;
-    /*0x28C*/ u8 unk28C[0x894 - 0x28C];
-    /*0x894*/ u8 beh[0x900 - 0x894];
+    /*0x28C*/ u8 unk28C[0x604 - 0x28C];
+    /*0x604*/ void* field604;
+    /*0x608*/ int targetId;
+    /*0x60C*/ u8 unk60C[0x894 - 0x60C];
+    /*0x894*/ u8 beh[0x91C - 0x894];
+    /*0x91C*/ f32 field91C;
+    /*0x920*/ u8 unk920[0x994 - 0x920];
 };
 
+// Name hashes of the model nodes this actor animates (8 each), and the asset ids found for them.
+static const u32 sHashA[8] = {0x9CA18DD0, 0x9C9EC4D7, 0xF74B24F1, 0xEF40825B, 0xEF408315, 0x014BE569, 0x014BE623, 0x9FAFABBD};
+static const u32 sHashB[8] = {0x3D33E0B9, 0xF65F386F, 0x5C7672B5, 0x05E3C5C2, 0xBF9C6C7C, 0xC2A29D50, 0x7C5B440A, 0x4494EE74};
+static const u32 sHashC[8] = {0xD20F7090, 0xD20CA797, 0x6F999A31, 0x80C0B51B, 0x80C0B5D5, 0x92CC1829, 0x92CC18E3, 0x3E35D0FD};
+static int sIdA[8];
+static int sIdB[8];
+static int sIdC[8];
+static int sIdD[8];
+
 extern "C" {
+extern int lbl_804D3B3C;
+extern int lbl_804D3B40;
+extern int lbl_804D3B44;
+extern int lbl_804D3B48;
+extern int lbl_804D3B4C;
+extern int lbl_804D3B54;
+extern f32 lbl_804DAF00;
+extern f32 lbl_804DAF10;
+extern f32 lbl_804DAF38;
+int fn_802C9D1C(void* owner);
+void fn_800CE328();
+void fn_800B2D00();
 void VFree(void* p);
 void fn_800BBCA8(Actor* actor);
 void fn_800BC56C(Actor* actor, void* target);
 void fn_80162610(Actor* actor, void* beh, int arg);
 }
+int fn_80037EC0(int model, int node, int a, int r, int g, int b, int al);
 void BehReset(Beh* beh);
+void* VAlloc(int size);
+int AssetFind(u32 type, u32 name);
+int ModelNodeSetup(int model, int node, int a, int b);
+int FxFind(const char* name);
 void ConditionUpdateBit(void* conditions, int id, int value);
 void* FollowGetTargetObj(void* conditions);
 void FollowSetTargetObj(void* conditions, void* target);
@@ -105,4 +156,50 @@ int FollowStateEnter0(Actor* a) {
     a->field288 = 0;
     fn_800BBCA8(a);
     return 1;
+}
+
+// 0x802CA544: allocate and initialise the state block, look up the model nodes and effects
+void FollowInit(Actor* a) {
+    StateBlock* b;
+    int i;
+    a->field104 = (void*)fn_802C9D1C;
+    b = (StateBlock*)VAlloc(0x88);
+    if (b == 0) {
+        a->block = 0;
+    } else {
+        f32 other;
+        f32 zero;
+        a->block = b;
+        a->field0FC = (void*)fn_800CE328;
+        a->field604 = (void*)fn_800B2D00;
+        a->field91C = lbl_804DAF10;
+        zero = lbl_804DAF00;
+        other = lbl_804DAF38;
+        b->state = 0;
+        b->field08 = 0;
+        b->field0A = 0;
+        b->field74 = -1;
+        b->field78 = zero;
+        b->field7C = -1;
+        b->field80 = -1;
+        b->field84 = -1;
+        for (i = 0; i < 8; i++) {
+            b->a[i] = zero;
+            b->b[i] = other;
+            b->c[i] = zero;
+            sIdD[i] = AssetFind(0xD9044CBB, sHashC[i]);
+            sIdA[i] = AssetFind(0xD9044CBB, sHashA[i]);
+            sIdB[i] = AssetFind(0xF1754BF2, sHashA[i]);
+            sIdC[i] = AssetFind(0xD9044CBB, sHashB[i]);
+            ModelNodeSetup(a->model, sIdD[i], 0, 1);
+            fn_80037EC0(a->model, sIdD[i], 1, 0x32, 0x32, 0xFF, 0xFF);
+            fn_80037EC0(a->model, sIdC[i], 1, 0xFF, 0xFF, 0xFF, 0x32);
+        }
+        lbl_804D3B3C = AssetFind(0xF2E2BEB8, 0xDE1813E0);
+        lbl_804D3B40 = AssetFind(0xF2E2BEB8, 0x0A8B74B2);
+        lbl_804D3B44 = AssetFind(0xF2E2BEB8, 0x0A36E7AC);
+        lbl_804D3B48 = AssetFind(0xF2E2BEB8, 0x0A28D02B);
+        lbl_804D3B4C = AssetFind(0xF2E2BEB8, 0x4A9BE9A9);
+        lbl_804D3B54 = FxFind("stat_hit");
+    }
 }
