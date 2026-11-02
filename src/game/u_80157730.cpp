@@ -1868,7 +1868,8 @@ void fn_80159118(f32 dt) {
     }
     fn_80233A20(dt);
 }
-void fn_80159554() {}
+// TODO (not drafted yet, 0x4B0 bytes at 0x80159554)
+void fn_80159554();
 void fn_80159C0C() {
     int** p;
 
@@ -1947,7 +1948,8 @@ void fn_80159D48(f32* p) {
         }
     }
 }
-void fn_8015A1A0(f32, int) {}
+// TODO (not drafted yet, 0x30C bytes at 0x8015A1A0)
+void fn_8015A1A0(f32, int);
 int fn_8015A570(f32 a, f32 b, u8 p3, u8 p4, u8 p5, u8 p6, u8 p7, u8 p8, u8 p9, u8 p10,
                 int kind, int arg) {
     int* obj;
@@ -2045,8 +2047,10 @@ int fn_8015A78C(u8 p1, u8 p2, u8 p3, u8 p4, u8 p5, u8 p6, u8 p7, u8 p8) {
     }
     return (int)obj;
 }
-void fn_8015AC70() {}
-void fn_8015AF74() {}
+// TODO (not drafted yet, 0x304 bytes at 0x8015AC70)
+void fn_8015AC70();
+// TODO (not drafted yet, 0x32C bytes at 0x8015AF74)
+void fn_8015AF74();
 int fn_8015B2A0(f32 timer, void* posRaw, u8 a, u8 b, u8 c, u8 d, u8 e, u8 f) {
     int* pos = (int*)posRaw;
     u32* p;
@@ -2122,7 +2126,9 @@ int fn_8015B428(f32 timer, void* posRaw, int arg, u8 a, u8 b, u8 c, u8 d, u8 e, 
     }
     return p != 0;
 }
-void fn_8015B5B4(int) {}
-void fn_8015BA5C(f32) {}
+// TODO (not drafted yet, 0x4A8 bytes at 0x8015B5B4)
+void fn_8015B5B4(int);
+// TODO (not drafted yet, 0x534 bytes at 0x8015BA5C)
+void fn_8015BA5C(f32);
 
 } // extern "C"
