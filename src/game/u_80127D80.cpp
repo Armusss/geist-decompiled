@@ -1569,7 +1569,8 @@ int FoeNoMsgResult() {
 
 int FoeSpawnMsg(int* p, int msg, u32 param, int* extra) {
     int v = Fn80175D60(param);
-    if (msg == 0x14967) {
+    switch (msg) {
+    case 0x14967:
         fn_80131798(param, v, extra, *p);
         return 1;
     }
