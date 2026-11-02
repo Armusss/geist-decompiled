@@ -70,6 +70,13 @@ struct MenuOps {
     void (*activate)(MenuItem* item, int flag); // 0x24
 };
 
+// Message block of the menu command message (0xC14).
+struct MenuMsgData {
+    u8 unk0[8];
+    u32 target; // 0x08
+    int key;    // 0x0c
+};
+
 // A menu page: owned strings plus up to five (label, id) shortcut pairs.
 struct MenuPage {
     void* items[20];  // 0x00
@@ -134,10 +141,13 @@ void HookNop0();
 void HookNop1();
 extern "C" void fn_8001BC78();
 // TODO (not drafted yet, 0x410 bytes at 0x8021E09C): menu screen handler
-extern "C" void fn_8021E09C();
+extern "C" void fn_8021E09C(MenuPage* page);
 // TODO (not drafted yet, 0x188 bytes at 0x8021DCF4): widget callback
 extern "C" void fn_8021DCF4();
 extern MenuWidget* lbl_8049EE58[];
+extern MenuPage lbl_8049E9A8;
+extern MenuPage lbl_8049EB38;
+int MenuMsg(int sender, int msg, MenuMsgData* data);
 extern int lbl_804D53C8;
 extern int lbl_804D53F0;
 extern "C" int SendMsg(int to, int msg, void* data);
@@ -174,8 +184,6 @@ extern "C" void fn_8000F874(int x);
 u32 StrFindKeySkip(u32 key);
 void VFree(void* p);
 
-// TODO (not drafted yet, 0xDC bytes at 0x80217B60): menu message handler
-extern "C" void fn_80217B60();
 
 // MenuIsCurrent: whether a screen is the current one (0: whether any selection is set).
 extern "C" int fn_80215C04(MenuScreen* screen) {
@@ -202,7 +210,7 @@ extern "C" void fn_80217AFC() {
     lbl_804D3430 = 1;
     lbl_804D53D4 = 0;
     lbl_804D53E4 = 0;
-    fn_80026660(0x20, (void*)fn_80217B60, 0);
+    fn_80026660(0x20, (void*)MenuMsg, 0);
 }
 
 // WideScreenToggle: flip the wide-screen flag by an increment.
@@ -350,8 +358,8 @@ void MenuArmWidget() {
     w->state = 3;
 }
 
-void MenuScreenRun() {
-    fn_8021E09C();
+void MenuScreenRun(MenuPage* page) {
+    fn_8021E09C(page);
 }
 
 // MenuItemActivate: invoke the item class's activate slot when it is not held.
@@ -517,4 +525,34 @@ extern "C" int fn_80215B40(int widget) {
     } else {
         return 0;
     }
+}
+
+// MenuMsg: handle the menu open/close command messages.
+int MenuMsg(int sender, int msg, MenuMsgData* data) {
+    MenuScreen* screen[10];
+    switch (msg) {
+    case 0xC14:
+        switch (data->key) {
+        case -0x79D6369:
+            if (lbl_804D53E0 == 4 || lbl_804D53E0 == 3) {
+                lbl_804D3434 = -1;
+                fn_8021E09C(&lbl_8049EB38);
+                return 1;
+            }
+            break;
+        case 0x1C19D386:
+            if (lbl_804D53E0 == 2) {
+                if ((int)(data->target >> 24) == 2) {
+                    SendMsg(data->target, 0x400, screen);
+                    lbl_804D53DC = screen[0];
+                }
+                lbl_804D3434 = -1;
+                fn_8021E09C(&lbl_8049E9A8);
+                return 1;
+            }
+            break;
+        }
+        return 0;
+    }
+    return 0;
 }
