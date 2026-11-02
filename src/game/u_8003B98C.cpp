@@ -28,14 +28,8 @@ extern "C" s32 fn_8003B98C(s16 handle)
 {
     s32 index;
 
-    if (handle == -1)
-        return 0;
-    index = handle & 0xFFF;
-    if (index >= 1)
-        return 0;
-    if ((lbl_804D4324[index / 32] & (1 << (handle & 0x1F))) == 0)
-        return 0;
-    if (((handle >> 12) & 7) != (lbl_8040DF00[index].channel & 7))
+    if (handle == -1 || (index = handle & 0xFFF) >= 1 || (lbl_804D4324[index / 32] & (1 << (handle & 0x1F))) == 0
+        || ((handle >> 12) & 7) != (lbl_8040DF00[index].channel & 7))
         return 0;
     return lbl_8040DF00[index].value;
 }
@@ -46,15 +40,10 @@ extern "C" void fn_8003BA00(s16 handle)
 {
     s32 index;
 
-    if (handle == -1)
+    if (handle == -1 || (index = handle & 0xFFF) >= 1 || (lbl_804D4324[index / 32] & (1 << (handle & 0x1F))) == 0
+        || ((handle >> 12) & 7) != (lbl_8040DF00[index].channel & 7))
         return;
-    index = handle & 0xFFF;
-    if (index >= 1)
-        return;
-    if ((lbl_804D4324[index / 32] & (1 << (handle & 0x1F))) == 0)
-        return;
-    if (((handle >> 12) & 7) == (lbl_8040DF00[index].channel & 7))
-        lbl_8040DF00[index].value = 1;
+    lbl_8040DF00[index].value = 1;
 }
 
 // fn_8003BA70 (placeholder name kept: called from other units as fn_8003BA70).
@@ -199,16 +188,18 @@ extern "C" void fn_8003BAD0(float dt)
 // Reset/init view of the load manager at lbl_8040DF00: a small header followed
 // by the per-slot state.  The handle fields hold queue channel handles and are
 // -1 while the slot is free.  (Layout is a guess from the retail offsets.)
-struct LoadSlotView {
-    s32 handle;   // +0x00
-    s32 count;    // +0x04
-    s32 total;    // +0x08
-    s32 state;    // +0x0c
-    s32 arg;      // +0x10
-    s32 handle2;  // +0x14
-    s32 queue;    // +0x18
-    s32 field1c;  // +0x1c
-    s32 field20;  // +0x20
+typedef void (*AsyncCallback)(int, int);
+
+struct AsyncSource {            // 0x24 bytes at slot+0x28 + i*0x24
+    s32 id;                     // +0x00
+    s32 field04;                // +0x04
+    s32 field08;                // +0x08
+    s32 field0c;                // +0x0c
+    s32 block;                  // +0x10
+    s32 stream;                 // +0x14
+    s32 mode;                   // +0x18
+    AsyncCallback callback;     // +0x1c
+    AsyncFile* file;            // +0x20
 };
 
 struct LoadManagerView {
@@ -224,7 +215,7 @@ struct LoadManagerView {
     s32 limit;             // +0x1c
     s32 count;             // +0x20
     s32 field24;           // +0x24
-    LoadSlotView slots[7]; // +0x28
+    AsyncSource slots[7]; // +0x28
 };
 
 extern u8 lbl_803F9A00[];
@@ -242,9 +233,12 @@ static inline int IsHandleSlotUsed(s16 handle)
 void ResetLoadManager(void)
 {
     LoadManagerView* mgr = (LoadManagerView*)lbl_8040DF00;
+    s32 i;
 
-    if (IsHandleSlotUsed(0))
-        FreeHandleChannel((s16)((mgr->channel & 7) << 12));
+    for (i = 0; i < 1; i++) {
+        if (IsHandleSlotUsed(i))
+            FreeHandleChannel((s16)((mgr->channel & 7) << 12));
+    }
 
     mgr->processed = 0;
     mgr->completed = 0;
@@ -257,64 +251,68 @@ void ResetLoadManager(void)
     mgr->count = 0;
     mgr->field24 = 0;
 
-    mgr->slots[0].handle = -1;
-    mgr->slots[0].count = 0;
-    mgr->slots[0].total = 0;
-    mgr->slots[0].state = 0;
-    mgr->slots[0].handle2 = -1;
-    mgr->slots[0].queue = 0;
+    mgr->slots[0].id = -1;
+    mgr->slots[0].field04 = 0;
+    mgr->slots[0].field08 = 0;
+    mgr->slots[0].field0c = 0;
+    mgr->slots[0].stream = -1;
+    mgr->slots[0].mode = 0;
 
-    mgr->slots[1].handle = -1;
-    mgr->slots[1].count = 0;
-    mgr->slots[1].total = 0;
-    mgr->slots[1].state = 0;
-    mgr->slots[1].handle2 = -1;
-    mgr->slots[1].queue = 0;
+    mgr->slots[1].id = -1;
+    mgr->slots[1].field04 = 0;
+    mgr->slots[1].field08 = 0;
+    mgr->slots[1].field0c = 0;
+    mgr->slots[1].stream = -1;
+    mgr->slots[1].mode = 0;
 
-    mgr->slots[2].handle = -1;
-    mgr->slots[2].count = 0;
-    mgr->slots[2].total = 0;
-    mgr->slots[2].state = 0;
-    mgr->slots[2].handle2 = -1;
-    mgr->slots[2].queue = 0;
+    mgr->slots[2].id = -1;
+    mgr->slots[2].field04 = 0;
+    mgr->slots[2].field08 = 0;
+    mgr->slots[2].field0c = 0;
+    mgr->slots[2].stream = -1;
+    mgr->slots[2].mode = 0;
 
-    mgr->slots[3].handle = 0;
-    mgr->slots[3].count = 0;
-    mgr->slots[3].total = 0;
-    mgr->slots[3].state = 0;
-    mgr->slots[3].arg = 0;
-    mgr->slots[3].handle2 = -1;
-    mgr->slots[3].queue = 0;
-    mgr->slots[3].field1c = 0;
-    mgr->slots[3].field20 = 0;
+    mgr->slots[3].id = 0;
+    mgr->slots[3].field04 = 0;
+    mgr->slots[3].field08 = 0;
+    mgr->slots[3].field0c = 0;
+    mgr->slots[3].block = 0;
+    mgr->slots[3].stream = -1;
+    mgr->slots[3].mode = 0;
+    mgr->slots[3].callback = 0;
+    mgr->slots[3].file = 0;
 
-    mgr->slots[4].count = -1;
-    mgr->slots[4].total = 0;
-    mgr->slots[4].handle2 = -1;
-    mgr->slots[4].queue = 0;
-    mgr->slots[4].field1c = 0;
-    mgr->slots[4].field20 = 0;
+    mgr->slots[4].field04 = -1;
+    mgr->slots[4].field08 = 0;
+    mgr->slots[4].stream = -1;
+    mgr->slots[4].mode = 0;
+    mgr->slots[4].callback = 0;
+    mgr->slots[4].file = 0;
 
-    mgr->slots[5].count = -1;
-    mgr->slots[5].total = 0;
-    mgr->slots[5].handle2 = -1;
-    mgr->slots[5].queue = 0;
-    mgr->slots[5].field1c = 0;
-    mgr->slots[5].field20 = 0;
+    mgr->slots[5].field04 = -1;
+    mgr->slots[5].field08 = 0;
+    mgr->slots[5].stream = -1;
+    mgr->slots[5].mode = 0;
+    mgr->slots[5].callback = 0;
+    mgr->slots[5].file = 0;
 
-    mgr->slots[6].count = -1;
-    mgr->slots[6].total = 0;
+    mgr->slots[6].field04 = -1;
+    mgr->slots[6].field08 = 0;
 
-    mgr->channel = (mgr->channel + 1) & 7;
+    {
+        u8 c = mgr->channel;
+        mgr->channel = (c + 1) & 7;
+    }
 }
 
 // fn_8003BEF0: initialises the load manager: clears the queue buffer block and
 // the manager state, and forgets the global handle bookkeeping.
 int InitLoadManager(void)
 {
-    LoadManagerView* mgr = (LoadManagerView*)lbl_8040DF00;
+    LoadManagerView* mgr;
 
     memset(lbl_803F9A00, 0, 0x40C0);
+    mgr = (LoadManagerView*)lbl_8040DF00;
 
     mgr->processed = 0;
     mgr->completed = 0;
@@ -327,53 +325,53 @@ int InitLoadManager(void)
     mgr->count = 0;
     mgr->field24 = 0;
 
-    mgr->slots[0].handle = -1;
-    mgr->slots[0].count = 0;
-    mgr->slots[0].total = 0;
-    mgr->slots[0].state = 0;
-    mgr->slots[0].handle2 = -1;
-    mgr->slots[0].queue = 0;
+    mgr->slots[0].id = -1;
+    mgr->slots[0].field04 = 0;
+    mgr->slots[0].field08 = 0;
+    mgr->slots[0].field0c = 0;
+    mgr->slots[0].stream = -1;
+    mgr->slots[0].mode = 0;
 
-    mgr->slots[1].handle = -1;
-    mgr->slots[1].count = 0;
-    mgr->slots[1].total = 0;
-    mgr->slots[1].state = 0;
-    mgr->slots[1].handle2 = -1;
-    mgr->slots[1].queue = 0;
+    mgr->slots[1].id = -1;
+    mgr->slots[1].field04 = 0;
+    mgr->slots[1].field08 = 0;
+    mgr->slots[1].field0c = 0;
+    mgr->slots[1].stream = -1;
+    mgr->slots[1].mode = 0;
 
-    mgr->slots[2].handle = -1;
-    mgr->slots[2].count = 0;
-    mgr->slots[2].total = 0;
-    mgr->slots[2].state = 0;
-    mgr->slots[2].handle2 = -1;
-    mgr->slots[2].queue = 0;
+    mgr->slots[2].id = -1;
+    mgr->slots[2].field04 = 0;
+    mgr->slots[2].field08 = 0;
+    mgr->slots[2].field0c = 0;
+    mgr->slots[2].stream = -1;
+    mgr->slots[2].mode = 0;
 
-    mgr->slots[3].handle = 0;
-    mgr->slots[3].count = 0;
-    mgr->slots[3].total = 0;
-    mgr->slots[3].state = 0;
-    mgr->slots[3].arg = 0;
-    mgr->slots[3].handle2 = -1;
-    mgr->slots[3].queue = 0;
-    mgr->slots[3].field1c = 0;
-    mgr->slots[3].field20 = 0;
+    mgr->slots[3].id = 0;
+    mgr->slots[3].field04 = 0;
+    mgr->slots[3].field08 = 0;
+    mgr->slots[3].field0c = 0;
+    mgr->slots[3].block = 0;
+    mgr->slots[3].stream = -1;
+    mgr->slots[3].mode = 0;
+    mgr->slots[3].callback = 0;
+    mgr->slots[3].file = 0;
 
-    mgr->slots[4].count = -1;
-    mgr->slots[4].total = 0;
-    mgr->slots[4].handle2 = -1;
-    mgr->slots[4].queue = 0;
-    mgr->slots[4].field1c = 0;
-    mgr->slots[4].field20 = 0;
+    mgr->slots[4].field04 = -1;
+    mgr->slots[4].field08 = 0;
+    mgr->slots[4].stream = -1;
+    mgr->slots[4].mode = 0;
+    mgr->slots[4].callback = 0;
+    mgr->slots[4].file = 0;
 
-    mgr->slots[5].count = -1;
-    mgr->slots[5].total = 0;
-    mgr->slots[5].handle2 = -1;
-    mgr->slots[5].queue = 0;
-    mgr->slots[5].field1c = 0;
-    mgr->slots[5].field20 = 0;
+    mgr->slots[5].field04 = -1;
+    mgr->slots[5].field08 = 0;
+    mgr->slots[5].stream = -1;
+    mgr->slots[5].mode = 0;
+    mgr->slots[5].callback = 0;
+    mgr->slots[5].file = 0;
 
-    mgr->slots[6].count = -1;
-    mgr->slots[6].total = 0;
+    mgr->slots[6].field04 = -1;
+    mgr->slots[6].field08 = 0;
 
     lbl_804D4328 = 0;
     lbl_804D4324[0] = 0;
@@ -500,15 +498,10 @@ extern "C" void fn_8003C308(s16 handle)
 {
     s32 index;
 
-    if (handle == -1)
+    if (handle == -1 || (index = handle & 0xFFF) >= 1 || (lbl_804D4324[index / 32] & (1 << (handle & 0x1F))) == 0
+        || ((handle >> 12) & 7) != (lbl_8040DF00[index].channel & 7))
         return;
-    index = handle & 0xFFF;
-    if (index >= 1)
-        return;
-    if ((lbl_804D4324[index / 32] & (1 << (handle & 0x1F))) == 0)
-        return;
-    if (((handle >> 12) & 7) == (lbl_8040DF00[index].channel & 7))
-        FreeHandleChannel(handle);
+    FreeHandleChannel(handle);
 }
 
 // ---- Async stream slot setup ---------------------------------------------
@@ -562,14 +555,8 @@ extern "C" int fn_8003C38C(s16 handle, int unused, int argA, int count,
     s32 i;
     s32 j;
 
-    if (handle == -1)
-        return -1;
-    index = handle & 0xFFF;
-    if (index >= 1)
-        return -1;
-    if ((lbl_804D4324[index / 32] & (1 << (handle & 0x1F))) == 0)
-        return -1;
-    if (((handle >> 12) & 7) != (lbl_8040DF00[index].channel & 7))
+    if (handle == -1 || (index = handle & 0xFFF) >= 1 || (lbl_804D4324[index / 32] & (1 << (handle & 0x1F))) == 0
+        || ((handle >> 12) & 7) != (lbl_8040DF00[index].channel & 7))
         return -1;
 
     slot = (AsyncSlotView*)&lbl_8040DF00[index];
@@ -593,20 +580,6 @@ extern "C" int fn_8003C38C(s16 handle, int unused, int argA, int count,
 // Opens the file streams described by an array of 0x0c-byte descriptors for a
 // free load slot, then publishes the slot's channel handle.  Names, struct
 // layout and callback types are descriptive guesses.
-
-typedef void (*AsyncCallback)(int, int);
-
-struct AsyncSource {            // 0x24 bytes at slot+0x28 + i*0x24
-    s32 id;                     // +0x00
-    s32 field04;                // +0x04
-    s32 field08;                // +0x08
-    s32 field0c;                // +0x0c
-    s32 block;                  // +0x10
-    s32 stream;                 // +0x14
-    s32 mode;                   // +0x18
-    AsyncCallback callback;     // +0x1c
-    AsyncFile* file;            // +0x20
-};
 
 struct StreamDesc {             // 0x0c bytes
     s8 type;                    // +0x0  'R' or 'A'
@@ -641,7 +614,6 @@ extern "C" int fn_8003C48C(const char* name, s32 blockBase, int count,
                            s16 handle)
 {
     LoadManagerView* mgr;
-    AsyncSource* sources;
     s32 index;
     s32 i;
     int useSam;
@@ -664,7 +636,6 @@ extern "C" int fn_8003C48C(const char* name, s32 blockBase, int count,
         return -1;
 
     mgr = (LoadManagerView*)&lbl_8040DF00[index];
-    sources = (AsyncSource*)mgr->slots;
 
     mgr->processed = 0;
     mgr->completed = 0;
@@ -676,53 +647,53 @@ extern "C" int fn_8003C48C(const char* name, s32 blockBase, int count,
     mgr->count = 0;
     mgr->field24 = 0;
 
-    mgr->slots[0].handle = -1;
-    mgr->slots[0].count = 0;
-    mgr->slots[0].total = 0;
-    mgr->slots[0].state = 0;
-    mgr->slots[0].handle2 = -1;
-    mgr->slots[0].queue = 0;
+    mgr->slots[0].id = -1;
+    mgr->slots[0].field04 = 0;
+    mgr->slots[0].field08 = 0;
+    mgr->slots[0].field0c = 0;
+    mgr->slots[0].stream = -1;
+    mgr->slots[0].mode = 0;
 
-    mgr->slots[1].handle = -1;
-    mgr->slots[1].count = 0;
-    mgr->slots[1].total = 0;
-    mgr->slots[1].state = 0;
-    mgr->slots[1].handle2 = -1;
-    mgr->slots[1].queue = 0;
+    mgr->slots[1].id = -1;
+    mgr->slots[1].field04 = 0;
+    mgr->slots[1].field08 = 0;
+    mgr->slots[1].field0c = 0;
+    mgr->slots[1].stream = -1;
+    mgr->slots[1].mode = 0;
 
-    mgr->slots[2].handle = -1;
-    mgr->slots[2].count = 0;
-    mgr->slots[2].total = 0;
-    mgr->slots[2].state = 0;
-    mgr->slots[2].handle2 = -1;
-    mgr->slots[2].queue = 0;
+    mgr->slots[2].id = -1;
+    mgr->slots[2].field04 = 0;
+    mgr->slots[2].field08 = 0;
+    mgr->slots[2].field0c = 0;
+    mgr->slots[2].stream = -1;
+    mgr->slots[2].mode = 0;
 
-    mgr->slots[3].handle = 0;
-    mgr->slots[3].count = 0;
-    mgr->slots[3].total = 0;
-    mgr->slots[3].state = 0;
-    mgr->slots[3].arg = 0;
-    mgr->slots[3].handle2 = -1;
-    mgr->slots[3].queue = 0;
-    mgr->slots[3].field1c = 0;
-    mgr->slots[3].field20 = 0;
+    mgr->slots[3].id = 0;
+    mgr->slots[3].field04 = 0;
+    mgr->slots[3].field08 = 0;
+    mgr->slots[3].field0c = 0;
+    mgr->slots[3].block = 0;
+    mgr->slots[3].stream = -1;
+    mgr->slots[3].mode = 0;
+    mgr->slots[3].callback = 0;
+    mgr->slots[3].file = 0;
 
-    mgr->slots[4].count = -1;
-    mgr->slots[4].total = 0;
-    mgr->slots[4].handle2 = -1;
-    mgr->slots[4].queue = 0;
-    mgr->slots[4].field1c = 0;
-    mgr->slots[4].field20 = 0;
+    mgr->slots[4].field04 = -1;
+    mgr->slots[4].field08 = 0;
+    mgr->slots[4].stream = -1;
+    mgr->slots[4].mode = 0;
+    mgr->slots[4].callback = 0;
+    mgr->slots[4].file = 0;
 
-    mgr->slots[5].count = -1;
-    mgr->slots[5].total = 0;
-    mgr->slots[5].handle2 = -1;
-    mgr->slots[5].queue = 0;
-    mgr->slots[5].field1c = 0;
-    mgr->slots[5].field20 = 0;
+    mgr->slots[5].field04 = -1;
+    mgr->slots[5].field08 = 0;
+    mgr->slots[5].stream = -1;
+    mgr->slots[5].mode = 0;
+    mgr->slots[5].callback = 0;
+    mgr->slots[5].file = 0;
 
-    mgr->slots[6].count = -1;
-    mgr->slots[6].total = 0;
+    mgr->slots[6].field04 = -1;
+    mgr->slots[6].field08 = 0;
 
     if ((flags & 8) != 0) {
         mgr->async = 1;
@@ -730,7 +701,7 @@ extern "C" int fn_8003C48C(const char* name, s32 blockBase, int count,
     }
 
     for (i = 0; i < count; i++) {
-        AsyncSource* src = &sources[i];
+        AsyncSource* src = &mgr->slots[i];
         const StreamDesc* desc = &descs[i];
 
         if (desc->type == 'R') {
@@ -760,7 +731,7 @@ extern "C" int fn_8003C48C(const char* name, s32 blockBase, int count,
     mgr->field14 = flags;
 
     for (i = 0; i < count; i++) {
-        AsyncSource* src = &sources[i];
+        AsyncSource* src = &mgr->slots[i];
         AsyncFile* file;
         s32 streamSlot;
         int isR;
@@ -798,35 +769,27 @@ extern "C" int fn_8003C48C(const char* name, s32 blockBase, int count,
 int FreeHandleChannel(s16 handle)
 {
     LoadManagerView* mgr;
-    AsyncSource* sources;
     s32 index;
     s32 i;
 
-    if (handle == -1)
-        return 0;
-    index = handle & 0xFFF;
-    if (index >= 1)
-        return 0;
-    if ((lbl_804D4324[index / 32] & (1 << (handle & 0x1F))) == 0)
+    if (handle == -1 || (index = handle & 0xFFF) >= 1 || (lbl_804D4324[index / 32] & (1 << (handle & 0x1F))) == 0
+        || ((handle >> 12) & 7) != (lbl_8040DF00[index].channel & 7))
         return 0;
     mgr = (LoadManagerView*)&lbl_8040DF00[index];
-    if (((handle >> 12) & 7) != (mgr->channel & 7))
-        return 0;
 
-    sources = (AsyncSource*)mgr->slots;
     for (i = 0; i < mgr->count; i++) {
-        AsyncFile* file = sources[i].file;
+        AsyncFile* file = mgr->slots[i].file;
         if (file != 0) {
             u32 stream = (u32)((u8*)file - lbl_803FDAC0) / 0x8220;
             AsyncClose(file);
-            sources[i].file = 0;
+            mgr->slots[i].file = 0;
             lbl_804D2680[stream / 32] = lbl_804D2680[stream / 32] |
                                         (1 << (stream & 0x1F));
         }
     }
     for (i = 0; i < mgr->count; i++) {
-        if ((u32)sources[i].stream != 0xFFFFFFFF)
-            QueueClear(sources[i].stream);
+        if ((u32)mgr->slots[i].stream != 0xFFFFFFFF)
+            QueueClear(mgr->slots[i].stream);
     }
 
     mgr->processed = 0;
@@ -840,53 +803,53 @@ int FreeHandleChannel(s16 handle)
     mgr->count = 0;
     mgr->field24 = 0;
 
-    mgr->slots[0].handle = -1;
-    mgr->slots[0].count = 0;
-    mgr->slots[0].total = 0;
-    mgr->slots[0].state = 0;
-    mgr->slots[0].handle2 = -1;
-    mgr->slots[0].queue = 0;
+    mgr->slots[0].id = -1;
+    mgr->slots[0].field04 = 0;
+    mgr->slots[0].field08 = 0;
+    mgr->slots[0].field0c = 0;
+    mgr->slots[0].stream = -1;
+    mgr->slots[0].mode = 0;
 
-    mgr->slots[1].handle = -1;
-    mgr->slots[1].count = 0;
-    mgr->slots[1].total = 0;
-    mgr->slots[1].state = 0;
-    mgr->slots[1].handle2 = -1;
-    mgr->slots[1].queue = 0;
+    mgr->slots[1].id = -1;
+    mgr->slots[1].field04 = 0;
+    mgr->slots[1].field08 = 0;
+    mgr->slots[1].field0c = 0;
+    mgr->slots[1].stream = -1;
+    mgr->slots[1].mode = 0;
 
-    mgr->slots[2].handle = -1;
-    mgr->slots[2].count = 0;
-    mgr->slots[2].total = 0;
-    mgr->slots[2].state = 0;
-    mgr->slots[2].handle2 = -1;
-    mgr->slots[2].queue = 0;
+    mgr->slots[2].id = -1;
+    mgr->slots[2].field04 = 0;
+    mgr->slots[2].field08 = 0;
+    mgr->slots[2].field0c = 0;
+    mgr->slots[2].stream = -1;
+    mgr->slots[2].mode = 0;
 
-    mgr->slots[3].handle = 0;
-    mgr->slots[3].count = 0;
-    mgr->slots[3].total = 0;
-    mgr->slots[3].state = 0;
-    mgr->slots[3].arg = 0;
-    mgr->slots[3].handle2 = -1;
-    mgr->slots[3].queue = 0;
-    mgr->slots[3].field1c = 0;
-    mgr->slots[3].field20 = 0;
+    mgr->slots[3].id = 0;
+    mgr->slots[3].field04 = 0;
+    mgr->slots[3].field08 = 0;
+    mgr->slots[3].field0c = 0;
+    mgr->slots[3].block = 0;
+    mgr->slots[3].stream = -1;
+    mgr->slots[3].mode = 0;
+    mgr->slots[3].callback = 0;
+    mgr->slots[3].file = 0;
 
-    mgr->slots[4].count = -1;
-    mgr->slots[4].total = 0;
-    mgr->slots[4].handle2 = -1;
-    mgr->slots[4].queue = 0;
-    mgr->slots[4].field1c = 0;
-    mgr->slots[4].field20 = 0;
+    mgr->slots[4].field04 = -1;
+    mgr->slots[4].field08 = 0;
+    mgr->slots[4].stream = -1;
+    mgr->slots[4].mode = 0;
+    mgr->slots[4].callback = 0;
+    mgr->slots[4].file = 0;
 
-    mgr->slots[5].count = -1;
-    mgr->slots[5].total = 0;
-    mgr->slots[5].handle2 = -1;
-    mgr->slots[5].queue = 0;
-    mgr->slots[5].field1c = 0;
-    mgr->slots[5].field20 = 0;
+    mgr->slots[5].field04 = -1;
+    mgr->slots[5].field08 = 0;
+    mgr->slots[5].stream = -1;
+    mgr->slots[5].mode = 0;
+    mgr->slots[5].callback = 0;
+    mgr->slots[5].file = 0;
 
-    mgr->slots[6].count = -1;
-    mgr->slots[6].total = 0;
+    mgr->slots[6].field04 = -1;
+    mgr->slots[6].field08 = 0;
 
     mgr->channel = (mgr->channel + 1) & 7;
     BitClear(lbl_804D4324, index);
