@@ -143,19 +143,37 @@ struct U80116B28Query {
     int pad[7];    // 0x4
 };
 
-// Payload for message 0x41E.
-struct U80116B28NameMsg {
-    int pad00;
-    unsigned int nameHash;    // 0x4
-    int pad08;                // 0x8
+// Runtime string buffer; the 0x41E/0x41D query messages carry a String slot.
+class Buffer {
+public:
+    Buffer();
+    virtual ~Buffer();
+    virtual void Release(char* p);
+
+    char* mData;
+    int mLength;
+    int mUnk0C;
+    int mOwned;
 };
 
-// Local view of the String object that receives the type name.
-class U80116B28String {
+class String : public Buffer {
 public:
-    U80116B28String();
-    ~U80116B28String();
-    int field_0;              // 0x0
+    String();
+    ~String() {}
+    virtual void Release(char* p);
+};
+
+struct U80116B28QueryResult {
+    String name;
+};
+
+// Payload for message 0x41E / 0x41D: the handler writes the answer over the
+// result String's first word (the vtable slot is reused).
+struct U80116B28NameMsg {
+    int pad00;
+    unsigned long nameHash;    // 0x4
+    int pad08;                 // 0x8
+    U80116B28QueryResult result;
 };
 
 // Sets the owner's attached type id; on failure to resolve the name it falls
@@ -177,20 +195,19 @@ extern "C" int U80116B28SetTypeId(U80116B28Owner* owner, int id)
         fn_80116E30((int)owner);
     if (id == -1)
         return 1;
-    if (SendMsg(id, 0x400, &query) == 0)
-        return 1;
-    if (query.id == 0)
-        return 1;
+    if (SendMsg(id, 0x400, &query) != 0 && (unsigned long)query.id != 0) {
+        {
+            int target = owner->field_38;
+            U80116B28NameMsg msg;
 
-    U80116B28NameMsg msg;
-    U80116B28String name;
-
-    name.field_0 = 0;
-    msg.nameHash = 0x1C1A4CC9;
-    msg.pad08 = 0;
-    result = SendMsg(owner->field_38, 0x41E, &msg);
-    value = name.field_0;
-    if (result == 0 || value == -1) {
+            *(int*)&msg.result = 0;
+            msg.nameHash = 0x1C1A4CC9;
+            msg.pad08 = 0;
+            result = SendMsg(target, 0x41E, &msg);
+            value = *(int*)&msg.result;
+        }
+        if (result != 0 && value != -1)
+            return 1;
         owner->field_22C = query.id;
         owner->field_220 = 5;
     }
@@ -210,28 +227,29 @@ extern "C" int U80116B28RampValue(U80116B28Owner* owner, U80116B28Rate* rate)
 {
     U80116B28Sub* sub;
     U80116B28Range* range;
+    float limit;
     bool active;
 
-    if (owner == 0)
-        return 0;
-    sub = owner->field_5EC;
-    if (sub == 0)
+    if (owner == 0 || (sub = owner->field_5EC) == 0)
         return 0;
 
     active = sub != 0 && sub->field_BC != -1;
-    if (active)
+    if (active) {
         range = &sub->rangeB;
-    else
-        range = &sub->rangeA;
-
-    if (range->value < range->limit) {
-        rate->flag = 0;
-        range->value = range->value + (float)(int)(range->limit * rate->rate);
+        limit = sub->rangeB.limit;
     } else {
-        rate->flag = 1;
+        range = &sub->rangeA;
+        limit = sub->rangeA.limit;
     }
-    if (range->limit < range->value)
-        range->value = range->limit;
+
+    if (range->value >= limit) {
+        rate->flag = 1;
+    } else {
+        rate->flag = 0;
+        range->value = range->value + (float)(int)(limit * rate->rate);
+    }
+    if (range->value > limit)
+        range->value = limit;
 
     owner->field_904 = range->value;
     return 1;
@@ -274,9 +292,9 @@ extern "C" int fn_80116DC4(U80116B28Owner* owner)
 {
     U80116B28Query query;
 
-    if (SendMsg(owner->field_5EC->field_BC, 0x400, &query) == 0)
-        return 0;
-    return query.id;
+    if (SendMsg(owner->field_5EC->field_BC, 0x400, &query) != 0)
+        return query.id;
+    return 0;
 }
 
 // ---- External helpers used by fn_80116E30 ---------------------------------
@@ -328,7 +346,6 @@ extern "C" void fn_800CF064(void);
 extern "C" void fn_800B5004(void* dst, void* src);
 extern "C" void fn_80090634(int a, int b, int c, int d);
 extern "C" int fn_801BD694(void* owner);
-extern "C" float lbl_804D7758;
 
 // Payload of message 0xC14: {pad, arg, arg, hash}.
 struct U80116B28MsgC14 {
@@ -432,13 +449,12 @@ struct U80116B28MsgC02 {
 static inline int U80116B28RequestName(int target, int msgId, unsigned int hash, int value)
 {
     U80116B28NameMsg msg;
-    U80116B28String name;
 
-    name.field_0 = value;
+    *(int*)&msg.result = value;
     msg.nameHash = hash;
     msg.pad08 = 0;
     SendMsg(target, msgId, &msg);
-    return name.field_0;
+    return *(int*)&msg.result;
 }
 
 // Returns whether the owner currently has a type object attached.
@@ -535,14 +551,14 @@ extern "C" int fn_80116E30(int self)
 
         msg.owner = (int)owner;
         msg.ownerId = OwnerId((Owner*)owner);
-        msg.field_4C = lbl_804D7758;
+        msg.field_4C = 0.0f;
         msg.field_44 = -1;
         if (fn_802A1D04() != 3 || typeGroup == 0x13) {
             msg.hash = 0x6CA5F172;
             msg.value = sub->field_5C - sub->rangeB.value;
             SendMsg(typeId, 0x407, &msg);
         }
-        msg.value = lbl_804D7758;
+        msg.value = 0.0f;
         msg.hash = 0x672F35C2;
         SendMsg(typeId, 0x407, &msg);
     }
@@ -716,9 +732,9 @@ extern "C" int fn_801174B0(void* ownerPtr, int typePtr)
     q402.field_4 = -1;
     SendMsg(sub->field_BC, 0x402, &q402);
 
-    offsets[0] = lbl_804D7758;
-    offsets[1] = lbl_804D7758;
-    offsets[2] = lbl_804D7758;
+    offsets[0] = 0.0f;
+    offsets[1] = 0.0f;
+    offsets[2] = 0.0f;
     fn_800B5004((char*)owner + 0x240, offsets);
     MemCopyVec3((float*)owner->field_270, offsets);
     RangeResetPending(owner->field_270);
@@ -881,10 +897,20 @@ void ZoneObjectSetSlot14(ZoneObject* obj, unsigned long value);
 void ZoneSetCallback(void* zone, int a, int (*callback)(int, Actor*, Actor*), int b, Actor* owner);
 void ZoneObjectSetSlot18(ZoneObject* obj, float value);
 extern "C" void fn_800CD5D8(void* owner, int value);
-extern "C" float lbl_804D775C;
 extern "C" U80116B28TypeTableEntry lbl_8039ED68[];
 extern "C" int lbl_804D2E08;
 extern "C" char lbl_803457B0[];
+
+static inline int U80116B28FindType(unsigned long id)
+{
+    int i;
+
+    for (i = 0; i < lbl_804D2E08; i++) {
+        if (id == lbl_8039ED68[i].id)
+            return i;
+    }
+    return -1;
+}
 
 // Allocates and initialises the owner's 0x224-byte geist state block, including
 // its embedded zone object. Returns 1 if a state already exists (or one was
@@ -896,24 +922,17 @@ extern "C" int fn_80117D80(void* ownerPtr)
     U80116B28Owner* owner = (U80116B28Owner*)ownerPtr;
     U80116B28Sub* sub;
     int index;
-    int i;
 
     if (owner->field_5EC != 0)
         return 1;
 
-    sub = (U80116B28Sub*)VAlloc(0x224);
-    owner->field_5EC = sub;
+    owner->field_5EC = (U80116B28Sub*)VAlloc(0x224);
+    sub = owner->field_5EC;
     if (sub == 0)
         return 0;
     if (sub != 0) {
         if (sub->field_CC != 0xFFFFFFFF) {
-            index = -1;
-            for (i = 0; i < lbl_804D2E08; i++) {
-                if (sub->field_CC == lbl_8039ED68[i].id) {
-                    index = i;
-                    break;
-                }
-            }
+            index = U80116B28FindType(sub->field_CC);
             if (index != -1)
                 lbl_8039ED68[index].reset(owner, sub);
         }
@@ -923,31 +942,31 @@ extern "C" int fn_80117D80(void* ownerPtr)
         sub->field_D4 = -1;
     }
 
-    sub->field_0 = 0;
-    sub->field_4 = 0;
-    sub->field_E0 = 0;
-    sub->field_D8 = 0;
-    sub->field_DC = 0;
-    if (owner->field_C4 == 0) {
-        sub->rangeA.value = lbl_804D7758;
-        sub->rangeA.limit = lbl_804D7758;
+    owner->field_5EC->field_0 = 0;
+    owner->field_5EC->field_4 = 0;
+    owner->field_5EC->field_E0 = 0;
+    owner->field_5EC->field_D8 = 0;
+    owner->field_5EC->field_DC = 0;
+    if (owner->field_C4 != 0) {
+        owner->field_5EC->rangeA.value = (float)owner->field_C4->field_30;
+        owner->field_5EC->rangeA.limit = owner->field_5EC->rangeA.value;
     } else {
-        sub->rangeA.value = (float)owner->field_C4->field_30;
-        sub->rangeA.limit = sub->rangeA.value;
+        owner->field_5EC->rangeA.value = 0.0f;
+        owner->field_5EC->rangeA.limit = 0.0f;
     }
-    sub->field_BC = -1;
-    sub->field_C0 = 0;
-    sub->field_C4 = 0;
-    sub->field_7C = -1;
-    sub->field_80 = -1;
-    sub->field_84 = -1;
-    GhostRecordReset((GhostSlot*)&sub->field_10);
-    sub->field_E4 = lbl_804D775C;
-    ZoneInit(sub->field_1E8, (Actor*)owner, (IVec3*)((char*)owner + 0x24), sub->field_E8,
-             0x10, sub->field_E4);
-    ZoneObjectSetSlot14((ZoneObject*)sub->field_1E8, 2);
-    ZoneSetCallback(sub->field_1E8, 0, 0, 0, (Actor*)owner);
-    ZoneObjectSetSlot18((ZoneObject*)sub->field_1E8, sub->field_E4);
+    owner->field_5EC->field_BC = -1;
+    owner->field_5EC->field_C0 = 0;
+    owner->field_5EC->field_C4 = 0;
+    owner->field_5EC->field_7C = -1;
+    owner->field_5EC->field_80 = -1;
+    owner->field_5EC->field_84 = -1;
+    GhostRecordReset((GhostSlot*)&owner->field_5EC->field_10);
+    owner->field_5EC->field_E4 = 10000.0f;
+    ZoneInit(owner->field_5EC->field_1E8, (Actor*)owner, (IVec3*)((char*)owner + 0x24), owner->field_5EC->field_E8,
+             0x10, owner->field_5EC->field_E4);
+    ZoneObjectSetSlot14((ZoneObject*)owner->field_5EC->field_1E8, 2);
+    ZoneSetCallback(owner->field_5EC->field_1E8, 0, 0, 0, (Actor*)owner);
+    ZoneObjectSetSlot18((ZoneObject*)owner->field_5EC->field_1E8, owner->field_5EC->field_E4);
     fn_800CD5D8((char*)owner + 0x5B0, 1);
     return 1;
 }
@@ -961,12 +980,12 @@ extern "C" int fn_80117FB4(void* ownerPtr)
     U80116B28Owner* owner = (U80116B28Owner*)ownerPtr;
     int (*callback)(void*);
 
-    if (owner->field_5EC == 0)
-        return 0;
-    callback = (int (*)(void*))owner->field_5EC->field_D8;
-    if (callback == 0)
-        return 0;
-    return callback(owner);
+    if (owner->field_5EC != 0) {
+        callback = (int (*)(void*))owner->field_5EC->field_D8;
+        if (callback != 0)
+            return callback(owner);
+    }
+    return 0;
 }
 
 // Looks the state block's registered type-table id up in the global per-type
@@ -976,18 +995,11 @@ extern "C" int fn_80117FB4(void* ownerPtr)
 // are kept.
 extern "C" int fn_80117FF8(U80116B28Sub* sub, int arg1, int arg2)
 {
-    int index = -1;
-    int i;
+    int index = U80116B28FindType(sub->field_CC);
 
-    for (i = 0; i < lbl_804D2E08; i++) {
-        if (sub->field_CC == lbl_8039ED68[i].id) {
-            index = i;
-            break;
-        }
-    }
-    if (index == -1)
-        return 0;
-    return lbl_8039ED68[index].dispatch(sub, arg1, arg2, 1);
+    if (index != -1)
+        return lbl_8039ED68[index].dispatch(sub, arg1, arg2, 1);
+    return 0;
 }
 
 // Same per-type dispatch as fn_80117FF8, but calls the entry's 0x10 callback
@@ -996,18 +1008,11 @@ extern "C" int fn_80117FF8(U80116B28Sub* sub, int arg1, int arg2)
 // are kept.
 extern "C" int fn_80118084(U80116B28Sub* sub, int arg1, int arg2)
 {
-    int index = -1;
-    int i;
+    int index = U80116B28FindType(sub->field_CC);
 
-    for (i = 0; i < lbl_804D2E08; i++) {
-        if (sub->field_CC == lbl_8039ED68[i].id) {
-            index = i;
-            break;
-        }
-    }
-    if (index == -1)
-        return 0;
-    return lbl_8039ED68[index].dispatch(sub, arg1, arg2, 0);
+    if (index != -1)
+        return lbl_8039ED68[index].dispatch(sub, arg1, arg2, 0);
+    return 0;
 }
 
 // Returns the name registered for the state block's type id in the global
@@ -1015,14 +1020,16 @@ extern "C" int fn_80118084(U80116B28Sub* sub, int arg1, int arg2)
 // there is no state block or the id is not registered.
 const char* U80116B28GetTypeName(U80116B28Owner* owner)
 {
+    unsigned long id;
     int count;
     int i;
 
     if (owner->field_5EC == 0)
         return &lbl_803457B0[0x47];
     count = lbl_804D2E08;
+    id = owner->field_5EC->field_CC;
     for (i = 0; i < count; i++) {
-        if (owner->field_5EC->field_CC == lbl_8039ED68[i].id)
+        if (id == lbl_8039ED68[i].id)
             return lbl_8039ED68[i].name;
     }
     return &lbl_803457B0[0x47];
