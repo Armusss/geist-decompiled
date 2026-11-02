@@ -26,7 +26,7 @@ struct MenuItem : MenuItemBase {
     virtual int canFocus();          // vtable offset 0x14
     virtual void defocus();          // 0x18
     virtual void layout();           // 0x1c
-    virtual void v6();
+    virtual void select();           // 0x20
     virtual void activate(int flag); // vtable offset 0x24
     virtual void open();             // 0x28
     virtual void close();            // vtable offset 0x2c
@@ -164,10 +164,17 @@ extern int lbl_804D3444;
 extern int lbl_804D3448;
 extern int lbl_804D3454;
 extern int lbl_804D3440;
+extern int lbl_804D53EC;
+extern int lbl_804D3438;
+int PlayerStateValue(int a, int b);
+int PadFindPressedPlayer(int a, int b);
 extern float lbl_804D53BC;
 extern "C" float fn_800071A4();
 extern "C" void fn_8000719C(float v);
 extern "C" void fn_8014CEDC(int v);
+void SaveCommand(int a, int b);
+extern "C" int fn_802A1FA0();
+extern MenuPage lbl_8049E818;
 extern "C" void fn_80201260(float f, int a, int b);
 int PadPressed(int pad, int a, int b);
 extern "C" void FxStart(int handle, int a, int b);
@@ -905,4 +912,93 @@ void MenuMainMenu() {
         }
         armed->state = 3;
     }
+}
+
+// MenuPageClose2: same as MenuPageClose (a second page type shares the code shape).
+void MenuPageClose2(MenuPage* page) {
+    MenuItem** p;
+    int i;
+    if (page->unka8 == 1) {
+        if (page->onOpen != 0) {
+            page->onClose(0);
+        }
+        p = page->items;
+        for (i = 0; i < page->itemCount; i++) {
+            (*p)->close();
+            p++;
+        }
+        page->unka8 = 0;
+    }
+    MenuPageClear(page);
+    MenuArmWidget();
+}
+
+// MenuPageCloseResetPad: close hook that also resets the pad modes.
+void MenuPageCloseResetPad(MenuPage* arg) {
+    MenuPage* page;
+    MenuItem** p;
+    int i;
+    SaveCommand(1, fn_802A1FA0());
+    SaveCommand(6, 0);
+    page = arg;
+    if (page->unka8 == 1) {
+        if (page->onOpen != 0) {
+            page->onClose(0);
+        }
+        p = page->items;
+        for (i = 0; i < page->itemCount; i++) {
+            (*p)->close();
+            p++;
+        }
+        page->unka8 = 0;
+    }
+    MenuPageClear(page);
+    MenuArmWidget();
+}
+
+// MenuPageWatch: per-frame update of a page that closes on a button press.
+int MenuPageWatch(int pad) {
+    if (lbl_8049E818.state == 1) {
+        fn_80201260(lbl_804D53BC, 0, 1);
+    } else {
+        fn_80201260(lbl_804D53BC, 0, 0);
+    }
+    if (PadPressed(pad, 0, 4) == 1 && lbl_804D53D4 == 0) {
+        lbl_804D53D4 = 1;
+        MenuArmWidget();
+    }
+    return 0;
+}
+
+static inline int PairHit(int id) {
+    int pad;
+    u8 r;
+    if (lbl_804D53EC != 0 || lbl_804D53D4 != 0) {
+        return 0;
+    }
+    if (lbl_804D3434 > -1 && PlayerStateValue(lbl_804D3434, id) != 0) {
+        r = PadPressed(lbl_804D3434, 0, id) == 1;
+        return r;
+    }
+    pad = PadFindPressedPlayer(0, id);
+    if (pad > -1 && PlayerStateValue(pad, id) != 0) {
+        lbl_804D3438 = pad;
+        return 1;
+    }
+    return 0;
+}
+
+// MenuPageInput: trigger the first shortcut pair whose button is pressed; returns 1 if one fired.
+int MenuPageInput(MenuPage* page) {
+    int id;
+    MenuPage* w;
+    int i;
+    for (i = 0, w = page; i < page->pairCount; w = (MenuPage*)((u8*)w + 8), i++) {
+        id = w->pairs[0].id;
+        if (PairHit(id)) {
+            ((MenuItem*)page->pairs[i].label)->select();
+            return 1;
+        }
+    }
+    return 0;
 }
