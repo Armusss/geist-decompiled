@@ -3,6 +3,8 @@
 // Names are descriptive guesses; the code is matched against the retail DOL where noted
 // in worker-notes.  Struct layouts are partial and derived from the retail asm.
 
+#pragma auto_inline off
+
 typedef unsigned char u8;
 typedef signed char s8;
 typedef unsigned short u16;
@@ -53,11 +55,13 @@ struct LightRender {
     /*0x00*/ u8 unk00[0x0C - 0x00];
     /*0x0C*/ f32 scaled[3];
     /*0x18*/ f32 color[4];
-    /*0x28*/ u8 unk28[0x64 - 0x28];
+    /*0x28*/ u8 unk28[0x60 - 0x28];
+    /*0x60*/ int unk60;
+    /*0x64*/ u8 end[0];
 };
 
 typedef int (*MsgHandler)(int to, int msg, void* data, void* ctx);
-typedef int (*ChunkHandler)(int type, int size, void* data, void* ctx);
+typedef void (*ChunkHandler)(int type, void* data, int size, void* ctx);
 
 // Chunk record inside a type-3 ModInfo block (0x10 bytes).
 struct ChunkEntry {
@@ -92,6 +96,8 @@ extern int lbl_804D4290;
 extern int lbl_804D4294;
 extern int lbl_804D429C;
 extern Actor* lbl_803DE1D8[];
+extern Actor* lbl_803DE3D8[];
+extern int lbl_804D4298;
 
 void fn_80007118(void*);
 void fn_800070C0(void*);
@@ -100,6 +106,12 @@ void fn_8016D864(Vec3* out, void* in);
 void fn_8021284C(u32);
 void fn_80029F4C(Actor* a, void* pos);
 void fn_80028A98(int index);
+void fn_80029080(int msg, void* data);
+void* VAlloc(int size);
+void VFree(void* p);
+extern "C" void fn_80026680(int, ChunkHandler, void*);
+extern "C" void fn_80026660(int, MsgHandler, void*);
+int fn_80112188(void* p);
 }
 
 typedef int (*FileHandlerFn)(void*, int, void*);
@@ -223,7 +235,7 @@ int ModInfoLoad(void* data, int size, void* ctx) {
                 e->data = (int)(p + e->data);
                 t = e->type;
                 if (t >= 0 && t < 0x1B && sChunkFn[t] != 0)
-                    sChunkFn[t](t, e->data, (void*)e->size, sChunkCtx[t]);
+                    sChunkFn[t](t, (void*)e->data, e->size, sChunkCtx[t]);
                 e++;
             }
         }
@@ -397,3 +409,88 @@ extern "C" int fn_80027A8C(float spread, int owner, float* pos, void* pos2, floa
     return -1;
 }
 
+
+// TODO (not drafted yet, 0x300 bytes at 0x80027CD8)
+// TODO (not drafted yet, 0x88 bytes at 0x80027FD8 is below)
+
+// 0x80027FD8: after a frame, drop the 0x80000000 flag of the lights queued this frame
+void LightsClearPending() {
+    int i;
+    for (i = lbl_804D4294; i < lbl_804D428C; i++)
+        lbl_803DE1D8[i]->flags &= 0x7FFFFFFF;
+    lbl_804D428C = lbl_804D4294;
+    for (i = 0; i < lbl_804D4290; i++)
+        lbl_803DE3D8[i]->flags &= 0x7FFFFFFF;
+    lbl_804D4290 = 0;
+}
+
+// TODO (not drafted yet, 0xE0 bytes at 0x80028060)
+
+void LightsLoad(int type, void* data, int size, void* ctx);
+void LightMsg(int id, int msg, void* data, void* ctx);
+int LightMsgNone(int id, int msg, void* data, void* ctx);
+
+// 0x80028140: init the light system and register its message/chunk handlers
+int LightsInit() {
+    lbl_804D4280 = 0;
+    lbl_804D4288 = 0;
+    fn_80026680(0xC, LightsLoad, 0);
+    fn_80026660(0xC, (MsgHandler)LightMsg, 0);
+    fn_80026660(0x3A, LightMsgNone, 0);
+    lbl_804D4298 = 0;
+    return 1;
+}
+
+// TODO (not drafted yet, 0x70 bytes at 0x800281B0 and 0x76C bytes at 0x8002828C)
+
+// 0x800289F8: free the light arrays
+void LightsShutdown() {
+    lbl_804D4280 = 0;
+    lbl_804D4288 = 0;
+    if (lbl_804D4284 != 0) {
+        VFree(lbl_804D4284);
+        lbl_804D4284 = 0;
+    }
+}
+
+// 0x80028A38: send message 0x800 to every light
+void LightsBroadcast() {
+    int i;
+    int data[2];
+    for (i = 0; i < lbl_804D4288; i++) {
+        data[1] = 0;
+        SendMsg((i & 0xFFFFFF) | 0xC000000, 0x800, data);
+    }
+}
+
+// TODO (not drafted yet, 0x494 bytes at 0x80028A98)
+
+// 0x80028F2C: chunk loader for type 0xF: the light array
+void LightsLoad(int type, void* data, int size, void* ctx) {
+    char* base = (char*)data;
+    void* hdr = (size > 0) ? data : 0;
+    FileFlushBuffer(hdr, 0x10);
+    if (*(int*)hdr == 0xF) {
+        int count = ((int*)hdr)[1];
+        int i;
+        lbl_804D4288 = count;
+        lbl_804D4280 = (Actor*)(Fits(size - 0x10, count * 0x1C8) ? base + 0x10 : 0);
+        lbl_804D4284 = (LightRender*)VAlloc(count * 0x64);
+        for (i = 0; i < lbl_804D4288; i++) {
+            FileFlushBuffer(&lbl_804D4280[i], 0x50);
+            FileFlushBuffer((char*)&lbl_804D4280[i] + 0x50, 0x178);
+            lbl_804D4284[i].unk60 = fn_80112188(&lbl_804D4284[i].unk28[0]);
+        }
+    }
+}
+
+// 0x80029040
+int LightMsgNone(int id, int msg, void* data, void* ctx) {
+    return 0;
+}
+
+// 0x80029048: light message handler: fetch the light record, then process the message
+void LightMsg(int id, int msg, void* data, void* ctx) {
+    *(Actor**)data = &lbl_804D4280[id];
+    fn_80029080(msg, data);
+}
