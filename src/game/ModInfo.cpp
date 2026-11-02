@@ -165,9 +165,11 @@ static inline bool Fits(int avail, int need) {
 
 // 0x80026944: chunk loader for file type 0xB; dispatches each chunk to its handler
 int ModInfoLoad(void* data, int size, void* ctx) {
-    char* p = (char*)data + 0x10;
-    int left = size - 0x10;
-    lbl_804D4278 = (ModInfoHeader*)(Fits(size, 1) ? data : 0);
+    char* p = (char*)data;
+    int left;
+    lbl_804D4278 = (ModInfoHeader*)(Fits(size, size) ? data : 0);
+    p += 0x10;
+    left = size - 0x10;
     fn_80007118(&lbl_804D4278->version);
     fn_80007118(&lbl_804D4278->chunkCount);
     fn_800070C0(&lbl_804D4278->unk04);
@@ -223,55 +225,52 @@ void ActorDebugDrawAll() {
     int i;
     if (lbl_804D429C != 0) {
         for (i = 0; i < lbl_804D4288; i++) {
-            Actor* a = &lbl_804D4280[i];
-            if (a->flags & 2) {
-                u8 r = (u8)(int)(255.0f * a->color[0]);
-                u8 g = (u8)(int)(255.0f * a->color[1]);
-                u8 b = (u8)(int)(255.0f * a->color[2]);
-                float rad = a->radius;
+            if (lbl_804D4280[i].flags & 2) {
+                u8 r = (u8)(int)(255.0f * lbl_804D4280[i].color[0]);
+                u8 g = (u8)(int)(255.0f * lbl_804D4280[i].color[1]);
+                u8 b = (u8)(int)(255.0f * lbl_804D4280[i].color[2]);
+                float rad = lbl_804D4280[i].radius;
                 Vec3 v;
                 Mtx34 m;
-                if (!(rad > 0.0f))
-                    rad = 0.0f;
-                DebugDrawSphere(r, g, b, 100, a->sphere[0], a->sphere[1], a->sphere[2], rad);
-                fn_8016D864(&v, a->pos);
-                ActorGetMatrix(&m, a);
+                rad = (rad > 100.0f) ? rad : 100.0f;
+                DebugDrawSphere(r, g, b, 100, lbl_804D4280[i].sphere[0], lbl_804D4280[i].sphere[1],
+                                lbl_804D4280[i].sphere[2], rad);
+                fn_8016D864(&v, lbl_804D4280[i].pos);
+                ActorGetMatrix(&m, &lbl_804D4280[i]);
                 DebugDrawBoneBox(&v, &m, r, g, b);
             }
         }
     }
 }
 
-// 0x80027690 (called from other units under this placeholder name)
-extern "C" void fn_80027690(u32 id) {
-    Actor* base = lbl_804D4280;
-    if (base != 0 && id != 0xFFFFFFFF && (id >> 24) == 0xC) {
-        int idx = (id & 0xFFFFFF) * 0x1C8;
-        Actor* a;
-        fn_8021284C(*(u32*)((char*)lbl_804D4280 + idx + 0x38));
-        a = (Actor*)((char*)lbl_804D4280 + idx);
-        if (a->owner != 0)
-            ActorUnlinkOwnerObjects(a);
-        a = (Actor*)((char*)lbl_804D4280 + idx);
-        a->flags &= ~6;
-        a = (Actor*)((char*)lbl_804D4280 + idx);
-        if (a->owner == 0) {
-            int n = 0;
-            int j;
-            lbl_804D428C = 0;
-            lbl_804D4290 = 0;
-            if (lbl_804D4280 != 0) {
-                for (j = 0; j < lbl_804D4288; j++) {
-                    Actor* o = &lbl_804D4280[j];
-                    if ((o->flags & 2) && o->owner == 0) {
-                        lbl_803DE1D8[lbl_804D428C] = o;
-                        lbl_803DE1D8[lbl_804D428C]->fieldF68 = 0.0f;
-                        lbl_804D428C++;
-                    }
-                }
+static inline void ActiveListRebuild() {
+    int j;
+    lbl_804D428C = 0;
+    lbl_804D4294 = 0;
+    lbl_804D4290 = 0;
+    if (lbl_804D4280 != 0) {
+        for (j = 0; j < lbl_804D4288; j++) {
+            Actor* o = &lbl_804D4280[j];
+            if ((o->flags & 2) && o->owner == 0) {
+                lbl_803DE1D8[lbl_804D428C] = o;
+                lbl_803DE1D8[lbl_804D428C]->fieldF68 = 0.0f;
+                lbl_804D428C++;
             }
-            lbl_804D4294 = lbl_804D428C;
         }
+    }
+    lbl_804D4294 = lbl_804D428C;
+}
+
+// 0x80027690 (called from other units under this placeholder name)
+extern "C" void fn_80027690(int id) {
+    if (lbl_804D4280 != 0 && id != -1 && (int)((u32)id >> 24) == 0xC) {
+        int idx = id & 0xFFFFFF;
+        fn_8021284C(lbl_804D4280[idx].id);
+        if (lbl_804D4280[idx].owner != 0)
+            ActorUnlinkOwnerObjects(&lbl_804D4280[idx]);
+        lbl_804D4280[idx].flags &= ~6;
+        if (lbl_804D4280[idx].owner == 0)
+            ActiveListRebuild();
     }
 }
 
