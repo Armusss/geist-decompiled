@@ -15,6 +15,8 @@ typedef float f32;
 
 // Script machine state.  Integer registers start at 0 (r1 is the stack pointer, r3 the result),
 // float registers start at 0x60.
+struct ScriptFunc;
+typedef struct ScriptFunc ScriptFunc;
 typedef struct ScriptVM {
     /*0x00*/ int r[24];
     /*0x60*/ f32 f[8];
@@ -25,14 +27,25 @@ typedef struct ScriptVM {
     /*0x98*/ u8* functions;
     /*0x9C*/ u8 unk9C[0x20AC - 0x9C];
     /*0x20AC*/ int currentFunction;
+    /*0x20B0*/ struct ScriptEntry* defaults[100];
+    /*0x2240*/ struct ScriptEntry* buckets[1600];
 } ScriptVM;
 
+// Message handler registration: matches (id, msg) or, in the default list, only the message.
+typedef struct ScriptEntry {
+    /*0x00*/ u32 id;
+    /*0x04*/ u32 msg;
+    /*0x08*/ ScriptFunc* func;
+    /*0x0C*/ int* data;
+    /*0x10*/ struct ScriptEntry* next;
+} ScriptEntry;
+
 // One 12-byte function record of a script.
-typedef struct ScriptFunc {
+struct ScriptFunc {
     /*0x00*/ int field00;
     /*0x04*/ int entry;
     /*0x08*/ int field08;
-} ScriptFunc;
+};
 
 typedef int (*ScriptOpFn)(int ins, ScriptVM* vm);
 
@@ -502,4 +515,97 @@ int ScriptOpMove(int ins, ScriptVM* vm) {
 int ScriptOpSkip(int ins, ScriptVM* vm) {
     vm->pc += 4;
     return 0;
+}
+
+// 0x80084540: deliver message `msg` for object `id`: run its registered script handler, else the
+// default handler for that object type.  Returns the script's result, 0 if nothing handled it.
+// (Called with 3 or 4 arguments by other files.)
+int fn_80084540(int id, int msg, int* args, int arg4) {
+    int type = (u32)id >> 24;
+    ScriptVM* base = &lbl_8043CAF0;
+    ScriptVM* vm = base;
+    int ret = 0;
+    ScriptFunc* func = 0;
+    int* tbl;
+    int i;
+    int n;
+    if (type < 100) {
+        ScriptEntry* e = base->buckets[type * 16 + (id & 0xF)];
+        while (e != 0) {
+            if (e->id == id && e->msg == msg) {
+                func = e->func;
+                tbl = e->data;
+                e = 0;
+            } else {
+                e = e->next;
+            }
+        }
+    }
+    if (func != 0) {
+        if (msg == 0x7002) {
+            if (tbl == 0) {
+                args[2] = 0;
+            } else {
+                n = tbl[0];
+                for (i = 0; i < n; i++) {
+                    if (args[1] == tbl[1 + i * 2]) {
+                        args[2] = tbl[2 + i * 2];
+                        break;
+                    }
+                }
+            }
+            ret = 1;
+        } else if (msg == 0x7003) {
+            if (tbl == 0) {
+                args[2] = 0;
+            } else {
+                n = tbl[0];
+                for (i = 0; i < n; i++) {
+                    if (args[1] == tbl[1 + i * 2]) {
+                        tbl[2 + i * 2] = args[2];
+                        break;
+                    }
+                }
+            }
+            ret = 1;
+        } else if (msg == 0x7000 && tbl != 0) {
+            int* a = (int*)vm->r[1];
+            a[0] = (int)tbl;
+            a[1] = id;
+            a[2] = msg;
+            a[3] = (int)args;
+            a[4] = arg4;
+            ret = ScriptRun(func, vm);
+        } else {
+            int* a = (int*)vm->r[1];
+            a[0] = id;
+            a[1] = msg;
+            a[2] = (int)args;
+            a[3] = arg4;
+            ret = ScriptRun(func, vm);
+        }
+    }
+    if (ret == 0) {
+        ScriptFunc* dflt = 0;
+        if (type < 100 && type >= 0) {
+            ScriptEntry* e = base->defaults[type];
+            while (e != 0) {
+                if (e->msg == msg) {
+                    dflt = e->func;
+                    e = 0;
+                } else {
+                    e = e->next;
+                }
+            }
+        }
+        if (dflt != 0) {
+            int* a = (int*)vm->r[1];
+            a[0] = id;
+            a[1] = msg;
+            a[2] = (int)args;
+            a[3] = arg4;
+            ret = ScriptRun(dflt, vm);
+        }
+    }
+    return ret;
 }
