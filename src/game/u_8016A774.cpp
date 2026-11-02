@@ -179,7 +179,7 @@ struct SltEffectList {
 
 // Unit data.
 u32 sLoadedMask;   // 0x804D4F20  one bit per in-use slot
-u32 sInputLock;    // 0x804D4F24
+int sInputLock;    // 0x804D4F24
 u32 sHandleSeq;    // 0x804D4F28
 s8 sLBoxOn;        // 0x804D4F2C
 
@@ -317,8 +317,11 @@ int SltMsgHandler(int actor, int msg, void* data) {
 
 // 0x8016A9B8
 int SltUpdate(void) {
+    int i;
+    int j;
+    int result;
     int pressed = 0;
-    int result = 0;
+    result = 0;
 
     if (sInputLock == 0) {
         if (PadPressed(0, 0, 2) == 2) {
@@ -326,11 +329,11 @@ int SltUpdate(void) {
         }
     }
     if (pressed) {
-        for (int i = 0; i < 2; i++) {
+        for (i = 0; i < 2; i++) {
             if (sSlots[i].ptr != 0 && pressed) {
                 if (fn_802810BC(sSlots[i].unk20) != 0) {
                     if ((sSlots[i].flags & 0x200) == 0 && (sSlots[i].flags & 0x400) == 0) {
-                        for (int j = 0; j < sSlots[i].ptr->count; j++) {
+                        for (j = 0; j < sSlots[i].ptr->count; j++) {
                             if (sSlots[i].ptr->subs[j].type == 'R') {
                                 if ((sSlots[i].flags & 4) == 0 && (sSlots[i].flags & 0x80) == 0) {
                                     if (Fn800816B0() > 0) {
@@ -354,7 +357,7 @@ int SltUpdate(void) {
         }
     }
 
-    for (int i = 0; i < 2; i++) {
+    for (i = 0; i < 2; i++) {
         if (sSlots[i].ptr != 0) {
             if (sSlots[i].flags & 0x400) {
                 SltIdMsg unload;
@@ -372,7 +375,7 @@ int SltUpdate(void) {
                 sSlots[i].flags &= ~0x200;
                 sSlots[i].flags |= 0x400;
             } else {
-                for (int j = 0; j < sSlots[i].ptr->count; j++) {
+                for (j = 0; j < sSlots[i].ptr->count; j++) {
                     if (sSlots[i].ptr->subs[j].type == 'R') {
                         if (Fn800816B0() > sSlots[i].unk14) {
                             u32 a = sSlots[i].unk24;
@@ -525,7 +528,6 @@ int SltUnload(SltIdMsg* msg) {
     int target = sSlots[slot].unk2C;
     int arg = sSlots[slot].unk30;
     sSlots[slot].ptr = 0;
-    sLoadedMask &= ~(1 << slot);
     sSlots[slot].id = -1;
     sSlots[slot].stamp = 0;
     sSlots[slot].flags = 0;
@@ -541,6 +543,7 @@ int SltUnload(SltIdMsg* msg) {
     sSlots[slot].unk30 = 0;
     sSlots[slot].id = -1;
     out.id = arg;
+    sLoadedMask &= ~(1 << slot);
     sSlots[slot].ptr = 0;
     if (target != -1) {
         SendMsg(target, 0x3005, &out);
@@ -864,7 +867,6 @@ int SltRelease(int handle) {
         int target = sSlots[slot].unk2C;
         int arg = sSlots[slot].unk30;
         sSlots[slot].ptr = 0;
-        sLoadedMask &= ~(1 << slot);
         sSlots[slot].id = -1;
         sSlots[slot].stamp = 0;
         sSlots[slot].flags = 0;
@@ -881,6 +883,7 @@ int SltRelease(int handle) {
         sSlots[slot].id = -1;
         SltIdMsg m;
         m.id = arg;
+        sLoadedMask &= ~(1 << slot);
         sSlots[slot].ptr = 0;
         if (target != -1) {
             SendMsg(target, 0x3005, &m);
@@ -975,6 +978,8 @@ void SltEffectUpdate(float dt) {
     while (fn_80187148(&sEffects, &it) != 0) {
         SltEffect* e = (SltEffect*)fn_80187108(&sEffects, &it);
         switch (e->state) {
+        case 0:
+            break;
         case 1:
             if (e->timer <= dt) {
                 e->timer = 2900.0f;
