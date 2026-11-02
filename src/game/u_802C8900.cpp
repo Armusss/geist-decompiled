@@ -8,6 +8,13 @@ typedef unsigned char u8;
 typedef unsigned long u32;
 typedef float f32;
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+static const char* sDestroyable = "Destroyable";
+
+
 class Actor;
 struct Mtx34 { f32 m[12]; };
 
@@ -185,6 +192,8 @@ int Fn80211F78(Actor* actor);
 int ActorFxEmitterInit(Actor* self)
 {
     u8* base = (u8*)self;
+    u32 h2;
+    u32 h1;
     u8* p;
     u8 view[0x18];
 
@@ -201,12 +210,16 @@ int ActorFxEmitterInit(Actor* self)
         return 0;
     }
 
-    *(u32*)(p + 0x18) &= ~0x08000000;
-    *(u32*)(p + 0x18) &= ~0x8;
-    *(u32*)(p + 0x18) &= ~0x6;
-    *(f32*)(p + 0x34) = lbl_804DAEDC;
-    *(f32*)(p + 0x38) = lbl_804DAED4;
-
+    {
+        f32 b, a;
+        a = lbl_804DAEDC;
+        b = lbl_804DAED4;
+        *(u32*)(p + 0x18) &= ~0x08000000;
+        *(u32*)(p + 0x18) &= ~0x8;
+        *(u32*)(p + 0x18) &= ~0x6;
+        *(f32*)(p + 0x34) = a;
+        *(f32*)(p + 0x38) = b;
+    }
     if (*(u32*)(base + 0x84) == 0 || *(u32*)(*(u32*)(base + 0x84) + 0x24) == 0x24A738)
         *(u32*)(p + 0x18) |= 0x30000000;
 
@@ -217,8 +230,8 @@ int ActorFxEmitterInit(Actor* self)
 
     {
         u32 key = *(u32*)(*(u32*)(base + 0x84) + 0x28);
-        u32 h1 = VarFindHash(0xF3BEEEDF, key, 0x4B35781);
-        u32 h2 = VarFindHash(0xF3BEEEDF, key, 0x40795527);
+        h1 = VarFindHash(0xF3BEEEDF, key, 0x4B35781);
+        h2 = VarFindHash(0xF3BEEEDF, key, 0x40795527);
 
         fn_8016D864(view, *(u32*)(base + 0x40));
         fn_8016D6BC(view, view);
@@ -266,11 +279,12 @@ int FxEmitterHandleMessage(Actor* self, int msg, void* data, int arg4)
         case 0xAD8576FA: {
             String s;
 
-            s.Format("Parent: 0x%08x", fn_80212730(*(u32*)(owner + 0x38)));
+            s.Format("Parent: 0x%08x\n", fn_80212730(*(u32*)(owner + 0x38)));
             fn_8028C188(d + 3, s.data, s.length);
             break;
         }
         }
+        result = 0;
         break;
     }
     }
