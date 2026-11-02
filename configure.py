@@ -603,7 +603,7 @@ config.libs = [
             Object(NonMatching, "game/u_8007EE68.cpp"),  # guess
             Object(Matching, "game/u_80080714.cpp"),  # ring-buffer queues
             Object(NonMatching, "game/u_80080F88.cpp"),  # guess
-            Object(NonMatching, "game/Script.c"),  # guess
+            Object(NonMatching, "game/Script.c", cflags=cflags_game_c),  # guess; C (task: write C)
             Object(Matching, "game/u_80085CDC.cpp"),  # guess
             Object(Matching, "game/u_80085E50.cpp"),  # string table
             Object(NonMatching, "game/AppMain.c"),  # guess
