@@ -154,6 +154,12 @@ extern "C" void fn_8001BC78();
 extern "C" void fn_8021E09C(MenuPage* page);
 // TODO (not drafted yet, 0x220 bytes at 0x8021DE7C): menu page redraw
 extern "C" void fn_8021DE7C();
+extern const char* lbl_804D3458; // "MainMenu"
+extern "C" int fn_800498D0(MenuScreen* screen);
+extern "C" int fn_800C5654(int a, u32 hash, int b);
+extern "C" void fn_80142E88();
+// TODO (not drafted yet, 0x1A0 bytes at 0x8021DAA0): widget callback
+extern "C" void fn_8021DAA0();
 // TODO (not drafted yet, 0x188 bytes at 0x8021DCF4): widget callback
 extern "C" void fn_8021DCF4();
 extern MenuPage* lbl_8049EE58[];
@@ -597,4 +603,36 @@ void MenuPageClose(MenuPage* page) {
     }
     MenuPageClear(page);
     MenuArmWidget();
+}
+
+struct MenuNameMsg {
+    int unk0;
+    const char* name;
+    u8 unk8[16];
+};
+
+// MenuGotoScreen: ask the front end to switch to a named screen.
+void MenuGotoScreen(const char* name) {
+    MenuNameMsg msg;
+    MenuPage* page;
+    MenuPage* armed;
+    msg.name = name;
+    if (name == lbl_804D3458) {
+        fn_80142E88();
+    }
+    SendMsg(0x38000000, 0x5600, &msg);
+    if (lbl_804D345C != -1) {
+        lbl_804D53D4 = 1;
+        page = lbl_8049EE58[lbl_804D345C];
+        if (page->unkb4 != 0) {
+            MenuPageClear(page);
+        }
+        armed = lbl_8049EE58[lbl_804D345C];
+        armed->callback = (void*)MenuPopPage;
+        armed->unka0 = 0;
+        if (armed->state != 1) {
+            armed->timer = 500;
+        }
+        armed->state = 3;
+    }
 }
