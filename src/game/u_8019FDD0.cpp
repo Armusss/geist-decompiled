@@ -94,7 +94,7 @@ void fn_800C6200(void* buf);
 void* fn_800C6448(void);
 void fn_800C6664(int a);
 void fn_800C6834(int a);
-void fn_8009863C(float f, int a);
+void fn_8009863C(int a, float f);
 void fn_8010F7EC(void);
 void fn_80115F28(int a);
 
@@ -184,7 +184,7 @@ void ReflectEnd(void) {
     switch (lbl_80495D84[lbl_804D308C].actor->flag35) {
     case 1:
         if (lbl_804D3088 != 0.0f) {
-            fn_8009863C((float)(lbl_804D5160 * 3), 0);
+            fn_8009863C(0, (float)(lbl_804D5160 * 3));
         }
         break;
     }
