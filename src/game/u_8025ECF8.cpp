@@ -957,23 +957,29 @@ int ShellCrabEvent(int msg, Actor* a) {
 int ShellCrabEventSimple(int msg, Actor* a) {
     ShellBeh* b = a->beh;
 
-    if (msg == 0x1B83833F) {
+    switch (msg) {
+    case 0x1B83833F:
         lbl_803BFB70[b->state].setState(a, b->next);
         lbl_803BFB70[b->next].enter(a);
-    } else if (msg < 0x1B83833F) {
-        if (msg == -0x68C67389 && a->handle != -1) {
+        break;
+    case -0x68C67389:
+        if (a->handle != -1) {
             FxMsg m;
             m.id = a->handle;
             m.key = 0xEC1B94EE;
             m.a = 0;
             SendMsg(a->handle, 0xC14, &m);
         }
-    } else if (msg == 0x703BA9B7 && a->handle != -1) {
-        FxMsg m;
-        m.id = a->handle;
-        m.key = 0x5A326F65;
-        m.a = 0;
-        SendMsg(a->handle, 0xC14, &m);
+        break;
+    case 0x703BA9B7:
+        if (a->handle != -1) {
+            FxMsg m;
+            m.id = a->handle;
+            m.key = 0x5A326F65;
+            m.a = 0;
+            SendMsg(a->handle, 0xC14, &m);
+        }
+        break;
     }
     return 1;
 }
