@@ -46,20 +46,39 @@ struct CondObj {
 };
 
 // Host-like game object: the offsets the state helpers below touch.
+struct FxData {
+    char pad00[0x14];
+    int i14;            // 0x14
+    int i18;            // 0x18
+    int i1C;            // 0x1C
+};
+
 struct HostObj {
     char pad0[0x24];
     int pos24; // 0x24
     int pos28; // 0x28
     int pos2C; // 0x2C
-    char pad30[8];
+    char pad30[0x8];
     int handle38; // 0x38
     char pad3C[0x14];
     u32 flags50; // 0x50
     char pad54[0x24];
     int i78; // 0x78
-    char pad7C[0x48];
+    char pad7C[0x10];
+    void* cb8C; // 0x8C
+    char pad90[0x8];
+    int i98; // 0x98
+    char pad9C[0x8];
+    int iA4; // 0xA4
+    char padA8[0x1C];
     int iC4; // 0xC4
-    char padC8[0x3C];
+    char padC8[0x1C];
+    void* cbE4; // 0xE4
+    char padE8[0x8];
+    int iF0; // 0xF0
+    char padF4[0x8];
+    int iFC; // 0xFC
+    char pad100[0x4];
     int i104; // 0x104
     char pad108[0x4];
     void (*cb10C)(void*); // 0x10C
@@ -74,13 +93,16 @@ struct HostObj {
     int i288; // 0x288
     char pad28C[0x3AC];
     int i638; // 0x638
-    char pad63C[0x168];
+    char pad63C[0x100];
+    int i73C; // 0x73C
+    char pad740[0x64];
     char sub7A4[0x10]; // 0x7A4
     u32 flags7B4; // 0x7B4
     char pad7B8[0x18];
     int i7D0; // 0x7D0
     char pad7D4[0xC0];
-    char anim894[0x1E4C]; // 0x894
+    char anim894[0x1E30]; // 0x894
+    FxData* fxData[7]; // 0x26C4
     char sub26E0[8]; // 0x26E0
     int i26E8; // 0x26E8
     char pad26EC[0xB0];
@@ -107,13 +129,17 @@ void* FollowGetTargetObj(void* f);                      // 0x800A7A18
 void FollowSetTargetObj(void* f, void* t);              // 0x800A78A0
 void FollowOffsetUpdate(void* f);                       // 0x800A70D0
 int PlayerGetHeldSlotIndex(void* p);                    // 0x8006CAB8
-void PlayerInHost(Actor* a);                            // 0x80049750
+int PlayerInHost(Actor* a);                            // 0x80049750
 extern "C" int fn_80049940(void);
 extern "C" int fn_8016325C(void* anim);
 extern "C" void fn_8029B3B0(void* o, int v);
 extern "C" void fn_800B26B8(void* o);
 extern "C" void fn_800BC56C(void* o, void* t);
 
+extern "C" int fn_800A1BC8(int a, int b, u32 type, int c, int d);
+extern "C" u32 lbl_803C39D4[];
+extern "C" u32 lbl_803C3AF4[];
+extern "C" void fn_802A770C(void);
 extern "C" int fn_800B84E4(int a, int b, int c);
 extern "C" int fn_800B7CE0(int a);
 extern "C" void* memset(void* p, int c, u32 n);
@@ -370,7 +396,28 @@ bool CondObjClearFlag2A(CondObj* o) {
     return true;
 }
 
-// TODO (not drafted yet, 0xC0 bytes at 0x8029FAB0): not analysed
+bool HostEnterB(HostObj* o) {
+    if (o == 0) {
+        return false;
+    }
+    int* st = o->ptr130;
+    if (*st == 8) {
+        ConditionSetBit(o->conditions, 0x2A, 1);
+    }
+    *st = 5;
+    ConditionUpdateBit(o->conditions, 4, 0);
+    void* t = FollowGetTargetObj(o->conditions);
+    if (t != 0) {
+        FollowSetTargetObj(o->conditions, t);
+        o->i288 = 0;
+    }
+    if (o->i220 == 4) {
+        o->i220 = 0;
+    }
+    fn_80162610(o, o->anim894, 3);
+    return true;
+}
+
 // TODO (not drafted yet, 0x16C bytes at 0x8029FB70): not analysed
 bool HostResetFollow(HostObj* o) {
     float zero = lbl_804DA7C0;
@@ -1007,7 +1054,18 @@ void HostStateEnter7A8(HostObj* o, float dt) {
 
 // TODO (not drafted yet, 0x10C bytes at 0x802A5814): not analysed
 // TODO (not drafted yet, 0x288 bytes at 0x802A5920): not analysed
-// TODO (not drafted yet, 0xB4 bytes at 0x802A5BA8): not analysed
+void HostSetAnimsB(HostObj* o) {
+    int slot = PlayerInHost((Actor*)o);
+    int v = o->i73C;
+    FxData* d = o->fxData[slot];
+    o->i98 = fn_800A1BC8(d->i14, d->i18, lbl_803C3AF4[v], 0, 0);
+    o->cb8C = (void*)fn_802A770C;
+    o->iA4 = 0x11;
+    d = o->fxData[slot];
+    o->iF0 = fn_800A1BC8(d->i14, d->i1C, lbl_803C3AF4[v], 0, 0);
+    o->iFC = 0x11;
+}
+
 // TODO (not drafted yet, 0x61C bytes at 0x802A5C5C): not analysed
 // TODO (not drafted yet, 0x1F4 bytes at 0x802A6278): not analysed
 void ActorPlayAnim8B3A() {
@@ -1026,7 +1084,19 @@ void HostStateEnter4A0(HostObj* o, float dt) {
 
 // TODO (not drafted yet, 0x140 bytes at 0x802A650C): not analysed
 // TODO (not drafted yet, 0x520 bytes at 0x802A664C): not analysed
-// TODO (not drafted yet, 0xBC bytes at 0x802A6B6C): not analysed
+void HostSetAnimsA(HostObj* o) {
+    int slot = PlayerInHost((Actor*)o);
+    int v = o->i73C;
+    FxData* d = o->fxData[slot];
+    o->i98 = fn_800A1BC8(d->i14, d->i18, lbl_803C39D4[v], 0, 0);
+    o->iA4 = 1;
+    d = o->fxData[slot];
+    o->iF0 = fn_800A1BC8(d->i14, d->i1C, lbl_803C39D4[v], 0, 0);
+    o->cbE4 = (void*)fn_802A770C;
+    o->iFC = 1;
+    o->i7D0 = 0;
+}
+
 void PlayerResetGunTimer(void* p);
 void GunTimerResetForward(void* p) {
     PlayerResetGunTimer(p);
