@@ -368,9 +368,9 @@ static inline void ClockSpinHands(Actor* self, Player* player, float dt, int han
                    (int)(4096.0f *
                          (amount / ((45.0f * dt) / 1000.0f))), 0, 0);
         limit = 1.0f - base;
-        if (limit < 0.0f) {
+        if (0.0f > limit) {
             limit = 0.0f;
-        } else if (limit > 0.99999988f) {
+        } else if (0.99999988f < limit) {
             limit = 0.99999988f;
         }
         Fn8006CD84(player, 0, limit);
@@ -483,7 +483,7 @@ void ClockActorTick(Actor* self, float dt) {
 
         if (work->field_34 < 6 ||
             (work->field_34 == 6 && work->field_38 <= 30.0f)) {
-            step = step * -1.0f;
+            step *= -1.0f;
         }
         if (step == 0.0f) {
             Fn8006CDE8(player, 0, 0);
