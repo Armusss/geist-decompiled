@@ -24,7 +24,7 @@ struct MenuItem : MenuItemBase {
     virtual void v1();
     virtual void v2();
     virtual int canFocus();          // vtable offset 0x14
-    virtual void v4();
+    virtual void defocus();          // 0x18
     virtual void layout();           // 0x1c
     virtual void v6();
     virtual void activate(int flag); // vtable offset 0x24
@@ -164,6 +164,7 @@ int GunPoolFreeSize8017BA2C();
 extern "C" void fn_8002FD68();
 extern int lbl_804D3444;
 extern int lbl_804D3448;
+extern int lbl_804D3454;
 extern "C" void FxStart(int handle, int a, int b);
 extern "C" void fn_8021DCF4();
 extern MenuPage* lbl_8049EE58[];
@@ -747,4 +748,56 @@ void MenuEnter(MenuPage* page) {
     }
     MenuPageOpen(page);
     FxStart(lbl_804D3448, 0, 0);
+}
+
+// MenuCursorNext: move the cursor to the next focusable item (wrapping).
+void MenuCursorNext(MenuPage* page) {
+    int i;
+    MenuItem** p;
+    i = page->cursor + 1;
+    p = &page->items[i];
+    for (; i < page->itemCount; i++) {
+        if ((*p)->canFocus() != 0) {
+            page->items[page->cursor]->defocus();
+            page->cursor = i;
+            FxStart(lbl_804D3454, 0, 0);
+            return;
+        }
+        p++;
+    }
+    for (i = 0, p = page->items; i < page->cursor; i++, p++) {
+        if ((*p)->canFocus() != 0) {
+            page->items[page->cursor]->defocus();
+            page->cursor = i;
+            FxStart(lbl_804D3454, 0, 0);
+            return;
+        }
+    }
+}
+
+// MenuCursorPrev: move the cursor to the previous focusable item (wrapping).
+void MenuCursorPrev(MenuPage* page) {
+    int i;
+    MenuItem** p;
+    i = page->cursor - 1;
+    p = &page->items[i];
+    for (; i > -1; i--) {
+        if ((*p)->canFocus() != 0) {
+            page->items[page->cursor]->defocus();
+            page->cursor = i;
+            FxStart(lbl_804D3454, 0, 0);
+            return;
+        }
+        p--;
+    }
+    i = page->itemCount - 1;
+    p = &page->items[i];
+    for (; i > page->cursor; i--, p--) {
+        if ((*p)->canFocus() != 0) {
+            page->items[page->cursor]->defocus();
+            page->cursor = i;
+            FxStart(lbl_804D3454, 0, 0);
+            return;
+        }
+    }
 }
