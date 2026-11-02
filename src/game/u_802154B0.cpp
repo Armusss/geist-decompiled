@@ -5,6 +5,9 @@
 typedef unsigned long u32;
 typedef unsigned char u8;
 
+struct MenuItem;
+struct MenuOps;
+
 // A menu entry (button/toggle/slider state shared by the menu screens).
 struct MenuItem {
     u32 flags;     // 0x00 (bit 0 enabled, bit 16 pressed)
@@ -14,7 +17,7 @@ struct MenuItem {
     int arg3;      // 0x10
     float hold0;   // 0x14
     float hold;    // 0x18
-    void* ops;     // 0x1c
+    MenuOps* ops;  // 0x1c
 };
 
 // The menu screen that is currently shown.
@@ -27,6 +30,44 @@ struct MenuScreen {
     int bit58c;      // 0x58c
     u8 unk590[0x14a8 - 0x590];
     int handle14a8;  // 0x14a8
+};
+
+// Menu item classes: each adds its own callback and argument after the common head.
+struct MenuButtonA : MenuItem {
+    void (*onPress)(int); // 0x20
+    int arg;              // 0x24
+};
+struct MenuButtonB : MenuItem {
+    u8 unk20[8];
+    void (*onPress)(int); // 0x28
+    int arg;              // 0x2c
+};
+struct MenuButtonC : MenuItem {
+    u8 unk20[0xc];
+    void (*onPress)(int); // 0x2c
+    int arg;              // 0x30
+};
+struct MenuButtonD : MenuItem {
+    u8 unk20[0x24];
+    void (*onPress)(int, int); // 0x44
+    int unk48;
+    int arg;                   // 0x4c
+};
+struct MenuButtonE : MenuItem {
+    u8 unk20[0xc];
+    int arg;                   // 0x2c
+    u8 unk30[0x38];
+    void (*onPress)(int, int); // 0x68
+};
+struct MenuButtonF : MenuItem {
+    u8 unk20[0x10];
+    int arg;                   // 0x30
+    u8 unk34[0x3c];
+    void (*onPress)(int, int); // 0x70
+};
+struct MenuOps {
+    u8 unk0[0x24];
+    void (*activate)(MenuItem* item, int flag); // 0x24
 };
 
 // A selectable widget on a menu screen.
@@ -72,6 +113,13 @@ extern int lbl_804D53D4;        // 0x804D53D4 (also used by u_8021427C)
 extern int lbl_804D53E4;        // 0x804D53E4
 extern int lbl_804D53F4;        // 0x804D53F4
 extern u8 lbl_803BC970[];       // menu item ops table
+extern int lbl_804D344C;        // 0x804D344C
+extern int lbl_804D3450;        // 0x804D3450
+extern "C" void FxStart(int handle, int a, int b);
+extern "C" void fn_8000F60C(int x);
+extern "C" void fn_8000F874(int x);
+u32 StrFindKey(u32 key);
+void VFree(void* p);
 
 // TODO (not drafted yet, 0xDC bytes at 0x80217B60): menu message handler
 extern "C" void fn_80217B60();
@@ -165,7 +213,7 @@ int MenuItemPress(MenuItem* item) {
 }
 
 void MenuItemInit(MenuItem* item, int a, int b, int c, int d) {
-    item->ops = lbl_803BC970;
+    item->ops = (MenuOps*)lbl_803BC970;
     item->flags = 1;
     item->arg0 = a;
     item->arg1 = b;
@@ -186,7 +234,7 @@ void MenuToggleA(int delta) {
 void MenuToggleB(int delta) {
     u32 v = fn_800E1BD0();
     v = v & (1 << lbl_804D53DC->bit58c);
-    v = (delta - ((int)(-v | v) >> 31)) & 1;
+    v = (((-v | v) >> 31) + delta) & 1;
     fn_80053FEC(lbl_804D53DC->handle14a8, v);
     if (fn_802A1D04() != 0) {
         fn_8014FF94(3, lbl_804D53DC->handle14a8, v);
@@ -251,4 +299,65 @@ void MenuArmWidget() {
 
 void MenuScreenRun() {
     fn_8021E09C();
+}
+
+// MenuItemActivate: invoke the item class's activate slot when it is not held.
+void MenuItemActivate(MenuItem* item) {
+    if (0.0f == item->hold) {
+        item->ops->activate(item, 1);
+    }
+}
+
+void MenuItemActivate2(MenuItem* item) {
+    if (0.0f == item->hold) {
+        item->ops->activate(item, 1);
+    }
+}
+
+void MenuItemActivate3(MenuItem* item) {
+    if (0.0f == item->hold) {
+        item->ops->activate(item, 1);
+    }
+}
+
+void MenuButtonDFire(MenuButtonD* b, int arg) {
+    if (0.0f == b->hold && b->onPress != 0) {
+        b->onPress(arg, b->arg);
+        FxStart(lbl_804D3450, 0, 0);
+    }
+}
+
+void MenuButtonEFire(MenuButtonE* b, int arg) {
+    if (0.0f == b->hold && b->onPress != 0) {
+        b->onPress(arg, b->arg);
+        FxStart(lbl_804D344C, 0, 0);
+    }
+}
+
+void MenuButtonFFire(MenuButtonF* b, int arg) {
+    if (0.0f == b->hold && b->onPress != 0) {
+        b->onPress(arg, b->arg);
+        FxStart(lbl_804D344C, 0, 0);
+    }
+}
+
+void MenuButtonBFire(MenuButtonB* b) {
+    if (0.0f == b->hold && b->onPress != 0) {
+        b->onPress(b->arg);
+        FxStart(lbl_804D344C, 0, 0);
+    }
+}
+
+void MenuButtonCFire(MenuButtonC* b) {
+    if (0.0f == b->hold && b->onPress != 0) {
+        b->onPress(b->arg);
+        FxStart(lbl_804D344C, 0, 0);
+    }
+}
+
+void MenuButtonAFire(MenuButtonA* b) {
+    if (0.0f == b->hold && b->onPress != 0) {
+        b->onPress(b->arg);
+        FxStart(lbl_804D344C, 0, 0);
+    }
 }
