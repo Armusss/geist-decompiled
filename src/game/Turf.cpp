@@ -29,7 +29,7 @@ struct TurfZone {
     int countC;             // 0x14
     int countD;             // 0x18
     int* handles;           // 0x1C
-    s16 state;              // 0x20
+    u16 state;              // 0x20
     u8 unk22[0x28 - 0x22];
     int size;               // 0x28
     u8 unk2C[0x30 - 0x2C];
@@ -69,6 +69,12 @@ extern "C" void fn_8000F60C(int handle);
 extern "C" void fn_8000F874(int handle);
 int FileAddHandler(int type, int (*handler)(void*, int, void*), void* arg);   // 0x8001950C
 
+struct TurfRegion {
+    u8 unk0[0x1E];
+    s16 zone;               // 0x1E
+};
+extern int gTurfPassFlag;       // 0x804D2620
+extern "C" void fn_80008B94(int a);
 extern int gTurfEnabled;        // 0x804D2630
 extern int gTurfDrawEnabled;    // 0x804D2624
 extern u32 gTurfKColor;         // 0x804D262C
@@ -92,11 +98,10 @@ int TurfFileHandler(void* data, int size, void* unused); // 0x800142CC
 
 // Turns a zone's item offsets back into relative values and clears the item list.
 static inline void TurfZoneRelease(TurfZone* zone) {
-    int i;
-    int off;
+    int i = 0;
+    int off = 0;
     if (zone->items != 0) {
-        off = 0;
-        for (i = 0; i < zone->itemCount; i++) {
+        for (; i < zone->itemCount; i++) {
             TurfItem* item = (TurfItem*)((u8*)zone->items + off);
             off += 0x44;
             item->offA -= zone->baseA;
@@ -115,7 +120,7 @@ static inline void TurfZoneRelease(TurfZone* zone) {
 
 // 0x80012E04 stores one byte into an 8x4-tiled texture buffer.
 void TurfPlotPixel(u8* base, int width, int y, int x, u8 value) {
-    base[(y % 4) * 8 + x % 8 + ((y / 4) * (width / 8) + x / 8) * 32] = value;
+    *(u8*)(x % 8 + (y % 4) * 8 + ((y / 4) * (width / 8) + x / 8) * 32 + (int)base) = value;
 }
 
 // 0x80012E64
@@ -125,19 +130,16 @@ extern "C" void fn_80012E64(int mode) {   // TurfSetMode; called from other unit
 
 // 0x80012E6C counts the bytes of resident zones and of all zones.
 extern "C" void fn_80012E6C(int* resident, int* total) {   // TurfCountSizes; called from other units
+    TurfZone* zone = gTurfZones;
     int resSum = 0;
     int allSum = 0;
-    TurfZone* zone = gTurfZones;
-    int n = gTurfZoneCount;
-    if (n > 0) {
-        do {
-            allSum += zone->size;
-            if (zone->state == 1 || zone->state == 4) {
-                resSum += zone->size;
-            }
-            zone++;
-            n--;
-        } while (n != 0);
+    int i;
+    for (i = 0; i < gTurfZoneCount; i++) {
+        allSum += zone->size;
+        if (zone->state == 1 || zone->state == 4) {
+            resSum += zone->size;
+        }
+        zone++;
     }
     if (resident != 0) {
         *resident = resSum;
@@ -150,8 +152,8 @@ extern "C" void fn_80012E6C(int* resident, int* total) {   // TurfCountSizes; ca
 
 // 0x80012ECC re-queues zones that finished loading but were not yet started.
 void TurfStartPending(void) {
-    int i;
     int off;
+    int i;
     TurfZone* zone;
     if (gTurfLoadedDirty != 0 && gTurfEnabled != 0) {
         off = 0;
@@ -169,8 +171,8 @@ void TurfStartPending(void) {
 
 // 0x80012F78 releases zones whose streaming finished (state 3).
 void TurfReleaseFinished(void) {
-    int i;
     int off;
+    int i;
     TurfZone* zone;
     if (gTurfReleaseDirty != 0 && gTurfEnabled != 0) {
         off = 0;
@@ -178,12 +180,12 @@ void TurfReleaseFinished(void) {
         for (i = 0; i < gTurfZoneCount; i++) {
             zone = (TurfZone*)((u8*)gTurfZones + off);
             if (zone->state == 3) {
-                if (zone->items == 0) {
-                    gTurfReleaseDirty = 1;
-                } else {
+                if (zone->items != 0) {
                     zone->state = 0;
                     TurfZoneRelease(zone);
                     StreamFree(0);
+                } else {
+                    gTurfReleaseDirty = 1;
                 }
             }
             off += 0x48;
@@ -219,9 +221,9 @@ void TurfZoneCallback(int cmd, void* arg, void* zonePtr) {
 
 // 0x80013394 ticks a zone's timer state and releases its handles.
 void TurfZoneTick(int index) {
-    int i;
     TurfZone* zone;
-    if (index > -1 && index < gTurfZoneCount) {
+    int i;
+    if (index >= 0 && index < gTurfZoneCount) {
         gTurfReleaseDirty = 1;
         zone = &gTurfZones[index];
         GunStateTimerTick8017BAD0(&zone->state);
@@ -233,9 +235,9 @@ void TurfZoneTick(int index) {
 
 // 0x80013424 steps a zone's state and releases its handles (the other direction).
 void TurfZoneStep(int index) {
-    int i;
     TurfZone* zone;
-    if (index > -1 && index < gTurfZoneCount) {
+    int i;
+    if (index >= 0 && index < gTurfZoneCount) {
         gTurfLoadedDirty = 1;
         zone = &gTurfZones[index];
         GunStateStep8017BBBC(&zone->state);
@@ -250,7 +252,7 @@ void TurfFlagOff(int index) {
     if (index < 0) {
         return;
     }
-    if (gTurfZoneCount <= index) {
+    if (index >= gTurfZoneCount) {
         return;
     }
     gTurfFlags[index].mode = 0;
@@ -261,7 +263,7 @@ void TurfFlagOn(int index) {
     if (index < 0) {
         return;
     }
-    if (gTurfZoneCount <= index) {
+    if (index >= gTurfZoneCount) {
         return;
     }
     gTurfFlags[index].mode = 1;
@@ -272,7 +274,7 @@ void TurfFlagColor(int index, u8 r, u8 g, u8 b) {
     if (index < 0) {
         return;
     }
-    if (gTurfZoneCount <= index) {
+    if (index >= gTurfZoneCount) {
         return;
     }
     gTurfFlags[index].mode = 2;
@@ -331,9 +333,41 @@ void TurfSetDef(int huntArg, int* def) {
 }
 
 // TODO (not drafted yet, 0x700 bytes at 0x800137DC): draws the visible tiles of a region (30 callees)
-// TODO (not drafted yet, 0x74 bytes at 0x80013EDC): not read yet
-// TODO (not drafted yet, 0x38 bytes at 0x80013F50): not read yet
-// TODO (not drafted yet, 0x34 bytes at 0x80013F88): not read yet
+
+// 0x80013EDC copies a region's first six words (its bounds) out, if drawing is enabled.
+int TurfGetRegionBounds(int index, int* out) {
+    int* region;
+    if (gTurfDrawEnabled == 0) {
+        return 0;
+    }
+    if (index > -1 && index < gTurfRegionCount) {
+        region = (int*)((u8*)gTurfRegions + index * 0x20);
+        out[0] = region[0];
+        out[1] = region[1];
+        out[2] = region[2];
+        out[3] = region[3];
+        out[4] = region[4];
+        out[5] = region[5];
+        return 1;
+    }
+    return 0;
+}
+
+// 0x80013F50 starts a new draw pass: bumps the stamp so every item is drawn once.
+extern "C" void fn_80013F50(void) {   // TurfBeginPass; called from other units
+    gTurfPassFlag = 1;
+    gTurfStamp++;
+    fn_80008B94(0);
+}
+
+// 0x80013F88 returns the item list of the zone a region belongs to (or null).
+TurfItem* TurfRegionItems(TurfRegion* region) {
+    s16 zone = region->zone;
+    if (zone > -1 && zone < gTurfZoneCount) {
+        return gTurfZones[zone].items;
+    }
+    return 0;
+}
 // TODO (not drafted yet, 0x310 bytes at 0x80013FBC): not read yet
 
 // 0x800142CC file handler for a turf data file: checks the version and carves the tables out of the block.
