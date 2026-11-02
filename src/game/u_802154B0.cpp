@@ -113,7 +113,7 @@ struct MenuPage {
     int state;        // 0xa4
     int unka8;        // 0xa8 (page is open)
     int timer;        // 0xac
-    u8 unkb0[4];
+    int unkb0;        // 0xb0
     int unkb4;        // 0xb4
 };
 
@@ -823,4 +823,35 @@ void MenuReplace(MenuPage* page) {
     MenuPageSetup(cur);
     MenuPageOpen(cur);
     FxStart(lbl_804D3440, 0, 0);
+}
+
+// MenuSelectPage: play the page's select cue, then open it (or hand it to the current page).
+void MenuSelectPage(MenuPage* page) {
+    MenuPage* cur;
+    switch (page->unkb0) {
+    case 1:
+        fn_800C5654(fn_800498D0(lbl_804D53DC), 0xCB2B18BE, 0);
+        break;
+    case 2:
+        fn_800C5654(fn_800498D0(lbl_804D53DC), 0x044CEF3E, 0);
+        break;
+    case 3:
+        fn_800C5654(fn_800498D0(lbl_804D53DC), 0x5A7E5498, 0);
+        break;
+    case 4:
+        fn_800C5654(fn_800498D0(lbl_804D53DC), 0x5A7E5498, 0);
+        break;
+    }
+    if (lbl_804D345C > -1) {
+        cur = lbl_8049EE58[lbl_804D345C];
+        cur->callback = (void*)MenuReplace;
+        cur->unka0 = (int)page;
+        if (cur->state != 1) {
+            cur->timer = 500;
+        }
+        cur->state = 3;
+        lbl_804D53D4 = 1;
+    } else {
+        fn_8021E09C(page);
+    }
 }
