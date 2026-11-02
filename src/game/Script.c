@@ -609,3 +609,33 @@ int fn_80084540(int id, int msg, int* args, int arg4) {
     }
     return ret;
 }
+
+// ---- Functions not drafted yet (declarations only; retail assembly is used for them) ----
+// TODO (not drafted yet, 0x474 bytes at 0x80083534): script VM function
+void fn_80083534();
+// TODO (not drafted yet, 0x11C bytes at 0x800847D8): script VM function
+void fn_800847D8();
+// TODO (not drafted yet, 0xC4 bytes at 0x800848F4): script VM function
+void fn_800848F4();
+// TODO (not drafted yet, 0x17C bytes at 0x800849B8): script VM function
+void fn_800849B8();
+// TODO (not drafted yet, 0x1C0 bytes at 0x80084B34): script VM function
+void fn_80084B34();
+// TODO (not drafted yet, 0x200 bytes at 0x80084CF4): script VM function
+void fn_80084CF4();
+// TODO (not drafted yet, 0x25C bytes at 0x80084EF4): script VM function
+void fn_80084EF4();
+// TODO (not drafted yet, 0x340 bytes at 0x80085150): script VM function
+void fn_80085150();
+// TODO (not drafted yet, 0x170 bytes at 0x80085490): script VM function
+void fn_80085490();
+// TODO (not drafted yet, 0x1A8 bytes at 0x80085600): script VM function
+void fn_80085600();
+// TODO (not drafted yet, 0x2EC bytes at 0x800857A8): script VM function
+void fn_800857A8();
+// TODO (not drafted yet, 0x4 bytes at 0x80085A94): script VM function
+void fn_80085A94();
+// TODO (not drafted yet, 0x98 bytes at 0x80085A98): script VM function
+void fn_80085A98();
+// TODO (not drafted yet, 0x1AC bytes at 0x80085B30): script VM function
+void fn_80085B30();
