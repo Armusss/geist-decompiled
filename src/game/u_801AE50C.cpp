@@ -83,7 +83,11 @@ struct AiStateRec {
 
 // Enemy character actor (descriptive guess; only the fields used in this file).
 struct Actor {
-    u8 pad00[0x38];
+    u8 pad00[0x24];
+    int px;          // 0x24
+    int py;          // 0x28
+    int pz;          // 0x2C
+    u8 pad30[0x38 - 0x30];
     int handle;      // 0x38
     u8 pad3C[0x50 - 0x3C];
     u32 flags;       // 0x50
@@ -238,6 +242,7 @@ extern float lbl_804D31AC;
 extern "C" int rand();
 extern "C" void fn_8016EEF4(int v);
 extern "C" void fn_80073E80(Actor* a);
+extern "C" void fn_800B4C50(float a, float b, float* pos, int c, int d, int e);
 extern "C" void fn_8016D68C(void* dst, void* src);
 extern "C" int fn_80116E08(Actor* a);
 extern "C" int fn_800E0DBC(void* v);
@@ -999,8 +1004,42 @@ void AiState801B640C(Actor* a) {
     PlayerSlideByVar(a);
 }
 
-// TODO (not drafted yet, 0x288 bytes at 0x801B6508): game logic
-extern "C" void fn_801B6508();
+void AiState801B6508(Actor* a, float dt) {
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    fn_800769A0(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
+    PlayerResetGunTimer(a);
+    PlayerSetValue4(&a->state, 7);
+    if (a->unk328 & 1) {
+        if (PlayerInHost(a) != 0) {
+            if (!(a->flags7B4 & 0x40000) && !(a->flags7B4 & 0x80000)) {
+                fn_80073E80(a);
+            }
+        }
+    }
+    if (a->flags31C == 0) {
+        int id1;
+        int id2;
+        QueryGet(&id1, a->handle, 0x2DA8293C);
+        QueryGet(&id2, a->handle, 0xDFF3097A);
+        fn_80048BA8(a, a->unk1D04, 1);
+        Fn800F7F5C(id1, id2, 0x238E87F4, fn_800498D0(a), a->unk1D04, a->unk14FC);
+        if (a->state.cur == 7) {
+            PlayerSetActionMode(a, 3);
+        } else {
+            PlayerSetHeldSlotMode(a, 3);
+        }
+    } else {
+        PlayerResetGunTimer(a);
+    }
+    ActorPlayAnim(a->handle, 0x8B390117, a->handle);
+    float pos[3];
+    pos[0] = (float)a->px;
+    pos[1] = (float)a->py;
+    pos[2] = (float)a->pz;
+    fn_800B4C50(201.0f, 5000.0f, pos, a->handle, 2, 0x12);
+}
 
 void AiState801B6790(Actor* a) {
     int idx = PlayerInHost(a);
@@ -1052,8 +1091,31 @@ void AiState801B6B24(Actor* a) {
 // TODO (not drafted yet, 0x338 bytes at 0x801B6C18): game logic
 extern "C" void fn_801B6C18();
 
-// TODO (not drafted yet, 0x1B0 bytes at 0x801B6F50): game logic
-extern "C" void fn_801B6F50();
+void AiState801B6F50(Actor* a) {
+    int d1;
+    int d2;
+    QueryGet(&d1, a->handle, 0x2DA8293C);
+    QueryGet(&d2, a->handle, 0xDFF3097A);
+    int idx = PlayerInHost(a);
+    int v = a->variant;
+    int anim;
+    if (a->flags7B4 & 0x80000) {
+        anim = a->set[idx]->a20;
+    } else {
+        anim = a->set[idx]->a18;
+    }
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, anim, lbl_803AAE98[3].byVariant[v], 0, 0);
+    a->cb8C = (void*)fn_801B7B88;
+    a->animFlagA4 = 1;
+    AiAnimSet* set = a->set[idx];
+    if (a->flags7B4 & 0x80000) {
+        anim = set->a24;
+    } else {
+        anim = set->a1C;
+    }
+    a->animF0 = fn_800A1BC8(set->a14, anim, lbl_803AAE98[3].byVariant[v], 0, 0);
+    a->animFlagFC = 1;
+}
 
 void AiState801B7100(Actor* a, float dt) {
     a->unk638 = 1;
