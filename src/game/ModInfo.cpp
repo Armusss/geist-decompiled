@@ -155,6 +155,14 @@ extern int lbl_804D42D0;
 extern char* lbl_804D42BC;
 extern int lbl_804D42C0;
 extern int lbl_804D42A8;
+extern int lbl_804D42AC;
+extern int lbl_804D42B0;
+extern int lbl_804D42B4;
+extern int lbl_804D42C4;
+extern int lbl_804D42DC;
+extern int lbl_804D42E0;
+extern int lbl_804D42EC;
+extern int fn_80036688(void*, int, void*);
 void fn_8002FC30(int, void*, void*);
 extern ModelDb* lbl_804D4300;
 extern ModelSlot lbl_803E4998[];
@@ -693,6 +701,7 @@ void StreamSlotsRelease() {
     }
 }
 
+// TODO (not drafted yet, 0x138 bytes at 0x8002FC30): stream slot completion callback (declared above)
 
 // 0x8002FD68 (called from another unit under this placeholder name)
 extern "C" void fn_8002FD68() {
@@ -837,6 +846,70 @@ extern "C" int fn_80032094(int which, int value) {
     return r;
 }
 
+static inline void SlotsRelease() {
+    if (lbl_804D42D8 != 0 && lbl_804D2678 != 0) {
+        int i;
+        lbl_804D42D8 = 0;
+        for (i = 0; i < lbl_804D42E8; i++) {
+            StreamSlot* s = &lbl_804D42E4[i];
+            if (s->state == 3) {
+                if (s->buffer != 0) {
+                    s->state = 0;
+                    StreamFree(s->buffer);
+                    s->buffer = 0;
+                } else {
+                    lbl_804D42D8 = 1;
+                }
+            }
+        }
+    }
+}
+
+
+static inline void SlotsFinishAll() {
+    int i;
+    lbl_804D42D8 = 1;
+    for (i = 0; i < lbl_804D42E8; i++)
+        GunStateFinish8017BC5C(&lbl_804D42E4[i].state);
+}
+
+// 0x800320F4 (called from another unit under this placeholder name; StreamSlotsShutdown)
+extern "C" void fn_800320F4() {
+    SlotsFinishAll();
+    SlotsRelease();
+    lbl_804D42AC = 0;
+    lbl_804D42B0 = 0;
+    lbl_804D42B4 = 0;
+    lbl_804D42BC = 0;
+    lbl_804D42C4 = 0;
+    lbl_804D42CC = 0;
+    lbl_804D42E0 = 0;
+    lbl_804D42E4 = 0;
+    lbl_804D42E8 = 0;
+    lbl_804D42EC = 0;
+    lbl_804D42D4 = 0;
+    lbl_804D42D8 = 0;
+}
+
+// 0x80032200 (called from another unit under this placeholder name; StreamSlotsInit)
+extern "C" int fn_80032200() {
+    lbl_804D42AC = 0;
+    lbl_804D42B0 = 0;
+    lbl_804D42B4 = 0;
+    lbl_804D42BC = 0;
+    lbl_804D42C4 = 0;
+    lbl_804D42CC = 0;
+    lbl_804D42E0 = 0;
+    lbl_804D42E4 = 0;
+    lbl_804D42E8 = 0;
+    lbl_804D42EC = 0;
+    lbl_804D42DC = 0;
+    lbl_804D42D4 = 0;
+    lbl_804D42D8 = 0;
+    FileAddHandler(0x2E, fn_80036688, 0);
+    return 1;
+}
+
 // ---- Functions not drafted yet (declarations only; retail assembly is used for them) ----
 // TODO (not drafted yet, 0x55C bytes at 0x80026B50): ModInfo function
 extern "C" void fn_80026B50();
@@ -890,10 +963,6 @@ extern "C" void fn_8002FE64();
 extern "C" void fn_800312B4();
 // TODO (not drafted yet, 0x6FC bytes at 0x8003174C): ModInfo function
 extern "C" void fn_8003174C();
-// TODO (not drafted yet, 0x10C bytes at 0x800320F4): ModInfo function
-extern "C" void fn_800320F4();
-// TODO (not drafted yet, 0x6C bytes at 0x80032200): ModInfo function
-extern "C" void fn_80032200();
 // TODO (not drafted yet, 0x210 bytes at 0x8003226C): ModInfo function
 extern "C" void fn_8003226C();
 // TODO (not drafted yet, 0x8B8 bytes at 0x8003247C): ModInfo function
@@ -945,7 +1014,6 @@ extern "C" void fn_800362E0();
 // TODO (not drafted yet, 0x3C bytes at 0x8003664C): ModInfo function
 extern "C" void fn_8003664C();
 // TODO (not drafted yet, 0x244 bytes at 0x80036688): ModInfo function
-extern "C" void fn_80036688();
 // TODO (not drafted yet, 0x138 bytes at 0x800368CC): ModInfo function
 extern "C" void fn_800368CC();
 // TODO (not drafted yet, 0x1EC bytes at 0x80036A04): ModInfo function
