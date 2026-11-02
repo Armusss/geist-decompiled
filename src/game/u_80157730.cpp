@@ -273,7 +273,7 @@ void fn_802CECE8();
 }
 
 // Defined later in this file.
-void fn_801582AC();
+extern "C" void fn_801582AC();
 void fn_801584F8();
 void fn_8015860C();
 void fn_80158744();
@@ -522,6 +522,8 @@ struct QueryMsg {
     int unk8;
     QueryResult result;
 };
+
+extern "C" {
 
 // 0x80157730: release everything the game session allocated.
 void fn_80157730() {
@@ -2122,3 +2124,5 @@ int fn_8015B428(f32 timer, void* posRaw, int arg, u8 a, u8 b, u8 c, u8 d, u8 e, 
 }
 void fn_8015B5B4(int) {}
 void fn_8015BA5C(f32) {}
+
+} // extern "C"
