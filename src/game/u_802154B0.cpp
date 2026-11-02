@@ -2,8 +2,7 @@
 // item helpers and the menu input state. Names are descriptive guesses; the code is matched against the
 // retail DOL.
 
-typedef unsigned long u32;
-typedef unsigned char u8;
+#include <dolphin/gx.h>
 
 struct MenuItem;
 struct MenuOps;
@@ -174,6 +173,12 @@ extern "C" void fn_8000719C(float v);
 extern "C" void fn_8014CEDC(int v);
 void SaveCommand(int a, int b);
 extern "C" int fn_802A1FA0();
+extern "C" int fn_80010448(int a, int b);
+extern "C" void fn_80010330(int a, int b);
+extern "C" void fn_801D8A68(int a);
+extern "C" void fn_8010475C(int a);
+extern int lbl_804D343C;
+extern u32 lbl_804D53B8;
 extern MenuPage lbl_8049E818;
 extern "C" void fn_80201260(float f, int a, int b);
 int PadPressed(int pad, int a, int b);
@@ -1001,4 +1006,35 @@ int MenuPageInput(MenuPage* page) {
         }
     }
     return 0;
+}
+
+inline void MenuQuad(f32 x0, f32 y0, f32 x1, f32 y1, u8 r, u8 g, u8 b, u8 a) {
+    GXBegin(GX_QUADS, GX_VTXFMT2, 4);
+    GXPosition3f32(x0, y0, 0.0f);
+    GXColor4u8(r, g, b, a);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(x0, y1, 0.0f);
+    GXColor4u8(r, g, b, a);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(x1, y1, 0.0f);
+    GXColor4u8(r, g, b, a);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(x1, y0, 0.0f);
+    GXColor4u8(r, g, b, a);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+}
+
+// MenuDimScreen: darken the screen behind the menu with a full-screen quad.
+extern "C" void fn_802154B0(int alpha) {
+    if (fn_80010448(lbl_804D343C, 0) == 2) {
+        fn_80010330(lbl_804D343C, 0);
+    }
+    fn_801D8A68(8);
+    fn_8010475C(lbl_804D53B8 >> 2);
+    GXSetZMode(GX_TRUE, GX_ALWAYS, GX_FALSE);
+    MenuQuad(0.0f, 0.0f, 1.0f, 1.0f, 0x48, 0x48, 0x48, alpha);
 }
