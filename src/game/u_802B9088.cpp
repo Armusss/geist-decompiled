@@ -54,23 +54,29 @@ struct Beh {
 // What the rider is looking at / locked on to (actor+0x22C while riding).
 struct Target {
     char pad0[0x24];
-    u32 x;          // 0x24
-    u32 y;          // 0x28
-    u32 z;          // 0x2C
+    int x;          // 0x24
+    int y;          // 0x28
+    int z;          // 0x2C
     char pad30[8];
-    u32 id;         // 0x38
+    u32 id;        // 0x38
 };
 
 // The host's per-type definition data (at actor+0xC4).
 struct RideData {
     u32 hash;       // 0x00
     char pad4[0x2C];
-    u32 value;      // 0x30
+    int value;      // 0x30
     char pad34[0xB0];
-    float fE4;      // 0xE4
+    union {
+        float fE4;      // 0xE4
+        float arrE4[1];
+    };
     char padE8[8];
     float fF0;      // 0xF0
-    float fF4;      // 0xF4
+    union {
+        float fF4;      // 0xF4
+        float arrF4[1];
+    };
     float fF8;      // 0xF8
 };
 
@@ -322,18 +328,20 @@ int RideMsg(int msg, void* data) {
     case 0x41E: {
         m41E = (Msg41E*)data;
         beh = actor->beh;
-        if (m41E->hash != 0xAD8576FA) {
+        switch (m41E->hash) {
+        case 0xAD8576FA: {
+            String s;
+            String a(gRideTypes[beh->idx].name);
+            String b("\n");
+            String c;
+
+            fn_800225C8(&c, a, b);
+            fn_8028C188(&m41E->result, c.mData, c.mLength);
+            fn_8028BF80(&s, "Roll: %f\n", actor->v24C.y);
+            fn_8028C188(&m41E->result, s.mData, s.mLength);
             return 0;
         }
-        String s;
-        String a(gRideTypes[beh->idx].name);
-        String b("\n");
-        String c;
-
-        fn_800225C8(&c, a, b);
-        fn_8028C188(&m41E->result, c.mData, c.mLength);
-        fn_8028BF80(&s, "Roll: %f\n", actor->v24C.y);
-        fn_8028C188(&m41E->result, s.mData, s.mLength);
+        }
         return 0;
     }
     case 0x41D:
@@ -545,8 +553,8 @@ int RideState0Enter(Actor* actor) {
 int RideTick(void* p) {
     Actor* actor;
     RideState* st;
-    Vec3 v;
     Vec3 rot;
+    Vec3 v;
     Vec3 va;
     Vec3 vb;
     float f31;
@@ -558,6 +566,7 @@ int RideTick(void* p) {
     int flag;
     int n;
     int state;
+    int t;
     Target* target;
 
     if (p == 0) {
@@ -580,17 +589,17 @@ int RideTick(void* p) {
         f29 = actor->f8C;
         flag = 0;
         if (actor->i21C != 0) {
-            target = actor->pTarget;
             st->i18 = actor->i21C;
+            target = actor->pTarget;
             v.x = (float)target->x;
             v.y = (float)target->y;
             v.z = (float)target->z;
             st->pos.x = v.x - f31;
             st->pos.y = v.y - f30;
             st->pos.z = v.z - f29;
-            st->f3C = *(float*)((char*)actor->data + st->i18 * 4 + 0xF4);
+            st->f3C = actor->data->arrF4[st->i18];
             st->f38 = actor->data->fF0;
-            st->f1C = *(float*)((char*)actor->data + st->i18 * 4 + 0xE4);
+            st->f1C = actor->data->arrE4[st->i18];
         } else {
             st->i18 = actor->i218;
             st->pos.x = 0.0f;
@@ -607,7 +616,7 @@ int RideTick(void* p) {
         v.x -= f31;
         v.y -= f30;
         v.z -= f29;
-        n = (fabs(v.x) > 1.1920929e-7f) + (fabs(v.y) > 1.1920929e-7f) + (fabs(v.z) > 1.1920929e-7f);
+        n = (fabsf(v.x) > 1.1920929e-7f) + (fabsf(v.y) > 1.1920929e-7f) + (fabsf(v.z) > 1.1920929e-7f);
         if (n != 0) {
             fn_8016D440(&rot, &v);
             Vec3Set(&st->rot, rot.z - actor->v24C.z, rot.x - actor->v24C.x, 0.0f);
@@ -629,10 +638,10 @@ int RideTick(void* p) {
         if (dot < 0.0f) {
             flag = 1;
         }
-        len2 = st->pos.x * st->pos.x + st->pos.y * st->pos.y + st->pos.z * st->pos.z;
-        if ((actor->i21C == 0 && fabs(st->rot.z) < 1.1920929e-7f) || len2 < thr || flag != 0) {
+        if ((actor->i21C == 0 && fabsf(st->rot.z) < 1.1920929e-7f) ||
+            st->pos.x * st->pos.x + st->pos.y * st->pos.y + st->pos.z * st->pos.z < thr || flag != 0) {
             if (actor->i220 == 2 && actor->pTarget != 0 &&
-                (actor->pTarget->id >> 24) == 3) {
+                (t = actor->pTarget->id >> 24, t == 3)) {
                 actor->i220 = 0;
                 actor->pTarget = 0;
                 st->i18 = 1;
@@ -643,24 +652,22 @@ int RideTick(void* p) {
                 ActorPlayAnim(actor->i224, actor->i228, OwnerId(actor));
             }
         }
-        return 1;
-    }
-    if (state == 3) {
-        Vec3 d;
-        d.z = actor->f234 - actor->v24C.z;
-        d.x = actor->f22C - actor->v24C.x;
-        if (fabs(d.z) < 1.1920929e-7f && fabs(d.x) < 1.1920929e-7f) {
+    } else if (state == 3) {
+        rot.z = actor->f234 - actor->v24C.z;
+        rot.x = actor->f22C - actor->v24C.x;
+        if (fabsf(rot.z) < 1.1920929e-7f && fabsf(rot.x) < 1.1920929e-7f) {
             actor->i220 = 0;
             ActorPlayAnim(actor->i224, actor->i228, OwnerId(actor));
-        } else if (!MemFlagIsSet(st, 0x16) || fabs(st->f40 - actor->f258) < 10.0f) {
+        } else if (!MemFlagIsSet(st, 0x16) || fabsf(st->f40 - actor->f258) < 10.0f) {
             st->i18 = actor->i218;
-            Vec3Set(&st->rot, d.z, d.x, 0.0f);
+            Vec3Set(&st->rot, rot.z, rot.x, 0.0f);
             EulerNormalize(&st->rot, &st->rot);
             st->f3C = actor->data->fF4;
             st->f38 = actor->data->fE4;
             st->f1C = actor->data->fE4;
         }
-        return 1;
+    } else {
+        return FollowOffsetUpdate(p);
     }
-    return FollowOffsetUpdate(actor);
+    return 1;
 }
