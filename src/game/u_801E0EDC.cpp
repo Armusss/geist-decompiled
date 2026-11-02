@@ -528,8 +528,9 @@ u32 BarrierActorMsg(void* actorPtr, int msg, int* data) {
 // drives the node colour and effect, then chains to ActorUpdate.
 // Descriptive name: BarrierActorUpdate.
 void BarrierActorUpdate(void* actorPtr, float delta) {
+    BarrierBeh* beh;
     BarrierActor* actor = (BarrierActor*)actorPtr;
-    BarrierBeh* beh = actor->behaviour;
+    beh = actor->behaviour;
 
     if (beh != 0) {
         // "level" scales the barrier effect; it starts at its maximum.
@@ -566,17 +567,19 @@ void BarrierActorUpdate(void* actorPtr, float delta) {
             break;
         }
         case 2: {
-            if ((beh->flags & 2) == 0) {
+            if ((beh->flags & 2) != 0) {
+                if ((beh->flags & 4) != 0) {
+                    float speed = fn_80017084(beh->timer);
+                    beh->timer -= delta;
+                    level = 0.15f * speed + 0.85f;
+                    if (beh->timer <= 0.0f) {
+                        beh->state = 3;
+                        beh->timer = 100.0f;
+                    }
+                }
+            } else {
                 beh->state = 3;
                 beh->timer = 100.0f;
-            } else if ((beh->flags & 4) != 0) {
-                float speed = fn_80017084(beh->timer);
-                beh->timer -= delta;
-                level = 0.15f * speed + 0.85f;
-                if (beh->timer <= 0.0f) {
-                    beh->state = 3;
-                    beh->timer = 100.0f;
-                }
             }
             break;
         }
@@ -630,74 +633,47 @@ int BarrierKindRegistryMsg(void* actorPtr, void* dataPtr) {
     if (fn_80019F88(dataPtr, actorPtr) != 0) {
         return 1;
     }
-    if (beh == 0) {
-        return 0;
-    }
-
-    switch (data[1]) {
-    case 0x1314F:
-        beh->flags &= ~2u;
-        return 1;
-    case 0x9DF:
-        beh->flags |= 2;
-        return 1;
-    case (int)0xFCC9CDD8u:
-        if (data[3] != 0) {
-            beh->flags |= 4;
-        } else {
-            beh->flags &= ~4u;
-        }
-        beh->timer = 100.0f;
-        return 1;
-    case 0x1E417DFF: {
-        int firstFree = -1;
-        int* table = lbl_803ADE38;
-        int i = 0;
-        for (int n = 16; n != 0; n--) {
-            if (data[3] == table[0]) {
+    if (beh != 0) {
+        switch (data[1]) {
+        case 0x1314F:
+            beh->flags &= ~2u;
+            return 1;
+        case 0x9DF:
+            beh->flags |= 2;
+            return 1;
+        case (int)0xFCC8CDD8u:
+            if (data[3] != 0) {
+                beh->flags |= 4;
+            } else {
+                beh->flags &= ~4u;
+            }
+            beh->timer = 100.0f;
+            return 1;
+        case 0x1E417DFF: {
+            int firstFree = -1;
+            for (int i = 0; i < 64; i++) {
+                if (data[3] == lbl_803ADE38[i]) {
+                    return 1;
+                }
+                if (firstFree == -1 && lbl_803ADE38[i] == -1) {
+                    firstFree = i;
+                }
+            }
+            if (firstFree == -1) {
                 return 1;
             }
-            if (firstFree == -1 && table[0] == -1) {
-                firstFree = i;
-            }
-            i++;
-            if (data[3] == table[1]) {
-                return 1;
-            }
-            if (firstFree == -1 && table[1] == -1) {
-                firstFree = i;
-            }
-            i++;
-            if (data[3] == table[2]) {
-                return 1;
-            }
-            if (firstFree == -1 && table[2] == -1) {
-                firstFree = i;
-            }
-            i++;
-            if (data[3] == table[3]) {
-                return 1;
-            }
-            if (firstFree == -1 && table[3] == -1) {
-                firstFree = i;
-            }
-            i++;
-            table += 4;
-        }
-        if (firstFree == -1) {
+            lbl_803ADE38[firstFree] = data[3];
             return 1;
         }
-        lbl_803ADE38[firstFree] = data[3];
-        return 1;
-    }
-    case 0x5E1B40B7:
-        for (int i = 0; i < 64; i++) {
-            if (data[3] == lbl_803ADE38[i]) {
-                lbl_803ADE38[i] = -1;
-                return 1;
+        case 0x5E1B40B7:
+            for (int i = 0; i < 64; i++) {
+                if (data[3] == lbl_803ADE38[i]) {
+                    lbl_803ADE38[i] = -1;
+                    return 1;
+                }
             }
+            return 1;
         }
-        return 1;
     }
     return 0;
 }
