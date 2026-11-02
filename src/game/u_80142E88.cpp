@@ -46,6 +46,20 @@ extern int lbl_8046DB00[4][4];  // four value banks
 
 u32 StrFindKey(u32 key, u32* out);
 
+// Option getters and setters (neighbouring units).
+extern "C" {
+int fn_8016E758();
+void fn_8016E6D8(int value);
+int fn_80170C30();
+void fn_80170DD4(int value);
+int fn_80170CBC();
+void fn_80170D48(int value);
+float fn_800071A4();
+void fn_8000719C(float value);
+}
+extern int lbl_804D2ED0;
+extern int gWideScreen;  // 0x804D4008
+
 // 0x80142E88
 extern "C" void fn_80142E88()
 {
@@ -56,6 +70,121 @@ extern "C" void fn_80142E88()
 extern "C" int fn_80142E94()
 {
     return lbl_804D2ED8;
+}
+
+// 0x80145B24: steps a three-way option (wraps around)
+void OptionStep3(int delta)
+{
+    int v = fn_8016E758() + delta;
+
+    if (v < 0) {
+        v = 2;
+    } else if (v > 2) {
+        v = 0;
+    }
+    fn_8016E6D8(v);
+}
+
+// 0x80145B70: reads the three-way option
+int OptionGet3()
+{
+    return fn_8016E758();
+}
+
+// 0x80145B90: changes a volume by steps of four (0-100)
+void VolumeAdjustA(int steps)
+{
+    int v = fn_80170C30() + steps * 4;
+    int c;
+
+    if (v < 0) {
+        c = 0;
+    } else {
+        c = 100;
+        if (v < 101) {
+            c = v;
+        }
+    }
+    fn_80170DD4(c);
+}
+
+// 0x80145BE4: reads the first volume
+int VolumeGetA()
+{
+    return fn_80170C30();
+}
+
+// 0x80145C04: changes the second volume by steps of four (0-100)
+void VolumeAdjustB(int steps)
+{
+    int v = fn_80170CBC() + steps * 4;
+    int c;
+
+    if (v < 0) {
+        c = 0;
+    } else {
+        c = 100;
+        if (v < 101) {
+            c = v;
+        }
+    }
+    fn_80170D48(c);
+}
+
+// 0x80145C58: reads the second volume
+int VolumeGetB()
+{
+    return fn_80170CBC();
+}
+
+// 0x80145DF4: toggles a two-state option
+void OptionToggle(int delta)
+{
+    lbl_804D2ED0 = (lbl_804D2ED0 + delta) & 1;
+}
+
+// 0x80145E08: reads the two-state option
+int OptionGet()
+{
+    return lbl_804D2ED0;
+}
+
+// 0x80145E10: changes the brightness by steps of 0.05, limited to +-0.5
+void BrightnessAdjust(int steps)
+{
+    float v = 0.05f * (float)steps + fn_800071A4();
+    float c = 0.5f;
+
+    if (v <= c) {
+        c = v;
+        if (v < -0.5f) {
+            c = -0.5f;
+        }
+    }
+    fn_8000719C(c);
+}
+
+// 0x80145E88: brightness as a percentage
+int BrightnessGet()
+{
+    return (int)(100.0f * (0.5f + fn_800071A4()));
+}
+
+// 0x80145EC4: steps the widescreen option (0-1)
+void WideScreenStep(int delta)
+{
+    gWideScreen = gWideScreen + delta;
+    if (gWideScreen < 0) {
+        gWideScreen = 0;
+    } else if (gWideScreen > 1) {
+        gWideScreen = 1;
+    }
+}
+
+// 0x80145EEC: is widescreen on?
+int WideScreenOn()
+{
+    return gWideScreen != 0;
 }
 
 // TODO (not drafted yet, 0x7CC bytes at 0x80142E9C): progress state update (14 calls)
@@ -212,23 +341,11 @@ extern "C" void fn_80144D8C();
 // TODO (not drafted yet, 0x7AC bytes at 0x80145378): level progress / game state routine
 extern "C" void fn_80145378();
 
-// TODO (not drafted yet, 0x4C bytes at 0x80145B24): level progress / game state routine
-extern "C" void fn_80145B24();
 
-// TODO (not drafted yet, 0x20 bytes at 0x80145B70): level progress / game state routine
-extern "C" void fn_80145B70();
 
-// TODO (not drafted yet, 0x54 bytes at 0x80145B90): level progress / game state routine
-extern "C" void fn_80145B90();
 
-// TODO (not drafted yet, 0x20 bytes at 0x80145BE4): level progress / game state routine
-extern "C" void fn_80145BE4();
 
-// TODO (not drafted yet, 0x54 bytes at 0x80145C04): level progress / game state routine
-extern "C" void fn_80145C04();
 
-// TODO (not drafted yet, 0x20 bytes at 0x80145C58): level progress / game state routine
-extern "C" void fn_80145C58();
 
 // TODO (not drafted yet, 0xF0 bytes at 0x80145C78): level progress / game state routine
 extern "C" void fn_80145C78();
@@ -236,23 +353,11 @@ extern "C" void fn_80145C78();
 // TODO (not drafted yet, 0x8C bytes at 0x80145D68): level progress / game state routine
 extern "C" void fn_80145D68();
 
-// TODO (not drafted yet, 0x14 bytes at 0x80145DF4): level progress / game state routine
-extern "C" void fn_80145DF4();
 
-// TODO (not drafted yet, 0x8 bytes at 0x80145E08): level progress / game state routine
-extern "C" void fn_80145E08();
 
-// TODO (not drafted yet, 0x78 bytes at 0x80145E10): level progress / game state routine
-extern "C" void fn_80145E10();
 
-// TODO (not drafted yet, 0x3C bytes at 0x80145E88): level progress / game state routine
-extern "C" void fn_80145E88();
 
-// TODO (not drafted yet, 0x28 bytes at 0x80145EC4): level progress / game state routine
-extern "C" void fn_80145EC4();
 
-// TODO (not drafted yet, 0x14 bytes at 0x80145EEC): level progress / game state routine
-extern "C" void fn_80145EEC();
 
 // TODO (not drafted yet, 0x418 bytes at 0x80145F00): level progress / game state routine
 extern "C" void fn_80145F00();
