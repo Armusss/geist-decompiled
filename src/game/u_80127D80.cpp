@@ -272,10 +272,18 @@ extern "C" void fn_800B1AB8(float f, void* o, int r, int n);
 extern "C" void fn_80131798(u32 a, int b, int* c, int d);
 int Fn80175D60(u32 a);
 void* VAlloc(int n);
+struct Owner;
+int OwnerId(Owner* o);
+struct OwnerMsg {
+    int pad0;
+    int a;           // 0x04
+    int b;           // 0x08
+    u32 hash;        // 0x0C
+};
 struct GunData {
     int mode;        // 0x00
     int h4;          // 0x04
-    int f8;          // 0x08
+    float f8;        // 0x08
     int hC;          // 0x0C
     int f10;         // 0x10
 };
@@ -1720,11 +1728,62 @@ int GunEnterIdle(FoeObj* o, GunBeh* b) {
     return 1;
 }
 
-// TODO (not drafted yet, 0xC4 bytes at 0x80133D28): game logic
-extern "C" void fn_80133D28();
+int GunMsg(int msg, int* p) {
+    Owner* obj = (Owner*)p[0];
+    if (msg == 0xC14) {
+        switch (p[3]) {
+        case 0x1FF464:
+            if (p[1] == OwnerId(obj)) {
+                int id = OwnerId(obj);
+                int target = OwnerId(obj);
+                if (target != -1) {
+                    OwnerMsg m;
+                    m.a = p[1];
+                    m.b = id;
+                    m.hash = 0x8140BB1F;
+                    SendMsg(target, 0xC14, &m);
+                }
+            }
+            return 1;
+        }
+        return 0;
+    }
+    return 0;
+}
 
-// TODO (not drafted yet, 0xE4 bytes at 0x80133DEC): game logic
-extern "C" void fn_80133DEC();
+int GunAccess(GunBeh* b, int msg, int* p, int set) {
+    GunData* d = b->data;
+    if (set == 0) {
+        switch (msg) {
+        case 0x315C41D:
+            d->h4 = *p;
+            break;
+        case 0x33FA508:
+            d->f8 = *(float*)p;
+            break;
+        case -0x45DC69E:
+            d->hC = *p;
+            break;
+        default:
+            return 0;
+        }
+    } else {
+        switch (msg) {
+        case 0x315C41D:
+            *p = d->h4;
+            break;
+        case 0x33FA508:
+            *(float*)p = d->f8;
+            break;
+        case -0x45DC69E:
+            *p = d->hC;
+            break;
+        default:
+            return 0;
+        }
+    }
+    return 1;
+}
 
 // TODO (not drafted yet, 0x18C bytes at 0x80133ED0): game logic
 extern "C" void fn_80133ED0();
