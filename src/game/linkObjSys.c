@@ -22,8 +22,10 @@ struct Mtx34 {
     float m[3][4];
 };
 
+// Orientation (3x3) followed by the position.
 struct Place {
-    int w[12];
+    Mtx33 rot;
+    Vec3 pos;
 };
 
 // A linked actor in the tree.
@@ -105,6 +107,12 @@ struct PlayerAnimSet {
     int mUnk1C;               // 0x1C
 };
 
+// What OwnerGetInfo() returns for a linked actor id.
+struct ActorInfo {
+    u8 mUnk00[0x4C];  // 0x00
+    u32 mFlags;       // 0x4C 0x800 = linked
+};
+
 struct Actor {
     u8 mUnk00[0x38];            // 0x00
     u32 mId;                    // 0x38
@@ -166,11 +174,12 @@ ChildNode* BlockListAlloc(BlockList* list);
 int SetChildNodeRootIfEmpty(ChildNode** root, ChildNode* node);
 ChildNode* DetachChildNode(ChildNode** root, ChildNode* node);
 ChildNode* ReparentChildNodes(ChildNode** root, ChildNode* dst, ChildNode* src);
+void BoneSetMatrix(void* dst, Mtx34* src);
 ChildNode* AppendChildNode(ChildNode** root, ChildNode* parent, ChildNode* node);
 void DetachChildNodeAndNotify(ChildNodeTree* tree, ChildNode* node);
 ChildNodeTree* FreeChildNodeTree(ChildNodeTree* tree, short freeTree);
 u8 WalkChildNodes(ChildNode* node, u8 (*visit)(ChildNode*, void*), void* arg);
-Actor* OwnerGetInfo(u32 id);
+ActorInfo* OwnerGetInfo(u32 id);
 int HasCondition(void* conditions, int cond);
 int PlayerInHost(Actor* a);
 void PlayerSelectCollisionUpdate(void* player, float dt);
@@ -196,16 +205,20 @@ static inline int* HostAnimEntry(int* table, int kind)
 {
     return &table[kind];
 }
-extern int lbl_8049E260[];       // 0x8049E260
+extern int lbl_8049E260[];
+extern const float lbl_804D94A8;  // 0.0f
+extern const float lbl_804D94AC;  // 1.0f       // 0x8049E260
 
 static ChildNodeTree* sLinkTree;
 static LinkRequest* sLinkQueue;
 static int sLinkQueueCount;
 
+u8 LinkNodeMatchId(ChildNode* node, void* arg);
 u8 LinkNodeRefresh(ChildNode* node, void* arg);
 u8 LinkNodeCheck(ChildNode* node, void* arg);
 u8 LinkNodeRemove(ChildNode* node, void* arg);
 void LinkQueueFlush(void);
+u8 LinkNodeCheck(ChildNode* node, void* arg);
 
 // Not referenced in Geist (dead-stripped), but its strings open this file's string pool.
 void LinkNodePrint(ChildNode* parent, const char* name, const char* pad)
@@ -259,15 +272,169 @@ void LinkObjSysInit(void)
     sLinkQueueCount = 0;
 }
 
-// TODO (not drafted yet, 0x2A0 bytes at 0x80212A58): queue a link / relink / unlink request
-// TODO (not drafted yet, 0x424 bytes at 0x80212CF8): LinkQueueFlush, applies the queued requests
-// TODO (not drafted yet, 0x3C8 bytes at 0x802131BC): per-node check pass
-// TODO (not drafted yet, 0x3EC bytes at 0x80213584): per-node refresh pass
+// Queues a request to link child to parent (or, with parent -1, to unlink child). Returns whether it was queued.
+int LinkQueueAdd(int child, int parent, int bone, Place* place, u8 allowReverse, u8 keepRot, u8 keepPos)
+{
+    int id;
+    int parentId;
+    int childId;
+    childId = child;
+    parentId = parent;
+    if (child == -1) {
+        return 0;
+    }
+    if (parent == -1) {
+        ActorInfo* info = OwnerGetInfo(child);
+        if (info && (info->mFlags & 0x800)) {
+            ChildNode* node = fn_80243448(fn_80242BA4(sLinkTree), LinkNodeMatchId, &childId);
+            if (node && node->mParent && node->mParent->mParent) {
+                id = childId;
+                if (id != -1) {
+                    if (fn_80243448(fn_80242BA4(sLinkTree), LinkNodeMatchId, &id)) {
+                        if (sLinkQueueCount < 0x100) {
+                            LinkRequest* r = &sLinkQueue[sLinkQueueCount];
+                            r->mType = 2;
+                            r->mChild = id;
+                            r->mParent = -1;
+                            r->mBone = -1;
+                            sLinkQueueCount++;
+                        }
+                    }
+                }
+            }
+        }
+        return 0;
+    } else {
+        ChildNode* childNode = fn_80243448(fn_80242BA4(sLinkTree), LinkNodeMatchId, &childId);
+        ChildNode* parentNode = fn_80243448(fn_80242BA4(sLinkTree), LinkNodeMatchId, &parentId);
+        if (childNode && parentNode) {
+            if (childNode->mParent == parentNode) {
+                return 0;
+            }
+            if (!allowReverse && parentNode->mParent == childNode) {
+                return 0;
+            }
+        }
+        if (sLinkQueueCount < 0x100) {
+            LinkRequest* r = &sLinkQueue[sLinkQueueCount];
+            r->mChild = childId;
+            r->mParent = parentId;
+            r->mBone = bone;
+            r->mFlags = 0;
+            r->mFlags |= keepRot ? 4 : 0;
+            r->mFlags |= keepPos ? 8 : 0;
+            if (place) {
+                r->mType = 0;
+                r->mPlace = *place;
+            } else {
+                r->mType = 1;
+            }
+            sLinkQueueCount++;
+            return 1;
+        }
+        return 0;
+    }
+}
+
+// Creates a node for a linked actor and marks the actor as linked.
+static inline ChildNode* LinkNodeCreate(int id, int bone)
+{
+    ChildNode* node = BlockListAlloc((BlockList*)sLinkTree);
+    node->mId = id;
+    node->mBone = bone;
+    node->mFlags = 0;
+    node->mRot[0] = lbl_804D94A8;
+    node->mRot[1] = lbl_804D94A8;
+    node->mRot[2] = lbl_804D94A8;
+    node->mRot[3] = lbl_804D94AC;
+    node->mPos[0] = lbl_804D94A8;
+    node->mPos[1] = lbl_804D94A8;
+    node->mPos[2] = lbl_804D94A8;
+    if (id != -1) {
+        ActorInfo* info = OwnerGetInfo(id);
+        if (info) {
+            info->mFlags |= 0x800;
+        }
+    }
+    return node;
+}
+
+// Applies one link request: finds or creates both nodes and (re)attaches the child below the parent.
+static inline void LinkApply(LinkRequest* r, Place* place)
+{
+    u32 flags = r->mFlags;
+    int bone = r->mBone;
+    int parentId = r->mParent;
+    int childId = r->mChild;
+    ChildNode* childNode = fn_80243448(fn_80242BA4(sLinkTree), LinkNodeMatchId, &childId);
+    ChildNode* parentNode = fn_80243448(fn_80242BA4(sLinkTree), LinkNodeMatchId, &parentId);
+    if (parentNode == 0) {
+        parentNode = LinkNodeCreate(parentId, -1);
+        AppendChildNode((ChildNode**)sLinkTree, fn_80242BA4(sLinkTree), parentNode);
+    }
+    if (childNode == 0) {
+        childNode = LinkNodeCreate(childId, bone);
+    } else {
+        childNode = DetachChildNode((ChildNode**)sLinkTree, childNode);
+    }
+    parentNode->mFlags = 1;
+    childNode->mBone = bone;
+    childNode->mFlags = flags;
+    if (place) {
+        BoneSetMatrix(childNode->mRot, (Mtx34*)place);
+        childNode->mPos[0] = place->pos.x;
+        childNode->mPos[1] = place->pos.y;
+        childNode->mPos[2] = place->pos.z;
+        childNode->mFlags = 0;
+    } else {
+        childNode->mFlags |= 1;
+    }
+    AppendChildNode((ChildNode**)sLinkTree, parentNode, childNode);
+}
+
+// Moves a linked actor's node back below the root.
+static inline void LinkUnlink(LinkRequest* r)
+{
+    int id = r->mChild;
+    if (id != -1) {
+        ChildNode* node = fn_80243448(fn_80242BA4(sLinkTree), LinkNodeMatchId, &id);
+        if (node) {
+            node = DetachChildNode((ChildNode**)sLinkTree, node);
+            if (node) {
+                AppendChildNode((ChildNode**)sLinkTree, fn_80242BA4(sLinkTree), node);
+            }
+        }
+    }
+}
+
+// Applies the queued requests and empties the queue.
+void LinkQueueFlush(void)
+{
+    int i;
+    for (i = 0; i != sLinkQueueCount; i++) {
+        LinkRequest* r = &sLinkQueue[i];
+        switch (r->mType) {
+        case 1:
+            LinkApply(r, 0);
+            break;
+        case 0:
+            LinkApply(r, &r->mPlace);
+            break;
+        case 2:
+            LinkUnlink(r);
+            break;
+        }
+    }
+    sLinkQueueCount = 0;
+}
 
 u8 LinkNodeRemove(ChildNode* node, void* arg)
 {
-    if (node->mParent != 0 && (node->mFlags & 2)) {
-        Actor* owner = OwnerGetInfo(node->mId);
+    if (node->mParent == 0) {
+        return 0;
+    }
+    if (node->mFlags & 2) {
+        ActorInfo* owner = OwnerGetInfo(node->mId);
         if (owner) {
             owner->mFlags &= ~0x800;
         }
