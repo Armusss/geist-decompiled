@@ -215,3 +215,150 @@ int ScriptOpLoadHigh(int ins, ScriptVM* vm) {
     vm->pc += 4;
     return 0;
 }
+
+// 0x80083F88: store a register to memory at base register + signed 16-bit offset
+// (sub 0/1 = byte, 2/3 = halfword, 4/6 = word; sub 6 stores a float register)
+int ScriptOpStore(int ins, ScriptVM* vm) {
+    u32 sub;
+    u32 val;
+    u8* addr;
+    int err;
+    int idx = ((u32)ins >> 12) & 0xF;
+    if (INS_SUB(ins) == 6)
+        val = *(u32*)((u8*)vm + idx * 4 + 0x60);
+    else
+        val = *(u32*)((u8*)vm + idx * 4);
+    sub = ((u32)ins >> 5) & 6;
+    addr = (u8*)(*(int*)((u8*)vm + (((u32)ins >> 8) & 0xF) * 4) + (ins >> 16));
+    err = 0;
+    switch (sub) {
+    case 0:
+        *addr = val;
+        break;
+    case 2:
+        if ((u32)addr & 1) {
+            err = 0x40000004;
+        } else {
+            *(u16*)addr = val;
+        }
+        break;
+    case 4:
+    case 6:
+        if ((u32)addr & 3) {
+            err = 0x40000004;
+        } else {
+            *(u32*)addr = val;
+        }
+        break;
+    }
+    if (err == 0)
+        vm->pc += 4;
+    return err;
+}
+
+// 0x80084050: store a register through a pointer register (addresses with bit 28 set are stack-relative)
+int ScriptOpStorePtr(int ins, ScriptVM* vm) {
+    u32 sub;
+    u8* addr = *(u8**)((u8*)vm + (((u32)ins >> 10) & 0x3C));
+    u32 val = *(u32*)((u8*)vm + (((u32)ins >> 6) & 0x3C));
+    int err;
+    if ((u32)addr & 0x10000000)
+        addr = (u8*)(((u32)addr & 0xFFFFFFF) + vm->r[1]);
+    sub = ((u32)ins >> 5) & 6;
+    err = 0;
+    switch (sub) {
+    case 0:
+        *addr = val;
+        break;
+    case 2:
+        if ((u32)addr & 1) {
+            err = 0x40000004;
+        } else {
+            *(u16*)addr = val;
+        }
+        break;
+    case 4:
+    case 6:
+        if ((u32)addr & 3) {
+            err = 0x40000004;
+        } else {
+            *(u32*)addr = val;
+        }
+        break;
+    }
+    if (err == 0)
+        vm->pc += 4;
+    return err;
+}
+
+// 0x80084100
+int ScriptOpNop(int ins, ScriptVM* vm) {
+    return 0;
+}
+
+// 0x80084108: load from memory at base register + signed 16-bit offset (sub 6 loads a float register)
+int ScriptOpLoad(int ins, ScriptVM* vm) {
+    int sub = INS_SUB(ins);
+    int dst = ((u32)ins >> 12) & 0xF;
+    u8* addr = (u8*)(*(int*)((u8*)vm + (((u32)ins >> 6) & 0x3C)) + (s16)((int)(ins & 0xFFFF0000) >> 16));
+    u32 val;
+    int err;
+    switch (sub) {
+    case 0: val = *(s8*)addr; break;
+    case 1: val = *(u8*)addr; break;
+    case 2: val = *(s16*)addr; break;
+    case 3: val = *(u16*)addr; break;
+    case 4:
+    case 6:
+        if ((u32)addr & 3)
+            return 0x40000003;
+        val = *(u32*)addr;
+        break;
+    default: val = 0; break;
+    }
+    if (sub == 6)
+        *(u32*)((u8*)vm + dst * 4 + 0x60) = val;
+    else
+        *(u32*)((u8*)vm + dst * 4) = val;
+    vm->pc += 4;
+    return 0;
+}
+
+// 0x800841CC: convert float to int (sub 0) or int to float (sub 1)
+int ScriptOpConvert(int ins, ScriptVM* vm) {
+    int sub = INS_SUB(ins);
+    int src = ((u32)ins >> 8) & 0xF;
+    int dst = ((u32)ins >> 12) & 0xF;
+    FloatBits res;
+    switch (sub) {
+    case 0:
+        vm->r[dst] = (int)vm->f[src];
+        break;
+    case 1:
+        res.f = (f32)vm->r[src];
+        *(u32*)&vm->f[dst] = res.u;
+        break;
+    default:
+        return 0x40000001;
+    }
+    vm->pc += 4;
+    return 0;
+}
+
+// 0x8008427C: shift left (sub 0), logical right (sub 1), arithmetic right (sub 2) by an immediate
+int ScriptOpShift(int ins, ScriptVM* vm) {
+    int sub = INS_SUB(ins);
+    int dst;
+    u32 val = *(u32*)((u8*)vm + (((u32)ins >> 6) & 0x3C));
+    u32 n = (u32)ins >> 16;
+    dst = ((u32)ins >> 12) & 0xF;
+    switch (sub) {
+    case 0: val = val << n; break;
+    case 1: val = val >> n; break;
+    case 2: val = (s32)val >> n; break;
+    default: return 0x40000001;
+    }
+    vm->r[dst] = val;
+    vm->pc += 4;
+    return 0;
+}
