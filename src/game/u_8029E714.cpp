@@ -47,33 +47,43 @@ struct CondObj {
 
 // Host-like game object: the offsets the state helpers below touch.
 struct HostObj {
-    char pad00[0x24];
-    int pos24;          // 0x24
-    int pos28;          // 0x28
-    int pos2C;          // 0x2C
+    char pad0[0x24];
+    int pos24; // 0x24
+    int pos28; // 0x28
+    int pos2C; // 0x2C
     char pad30[0x20];
-    u32 flags50;        // 0x50
+    u32 flags50; // 0x50
     char pad54[0x24];
-    int i78;            // 0x78
+    int i78; // 0x78
     char pad7C[0x48];
-    int iC4;            // 0xC4
-    char padC8[0x68];
-    int* ptr130;        // 0x130
-    char pad134[0x13C];
-    char conditions[0x10];  // 0x270
-    char pad280[0x3B8];
-    int i638;           // 0x638
+    int iC4; // 0xC4
+    char padC8[0x3C];
+    int i104; // 0x104
+    char pad108[0x4];
+    void (*cb10C)(void*); // 0x10C
+    char pad110[0x20];
+    int* ptr130; // 0x130
+    char pad134[0xE8];
+    int i21C; // 0x21C
+    int i220; // 0x220
+    char pad224[0x4C];
+    char conditions[0x10]; // 0x270
+    char pad280[0x8];
+    int i288; // 0x288
+    char pad28C[0x3AC];
+    int i638; // 0x638
     char pad63C[0x168];
-    char sub7A4[0x10];  // 0x7A4
-    u32 flags7B4;       // 0x7B4
+    char sub7A4[0x10]; // 0x7A4
+    u32 flags7B4; // 0x7B4
     char pad7B8[0x18];
-    int i7D0;           // 0x7D0
+    int i7D0; // 0x7D0
     char pad7D4[0xC0];
-    char anim894[0x1E4C];   // 0x894
-    char sub26E0[8];    // 0x26E0
-    int i26E8;          // 0x26E8
+    char anim894[0x1E4C]; // 0x894
+    char sub26E0[8]; // 0x26E0
+    char pad26E4[0x4];
+    int i26E8; // 0x26E8
     char pad26EC[0xB0];
-    int i279C;          // 0x279C
+    int i279C; // 0x279C
 };
 
 extern "C" {
@@ -92,6 +102,16 @@ int ConditionUpdateBit(void* cond, int bit, int set);   // 0x800A7B08
 extern float lbl_804DA8C4;
 extern float lbl_804DA8E8;
 extern float lbl_804DA7C0;
+void* FollowGetTargetObj(void* f);                      // 0x800A7A18
+void FollowSetTargetObj(void* f, void* t);              // 0x800A78A0
+void FollowOffsetUpdate(void* f);                       // 0x800A70D0
+int PlayerGetHeldSlotIndex(void* p);                    // 0x8006CAB8
+void PlayerInHost(Actor* a);                            // 0x80049750
+extern "C" int fn_80049940(void);
+extern "C" int fn_8016325C(void* anim);
+extern "C" void fn_8029B3B0(void* o, int v);
+extern "C" void fn_800B26B8(void* o);
+extern "C" void fn_800BC56C(void* o, void* t);
 
 struct HostObjFx {
     char pad00[0xC8];
@@ -244,15 +264,54 @@ void fn_802A3BEC() {}
 
 // TODO (not drafted yet, 0x6B8 bytes at 0x8029E714): not analysed
 // TODO (not drafted yet, 0x260 bytes at 0x8029EDCC): not analysed
-// TODO (not drafted yet, 0x90 bytes at 0x8029F02C): not analysed
+void HostLeaveRide(HostObj* o) {
+    o->i104 = 0;
+    ConditionUpdateBit(o->conditions, 4, 0);
+    ConditionUpdateBit(o->conditions, 3, 0);
+    ConditionUpdateBit(o->conditions, 0x17, 0);
+    ConditionSetBit(o->conditions, 0x2A, 0);
+    ConditionSetBit(o->conditions, 0x2B, 0);
+    VFree(o->ptr130);
+    o->ptr130 = 0;
+}
+
 // TODO (not drafted yet, 0x164 bytes at 0x8029F0BC): not analysed
 // TODO (not drafted yet, 0x128 bytes at 0x8029F220): not analysed
-// TODO (not drafted yet, 0xA4 bytes at 0x8029F348): not analysed
+bool HostResetFollowB(HostObj* o) {
+    float zero = lbl_804DA7C0;
+    if (o == 0) {
+        return false;
+    }
+    o->cb10C = FollowOffsetUpdate;
+    *(float*)(o->ptr130 + 5) = zero;
+    o->i288 = 0;
+    o->i21C = 0;
+    o->i220 = 0;
+    fn_800BBCA8(o);
+    o->cb10C = FollowOffsetUpdate;
+    ConditionUpdateBit(o->conditions, 0x16, 0);
+    fn_8029B070(o, 0x73B1E248);
+    fn_8029B070(o, 0x13E6B);
+    return true;
+}
+
 // TODO (not drafted yet, 0xCC bytes at 0x8029F3EC): not analysed
 // TODO (not drafted yet, 0x39C bytes at 0x8029F4B8): not analysed
 // TODO (not drafted yet, 0xA4 bytes at 0x8029F854): not analysed
 // TODO (not drafted yet, 0xE0 bytes at 0x8029F8F8): not analysed
-// TODO (not drafted yet, 0x88 bytes at 0x8029F9D8): not analysed
+bool HostRideDone(HostObj* o) {
+    if (o == 0) {
+        return false;
+    }
+    void* t = FollowGetTargetObj(o->conditions);
+    fn_800B26B8(o);
+    if (t == 0) {
+        ConditionUpdateBit(o->conditions, 4, 0);
+        return true;
+    }
+    return fn_8016325C(o->anim894) != 6;
+}
+
 bool CondObjClearFlag2A(CondObj* o) {
     if (o == 0) {
         return false;
@@ -264,7 +323,23 @@ bool CondObjClearFlag2A(CondObj* o) {
 
 // TODO (not drafted yet, 0xC0 bytes at 0x8029FAB0): not analysed
 // TODO (not drafted yet, 0x16C bytes at 0x8029FB70): not analysed
-// TODO (not drafted yet, 0x94 bytes at 0x8029FCDC): not analysed
+bool HostResetFollow(HostObj* o) {
+    float zero = lbl_804DA7C0;
+    if (o == 0) {
+        return false;
+    }
+    o->cb10C = FollowOffsetUpdate;
+    *(float*)(o->ptr130 + 5) = zero;
+    o->i288 = 0;
+    o->i21C = 0;
+    o->i220 = 0;
+    fn_800BBCA8(o);
+    o->cb10C = FollowOffsetUpdate;
+    fn_8029B070(o, 0x73B1E248);
+    fn_8029B070(o, 0x13E6B);
+    return true;
+}
+
 // TODO (not drafted yet, 0xE4 bytes at 0x8029FD70): not analysed
 // TODO (not drafted yet, 0x39C bytes at 0x8029FE54): not analysed
 // TODO (not drafted yet, 0xA4 bytes at 0x802A01F0): not analysed
@@ -279,7 +354,25 @@ bool CondObjActivate(CondObj* o) {
     return true;
 }
 
-// TODO (not drafted yet, 0xBC bytes at 0x802A0584): not analysed
+int HostEnterRide(HostObj* o) {
+    if (o == 0) {
+        return 0;
+    }
+    *o->ptr130 = 2;
+    ConditionUpdateBit(o->conditions, 3, 1);
+    ConditionUpdateBit(o->conditions, 0x17, 0);
+    fn_8029B3B0(o, 0x13E6B);
+    void* t = FollowGetTargetObj(o->conditions);
+    if (t != 0) {
+        FollowSetTargetObj(o->conditions, t);
+        fn_800BC56C(o, t);
+    }
+    if (o->i220 == 4) {
+        o->i220 = 0;
+    }
+    return 1;
+}
+
 bool CondObjNotBusy(CondObj* o) {
     if (o == 0) {
         return false;
@@ -710,7 +803,25 @@ void HostStateEnterD(HostObj* o) {
 }
 
 // TODO (not drafted yet, 0xFC bytes at 0x802A4940): not analysed
-// TODO (not drafted yet, 0xBC bytes at 0x802A4A3C): not analysed
+void HostStateEnterF(HostObj* o, float dt) {
+    PlayerResetGunTimer(o);
+    o->i638 = 1;
+    o->flags7B4 &= 0xFFFFFFFE;
+    fn_800769A0();
+    PlayerSelectCollisionUpdate(o, dt);
+    if (fn_80049940() == 0) {
+        if (PlayerGetHeldSlotIndex(o) == 0) {
+            PlayerSetValue4(o->sub7A4, 1);
+        } else {
+            PlayerSetValue4(o->sub7A4, 2);
+        }
+    } else {
+        PlayerSetValue4(o->sub7A4, 2);
+    }
+    PlayerInHost((Actor*)o);
+    DashUpdate((Actor*)o);
+}
+
 // TODO (not drafted yet, 0x170 bytes at 0x802A4AF8): not analysed
 void HostStateEnterB(HostObj* o) {
     PlayerResetGunTimer(o);
