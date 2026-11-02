@@ -346,7 +346,6 @@ extern "C" void fn_800CF064(void);
 extern "C" void fn_800B5004(void* dst, void* src);
 extern "C" void fn_80090634(int a, int b, int c, int d);
 extern "C" int fn_801BD694(void* owner);
-extern "C" float lbl_804D7758;
 
 // Payload of message 0xC14: {pad, arg, arg, hash}.
 struct U80116B28MsgC14 {
@@ -552,14 +551,14 @@ extern "C" int fn_80116E30(int self)
 
         msg.owner = (int)owner;
         msg.ownerId = OwnerId((Owner*)owner);
-        msg.field_4C = lbl_804D7758;
+        msg.field_4C = 0.0f;
         msg.field_44 = -1;
         if (fn_802A1D04() != 3 || typeGroup == 0x13) {
             msg.hash = 0x6CA5F172;
             msg.value = sub->field_5C - sub->rangeB.value;
             SendMsg(typeId, 0x407, &msg);
         }
-        msg.value = lbl_804D7758;
+        msg.value = 0.0f;
         msg.hash = 0x672F35C2;
         SendMsg(typeId, 0x407, &msg);
     }
@@ -733,9 +732,9 @@ extern "C" int fn_801174B0(void* ownerPtr, int typePtr)
     q402.field_4 = -1;
     SendMsg(sub->field_BC, 0x402, &q402);
 
-    offsets[0] = lbl_804D7758;
-    offsets[1] = lbl_804D7758;
-    offsets[2] = lbl_804D7758;
+    offsets[0] = 0.0f;
+    offsets[1] = 0.0f;
+    offsets[2] = 0.0f;
     fn_800B5004((char*)owner + 0x240, offsets);
     MemCopyVec3((float*)owner->field_270, offsets);
     RangeResetPending(owner->field_270);
@@ -898,10 +897,20 @@ void ZoneObjectSetSlot14(ZoneObject* obj, unsigned long value);
 void ZoneSetCallback(void* zone, int a, int (*callback)(int, Actor*, Actor*), int b, Actor* owner);
 void ZoneObjectSetSlot18(ZoneObject* obj, float value);
 extern "C" void fn_800CD5D8(void* owner, int value);
-extern "C" float lbl_804D775C;
 extern "C" U80116B28TypeTableEntry lbl_8039ED68[];
 extern "C" int lbl_804D2E08;
 extern "C" char lbl_803457B0[];
+
+static inline int U80116B28FindType(unsigned long id)
+{
+    int i;
+
+    for (i = 0; i < lbl_804D2E08; i++) {
+        if (id == lbl_8039ED68[i].id)
+            return i;
+    }
+    return -1;
+}
 
 // Allocates and initialises the owner's 0x224-byte geist state block, including
 // its embedded zone object. Returns 1 if a state already exists (or one was
@@ -913,24 +922,17 @@ extern "C" int fn_80117D80(void* ownerPtr)
     U80116B28Owner* owner = (U80116B28Owner*)ownerPtr;
     U80116B28Sub* sub;
     int index;
-    int i;
 
     if (owner->field_5EC != 0)
         return 1;
 
-    sub = (U80116B28Sub*)VAlloc(0x224);
-    owner->field_5EC = sub;
+    owner->field_5EC = (U80116B28Sub*)VAlloc(0x224);
+    sub = owner->field_5EC;
     if (sub == 0)
         return 0;
     if (sub != 0) {
         if (sub->field_CC != 0xFFFFFFFF) {
-            index = -1;
-            for (i = 0; i < lbl_804D2E08; i++) {
-                if (sub->field_CC == lbl_8039ED68[i].id) {
-                    index = i;
-                    break;
-                }
-            }
+            index = U80116B28FindType(sub->field_CC);
             if (index != -1)
                 lbl_8039ED68[index].reset(owner, sub);
         }
@@ -940,31 +942,31 @@ extern "C" int fn_80117D80(void* ownerPtr)
         sub->field_D4 = -1;
     }
 
-    sub->field_0 = 0;
-    sub->field_4 = 0;
-    sub->field_E0 = 0;
-    sub->field_D8 = 0;
-    sub->field_DC = 0;
-    if (owner->field_C4 == 0) {
-        sub->rangeA.value = lbl_804D7758;
-        sub->rangeA.limit = lbl_804D7758;
+    owner->field_5EC->field_0 = 0;
+    owner->field_5EC->field_4 = 0;
+    owner->field_5EC->field_E0 = 0;
+    owner->field_5EC->field_D8 = 0;
+    owner->field_5EC->field_DC = 0;
+    if (owner->field_C4 != 0) {
+        owner->field_5EC->rangeA.value = (float)owner->field_C4->field_30;
+        owner->field_5EC->rangeA.limit = owner->field_5EC->rangeA.value;
     } else {
-        sub->rangeA.value = (float)owner->field_C4->field_30;
-        sub->rangeA.limit = sub->rangeA.value;
+        owner->field_5EC->rangeA.value = 0.0f;
+        owner->field_5EC->rangeA.limit = 0.0f;
     }
-    sub->field_BC = -1;
-    sub->field_C0 = 0;
-    sub->field_C4 = 0;
-    sub->field_7C = -1;
-    sub->field_80 = -1;
-    sub->field_84 = -1;
-    GhostRecordReset((GhostSlot*)&sub->field_10);
-    sub->field_E4 = lbl_804D775C;
-    ZoneInit(sub->field_1E8, (Actor*)owner, (IVec3*)((char*)owner + 0x24), sub->field_E8,
-             0x10, sub->field_E4);
-    ZoneObjectSetSlot14((ZoneObject*)sub->field_1E8, 2);
-    ZoneSetCallback(sub->field_1E8, 0, 0, 0, (Actor*)owner);
-    ZoneObjectSetSlot18((ZoneObject*)sub->field_1E8, sub->field_E4);
+    owner->field_5EC->field_BC = -1;
+    owner->field_5EC->field_C0 = 0;
+    owner->field_5EC->field_C4 = 0;
+    owner->field_5EC->field_7C = -1;
+    owner->field_5EC->field_80 = -1;
+    owner->field_5EC->field_84 = -1;
+    GhostRecordReset((GhostSlot*)&owner->field_5EC->field_10);
+    owner->field_5EC->field_E4 = 10000.0f;
+    ZoneInit(owner->field_5EC->field_1E8, (Actor*)owner, (IVec3*)((char*)owner + 0x24), owner->field_5EC->field_E8,
+             0x10, owner->field_5EC->field_E4);
+    ZoneObjectSetSlot14((ZoneObject*)owner->field_5EC->field_1E8, 2);
+    ZoneSetCallback(owner->field_5EC->field_1E8, 0, 0, 0, (Actor*)owner);
+    ZoneObjectSetSlot18((ZoneObject*)owner->field_5EC->field_1E8, owner->field_5EC->field_E4);
     fn_800CD5D8((char*)owner + 0x5B0, 1);
     return 1;
 }
@@ -984,17 +986,6 @@ extern "C" int fn_80117FB4(void* ownerPtr)
             return callback(owner);
     }
     return 0;
-}
-
-static inline int U80116B28FindType(unsigned long id)
-{
-    int i;
-
-    for (i = 0; i < lbl_804D2E08; i++) {
-        if (id == lbl_8039ED68[i].id)
-            return i;
-    }
-    return -1;
 }
 
 // Looks the state block's registered type-table id up in the global per-type
