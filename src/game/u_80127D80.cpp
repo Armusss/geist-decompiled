@@ -252,7 +252,9 @@ struct FoeBeh {
     FoeData* data;   // 0xE0
 };
 struct FoeObj {
-    u8 pad00[0x270];
+    u8 pad00[0x268];
+    int f268;        // 0x268
+    u8 pad26C[4];
     u8 cond[0x18];   // 0x270
     int f288;        // 0x288
     u8 pad28C[0x894 - 0x28C];
@@ -286,12 +288,24 @@ struct GunData {
     float f8;        // 0x08
     int hC;          // 0x0C
     int f10;         // 0x10
+    int f14;         // 0x14
 };
 struct GunBeh {
-    u8 pad00[0xE0];
+    u8 pad00[0xBC];
+    int fBC;         // 0xBC
+    u8 padC0[0xD8 - 0xC0];
+    void* cbD8;      // 0xD8
+    u8 padDC[4];
     GunData* data;   // 0xE0
 };
 extern "C" int fn_80175EF8();
+struct GunState {
+    int (*enter)(FoeObj*, GunBeh*);
+    int (*exit)(FoeObj*, GunBeh*);
+    int (*update)(FoeObj*, GunBeh*);
+};
+extern GunState lbl_803A0090[];
+extern "C" float fn_800AA050(void* a, void* b);
 struct FoeState {
     int (*enter)(FoeObj*, FoeBeh*);
     int (*unk4)();
@@ -1785,8 +1799,48 @@ int GunAccess(GunBeh* b, int msg, int* p, int set) {
     return 1;
 }
 
-// TODO (not drafted yet, 0x18C bytes at 0x80133ED0): game logic
-extern "C" void fn_80133ED0();
+int GunUpdate(FoeObj* o, GunBeh* b) {
+    if (o == 0) {
+        return 0;
+    }
+    GunData* d = b->data;
+    if ((b->fBC == -1 && d->f14 != 1) || (b->fBC != -1 && (d->f14 & 2) == 0)) {
+        return 0;
+    }
+    if (lbl_803A0090[d->mode].update(o, b) == 0) {
+        return 1;
+    }
+    int next;
+    if (o == 0) {
+        next = 0;
+    } else {
+        GunData* e = b->data;
+        if (e->hC != -1) {
+            next = 1;
+        } else {
+            int msg[10];
+            if (e->h4 == -1) {
+                if (o->f268 < 4) {
+                    next = 3;
+                } else {
+                    next = 0;
+                }
+            } else {
+                SendMsg(e->h4, 0x400, msg);
+                float dist = fn_800AA050(o, (void*)msg[0]);
+                if (e->f8 < dist) {
+                    next = 4;
+                } else {
+                    next = 0;
+                }
+            }
+        }
+    }
+    if (next != d->mode && lbl_803A0090[d->mode].exit(o, b) != 0) {
+        lbl_803A0090[next].enter(o, b);
+    }
+    return 1;
+}
 
 void GunFree(FoeObj* o, GunBeh* b) {
     if (o != 0) {
@@ -1794,8 +1848,27 @@ void GunFree(FoeObj* o, GunBeh* b) {
     }
 }
 
-// TODO (not drafted yet, 0xDC bytes at 0x80134088): game logic
-extern "C" void fn_80134088();
+void GunInit(FoeObj* o, GunBeh* b) {
+    if (o != 0) {
+        GunData* d = (GunData*)VAlloc(0x18);
+        if (d == 0) {
+            b->data = 0;
+        } else {
+            b->cbD8 = (void*)GunUpdate;
+            float range = 1000.0f;
+            b->data = d;
+            d->mode = 0;
+            d->h4 = -1;
+            d->f8 = range;
+            d->hC = -1;
+            d->f14 = (b->fBC == -1) ? 1 : 2;
+            d->f10 = 0;
+            fn_800BBCA8(o);
+            RangeResetPending(o->cond);
+            lbl_803A0090[d->mode].enter(o, b);
+        }
+    }
+}
 
 void AiState80134164(Actor* a, float dt) {
     a->unk638 = 0;
