@@ -13,6 +13,7 @@ typedef unsigned long u32;
 typedef signed long s32;
 typedef float f32;
 
+
 struct Vec3 {
     f32 x, y, z;
 };
@@ -785,34 +786,27 @@ extern "C" int fn_80031E48(int* a, int* b) {
 
 // 0x80031FAC (called from another unit under this placeholder name; Chunk6Load): file chunk handler for type 6 (array of 0x68-byte records)
 extern "C" int fn_80031FAC(void* data, int size, void* ctx) {
-    int* p = (int*)data;
-    if (size < 1)
-        p = 0;
+    int* p = (size > 0) ? (int*)data : 0;
     if (*p == 6) {
         lbl_804D42D0 = p[1];
-        if (Fits(size - 0x20, p[1] * 0x68))
-            lbl_804D42CC = (int*)data + 8;
-        else
-            lbl_804D42CC = 0;
+        lbl_804D42CC = Fits(size - 0x20, p[1] * 0x68) ? (int*)data + 8 : 0;
     }
     return 1;
 }
 
 // 0x80032014 (called from another unit under this placeholder name; ChunkNodesLoad): file chunk handler (0x48-byte records followed by 0x20-byte records)
 extern "C" int fn_80032014(void* data, int size, void* ctx) {
-    char* h = (char*)data;
-    int n;
+    char* h = (size > 0) ? (char*)data : 0;
+    int n = *(int*)(h + 4);
+    char* p;
+    int bytes;
     int pad;
-    bool ok = false;
-    if (size < 1)
-        h = 0;
-    n = *(int*)(h + 4);
-    pad = ((n * 0x48 + 0x1F) & 0xFFFFFFE0) - n * 0x48;
-    lbl_804D42BC = (char*)data + 0x20 + n * 0x48 + pad;
-    if ((size - 0x20 - n * 0x48) - pad > 0 && (*(int*)(h + 8) << 5) > 0)
-        ok = true;
-    if (!ok)
-        lbl_804D42BC = 0;
+    bytes = n * 0x48;
+    pad = ((bytes + 0x1F) & 0xFFFFFFE0) - bytes;
+    p = (char*)data + 0x20;
+    p += bytes;
+    p += pad;
+    lbl_804D42BC = Fits(size - 0x20 - bytes - pad, *(int*)(h + 8) << 5) ? p : 0;
     lbl_804D42C0 = *(int*)(h + 8);
     return 1;
 }
@@ -820,17 +814,25 @@ extern "C" int fn_80032014(void* data, int size, void* ctx) {
 // 0x80032094 (called from another unit under this placeholder name; DebugOptionSet): debug option 0: value -1 toggles, 0/1 sets; returns the new value
 extern "C" int fn_80032094(int which, int value) {
     int r = -1;
-    if (which != 1 && which < 1 && which >= 0) {
-        if (value == -1) {
-            r = (lbl_804D42A8 == 0);
+    switch (which) {
+    case 0:
+        switch (value) {
+        case -1:
+            r = (u32)__cntlzw(lbl_804D42A8) >> 5;
             lbl_804D42A8 = r;
-        } else {
+            break;
+        case 0:
+        case 1:
+            r = value;
+            lbl_804D42A8 = value;
+            break;
+        default:
             r = lbl_804D42A8;
-            if (value > -2 && value < 2) {
-                r = value;
-                lbl_804D42A8 = value;
-            }
+            break;
         }
+        break;
+    case 1:
+        break;
     }
     return r;
 }
