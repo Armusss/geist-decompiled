@@ -630,7 +630,47 @@ u32 fn_800102F8(int id) {
     return 0;
 }
 
-// TODO (not drafted yet, 0x1B4 bytes at 0x80010114): init the texture system (file handler, 8x8 default texture)
+int TextureFileLoad(void* file, int size);
+int FileAddHandler(int type, int (*fn)(void*, int, void*), void* arg);
+extern GXTexObj lbl_803DA920;
+extern unsigned short lbl_803DA940[];
+extern int lbl_804D25D4;
+extern float lbl_804D6018;
+
+// Registers the texture file handler and builds the 8x8 default (blank) texture.
+void TextureSystemInit() {
+    FileAddHandler(2, (int (*)(void*, int, void*))TextureFileLoad, 0);
+    lbl_804D25D0 = 1;
+    lbl_804D25D4 = 1;
+    lbl_804D25C8 = -1;
+    lbl_804D4140 = 0;
+    lbl_804D4144 = 0;
+    for (int i = 0; i < 8; i++) {
+        int row = i / 4;
+        int col = (i % 4) * 4;
+        int a = row * 0x40 + col;
+        int b = (row * 2 + 1) * 0x20 + col;
+        lbl_803DA940[a] = 0;
+        lbl_803DA940[a + 0x20] = 0;
+        lbl_803DA940[a + 1] = 0;
+        lbl_803DA940[a + 0x21] = 0;
+        lbl_803DA940[a + 2] = 0;
+        lbl_803DA940[a + 0x22] = 0;
+        lbl_803DA940[a + 3] = 0;
+        lbl_803DA940[a + 0x23] = 0;
+        lbl_803DA940[b] = 0;
+        lbl_803DA940[b + 0x20] = 0;
+        lbl_803DA940[b + 1] = 0;
+        lbl_803DA940[b + 0x21] = 0;
+        lbl_803DA940[b + 2] = 0;
+        lbl_803DA940[b + 0x22] = 0;
+        lbl_803DA940[b + 3] = 0;
+        lbl_803DA940[b + 0x23] = 0;
+    }
+    GXInitTexObj(&lbl_803DA920, lbl_803DA940, 8, 8, GX_TF_RGBA8, GX_REPEAT, GX_REPEAT, 0);
+    GXInitTexObjLOD(&lbl_803DA920, GX_NEAR, GX_NEAR, lbl_804D6018, lbl_804D6018, lbl_804D6018, 0, 0,
+                    GX_ANISO_1);
+}
 
 // Simpler variant of fn_80010448: always flushes the cached state.
 int fn_80010330(int id, int alpha) {
