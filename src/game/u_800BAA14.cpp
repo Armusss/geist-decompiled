@@ -809,7 +809,6 @@ extern "C" void fn_800BB8B8();
 // TODO (not drafted yet, 0x1E8 bytes at 0x800BBAC0): nav helper
 extern "C" void fn_800BBAC0();
 // TODO (not drafted yet, 0x278 bytes at 0x800BBCA8): reset an actor's navigation state
-extern "C" void fn_800BBCA8();
 // TODO (not drafted yet, 0x314 bytes at 0x800BE218): nav helper
 extern "C" void fn_800BE218();
 // TODO (not drafted yet, 0x278 bytes at 0x800BAB34): project a position onto a link
