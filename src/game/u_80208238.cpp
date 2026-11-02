@@ -5,6 +5,11 @@ typedef unsigned char u8;
 typedef int s32;
 typedef unsigned int u32;
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
 struct Actor;
 
 // One possessed host; the player keeps a per-slot array of these.
@@ -223,22 +228,23 @@ void PlayerBatsqueekUpdate(Player* player, float seek)
 void PlayerBatsqueekSetup(Player* player)
 {
     int slot = PlayerInHost((Actor*)player);
+    int idx = player->field73C;
 
     player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14,
                                    player->slots26C4[slot]->field18,
-                                   lbl_803BA2B0.ids[player->field73C], 0, 0);
+                                   lbl_803BA2B0.ids[idx], 0, 0);
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 1;
 
     player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14,
                                    player->slots26C4[slot]->field1C,
-                                   lbl_803BA2B0.ids[player->field73C], 0, 0);
+                                   lbl_803BA2B0.ids[idx], 0, 0);
     player->field0FC = 1;
     player->field7D0 = 0;
-    if (player->field7D0 == 0)
-        PlayerSetValue4(&player->field7A4, 1);
-    else
+    if (player->field7D0 != 0)
         PlayerSetValue4(&player->field7A4, 3);
+    else
+        PlayerSetValue4(&player->field7A4, 1);
 }
 
 // Per-frame update while the player is leaving the Batsqueeks host mode.
@@ -299,22 +305,25 @@ void PlayerBatsqueekHostSetup(Player* player)
     HostState* state;
     int used = 0;
 
-    if ((anim->field38 >> 24) == 0x13)
+    if ((int)(anim->field38 >> 24) == 0x13)
     {
         state = (HostState*)fn_800A384C(anim);
         if (HasCondition(anim->field270, 0xb) != 0)
             used = 1;
     }
 
+    int idx;
+
     PlayerInHost((Actor*)player);
+    idx = player->field73C;
 
     player->field098 = fn_800A1BC8(state->field14, state->field18,
-                                   lbl_803BA2B0.ids5F4[player->field73C], used, 0);
+                                   lbl_803BA2B0.ids5F4[idx], used, 0);
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 0x19;
 
     player->field0F0 = fn_800A1BC8(state->field14, state->field1C,
-                                   lbl_803BA2B0.ids5F4[player->field73C], used, 0);
+                                   lbl_803BA2B0.ids5F4[idx], used, 0);
     player->field0FC = 0x19;
 
     PlayerSetValue4(&player->field7A4, 0x15);
@@ -332,21 +341,20 @@ void PlayerBatsqueekFrameUpdate(Player* player, float seek)
     PlayerSetValue4(&player->field7A4, 3);
     PlayerInHost((Actor*)player);
 
-    if ((player->flags31C & 1) == 0 || PlayerInHost((Actor*)player) == 0)
+    if ((player->flags31C & 1) != 0 && PlayerInHost((Actor*)player) != 0)
     {
-        if ((player->flags328 & 1) != 0)
-            FxStart(FxFind("Batsqueeks"), 0, 0);
-        return;
+        if (fn_802A1D04() != 0)
+            fn_8004C9C8(player);
+        PlayerApplyFrameOffset(player);
+        if (player->field7A4 != 0x17)
+            PlayerSetActionMode(player, 0x17);
+        else
+            PlayerSetValue4(&player->field7A4, 0x17);
     }
-
-    if (fn_802A1D04() != 0)
-        fn_8004C9C8(player);
-
-    PlayerApplyFrameOffset(player);
-    if (player->field7A4 != 0x17)
-        PlayerSetActionMode(player, 0x17);
-    else
-        PlayerSetValue4(&player->field7A4, 0x17);
+    else if ((player->flags328 & 1) != 0)
+    {
+        FxStart(FxFind("Batsqueeks"), 0, 0);
+    }
 }
 
 // Hosts the Batsqueeks mode: builds the per-slot motion objects and asks the peer
@@ -391,14 +399,14 @@ void PlayerBatsqueekResetGunState(Player* player)
 {
     PlayerResetGunTimer(player);
     player->field638 = 1;
-    if ((player->flags7B4 & 1) == 0)
+    if ((player->flags7B4 & 1) != 0)
     {
-        player->field50 |= 0x20000;
-        player->field78 = 1;
+        player->flags7B4 &= ~1u;
     }
     else
     {
-        player->flags7B4 &= ~1u;
+        player->field50 |= 0x20000;
+        player->field78 = 1;
     }
 }
 
@@ -412,7 +420,7 @@ void PlayerBatsqueekHostSlotSetup(Player* player)
     int slot;
     HostSlot* host;
 
-    if ((anim->field38 >> 24) == 0x13)
+    if ((int)(anim->field38 >> 24) == 0x13)
     {
         state = (HostState*)fn_800A384C(anim);
         if (HasCondition(anim->field270, 0xb) != 0)
@@ -470,7 +478,7 @@ void PlayerBatsqueekCarryStateSetup(Player* player)
     int index = player->field73C;
     int used = 0;
 
-    if ((anim->field38 >> 24) == 0x13)
+    if ((int)(anim->field38 >> 24) == 0x13)
     {
         state = (HostState*)fn_800A384C(anim);
         if (HasCondition(anim->field270, 0xb) != 0)
@@ -670,21 +678,20 @@ void PlayerBatsqueekExitMotionUpdate(Player* player, float seek)
     PlayerSetValue4(&player->field7A4, 1);
     player->field7D0 = 0;
 
-    if ((player->flags31C & 1) == 0 || PlayerInHost((Actor*)player) == 0)
+    if ((player->flags31C & 1) != 0 && PlayerInHost((Actor*)player) != 0)
     {
-        if ((player->flags328 & 1) != 0)
-            FxStart(FxFind("Batsqueeks"), 0, 0);
-        return;
+        if (fn_802A1D04() != 0)
+            fn_8004C9C8(player);
+        PlayerApplyFrameOffset(player);
+        if (player->field7A4 != 0x17)
+            PlayerSetActionMode(player, 0x17);
+        else
+            PlayerSetValue4(&player->field7A4, 0x17);
     }
-
-    if (fn_802A1D04() != 0)
-        fn_8004C9C8(player);
-
-    PlayerApplyFrameOffset(player);
-    if (player->field7A4 != 0x17)
-        PlayerSetActionMode(player, 0x17);
-    else
-        PlayerSetValue4(&player->field7A4, 0x17);
+    else if ((player->flags328 & 1) != 0)
+    {
+        FxStart(FxFind("Batsqueeks"), 0, 0);
+    }
 }
 
 // Sets up the two slot motion objects of the Batsqueeks host mode and stores the
@@ -738,7 +745,7 @@ void PlayerBatsqueekExitHost(Player* player)
 
     if (zero != player->field394 || zero != player->field38C ||
         zero != player->field390 || zero != player->field398 ||
-        player->flags328 != 0)
+        (int)player->flags328 != 0)
         PlayerSetActionMode(player, 3);
 }
 
@@ -850,9 +857,10 @@ struct BatsqueekModeHooks {
 
 // Run the per-action-mode function pointer stored at table entry offset 0x04, if set.
 void BatsqueekRunModeHook04(Player* player) {
-    BatsqueekModeHooks* entry = &((BatsqueekModeHooks*)&lbl_803BA2B0)[player->field7A4];
-    if (entry->hook04 != 0) {
-        entry->hook04(player);
+    BatsqueekModeHooks* table = (BatsqueekModeHooks*)&lbl_803BA2B0;
+    void (*fn)(Player*) = table[player->field7A4].hook04;
+    if (fn != 0) {
+        fn(player);
     }
 }
 
@@ -1035,18 +1043,20 @@ void BatsqueekTriggerModeSounds(SoundList* list, float seek, Vec3* pos, Vec3* ve
 // source object to the trigger routine; if nothing matches, restarts the delay.
 void SoundListTriggerEntry(SoundList* list, u32 hash, void* param)
 {
+    int off;
+    int i;
+
     if (list->entries != 0)
     {
-        int off = 0x28;
-
-        for (int i = 1; i < list->count; i++)
+        i = 1;
+        off = 0x28;
+        for (; i < list->count; i++)
         {
             u8* entry = list->entries + off;
-            void* source = *(void**)(entry + 0x24);
 
-            if (source != 0 && hash == *(u32*)(entry + 4))
+            if (*(void**)(entry + 0x24) != 0 && hash == *(u32*)(entry + 4))
             {
-                fn_801D5010(source, param);
+                fn_801D5010(*(void**)(list->entries + i * 0x28 + 0x24), param);
                 return;
             }
             off += 0x28;
@@ -1104,18 +1114,21 @@ void SoundListTeardown(SoundList* list)
 // active; a single active source makes the whole list report "not finished".
 int SoundListSourcesFinished(SoundList* list)
 {
-    if (list->entries != 0)
+    int off;
+    int i;
+
+    if (list->entries == 0)
+        return 1;
+
+    i = 1;
+    off = 0x28;
+    for (; i < list->count; i++)
     {
-        int off = 0x28;
+        void* source = *(void**)(list->entries + off + 0x24);
 
-        for (int i = 1; i < list->count; i++)
-        {
-            void* source = *(void**)(list->entries + off + 0x24);
-
-            if (source != 0 && fn_801D549C(source) != 0)
-                return 0;
-            off += 0x28;
-        }
+        if (source != 0 && fn_801D549C(source) != 0)
+            return 0;
+        off += 0x28;
     }
 
     return 1;
