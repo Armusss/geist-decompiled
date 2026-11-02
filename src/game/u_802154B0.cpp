@@ -186,8 +186,8 @@ extern "C" void fn_8014CEDC(int v);
 void SaveCommand(int a, int b);
 extern "C" int fn_802A1FA0();
 extern MenuPage lbl_8049EC00;
-// TODO (not drafted yet, 0x18C bytes at 0x8021B41C): confirmation page cancel handler
 void MenuReturnToMain(MenuPage* page);
+extern "C" const char* fn_802A1F08();
 extern "C" int fn_80010448(int a, int b);
 extern "C" void fn_80010330(int a, int b);
 extern "C" void fn_801D8A68(int a);
@@ -1145,4 +1145,33 @@ void MenuClose() {
     }
     fn_801EB060(2);
     FxStart(lbl_804D3440, 0, 0);
+}
+
+// MenuReturnToMain: clear the confirmation page and go back to the main (or named) screen.
+void MenuReturnToMain(MenuPage* page) {
+    MenuNameMsg msg;
+    MenuPage* cur;
+    MenuPage* armed;
+    MenuPageClear(page);
+    if (page == &lbl_8049EC00) {
+        msg.name = fn_802A1F08();
+    } else {
+        msg.name = lbl_804D3458;
+        fn_80142E88();
+    }
+    SendMsg(0x38000000, 0x5601, &msg);
+    if (lbl_804D345C != -1) {
+        lbl_804D53D4 = 1;
+        cur = lbl_8049EE58[lbl_804D345C];
+        if (cur->unkb4 != 0) {
+            MenuPageClear(cur);
+        }
+        armed = lbl_8049EE58[lbl_804D345C];
+        armed->callback = (void*)fn_8021DC40;
+        armed->unka0 = 0;
+        if (armed->state != 1) {
+            armed->timer = 500;
+        }
+        armed->state = 3;
+    }
 }
