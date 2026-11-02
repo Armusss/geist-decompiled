@@ -795,8 +795,33 @@ void AiState801B5AA0(Actor* a, float dt) {
     PlayerSetValue4(&a->state, 3);
 }
 
-// TODO (not drafted yet, 0x1F8 bytes at 0x801B5B3C): game logic
-extern "C" void fn_801B5B3C();
+void AiState801B5B3C(Actor* a) {
+    int id1;
+    int id2;
+    QueryGet(&id1, a->handle, 0x2DA8293C);
+    QueryGet(&id2, a->handle, 0xDFF3097A);
+    fn_80048BA8(a, a->unk1D04, 1);
+    Fn800F7F5C(id1, id2, 0xBC78F550, fn_800498D0(a), a->unk1D04, a->unk14FC);
+    int idx = PlayerInHost(a);
+    int v = a->variant;
+    int anim;
+    if (a->flags7B4 & 0x80000) {
+        anim = a->set[idx]->a20;
+    } else {
+        anim = a->set[idx]->a18;
+    }
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, anim, lbl_803AAE98[11].byVariant[v], 0, 0);
+    a->cb8C = (void*)fn_801B7B88;
+    a->animFlagA4 = 0x11;
+    AiAnimSet* set = a->set[idx];
+    if (a->flags7B4 & 0x80000) {
+        anim = set->a24;
+    } else {
+        anim = set->a1C;
+    }
+    a->animF0 = fn_800A1BC8(set->a14, anim, lbl_803AAE98[11].byVariant[v], 0, 0);
+    a->animFlagFC = 0x11;
+}
 
 void AiState801B5D34(Actor* a, float dt) {
     a->unk638 = 1;
@@ -813,8 +838,33 @@ void AiState801B5D34(Actor* a, float dt) {
     PlayerSetValue4(&a->state, 3);
 }
 
-// TODO (not drafted yet, 0x1F8 bytes at 0x801B5DD0): game logic
-extern "C" void fn_801B5DD0();
+void AiState801B5DD0(Actor* a) {
+    int id1;
+    int id2;
+    QueryGet(&id1, a->handle, 0x2DA8293C);
+    QueryGet(&id2, a->handle, 0xDFF3097A);
+    fn_80048BA8(a, a->unk1D04, 1);
+    Fn800F7F5C(id1, id2, 0x8FDD7599, fn_800498D0(a), a->unk1D04, a->unk14FC);
+    int idx = PlayerInHost(a);
+    int v = a->variant;
+    int anim;
+    if (a->flags7B4 & 0x80000) {
+        anim = a->set[idx]->a20;
+    } else {
+        anim = a->set[idx]->a18;
+    }
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, anim, lbl_803AAE98[10].byVariant[v], 0, 0);
+    a->cb8C = (void*)fn_801B7B88;
+    a->animFlagA4 = 0x11;
+    AiAnimSet* set = a->set[idx];
+    if (a->flags7B4 & 0x80000) {
+        anim = set->a24;
+    } else {
+        anim = set->a1C;
+    }
+    a->animF0 = fn_800A1BC8(set->a14, anim, lbl_803AAE98[10].byVariant[v], 0, 0);
+    a->animFlagFC = 0x11;
+}
 
 void AiState801B5FC8(Actor* a, float dt) {
     a->unk638 = 1;

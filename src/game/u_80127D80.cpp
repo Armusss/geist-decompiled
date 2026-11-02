@@ -1574,8 +1574,21 @@ void AiState80134AD0(Actor* a, float dt) {
     PlayerSetValue4(&a->state, 3);
 }
 
-// TODO (not drafted yet, 0x1B8 bytes at 0x80134B3C): game logic
-extern "C" void fn_80134B3C();
+void AiState80134B3C(Actor* a) {
+    int id1;
+    int id2;
+    QueryGet(&id1, a->handle, 0x2DA8293C);
+    QueryGet(&id2, a->handle, 0xDFF3097A);
+    fn_80048BA8(a, a->unk1D04, 0);
+    Fn800F7F5C(id1, id2, 0xBC78F550, fn_800498D0(a), a->unk1D04, a->unk14FC);
+    int idx = PlayerInHost(a);
+    int v = a->variant;
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a18, lbl_803A00D0[11].byVariant[v], 0, 0);
+    a->cb8C = (void*)PlayerGunAction;
+    a->animFlagA4 = 0x11;
+    a->animF0 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a1C, lbl_803A00D0[11].byVariant[v], 0, 0);
+    a->animFlagFC = 0x11;
+}
 
 void AiState80134CF4(Actor* a, float dt) {
     a->unk638 = 1;
