@@ -928,26 +928,109 @@ int AiState8012B904(Actor* a) {
     return lbl_8039F7C8[a->state.cur].byVariant[14];
 }
 
-// TODO (not drafted yet, 0x44 bytes at 0x8012B920): game logic
-extern "C" void fn_8012B920();
+void AiTypeMsg(Actor* a) {
+    if (lbl_8039F7C8[a->state.cur].msg) {
+        lbl_8039F7C8[a->state.cur].msg(a);
+    }
+}
 
-// TODO (not drafted yet, 0x44 bytes at 0x8012B964): game logic
-extern "C" void fn_8012B964();
+void AiTypeCallback04(Actor* a) {
+    if (lbl_8039F7C8[a->state.cur].cb04) {
+        lbl_8039F7C8[a->state.cur].cb04(a);
+    }
+}
 
-// TODO (not drafted yet, 0x40 bytes at 0x8012B9A8): game logic
-extern "C" void fn_8012B9A8();
+void AiTypeCallback00(Actor* a) {
+    if (lbl_8039F7C8[a->state.cur].cb00) {
+        lbl_8039F7C8[a->state.cur].cb00(a);
+    }
+}
 
-// TODO (not drafted yet, 0x21C bytes at 0x8012B9E8): game logic
-extern "C" void fn_8012B9E8();
+void AiLoadAssets() {
+    lbl_8046D1F0[0] = AssetFind(0xF1754BF2, 0x0021C5E0);
+    lbl_8046D1F0[1] = AssetFind(0xF1754BF2, 0x0024805F);
+    lbl_8046D1F0[2] = AssetFind(0xF1754BF2, 0x101844CC);
+    lbl_8046D1F0[3] = AssetFind(0xF1754BF2, 0x48874F6E);
+    lbl_8046D1F0[4] = AssetFind(0xF1754BF2, 0x04A53FC1);
+    lbl_8046D1F0[5] = AssetFind(0xF1754BF2, 0x967DAAC6);
+    lbl_8046D1F0[6] = AssetFind(0xF1754BF2, 0xD9404234);
+    lbl_8046D1F0[7] = AssetFind(0xF1754BF2, 0x0450B2BB);
+    lbl_8046D1F0[8] = AssetFind(0xF1754BF2, 0x922BF04E);
+    lbl_8046D1F0[9] = AssetFind(0xF1754BF2, 0x8C73DFA9);
+    lbl_8046D1F0[10] = AssetFind(0xF1754BF2, 0x90AEEEE4);
+    lbl_8046D1F0[11] = AssetFind(0xF1754BF2, 0x04A2F9AA);
+    lbl_8046D1F0[12] = AssetFind(0xF1754BF2, 0x04A48BC0);
+    lbl_8046D1F0[13] = AssetFind(0xF1754BF2, 0x8671DB2A);
+    lbl_8046D1F0[14] = AssetFind(0xF1754BF2, 0x044E6CA4);
+    lbl_8046D1F0[15] = AssetFind(0xF1754BF2, 0x044FFEBA);
+}
 
-// TODO (not drafted yet, 0x4 bytes at 0x8012BC04): game logic
-extern "C" void fn_8012BC04();
+void AiNoOp() {
+}
 
 // TODO (not drafted yet, 0x1B8 bytes at 0x8012BC08): game logic
 extern "C" void fn_8012BC08();
 
-// TODO (not drafted yet, 0x18C bytes at 0x8012BDC0): game logic
-extern "C" void fn_8012BDC0();
+struct AiGunInfo {
+    int unk0;
+    int unk4;
+    int unk8;
+};
+
+struct AiGunData {
+    int mode;        // 0x00
+    int unk4;
+    int unk8;
+    int unkC;        // 0x0C
+    u8 pad10[0x20 - 0x10];
+    AiGunInfo* info; // 0x20
+    int unk24;
+};
+
+struct AiGunOwner {
+    u8 pad00[8];
+    int unk8;        // 0x08
+    AiGunData* data; // 0x0C
+};
+
+int AiActionResult(AiGunOwner* owner, int action) {
+    AiGunData* d = owner->data;
+    AiGunInfo* g = d->info;
+    int r;
+    switch (action) {
+    case 0xF829DB93:
+    case 0x42E50A3D:
+        return 0x4A3E183;
+    case 0x96224FCC:
+    case 0x20EE36:
+        r = fn_800F7D28(d->unkC, g->unk4);
+        if (r != 0) {
+            return 0x4A3E183;
+        }
+        r = fn_800F7D28(owner->unk8, g->unk4);
+        if (r != 0) {
+            return 0xC0BECF7E;
+        }
+        return 0x11D2C025;
+    case 0x0D19E338:
+        if (d->mode == 1) {
+            return 0x4A3E183;
+        }
+        return 0x3DA260F7;
+    case 0x968CBE3D:
+    case 0xE6B71BCC:
+        r = fn_800F7D28(d->unkC, g->unk4);
+        if (g->unk8 == r) {
+            return 0x4848CA1E;
+        }
+        r = fn_800F7D28(owner->unk8, g->unk4);
+        if (r != 0) {
+            return 0x4A3E183;
+        }
+        return 0x11D2C025;
+    }
+    return 0x3DA260F7;
+}
 
 // TODO (not drafted yet, 0x4A0 bytes at 0x8012BF4C): game logic
 extern "C" void fn_8012BF4C();
