@@ -1264,10 +1264,10 @@ int ShellUpdateB(Actor* a) {
 
     ShellCrabStep(a);
     if (HasCondition(a->conditions, 0x24) || HasCondition(a->conditions, 0x25)) {
-        if ((b->flags & 2) == 0) {
-            return 0x2A;
+        if ((b->flags & 2) != 0) {
+            return 0x28;
         }
-        return 0x28;
+        return 0x2A;
     }
     if (fn_8016325C(a->animState) == 4) {
         return 0x26;
@@ -1568,10 +1568,10 @@ int ShellEnter2A(Actor* a) {
     b->state = 0x2A;
     b->next = 0x2B;
     b->f6C = 0.0f;
-    if (HasCondition(a->conditions, 0x24) == 0) {
-        b->i3C = 1;
-    } else {
+    if (HasCondition(a->conditions, 0x24) != 0) {
         b->i3C = 0;
+    } else {
+        b->i3C = 1;
     }
     ConditionSetBit(a->conditions, 0xE, 1);
     ShellCrabSetAnim(a, 0x418);
@@ -1678,10 +1678,10 @@ int ShellEnter23(Actor* a) {
 
     b->state = 0x23;
     b->i50 = 0;
-    if ((b->flags & 2) == 0) {
-        b->next = 0x24;
-    } else {
+    if ((b->flags & 2) != 0) {
         b->next = 0x28;
+    } else {
+        b->next = 0x24;
     }
     ShellCrabSetAnim(a, 0x410);
     fn_8016F120(lbl_804D3744, &a->i24);
