@@ -810,22 +810,23 @@ void TrailBufferInit(TrailBuffer* p, f32* verts, u32 max,
                      u32 rEnd, u32 gEnd, u32 bEnd, u32 aEnd,
                      u8 rBase, u8 gBase, u8 bBase, u8 aBase)
 {
-    f32 scale = 1.0f / (f32)max;
-    u32 end = max - 1;
-    u32 count = 0;
-
+    int dr = (rEnd & 0xFF) - rBase;
+    int dg = (gEnd & 0xFF) - gBase;
+    int db = (bEnd & 0xFF) - bBase;
+    int da = (aEnd & 0xFF) - aBase;
     p->verts = verts;
-    p->count = count;
-    p->end = end;
+    p->count = 0;
+    p->end = max - 1;
     p->max = max;
     p->base[0] = rBase;
     p->base[1] = gBase;
     p->base[2] = bBase;
     p->base[3] = aBase;
-    p->dr = scale * (f32)((rEnd & 0xFF) - rBase);
-    p->dg = scale * (f32)((gEnd & 0xFF) - gBase);
-    p->db = scale * (f32)((bEnd & 0xFF) - bBase);
-    p->da = scale * (f32)((aEnd & 0xFF) - aBase);
+    f32 scale = 1.0f / (f32)(int)max;
+    p->dr = scale * (f32)dr;
+    p->dg = scale * (f32)dg;
+    p->db = scale * (f32)db;
+    p->da = scale * (f32)da;
 }
 
 extern "C" f32 lbl_804D7AB8;
@@ -856,7 +857,7 @@ extern "C" s32 lbl_804D256C;
 void DrawUpdateScreenScale(void)
 {
     lbl_804D4D08 = 1.0f / (f32)lbl_804D2568;
+    lbl_804D4D0C = 1.0f / (f32)lbl_804D256C;
     lbl_804D4D18 = (f32)lbl_804D2568;
     lbl_804D4D1C = (f32)lbl_804D256C;
-    lbl_804D4D0C = 1.0f / (f32)lbl_804D256C;
 }
