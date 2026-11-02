@@ -129,8 +129,11 @@ u_8011818C 15/49 (ds-2 draft): fn_8011F66C (0x660) and fn_8011FCEC (0x674) not d
   unfolded-stage puzzle), FearMap2 8/35 (extern "C" block), Turf 9/22, DbRoom 15/62 (named .c but is C++), Msx 13/93
   (0x8016D440-0x8016E200 is shared Euler/box math: candidate split), Cube 49/112 (four byte-swap functions are
   hand-written asm in retail: lwbrx/lhbrx with fralloc; kept as asm, Lead/user review). Note: .c units compile as C++
-  (cflags_game) unless given cflags_game_c like Audio.c. Still grey (source, 0 exact matches): u_800E0CB8, u_80157730,
-  u_80202AB8, u_8024CAA0, u_802C8900.
+  (cflags_game) unless given cflags_game_c like Audio.c. Grey-unit pass (sonnet-1, one file at a time): u_80157730 orange (its fn_ functions
+  needed C linkage so objdiff pairs them; 43/67 by udiff), u_8024CAA0 orange (ScannableBeamSetParam; RailFireloopDestroy 5),
+  u_80202AB8 orange (2 TimerDone functions take (int, void*); HostActorInit 5: one early lfs). Still grey:
+  u_802C8900 (ActorFxEmitterInit 26: r29/r30 + early lfs; HandleMessage 68) and u_800E0CB8 (pairing fixed; 5/5/14/5/9:
+  retail loads before the stwu, not reproducible with GC/1.3.2 so far).
 - **Five-agent round (2026-11-01/02): every `u_` placeholder unit now has C source.** 2,084 -> 2,503 functions.
   Correction (2026-11-02): pick_untouched.py only listed `u_` units, so 11 already-named units still have no
   source: linkObjSys, AppMain, Script, Turf, FearMap2, Cube, DbRoom, Msx, CubeTev, ModInfo, FearActor (761
