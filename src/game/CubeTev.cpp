@@ -42,7 +42,10 @@ extern "C" void MemFree(void* p, const char* file, int line);
 extern int gTevForcedLevel;   // 0x804D2DB8
 extern int gTevLevel;         // 0x804D2DBC
 extern int gTevResetKey;      // 0x804D4C24
-extern void* gTevBufs[8];     // 0x804D4C28 .. (only the used words)
+extern void* gTevBufA;   // 0x804D4C28
+extern void* gTevBufD;   // 0x804D4C34
+extern void* gTevBufE;   // 0x804D4C38
+extern void* gTevBufF;   // 0x804D4C3C
 extern Mtx gTevSkyMtx;        // 0x8039EC50
 extern "C" float fn_800A1394(float x);   // sine of a scaled angle
 extern "C" float fn_800A1418(float x);   // cosine of a scaled angle
@@ -1364,7 +1367,7 @@ void TevSetKColor1Grey(float level) {
 }
 
 // 0x8010EB70 loads a translating texture matrix into a slot unless it is already cached there.
-void TevSlotTranslate(float x, float y, int slot) {
+extern "C" void fn_8010EB70(float x, float y, int slot) {   // TevSlotTranslate; called from other units
     Mtx m;
     bool same;
     if (gTevSlots[slot].kind == 2 && gTevSlots[slot].x == x && gTevSlots[slot].y == y) {
@@ -1382,7 +1385,7 @@ void TevSlotTranslate(float x, float y, int slot) {
 }
 
 // 0x8010EC10 the same for a scaling texture matrix.
-void TevSlotScale(float x, float y, int slot) {
+extern "C" void fn_8010EC10(float x, float y, int slot) {   // TevSlotScale; called from other units
     Mtx m;
     bool same;
     if (gTevSlots[slot].kind == 1 && gTevSlots[slot].x == x && gTevSlots[slot].y == y) {
@@ -1451,14 +1454,14 @@ void TevSetupSkyMtx(void) {
 }
 
 // 0x8010EF00 texture matrix 0x36: inverse transpose of the base matrix.
-void TevLoadNormalMtx(void) {
+extern "C" void fn_8010EF00(void) {   // TevLoadNormalMtx; called from other units
     Mtx m;
     PSMTXInvXpose(gTevBaseMtx, m);
     GXLoadTexMtxImm(m, 0x36, GX_MTX3x4);
 }
 
 // 0x8010EF3C texture matrix 0x39: the base matrix itself.
-void TevLoadBaseMtx(void) {
+extern "C" void fn_8010EF3C(void) {   // TevLoadBaseMtx; called from other units
     GXLoadTexMtxImm(gTevBaseMtx, 0x39, GX_MTX3x4);
 }
 
@@ -1477,17 +1480,17 @@ void TevNoop(void) {
 
 // 0x8010EFB0 releases the effect buffers.
 void TevFreeBuffers(void) {
-    if (gTevBufs[0] != 0) {
-        MemFree(gTevBufs[0], "CubeTev.cpp", 253);
+    if (gTevBufA != 0) {
+        MemFree(gTevBufA, "CubeTev.cpp", 253);
     }
-    if (gTevBufs[3] != 0) {
-        MemFree(gTevBufs[3], "CubeTev.cpp", 262);
+    if (gTevBufD != 0) {
+        MemFree(gTevBufD, "CubeTev.cpp", 262);
     }
-    if (gTevBufs[4] != 0) {
-        MemFree(gTevBufs[4], "CubeTev.cpp", 265);
+    if (gTevBufE != 0) {
+        MemFree(gTevBufE, "CubeTev.cpp", 265);
     }
-    if (gTevBufs[5] != 0) {
-        MemFree(gTevBufs[5], "CubeTev.cpp", 268);
+    if (gTevBufF != 0) {
+        MemFree(gTevBufF, "CubeTev.cpp", 268);
     }
 }
 
@@ -1495,3 +1498,60 @@ void TevFreeBuffers(void) {
 void TevResetCache(void) {
     TevStateReset();
 }
+
+// TODO (not drafted yet, 0x6B0 bytes at 0x8010F110): builds the effect lookup textures (MemAlloc buffers at lines 0x158..)
+void CubeTevUndrafted_8010F110();
+
+// TODO (not drafted yet, 0x2C bytes at 0x8010F7C0): small helper
+void CubeTevUndrafted_8010F7C0();
+
+// TODO (not drafted yet, 0x64 bytes at 0x8010F7EC): small helper (called from other units)
+void CubeTevUndrafted_8010F7EC();
+
+// TODO (not drafted yet, 0x2CC bytes at 0x8010F850): texture upload helper
+void CubeTevUndrafted_8010F850();
+
+// TODO (not drafted yet, 0x8 bytes at 0x8010FB1C): tiny accessor
+void CubeTevUndrafted_8010FB1C();
+
+// TODO (not drafted yet, 0x314 bytes at 0x8010FB24): effect setup helper
+void CubeTevUndrafted_8010FB24();
+
+// TODO (not drafted yet, 0x2C bytes at 0x8010FE38): small helper (called from other units)
+void CubeTevUndrafted_8010FE38();
+
+// TODO (not drafted yet, 0x8 bytes at 0x8010FE64): tiny accessor (called from other units)
+void CubeTevUndrafted_8010FE64();
+
+// TODO (not drafted yet, 0x1570 bytes at 0x8010FE6C): main effect draw
+void CubeTevUndrafted_8010FE6C();
+
+// TODO (not drafted yet, 0x28 bytes at 0x801113DC): small helper
+void CubeTevUndrafted_801113DC();
+
+// TODO (not drafted yet, 0x250 bytes at 0x80111404): effect helper (called from other units)
+void CubeTevUndrafted_80111404();
+
+// TODO (not drafted yet, 0x90 bytes at 0x80111654): helper
+void CubeTevUndrafted_80111654();
+
+// TODO (not drafted yet, 0x168 bytes at 0x801116E4): helper (called from other units)
+void CubeTevUndrafted_801116E4();
+
+// TODO (not drafted yet, 0x548 bytes at 0x8011184C): effect helper
+void CubeTevUndrafted_8011184C();
+
+// TODO (not drafted yet, 0x60 bytes at 0x80111D94): helper
+void CubeTevUndrafted_80111D94();
+
+// TODO (not drafted yet, 0x164 bytes at 0x80111DF4): helper
+void CubeTevUndrafted_80111DF4();
+
+// TODO (not drafted yet, 0x200 bytes at 0x80111F58): helper
+void CubeTevUndrafted_80111F58();
+
+// TODO (not drafted yet, 0x30 bytes at 0x80112158): helper
+void CubeTevUndrafted_80112158();
+
+// TODO (not drafted yet, 0x180 bytes at 0x80112188): helper
+void CubeTevUndrafted_80112188();
