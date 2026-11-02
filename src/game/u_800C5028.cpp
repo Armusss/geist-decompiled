@@ -14,6 +14,8 @@ void fn_800933D0(int anim);
 void fn_8009337C(int anim);
 int fn_80084540(int to, int msg, void* data, void* result);
 }
+void AnimUnref(int anim);
+void AnimRef(int anim);
 
 // A sorted table entry: an animation key and the list of states that use it.
 struct AnimTableEntry {
@@ -68,6 +70,9 @@ static inline int AnimTableFind(u32 key, u32 state, int unused, AnimTableEntry* 
     return -1;
 }
 
+int AnimEntryCompare(const u32* a, const u32* b);
+int ActorPendingMsgHandler(int self, int msg, int* data);
+
 // 0x800C5028: does an animation key allow a state?
 int ActorAnimState(int key, u32 state)
 {
@@ -82,53 +87,186 @@ int ActorAnimState(int key, u32 state)
     return AnimTableFind(key, state, 0, table, lo, hi, found);
 }
 
+// 0x800C50F0: empty
+void ActorAnimNop()
+{
+}
+
+// 0x800C50F4: installs the animation table, sorts it and drops the unused (-1) entries
+void ActorAnimTableSet(int count, AnimTableEntry* table, u32* lists)
+{
+    int i;
+    int dropped = 0;
+    int offset = 0;
+    int n = count;
+
+    lbl_804D4898 = table;
+    lbl_804D489C = count;
+    if (count > 0) {
+        do {
+            AnimTableEntry* e = (AnimTableEntry*)((char*)lbl_804D4898 + offset);
+
+            if (e->key == (u32)-1) {
+                dropped++;
+            }
+            offset += 12;
+            e->states = lists + (int)e->states;
+            n--;
+        } while (n != 0);
+    }
+    qsort(lbl_804D4898, count, 12, (int (*)(const void*, const void*))AnimEntryCompare);
+    lbl_804D489C = count - dropped;
+}
+
+// 0x800C5190: qsort comparator for the animation table
+int AnimEntryCompare(const u32* a, const u32* b)
+{
+    return (*a >= *b) ? 1 : -1;
+}
+
+// 0x800C51AC: empty
+extern "C" void fn_800C51AC()
+{
+}
+
+// 0x800C51B0: takes or drops an animation reference
+void ActorAnimRef(int anim, int release)
+{
+    if (release != 0) {
+        fn_8009337C(anim);
+    } else {
+        fn_800933D0(anim);
+    }
+}
+
+// 0x800C51E0: takes or drops an animation reference (other pair)
+void ActorAnimRef2(int anim, int release)
+{
+    if (release != 0) {
+        AnimRef(anim);
+    } else {
+        AnimUnref(anim);
+    }
+}
+
+// 0x800C5654: tells an actor to play an animation
+void ActorPlayAnim(int actor, u32 key, int arg)
+{
+    int msg[3];
+    char result[4];
+
+    msg[0] = 0;
+    msg[1] = key;
+    msg[2] = arg;
+    fn_80084540(actor, 0x7000, msg, result);
+}
+
+// 0x800C5690: clears the animation table
+void ActorAnimTableClear()
+{
+    lbl_804D4898 = 0;
+}
+
+// 0x800C569C: delivers the queued play-animation messages and recycles them
+void ActorPendingMsgsFlush()
+{
+    PendingMsg* m = lbl_804D4890;
+    PendingMsg* n;
+    int msg[3];
+    char result[4];
+
+    lbl_804D4890 = 0;
+    while (m != 0) {
+        msg[2] = m->arg1;
+        msg[1] = m->arg0;
+        msg[0] = 0;
+        fn_80084540(m->target, 0x7000, msg, result);
+        n = m;
+        if (m != 0) {
+            n = m->next;
+            m->next = lbl_804D4894;
+            lbl_804D4894 = m;
+        }
+        m = n;
+    }
+}
+
+// 0x800C5724: clears a counter
+void ActorCounterClear()
+{
+    lbl_804D48A0 = 0;
+}
+
+// 0x800C5730: builds the free pool of queued messages and registers the handler
+void ActorPendingMsgsInit()
+{
+    int i;
+    PendingMsg* head;
+
+    memset(lbl_8044F600, 0, 0x800);
+    lbl_804D4894 = 0;
+    lbl_804D4890 = 0;
+    head = 0;
+    for (i = 0; i < 64; i++) {
+        lbl_8044F600[i].next = head;
+        head = &lbl_8044F600[i];
+        lbl_804D4894 = head;
+    }
+    fn_80026660(0x4D, (void*)ActorPendingMsgHandler, 0);
+}
+
+// 0x800C5898: message handler that queues play-animation requests (message 0x7001)
+int ActorPendingMsgHandler(int self, int msg, int* data)
+{
+    if (msg == 0x7001) {
+        int arg1 = data[3];
+        int arg0 = data[2];
+        int target = data[1];
+        PendingMsg* m;
+
+        if (lbl_804D4894 == 0) {
+            m = 0;
+        } else {
+            PendingMsg** link = &lbl_804D4890;
+            PendingMsg* p;
+
+            for (p = lbl_804D4890; p != 0; p = p->next) {
+                link = &p->next;
+            }
+            *link = lbl_804D4894;
+            lbl_804D4894 = lbl_804D4894->next;
+            (*link)->next = 0;
+            m = *link;
+        }
+        if (m != 0) {
+            m->target = target;
+            m->arg0 = arg0;
+            m->arg1 = arg1;
+        }
+        return 1;
+    }
+    return 0;
+}
+
 // TODO (not drafted yet, 0x4 bytes at 0x800C50EC): actor/game routine
 extern "C" void fn_800C50EC();
 
-// TODO (not drafted yet, 0x4 bytes at 0x800C50F0): actor/game routine
-extern "C" void fn_800C50F0();
 
-// TODO (not drafted yet, 0x9C bytes at 0x800C50F4): actor/game routine
-extern "C" void fn_800C50F4();
 
-// TODO (not drafted yet, 0x1C bytes at 0x800C5190): actor/game routine
-extern "C" void fn_800C5190();
 
-// TODO (not drafted yet, 0x4 bytes at 0x800C51AC): actor/game routine
-extern "C" void fn_800C51AC();
 
-// TODO (not drafted yet, 0x30 bytes at 0x800C51B0): actor/game routine
-extern "C" void fn_800C51B0();
 
-// TODO (not drafted yet, 0x30 bytes at 0x800C51E0): actor/game routine
-extern "C" void fn_800C51E0();
 
 // TODO (not drafted yet, 0x444 bytes at 0x800C5210): actor/game routine
 extern "C" void fn_800C5210();
 
-// TODO (not drafted yet, 0x3C bytes at 0x800C5654): actor/game routine
-extern "C" void fn_800C5654();
 
-// TODO (not drafted yet, 0xC bytes at 0x800C5690): actor/game routine
-extern "C" void fn_800C5690();
 
-// TODO (not drafted yet, 0x88 bytes at 0x800C569C): actor/game routine
-extern "C" void fn_800C569C();
 
-// TODO (not drafted yet, 0xC bytes at 0x800C5724): actor/game routine
-extern "C" void fn_800C5724();
 
-// TODO (not drafted yet, 0x168 bytes at 0x800C5730): actor/game routine
-extern "C" void fn_800C5730();
 
-// TODO (not drafted yet, 0x88 bytes at 0x800C5898): actor/game routine
-extern "C" void fn_800C5898();
 
-// TODO (not drafted yet, 0x124 bytes at 0x800C5920): actor/game routine
-extern "C" void fn_800C5920();
 
-// TODO (not drafted yet, 0x128 bytes at 0x800C5A44): actor/game routine
-extern "C" void fn_800C5A44();
 
 // TODO (not drafted yet, 0x26C bytes at 0x800C5B6C): actor/game routine
 extern "C" void fn_800C5B6C();
