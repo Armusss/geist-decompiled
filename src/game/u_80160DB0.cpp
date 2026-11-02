@@ -103,7 +103,9 @@ struct Owner {
     int nodeF0;                                // 0xF0
     char padF4[0x44];
     float unk138;                              // 0x138
-    char pad13C[0x7B0];
+    char pad13C[0x134];
+    char cond[0x4];                            // 0x270
+    char pad274[0x678];
     int unk8EC;                                // 0x8EC
     int unk8F0;                                // 0x8F0
 };
@@ -529,54 +531,6 @@ int PickupBehMsg(void* owner, void* beh, int msg) {
         BehData* d = b->data;
 
         switch (msg) {
-        case (int)0xEAC45581:
-            d->next = 4;
-            if (gHostBehStates[d->state].exit) {
-                gHostBehStates[d->state].exit(o, b);
-            }
-            d->state = d->next;
-            b->state = d->next;
-            if (gHostBehStates[d->state].enter) {
-                gHostBehStates[d->state].enter(o, b);
-            }
-            d->flags |= 1;
-            d->flags &= ~0x100;
-            break;
-        case (int)0xE6B71BCC:
-        case (int)0x968DBE3D:
-            if ((d->flags & 0x20) == 0) {
-                d->flags |= 0x20;
-                Fn800F7F5C(o->unk8EC, o->unk8F0, msg, OwnerId(o), 0, o->unk138);
-            }
-            break;
-        case (int)0xF829DB93:
-            if (Fn800F7DEC(o->unk8EC, o->unk8F0, msg, OwnerId(o), 0) == 0x4A3E183) {
-                if ((float)b->unk28 <= d->timer1) {
-                    char buf[0x60];
-                    d->flags |= 1;
-                    d->timer1 = 0.0f;
-                    if (Fn80161FF4(o, buf, 0.0f) == 0) {
-                        return 0;
-                    }
-                    Fn800F7F5C(o->unk8EC, o->unk8F0, msg, OwnerId(o), buf, o->unk138);
-                    d->flags &= ~0x100;
-                }
-            }
-            break;
-        case 0x20EE36:
-            if (Fn800F7DEC(o->unk8EC, o->unk8F0, msg, OwnerId(o), 0) == 0x4A3E183) {
-                if ((float)b->unk2A <= d->timer2) {
-                    char buf[0x60];
-                    d->flags |= 1;
-                    d->timer2 = 0.0f;
-                    if (Fn80161FF4(o, buf, 0.0f) == 0) {
-                        return 0;
-                    }
-                    Fn800F7F5C(o->unk8EC, o->unk8F0, msg, OwnerId(o), buf, o->unk138);
-                    d->flags &= ~0x100;
-                }
-            }
-            break;
         case 0:
             d->next = 0;
             break;
@@ -601,6 +555,54 @@ int PickupBehMsg(void* owner, void* beh, int msg) {
         case 0x1B83833F:
             d->flags |= 0x10;
             break;
+        case 0x20EE36:
+            if (Fn800F7DEC(o->unk8EC, o->unk8F0, msg, OwnerId(o), 0) == 0x4A3E183) {
+                if (d->timer1 >= (float)b->unk28) {
+                    char buf[0x60];
+                    d->flags |= 1;
+                    d->timer1 = 0.0f;
+                    if (Fn80161FF4(o, buf, 0.0f) == 0) {
+                        return 0;
+                    }
+                    Fn800F7F5C(o->unk8EC, o->unk8F0, msg, OwnerId(o), buf, o->unk138);
+                    d->flags &= ~0x100;
+                }
+            }
+            break;
+        case (int)0xF829DB93:
+            if (Fn800F7DEC(o->unk8EC, o->unk8F0, msg, OwnerId(o), 0) == 0x4A3E183) {
+                if (d->timer2 >= (float)b->unk2A) {
+                    char buf[0x60];
+                    d->flags |= 1;
+                    d->timer2 = 0.0f;
+                    if (Fn80161FF4(o, buf, 0.0f) == 0) {
+                        return 0;
+                    }
+                    Fn800F7F5C(o->unk8EC, o->unk8F0, msg, OwnerId(o), buf, o->unk138);
+                    d->flags &= ~0x100;
+                }
+            }
+            break;
+        case (int)0xEAC45581:
+            d->next = 4;
+            if (gHostBehStates[d->state].exit) {
+                gHostBehStates[d->state].exit(o, b);
+            }
+            d->state = d->next;
+            b->state = d->next;
+            if (gHostBehStates[d->state].enter) {
+                gHostBehStates[d->state].enter(o, b);
+            }
+            d->flags |= 1;
+            d->flags &= ~0x100;
+            break;
+        case (int)0xE6B71BCC:
+        case (int)0x968CBE3D:
+            if ((d->flags & 0x20) == 0) {
+                d->flags |= 0x20;
+                Fn800F7F5C(o->unk8EC, o->unk8F0, msg, OwnerId(o), 0, o->unk138);
+            }
+            break;
         }
     }
     return 1;
@@ -608,22 +610,18 @@ int PickupBehMsg(void* owner, void* beh, int msg) {
 
 // 0x80161C44
 int PickupBehUpdate(void* owner_, void* beh_) {
-    Owner* owner;
-    Beh* beh;
+    Beh* b = (Beh*)beh_;
 
-    if (beh_ == 0) {
+    if (b == 0) {
         return 0;
     }
-    owner = (Owner*)owner_;
-    beh = (Beh*)beh_;
     {
-        Owner* o = owner;
-        Beh* b = beh;
         BehData* d = b->data;
+        Owner* o = (Owner*)owner_;
 
-        if (HasCondition((char*)o + 0x270, 9) != 0 ||
-            HasCondition((char*)o + 0x270, 10) != 0 ||
-            HasCondition((char*)o + 0x270, 11) != 0) {
+        if (HasCondition(o->cond, 9) != 0 ||
+            HasCondition(o->cond, 10) != 0 ||
+            HasCondition(o->cond, 11) != 0) {
             if (d->handle != -1) {
                 fn_80027690(d->handle);
                 d->handle = -1;
