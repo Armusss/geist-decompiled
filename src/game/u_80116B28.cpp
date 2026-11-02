@@ -274,9 +274,9 @@ extern "C" int fn_80116DC4(U80116B28Owner* owner)
 {
     U80116B28Query query;
 
-    if (SendMsg(owner->field_5EC->field_BC, 0x400, &query) == 0)
-        return 0;
-    return query.id;
+    if (SendMsg(owner->field_5EC->field_BC, 0x400, &query) != 0)
+        return query.id;
+    return 0;
 }
 
 // ---- External helpers used by fn_80116E30 ---------------------------------
@@ -961,12 +961,23 @@ extern "C" int fn_80117FB4(void* ownerPtr)
     U80116B28Owner* owner = (U80116B28Owner*)ownerPtr;
     int (*callback)(void*);
 
-    if (owner->field_5EC == 0)
-        return 0;
-    callback = (int (*)(void*))owner->field_5EC->field_D8;
-    if (callback == 0)
-        return 0;
-    return callback(owner);
+    if (owner->field_5EC != 0) {
+        callback = (int (*)(void*))owner->field_5EC->field_D8;
+        if (callback != 0)
+            return callback(owner);
+    }
+    return 0;
+}
+
+static inline int U80116B28FindType(unsigned long id)
+{
+    int i;
+
+    for (i = 0; i < lbl_804D2E08; i++) {
+        if (id == lbl_8039ED68[i].id)
+            return i;
+    }
+    return -1;
 }
 
 // Looks the state block's registered type-table id up in the global per-type
@@ -976,18 +987,11 @@ extern "C" int fn_80117FB4(void* ownerPtr)
 // are kept.
 extern "C" int fn_80117FF8(U80116B28Sub* sub, int arg1, int arg2)
 {
-    int index = -1;
-    int i;
+    int index = U80116B28FindType(sub->field_CC);
 
-    for (i = 0; i < lbl_804D2E08; i++) {
-        if (sub->field_CC == lbl_8039ED68[i].id) {
-            index = i;
-            break;
-        }
-    }
-    if (index == -1)
-        return 0;
-    return lbl_8039ED68[index].dispatch(sub, arg1, arg2, 1);
+    if (index != -1)
+        return lbl_8039ED68[index].dispatch(sub, arg1, arg2, 1);
+    return 0;
 }
 
 // Same per-type dispatch as fn_80117FF8, but calls the entry's 0x10 callback
@@ -996,18 +1000,11 @@ extern "C" int fn_80117FF8(U80116B28Sub* sub, int arg1, int arg2)
 // are kept.
 extern "C" int fn_80118084(U80116B28Sub* sub, int arg1, int arg2)
 {
-    int index = -1;
-    int i;
+    int index = U80116B28FindType(sub->field_CC);
 
-    for (i = 0; i < lbl_804D2E08; i++) {
-        if (sub->field_CC == lbl_8039ED68[i].id) {
-            index = i;
-            break;
-        }
-    }
-    if (index == -1)
-        return 0;
-    return lbl_8039ED68[index].dispatch(sub, arg1, arg2, 0);
+    if (index != -1)
+        return lbl_8039ED68[index].dispatch(sub, arg1, arg2, 0);
+    return 0;
 }
 
 // Returns the name registered for the state block's type id in the global
