@@ -226,6 +226,7 @@ struct HitInfo {
 
 // Message 0xC14 payload (effect trigger).
 struct FxMsg {
+    int unk0;
     int a;
     int id;
     u32 key;
@@ -1635,10 +1636,10 @@ int ShellEnter25(Actor* a) {
     ShellBeh* b = a->beh;
 
     b->state = 0x25;
-    if (HasCondition(a->conditions, 6) == 0) {
-        b->next = 0x1D;
-    } else {
+    if (HasCondition(a->conditions, 6) != 0) {
         b->next = 0x24;
+    } else {
+        b->next = 0x1D;
     }
     if (a->handle != -1) {
         FxMsg m;
@@ -1703,10 +1704,10 @@ int ShellEnter1B(Actor* a) {
     ShellBeh* b = a->beh;
 
     b->state = 0x1B;
-    if (HasCondition(a->conditions, 6) == 0) {
-        b->next = 0x27;
-    } else {
+    if (HasCondition(a->conditions, 6) != 0) {
         b->next = 1;
+    } else {
+        b->next = 0x27;
     }
     ShellCrabSetAnim(a, 0x410);
     return 1;
@@ -1945,10 +1946,10 @@ int ShellEnter1F(Actor* a) {
 
     b->state = 0x1F;
     b->i50 = 0xFF;
-    if (HasCondition(a->conditions, 0x35) == 0) {
-        b->next = 0x20;
-    } else {
+    if (HasCondition(a->conditions, 0x35) != 0) {
         b->next = 0x21;
+    } else {
+        b->next = 0x20;
     }
     ShellCrabSetAnim(a, 0);
     return 1;
