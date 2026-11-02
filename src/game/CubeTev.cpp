@@ -1,0 +1,236 @@
+// CubeTev.cpp: TEV (texture environment) setups for full-screen effects and cube/sprite drawing
+// (0x80104134-0x80112308). Each setup function resets the GX state with a handful of texture
+// coordinate generators, TEV stages and register writes that the SDK helpers would have issued.
+// Names are descriptive guesses; the code is matched against the retail DOL.
+
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+#include "src/dolphin/gx/__gx.h"
+
+// Shared TEV bookkeeping that every setup function clears first (3 words per cached texture slot).
+struct TevSlot {
+    int tex;
+    int unk4;
+    int unk8;
+};
+extern TevSlot gTevSlots[8];   // 0x8045E800
+extern int gTevPrevA;          // 0x804D2DC4
+extern int gTevPrevB;          // 0x804D2DC8
+extern Mtx gTevBaseMtx;        // 0x8045E860
+
+extern "C" void fn_8000FF7C(void);
+extern "C" float fn_800A1394(float x);   // sine of a scaled angle
+extern "C" float fn_800A1418(float x);   // cosine of a scaled angle
+void GfxSetChannelEnables(int a, int b, int* c);   // 0x80112374
+
+static inline void TevOrder(int stage, int coord, int map, int color) {
+    GXSetTevOrder((GXTevStageID)stage, (GXTexCoordID)coord, (GXTexMapID)map, (GXChannelID)color);
+}
+
+static inline void TexGen(int dst, int func, int src, int mtx, int norm, int post) {
+    GXSetTexCoordGen2((GXTexCoordID)dst, (GXTexGenType)func, (GXTexGenSrc)src, mtx, (GXBool)norm, post);
+}
+
+static inline void TevStateReset() {
+    gTevPrevA = -1;
+    gTevPrevB = -2;
+    gTevSlots[0].tex = 0;
+    gTevSlots[1].tex = 0;
+    gTevSlots[2].tex = 0;
+    gTevSlots[3].tex = 0;
+    gTevSlots[4].tex = 0;
+    gTevSlots[5].tex = 0;
+    gTevSlots[6].tex = 0;
+    gTevSlots[7].tex = 0;
+    PSMTXIdentity(gTevBaseMtx);
+    fn_8000FF7C();
+}
+
+// Starts a stage: selects its register block and clears the "BP sent" flag.
+static inline void TevStageSelect(int stage) {
+    GX_WRITE_RAS_REG((0x10 + stage) << 24);
+    __GXData->bpSentNot = 0;
+}
+
+// Writes a TEV color-env/alpha-env pair of constant bits for a stage (the SDK's In/Op words, packed).
+static inline void TevStageWords(int stage, u32 colorBits, u32 alphaBits) {
+    u32 c = ((0xC0 + stage * 2) << 24) | colorBits;
+    GX_WRITE_RAS_REG(c);
+    __GXData->tevc[stage] = c;
+    __GXData->bpSentNot = 0;
+    u32 a = ((0xC1 + stage * 2) << 24) | alphaBits;
+    GX_WRITE_RAS_REG(a);
+    __GXData->teva[stage] = a;
+    __GXData->bpSentNot = 0;
+}
+
+// 0x80104134 n stages, each texture coordinate generated from a position matrix.
+extern "C" void fn_80104134(int n) {   // called from other units, keeps its placeholder name
+    int i;
+    int mtx;
+    int stage;
+    GXSetNumTevStages(n);
+    GXSetNumTexGens(n);
+    mtx = 0x1E;
+    for (i = 0; i < n; i++) {
+        TexGen(i, 0, 0, mtx, 0, 0x7D);
+        mtx += 3;
+    }
+    TevStageSelect(0);
+    stage = 0;
+    TevOrder(0, 0, 0, 0xFF);
+    TevStageWords(stage, 0x88FFF, 0x89FF0);
+    for (i = 1; i < n; i++) {
+        stage++;
+        TevStageSelect(stage);
+        TevOrder(stage, i, i, 0xFF);
+        TevStageWords(stage, 0x8F08F, 0x8E270);
+    }
+}
+
+// 0x801042F4 animated warp: two scaled/rotated texture matrices driven by a 10-bit phase.
+void CubeTevSetupWarp(u32 phase) {
+    Mtx scale;
+    Mtx rot;
+    Mtx m;
+    float ang;
+    float a2;
+    float sy;
+    float sx;
+    TevStateReset();
+    GXSetNumTevStages(3);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(2);
+    GfxSetChannelEnables(0, 0, 0);
+    TexGen(0, 1, 4, 0x1E, 0, 0x7D);
+    TexGen(1, 1, 4, 0x21, 0, 0x7D);
+    ang = 360.0f * ((float)(int)(phase & 0x3FF) / 1023.0f);
+    a2 = 2.0f * ang;
+    sx = fn_800A1394(3.0f * ang);
+    sy = 0.15f * sx + 0.75f;
+    sx = fn_800A1394(a2);
+    PSMTXScale(scale, 0.15f * sx + 0.75f, sy, 1.0f);
+    PSMTXTrans(m, -0.5f, -0.5f, 0.0f);
+    PSMTXRotRad(rot, 'z', 0.017453292f * ang);
+    PSMTXConcat(rot, m, m);
+    PSMTXConcat(scale, m, m);
+    PSMTXTransApply(m, m, 0.5f, 0.5f, 0.0f);
+    GXLoadTexMtxImm(m, 0x1E, GX_MTX2x4);
+    sx = fn_800A1394(a2);
+    sy = 0.15f * sx + 0.75f;
+    sx = fn_800A1394(4.0f * ang);
+    PSMTXScale(scale, 0.15f * sx + 0.75f, sy, 1.0f);
+    PSMTXTrans(m, -0.5f, -0.5f, 0.0f);
+    PSMTXRotRad(rot, 'z', 0.017453292f * -ang);
+    PSMTXConcat(rot, m, m);
+    PSMTXConcat(scale, m, m);
+    PSMTXTransApply(m, m, 0.5f, 0.5f, 0.0f);
+    GXLoadTexMtxImm(m, 0x21, GX_MTX2x4);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 0xFF);
+    TevStageWords(0, 0x8FC8F, 0x8FA70);
+    TevStageSelect(1);
+    TevOrder(1, 1, 0, 0xFF);
+    TevStageWords(1, 0x8F08F, 0x8E270);
+    TevStageSelect(2);
+    TevOrder(2, 0xFF, 0xFF, 4);
+    TevStageWords(2, 0x8F0AF, 0x8E2F0);
+}
+
+// 0x8010475C two scrolling texture matrices (phase in 13/12-bit fixed point).
+extern "C" void fn_8010475C(u32 phase) {   // called from other units, keeps its placeholder name
+    Mtx m;
+    TevStateReset();
+    GXSetNumTevStages(3);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(2);
+    GfxSetChannelEnables(0, 0, 0);
+    TexGen(0, 1, 4, 0x1E, 0, 0x7D);
+    TexGen(1, 1, 4, 0x21, 0, 0x7D);
+    PSMTXTrans(m, 0.0f, (float)(int)(phase & 0x1FFF) / 8191.0f, 0.0f);
+    GXLoadTexMtxImm(m, 0x1E, GX_MTX2x4);
+    PSMTXTrans(m, 0.5f, -((float)(int)(phase & 0xFFF) / 4095.0f), 0.0f);
+    GXLoadTexMtxImm(m, 0x21, GX_MTX2x4);
+    GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_RED, GX_CH_RED, GX_CH_RED);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 0xFF);
+    TevStageWords(0, 0x8FFFF, 0x89FF4);
+    TevStageSelect(1);
+    TevOrder(1, 1, 0, 0xFF);
+    TevStageWords(1, 0x8FFFF, 0x8E274);
+    TevStageSelect(2);
+    TevOrder(2, 0xFF, 0xFF, 4);
+    TevStageWords(2, 0x8AFFF, 0x8E2F0);
+}
+
+// 0x80104AAC tinted four-layer wobble (seven stages): the phase drives two small texture offsets.
+extern "C" void fn_80104AAC(u32 phase, u8 r, u8 g, u8 b) {   // called from other units
+    Mtx m;
+    GXColor color;
+    float ang;
+    double dy;
+    double dx;
+    TevStateReset();
+    color.r = r;
+    color.g = g;
+    color.b = b;
+    color.a = 0xFF;
+    GXSetTevColor(GX_TEVREG2, color);
+    GXSetNumTevStages(7);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(4);
+    GfxSetChannelEnables(1, 0, 0);
+    TexGen(0, 1, 4, 0x1E, 0, 0x7D);
+    TexGen(1, 1, 4, 0x21, 0, 0x7D);
+    TexGen(2, 1, 4, 0x24, 0, 0x7D);
+    TexGen(3, 1, 4, 0x27, 0, 0x7D);
+    ang = 360.0f * ((float)(int)(phase & 0x7FF) / 2047.0f);
+    dx = (float)(0.005 * fn_800A1394(ang));
+    dy = (float)(0.005 * fn_800A1418(ang));
+    PSMTXTrans(m, 0.0f, (float)(int)(phase & 0x1FFF) / 8191.0f, 0.0f);
+    GXLoadTexMtxImm(m, 0x1E, GX_MTX2x4);
+    dx = 0.02 + dx;
+    dy = 0.02 + dy;
+    PSMTXTransApply(m, m, (float)dx, (float)dy, 0.0f);
+    GXLoadTexMtxImm(m, 0x24, GX_MTX2x4);
+    PSMTXTrans(m, 0.5f, (float)(int)(phase & 0x3FFF) / -16383.0f, 0.0f);
+    GXLoadTexMtxImm(m, 0x21, GX_MTX2x4);
+    PSMTXTransApply(m, m, (float)dx, (float)dy, 0.0f);
+    GXLoadTexMtxImm(m, 0x27, GX_MTX2x4);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 0xFF);
+    TevStageWords(0, 0x8FC8F, 0x8FA70);
+    TevStageSelect(1);
+    TevOrder(1, 1, 0, 0xFF);
+    TevStageWords(1, 0x4C8FF0, 0x48FF80);
+    TevStageSelect(2);
+    TevOrder(2, 2, 0, 0xFF);
+    TevStageWords(2, 0x8FC8F, 0x8FA70);
+    TevStageSelect(3);
+    TevOrder(3, 3, 0, 0xFF);
+    TevStageWords(3, 0x8C8FF0, 0x88FF80);
+    TevStageSelect(4);
+    TevOrder(4, 0xFF, 0xFF, 0xFF);
+    TevStageWords(4, 0x0C2FF4, 0x183FA0);
+    TevStageSelect(5);
+    TevOrder(5, 0xFF, 0xFF, 0xFF);
+    TevStageWords(5, 0x086FF0, 0x08FF80);
+    TevStageSelect(6);
+    TevOrder(6, 0xFF, 0xFF, 4);
+    TevStageWords(6, 0x8F0AF, 0x8E2F0);
+}
+
+// 0x80105188 rotating texture matrix for the stage-0 coordinates.
+extern "C" void fn_80105188(float angle) {   // called from other units
+    Mtx m;
+    Mtx rot;
+    TevStateReset();
+    PSMTXTrans(m, -0.5f, -0.5f, 0.0f);
+    PSMTXRotRad(rot, 'z', 0.017453292f * angle);
+    PSMTXConcat(rot, m, m);
+    PSMTXTransApply(m, m, 0.5f, 0.5f, 0.0f);
+    GXLoadTexMtxImm(m, 0x1E, GX_MTX2x4);
+}
