@@ -639,8 +639,8 @@ extern "C" ModelNode* fn_8003A1C0(int model) {
 // 0x8002FA34
 bool StreamSlotIdle(int index) {
     if (index >= 0 && index < lbl_804D42E8) {
-        bool r = false;
         StreamSlot* s = &lbl_804D42E4[index];
+        bool r = false;
         if (s->buffer != 0 || s->size == 0)
             r = true;
         return r;
@@ -782,13 +782,18 @@ int ActorsUpdate(float dt) {
 
 // 0x80031E48 (called from other units under this placeholder name): do two integer boxes overlap?
 // Each box is {min x, y, z, max x, y, z}.
+static inline int Abs(int x) {
+    return x < 0 ? -x : x;
+}
+
 extern "C" int fn_80031E48(int* a, int* b) {
     int dx = (b[3] + b[0]) / 2 - (a[3] + a[0]) / 2;
     int dy = (b[4] + b[1]) / 2 - (a[4] + a[1]) / 2;
     int dz = (b[5] + b[2]) / 2 - (a[5] + a[2]) / 2;
-    if ((a[3] - a[0]) / 2 + (b[3] - b[0]) / 2 < (dx < 0 ? -dx : dx) ||
-        (a[4] - a[1]) / 2 + (b[4] - b[1]) / 2 < (dy < 0 ? -dy : dy) ||
-        (a[5] - a[2]) / 2 + (b[5] - b[2]) / 2 < (dz < 0 ? -dz : dz))
+    int hx = (a[3] - a[0]) / 2 + (b[3] - b[0]) / 2;
+    int hy = (a[4] - a[1]) / 2 + (b[4] - b[1]) / 2;
+    int hz = (a[5] - a[2]) / 2 + (b[5] - b[2]) / 2;
+    if (hx < Abs(dx) || hy < Abs(dy) || hz < Abs(dz))
         return 0;
     return 1;
 }
