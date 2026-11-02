@@ -57,7 +57,7 @@ extern "C" {
     int  fn_80212730(u32 x);
     void fn_80211AA4(f32 dt, Actor* self);
     void fn_8021284C(u32 x);
-    void fn_801D55CC();
+    void fn_801D55CC(u32 handle);
     u32  fn_801D5B38(f32 x, f32 y, f32 z, u32 a, int b, u32 c, u32 d, u32 e, void* view, int f);
     void fn_801D52E0(u32 fx, void* m);
     void fn_801D5298(u32 fx, void* v);
@@ -115,7 +115,7 @@ void ActorFxEmitterUpdate(Actor* self, f32 dt)
                 u8 rot[0x18];
 
                 if (*(u32*)(base + 0x11C) != 0) {
-                    fn_801D55CC();
+                    fn_801D55CC(*(u32*)(base + 0x11C));
                     *(u32*)(base + 0x11C) = 0;
                 }
 
@@ -185,12 +185,14 @@ int Fn80211F78(Actor* actor);
 int ActorFxEmitterInit(Actor* self)
 {
     u8* base = (u8*)self;
-    u8* p = *(u8**)(base + 0xA4);
+    u8* p;
     u8 view[0x18];
 
-    if (p == 0) {
+    if (*(u8**)(base + 0xA4) == 0) {
         p = (u8*)VAlloc(0x44);
         *(u8**)(base + 0xA4) = p;
+    } else {
+        p = *(u8**)(base + 0xA4);
     }
     memset(p, 0, 0x44);
 
@@ -209,32 +211,31 @@ int ActorFxEmitterInit(Actor* self)
         *(u32*)(p + 0x18) |= 0x30000000;
 
     if (*(u32*)(base + 0x11C) != 0) {
-        fn_801D55CC();
+        fn_801D55CC(*(u32*)(base + 0x11C));
         *(u32*)(base + 0x11C) = 0;
     }
 
     {
-        u32 h1 = VarFindHash(0xF3BEEEDF, *(u32*)(*(u32*)(base + 0x84) + 0x28), 0x4B35781);
-        u32 h2 = VarFindHash(0xF3BEEEDF, *(u32*)(*(u32*)(base + 0x84) + 0x28), 0x40795527);
-        u32 handle;
+        u32 key = *(u32*)(*(u32*)(base + 0x84) + 0x28);
+        u32 h1 = VarFindHash(0xF3BEEEDF, key, 0x4B35781);
+        u32 h2 = VarFindHash(0xF3BEEEDF, key, 0x40795527);
 
         fn_8016D864(view, *(u32*)(base + 0x40));
         fn_8016D6BC(view, view);
 
-        handle = fn_801D5B38(lbl_804DAECC * *(f32*)(view + 0x0C),
+        *(u32*)(base + 0x11C) = fn_801D5B38(lbl_804DAECC * *(f32*)(view + 0x0C),
                              lbl_804DAECC * *(f32*)(view + 0x10),
                              lbl_804DAECC * *(f32*)(view + 0x14),
                              *(u32*)(base + 0x38), -1, h1, h2, 0x1FFFFFFF, view, 1);
-        *(u32*)(base + 0x11C) = handle;
 
-        if (handle != 0) {
+        if (*(u32*)(base + 0x11C) != 0) {
             u8 m[0x30];
 
             fn_8009ED70(m, self);
             fn_800A0168(m, m);
-            fn_801D52E0(handle, m);
+            fn_801D52E0(*(u32*)(base + 0x11C), m);
             if (fn_80022B10(self) != 0)
-                fn_801D556C(handle);
+                fn_801D556C(*(u32*)(base + 0x11C));
         }
     }
 
@@ -249,21 +250,29 @@ int FxEmitterHandleMessage(Actor* self, int msg, void* data, int arg4)
     u32* d = (u32*)data;
     int result = 0;
 
-    if (msg == 0x41E) {
-        if (d[1] == 0xAD8576FA) {
+    switch (msg) {
+    case 0x407:
+        result = FxEmitterSpawnFromMsg((int*)d);
+        break;
+    case 0:
+        result = FxEmitterUpdateState(d, 0);
+        break;
+    case 0x7300:
+        result = FxEmitterUpdateState(d, 1);
+        break;
+    case 0x41E: {
+        u32 owner = d[0];
+        switch (d[1]) {
+        case 0xAD8576FA: {
             String s;
 
-            s.Format("Parent: 0x%08x", fn_80212730(*(u32*)(d[0] + 0x38)));
+            s.Format("Parent: 0x%08x", fn_80212730(*(u32*)(owner + 0x38)));
             fn_8028C188(d + 3, s.data, s.length);
+            break;
         }
-    } else if (msg < 0x41E) {
-        if (msg == 0x407) {
-            result = FxEmitterSpawnFromMsg((int*)d);
-        } else if (msg == 0) {
-            result = FxEmitterUpdateState(d, 0);
         }
-    } else if (msg == 0x7300) {
-        result = FxEmitterUpdateState(d, 1);
+        break;
+    }
     }
 
     if (result == -999999) {
@@ -540,7 +549,7 @@ int FxEmitterSpawnFromMsg(int* d)
             u32 h2;
 
             if (*(u32*)((u8*)actor + 0x11C) != 0) {
-                fn_801D55CC();
+                fn_801D55CC(*(u32*)((u8*)actor + 0x11C));
                 *(u32*)((u8*)actor + 0x11C) = 0;
             }
 
