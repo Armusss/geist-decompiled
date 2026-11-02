@@ -461,8 +461,10 @@ void ExtraTrailAttach(ExtraHolder* e) {
     if (e->hash == 0) {
         e->hash = StrHash("RD_HUMAN_MALE_TYPE1");
     }
-    end = (ExtraHolder**)((char*)lbl_804D5440->data + lbl_804D5440->size);
-    for (p = (ExtraHolder**)lbl_804D5440->data; p != end; p++) {
+    end = (ExtraHolder**)lbl_804D5440->data;
+    p = end;
+    end = (ExtraHolder**)((char*)end + lbl_804D5440->size);
+    for (; p != end; p++) {
         other = *p;
         if (other->actor && other->model == e->model) {
             return;
