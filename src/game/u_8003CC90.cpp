@@ -47,6 +47,7 @@ struct ModelEntryView {
     char stream[4];     // 0x34
 };
 
+void StreamFree(void* p);                                       // 0x8017C1F4
 void StreamRead(int pri, StreamEntry* e, void (*done)(int, void*, void*), void* arg);
 void GunStateTimerTick8017BAD0(void* p);
 void GunStateStep8017BBBC(void* p);
@@ -198,7 +199,81 @@ void ModelFlushRequests() {
 }
 
 // TODO (not drafted yet, 0x4CC bytes at 0x8003D1A0): stream completion callback (ModelSlotDone), chains the texture loads
-// TODO (not drafted yet, 0x1F8 bytes at 0x8003CF98): unknown
+// Raw integer views used while a model's pointers are turned back into offsets.
+struct PrimWords {
+    int w[12];          // 0x30 bytes
+};
+
+struct MeshWords {
+    PrimWords* prims;   // 0x00: becomes an index
+    int w04;            // 0x04
+    int w08;            // 0x08
+    int nPrims;         // 0x0C
+    char pad10[0x20];
+};
+
+struct ModelEntryRaw {
+    int texCount;       // 0x00
+    int meshCount;      // 0x04
+    char pad08[0x24];
+    MeshWords* meshes;  // 0x2C
+    char pad30[4];
+    short state;        // 0x34
+    char pad36[0x0E];
+    int base;           // 0x44
+    int off48;          // 0x48
+    int off4C;          // 0x4C
+    int off50;          // 0x50
+    int off54;          // 0x54
+    int off58;          // 0x58
+    int off5C;          // 0x5C
+    int off60;          // 0x60
+    int off64;          // 0x64
+};
+
+// Releases the data of models whose streaming slot is in the "releasing" state: converts the
+// pointers inside the model back into offsets and clears the relocation bases.
+void fn_8003CF98(void) {
+    if (lbl_804D4358 != 0 && lbl_804D26D0 != 0) {
+        lbl_804D4358 = 0;
+        for (int i = 0; i < lbl_804D4350; i++) {
+            ModelEntryRaw* e = (ModelEntryRaw*)&lbl_804D4340[i];
+            if (e->state == 3) {
+                if (e->base == 0) {
+                    lbl_804D4358 = 1;
+                } else {
+                    e->state = 0;
+                    if (e->base != 0) {
+                        MeshWords* m = e->meshes;
+                        for (int k = 0; k < e->meshCount; k++, m++) {
+                            for (int j = 0; j < m->nPrims; j++) {
+                                PrimWords* pr = &m->prims[j];
+                                pr->w[5] -= e->off48;
+                                pr->w[6] = (pr->w[6] - e->off4C) / 12;
+                                pr->w[8] = (pr->w[8] - e->off54) / 4;
+                                pr->w[9] = (pr->w[9] - e->off58) / 4;
+                                pr->w[10] = (pr->w[10] - e->off64) / 2;
+                            }
+                            m->prims = (PrimWords*)(((int)m->prims - e->base) / 0x30);
+                            m->w04 = (m->w04 - e->off5C) / 32;
+                            m->w08 = (m->w08 - e->off60) / 0x24;
+                        }
+                    }
+                    StreamFree((void*)e->base);
+                    e->base = 0;
+                    e->off4C = 0;
+                    e->off50 = 0;
+                    e->off54 = 0;
+                    e->off58 = 0;
+                    e->off5C = 0;
+                    e->off60 = 0;
+                    e->off64 = 0;
+                }
+            }
+        }
+    }
+}
+
 
 void ModelFreeIds(short* ids, int n) {
     for (int i = 0; i < n; i++) {
