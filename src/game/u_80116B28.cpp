@@ -210,28 +210,29 @@ extern "C" int U80116B28RampValue(U80116B28Owner* owner, U80116B28Rate* rate)
 {
     U80116B28Sub* sub;
     U80116B28Range* range;
+    float limit;
     bool active;
 
-    if (owner == 0)
-        return 0;
-    sub = owner->field_5EC;
-    if (sub == 0)
+    if (owner == 0 || (sub = owner->field_5EC) == 0)
         return 0;
 
     active = sub != 0 && sub->field_BC != -1;
-    if (active)
+    if (active) {
         range = &sub->rangeB;
-    else
-        range = &sub->rangeA;
-
-    if (range->value < range->limit) {
-        rate->flag = 0;
-        range->value = range->value + (float)(int)(range->limit * rate->rate);
+        limit = sub->rangeB.limit;
     } else {
-        rate->flag = 1;
+        range = &sub->rangeA;
+        limit = sub->rangeA.limit;
     }
-    if (range->limit < range->value)
-        range->value = range->limit;
+
+    if (range->value >= limit) {
+        rate->flag = 1;
+    } else {
+        rate->flag = 0;
+        range->value = range->value + (float)(int)(limit * rate->rate);
+    }
+    if (range->value > limit)
+        range->value = limit;
 
     owner->field_904 = range->value;
     return 1;
