@@ -613,8 +613,8 @@ int MenuMsg(int sender, int msg, MenuMsgData* data) {
     return 0;
 }
 
-// MenuPopPage: close the current page and clear the selection.
-void MenuPopPage() {
+// fn_8021DC40: close the current page and clear the selection.
+extern "C" void fn_8021DC40() {
     MenuPage* page = lbl_8049EE58[lbl_804D345C];
     if (page->unkb4 != 0) {
         MenuPageClear(page);
@@ -665,7 +665,7 @@ void MenuGotoScreen(const char* name) {
             MenuPageClear(page);
         }
         armed = lbl_8049EE58[lbl_804D345C];
-        armed->callback = (void*)MenuPopPage;
+        armed->callback = (void*)fn_8021DC40;
         armed->unka0 = 0;
         if (armed->state != 1) {
             armed->timer = 500;
@@ -708,7 +708,7 @@ void MenuSendValue(int value) {
             MenuPageClear(page);
         }
         armed = lbl_8049EE58[lbl_804D345C];
-        armed->callback = (void*)MenuPopPage;
+        armed->callback = (void*)fn_8021DC40;
         armed->unka0 = 0;
         if (armed->state != 1) {
             armed->timer = 500;
@@ -925,7 +925,7 @@ void MenuMainMenu() {
             MenuPageClear(page);
         }
         armed = lbl_8049EE58[lbl_804D345C];
-        armed->callback = (void*)MenuPopPage;
+        armed->callback = (void*)fn_8021DC40;
         armed->unka0 = 0;
         if (armed->state != 1) {
             armed->timer = 500;
