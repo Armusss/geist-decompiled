@@ -159,6 +159,7 @@ extern "C" void fn_800769A0(void* a, float dt);
 int PlayerInHost(Actor* a);
 void PlayerSetHeldSlotIndex(void* a, int slot);
 void PlayerSetHeldSlotMode(void* a, int mode);
+void PlayerSlideByVar(void* a);
 void PlayerDispatchMotionUpdate(void* a, int mode, float dt);
 extern "C" int fn_802A1D04();
 extern "C" int fn_800C5210(int to, int msg, void* data);
@@ -785,23 +786,112 @@ void AiState801B6064(Actor* a) {
     FxStart((void*)lbl_804D31C4, 0, 0);
 }
 
-// TODO (not drafted yet, 0x228 bytes at 0x801B61E4): game logic
-extern "C" void fn_801B61E4();
+void AiState801B61E4(Actor* a, float dt) {
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    fn_800769A0(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
+    if ((a->flags678 & 0x80) && a->variant != 4) {
+        a->flags678 &= ~0x80;
+        PlayerSetActionMode(a, 3);
+    } else {
+        PlayerSetValue4(&a->state, 3);
+    }
+    if (a->unk328 & 1) {
+        if (PlayerInHost(a) != 0) {
+            if (!(a->flags7B4 & 0x40000) && !(a->flags7B4 & 0x80000)) {
+                fn_80073E80(a);
+            }
+        }
+    }
+    int id1;
+    int id2;
+    QueryGet(&id1, a->handle, 0x2DA8293C);
+    QueryGet(&id2, a->handle, 0xDFF3097A);
+    if (a->unk318 == 0) {
+        PlayerSetValue4(&a->state, 3);
+        if (a->state.cur == 0x11 || a->state.cur == 0x10) {
+            fn_80048BA8(a, a->unk1D04, 1);
+            Fn800F7F5C(id1, id2, 0x9791AF51, fn_800498D0(a), a->unk1D04, a->unk14FC);
+            PlayerSetHeldSlotMode(a, 8);
+        }
+    } else {
+        PlayerResetGunTimer(a);
+    }
+}
 
-// TODO (not drafted yet, 0xFC bytes at 0x801B640C): game logic
-extern "C" void fn_801B640C();
+void AiState801B640C(Actor* a) {
+    int idx = PlayerInHost(a);
+    int v = a->variant;
+    int anim;
+    if (a->flags7B4 & 0x80000) {
+        anim = a->set[idx]->a20;
+    } else {
+        anim = a->set[idx]->a18;
+    }
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, anim, lbl_803AAE98[8].byVariant[v], 0, 0);
+    a->cb8C = (void*)fn_801B7B88;
+    a->animFlagA4 = 0x11;
+    AiAnimSet* set = a->set[idx];
+    if (a->flags7B4 & 0x80000) {
+        anim = set->a24;
+    } else {
+        anim = set->a1C;
+    }
+    a->animF0 = fn_800A1BC8(set->a14, anim, lbl_803AAE98[8].byVariant[v], 0, 0);
+    a->animFlagFC = 0x11;
+    PlayerSlideByVar(a);
+}
 
 // TODO (not drafted yet, 0x288 bytes at 0x801B6508): game logic
 extern "C" void fn_801B6508();
 
-// TODO (not drafted yet, 0x100 bytes at 0x801B6790): game logic
-extern "C" void fn_801B6790();
+void AiState801B6790(Actor* a) {
+    int idx = PlayerInHost(a);
+    int v4 = a->variant;
+    int anim;
+    if (a->flags7B4 & 0x80000) {
+        anim = a->set[idx]->a20;
+    } else {
+        anim = a->set[idx]->a18;
+    }
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, anim, lbl_803AAE98[7].byVariant[v4], 0, 0);
+    a->cb8C = (void*)fn_801B7B88;
+    a->animFlagA4 = 1;
+    AiAnimSet* set = a->set[idx];
+    if (a->flags7B4 & 0x80000) {
+        anim = set->a24;
+    } else {
+        anim = set->a1C;
+    }
+    a->animF0 = fn_800A1BC8(set->a14, anim, lbl_803AAE98[3].byVariant[v4], 0, 0);
+    a->animFlagFC = 1;
+}
 
 // TODO (not drafted yet, 0x294 bytes at 0x801B6890): game logic
 extern "C" void fn_801B6890();
 
-// TODO (not drafted yet, 0xF4 bytes at 0x801B6B24): game logic
-extern "C" void fn_801B6B24();
+void AiState801B6B24(Actor* a) {
+    int idx = PlayerInHost(a);
+    int v = a->variant;
+    int anim;
+    if (a->flags7B4 & 0x80000) {
+        anim = a->set[idx]->a20;
+    } else {
+        anim = a->set[idx]->a18;
+    }
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, anim, lbl_803AAE98[5].byVariant[v], 0, 0);
+    a->cb8C = (void*)fn_801B7B88;
+    a->animFlagA4 = 1;
+    AiAnimSet* set = a->set[idx];
+    if (a->flags7B4 & 0x80000) {
+        anim = set->a24;
+    } else {
+        anim = set->a1C;
+    }
+    a->animF0 = fn_800A1BC8(set->a14, anim, lbl_803AAE98[5].byVariant[v], 0, 0);
+    a->animFlagFC = 1;
+}
 
 // TODO (not drafted yet, 0x338 bytes at 0x801B6C18): game logic
 extern "C" void fn_801B6C18();
