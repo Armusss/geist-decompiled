@@ -657,13 +657,13 @@ int ShellRollDustStart(Actor* a, Vec3* euler) {
 }
 
 extern "C" {
-void EmitterDestroy(int handle);                                // 0x800D3694
 void fn_8028B35C(void* buf, int at, int size);
 void fn_8000F550(short* ids, int n);
 void fn_8028C188(Buffer* b, char* data, int len);
 }
 int fn_8007EF48(int, int, const char*, int, int, int, int, int, int, int);
 int fn_8007EE6C(int, int, int, int, int, int);
+void EmitterDestroy(int handle);                                // 0x800D3694
 void TextureLoad(short* ids, int n);                            // 0x8000F738
 extern int lbl_804D375C;
 

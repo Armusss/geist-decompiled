@@ -55,7 +55,9 @@ struct HostObj {
     u32 flags50;        // 0x50
     char pad54[0x24];
     int i78;            // 0x78
-    char pad7C[0xB4];
+    char pad7C[0x48];
+    int iC4;            // 0xC4
+    char padC8[0x68];
     int* ptr130;        // 0x130
     char pad134[0x13C];
     char conditions[0x10];  // 0x270
@@ -64,7 +66,9 @@ struct HostObj {
     char pad63C[0x168];
     char sub7A4[0x10];  // 0x7A4
     u32 flags7B4;       // 0x7B4
-    char pad7B8[0xDC];
+    char pad7B8[0x18];
+    int i7D0;           // 0x7D0
+    char pad7D4[0xC0];
     char anim894[0x1E4C];   // 0x894
     char sub26E0[8];    // 0x26E0
     int i26E8;          // 0x26E8
@@ -108,6 +112,7 @@ public:
     EffectList() {}
     virtual ~EffectList() {}
 };
+extern EffectList* lbl_804D5750;
 
 extern int lbl_804D5728;
 extern float lbl_804D5720;
@@ -347,22 +352,19 @@ extern int lbl_804A46F8_arr[];
 
 // Pushes a new level-state value (1..8) on the 5-deep stack and returns the previous top.
 int LevelFlagPush(int v) {
-    if (v < 1 || v > 8) {
-        return 0;
+    if (v > 0 && v < 9) {
+        int n = lbl_804D5734 + 1;
+        (&lbl_804A46F8)[lbl_804D5734] = lbl_804D572C;
+        lbl_804D5730 = v;
+        lbl_804D5734 = n < 5 ? n : 5;
+        if (v == 3) {
+            MusicResume();
+            fn_8016F6A0(1);
+            fn_80170E60(1);
+        }
+        return lbl_804A46F4[lbl_804D5734];
     }
-    int n = lbl_804D5734 + 1;
-    (&lbl_804A46F8)[lbl_804D5734] = lbl_804D572C;
-    lbl_804D5734 = 5;
-    if (n < 5) {
-        lbl_804D5734 = n;
-    }
-    lbl_804D5730 = v;
-    if (v == 3) {
-        MusicResume();
-        fn_8016F6A0(1);
-        fn_80170E60(1);
-    }
-    return lbl_804A46F4[lbl_804D5734];
+    return 0;
 }
 
 extern void* lbl_804D3858;
@@ -510,8 +512,66 @@ int StructCopy18(u32* src, u32* dst) {
 // TODO (not drafted yet, 0xF0 bytes at 0x802A3688): not analysed
 // TODO (not drafted yet, 0xEC bytes at 0x802A3778): not analysed
 // TODO (not drafted yet, 0x254 bytes at 0x802A3864): not analysed
-// TODO (not drafted yet, 0xBC bytes at 0x802A3AB8): not analysed
-// TODO (not drafted yet, 0xF0 bytes at 0x802A3BF0): not analysed
+void EmitterDestroy(int handle);                        // 0x800D3694
+extern "C" void fn_8028B35C(void* buf, int at, int size);
+
+struct FxRecItem {
+    int pad00;
+    int handle;         // 0x04
+    char pad08[0x28];
+};
+
+// Effect record: time left, item count, then 0x30-byte items starting at +0x30.
+struct FxRec {
+    float time;         // 0x00
+    int count;          // 0x04
+    char pad08[0x28];
+    FxRecItem items[1]; // 0x30
+};
+
+// Destroys every effect record in the list, then the list itself.
+void EffectListFreeAll() {
+    while (((u32)lbl_804D5750->mLength >> 2) != 0) {
+        FxRec* rec = *(FxRec**)lbl_804D5750->mUnk0C;
+        for (int i = 0; i != rec->count; i++) {
+            if (rec->items[i].handle != -1) {
+                EmitterDestroy(rec->items[i].handle);
+            }
+        }
+        VFree(*(FxRec**)lbl_804D5750->mUnk0C);
+        fn_8028B35C(lbl_804D5750, lbl_804D5750->mUnk0C, 4);
+    }
+    if (lbl_804D5750 != 0) {
+        delete lbl_804D5750;
+    }
+}
+
+// Ticks every effect record by dt and frees the expired ones.
+void EffectListUpdate(float dt) {
+    int* p = (int*)lbl_804D5750->mUnk0C;
+    while (p != (int*)(lbl_804D5750->mUnk0C + lbl_804D5750->mLength)) {
+        FxRec* rec = (FxRec*)*p;
+        int r;
+        if (dt <= rec->time) {
+            r = 0;
+            rec->time = rec->time - dt;
+        } else {
+            r = -1;
+        }
+        if (r == -1) {
+            for (int i = 0; i != rec->count; i++) {
+                if (rec->items[i].handle != -1) {
+                    EmitterDestroy(rec->items[i].handle);
+                }
+            }
+            VFree(rec);
+            fn_8028B35C(lbl_804D5750, (int)p, 4);
+        } else {
+            p++;
+        }
+    }
+}
+
 struct TexKey {
     u32 key;
     short id;
@@ -530,7 +590,6 @@ void fn_802A3CE0(void) {
     } while (i != 4);
 }
 
-extern EffectList* lbl_804D5750;
 extern "C" void fn_802A3D50(void);
 void fn_802A3D50(void) {
     lbl_804D5750 = new EffectList();
@@ -600,7 +659,22 @@ void HostFxB(int unused, HostObjFx* o) {
     }
 }
 
-// TODO (not drafted yet, 0x9C bytes at 0x802A47F8): not analysed
+void HostStateEnterE(HostObj* o, float dt) {
+    o->i638 = 0;
+    o->flags7B4 &= 0xFFFFFFFE;
+    fn_800769A0();
+    PlayerSelectCollisionUpdate(o, dt);
+    if (o->iC4 == -1) {
+        if (o->i7D0 == 0) {
+            PlayerSetValue4(o->sub7A4, 1);
+        } else {
+            PlayerSetValue4(o->sub7A4, 3);
+        }
+    } else {
+        PlayerSetValue4(o->sub7A4, 0x16);
+    }
+}
+
 struct ResetObj {
     char pad00[0x8C];
     int i8C;            // 0x8C
