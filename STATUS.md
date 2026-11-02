@@ -121,7 +121,11 @@ u_8006C604 19/61 (ds-3 draft): 9 TODO functions incl. fn_80074018 (0xD50), fn_80
 u_80120D98 12/49 (ds-1 draft): HazardTargetAimDir TODO; HazardTrackTarget 155, TrackListUpdate 137; Clear vtable slot vs base class; lbl_8039EED8 needs a struct type (0x14C entries)
 u_8011818C 15/49 (ds-2 draft): fn_8011F66C (0x660) and fn_8011FCEC (0x674) not drafted; ItemSetupNearest/StatusEvent etc. have large diffs
 - u_800D32E8 16/50 (emitters/pads, ds-3 3 runs): 34 left.
-- **Five-agent round (2026-11-01/02): every game unit now has C source (0 untouched).** 2,084 -> 2,503 functions.
+- **Five-agent round (2026-11-01/02): every `u_` placeholder unit now has C source.** 2,084 -> 2,503 functions.
+  Correction (2026-11-02): pick_untouched.py only listed `u_` units, so 11 already-named units still have no
+  source: linkObjSys, AppMain, Script, Turf, FearMap2, Cube, DbRoom, Msx, CubeTev, ModInfo, FearActor (761
+  functions), plus u_802C9818 (skip list). Units with source but 0 matching functions: u_800E0CB8, u_80157730,
+  u_80202AB8, u_8024CAA0, u_802C8900. The picker now includes named units.
   - sonnet-1, second pass over batch 5: u_8025ECF8 71/101 (7 large TODO), u_8000F2F0 10/38 (1 TODO: 0x80010AEC, 0x2318), u_8003CC90 10/52 (22 TODO), u_8029E714 59/128 (46 TODO). ShellName/ShellNameBase and EffectList/EffectListBase are inline-ctor classes over Buffer (vtables 0x803C0060/80, 0x803C38F0/3910); ShellTablesInit is a .ctors init writing 0x803BFA68+0xD8.
   - sonnet-2: u_80259AB0 hyd_rico 22/42 (data anchor lbl_803BF800: asset keys +0xD8/+0x120, state table +0x168, obj data +0x218), u_80161FF4 behaviour framework/HUD 30/59, u_8008DCDC animation table 14/130 (116 TODO).
   - sonnet-3: u_8026C200 ODE collision 22/86 (real C++ classes Geom/Space/HashSpace/Sphere/Capsule/Box; vptr +0x48; to flip: GeomInit__FP4GeomP5Spacei and GeomDestroyBase__FP4Geoms are really __ct__4GeomFP5Spacei / __dt__4GeomFv; ~HashSpace = SpaceDestroy in u_8026A37C; ODE is BSD/LGPL: credit it in the README), u_800C5028 actor/camera core 24/149, u_80142E88 progress/options 11/65.
