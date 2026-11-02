@@ -231,14 +231,24 @@ struct FoeData {
     float fC;        // 0x0C
     int f10;         // 0x10
     int f14;         // 0x14
-    u8 pad18[0x24 - 0x18];
+    int f18;         // 0x18
+    float f1C;       // 0x1C
+    int f20;         // 0x20
     float f24;       // 0x24
-    u8 pad28[0x30 - 0x28];
+    int f28;         // 0x28
+    int f2C;         // 0x2C
     int h30;         // 0x30
+    int f34;         // 0x34
+    int f38;         // 0x38
+    int f3C;         // 0x3C
 };
 struct FoeBeh {
     void (*notify)(u32 hash, void* obj); // 0x00
-    u8 pad04[0xE0 - 0x04];
+    u8 pad04[0xBC - 0x04];
+    int fBC;         // 0xBC
+    u8 padC0[0xD8 - 0xC0];
+    void* cbD8;      // 0xD8
+    u8 padDC[4];
     FoeData* data;   // 0xE0
 };
 struct FoeObj {
@@ -255,6 +265,19 @@ extern "C" void fn_800BBCA8(void* o);
 void ConditionUpdateBit(void* c, int bit, int on);
 void RangeResetPending(void* c);
 void FollowSetTargetObj(void* c, void* t);
+extern "C" void fn_800BC56C(void* o, void* t);
+extern "C" int fn_800BAF40(void* o);
+extern "C" int fn_800B26B8(void* o);
+extern "C" void fn_800B1AB8(float f, void* o, int r, int n);
+extern "C" void fn_80131798(u32 a, int b, int* c, int d);
+int Fn80175D60(u32 a);
+void* VAlloc(int n);
+struct FoeState {
+    int (*enter)(FoeObj*, FoeBeh*);
+    int (*unk4)();
+    int (*unk8)();
+};
+extern FoeState lbl_8039FF90[];
 extern "C" int fn_800B93DC(int* list, int a, int* out, int b, int c);
 extern "C" int fn_800A2DE8(void* desc, int a, int b, int c);
 extern "C" void fn_800A3990(int id);
@@ -1454,8 +1477,31 @@ int FoeEnterTrack(FoeObj* o, FoeBeh* b) {
     return 1;
 }
 
-// TODO (not drafted yet, 0xF4 bytes at 0x80130EA4): game logic
-extern "C" void fn_80130EA4();
+int FoeEnterAttack(FoeObj* o, FoeBeh* b) {
+    float t = 10000.0f;
+    if (o == 0) {
+        return 0;
+    }
+    int msg[8];
+    FoeData* d = b->data;
+    d->mode = 1;
+    d->f1C = t;
+    SendMsg(d->h4, 0x400, msg);
+    FollowSetTargetObj(o->cond, (void*)msg[0]);
+    ConditionUpdateBit(o->cond, 4, 0);
+    ConditionUpdateBit(o->cond, 3, 1);
+    o->f288 = 3;
+    fn_800BC56C(o, (void*)msg[0]);
+    int r = fn_800BAF40(o);
+    if (r == -1) {
+        r = fn_800B26B8(o);
+        if (r != 4) {
+            fn_800B1AB8(1000.0f, o, r, 5);
+            b->notify(0x30A0D567, o);
+        }
+    }
+    return 1;
+}
 
 int FoeEnterIdle(FoeObj* o, FoeBeh* b) {
     if (o == 0) {
@@ -1477,20 +1523,60 @@ extern "C" void fn_80131118();
 // TODO (not drafted yet, 0x2CC bytes at 0x801312E0): game logic
 extern "C" void fn_801312E0();
 
-// TODO (not drafted yet, 0x54 bytes at 0x801315AC): game logic
-extern "C" void fn_801315AC();
+void FoeFree(FoeObj* o, FoeBeh* b) {
+    if (o != 0) {
+        VFree(b->data);
+        fn_800B6CAC(o, (void*)fn_8012F210);
+        fn_800B6CAC(o, (void*)fn_8012EC3C);
+    }
+}
 
-// TODO (not drafted yet, 0x104 bytes at 0x80131600): game logic
-extern "C" void fn_80131600();
+void FoeInit(FoeObj* o, FoeBeh* b) {
+    if (o != 0) {
+        FoeData* d = (FoeData*)VAlloc(0x40);
+        if (d == 0) {
+            b->data = 0;
+        } else {
+            b->cbD8 = (void*)fn_801312E0;
+            float attack = 10000.0f;
+            b->data = d;
+            float track = 5000.0f;
+            d->mode = 0;
+            d->h4 = -1;
+            d->f8 = 0;
+            d->f10 = -1;
+            d->f14 = 0;
+            d->f18 = (b->fBC == -1) ? 1 : 2;
+            d->f1C = attack;
+            d->f20 = 0;
+            d->f24 = track;
+            d->f28 = -1;
+            d->f2C = 0;
+            d->h30 = -1;
+            d->f34 = -1;
+            d->f38 = -1;
+            d->f3C = -1;
+            fn_800BBCA8(o);
+            RangeResetPending(o->cond);
+            lbl_8039FF90[d->mode].enter(o, b);
+        }
+    }
+}
 
-// TODO (not drafted yet, 0xC bytes at 0x80131704): game logic
-extern "C" void fn_80131704();
+int FoeNoMsgResult() {
+    return 0x3DA260F7;
+}
 
-// TODO (not drafted yet, 0x88 bytes at 0x80131710): game logic
-extern "C" void fn_80131710();
+int FoeSpawnMsg(int* p, int msg, u32 param, int* extra) {
+    int v = Fn80175D60(param);
+    if (msg == 0x14967) {
+        fn_80131798(param, v, extra, *p);
+        return 1;
+    }
+    return 0;
+}
 
 // TODO (not drafted yet, 0x6C0 bytes at 0x80131798): game logic (string: ShotgunShell)
-extern "C" void fn_80131798();
 
 // TODO (not drafted yet, 0x28 bytes at 0x80131E58): game logic
 extern "C" void fn_80131E58();
