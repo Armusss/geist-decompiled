@@ -143,19 +143,37 @@ struct U80116B28Query {
     int pad[7];    // 0x4
 };
 
-// Payload for message 0x41E.
-struct U80116B28NameMsg {
-    int pad00;
-    unsigned int nameHash;    // 0x4
-    int pad08;                // 0x8
+// Runtime string buffer; the 0x41E/0x41D query messages carry a String slot.
+class Buffer {
+public:
+    Buffer();
+    virtual ~Buffer();
+    virtual void Release(char* p);
+
+    char* mData;
+    int mLength;
+    int mUnk0C;
+    int mOwned;
 };
 
-// Local view of the String object that receives the type name.
-class U80116B28String {
+class String : public Buffer {
 public:
-    U80116B28String();
-    ~U80116B28String();
-    int field_0;              // 0x0
+    String();
+    ~String() {}
+    virtual void Release(char* p);
+};
+
+struct U80116B28QueryResult {
+    String name;
+};
+
+// Payload for message 0x41E / 0x41D: the handler writes the answer over the
+// result String's first word (the vtable slot is reused).
+struct U80116B28NameMsg {
+    int pad00;
+    unsigned long nameHash;    // 0x4
+    int pad08;                 // 0x8
+    U80116B28QueryResult result;
 };
 
 // Sets the owner's attached type id; on failure to resolve the name it falls
@@ -177,20 +195,19 @@ extern "C" int U80116B28SetTypeId(U80116B28Owner* owner, int id)
         fn_80116E30((int)owner);
     if (id == -1)
         return 1;
-    if (SendMsg(id, 0x400, &query) == 0)
-        return 1;
-    if (query.id == 0)
-        return 1;
+    if (SendMsg(id, 0x400, &query) != 0 && (unsigned long)query.id != 0) {
+        {
+            int target = owner->field_38;
+            U80116B28NameMsg msg;
 
-    U80116B28NameMsg msg;
-    U80116B28String name;
-
-    name.field_0 = 0;
-    msg.nameHash = 0x1C1A4CC9;
-    msg.pad08 = 0;
-    result = SendMsg(owner->field_38, 0x41E, &msg);
-    value = name.field_0;
-    if (result == 0 || value == -1) {
+            *(int*)&msg.result = 0;
+            msg.nameHash = 0x1C1A4CC9;
+            msg.pad08 = 0;
+            result = SendMsg(target, 0x41E, &msg);
+            value = *(int*)&msg.result;
+        }
+        if (result != 0 && value != -1)
+            return 1;
         owner->field_22C = query.id;
         owner->field_220 = 5;
     }
@@ -433,13 +450,12 @@ struct U80116B28MsgC02 {
 static inline int U80116B28RequestName(int target, int msgId, unsigned int hash, int value)
 {
     U80116B28NameMsg msg;
-    U80116B28String name;
 
-    name.field_0 = value;
+    *(int*)&msg.result = value;
     msg.nameHash = hash;
     msg.pad08 = 0;
     SendMsg(target, msgId, &msg);
-    return name.field_0;
+    return *(int*)&msg.result;
 }
 
 // Returns whether the owner currently has a type object attached.
