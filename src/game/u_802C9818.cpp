@@ -83,6 +83,11 @@ extern "C" {
 int rand();
 
 int fn_80162940(void* beh, int id);
+int fn_800B26B8(Actor* a);
+int fn_800BAF40(Actor* a);
+void fn_800B261C(Actor* a, int arg, void* out);
+int fn_8029B3B0(Actor* a, u32 hash);
+void fn_8029B070(Actor* a, u32 hash);
 extern int lbl_804D3B3C;
 extern int lbl_804D3B40;
 extern int lbl_804D3B44;
@@ -113,6 +118,8 @@ int ModelNodeSetup(int model, int node, int a, int b);
 int FxFind(const char* name);
 void ConditionUpdateBit(void* conditions, int id, int value);
 void* FollowGetTargetObj(void* conditions);
+int HasCondition(void* conditions, int id);
+void RangeResetPending(void* conditions);
 void FollowSetTargetObj(void* conditions, void* target);
 
 // 0x802CA508: release the state block
@@ -256,4 +263,98 @@ int FollowState2Update(void* owner) {
         }
         return 1;
     }
+}
+
+// 0x802CAA84: update while in state 1 (following the target)
+int FollowState1Update(void* owner) {
+    Actor* a = (Actor*)owner;
+    StateBlock* b = a->block;
+    void* target;
+    Reply400 reply;
+    fn_800B26B8(a);
+    target = FollowGetTargetObj(a->conditions);
+    if (target == 0) {
+        ConditionUpdateBit(a->conditions, 4, 0);
+        return 0;
+    }
+    if (MemFlagIsSet(a->conditions, 0x24) != 0) {
+        ConditionUpdateBit(a->conditions, 4, 0);
+        return 0;
+    }
+    if (SendMsg(a->targetId, 0x400, &reply) != 0 && reply.hit != 0) {
+        Actor* other = reply.actor;
+        f32 d1 = ActorAimAngleToPos(target, a->pos);
+        f32 d2 = ActorAimAngleToPos(target, other->pos);
+        f32 s = OwnerValue((Owner*)other, target);
+        f32 t = OwnerValue((Owner*)a, target);
+        if (s < sFollowScale * t && __fabsf(d2) < 40.0f)
+            return 2;
+        if (50.0f < __fabsf(d1))
+            return 2;
+    }
+    if (fn_800BAF40(a) == -1)
+        fn_800BC56C(a, target);
+    if (fn_800BAF40(a) == -3)
+        a->field288 = 3;
+    else
+        a->field288 = 0;
+    return b->state;
+}
+
+// 0x802CAD28: update while in state 0 (idle, looking for a target)
+int FollowState0Update(void* owner) {
+    Actor* a = (Actor*)owner;
+    StateBlock* b = a->block;
+    Actor* target = 0;
+    Reply400 reply;
+    int i;
+    if (MemFlagIsSet(a->conditions, 0x24) != 0) {
+        b->hitTimer -= a->dt;
+        if (b->hitTimer <= 0.0f) {
+            ConditionUpdateBit(a->conditions, 0x24, 0);
+            for (i = 0; i < 8; i++) {
+                b->a[i] = 0.0f;
+                b->b[i] = 999999.0f;
+                ModelNodeSetup(a->model, sIdD[i], 0, 1);
+                ModelNodeSetup(a->model, sIdA[i], 1, 1);
+                fn_80037EC0(a->model, sIdA[i], 0, 0xFF, 0xFF, 0xFF, 0xFF);
+                fn_80037EC0(a->model, sIdD[i], 1, 0x32, 0x32, 0xFF, 0xFF);
+            }
+        }
+    }
+    if (HasCondition(a->conditions, 0x3B) == 0) {
+        int k = fn_800B26B8(a);
+        if (k == 4) {
+            target = (Actor*)FollowGetTargetObj(a->conditions);
+            if (target != 0) {
+                SendMsg(*(int*)((u8*)target + 0x38), 0x400, &reply);
+                if ((*(u32*)((u8*)&reply + 0x18) & 2) == 0)
+                    RangeResetPending(a->conditions);
+            }
+        } else {
+            fn_800B261C(a, k, &target);
+            if (target != 0) {
+                SendMsg(*(int*)((u8*)target + 0x38), 0x400, &reply);
+                if ((*(u32*)((u8*)&reply + 0x18) & 2) != 0)
+                    FollowSetTargetObj(a->conditions, target);
+            }
+        }
+        target = (Actor*)FollowGetTargetObj(a->conditions);
+        if (target != 0) {
+            Reply400 r2;
+            if (SendMsg(a->targetId, 0x400, &r2) == 0 || r2.hit == 0)
+                r2.actor = 0;
+            if (r2.actor != 0) {
+                f32 s = OwnerValue((Owner*)r2.actor, target);
+                f32 t = OwnerValue((Owner*)a, target);
+                if (s <= t)
+                    return 2;
+            }
+            if (fn_8029B3B0(a, 0x31992E8D) != 0) {
+                fn_8029B070(a, 0x31992E8D);
+                return 1;
+            }
+        }
+    }
+    return b->state;
 }
