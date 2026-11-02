@@ -707,3 +707,167 @@ extern "C" void fn_8010883C(void) {   // placeholder name kept: checked below
     TevOrder(stage, 0xff, 0xff, 4);
     TevStageWords(stage++, 0x08AFFF, 0x08BC70);
 }
+
+// 0x8010C398 single textured stage, channel 0 enabled
+void CubeTevOneStageTextured() {
+    TevStateReset();
+    GXSetNumTevStages(1);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(1);
+    GfxSetChannelEnables(1,0,0);
+    TexGen(0,1,4,0x3c,0,0x7d);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 4);
+    TevStageWords(0, 0x08F8AF, 0x08BFF0);
+}
+
+// 0x8010C4C0 single stage with a red-replicating swap table
+void CubeTevOneStageSwapA() {
+    TevStateReset();
+    GXSetNumTevStages(1);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(1);
+    GfxSetChannelEnables(0,0,0);
+    TexGen(0,1,4,0x3c,0,0x7d);
+    GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_RED, GX_CH_RED, GX_CH_RED);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 4);
+    TevStageWords(0, 0x08AC9F, 0x08DFF4);
+}
+
+// 0x8010C600 single stage with a red-replicating swap table (second constant set)
+void CubeTevOneStageSwapB() {
+    TevStateReset();
+    GXSetNumTevStages(1);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(1);
+    GfxSetChannelEnables(0,0,0);
+    TexGen(0,1,4,0x3c,0,0x7d);
+    GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_RED, GX_CH_RED, GX_CH_RED);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 4);
+    TevStageWords(0, 0x08AFFF, 0x3B9674);
+}
+
+// 0x8010C740 single stage with a red-replicating swap table (third constant set)
+void CubeTevOneStageSwapC() {
+    TevStateReset();
+    GXSetNumTevStages(1);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(1);
+    GfxSetChannelEnables(0,0,0);
+    TexGen(0,1,4,0x3c,0,0x7d);
+    GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_RED, GX_CH_RED, GX_CH_RED);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 4);
+    TevStageWords(0, 0x08AFFF, 0x08F2F4);
+}
+
+// 0x8010C880 two stages: texture and environment-mapped texture coordinate
+extern "C" void fn_8010C880() {   // called from other units
+    TevStateReset();
+    GXSetNumTevStages(2);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(2);
+    GfxSetChannelEnables(0,0,0);
+    TexGen(0,1,4,0x1e,0,0x7d);
+    TexGen(1,1,5,0x1e,0,0x7d);
+    GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_RED, GX_CH_RED, GX_CH_RED);
+    int stage = 0;
+    TevStageSelect(stage);
+    TevOrder(stage, 0, 0, 4);
+    TevStageWords(stage++, 0x08FA8F, 0x08F674);
+    TevStageSelect(stage);
+    TevOrder(stage, 1, 0, 4);
+    TevStageWords(stage++, 0x08FFF0, 0x08F604);
+}
+
+// 0x8010CA48 single stage with a red-replicating swap table (fourth constant set)
+void CubeTevOneStageSwapD() {
+    TevStateReset();
+    GXSetNumTevStages(1);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(1);
+    GfxSetChannelEnables(0,0,0);
+    TexGen(0,1,4,0x3c,0,0x7d);
+    GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_RED, GX_CH_RED, GX_CH_RED);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 4);
+    TevStageWords(0, 0x08F8AF, 0x08F2F4);
+}
+
+// 0x8010CB88 single stage, channel 0 enabled, modulate-like constants
+void CubeTevOneStageModulate() {
+    TevStateReset();
+    GXSetNumTevStages(1);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(1);
+    GfxSetChannelEnables(1,0,0);
+    TexGen(0,1,4,0x3c,0,0x7d);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 4);
+    TevStageWords(0, 0x08A89F, 0x08BFF0);
+}
+
+// 0x8010CCB0 single stage, channel 0 enabled (alpha pass)
+extern "C" void fn_8010CCB0() {   // called from other units
+    TevStateReset();
+    GXSetNumTevStages(1);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(1);
+    GfxSetChannelEnables(1,0,0);
+    TexGen(0,1,4,0x3c,0,0x7d);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 4);
+    TevStageWords(0, 0x088FFA, 0x089FF0);
+}
+
+// 0x8010CDD8 single stage with no color channel
+extern "C" void fn_8010CDD8() {   // called from other units
+    TevStateReset();
+    GXSetNumTevStages(1);
+    GXSetNumIndStages(0);
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GfxSetChannelEnables(1,0,0);
+    TexGen(0,1,4,0x3c,0,0x7d);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 0xff);
+    TevStageWords(0, 0x088FFF, 0x089FF0);
+}
+
+// 0x8010CF00 single stage using the konstant color 0 / alpha 0 with no texture
+extern "C" void fn_8010CF00() {   // called from other units
+    TevStateReset();
+    GXSetNumTevStages(1);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(0);
+    GfxSetChannelEnables(0,0,0);
+    GXSetTevKColorSel(GX_TEVSTAGE0, GX_TEV_KCSEL_K0);
+    GXSetTevKAlphaSel(GX_TEVSTAGE0, GX_TEV_KASEL_K0_A);
+    TevStageSelect(0);
+    TevOrder(0, 0xff, 0xff, 4);
+    TevStageWords(0, 0x08EFFF, 0x08DFF0);
+}
+
+// 0x8010D024 single stage showing only the rasterized vertex color
+extern "C" void fn_8010D024() {   // called from other units
+    TevStateReset();
+    GXSetNumTevStages(1);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(0);
+    GfxSetChannelEnables(1,0,0);
+    TevStageSelect(0);
+    TevOrder(0, 0xff, 0xff, 4);
+    TevStageWords(0, 0x08AFFF, 0x08BFF0);
+}
