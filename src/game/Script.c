@@ -362,3 +362,78 @@ int ScriptOpShift(int ins, ScriptVM* vm) {
     vm->pc += 4;
     return 0;
 }
+
+// 0x800842F4: shift by a register: left (sub 0), logical right (sub 1), arithmetic right (sub 2)
+int ScriptOpShiftReg(int ins, ScriptVM* vm) {
+    int sub = INS_SUB(ins);
+    int dst;
+    u32 val = *(u32*)((u8*)vm + (((u32)ins >> 6) & 0x3C));
+    u32 n = *(u32*)((u8*)vm + (((u32)ins >> 10) & 0x3C));
+    dst = ((u32)ins >> 16) & 0xF;
+    switch (sub) {
+    case 0: val = val << n; break;
+    case 1: val = val >> n; break;
+    case 2: val = (s32)val >> n; break;
+    default: return 0x40000001;
+    }
+    vm->r[dst] = val;
+    vm->pc += 4;
+    return 0;
+}
+
+// 0x80084370: logical op with an immediate: and (sub 0), or (sub 1), xor (sub 2)
+int ScriptOpLogicImm(int ins, ScriptVM* vm) {
+    int sub = INS_SUB(ins);
+    int dst;
+    u32 val = *(u32*)((u8*)vm + (((u32)ins >> 6) & 0x3C));
+    u32 imm = (u32)ins >> 16;
+    dst = ((u32)ins >> 12) & 0xF;
+    switch (sub) {
+    case 0: val = val & imm; break;
+    case 1: val = val | imm; break;
+    case 2: val = val ^ imm; break;
+    default: return 0x40000001;
+    }
+    vm->r[dst] = val;
+    vm->pc += 4;
+    return 0;
+}
+
+// 0x800843E8: logical op on two registers: and (sub 0), or (sub 1), xor (sub 2), not (sub 3)
+int ScriptOpLogic(int ins, ScriptVM* vm) {
+    int sub = INS_SUB(ins);
+    u32 a = *(u32*)((u8*)vm + (((u32)ins >> 6) & 0x3C));
+    u32 b = *(u32*)((u8*)vm + (((u32)ins >> 10) & 0x3C));
+    switch (sub) {
+    case 0: b = b & a; break;
+    case 1: b = b | a; break;
+    case 2: b = b ^ a; break;
+    case 3: b = ~a; break;
+    default: return 0x40000001;
+    }
+    vm->r[((u32)ins >> 16) & 0xF] = b;
+    vm->pc += 4;
+    return 0;
+}
+
+// 0x80084470: register move (sub 0 int, sub 1 float) and negate (sub 2 float, sub 3 int)
+int ScriptOpMove(int ins, ScriptVM* vm) {
+    int sub = INS_SUB(ins);
+    int src = ((u32)ins >> 8) & 0xF;
+    int dst = ((u32)ins >> 12) & 0xF;
+    switch (sub) {
+    case 0: vm->r[dst] = vm->r[src]; break;
+    case 1: *(u32*)&vm->f[dst] = *(u32*)&vm->f[src]; break;
+    case 2: vm->f[dst] = -vm->f[src]; break;
+    case 3: vm->r[dst] = -vm->r[src]; break;
+    default: return 0x40000001;
+    }
+    vm->pc += 4;
+    return 0;
+}
+
+// 0x8008452C
+int ScriptOpSkip(int ins, ScriptVM* vm) {
+    vm->pc += 4;
+    return 0;
+}
