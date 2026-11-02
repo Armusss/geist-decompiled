@@ -164,6 +164,12 @@ extern int lbl_804D3444;
 extern int lbl_804D3448;
 extern int lbl_804D3454;
 extern int lbl_804D3440;
+extern float lbl_804D53BC;
+extern "C" float fn_800071A4();
+extern "C" void fn_8000719C(float v);
+extern "C" void fn_8014CEDC(int v);
+extern "C" void fn_80201260(float f, int a, int b);
+int PadPressed(int pad, int a, int b);
 extern "C" void FxStart(int handle, int a, int b);
 extern "C" void fn_8021DCF4();
 extern MenuPage* lbl_8049EE58[];
@@ -853,5 +859,50 @@ void MenuSelectPage(MenuPage* page) {
         lbl_804D53D4 = 1;
     } else {
         fn_8021E09C(page);
+    }
+}
+
+// MenuAdjustLevel: step the level value by the given amount, clamped to +-0.5.
+void MenuAdjustLevel(int steps) {
+    float cur = fn_800071A4();
+    cur = 0.05f * (float)steps + cur;
+    if (cur > 0.5f) {
+        cur = 0.5f;
+    } else if (cur < -0.5f) {
+        cur = -0.5f;
+    }
+    fn_8000719C(cur);
+}
+
+// MenuLevelPercent: current level as a 0-100 value.
+int MenuLevelPercent() {
+    float cur = fn_800071A4();
+    return (int)((0.5f + cur) * 100.0f);
+}
+
+// MenuMainMenu: leave to the main menu.
+void MenuMainMenu() {
+    MenuNameMsg msg;
+    MenuPage* page;
+    MenuPage* armed;
+    fn_8014CEDC(1);
+    msg.name = lbl_804D3458;
+    if (msg.name == lbl_804D3458) {
+        fn_80142E88();
+    }
+    SendMsg(0x38000000, 0x5600, &msg);
+    if (lbl_804D345C != -1) {
+        lbl_804D53D4 = 1;
+        page = lbl_8049EE58[lbl_804D345C];
+        if (page->unkb4 != 0) {
+            MenuPageClear(page);
+        }
+        armed = lbl_8049EE58[lbl_804D345C];
+        armed->callback = (void*)MenuPopPage;
+        armed->unka0 = 0;
+        if (armed->state != 1) {
+            armed->timer = 500;
+        }
+        armed->state = 3;
     }
 }
