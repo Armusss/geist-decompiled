@@ -5,7 +5,22 @@
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include "src/dolphin/gx/__gx.h"
+
+// The game's view of the GX library state (only the TEV words and the "BP sent" flag are touched).
+struct GxState {
+    u16 unk0;
+    u16 bpSentNot;     // 0x02
+    u8 unk4[0x130 - 4];
+    u32 tevc[16];      // 0x130
+    u32 teva[16];      // 0x170
+};
+extern GxState* __GXData;
+
+// Writes one raster (BP) register to the graphics FIFO.
+static inline void BpWrite(u32 value) {
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = value;
+}
 
 // Shared TEV bookkeeping that every setup function clears first (3 words per cached texture slot).
 struct TevSlot {
@@ -50,20 +65,22 @@ static inline void TevStateReset() {
 
 // Starts a stage: selects its register block and clears the "BP sent" flag.
 static inline void TevStageSelect(int stage) {
-    GX_WRITE_RAS_REG((0x10 + stage) << 24);
+    BpWrite((0x10 + stage) << 24);
     __GXData->bpSentNot = 0;
 }
 
 // Writes a TEV color-env/alpha-env pair of constant bits for a stage (the SDK's In/Op words, packed).
 static inline void TevStageWords(int stage, u32 colorBits, u32 alphaBits) {
     u32 c = ((0xC0 + stage * 2) << 24) | colorBits;
+    BpWrite(c);
+    GxState* g = __GXData;
+    g->tevc[stage] = c;
+    g->bpSentNot = 0;
     u32 a = ((0xC1 + stage * 2) << 24) | alphaBits;
-    GX_WRITE_RAS_REG(c);
-    __GXData->tevc[stage] = c;
-    __GXData->bpSentNot = 0;
-    GX_WRITE_RAS_REG(a);
-    __GXData->teva[stage] = a;
-    __GXData->bpSentNot = 0;
+    BpWrite(a);
+    g = __GXData;
+    g->teva[stage] = a;
+    g->bpSentNot = 0;
 }
 
 // 0x80104134 n stages, each texture coordinate generated from a position matrix.
@@ -396,4 +413,147 @@ extern "C" void fn_801060C4(float strength, GXColor* color) {   // called from o
     GXSetTevIndWarp(GX_TEVSTAGE0, GX_INDTEXSTAGE0, GX_TRUE, GX_FALSE, GX_ITM_0);
     TevOrder(0, 0, 0, 0xff);
     TevStageWords(0, 0x08F82F, 0x083FF0);
+}
+
+// 0x801062F4 hexagonal ring of seven offset samples (a spread, x horizontally and y vertically scaled).
+extern "C" void fn_801062F4(float x, float y) {   // called from other units
+    Mtx m;
+    float hx;
+    float hy;
+    float nx;
+    GXColor c;
+    TevStateReset();
+    GXSetNumTevStages(9);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(7);
+    GfxSetChannelEnables(0, 0, 0);
+    PSMTXTrans(m, x, 0.0f, 0.0f);
+    GXLoadTexMtxImm(m, 0x1E, GX_MTX2x4);
+    PSMTXTrans(m, -1.0f * x, 0.0f, 0.0f);
+    GXLoadTexMtxImm(m, 0x21, GX_MTX2x4);
+    hx = 0.5f * x;
+    hy = 0.866f * y;
+    PSMTXTrans(m, hx, hy, 0.0f);
+    GXLoadTexMtxImm(m, 0x24, GX_MTX2x4);
+    nx = -0.5f * x;
+    PSMTXTrans(m, nx, hy, 0.0f);
+    GXLoadTexMtxImm(m, 0x27, GX_MTX2x4);
+    hy = -0.866f * y;
+    PSMTXTrans(m, hx, hy, 0.0f);
+    GXLoadTexMtxImm(m, 0x2A, GX_MTX2x4);
+    PSMTXTrans(m, nx, hy, 0.0f);
+    GXLoadTexMtxImm(m, 0x2D, GX_MTX2x4);
+    TexGen(0, 1, 4, 0x3C, 0, 0x7D);
+    TexGen(1, 1, 4, 0x1E, 0, 0x7D);
+    TexGen(2, 1, 4, 0x21, 0, 0x7D);
+    TexGen(3, 1, 4, 0x24, 0, 0x7D);
+    TexGen(4, 1, 4, 0x27, 0, 0x7D);
+    TexGen(5, 1, 4, 0x2A, 0, 0x7D);
+    TexGen(6, 1, 4, 0x2D, 0, 0x7D);
+    c.r = c.g = c.b = c.a = 0x55;
+    GXSetTevColor(GX_TEVREG2, c);
+    TevStageSelect(0);
+    TevOrder(0, 1, 0, 0xff);
+    TevStageWords(0, 0x00F86F, 0x08FFF0);
+    TevStageSelect(1);
+    TevOrder(1, 2, 0, 0xff);
+    TevStageWords(1, 0x00F860, 0x08FFF0);
+    TevStageSelect(2);
+    TevOrder(2, 3, 0, 0xff);
+    TevStageWords(2, 0x00F860, 0x08FFF0);
+    TevStageSelect(3);
+    TevOrder(3, 4, 0, 0xff);
+    TevStageWords(3, 0x00F860, 0x08FFF0);
+    TevStageSelect(4);
+    TevOrder(4, 5, 0, 0xff);
+    TevStageWords(4, 0x00F860, 0x08FFF0);
+    TevStageSelect(5);
+    TevOrder(5, 6, 0, 0xff);
+    TevStageWords(5, 0x38F860, 0x08FFF0);
+    TevStageSelect(6);
+    TevOrder(6, 0, 0, 0xff);
+    TevStageWords(6, 0x0C8FF0, 0x08FFF0);
+    TevStageSelect(7);
+    TevOrder(7, 0xff, 0xff, 4);
+    TevStageWords(7, 0x3B0FA0, 0x08FFF0);
+    TevStageSelect(8);
+    TevOrder(8, 0xff, 0xff, 0xff);
+    TevStageWords(8, 0x08240F, 0x08DFF0);
+}
+
+// 0x80106AE0 the same seven-sample ring with thirteen stages (blends a texture with its offsets).
+extern "C" void fn_80106AE0(float x, float y) {   // called from other units
+    Mtx m;
+    float hx;
+    float hy;
+    float nx;
+    TevStateReset();
+    GXSetNumTevStages(13);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(7);
+    GfxSetChannelEnables(0, 0, 0);
+    PSMTXTrans(m, x, 0.0f, 0.0f);
+    GXLoadTexMtxImm(m, 0x1E, GX_MTX2x4);
+    PSMTXTrans(m, -1.0f * x, 0.0f, 0.0f);
+    GXLoadTexMtxImm(m, 0x21, GX_MTX2x4);
+    hx = 0.5f * x;
+    hy = 0.866f * y;
+    PSMTXTrans(m, hx, hy, 0.0f);
+    GXLoadTexMtxImm(m, 0x24, GX_MTX2x4);
+    nx = -0.5f * x;
+    PSMTXTrans(m, nx, hy, 0.0f);
+    GXLoadTexMtxImm(m, 0x27, GX_MTX2x4);
+    hy = -0.866f * y;
+    PSMTXTrans(m, hx, hy, 0.0f);
+    GXLoadTexMtxImm(m, 0x2A, GX_MTX2x4);
+    PSMTXTrans(m, nx, hy, 0.0f);
+    GXLoadTexMtxImm(m, 0x2D, GX_MTX2x4);
+    TexGen(0, 1, 4, 0x3C, 0, 0x7D);
+    TexGen(1, 1, 4, 0x1E, 0, 0x7D);
+    TexGen(2, 1, 4, 0x21, 0, 0x7D);
+    TexGen(3, 1, 4, 0x24, 0, 0x7D);
+    TexGen(4, 1, 4, 0x27, 0, 0x7D);
+    TexGen(5, 1, 4, 0x2A, 0, 0x7D);
+    TexGen(6, 1, 4, 0x2D, 0, 0x7D);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 0xff);
+    TevStageWords(0, 0x488FFF, 0x08FFF0);
+    TevStageSelect(1);
+    TevOrder(1, 1, 0, 0xff);
+    TevStageWords(1, 0x3B28CF, 0x08FFF0);
+    TevStageSelect(2);
+    TevOrder(2, 1, 0, 0xff);
+    TevStageWords(2, 0x48820F, 0x08FFF0);
+    TevStageSelect(3);
+    TevOrder(3, 2, 0, 0xff);
+    TevStageWords(3, 0x3B28CF, 0x08FFF0);
+    TevStageSelect(4);
+    TevOrder(4, 2, 0, 0xff);
+    TevStageWords(4, 0x48820F, 0x08FFF0);
+    TevStageSelect(5);
+    TevOrder(5, 3, 0, 0xff);
+    TevStageWords(5, 0x3B28CF, 0x08FFF0);
+    TevStageSelect(6);
+    TevOrder(6, 3, 0, 0xff);
+    TevStageWords(6, 0x48820F, 0x08FFF0);
+    TevStageSelect(7);
+    TevOrder(7, 4, 0, 0xff);
+    TevStageWords(7, 0x3B28CF, 0x08FFF0);
+    TevStageSelect(8);
+    TevOrder(8, 4, 0, 0xff);
+    TevStageWords(8, 0x48820F, 0x08FFF0);
+    TevStageSelect(9);
+    TevOrder(9, 5, 0, 0xff);
+    TevStageWords(9, 0x3B28CF, 0x08FFF0);
+    TevStageSelect(10);
+    TevOrder(10, 5, 0, 0xff);
+    TevStageWords(10, 0x48820F, 0x08FFF0);
+    TevStageSelect(11);
+    TevOrder(11, 6, 0, 0xff);
+    TevStageWords(11, 0x3B28CF, 0x08FFF0);
+    TevStageSelect(12);
+    TevOrder(12, 6, 0, 4);
+    TevStageWords(12, 0x08820F, 0x08BFF0);
 }
