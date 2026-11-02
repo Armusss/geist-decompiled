@@ -398,7 +398,6 @@ int fn_80087428(void);
 
 // TODO (not drafted yet, 0x720 bytes at 0x80086B9C): fn_80086B9C, the "AppMain" loop (pre-load, fade in, FPS counter, fade out)
 // TODO (not drafted yet, 0x3C8 bytes at 0x80087428): fn_80087428, loading/splash screen state machine
-// TODO (not drafted yet, 0x3C0 bytes at 0x800877F0): fn_800877F0, per-frame render of all views
 // TODO (not drafted yet, 0x314 bytes at 0x80087BB0): fn_80087BB0
 // TODO (not drafted yet, 0x47C bytes at 0x800880F8): fn_800880F8, chunk 0x38 handler
 void fn_800880F8(int a, int size, int* out, int b);
@@ -720,4 +719,118 @@ extern "C" void fn_80088574(void)
     fn_80115A34(0, 1, rect);
     fn_80006D20();
     fn_80006558(1);
+}
+
+// Layout of one split-screen configuration (count of views, one value per view, then the two overlays).
+struct ViewSet {
+    int mCount;       // 0x00
+    int mView[4];     // 0x04
+    int mUnk14;       // 0x14
+    int mUnk18[5];    // 0x18
+    u8 mUnk2C[0x38 - 0x2C];  // 0x2C
+    int mUnk38;       // 0x38
+    int mUnk3C[5];    // 0x3C
+    u8 mUnk50[0x5C - 0x50];  // 0x50
+    int mMode;        // 0x5C
+};
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+int fn_802A1E90(void);
+ViewSet* fn_802A1EBC(int layout);
+int fn_800FC3B8(int what);
+int fn_800C5E74(int view);
+void fn_80009E44(int a, int b);
+void fn_80008E5C(int a);
+void fn_8015779C(float dt, int pass, int view, int flag);
+void fn_8000761C(int a, int* b);
+void fn_80007400(int a, int* b);
+int fn_80220A38(void);
+void fn_80215A24(void);
+void fn_80215654(void);
+void fn_8000ADD8(void);
+#ifdef __cplusplus
+}
+#endif
+ViewSet* LevelSlotCurrent(void);
+
+extern int lbl_804D46D8;  // letterbox borders enabled
+extern int lbl_804D29F0;  // border width
+extern int lbl_804D29F4;  // border height
+extern int lbl_804D29F8;  // border colour
+extern int lbl_804D29FC;
+extern int lbl_804D46DC;
+extern int lbl_804D46E0;
+
+// Renders one frame: every active view of the current layout, then the overlays and the borders.
+void AppRenderFrame(float dt)
+{
+    int* p;
+    int i;
+    ViewSet* set;
+    int flag;
+    int layout;
+    layout = fn_802A1E90();
+    set = LevelSlotCurrent();
+    GfxFrameEnd();
+    GfxFrameSwap();
+    if (layout <= 6) {
+        if (set->mCount == 2) {
+            if (gWideScreen != 0) {
+                set = fn_802A1EBC(5);
+            } else {
+                set = fn_802A1EBC(1);
+            }
+        } else if (set->mCount == 3) {
+            if (gWideScreen != 0) {
+                if (fn_800FC3B8(4) != 0) {
+                    set = fn_802A1EBC(6);
+                } else {
+                    set = fn_802A1EBC(2);
+                }
+            } else {
+                if (fn_800FC3B8(4) != 0) {
+                    set = fn_802A1EBC(4);
+                } else {
+                    set = fn_802A1EBC(2);
+                }
+            }
+        }
+    }
+    {
+        u32 x = set->mCount ^ 1;
+        flag = (u32)(((int)x >> 1) - (x & set->mCount)) >> 31;
+    }
+    for (p = (int*)set, i = 0; i < set->mCount; i++, p++) {
+        if (fn_800C5E74(i) != 0) {
+            fn_80009E44(p[1], 0);
+            fn_80008E5C(set->mMode);
+            fn_8015779C(dt, 0, i, flag);
+        }
+    }
+    fn_800C5E74(0);
+    fn_80009E44(0, 0);
+    fn_80008E5C(0);
+    if (set->mUnk14 != 0) {
+        fn_8000761C(set->mUnk14, set->mUnk18);
+    }
+    if (set->mUnk38 != 0) {
+        fn_80007400(set->mUnk38, set->mUnk3C);
+    }
+    fn_8015779C(dt, 1, -1, flag);
+    if (fn_80220A38() == 4) {
+        fn_80215A24();
+    }
+    fn_80215654();
+    if (lbl_804D46D8 != 0) {
+        Draw2DBegin();
+        DrawTexQuad(-3, lbl_804D686C, lbl_804D686C, (float)lbl_804D29F0, lbl_804D6884, lbl_804D29F8, lbl_804D46DC, lbl_804D46E0, lbl_804D29FC);
+        DrawTexQuad(-3, (float)(640 - lbl_804D29F0), lbl_804D686C, lbl_804D6888, lbl_804D6884, lbl_804D29F8, lbl_804D46DC, lbl_804D46E0, lbl_804D29FC);
+        DrawTexQuad(-3, (float)lbl_804D29F0, (float)(480 - lbl_804D29F4), (float)(640 - lbl_804D29F0), lbl_804D6884, lbl_804D29F8, lbl_804D46DC, lbl_804D46E0, lbl_804D29FC);
+        DrawTexQuad(-3, (float)lbl_804D29F0, lbl_804D686C, (float)(640 - lbl_804D29F0), (float)lbl_804D29F4, lbl_804D29F8, lbl_804D46DC, lbl_804D46E0, lbl_804D29FC);
+        Draw2DEnd();
+    }
+    GfxFrameBegin();
+    fn_8000ADD8();
 }
