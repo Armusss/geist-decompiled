@@ -287,9 +287,9 @@ int FollowState1Update(void* owner) {
         f32 d2 = ActorAimAngleToPos(target, other->pos);
         f32 s = OwnerValue((Owner*)other, target);
         f32 t = OwnerValue((Owner*)a, target);
-        if (s < sFollowScale * t && __fabsf(d2) < 40.0f)
+        if (sFollowScale * t > s && __fabsf(d2) < 40.0f)
             return 2;
-        if (50.0f < __fabsf(d1))
+        if (__fabsf(d1) > 50.0f)
             return 2;
     }
     if (fn_800BAF40(a) == -1)
@@ -341,11 +341,10 @@ int FollowState0Update(void* owner) {
         }
         target = (Actor*)FollowGetTargetObj(a->conditions);
         if (target != 0) {
-            Reply400 r2;
-            if (SendMsg(a->targetId, 0x400, &r2) == 0 || r2.hit == 0)
-                r2.actor = 0;
-            if (r2.actor != 0) {
-                f32 s = OwnerValue((Owner*)r2.actor, target);
+            if (SendMsg(a->targetId, 0x400, &reply) == 0 || reply.hit == 0)
+                reply.actor = 0;
+            if (reply.actor != 0) {
+                f32 s = OwnerValue((Owner*)reply.actor, target);
                 f32 t = OwnerValue((Owner*)a, target);
                 if (s <= t)
                     return 2;
@@ -358,3 +357,12 @@ int FollowState0Update(void* owner) {
     }
     return b->state;
 }
+
+// ---- Functions not drafted yet (declarations only; retail assembly is used for them) ----
+// TODO (not drafted yet, 0x504 bytes at 0x802C9818): actor message handler (first function of the unit)
+extern "C" void fn_802C9818();
+// TODO (not drafted yet, 0x7EC bytes at 0x802C9D1C): per-frame state dispatcher (fn_802C9D1C, declared above)
+// TODO (not drafted yet, 0x660 bytes at 0x802CAFF4): actor update
+extern "C" void fn_802CAFF4();
+// TODO (not drafted yet, 0x4F0 bytes at 0x802CB654): actor message handler
+extern "C" void fn_802CB654();
