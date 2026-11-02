@@ -197,6 +197,37 @@ extern int lbl_80496C98[16];
 u32 AssetFind(u32 table, u32 key);
 extern "C" int fn_801B7B88(int action, void* p);
 
+// Per-enemy data block (descriptive guess; only the fields used here).
+struct EnemyData {
+    int f0;          // 0x00
+    int state;       // 0x04
+    int f8;          // 0x08
+    u8 padC[0x14 - 0xC];
+    int f14;         // 0x14
+    u8 pad18[0x24 - 0x18];
+    float f24;       // 0x24
+    u8 pad28[0x50 - 0x28];
+    float f50;       // 0x50
+};
+
+// Behaviour object with a data block at 0x130 (descriptive guess).
+struct EnemyObj {
+    u8 pad00[0x130];
+    EnemyData* data; // 0x130
+    u8 pad134[0x91C - 0x134];
+    float f91C;      // 0x91C
+};
+
+inline float Lerp(float lo, float hi, float t) {
+    float d = hi - lo;
+    return lo + d * t;
+}
+extern float lbl_804D31A8;
+extern float lbl_804D31AC;
+extern "C" int rand();
+extern "C" void fn_8016EEF4(int v);
+extern "C" void fn_80073E80(Actor* a);
+
 // TODO (not drafted yet, 0x500 bytes at 0x801AE50C): game logic
 extern "C" void fn_801AE50C();
 
@@ -239,8 +270,10 @@ extern "C" void fn_801AF7EC();
 // TODO (not drafted yet, 0x300 bytes at 0x801AFF7C): game logic
 extern "C" void fn_801AFF7C();
 
-// TODO (not drafted yet, 0x14 bytes at 0x801B027C): game logic
-extern "C" void fn_801B027C();
+int EnemyMsg801B027C(EnemyObj* o) {
+    o->data->f14 = 0;
+    return 1;
+}
 
 int AiReturnTrue_801B0290() {
     return 1;
@@ -254,17 +287,32 @@ int AiReturnTrue_801B02A0() {
     return 1;
 }
 
-// TODO (not drafted yet, 0x14 bytes at 0x801B02A8): game logic
-extern "C" void fn_801B02A8();
+int EnemyMsg801B02A8(EnemyObj* o) {
+    o->data->f8 = -1;
+    return 1;
+}
 
-// TODO (not drafted yet, 0x14 bytes at 0x801B02BC): game logic
-extern "C" void fn_801B02BC();
+int EnemyMsg801B02BC(EnemyObj* o) {
+    o->data->f8 = -1;
+    return 1;
+}
 
-// TODO (not drafted yet, 0x14 bytes at 0x801B02D0): game logic
-extern "C" void fn_801B02D0();
+int EnemyMsg801B02D0(EnemyObj* o) {
+    o->data->f8 = -1;
+    return 1;
+}
 
-// TODO (not drafted yet, 0xA0 bytes at 0x801B02E4): game logic
-extern "C" void fn_801B02E4();
+int EnemyMsg801B02E4(EnemyObj* o) {
+    EnemyData* d = o->data;
+    d->f8 = -1;
+    o->f91C = 1.0f;
+    if (-1.0f != d->f50) {
+        fn_8016EEF4((int)d->f50);
+        d->f50 = -1.0f;
+    }
+    d->f24 = Lerp(lbl_804D31A8, lbl_804D31AC, (float)rand() / 32767.0f);
+    return 1;
+}
 
 // TODO (not drafted yet, 0x2D0 bytes at 0x801B0384): game logic
 extern "C" void fn_801B0384();
@@ -394,8 +442,22 @@ void AiState801B4914(Actor* a) {
     PlayerSetValue4(&a->state, 0x15);
 }
 
-// TODO (not drafted yet, 0xB0 bytes at 0x801B4A10): game logic
-extern "C" void fn_801B4A10();
+void AiState801B4A10(Actor* a, float dt) {
+    PlayerResetGunTimer(a);
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    fn_800769A0(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
+    PlayerSetValue4(&a->state, 3);
+    PlayerInHost(a);
+    if (a->unk328 & 1) {
+        if (PlayerInHost(a) != 0) {
+            if (!(a->flags7B4 & 0x40000) && !(a->flags7B4 & 0x80000)) {
+                fn_80073E80(a);
+            }
+        }
+    }
+}
 
 void AiState801B4AC0(Actor* a) {
     int idx = PlayerInHost(a);
@@ -540,20 +602,56 @@ void AiState801B58F0(Actor* a, float dt) {
 // TODO (not drafted yet, 0x158 bytes at 0x801B5948): game logic
 extern "C" void fn_801B5948();
 
-// TODO (not drafted yet, 0x9C bytes at 0x801B5AA0): game logic
-extern "C" void fn_801B5AA0();
+void AiState801B5AA0(Actor* a, float dt) {
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    fn_800769A0(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
+    if (a->unk328 & 1) {
+        if (PlayerInHost(a) != 0) {
+            if (!(a->flags7B4 & 0x40000) && !(a->flags7B4 & 0x80000)) {
+                fn_80073E80(a);
+            }
+        }
+    }
+    PlayerSetValue4(&a->state, 3);
+}
 
 // TODO (not drafted yet, 0x1F8 bytes at 0x801B5B3C): game logic
 extern "C" void fn_801B5B3C();
 
-// TODO (not drafted yet, 0x9C bytes at 0x801B5D34): game logic
-extern "C" void fn_801B5D34();
+void AiState801B5D34(Actor* a, float dt) {
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    fn_800769A0(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
+    if (a->unk328 & 1) {
+        if (PlayerInHost(a) != 0) {
+            if (!(a->flags7B4 & 0x40000) && !(a->flags7B4 & 0x80000)) {
+                fn_80073E80(a);
+            }
+        }
+    }
+    PlayerSetValue4(&a->state, 3);
+}
 
 // TODO (not drafted yet, 0x1F8 bytes at 0x801B5DD0): game logic
 extern "C" void fn_801B5DD0();
 
-// TODO (not drafted yet, 0x9C bytes at 0x801B5FC8): game logic
-extern "C" void fn_801B5FC8();
+void AiState801B5FC8(Actor* a, float dt) {
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    fn_800769A0(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
+    if (a->unk328 & 1) {
+        if (PlayerInHost(a) != 0) {
+            if (!(a->flags7B4 & 0x40000) && !(a->flags7B4 & 0x80000)) {
+                fn_80073E80(a);
+            }
+        }
+    }
+    PlayerSetValue4(&a->state, 1);
+}
 
 // TODO (not drafted yet, 0x180 bytes at 0x801B6064): game logic
 extern "C" void fn_801B6064();
@@ -582,8 +680,20 @@ extern "C" void fn_801B6C18();
 // TODO (not drafted yet, 0x1B0 bytes at 0x801B6F50): game logic
 extern "C" void fn_801B6F50();
 
-// TODO (not drafted yet, 0x9C bytes at 0x801B7100): game logic
-extern "C" void fn_801B7100();
+void AiState801B7100(Actor* a, float dt) {
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    fn_800769A0(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
+    if (a->unk328 & 1) {
+        if (PlayerInHost(a) != 0) {
+            if (!(a->flags7B4 & 0x40000) && !(a->flags7B4 & 0x80000)) {
+                fn_80073E80(a);
+            }
+        }
+    }
+    PlayerSetValue4(&a->state, 3);
+}
 
 // TODO (not drafted yet, 0x180 bytes at 0x801B719C): game logic
 extern "C" void fn_801B719C();
