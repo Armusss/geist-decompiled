@@ -36,6 +36,7 @@ extern "C" void fn_800BBCA8(void* o);
 extern "C" void fn_8029B070(void* o, int v);
 extern "C" void fn_800C9ED0(void* o);
 extern "C" void fn_8016EDD4(int v);
+extern "C" char* strcpy(char* dst, const char* src);
 extern "C" char* strncpy(char* dst, const char* src, u32 n);
 
 // Condition-carrying object (the condition block sits at +0x270).
@@ -341,7 +342,29 @@ void AudioPauseAll() {
     fn_80170E60(0);
 }
 
-// TODO (not drafted yet, 0x9C bytes at 0x802A1DEC): not analysed
+extern "C" void MusicResume();
+extern int lbl_804A46F8_arr[];
+
+// Pushes a new level-state value (1..8) on the 5-deep stack and returns the previous top.
+int LevelFlagPush(int v) {
+    if (v < 1 || v > 8) {
+        return 0;
+    }
+    int n = lbl_804D5734 + 1;
+    (&lbl_804A46F8)[lbl_804D5734] = lbl_804D572C;
+    lbl_804D5734 = 5;
+    if (n < 5) {
+        lbl_804D5734 = n;
+    }
+    lbl_804D5730 = v;
+    if (v == 3) {
+        MusicResume();
+        fn_8016F6A0(1);
+        fn_80170E60(1);
+    }
+    return lbl_804A46F4[lbl_804D5734];
+}
+
 extern void* lbl_804D3858;
 void* LevelSlotCurrent() {
     return lbl_804D3858;
@@ -358,8 +381,28 @@ void* fn_802A1EBC(u32 index) {
     return lbl_804D3858;
 }
 
-// TODO (not drafted yet, 0x98 bytes at 0x802A1F08): not analysed
-extern "C" char* strcpy(char* dst, const char* src);
+extern "C" char* strchr(const char* s, int c);
+extern "C" char* strrchr(const char* s, int c);
+extern char lbl_804A46B8[];
+
+// Returns the file-name part of the current level path, without extension.
+char* LevelFileName() {
+    strcpy(lbl_804A46B8, lbl_804A4598);
+    char* dot = strchr(lbl_804A46B8, '.');
+    if (dot != 0) {
+        *dot = 0;
+    }
+    char* slash = strrchr(lbl_804A46B8, '/');
+    if (slash == 0) {
+        slash = strrchr(lbl_804A46B8, '\\');
+        if (slash == 0) {
+            return lbl_804A46B8;
+        }
+        return slash + 1;
+    }
+    return slash + 1;
+}
+
 void LevelNameSet(const char* name) {
     strcpy(lbl_804A4598, name);
 }
@@ -382,18 +425,88 @@ float TimeScaleValue() {
     return lbl_804DA820;
 }
 
-// TODO (not drafted yet, 0xA8 bytes at 0x802A20A4): not analysed
-// TODO (not drafted yet, 0xC4 bytes at 0x802A214C): not analysed
+struct ListNode {
+    char pad00[0x38];
+    int id;             // 0x38
+    char pad3C[0xFB0 - 0x3C];
+    ListNode* next;     // 0xFB0
+    ListNode* prev;     // 0xFB4
+};
+extern ListNode* lbl_804D5740;
+extern int lbl_804D5744;
+extern "C" void fn_8000F60C(int id);
+extern "C" void fn_8021284C(int id);
+extern "C" void fn_802A2210(int a, int b, int* c, int d);
+extern "C" void fn_80026660(int a, void (*fn)(int, int, int*, int), int b);
+void ActorUnlinkOwnerObjects(Actor* a);                 // 0x80022FF0
+
+// Frees every node of the global list.
+static inline void ListFreeAll() {
+    ListNode* n;
+    while ((n = lbl_804D5740) != 0) {
+        if (lbl_804D5740 != 0) {
+            fn_8000F60C(AssetFind(0xF2E2BEB8, 0xFAC4DCB6));
+            fn_8021284C(n->id);
+            ActorUnlinkOwnerObjects((Actor*)n);
+            if (n->next != 0) {
+                n->next->prev = n->prev;
+            }
+            if (n->prev != 0) {
+                n->prev->next = n->next;
+            }
+            if (lbl_804D5740 == n) {
+                lbl_804D5740 = n->next;
+            }
+            VFree(n);
+        }
+    }
+}
+
+extern "C" void fn_802A20A4(void);
+void fn_802A20A4(void) {
+    ListFreeAll();
+}
+
+extern "C" void fn_802A214C(void);
+void fn_802A214C(void) {
+    ListFreeAll();
+    lbl_804D5744 = 0;
+    fn_80026660(0x61, fn_802A2210, 0);
+}
+
 // TODO (not drafted yet, 0x428 bytes at 0x802A2210): not analysed
 // TODO (not drafted yet, 0x410 bytes at 0x802A2638): not analysed
-extern "C" void fn_802A2210(int a, int b, int* c, int d);
 void ActorMsgForward(int a, int* b) {
     fn_802A2210(*(int*)(*b + 0x38), a, b, 0);
 }
 
 // TODO (not drafted yet, 0x218 bytes at 0x802A2A7C): not analysed
 // TODO (not drafted yet, 0x95C bytes at 0x802A2C94): not analysed
-// TODO (not drafted yet, 0x98 bytes at 0x802A35F0): not analysed
+int StructCopy18(u32* src, u32* dst) {
+    dst[0] = src[0];
+    dst[1] = src[1];
+    dst[2] = src[2];
+    dst[3] = src[3];
+    dst[4] = src[4];
+    dst[5] = src[5];
+    dst[6] = src[6];
+    dst[7] = src[7];
+    dst[8] = src[8];
+    dst[9] = src[9];
+    u32 a = src[11];
+    dst[10] = src[10];
+    dst[11] = a;
+    u32 b = src[13];
+    dst[12] = src[12];
+    dst[13] = b;
+    dst[14] = src[14];
+    u32 c = src[16];
+    dst[15] = src[15];
+    dst[16] = c;
+    dst[17] = src[17];
+    return 1;
+}
+
 // TODO (not drafted yet, 0xF0 bytes at 0x802A3688): not analysed
 // TODO (not drafted yet, 0xEC bytes at 0x802A3778): not analysed
 // TODO (not drafted yet, 0x254 bytes at 0x802A3864): not analysed
@@ -452,7 +565,24 @@ void EmptyRangeLoopB(void* begin, void* end) {
 
 // TODO (not drafted yet, 0x84 bytes at 0x802A3EFC): not analysed
 // TODO (not drafted yet, 0x250 bytes at 0x802A3F80): not analysed
-// TODO (not drafted yet, 0x9C bytes at 0x802A41D0): not analysed
+extern "C" int rand(void);
+extern float lbl_804DA8B8;
+extern float lbl_804DA8BC;
+extern float lbl_804DA8C0;
+
+struct JitterObj {
+    char pad00[0x8C];
+    float f8C;          // 0x8C
+    float f90;          // 0x90
+};
+
+// Randomises two offsets of the object.
+int JitterObjRandomize(int unused, JitterObj* o) {
+    o->f8C = lbl_804DA8BC * ((float)rand() / lbl_804DA8B8) - lbl_804DA8C0;
+    o->f90 = lbl_804DA8BC * ((float)rand() / lbl_804DA8B8) - lbl_804DA8C0;
+    return 1;
+}
+
 void HostFxA(int unused, HostObjFx* o) {
     if (o->model != -1) {
         char m[0x30];
