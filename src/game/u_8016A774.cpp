@@ -179,7 +179,7 @@ struct SltEffectList {
 
 // Unit data.
 u32 sLoadedMask;   // 0x804D4F20  one bit per in-use slot
-u32 sInputLock;    // 0x804D4F24
+int sInputLock;    // 0x804D4F24
 u32 sHandleSeq;    // 0x804D4F28
 s8 sLBoxOn;        // 0x804D4F2C
 
@@ -317,8 +317,11 @@ int SltMsgHandler(int actor, int msg, void* data) {
 
 // 0x8016A9B8
 int SltUpdate(void) {
+    int i;
+    int j;
+    int result;
     int pressed = 0;
-    int result = 0;
+    result = 0;
 
     if (sInputLock == 0) {
         if (PadPressed(0, 0, 2) == 2) {
@@ -326,11 +329,11 @@ int SltUpdate(void) {
         }
     }
     if (pressed) {
-        for (int i = 0; i < 2; i++) {
+        for (i = 0; i < 2; i++) {
             if (sSlots[i].ptr != 0 && pressed) {
                 if (fn_802810BC(sSlots[i].unk20) != 0) {
                     if ((sSlots[i].flags & 0x200) == 0 && (sSlots[i].flags & 0x400) == 0) {
-                        for (int j = 0; j < sSlots[i].ptr->count; j++) {
+                        for (j = 0; j < sSlots[i].ptr->count; j++) {
                             if (sSlots[i].ptr->subs[j].type == 'R') {
                                 if ((sSlots[i].flags & 4) == 0 && (sSlots[i].flags & 0x80) == 0) {
                                     if (Fn800816B0() > 0) {
@@ -354,7 +357,7 @@ int SltUpdate(void) {
         }
     }
 
-    for (int i = 0; i < 2; i++) {
+    for (i = 0; i < 2; i++) {
         if (sSlots[i].ptr != 0) {
             if (sSlots[i].flags & 0x400) {
                 SltIdMsg unload;
@@ -372,7 +375,7 @@ int SltUpdate(void) {
                 sSlots[i].flags &= ~0x200;
                 sSlots[i].flags |= 0x400;
             } else {
-                for (int j = 0; j < sSlots[i].ptr->count; j++) {
+                for (j = 0; j < sSlots[i].ptr->count; j++) {
                     if (sSlots[i].ptr->subs[j].type == 'R') {
                         if (Fn800816B0() > sSlots[i].unk14) {
                             u32 a = sSlots[i].unk24;
