@@ -1063,8 +1063,39 @@ void AiState801B6790(Actor* a) {
     a->animFlagFC = 1;
 }
 
-// TODO (not drafted yet, 0x294 bytes at 0x801B6890): game logic
-extern "C" void fn_801B6890();
+void AiState801B6890(Actor* a, float dt) {
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    fn_800769A0(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
+    PlayerSetValue4(&a->state, 5);
+    if (a->unk328 & 1) {
+        if (PlayerInHost(a) != 0) {
+            if (!(a->flags7B4 & 0x40000) && !(a->flags7B4 & 0x80000)) {
+                fn_80073E80(a);
+            }
+        }
+    }
+    if ((a->flags31C & 1) && a->unk1D94 == 0) {
+        int id1;
+        int id2;
+        QueryGet(&id1, a->handle, 0x2DA8293C);
+        QueryGet(&id2, a->handle, 0xDFF3097A);
+        fn_80048BA8(a, a->unk1D04, 1);
+        Fn800F7F5C(id1, id2, 0x0D19E338, fn_800498D0(a), a->unk1D04, a->unk14FC);
+        Fn800F7F5C(id1, id2, 0x4E424290, fn_800498D0(a), a->unk1D04, a->unk14FC);
+        if (a->state.cur != 3) {
+            PlayerSetHeldSlotMode(a, 7);
+        } else {
+            PlayerSetActionMode(a, 7);
+        }
+    }
+    float pos[3];
+    pos[0] = (float)a->px;
+    pos[1] = (float)a->py;
+    pos[2] = (float)a->pz;
+    fn_800B4C50(201.0f, 2500.0f, pos, a->handle, 2, 0x12);
+}
 
 void AiState801B6B24(Actor* a) {
     int idx = PlayerInHost(a);
