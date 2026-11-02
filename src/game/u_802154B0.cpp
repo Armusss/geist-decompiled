@@ -9,7 +9,7 @@ struct MenuItem;
 struct MenuOps;
 
 // A menu entry (button/toggle/slider state shared by the menu screens).
-struct MenuItem {
+struct MenuItemBase {
     u32 flags;     // 0x00 (bit 0 enabled, bit 16 pressed)
     int arg0;      // 0x04
     int arg1;      // 0x08
@@ -17,7 +17,20 @@ struct MenuItem {
     int arg3;      // 0x10
     float hold0;   // 0x14
     float hold;    // 0x18
-    MenuOps* ops;  // 0x1c
+};
+
+struct MenuItem : MenuItemBase {
+    virtual void v0();
+    virtual void v1();
+    virtual void v2();
+    virtual void v3();
+    virtual void v4();
+    virtual void v5();
+    virtual void v6();
+    virtual void activate(int flag); // vtable offset 0x24
+    virtual void v8();
+    virtual void close();            // vtable offset 0x2c
+    MenuItem(int a, int b, int c, int d);
 };
 
 // The menu screen that is currently shown.
@@ -272,15 +285,15 @@ int MenuItemPress(MenuItem* item) {
     return 0;
 }
 
-void MenuItemInit(MenuItem* item, int a, int b, int c, int d) {
-    item->ops = (MenuOps*)lbl_803BC970;
-    item->flags = 1;
-    item->arg0 = a;
-    item->arg1 = b;
-    item->arg2 = c;
-    item->arg3 = d;
-    item->hold0 = 0.0f;
-    item->hold = 0.0f;
+// MenuItem constructor (the vtable is at lbl_803BC970).
+MenuItem::MenuItem(int a, int b, int c, int d) {
+    flags = 1;
+    arg0 = a;
+    arg1 = b;
+    arg2 = c;
+    arg3 = d;
+    hold0 = 0.0f;
+    hold = 0.0f;
 }
 
 void MenuToggleA(int delta) {
@@ -364,19 +377,19 @@ void MenuScreenRun(MenuPage* page) {
 // MenuItemActivate: invoke the item class's activate slot when it is not held.
 void MenuItemActivate(MenuItem* item) {
     if (0.0f == item->hold) {
-        item->ops->activate(item, 1);
+        item->activate(1);
     }
 }
 
 void MenuItemActivate2(MenuItem* item) {
     if (0.0f == item->hold) {
-        item->ops->activate(item, 1);
+        item->activate(1);
     }
 }
 
 void MenuItemActivate3(MenuItem* item) {
     if (0.0f == item->hold) {
-        item->ops->activate(item, 1);
+        item->activate(1);
     }
 }
 
@@ -577,7 +590,7 @@ void MenuPageClose(MenuPage* page) {
         }
         p = page->items;
         for (i = 0; i < page->itemCount; i++) {
-            (*p)->ops->close(*p);
+            (*p)->close();
             p++;
         }
         page->unka8 = 0;
