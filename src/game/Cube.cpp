@@ -3,6 +3,10 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <dolphin/pad.h>
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+#include <dolphin/os.h>
+#include <string.h>
 
 typedef unsigned char u8;
 typedef unsigned short u16;
@@ -237,9 +241,6 @@ void fn_80093180(void);
 void fn_8002FAE4(void);
 void fn_80012ECC(void);
 void fn_800930D0(void);
-void GXSetScissorBoxOffset(int x, int y);
-void GXSetCullMode(int mode);
-void GXSetClipMode(int mode);
 }
 void TextureFlushReleases(void);
 void ModelFlushRequests(void);
@@ -257,12 +258,8 @@ extern int lbl_804D4060;
 extern int lbl_804D4048;
 extern u8 lbl_804D403C, lbl_804D403D, lbl_804D403E;
 extern u8 lbl_804D4040[4];   // clear color
-extern void* lbl_804D4024;
+extern int lbl_804D4024;
 extern char lbl_8034EE8C[];
-extern "C" char* strcpy(char* d, const char* s);
-extern "C" void OSPanic(const char* file, int line, const char* msg, ...);
-extern "C" int OSCheckHeap(void* heap);
-extern "C" void PSMTXCopy(void* src, void* dst);
 extern char lbl_803CFFE4[];
 
 // ResourceFlush: lets every cache release and request what it queued.
@@ -319,21 +316,21 @@ int SysHeapFreeBytes(void) { return OSCheckHeap(lbl_804D4024); }
 // GfxSetCullMode: swaps front/back culling when mirrored.
 void GfxSetCullMode(int mode) {
     if (lbl_804D4084 == 0) {
-        GXSetCullMode(mode);
+        GXSetCullMode((GXCullMode)mode);
     } else {
         if (mode == 1) {
             mode = 2;
         } else if (mode == 2) {
             mode = 1;
         }
-        GXSetCullMode(mode);
+        GXSetCullMode((GXCullMode)mode);
     }
 }
 
 extern "C" void fn_80008B94(int mode) {
     if (lbl_804D2548 != mode) {
         lbl_804D2548 = mode;
-        GXSetClipMode(0);
+        GXSetClipMode(GX_CLIP_ENABLE);
     }
 }
 
@@ -343,4 +340,139 @@ void FatalError(const char* msg) { OSPanic("Cube.cpp", 0xC5F, ""); }
 
 extern "C" float fn_80008C70(void) { return lbl_804D2540; }
 
-extern "C" void fn_80008C78(void* m) { PSMTXCopy(lbl_803CFFE4, m); }
+extern "C" void fn_80008C78(void* m) { PSMTXCopy((float(*)[4])lbl_803CFFE4, (float(*)[4])m); }
+
+
+extern "C" {
+void fn_8000FF7C(void);
+void fn_8010F7EC(void);
+void fn_801D8FC8(void);
+void fn_80013F50(void);
+void fn_80040600(void);
+double tan(double x);
+}
+void DeferFlush0to2(void);
+void MeshNop0(void);
+
+struct VtxDescSet {
+    GXVtxDescList list[6];
+};
+
+struct DebugLine {
+    int from[3];     // 0x00
+    int to[3];     // 0x0C
+    u8 r, g, b;      // 0x18
+    u8 pad1b;
+};
+
+extern int lbl_804D4038;
+extern int lbl_804D2530;
+extern VtxDescSet lbl_8034F018[];
+extern int lbl_803D712C[];
+extern int lbl_803D7328[];
+extern int lbl_804D4074;
+extern int lbl_804D407C;
+extern int lbl_804D4034;
+extern DebugLine lbl_803D0114[0x400];
+extern float lbl_804D2544;
+extern int lbl_804D4050;
+extern int lbl_804D4054;
+extern int lbl_804D4058;
+extern int lbl_804D2550;
+extern char lbl_803CFF80[];
+
+static inline void Ortho2D(float t, float b, float l, float r) {
+    Mtx44 id;
+    Mtx44 m;
+
+    C_MTXOrtho(m, t, b, l, r, 0.0f, -1.0f);
+    GXSetProjection(m, GX_ORTHOGRAPHIC);
+    PSMTX44Identity(id);
+    GXLoadPosMtxImm((float(*)[4])id, 0);
+    GXSetCurrentMtx(0);
+    lbl_804D4038 = 0;
+}
+
+// Draw2DBegin640x480
+extern "C" void fn_80008CA4(void) { Ortho2D(480.0f, 0.0f, 0.0f, 640.0f); }
+
+// Draw2DBeginUnit
+extern "C" void fn_80008D10(void) { Ortho2D(0.0f, 1.0f, 0.0f, 1.0f); }
+
+extern "C" void fn_80008D7C(void) {
+    lbl_804D2530 = -1;
+    fn_8000FF7C();
+    fn_8010F7EC();
+    fn_801D8FC8();
+}
+
+void GfxSetVtxDesc(int set) {
+    if (set != lbl_804D2530) {
+        GXClearVtxDesc();
+        GXSetVtxDescv(lbl_8034F018[set].list);
+        lbl_804D2530 = set;
+    }
+}
+
+extern "C" void fn_80008DFC(int i) {
+    lbl_803D712C[i] = lbl_804D4074 - lbl_803D712C[i];
+    lbl_803D7328[i] = lbl_804D407C - lbl_803D7328[i];
+}
+
+extern "C" void fn_80008E34(int i) {
+    lbl_803D712C[i] = lbl_804D4074;
+    lbl_803D7328[i] = lbl_804D407C;
+}
+
+extern "C" void fn_80008EF0(Vec* in, Vec* out) { PSMTX44MultVecSR((float(*)[4])lbl_803CFFE4, in, out); }
+
+extern "C" void fn_80008F24(Vec* in, Vec* out) { PSMTXMultVec((float(*)[4])lbl_803CFFE4, in, out); }
+
+extern "C" void fn_80008F58(void) { lbl_804D4034 = 0; }
+
+// DebugLineAdd: queues a colored debug line (up to 1024 per frame).
+extern "C" void fn_80009170(int* from, int* to, u8 r, u8 g, u8 b) {
+    int n = lbl_804D4034;
+    DebugLine* l;
+
+    if (n >= 0x400) {
+        return;
+    }
+    l = &lbl_803D0114[n];
+    l->from[0] = from[0];
+    l->from[1] = from[1];
+    l->from[2] = from[2];
+    l->to[0] = to[0];
+    l->to[1] = to[1];
+    l->to[2] = to[2];
+    l->r = r;
+    l->g = g;
+    l->b = b;
+    lbl_804D4034 = n + 1;
+}
+
+// Focal length in pixels for a field of view.
+extern "C" float fn_800097B4(void) { return 240.0f * (float)tan(1.5707964f - lbl_804D2544 * 0.5f); }
+
+extern "C" void fn_80009E10(void) {
+    lbl_804D2548 = -2;
+    DeferFlush0to2();
+    fn_80013F50();
+    fn_80040600();
+    MeshNop0();
+}
+
+extern "C" int fn_8000A9E0(void) {
+    if (lbl_804D4050 != 0 && lbl_804D4054 != 0) {
+        return 1;
+    }
+    return 0;
+}
+
+extern "C" void fn_8000AA08(void) { lbl_804D4058 = 0; }
+
+extern "C" void fn_8000AA14(void) { lbl_804D4058 = 1; }
+
+extern "C" void fn_8000ADD0(int v) { lbl_804D2550 = v; }
+
+extern "C" void fn_8000ADD8(void) {}
