@@ -222,6 +222,39 @@ extern "C" void fn_80050EB0(Actor* a);
 extern "C" int fn_800F7994(int a, u32 b);
 extern "C" int FxStart(void* fx, int a, int b);
 extern "C" int fn_8012AF68(Actor* a);
+
+// Weapon-object behaviour support (descriptive guesses; fields used by this file).
+struct FoeData {
+    int mode;        // 0x00
+    int h4;          // 0x04
+    int f8;          // 0x08
+    float fC;        // 0x0C
+    int f10;         // 0x10
+    int f14;         // 0x14
+    u8 pad18[0x24 - 0x18];
+    float f24;       // 0x24
+    u8 pad28[0x30 - 0x28];
+    int h30;         // 0x30
+};
+struct FoeBeh {
+    void (*notify)(u32 hash, void* obj); // 0x00
+    u8 pad04[0xE0 - 0x04];
+    FoeData* data;   // 0xE0
+};
+struct FoeObj {
+    u8 pad00[0x270];
+    u8 cond[0x18];   // 0x270
+    int f288;        // 0x288
+    u8 pad28C[0x894 - 0x28C];
+    u8 pad894[4];    // 0x894
+};
+extern "C" int fn_80162940(void* a, int b);
+extern "C" void fn_800B6CAC(void* o, void* cb);
+extern "C" void fn_800B6D04(void* o, void* cb);
+extern "C" void fn_800BBCA8(void* o);
+void ConditionUpdateBit(void* c, int bit, int on);
+void RangeResetPending(void* c);
+void FollowSetTargetObj(void* c, void* t);
 extern "C" int fn_800B93DC(int* list, int a, int* out, int b, int c);
 extern "C" int fn_800A2DE8(void* desc, int a, int b, int c);
 extern "C" void fn_800A3990(int id);
@@ -1317,32 +1350,123 @@ extern "C" void fn_8012FFCC();
 // TODO (not drafted yet, 0x76C bytes at 0x80130368): game logic
 extern "C" void fn_80130368();
 
-// TODO (not drafted yet, 0xB0 bytes at 0x80130AD4): game logic
-extern "C" void fn_80130AD4();
+int FoeCheckDown(FoeObj* o, FoeBeh* b) {
+    int r;
+    if (o == 0) {
+        r = 0;
+    } else {
+        FoeData* d = b->data;
+        if (fn_80162940(o->pad894, 0x1000) != 0) {
+            b->notify(0xE929ADB6, o);
+            r = 1;
+        } else if (d->h4 != -1) {
+            r = 1;
+        } else {
+            b->notify(0xACBEC0A8, o);
+            r = 1;
+        }
+    }
+    return r;
+}
 
-// TODO (not drafted yet, 0x70 bytes at 0x80130B84): game logic
-extern "C" void fn_80130B84();
+int FoeLeave(FoeObj* o, FoeBeh* b) {
+    FoeData* d = b->data;
+    if (d->f14 != 0) {
+        fn_800B6CAC(o, (void*)fn_8012F210);
+        d->f14 = 0;
+    }
+    ConditionUpdateBit(o->cond, 0x17, 0);
+    RangeResetPending(o->cond);
+    return 1;
+}
 
-// TODO (not drafted yet, 0x40 bytes at 0x80130BF4): game logic
-extern "C" void fn_80130BF4();
+int FoeDetach(FoeObj* o) {
+    fn_800BBCA8(o);
+    fn_800B6CAC(o, (void*)fn_8012EC3C);
+    return 1;
+}
 
-// TODO (not drafted yet, 0x8 bytes at 0x80130C34): game logic
-extern "C" void fn_80130C34();
+int FoeReturnTrue() {
+    return 1;
+}
 
-// TODO (not drafted yet, 0xE0 bytes at 0x80130C3C): game logic
-extern "C" void fn_80130C3C();
+int FoeEnterWait(FoeObj* o, FoeBeh* b) {
+    FoeData* d;
+    int msg[8];
+    if (o == 0) {
+        return 0;
+    }
+    {
+        d = b->data;
+        d->mode = 4;
+        d->f8 = 0;
+        d->fC = 1000.0f * ((float)rand() / 32767.0f) + 500.0f;
+        d->f10 = -1;
+        d->f14 = 0;
+        SendMsg(d->h4, 0x400, msg);
+        FollowSetTargetObj(o->cond, (void*)msg[0]);
+        ConditionUpdateBit(o->cond, 4, 1);
+        ConditionUpdateBit(o->cond, 3, 1);
+        o->f288 = 3;
+    }
+    return 1;
+}
 
-// TODO (not drafted yet, 0xB0 bytes at 0x80130D1C): game logic
-extern "C" void fn_80130D1C();
+int FoeEnterChase(FoeObj* o, FoeBeh* b) {
+    float t = 3000.0f;
+    if (o == 0) {
+        return 0;
+    }
+    int msg[8];
+    FoeData* d = b->data;
+    d->mode = 3;
+    d->f10 = -1;
+    d->f24 = t;
+    RangeResetPending(o->cond);
+    ConditionUpdateBit(o->cond, 3, 1);
+    ConditionUpdateBit(o->cond, 4, 1);
+    o->f288 = 0;
+    if (SendMsg(d->h30, 0x400, msg) != 0) {
+        FollowSetTargetObj(o->cond, (void*)msg[0]);
+    }
+    return 1;
+}
 
-// TODO (not drafted yet, 0xD8 bytes at 0x80130DCC): game logic
-extern "C" void fn_80130DCC();
+int FoeEnterTrack(FoeObj* o, FoeBeh* b) {
+    float t = 5000.0f;
+    if (o == 0 || b == 0) {
+        return 0;
+    }
+    int msg[8];
+    FoeData* d = b->data;
+    d->mode = 2;
+    d->f10 = -1;
+    d->f24 = t;
+    ConditionUpdateBit(o->cond, 3, 1);
+    ConditionUpdateBit(o->cond, 4, 1);
+    o->f288 = 3;
+    RangeResetPending(o->cond);
+    if (SendMsg(d->h30, 0x400, msg) != 0) {
+        FollowSetTargetObj(o->cond, (void*)msg[0]);
+        fn_800B6CAC(o, (void*)fn_8012EC3C);
+        fn_800B6D04(o, (void*)fn_8012EC3C);
+    }
+    return 1;
+}
 
 // TODO (not drafted yet, 0xF4 bytes at 0x80130EA4): game logic
 extern "C" void fn_80130EA4();
 
-// TODO (not drafted yet, 0x6C bytes at 0x80130F98): game logic
-extern "C" void fn_80130F98();
+int FoeEnterIdle(FoeObj* o, FoeBeh* b) {
+    if (o == 0) {
+        return 0;
+    }
+    b->data->mode = 0;
+    ConditionUpdateBit(o->cond, 4, 0);
+    ConditionUpdateBit(o->cond, 3, 1);
+    o->f288 = 3;
+    return 1;
+}
 
 // TODO (not drafted yet, 0x114 bytes at 0x80131004): game logic
 extern "C" void fn_80131004();
