@@ -12,7 +12,6 @@ typedef float f32;
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
 };
-static const char* sDestroyable = "Destroyable";
 
 
 class Actor;
