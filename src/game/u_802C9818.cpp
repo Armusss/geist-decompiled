@@ -78,7 +78,8 @@ int FollowStateLeave(Actor* a) {
 }
 
 // 0x802CAC90: enter state 1 and pick up the current follow target
-int FollowStateEnter1(Actor* a) {
+int FollowStateEnter1(void* owner) {
+    Actor* a = (Actor*)owner;
     void* target;
     a->block->state = 1;
     a->field288 = 0;
