@@ -82,7 +82,6 @@ struct HostObj {
     char pad7D4[0xC0];
     char anim894[0x1E4C]; // 0x894
     char sub26E0[8]; // 0x26E0
-    char pad26E4[0x4];
     int i26E8; // 0x26E8
     char pad26EC[0xB0];
     int i279C; // 0x279C
