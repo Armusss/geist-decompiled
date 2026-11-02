@@ -9,6 +9,8 @@
 typedef unsigned char u8;
 typedef unsigned long u32;
 
+#define fabs(x) __fabs(x)
+
 struct Vec3 {
     float x, y, z;
 };
@@ -19,13 +21,32 @@ struct Mtx33 {
 
 // Orientation followed by the position (a full 3x4 matrix).
 struct Mtx34 {
-    float m[3][4];
+    Mtx33 rot;
+    union {
+        Vec3 pos;
+        int ipos[3];
+    };
 };
+
+struct PlaceF;
+struct Bone;
 
 // Orientation (3x3) followed by the position.
 struct Place {
     Mtx33 rot;
     Vec3 pos;
+};
+
+// A linked actor and the bone of the parent it hangs on.
+struct LinkRef {
+    int id;    // 0x00
+    int bone;  // 0x04
+};
+
+// Orientation (quaternion) and offset of a linked actor relative to its parent.
+struct LinkPose {
+    float rot[4];  // 0x00
+    float pos[3];  // 0x10
 };
 
 // A linked actor in the tree.
@@ -35,11 +56,9 @@ struct ChildNode {
     ChildNode* mLast;    // 0x08
     ChildNode* mNext;    // 0x0C
     ChildNode* mPrev;    // 0x10
-    int mId;             // 0x14 linked actor
-    int mBone;           // 0x18 bone of the parent (-1 = none)
+    LinkRef mRef;        // 0x14 linked actor and the bone of the parent it hangs on (-1 = none)
     u32 mFlags;          // 0x1C 1 = relink, 2 = remove, 4/8 = keep offset, 0x10 = moved
-    float mRot[4];       // 0x20 relative orientation
-    float mPos[3];       // 0x30 relative offset
+    LinkPose mPose;      // 0x20 orientation (quaternion) and offset relative to the parent
 };
 
 struct ChildNodeTree;
@@ -109,8 +128,32 @@ struct PlayerAnimSet {
 
 // What OwnerGetInfo() returns for a linked actor id.
 struct ActorInfo {
-    u8 mUnk00[0x4C];  // 0x00
-    u32 mFlags;       // 0x4C 0x800 = linked
+    u8 mUnk00[0x38];  // 0x00
+    u32 mId;          // 0x38
+    u8 mUnk3C[0x4C - 0x3C];  // 0x3C
+    u32 mFlags;       // 0x4C 0x40 / 1 = moves by itself, 0x800 = linked
+};
+
+// Message 0x414: asks a moving actor to update for this frame.
+struct LinkMoveMsg {
+    ActorInfo* mOwner;  // 0x00
+    float mDt;          // 0x04
+    int mUnk8;          // 0x08
+    int mUnkC;          // 0x0C
+};
+
+// Message 0x413: hands an actor its new world matrix.
+struct LinkRotMsg {
+    int mUnk0;        // 0x00
+    Mtx34* mMtx;      // 0x04
+};
+
+// Reply buffer of the 0x411 placement query.
+struct PlaceQuery {
+    int mUnk0;
+    int mBone;
+    int mPad[2];
+    Mtx34 mPlace;
 };
 
 struct Actor {
@@ -164,6 +207,12 @@ int fn_800A384C(Actor* a);
 int fn_800A1BC8(int a, int b, int c, int d, int e);
 void fn_80050EB0(Actor* a);
 int fn_80049940(void);
+void fn_8009F63C(Mtx34* out, Mtx34* in);
+void fn_8009F44C(void* out, Mtx34* m, void* in);
+void fn_800A025C(Vec3* out, Mtx34* m, int row);
+void fn_800A0030(void* out, Mtx34* m, void* in);
+void fn_800A0168(Mtx34* out, Mtx34* in);
+void fn_8009FC6C(Mtx34* out, Mtx34* a, Mtx34* b);
 #ifdef __cplusplus
 }
 #endif
@@ -175,6 +224,11 @@ int SetChildNodeRootIfEmpty(ChildNode** root, ChildNode* node);
 ChildNode* DetachChildNode(ChildNode** root, ChildNode* node);
 ChildNode* ReparentChildNodes(ChildNode** root, ChildNode* dst, ChildNode* src);
 void BoneSetMatrix(void* dst, Mtx34* src);
+void LinkInfoInit(void* info);
+void ActorGetMatrix(Mtx34* out, Actor* in);
+void BoneWorldMatrix(Mtx34* out, Bone* rot, float* pos);
+void PlacementToMatrix(Mtx34* out, PlaceF* in);
+void MtxMulQ12(int* out, int* a, int* b);
 ChildNode* AppendChildNode(ChildNode** root, ChildNode* parent, ChildNode* node);
 void DetachChildNodeAndNotify(ChildNodeTree* tree, ChildNode* node);
 ChildNodeTree* FreeChildNodeTree(ChildNodeTree* tree, short freeTree);
@@ -207,7 +261,9 @@ static inline int* HostAnimEntry(int* table, int kind)
 }
 extern int lbl_8049E260[];
 extern const float lbl_804D94A8;  // 0.0f
-extern const float lbl_804D94AC;  // 1.0f       // 0x8049E260
+extern const float lbl_804D94AC;
+extern const float lbl_804D94B0;
+extern const float lbl_804D94B4;  // 1.0f       // 0x8049E260
 
 static ChildNodeTree* sLinkTree;
 static LinkRequest* sLinkQueue;
@@ -263,8 +319,8 @@ void LinkObjSysInit(void)
     sLinkTree = (ChildNodeTree*)mem;
     root = BlockListAlloc((BlockList*)sLinkTree);
     SetChildNodeRootIfEmpty((ChildNode**)sLinkTree, root);
-    root->mId = -1;
-    root->mBone = -1;
+    root->mRef.id = -1;
+    root->mRef.bone = -1;
     sLinkQueue = (LinkRequest*)MemAlloc(0x4400, "linkObjSys.c", 781);
     if (sLinkQueue) {
         memset(sLinkQueue, 0, 0x4400);
@@ -340,16 +396,16 @@ int LinkQueueAdd(int child, int parent, int bone, Place* place, u8 allowReverse,
 static inline ChildNode* LinkNodeCreate(int id, int bone)
 {
     ChildNode* node = BlockListAlloc((BlockList*)sLinkTree);
-    node->mId = id;
-    node->mBone = bone;
+    node->mRef.id = id;
+    node->mRef.bone = bone;
     node->mFlags = 0;
-    node->mRot[0] = lbl_804D94A8;
-    node->mRot[1] = lbl_804D94A8;
-    node->mRot[2] = lbl_804D94A8;
-    node->mRot[3] = lbl_804D94AC;
-    node->mPos[0] = lbl_804D94A8;
-    node->mPos[1] = lbl_804D94A8;
-    node->mPos[2] = lbl_804D94A8;
+    node->mPose.rot[0] = lbl_804D94A8;
+    node->mPose.rot[1] = lbl_804D94A8;
+    node->mPose.rot[2] = lbl_804D94A8;
+    node->mPose.rot[3] = lbl_804D94AC;
+    node->mPose.pos[0] = lbl_804D94A8;
+    node->mPose.pos[1] = lbl_804D94A8;
+    node->mPose.pos[2] = lbl_804D94A8;
     if (id != -1) {
         ActorInfo* info = OwnerGetInfo(id);
         if (info) {
@@ -378,13 +434,13 @@ static inline void LinkApply(LinkRequest* r, Place* place)
         childNode = DetachChildNode((ChildNode**)sLinkTree, childNode);
     }
     parentNode->mFlags = 1;
-    childNode->mBone = bone;
+    childNode->mRef.bone = bone;
     childNode->mFlags = flags;
     if (place) {
-        BoneSetMatrix(childNode->mRot, (Mtx34*)place);
-        childNode->mPos[0] = place->pos.x;
-        childNode->mPos[1] = place->pos.y;
-        childNode->mPos[2] = place->pos.z;
+        BoneSetMatrix(childNode->mPose.rot, (Mtx34*)place);
+        childNode->mPose.pos[0] = place->pos.x;
+        childNode->mPose.pos[1] = place->pos.y;
+        childNode->mPose.pos[2] = place->pos.z;
         childNode->mFlags = 0;
     } else {
         childNode->mFlags |= 1;
@@ -434,7 +490,7 @@ u8 LinkNodeRemove(ChildNode* node, void* arg)
         return 0;
     }
     if (node->mFlags & 2) {
-        ActorInfo* owner = OwnerGetInfo(node->mId);
+        ActorInfo* owner = OwnerGetInfo(node->mRef.id);
         if (owner) {
             owner->mFlags &= ~0x800;
         }
@@ -447,10 +503,220 @@ u8 LinkNodeRemove(ChildNode* node, void* arg)
     return 0;
 }
 
+// Whether an actor moves by itself (so a link to it has to ask it for its update).
+static inline u8 LinkOwnerIsDynamic(ActorInfo* owner)
+{
+    u8 result = 0;
+    if (owner != 0 && ((owner->mFlags & 0x40) || (owner->mFlags & 1) || (int)(owner->mId >> 24) == 0xC)) {
+        result = 1;
+    }
+    return result;
+}
+
+// Do the orientations of two matrices agree (each row's dot product is about 1)?
+static inline u8 LinkMatricesAgree(Mtx34* a, Mtx34* b)
+{
+    int i;
+    if (fabs(a->pos.x - b->pos.x) > lbl_804D94B0 || fabs(a->pos.y - b->pos.y) > lbl_804D94B0 ||
+        fabs(a->pos.z - b->pos.z) > lbl_804D94B0) {
+        return 0;
+    }
+    for (i = 0; i != 3; i++) {
+        Vec3 rowA;
+        Vec3 rowB;
+        fn_800A025C(&rowA, a, i);
+        fn_800A025C(&rowB, b, i);
+        if (fabs(lbl_804D94AC - (rowA.x * rowB.x + rowA.y * rowB.y + rowA.z * rowB.z)) > lbl_804D94B4) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+// Per-node pass: asks the linked actor whether it may keep its link, and flags the node when the
+// actor has moved relative to the pose we stored (so the next pass rebases it).
+u8 LinkNodeCheck(ChildNode* node, void* arg)
+{
+    ChildNode* parent = node->mParent;
+    ActorInfo* owner;
+    LinkMoveMsg moveMsg;
+    PlaceQuery q1;
+    PlaceQuery q2;
+    PlaceQuery q3;
+    PlaceQuery q4;
+    Mtx34 parentMtx;
+    Mtx34 childMtx;
+    Mtx34 worldMtx;
+    Mtx34 inv;
+    Mtx34 rel;
+    Mtx34 before;
+    Mtx34 after;
+    LinkRotMsg rotMsg;
+    if (parent == 0) {
+        return 0;
+    }
+    if (node->mFirst == 0 && parent != 0 && parent->mParent == 0) {
+        node->mFlags |= 2;
+        return 0;
+    }
+    owner = OwnerGetInfo(node->mRef.id);
+    if (owner == 0) {
+        node->mFlags |= 2;
+        return 0;
+    }
+    if (parent->mParent != 0) {
+        q1.mUnk0 = 0;
+        q1.mBone = node->mRef.bone;
+        if (SendMsg(parent->mRef.id, 0x411, &q1)) {
+            ActorGetMatrix(&parentMtx, (Actor*)&q1.mPlace);
+        } else {
+            LinkInfoInit(&parentMtx);
+        }
+        BoneWorldMatrix(&childMtx, (Bone*)node->mPose.rot, node->mPose.pos);
+        PlacementToMatrix(&rel, (PlaceF*)&parentMtx);
+        PlacementToMatrix(&inv, (PlaceF*)&childMtx);
+        fn_8009F63C(&before, &rel);
+        fn_8009F44C(&inv.pos, &before, &inv.pos);
+        inv.ipos[0] += rel.ipos[0];
+        inv.ipos[1] += rel.ipos[1];
+        inv.ipos[2] += rel.ipos[2];
+        MtxMulQ12((int*)&inv, (int*)&inv, (int*)&rel);
+        ActorGetMatrix(&childMtx, (Actor*)&inv);
+        PlacementToMatrix(&worldMtx, (PlaceF*)&childMtx);
+        rotMsg.mMtx = &worldMtx;
+        SendMsg(node->mRef.id, 0x413, &rotMsg);
+    }
+    if (parent->mParent != 0) {
+        q2.mUnk0 = 0;
+        q2.mBone = -1;
+        if (SendMsg(node->mRef.id, 0x411, &q2)) {
+            ActorGetMatrix(&before, (Actor*)&q2.mPlace);
+        } else {
+            LinkInfoInit(&before);
+        }
+    }
+    if (owner != 0) {
+        if (LinkOwnerIsDynamic(owner)) {
+            moveMsg.mOwner = owner;
+            moveMsg.mDt = *(float*)arg;
+            moveMsg.mUnk8 = 0;
+            moveMsg.mUnkC = 0;
+            if (!SendMsg(owner->mId, 0x414, &moveMsg)) {
+                node->mFlags |= 2;
+                return 0;
+            }
+        }
+    }
+    if (parent->mParent != 0) {
+        q3.mUnk0 = 0;
+        q3.mBone = -1;
+        if (SendMsg(node->mRef.id, 0x411, &q3)) {
+            ActorGetMatrix(&after, (Actor*)&q3.mPlace);
+        } else {
+            LinkInfoInit(&after);
+        }
+    }
+    if (parent->mParent != 0) {
+        if (!LinkMatricesAgree(&before, &after)) {
+            node->mFlags |= 0x10;
+        }
+    }
+    return 0;
+}
+
+// Resets a node's relative pose to identity.
+static inline void LinkNodeResetPose(ChildNode* node)
+{
+    node->mPose.rot[0] = lbl_804D94A8;
+    node->mPose.rot[1] = lbl_804D94A8;
+    node->mPose.rot[2] = lbl_804D94A8;
+    node->mPose.rot[3] = lbl_804D94AC;
+    node->mPose.pos[0] = lbl_804D94A8;
+    node->mPose.pos[1] = lbl_804D94A8;
+    node->mPose.pos[2] = lbl_804D94A8;
+}
+
+// Asks an actor for its placement (0x411 query) and converts it to a matrix.
+static inline int LinkQueryMatrix(Mtx34* out, LinkRef* ref, int bone)
+{
+    PlaceQuery q;
+    int ok = 0;
+    if (ref) {
+        q.mUnk0 = 0;
+        q.mBone = bone;
+        if (SendMsg(ref->id, 0x411, &q)) {
+            ActorGetMatrix(out, (Actor*)&q.mPlace);
+            ok = 1;
+        } else {
+            LinkInfoInit(out);
+            ok = 0;
+        }
+    }
+    return ok;
+}
+
+// Recomputes a node's pose relative to its parent from the current world poses of both actors.
+static inline void LinkNodeRebase(ChildNode* node)
+{
+    Mtx34 world;
+    Mtx34 parentMtx;
+    Mtx34 inv;
+    LinkRef* ref = &node->mRef;
+    ChildNode* parent;
+    if (!LinkQueryMatrix(&world, ref, -1)) {
+        LinkNodeResetPose(node);
+        return;
+    }
+    parent = node->mParent;
+    if (parent == 0 || parent->mParent == 0) {
+        LinkInfoInit(&parentMtx);
+    } else if (!LinkQueryMatrix(&parentMtx, &parent->mRef, ref->bone)) {
+        LinkInfoInit(&parentMtx);
+    }
+    node->mPose.pos[0] = world.pos.x - parentMtx.pos.x;
+    node->mPose.pos[1] = world.pos.y - parentMtx.pos.y;
+    node->mPose.pos[2] = world.pos.z - parentMtx.pos.z;
+    fn_800A0030(node->mPose.pos, &parentMtx, node->mPose.pos);
+    fn_800A0168(&inv, &parentMtx);
+    fn_8009FC6C(&world, &world, &inv);
+    BoneSetMatrix(node->mPose.rot, &world);
+}
+
+// Per-node pass: brings the relative pose of a linked actor up to date (new link, or the parent moved).
+u8 LinkNodeRefresh(ChildNode* node, void* arg)
+{
+    ChildNode* parent = node->mParent;
+    if (parent == 0) {
+        return 0;
+    }
+    if (parent != 0 && (u32)parent->mRef.id != 0xFFFFFFFF) {
+        if (node->mFlags & 1) {
+            LinkNodeRebase(node);
+        } else if (node->mFlags & 0x10) {
+            LinkPose saved = node->mPose;
+            LinkNodeRebase(node);
+            if (node->mFlags & 4) {
+                node->mPose.pos[0] = saved.pos[0];
+                node->mPose.pos[1] = saved.pos[1];
+                node->mPose.pos[2] = saved.pos[2];
+            }
+            if (node->mFlags & 8) {
+                node->mPose.rot[0] = saved.rot[0];
+                node->mPose.rot[1] = saved.rot[1];
+                node->mPose.rot[2] = saved.rot[2];
+                node->mPose.rot[3] = saved.rot[3];
+            }
+        }
+    }
+    node->mFlags &= ~1;
+    node->mFlags &= ~0x10;
+    return 0;
+}
+
 u8 LinkNodeMatchId(ChildNode* node, void* arg)
 {
     u32 id = *(u32*)arg;
-    if (node->mParent != 0 && (u32)node->mId == id) {
+    if (node->mParent != 0 && (u32)node->mRef.id == id) {
         return 1;
     }
     return 0;
