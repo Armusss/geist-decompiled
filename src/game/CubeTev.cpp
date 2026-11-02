@@ -24,9 +24,9 @@ static inline void BpWrite(u32 value) {
 
 // Shared TEV bookkeeping that every setup function clears first (3 words per cached texture slot).
 struct TevSlot {
-    int tex;
-    int unk4;
-    int unk8;
+    int kind;    // 0 none, 1 scale matrix, 2 translate matrix
+    float x;
+    float y;
 };
 extern TevSlot gTevSlots[8];   // 0x8045E800
 extern int gTevPrevA;          // 0x804D2DC4
@@ -36,6 +36,14 @@ extern GXTexObj gTevTexObjs[5];   // 0x8045E8F0 (texture objects set up by the e
 extern "C" float fn_80008C70(void);
 
 extern "C" void fn_8000FF7C(void);
+extern "C" void fn_80008C78(Mtx m);   // fetches the current camera matrix
+extern "C" void* MemAlloc(int size, const char* file, int line);
+extern "C" void MemFree(void* p, const char* file, int line);
+extern int gTevForcedLevel;   // 0x804D2DB8
+extern int gTevLevel;         // 0x804D2DBC
+extern int gTevResetKey;      // 0x804D4C24
+extern void* gTevBufs[8];     // 0x804D4C28 .. (only the used words)
+extern Mtx gTevSkyMtx;        // 0x8039EC50
 extern "C" float fn_800A1394(float x);   // sine of a scaled angle
 extern "C" float fn_800A1418(float x);   // cosine of a scaled angle
 void GfxSetChannelEnables(int a, int b, int* c);   // 0x80112374
@@ -51,14 +59,14 @@ static inline void TexGen(int dst, int func, int src, int mtx, int norm, int pos
 static inline void TevStateReset() {
     gTevPrevA = -1;
     gTevPrevB = -2;
-    gTevSlots[0].tex = 0;
-    gTevSlots[1].tex = 0;
-    gTevSlots[2].tex = 0;
-    gTevSlots[3].tex = 0;
-    gTevSlots[4].tex = 0;
-    gTevSlots[5].tex = 0;
-    gTevSlots[6].tex = 0;
-    gTevSlots[7].tex = 0;
+    gTevSlots[0].kind = 0;
+    gTevSlots[1].kind = 0;
+    gTevSlots[2].kind = 0;
+    gTevSlots[3].kind = 0;
+    gTevSlots[4].kind = 0;
+    gTevSlots[5].kind = 0;
+    gTevSlots[6].kind = 0;
+    gTevSlots[7].kind = 0;
     PSMTXIdentity(gTevBaseMtx);
     fn_8000FF7C();
 }
@@ -377,14 +385,14 @@ extern "C" void fn_801060C4(float strength, GXColor* color) {   // called from o
     float fov;
     gTevPrevA = -1;
     gTevPrevB = -2;
-    gTevSlots[0].tex = 0;
-    gTevSlots[1].tex = 0;
-    gTevSlots[2].tex = 0;
-    gTevSlots[3].tex = 0;
-    gTevSlots[4].tex = 0;
-    gTevSlots[5].tex = 0;
-    gTevSlots[6].tex = 0;
-    gTevSlots[7].tex = 0;
+    gTevSlots[0].kind = 0;
+    gTevSlots[1].kind = 0;
+    gTevSlots[2].kind = 0;
+    gTevSlots[3].kind = 0;
+    gTevSlots[4].kind = 0;
+    gTevSlots[5].kind = 0;
+    gTevSlots[6].kind = 0;
+    gTevSlots[7].kind = 0;
     PSMTXIdentity(gTevBaseMtx);
     fn_8000FF7C();
     GXSetNumTevStages(1);
@@ -1300,4 +1308,190 @@ void GfxResetTev() {
     TevStageSelect(0);
     TevOrder(0, 0, 0, 4);
     TevStageWords(0, 0x08FA8F, 0x08F670);
+}
+
+// TODO (not drafted yet, 0x179C bytes at 0x8010D258): builds a TEV program from a bit mask of features (dynamic stage count, registers and texgens)
+
+// 0x8010E9F4 picks the quality level: a forced level (0-3) wins over the caller's.
+void TevSetLevel(int level) {
+    if (gTevForcedLevel > -1 && gTevForcedLevel < 4) {
+        gTevLevel = gTevForcedLevel;
+        return;
+    }
+    gTevLevel = level;
+}
+
+// 0x8010EA18 sets konstant color 3, clearing the cached TEV state when the key changes.
+void TevSetKColor3(int key, u8 r, u8 g, u8 b, u8 a) {
+    GXColor c;
+    if (gTevResetKey != key) {
+        gTevSlots[0].kind = 0;
+        gTevPrevA = -1;
+        gTevPrevB = -2;
+        gTevSlots[1].kind = 0;
+        gTevSlots[2].kind = 0;
+        gTevSlots[3].kind = 0;
+        gTevSlots[4].kind = 0;
+        gTevSlots[5].kind = 0;
+        gTevSlots[6].kind = 0;
+        gTevSlots[7].kind = 0;
+        gTevResetKey = key;
+        PSMTXIdentity(gTevBaseMtx);
+        fn_8000FF7C();
+    }
+    c.r = r;
+    c.g = g;
+    c.b = b;
+    c.a = a;
+    GXSetTevKColor(GX_KCOLOR3, c);
+}
+
+// 0x8010EAE8 sets konstant color 2 from a color.
+void TevSetKColor2(GXColor* color) {
+    GXColor c = *color;
+    GXSetTevKColor(GX_KCOLOR2, c);
+}
+
+// 0x8010EB18 sets konstant color 1 to a grey level (0..1) with full alpha.
+void TevSetKColor1Grey(float level) {
+    GXColor c;
+    u8 v = (int)(255.0f * level);
+    c.r = v;
+    c.g = v;
+    c.b = v;
+    c.a = 0xFF;
+    GXSetTevKColor(GX_KCOLOR1, c);
+}
+
+// 0x8010EB70 loads a translating texture matrix into a slot unless it is already cached there.
+void TevSlotTranslate(float x, float y, int slot) {
+    Mtx m;
+    bool same;
+    if (gTevSlots[slot].kind == 2 && gTevSlots[slot].x == x && gTevSlots[slot].y == y) {
+        same = true;
+    } else {
+        same = false;
+        gTevSlots[slot].kind = 2;
+        gTevSlots[slot].x = x;
+        gTevSlots[slot].y = y;
+    }
+    if (!same) {
+        PSMTXTrans(m, x, y, 1.0f);
+        GXLoadTexMtxImm(m, slot * 3 + 0x1E, GX_MTX2x4);
+    }
+}
+
+// 0x8010EC10 the same for a scaling texture matrix.
+void TevSlotScale(float x, float y, int slot) {
+    Mtx m;
+    bool same;
+    if (gTevSlots[slot].kind == 1 && gTevSlots[slot].x == x && gTevSlots[slot].y == y) {
+        same = true;
+    } else {
+        same = false;
+        gTevSlots[slot].kind = 1;
+        gTevSlots[slot].x = x;
+        gTevSlots[slot].y = y;
+    }
+    if (!same) {
+        PSMTXScale(m, x, y, 1.0f);
+        GXLoadTexMtxImm(m, slot * 3 + 0x1E, GX_MTX2x4);
+    }
+}
+
+// 0x8010ECB0 view-dependent texture matrix 0x33: camera rotation turned into small texture offsets.
+void TevSetupViewMtx(float x, float y) {
+    Mtx cam;
+    Mtx rx;
+    Mtx ry;
+    Mtx rz;
+    Mtx out;
+    fn_80008C78(cam);
+    PSMTXInverse(cam, cam);
+    PSMTXConcat(cam, gTevBaseMtx, cam);
+    PSMTXRotRad(rx, 'X', 0.017453292f * 0.05f * cam[0][3]);
+    PSMTXRotRad(ry, 'Y', 0.017453292f * 0.05f * cam[1][3]);
+    PSMTXRotRad(rz, 'Z', 0.017453292f * 0.05f * cam[2][3]);
+    PSMTXInvXpose(cam, cam);
+    PSMTXConcat(rx, cam, out);
+    PSMTXConcat(ry, out, out);
+    PSMTXConcat(rz, out, out);
+    PSMTXScaleApply(out, out, 64.0f * x, 64.0f * y, 0.0f);
+    GXLoadTexMtxImm(out, 0x33, GX_MTX3x4);
+}
+
+// 0x8010EDE4 view-dependent texture matrix 0x30: camera translation scaled into texture space.
+void TevSetupViewScroll(float x, float y) {
+    Mtx cam;
+    Mtx m;
+    Mtx scale;
+    float sx;
+    float sy;
+    fn_80008C78(cam);
+    PSMTXInverse(cam, cam);
+    PSMTXConcat(cam, gTevBaseMtx, m);
+    sx = 0.01f * x;
+    sy = 0.01f * y;
+    m[0][3] = m[0][3] * sx;
+    m[1][3] = m[1][3] * sy;
+    PSMTXScale(scale, sx, sy, 0.0f);
+    PSMTXConcat(scale, m, m);
+    GXLoadTexMtxImm(m, 0x30, GX_MTX3x4);
+}
+
+// 0x8010EEA0 sky texture matrix 0x73: the base matrix transposed (translation cleared) times a fixed matrix.
+void TevSetupSkyMtx(void) {
+    Mtx m;
+    PSMTXTranspose(gTevBaseMtx, m);
+    m[0][3] = 0.0f;
+    m[1][3] = 0.0f;
+    m[2][3] = 0.0f;
+    PSMTXConcat(gTevSkyMtx, m, m);
+    GXLoadTexMtxImm(m, 0x73, GX_MTX3x4);
+}
+
+// 0x8010EF00 texture matrix 0x36: inverse transpose of the base matrix.
+void TevLoadNormalMtx(void) {
+    Mtx m;
+    PSMTXInvXpose(gTevBaseMtx, m);
+    GXLoadTexMtxImm(m, 0x36, GX_MTX3x4);
+}
+
+// 0x8010EF3C texture matrix 0x39: the base matrix itself.
+void TevLoadBaseMtx(void) {
+    GXLoadTexMtxImm(gTevBaseMtx, 0x39, GX_MTX3x4);
+}
+
+// 0x8010EF6C sets the base matrix from a matrix, or from the camera when none is given.
+void TevSetBaseMtx(Mtx src) {
+    if (src == 0) {
+        fn_80008C78(gTevBaseMtx);
+    } else {
+        PSMTXCopy(src, gTevBaseMtx);
+    }
+}
+
+// 0x8010EFAC
+void TevNoop(void) {
+}
+
+// 0x8010EFB0 releases the effect buffers.
+void TevFreeBuffers(void) {
+    if (gTevBufs[0] != 0) {
+        MemFree(gTevBufs[0], "CubeTev.cpp", 253);
+    }
+    if (gTevBufs[3] != 0) {
+        MemFree(gTevBufs[3], "CubeTev.cpp", 262);
+    }
+    if (gTevBufs[4] != 0) {
+        MemFree(gTevBufs[4], "CubeTev.cpp", 265);
+    }
+    if (gTevBufs[5] != 0) {
+        MemFree(gTevBufs[5], "CubeTev.cpp", 268);
+    }
+}
+
+// 0x8010F0AC clears the cached TEV state.
+void TevResetCache(void) {
+    TevStateReset();
 }
