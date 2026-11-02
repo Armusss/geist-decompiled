@@ -29,7 +29,7 @@ inline float FastSqrt(float x) {
     return r;
 }
 
-int IVecNormalize(IVec3* out, IVec3* in) {
+extern "C" int fn_800E0CB8(IVec3* out, IVec3* in) {
     float x, y, z;
     float sq;
     float len;
@@ -56,7 +56,7 @@ int IVecNormalize(IVec3* out, IVec3* in) {
     return len;
 }
 
-int IVecLength(IVec3* v) {
+extern "C" int fn_800E0DBC(IVec3* v) {
     if ((v->x | v->y | v->z) == 0) {
         return 0;
     }
@@ -64,7 +64,7 @@ int IVecLength(IVec3* v) {
     return FastSqrt(sq);
 }
 
-void IVecSetLength(IVec3* out, IVec3* in, int length) {
+extern "C" void fn_800E0E9C(IVec3* out, IVec3* in, int length) {
     float sq;
     float len;
     float scale;
@@ -89,7 +89,7 @@ void IVecSetLength(IVec3* out, IVec3* in, int length) {
     }
 }
 
-float VecLength(Vec3* v) {
+extern "C" float fn_800E1020(Vec3* v) {
     if (((*(unsigned long*)&v->x | *(unsigned long*)&v->y | *(unsigned long*)&v->z) & 0x7FFFFFFF) == 0) {
         return 0.0f;
     }
@@ -97,7 +97,7 @@ float VecLength(Vec3* v) {
     return FastSqrt(sq);
 }
 
-void VecSetLength(Vec3* out, Vec3* in, float length) {
+extern "C" void fn_800E1098(Vec3* out, Vec3* in, float length) {
     float sq;
     float scale;
     float x, y, z;
