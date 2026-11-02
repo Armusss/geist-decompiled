@@ -813,8 +813,36 @@ void AiState801B765C(Actor* a) {
     PlayerResetGunTimer(a);
 }
 
-// TODO (not drafted yet, 0x248 bytes at 0x801B767C): game logic
-extern "C" void fn_801B767C();
+void AiState801B767C(Actor* a) {
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    a->unk7D0 = 1;
+    PlayerSetValue4(&a->state, 3);
+    if (a->unk328 & 1) {
+        if (PlayerInHost(a) != 0) {
+            if (!(a->flags7B4 & 0x40000) && !(a->flags7B4 & 0x80000)) {
+                fn_80073E80(a);
+            }
+        }
+    }
+    if ((a->flags31C & 1) && a->unk1D94 == 0) {
+        int id1;
+        int id2;
+        QueryGet(&id1, a->handle, 0x2DA8293C);
+        QueryGet(&id2, a->handle, 0xDFF3097A);
+        fn_80048BA8(a, a->unk1D04, 1);
+        Fn800F7F5C(id1, id2, 0x0D19E338, fn_800498D0(a), a->unk1D04, a->unk14FC);
+        Fn800F7F5C(id1, id2, 0x4E424290, fn_800498D0(a), a->unk1D04, a->unk14FC);
+        if (a->state.cur != 3) {
+            PlayerSetHeldSlotMode(a, 7);
+        } else {
+            PlayerSetActionMode(a, 7);
+        }
+    }
+    if (a->f394 != 0.0f || a->f38C != 0.0f || a->f390 != 0.0f || a->f398 != 0.0f || a->unk328 != 0) {
+        PlayerSetActionMode(a, 3);
+    }
+}
 
 // TODO (not drafted yet, 0x2C4 bytes at 0x801B78C4): game logic
 extern "C" void fn_801B78C4();
