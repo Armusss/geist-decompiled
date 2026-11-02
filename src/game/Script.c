@@ -28,13 +28,14 @@ typedef struct ScriptVM {
 
 // Instruction fields.
 #define INS_SUB(i) (((i) >> 5) & 7)
+#define INS_OFF(i) ((int)((i) & 0xFFFF0000) >> 16)
 
 extern void* memset(void* dst, int val, u32 n);
 extern void fn_800050B4(void);
 
 // 0x800834C0: stack adjust (sub 0 = release n bytes of stack and clear them, otherwise grow)
-int ScriptOpStack(u32 ins, ScriptVM* vm) {
-    u32 n = ins >> 16;
+int ScriptOpStack(int ins, ScriptVM* vm) {
+    int n = (u32)ins >> 16;
     if (INS_SUB(ins) == 0) {
         if (n != 0) {
             vm->r[1] -= n;
@@ -48,76 +49,76 @@ int ScriptOpStack(u32 ins, ScriptVM* vm) {
 }
 
 // 0x800839A8: conditional branch comparing two float registers (sub = comparison)
-int ScriptOpBranchFloat(u32 ins, ScriptVM* vm) {
-    u32 sub = INS_SUB(ins);
-    f32 a = *(f32*)((u8*)vm + ((ins >> 6) & 0x3C) + 0x60);
-    f32 b = *(f32*)((u8*)vm + ((ins >> 10) & 0x3C) + 0x60);
+int ScriptOpBranchFloat(int ins, ScriptVM* vm) {
+    int sub = INS_SUB(ins);
+    f32 a = *(f32*)((u8*)vm + (((u32)ins >> 6) & 0x3C) + 0x60);
+    f32 b = *(f32*)((u8*)vm + (((u32)ins >> 10) & 0x3C) + 0x60);
     int taken;
     switch (sub) {
-    case 0: taken = (a == b); break;
-    case 1: taken = (a != b); break;
-    case 2: taken = (a < b); break;
-    case 3: taken = (a > b); break;
-    case 4: taken = (a <= b); break;
-    case 5: taken = (a >= b); break;
+    case 0: taken = (u8)(a == b); break;
+    case 1: taken = (u8)(a != b); break;
+    case 2: taken = (u8)(a < b); break;
+    case 3: taken = (u8)(a > b); break;
+    case 4: taken = (u8)(a <= b); break;
+    case 5: taken = (u8)(a >= b); break;
     default: return 0x40000001;
     }
     if (taken)
-        vm->pc += (s32)ins >> 16;
+        vm->pc += INS_OFF(ins);
     else
         vm->pc += 4;
     return 0;
 }
 
 // 0x80083AA8: conditional branch comparing two integer registers as unsigned values
-int ScriptOpBranchUnsigned(u32 ins, ScriptVM* vm) {
-    u32 sub = INS_SUB(ins);
-    u32 a = *(u32*)((u8*)vm + ((ins >> 6) & 0x3C));
-    u32 b = *(u32*)((u8*)vm + ((ins >> 10) & 0x3C));
-    int taken;
+int ScriptOpBranchUnsigned(int ins, ScriptVM* vm) {
+    int sub = INS_SUB(ins);
+    u32 a = *(u32*)((u8*)vm + (((u32)ins >> 6) & 0x3C));
+    u32 b = *(u32*)((u8*)vm + (((u32)ins >> 10) & 0x3C));
+    u32 taken;
     switch (sub) {
-    case 0: taken = (a == b); break;
-    case 1: taken = (a != b); break;
-    case 2: taken = (a < b); break;
-    case 3: taken = (a > b); break;
-    case 4: taken = (a <= b); break;
-    case 5: taken = (a >= b); break;
+    case 0: taken = (u8)(a == b); break;
+    case 1: taken = (u8)(a != b); break;
+    case 2: taken = (u8)(a < b); break;
+    case 3: taken = (u8)(a > b); break;
+    case 4: taken = (u8)(a <= b); break;
+    case 5: taken = (u8)(a >= b); break;
     default: return 0x40000001;
     }
     if (taken)
-        vm->pc += (s32)ins >> 16;
+        vm->pc += INS_OFF(ins);
     else
         vm->pc += 4;
     return 0;
 }
 
 // 0x80083BAC: conditional branch comparing two integer registers as signed values
-int ScriptOpBranchSigned(u32 ins, ScriptVM* vm) {
-    u32 sub = INS_SUB(ins);
-    s32 a = *(s32*)((u8*)vm + ((ins >> 6) & 0x3C));
-    s32 b = *(s32*)((u8*)vm + ((ins >> 10) & 0x3C));
+int ScriptOpBranchSigned(int ins, ScriptVM* vm) {
+    int sub = INS_SUB(ins);
+    s32 a = *(s32*)((u8*)vm + (((u32)ins >> 6) & 0x3C));
+    s32 b = *(s32*)((u8*)vm + (((u32)ins >> 10) & 0x3C));
     int taken;
     switch (sub) {
-    case 0: taken = (a == b); break;
-    case 1: taken = (a != b); break;
-    case 2: taken = (a < b); break;
-    case 3: taken = (a > b); break;
-    case 4: taken = (a <= b); break;
-    case 5: taken = (a >= b); break;
+    case 0: taken = (u8)(a == b); break;
+    case 1: taken = (u8)(a != b); break;
+    case 2: taken = (u8)(a < b); break;
+    case 3: taken = (u8)(a > b); break;
+    case 4: taken = (u8)(a <= b); break;
+    case 5: taken = (u8)(a >= b); break;
     default: return 0x40000001;
     }
     if (taken)
-        vm->pc += (s32)ins >> 16;
+        vm->pc += INS_OFF(ins);
     else
         vm->pc += 4;
     return 0;
 }
 
 // 0x80083CB8: jump (sub 1 = to the address in a register, otherwise relative)
-int ScriptOpJump(u32 ins, ScriptVM* vm) {
+int ScriptOpJump(int ins, ScriptVM* vm) {
     if (INS_SUB(ins) == 1)
-        vm->pc = *(int*)((u8*)vm + ((ins >> 14) & 0x3FFFC));
+        vm->pc = *(int*)((u8*)vm + (((u32)ins >> 14) & 0x3FFFC));
     else
-        vm->pc += (s32)ins >> 16;
+        vm->pc += INS_OFF(ins);
     return 0;
 }
