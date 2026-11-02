@@ -58,6 +58,23 @@ struct GeomVtbl {
     void (*collideGeom)(Geom* g, void* data, Geom* other, SpaceCallback cb); // 0x2c
 };
 
+// Virtual-call view of a geometry or space: the retail objects keep their vptr at 0x48, after
+// the base data, and every call below dispatches through it. (The class tables themselves
+// are still built by hand further down.)
+struct GeomV {
+    char pad00[0x48];
+    virtual Geom* destroy(short del);                                         // 0x08
+    virtual void computeAabb();                                               // 0x0c
+    virtual int isDefault(Geom* other);                                       // 0x10
+    virtual int getNumGeoms();                                                // 0x14
+    virtual void addGeom(Geom* child, int arg);                               // 0x18
+    virtual void removeGeom(Geom* child);                                     // 0x1c
+    virtual void unk20();                                                     // 0x20
+    virtual void unk24();                                                     // 0x24
+    virtual void collideSpace(void* data, SpaceCallback cb);                  // 0x28
+    virtual void collideGeom(void* data, Geom* other, SpaceCallback cb);      // 0x2c
+};
+
 // A collision space's class table has the same layout as a geometry's.
 typedef GeomVtbl SpaceVtbl;
 
@@ -185,17 +202,17 @@ void GeomDelete(Geom* g);
 void SpaceSetFields(Space* s, int a, int b);
 
 // 0x8026A37C
-static inline void GeomSetUserColliders(int type)
+static inline void GeomSetAllColliders(int type, ColliderFn fn)
 {
     int i;
 
     for (i = 0; i < GEOM_CLASSES; i++) {
         if (gColliders[type][i].fn == 0) {
-            gColliders[type][i].fn = UserGeomCollide;
+            gColliders[type][i].fn = fn;
             gColliders[type][i].swap = 0;
         }
         if (gColliders[i][type].fn == 0) {
-            gColliders[i][type].fn = UserGeomCollide;
+            gColliders[i][type].fn = fn;
             gColliders[i][type].swap = 1;
         }
     }
@@ -211,7 +228,7 @@ int GeomRegisterClass(UserGeomClass* cls)
     gUserGeomClasses[lbl_804D551C] = *cls;
     type = lbl_804D551C + 0xb;
     CollisionInit();
-    GeomSetUserColliders(type);
+    GeomSetAllColliders(type, UserGeomCollide);
     lbl_804D551C += 1;
     return type;
 }
@@ -407,7 +424,7 @@ int GeomGetType(Geom* g)
 void GeomGetAabb(Geom* g, float* aabb)
 {
     if ((g->flags & 2) != 0) {
-        g->vtbl->computeAabb(g);
+        ((GeomV*)g)->computeAabb();
         g->flags &= ~2;
     }
     memcpy(aabb, g->aabb, 0x18);
@@ -537,7 +554,7 @@ void GeomSetGFlags(Geom* g, int flags)
 void GeomDestroyGeom(Geom* g)
 {
     if (g != 0) {
-        g->vtbl->destroy(g, 1);
+        ((GeomV*)g)->destroy(1);
     }
 }
 
@@ -667,6 +684,18 @@ int GeomCollideDispatch(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int
     return rc;
 }
 
+static inline void GeomSetCollider(int a, int b, ColliderFn fn)
+{
+    if (gColliders[a][b].fn == 0) {
+        gColliders[a][b].fn = fn;
+        gColliders[a][b].swap = 0;
+    }
+    if (gColliders[b][a].fn == 0) {
+        gColliders[b][a].fn = fn;
+        gColliders[b][a].swap = 1;
+    }
+}
+
 // 0x8026B40C
 void CollisionInit(void)
 {
@@ -688,120 +717,20 @@ void CollisionInit(void)
                 }
             }
         }
-        if (gColliders[0][0].fn == 0) {
-            gColliders[0][0].swap = 0;
-            gColliders[0][0].fn = fn_8026F9F8;
-        }
-        if (gColliders[0][0].fn == 0) {
-            gColliders[0][0].swap = 1;
-            gColliders[0][0].fn = fn_8026F9F8;
-        }
-        if (gColliders[0][1].fn == 0) {
-            gColliders[0][1].swap = 0;
-            gColliders[0][1].fn = fn_8026F590;
-        }
-        if (gColliders[1][0].fn == 0) {
-            gColliders[1][0].swap = 1;
-            gColliders[1][0].fn = fn_8026F590;
-        }
-        if (gColliders[0][4].fn == 0) {
-            gColliders[0][4].swap = 0;
-            gColliders[0][4].fn = fn_8026F4D0;
-        }
-        if (gColliders[4][0].fn == 0) {
-            gColliders[4][0].swap = 1;
-            gColliders[4][0].fn = fn_8026F4D0;
-        }
-        if (gColliders[1][1].fn == 0) {
-            gColliders[1][1].swap = 0;
-            gColliders[1][1].fn = fn_8026F21C;
-        }
-        if (gColliders[1][1].fn == 0) {
-            gColliders[1][1].swap = 1;
-            gColliders[1][1].fn = fn_8026F21C;
-        }
-        if (gColliders[1][4].fn == 0) {
-            gColliders[1][4].swap = 0;
-            gColliders[1][4].fn = fn_8026EAAC;
-        }
-        if (gColliders[4][1].fn == 0) {
-            gColliders[4][1].swap = 1;
-            gColliders[4][1].fn = fn_8026EAAC;
-        }
-        if (gColliders[2][0].fn == 0) {
-            gColliders[2][0].swap = 0;
-            gColliders[2][0].fn = fn_8026E9C8;
-        }
-        if (gColliders[0][2].fn == 0) {
-            gColliders[0][2].swap = 1;
-            gColliders[0][2].fn = fn_8026E9C8;
-        }
-        if (gColliders[2][1].fn == 0) {
-            gColliders[2][1].swap = 0;
-            gColliders[2][1].fn = fn_8026E8EC;
-        }
-        if (gColliders[1][2].fn == 0) {
-            gColliders[1][2].swap = 1;
-            gColliders[1][2].fn = fn_8026E8EC;
-        }
-        if (gColliders[2][2].fn == 0) {
-            gColliders[2][2].swap = 0;
-            gColliders[2][2].fn = fn_8026E498;
-        }
-        if (gColliders[2][2].fn == 0) {
-            gColliders[2][2].swap = 1;
-            gColliders[2][2].fn = fn_8026E498;
-        }
-        if (gColliders[2][4].fn == 0) {
-            gColliders[2][4].swap = 0;
-            gColliders[2][4].fn = fn_8026E194;
-        }
-        if (gColliders[4][2].fn == 0) {
-            gColliders[4][2].swap = 1;
-            gColliders[4][2].fn = fn_8026E194;
-        }
-        if (gColliders[5][0].fn == 0) {
-            gColliders[5][0].swap = 0;
-            gColliders[5][0].fn = fn_8026DEAC;
-        }
-        if (gColliders[0][5].fn == 0) {
-            gColliders[0][5].swap = 1;
-            gColliders[0][5].fn = fn_8026DEAC;
-        }
-        if (gColliders[5][1].fn == 0) {
-            gColliders[5][1].swap = 0;
-            gColliders[5][1].fn = fn_8026DA50;
-        }
-        if (gColliders[1][5].fn == 0) {
-            gColliders[1][5].swap = 1;
-            gColliders[1][5].fn = fn_8026DA50;
-        }
-        if (gColliders[5][2].fn == 0) {
-            gColliders[5][2].swap = 0;
-            gColliders[5][2].fn = fn_8026D538;
-        }
-        if (gColliders[2][5].fn == 0) {
-            gColliders[2][5].swap = 1;
-            gColliders[2][5].fn = fn_8026D538;
-        }
-        if (gColliders[5][4].fn == 0) {
-            gColliders[5][4].swap = 0;
-            gColliders[5][4].fn = fn_8026D428;
-        }
-        if (gColliders[4][5].fn == 0) {
-            gColliders[4][5].swap = 1;
-            gColliders[4][5].fn = fn_8026D428;
-        }
-        for (j = 0; j < GEOM_CLASSES; j++) {
-            if (gColliders[6][j].fn == 0) {
-                gColliders[6][j].fn = fn_80272060;
-                gColliders[6][j].swap = 0;
-            }
-            if (gColliders[j][6].fn == 0) {
-                gColliders[j][6].fn = fn_80272060;
-                gColliders[j][6].swap = 1;
-            }
-        }
+        GeomSetCollider(0, 0, fn_8026F9F8);
+        GeomSetCollider(0, 1, fn_8026F590);
+        GeomSetCollider(0, 4, fn_8026F4D0);
+        GeomSetCollider(1, 1, fn_8026F21C);
+        GeomSetCollider(1, 4, fn_8026EAAC);
+        GeomSetCollider(2, 0, fn_8026E9C8);
+        GeomSetCollider(2, 1, fn_8026E8EC);
+        GeomSetCollider(2, 2, fn_8026E498);
+        GeomSetCollider(2, 4, fn_8026E194);
+        GeomSetCollider(5, 0, fn_8026DEAC);
+        GeomSetCollider(5, 1, fn_8026DA50);
+        GeomSetCollider(5, 2, fn_8026D538);
+        GeomSetCollider(5, 4, fn_8026D428);
+        GeomSetAllColliders(6, fn_80272060);
     }
 }
 
@@ -848,7 +777,7 @@ Geom* SpaceDestroy(Space* s, short del)
                 Geom* g = s->firstGeom;
                 while (g != 0) {
                     Geom* next = (Geom*)g->nextInSpace;
-                    ((SpaceVtbl*)s->vtbl)->removeGeom(s, g);
+                    ((GeomV*)s)->removeGeom(g);
                     g = next;
                 }
             }
@@ -880,26 +809,26 @@ void SpaceCollidePair(Geom* g1, Geom* g2, void* data, SpaceCallback callback)
     if (s1 != 0) {
         if (s2 != 0) {
             if (s1 == s2) {
-                s1->vtbl->collideSpace(s1, data, callback);
+                ((GeomV*)s1)->collideSpace(data, callback);
             } else if (s1->count < s2->count) {
                 Geom* g = s1->firstGeom;
                 while (g != 0) {
-                    s2->vtbl->collideGeom(s2, data, g, callback);
+                    ((GeomV*)s2)->collideGeom(data, g, callback);
                     g = (Geom*)g->nextInSpace;
                 }
             } else {
                 Geom* g = s2->firstGeom;
                 while (g != 0) {
-                    s1->vtbl->collideGeom(s1, data, g, callback);
+                    ((GeomV*)s1)->collideGeom(data, g, callback);
                     g = (Geom*)g->nextInSpace;
                 }
             }
         } else {
-            s1->vtbl->collideGeom(s1, data, g2, callback);
+            ((GeomV*)s1)->collideGeom(data, g2, callback);
         }
     } else {
         if (s2 != 0) {
-            s2->vtbl->collideGeom(s2, data, g1, callback);
+            ((GeomV*)s2)->collideGeom(data, g1, callback);
         } else {
             callback(data, g1, g2);
         }
@@ -909,13 +838,13 @@ void SpaceCollidePair(Geom* g1, Geom* g2, void* data, SpaceCallback callback)
 // 0x8026C11C
 void SpaceCollideSelf(Geom* s, void* data, SpaceCallback callback)
 {
-    s->vtbl->collideSpace(s, data, callback);
+    ((GeomV*)s)->collideSpace(data, callback);
 }
 
 // 0x8026C148
 int SpaceGetNumGeoms(Geom* s)
 {
-    return s->vtbl->getNumGeoms(s);
+    return ((GeomV*)s)->getNumGeoms();
 }
 
 // 0x8026C174
@@ -927,13 +856,13 @@ int SpaceGetCount(Space* s)
 // 0x8026C17C
 void SpaceRemoveGeom(Space* s, Geom* g)
 {
-    s->vtbl->removeGeom(s, g);
+    ((GeomV*)s)->removeGeom(g);
 }
 
 // 0x8026C1A8
 void SpaceAddGeom(Space* s, Geom* g, int arg)
 {
-    s->vtbl->addGeom(s, g, arg);
+    ((GeomV*)s)->addGeom(g, arg);
 }
 
 // 0x8026C1D4
