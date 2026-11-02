@@ -59,9 +59,9 @@ struct HostState {
 // owner info returned by OwnerGetInfo: position at 0x24, handle at 0x38.
 struct Target {
     char pad0[0x24];
-    u32 x;          // 0x24
-    u32 y;          // 0x28
-    u32 z;          // 0x2C
+    int x;          // 0x24
+    int y;          // 0x28
+    int z;          // 0x2C
     char pad30[8];
     int id;         // 0x38
 };
@@ -502,17 +502,16 @@ int HostRideMsg(int msg, void* data) {
 }
 
 int HostRideTick(void* p) {
-    Beh* beh;
     Actor* actor;
+    Beh* beh;
     Target* info;
     int aim[3];
     float f;
     int r;
 
-    if (p == 0) {
+    if ((actor = (Actor*)p) == 0) {
         return 0;
     }
-    actor = (Actor*)p;
     beh = actor->beh;
     if (HasCondition(&actor->st, 9) || HasCondition(&actor->st, 10) ||
         HasCondition(&actor->st, 0xB)) {
@@ -528,37 +527,31 @@ int HostRideTick(void* p) {
         actor->i26C = 0;
     } else if (beh->target != -1 && (info = OwnerGetInfo(beh->target)) != 0) {
         ActorAim(aim, actor, 1);
-        f = (float)(u32)aim[0] * ((float)info->x - actor->f84) +
-            (float)(u32)aim[1] * ((float)info->y - actor->f88) +
-            (float)(u32)aim[2] * ((float)info->z - actor->f8C);
-        switch (actor->i21C) {
-        case 1:
-            if (beh->f10 * beh->f10 < f) {
+        f = (float)aim[0] * ((float)info->x - actor->f84) +
+            (float)aim[1] * ((float)info->y - actor->f88) +
+            (float)aim[2] * ((float)info->z - actor->f8C);
+        if (actor->i21C == 1) {
+            if (f > beh->f10 * beh->f10) {
                 actor->i21C = 2;
             }
-            break;
-        case 2:
-            if (beh->f0C * beh->f0C <= f) {
-                if (beh->f14 * beh->f14 < f) {
-                    actor->i21C = 3;
-                }
-            } else {
+        } else if (actor->i21C == 2) {
+            if (f < beh->f0C * beh->f0C) {
                 actor->i21C = 1;
+            } else if (f > beh->f14 * beh->f14) {
+                actor->i21C = 3;
             }
-            break;
-        case 3:
+        } else if (actor->i21C == 3) {
             if (f < beh->f18 * beh->f18) {
                 actor->i21C = 2;
             }
-            break;
         }
     }
     fn_80162658(actor, actor->unk894);
     if (r != 0) {
-        int next = HostRideBehavior(actor);
+        r = HostRideBehavior(actor);
 
-        if (next != beh->state && gHostRideTypes[beh->state].check(actor) &&
-            gHostRideTypes[next].enter(actor) == 0) {
+        if (r != beh->state && gHostRideTypes[beh->state].check(actor) &&
+            gHostRideTypes[r].enter(actor) == 0) {
             gHostRideTypes[beh->state].enter(actor);
         }
     }
