@@ -149,6 +149,11 @@ extern int lbl_804D42E8;
 extern int lbl_804D42D4;
 extern int lbl_804D42D8;
 extern int lbl_804D2678;
+extern int* lbl_804D42CC;
+extern int lbl_804D42D0;
+extern char* lbl_804D42BC;
+extern int lbl_804D42C0;
+extern int lbl_804D42A8;
 void fn_8002FC30(int, void*, void*);
 extern ModelDb* lbl_804D4300;
 extern ModelSlot lbl_803E4998[];
@@ -312,8 +317,8 @@ void IntSwap(int* a, int i, int j) {
 }
 
 
-// 0x8002756C: debug draw of every flagged actor (sphere + bone box)
-void ActorDebugDrawAll() {
+// 0x8002756C (called from another unit under this placeholder name; ActorDebugDrawAll): debug draw of every flagged actor (sphere + bone box)
+extern "C" void fn_8002756C() {
     int i;
     if (lbl_804D429C != 0) {
         for (i = 0; i < lbl_804D4288; i++) {
@@ -554,8 +559,8 @@ extern "C" s16* fn_80037B6C(int model) {
     return 0;
 }
 
-// 0x80037BAC
-s16* ModelArray44(int model) {
+// 0x80037BAC (called from another unit under this placeholder name; ModelArray44)
+extern "C" s16* fn_80037BAC(int model) {
     int idx = (u16)model;
     if (idx >= 0 && idx < lbl_804D4300->count)
         return lbl_804D4300->array44 + lbl_804D4300->nodes[idx].field36;
@@ -765,6 +770,71 @@ int ActorsUpdate(float dt) {
     return 1;
 }
 
+// 0x80031E48 (called from other units under this placeholder name): do two integer boxes overlap?
+// Each box is {min x, y, z, max x, y, z}.
+extern "C" int fn_80031E48(int* a, int* b) {
+    int dx = (b[3] + b[0]) / 2 - (a[3] + a[0]) / 2;
+    int dy = (b[4] + b[1]) / 2 - (a[4] + a[1]) / 2;
+    int dz = (b[5] + b[2]) / 2 - (a[5] + a[2]) / 2;
+    if ((a[3] - a[0]) / 2 + (b[3] - b[0]) / 2 < (dx < 0 ? -dx : dx) ||
+        (a[4] - a[1]) / 2 + (b[4] - b[1]) / 2 < (dy < 0 ? -dy : dy) ||
+        (a[5] - a[2]) / 2 + (b[5] - b[2]) / 2 < (dz < 0 ? -dz : dz))
+        return 0;
+    return 1;
+}
+
+// 0x80031FAC (called from another unit under this placeholder name; Chunk6Load): file chunk handler for type 6 (array of 0x68-byte records)
+extern "C" int fn_80031FAC(void* data, int size, void* ctx) {
+    int* p = (int*)data;
+    if (size < 1)
+        p = 0;
+    if (*p == 6) {
+        lbl_804D42D0 = p[1];
+        if (Fits(size - 0x20, p[1] * 0x68))
+            lbl_804D42CC = (int*)data + 8;
+        else
+            lbl_804D42CC = 0;
+    }
+    return 1;
+}
+
+// 0x80032014 (called from another unit under this placeholder name; ChunkNodesLoad): file chunk handler (0x48-byte records followed by 0x20-byte records)
+extern "C" int fn_80032014(void* data, int size, void* ctx) {
+    char* h = (char*)data;
+    int n;
+    int pad;
+    bool ok = false;
+    if (size < 1)
+        h = 0;
+    n = *(int*)(h + 4);
+    pad = ((n * 0x48 + 0x1F) & 0xFFFFFFE0) - n * 0x48;
+    lbl_804D42BC = (char*)data + 0x20 + n * 0x48 + pad;
+    if ((size - 0x20 - n * 0x48) - pad > 0 && (*(int*)(h + 8) << 5) > 0)
+        ok = true;
+    if (!ok)
+        lbl_804D42BC = 0;
+    lbl_804D42C0 = *(int*)(h + 8);
+    return 1;
+}
+
+// 0x80032094 (called from another unit under this placeholder name; DebugOptionSet): debug option 0: value -1 toggles, 0/1 sets; returns the new value
+extern "C" int fn_80032094(int which, int value) {
+    int r = -1;
+    if (which != 1 && which < 1 && which >= 0) {
+        if (value == -1) {
+            r = (lbl_804D42A8 == 0);
+            lbl_804D42A8 = r;
+        } else {
+            r = lbl_804D42A8;
+            if (value > -2 && value < 2) {
+                r = value;
+                lbl_804D42A8 = value;
+            }
+        }
+    }
+    return r;
+}
+
 // ---- Functions not drafted yet (declarations only; retail assembly is used for them) ----
 // TODO (not drafted yet, 0x55C bytes at 0x80026B50): ModInfo function
 extern "C" void fn_80026B50();
@@ -818,14 +888,6 @@ extern "C" void fn_8002FE64();
 extern "C" void fn_800312B4();
 // TODO (not drafted yet, 0x6FC bytes at 0x8003174C): ModInfo function
 extern "C" void fn_8003174C();
-// TODO (not drafted yet, 0x164 bytes at 0x80031E48): ModInfo function
-extern "C" void fn_80031E48();
-// TODO (not drafted yet, 0x68 bytes at 0x80031FAC): ModInfo function
-extern "C" void fn_80031FAC();
-// TODO (not drafted yet, 0x80 bytes at 0x80032014): ModInfo function
-extern "C" void fn_80032014();
-// TODO (not drafted yet, 0x60 bytes at 0x80032094): ModInfo function
-extern "C" void fn_80032094();
 // TODO (not drafted yet, 0x10C bytes at 0x800320F4): ModInfo function
 extern "C" void fn_800320F4();
 // TODO (not drafted yet, 0x6C bytes at 0x80032200): ModInfo function
