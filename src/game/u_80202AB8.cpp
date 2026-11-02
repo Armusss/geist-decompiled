@@ -908,8 +908,9 @@ extern "C" void fn_8016f120(u32 handle, int pos);
 extern "C" void fn_800265d4(u32 handle, int msg, void* data);
 extern "C" void fn_801D550C(void* link);
 extern "C" void fn_800E0CB8(int* v, int* out);
-void HostActorHoldTimerDone(int from, Actor* actor)
+void HostActorHoldTimerDone(int from, void* p)
 {
+    Actor* actor = (Actor*)p;
     HostBehaviour* beh = actor->behaviour;
 
     switch (from) {
@@ -938,8 +939,9 @@ void HostActorHoldTimerDone(int from, Actor* actor)
 // 0x802051f0: callback of the 0xc12 "restart hold timer" message that
 // HostActorBegin starts for a held target. On expiry it advances the hold state
 // machine by one step and plays the grab animation in the states that need it.
-void HostActorBeginTimerDone(int from, Actor* actor)
+void HostActorBeginTimerDone(int from, void* p)
 {
+    Actor* actor = (Actor*)p;
     HostBehaviour* beh = actor->behaviour;
 
     switch (from) {
