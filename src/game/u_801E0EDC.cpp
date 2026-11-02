@@ -8,6 +8,32 @@
 
 typedef unsigned long u32;
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
+// Actor type descriptor of the barrier (0x803ADF38).
+struct BarrierActorType {
+    int unk0;
+    const char* name;
+    u32 (*msg)(void*, int, int*);
+    void (*update)(void*, float);
+    u32 (*init)(void*);
+    void* unk14;
+    void (*free)(void*);
+    void* unk1C[5];
+};
+
+u32 BarrierActorMsg(void* actorPtr, int msg, int* data);
+void BarrierActorUpdate(void* actorPtr, float delta);
+u32 BarrierActorInit(void* actorPtr);
+void BarrierBehaviourFree(void* actorPtr);
+
+BarrierActorType gGhostBarrierType = {
+    0, "Ghost Barrier", BarrierActorMsg, BarrierActorUpdate, BarrierActorInit, 0, BarrierBehaviourFree,
+};
+
 struct Vec3 {
     float x;
     float y;
@@ -20,7 +46,6 @@ struct ActiveEntry {
 };
 
 extern ActiveEntry* lbl_804D5220;
-extern float lbl_804D8D78;
 
 extern "C" float fn_802A2080(void);
 void VFree(void* p);
@@ -50,7 +75,7 @@ static inline int ActiveIsRegistered(void* p) {
 // Applies a distance-scaled velocity to a registered active object.
 extern "C" void fn_801E0EDC(void* actor, Vec3* a, Vec3* b, int kind, float scale) {
     if (ActiveIsRegistered(actor)) {
-        float s = lbl_804D8D78 / fn_802A2080();
+        float s = 1.0f / fn_802A2080();
         Vec3 v;
         v.x = b->x * s;
         v.y = b->y * s;
@@ -288,16 +313,6 @@ struct BarrierMsgSource {
     virtual int Apply(int cmd, void* arg);  // 0x30
 };
 
-extern float lbl_804D8D80;
-extern float lbl_804D8D84;
-extern float lbl_804D8D88;
-extern float lbl_804D8D8C;
-extern float lbl_804D8D90;
-extern float lbl_804D8D94;
-extern float lbl_804D8D98;
-extern float lbl_804D8D9C;
-extern float lbl_804D8DA0;
-extern float lbl_804D8DA4;
 extern int lbl_804D3288;
 extern int lbl_804D328C;
 extern int lbl_804D3290;
@@ -371,7 +386,7 @@ static inline int BarrierNotifyTarget(Actor* actor, int msg, int* data, int targ
                 if (PlayerInHost((Actor*)target) == 0) {
                     valid = 1;
                 } else {
-                    ((BarrierActor*)target)->field14E8 = lbl_804D8D80;
+                    ((BarrierActor*)target)->field14E8 = 1.0f;
                     valid = 0;
                 }
             } else {
@@ -513,25 +528,26 @@ u32 BarrierActorMsg(void* actorPtr, int msg, int* data) {
 // drives the node colour and effect, then chains to ActorUpdate.
 // Descriptive name: BarrierActorUpdate.
 void BarrierActorUpdate(void* actorPtr, float delta) {
+    BarrierBeh* beh;
     BarrierActor* actor = (BarrierActor*)actorPtr;
-    BarrierBeh* beh = actor->behaviour;
+    beh = actor->behaviour;
 
     if (beh != 0) {
         // "level" scales the barrier effect; it starts at its maximum.
-        float level = lbl_804D8D80;
+        float level = 1.0f;
 
         switch (beh->state) {
         case 0: {
-            level = lbl_804D8D84;
+            level = 0.0f;
             if ((beh->flags & 2) != 0) {
                 if ((beh->flags & 4) != 0) {
                     beh->timer -= delta;
                 } else {
                     beh->timer = level;
                 }
-                if (beh->timer <= lbl_804D8D84) {
+                if (beh->timer <= 0.0f) {
                     beh->state = 1;
-                    beh->timer = lbl_804D8D88;
+                    beh->timer = 100.0f;
                     ModelNodeSetup(actor->model, lbl_804D3288, 1, 0);
                     fn_80038474(actor->model, lbl_804D328C, 1, 0);
                 }
@@ -540,37 +556,39 @@ void BarrierActorUpdate(void* actorPtr, float delta) {
         }
         case 1: {
             beh->timer -= delta;
-            level = level - lbl_804D8D88 * beh->timer;
-            if (beh->timer <= lbl_804D8D84) {
+            level = level - 100.0f * beh->timer;
+            if (beh->timer <= 0.0f) {
                 beh->state = 2;
                 u32 seed = (u32)rand();
-                beh->timer = lbl_804D8D94 * ((float)seed / lbl_804D8D8C) + lbl_804D8D90;
+                beh->timer = 2500.0f * ((float)seed / 32767.0f) + 500.0f;
                 beh->fx = fn_8016F120(FxFind("g_barriers"), &actor->field24);
                 fn_8016F120(FxFind("g_barriers_on"), &actor->field24);
             }
             break;
         }
         case 2: {
-            if ((beh->flags & 2) == 0) {
-                beh->state = 3;
-                beh->timer = lbl_804D8D88;
-            } else if ((beh->flags & 4) != 0) {
-                float speed = fn_80017084(beh->timer);
-                beh->timer -= delta;
-                level = lbl_804D8D9C * speed + lbl_804D8D98;
-                if (beh->timer <= lbl_804D8D84) {
-                    beh->state = 3;
-                    beh->timer = lbl_804D8D88;
+            if ((beh->flags & 2) != 0) {
+                if ((beh->flags & 4) != 0) {
+                    float speed = fn_80017084(beh->timer);
+                    beh->timer -= delta;
+                    level = 0.15f * speed + 0.85f;
+                    if (beh->timer <= 0.0f) {
+                        beh->state = 3;
+                        beh->timer = 100.0f;
+                    }
                 }
+            } else {
+                beh->state = 3;
+                beh->timer = 100.0f;
             }
             break;
         }
         case 3: {
             beh->timer -= delta;
-            level = lbl_804D8D88 * beh->timer;
-            if (beh->timer <= lbl_804D8D84) {
+            level = 100.0f * beh->timer;
+            if (beh->timer <= 0.0f) {
                 beh->state = 0;
-                beh->timer = lbl_804D8D88;
+                beh->timer = 100.0f;
                 if (beh->fx != -1) {
                     fn_8016F120(FxFind("g_barriers_off"), &actor->field24);
                     fn_8016EEF4(beh->fx);
@@ -584,16 +602,16 @@ void BarrierActorUpdate(void* actorPtr, float delta) {
         }
 
         float clamped;
-        if (level < lbl_804D8D84) {
-            clamped = lbl_804D8D84;
-        } else if (level > lbl_804D8D80) {
-            clamped = lbl_804D8D80;
+        if (level < 0.0f) {
+            clamped = 0.0f;
+        } else if (level > 1.0f) {
+            clamped = 1.0f;
         } else {
             clamped = level;
         }
-        beh->field04 = (int)((lbl_804D8DA0 * delta) * clamped);
+        beh->field04 = (int)((5.0f * delta) * clamped);
         fn_80037EC0(actor->model, lbl_804D3288, 1, 100, 60, 140,
-                    (int)(lbl_804D8DA4 * level) & 0xFF);
+                    (int)(255.0f * level) & 0xFF);
         if ((beh->flags & 2) != 0) {
             fn_80037EC0(actor->model, lbl_804D3294, 1, 0xFF, 0xFF, 0xFF, 0xFF);
             fn_80037EC0(actor->model, lbl_804D3298, 1, 0xFF, 0xFF, 0xFF, 0xFF);
@@ -615,74 +633,47 @@ int BarrierKindRegistryMsg(void* actorPtr, void* dataPtr) {
     if (fn_80019F88(dataPtr, actorPtr) != 0) {
         return 1;
     }
-    if (beh == 0) {
-        return 0;
-    }
-
-    switch (data[1]) {
-    case 0x1314F:
-        beh->flags &= ~2u;
-        return 1;
-    case 0x9DF:
-        beh->flags |= 2;
-        return 1;
-    case (int)0xFCC9CDD8u:
-        if (data[3] != 0) {
-            beh->flags |= 4;
-        } else {
-            beh->flags &= ~4u;
-        }
-        beh->timer = lbl_804D8D88;
-        return 1;
-    case 0x1E417DFF: {
-        int firstFree = -1;
-        int* table = lbl_803ADE38;
-        int i = 0;
-        for (int n = 16; n != 0; n--) {
-            if (data[3] == table[0]) {
+    if (beh != 0) {
+        switch (data[1]) {
+        case 0x1314F:
+            beh->flags &= ~2u;
+            return 1;
+        case 0x9DF:
+            beh->flags |= 2;
+            return 1;
+        case (int)0xFCC8CDD8u:
+            if (data[3] != 0) {
+                beh->flags |= 4;
+            } else {
+                beh->flags &= ~4u;
+            }
+            beh->timer = 100.0f;
+            return 1;
+        case 0x1E417DFF: {
+            int firstFree = -1;
+            for (int i = 0; i < 64; i++) {
+                if (data[3] == lbl_803ADE38[i]) {
+                    return 1;
+                }
+                if (firstFree == -1 && lbl_803ADE38[i] == -1) {
+                    firstFree = i;
+                }
+            }
+            if (firstFree == -1) {
                 return 1;
             }
-            if (firstFree == -1 && table[0] == -1) {
-                firstFree = i;
-            }
-            i++;
-            if (data[3] == table[1]) {
-                return 1;
-            }
-            if (firstFree == -1 && table[1] == -1) {
-                firstFree = i;
-            }
-            i++;
-            if (data[3] == table[2]) {
-                return 1;
-            }
-            if (firstFree == -1 && table[2] == -1) {
-                firstFree = i;
-            }
-            i++;
-            if (data[3] == table[3]) {
-                return 1;
-            }
-            if (firstFree == -1 && table[3] == -1) {
-                firstFree = i;
-            }
-            i++;
-            table += 4;
-        }
-        if (firstFree == -1) {
+            lbl_803ADE38[firstFree] = data[3];
             return 1;
         }
-        lbl_803ADE38[firstFree] = data[3];
-        return 1;
-    }
-    case 0x5E1B40B7:
-        for (int i = 0; i < 64; i++) {
-            if (data[3] == lbl_803ADE38[i]) {
-                lbl_803ADE38[i] = -1;
-                return 1;
+        case 0x5E1B40B7:
+            for (int i = 0; i < 64; i++) {
+                if (data[3] == lbl_803ADE38[i]) {
+                    lbl_803ADE38[i] = -1;
+                    return 1;
+                }
             }
+            return 1;
         }
-        return 1;
     }
     return 0;
 }
@@ -705,13 +696,14 @@ u32 BarrierActorInit(void* actorPtr) {
     if (!ActorInitBase((Actor*)actor)) {
         return 0;
     }
-    beh = actor->behaviour;
-    if (beh == 0) {
+    if (actor->behaviour == 0) {
         beh = (BarrierBeh*)PoolAlloc(lbl_8049B468, 0x20, lbl_8049B868, 0x20);
         if (beh == 0) {
             return 0;
         }
         actor->behaviour = beh;
+    } else {
+        beh = actor->behaviour;
     }
 
     actor->field4C |= 0x20000;
@@ -730,7 +722,7 @@ u32 BarrierActorInit(void* actorPtr) {
     beh->state = 2;
     beh->field04 = 0;
     beh->flags = 0;
-    beh->timer = lbl_804D8D84;
+    beh->timer = 0.0f;
     beh->fx = fn_8016F120(FxFind("g_barriers"), &actor->field24);
     beh->flags |= 2;
     lbl_804D329C = FxFind("BarrierPass_NPC");
