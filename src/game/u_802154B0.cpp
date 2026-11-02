@@ -156,8 +156,15 @@ void HookNop1();
 extern "C" void fn_8001BC78();
 // TODO (not drafted yet, 0x410 bytes at 0x8021E09C): menu screen handler
 extern "C" void fn_8021E09C(MenuPage* page);
-// TODO (not drafted yet, 0x220 bytes at 0x8021DE7C): menu page redraw
-extern "C" void fn_8021DE7C();
+extern "C" void fn_8001BB00();
+extern "C" void fn_8017BDC0();
+void LevelFlagPop();
+void SAMPause(int v);
+extern "C" void fn_80173DD0(int v);
+extern "C" void fn_800E2300(int v);
+extern "C" void fn_8013E990(float v);
+extern "C" void fn_801EB060(int v);
+void MenuClose();
 extern const char* lbl_804D3458; // "MainMenu"
 extern "C" int fn_800498D0(MenuScreen* screen);
 extern "C" int fn_800C5654(int a, u32 hash, int b);
@@ -613,7 +620,7 @@ void MenuPopPage() {
         MenuPageClear(page);
     }
     lbl_804D345C = -1;
-    fn_8021DE7C();
+    MenuClose();
 }
 
 // MenuPageClose: close a page (running the item close hooks) and re-arm its widget.
@@ -767,7 +774,7 @@ extern "C" void fn_8021DCF4() {
         MenuPageOpen(prev);
         FxStart(lbl_804D3444, 0, 0);
     } else {
-        fn_8021DE7C();
+        MenuClose();
     }
 }
 
@@ -1062,4 +1069,80 @@ void MenuConfirmPageInit(MenuPage* page) {
     page->okButton->arg = (int)page;
     page->cancelButton->onPress = (void (*)(int))MenuReturnToMain;
     page->cancelButton->arg = (int)page;
+}
+
+// MenuClose: leave the menu (state 4: resume the game, otherwise start the fade-in).
+void MenuClose() {
+    switch (lbl_804D53E0) {
+    case 4:
+        if (lbl_804D53D0 == 1) {
+            lbl_804D53C0 = 500.0f - lbl_804D53C0;
+        } else {
+            lbl_804D53C0 = 500.0f;
+        }
+        if (lbl_804D53E4 != 0) {
+            fn_8001BB00();
+            fn_8017BDC0();
+            lbl_804D53E4 = 0;
+        }
+        LevelFlagPop();
+        SAMPause(0);
+        fn_80173DD0(0);
+        fn_80173DD0(1);
+        fn_80173DD0(2);
+        fn_80173DD0(4);
+        fn_80173DD0(6);
+        fn_80173DD0(7);
+        fn_80173DD0(8);
+        fn_80173DD0(9);
+        fn_80173DD0(0xB);
+        fn_80173DD0(0xC);
+        fn_80173DD0(0xD);
+        fn_80173DD0(0xE);
+        fn_80173DD0(0xF);
+        fn_80173DD0(0x10);
+        fn_80173DD0(0x11);
+        fn_800E2300(0);
+        lbl_804D53D0 = 0;
+        lbl_804D53C8 = 1;
+        fn_8013E990(1.0f);
+        break;
+    case 1:
+        break;
+    default:
+        if (lbl_804D53C4 != 0) {
+            lbl_804D53C4 = 0;
+            lbl_804D53C0 = 500.0f - lbl_804D53C0;
+            LevelFlagPop();
+            lbl_804D53D0 = 2;
+        } else {
+            lbl_804D53D0 = 1;
+            lbl_804D53C0 = 500.0f;
+        }
+        SAMPause(0);
+        fn_80173DD0(0);
+        fn_80173DD0(1);
+        fn_80173DD0(2);
+        fn_80173DD0(4);
+        fn_80173DD0(6);
+        fn_80173DD0(7);
+        fn_80173DD0(8);
+        fn_80173DD0(9);
+        fn_80173DD0(0xB);
+        fn_80173DD0(0xC);
+        fn_80173DD0(0xD);
+        fn_80173DD0(0xE);
+        fn_80173DD0(0xF);
+        fn_80173DD0(0x10);
+        fn_80173DD0(0x11);
+        fn_800E2300(0);
+        if (lbl_804D53E4 != 0) {
+            fn_8001BB00();
+            fn_8017BDC0();
+            lbl_804D53E4 = 0;
+        }
+        break;
+    }
+    fn_801EB060(2);
+    FxStart(lbl_804D3440, 0, 0);
 }
