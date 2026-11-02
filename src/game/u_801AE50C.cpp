@@ -217,7 +217,9 @@ struct EnemyData {
     int f14;         // 0x14
     u8 pad18[0x24 - 0x18];
     float f24;       // 0x24
-    u8 pad28[0x50 - 0x28];
+    u8 pad28[0x3C - 0x28];
+    float f3C;       // 0x3C
+    u8 pad40[0x50 - 0x40];
     float f50;       // 0x50
 };
 
@@ -225,7 +227,15 @@ struct EnemyData {
 struct EnemyObj {
     u8 pad00[0x130];
     EnemyData* data; // 0x130
-    u8 pad134[0x91C - 0x134];
+    u8 pad134[0x270 - 0x134];
+    u8 cond[0x18];   // 0x270
+    u8 pad288[0x5B8 - 0x288];
+    float f5B8;      // 0x5B8
+    u8 pad5BC[0x5D0 - 0x5BC];
+    int i5D0;        // 0x5D0
+    u8 pad5D4[0x5EC - 0x5D4];
+    void* link;      // 0x5EC
+    u8 pad5F0[0x91C - 0x5F0];
     float f91C;      // 0x91C
 };
 
@@ -237,9 +247,50 @@ extern int lbl_804D31C4;
 extern int lbl_804D31C0;
 extern "C" int fn_800F7994(int a, u32 b);
 extern "C" int FxStart(void* fx, int a, int b);
+extern "C" int rand();
+int Rand();
+void ClearStateMachine(void* o);
+void SetStateMachineState(void* o, u32 state);
+void ConditionUpdateBit(void* c, int bit, int on);
+extern "C" void fn_80118084(void* link, u32 hash, void* data);
+extern "C" int fn_800B949C(u32 hash, int* out, int n, int x);
+extern "C" int fn_801B1F18(EnemyObj* o);
+extern "C" int fn_801B1594(EnemyObj* o, EnemyData* d);
+
+// Picks the next goal: a random entry of a table or the result of the planner.
+inline int EnemyPickGoal(EnemyObj* o) {
+    int list[16];
+    int goal;
+    if (0.5f * (o->f5B8 * (float)o->i5D0) > (float)rand() / 32767.0f) {
+        goal = fn_801B1F18(o);
+    } else {
+        int n = fn_800B949C(0x6D8FDBFF, list, 0x10, 1);
+        if (n == 0) {
+            goal = -1;
+        } else {
+            int r = Rand();
+            goal = list[r - (r / n) * n];
+        }
+    }
+    return goal;
+}
+
+// Enters the wander mode (state 4); shared tail of several mode-enter functions.
+inline void EnemyEnterWanderBody(EnemyObj* o) {
+    EnemyData* d = o->data;
+    d->state = 4;
+    d->f0 = 0;
+    d->f8 = EnemyPickGoal(o);
+    float speed = 1000.0f;
+    ClearStateMachine(o);
+    SetStateMachineState(o, 0xF1C37C5C);
+    fn_80118084(o->link, 0x315C41D, &d->f8);
+    fn_80118084(o->link, 0x33FA508, &speed);
+    fn_80118084(o->link, 0x99A725C, (void*)1);
+}
+
 extern float lbl_804D31A8;
 extern float lbl_804D31AC;
-extern "C" int rand();
 extern "C" void fn_8016EEF4(int v);
 extern "C" void fn_80073E80(Actor* a);
 extern "C" void fn_800B4C50(float a, float b, float* pos, int c, int d, int e);
@@ -401,17 +452,73 @@ int EnemyMsg801B02E4(EnemyObj* o) {
     return 1;
 }
 
-// TODO (not drafted yet, 0x2D0 bytes at 0x801B0384): game logic
-extern "C" void fn_801B0384();
+int EnemyEnterMode7(EnemyObj* o) {
+    if (o == 0) {
+        return 0;
+    }
+    EnemyData* d = o->data;
+    if (d->state != 7) {
+        d->f3C = 0.0f;
+    }
+    d->state = 7;
+    d->f0 = 0;
+    d->f8 = EnemyPickGoal(o);
+    d->f14 = 0;
+    if (d->f8 == -1) {
+        EnemyEnterWanderBody(o);
+        return 1;
+    }
+    float speed = 1000.0f;
+    int one = 1;
+    ClearStateMachine(o);
+    SetStateMachineState(o, 0xF1C37C5C);
+    fn_80118084(o->link, 0x315C41D, &d->f8);
+    fn_80118084(o->link, 0x33FA508, &speed);
+    fn_80118084(o->link, 0x7B88DA40, &one);
+    ConditionUpdateBit(o->cond, 4, 1);
+    return 1;
+}
 
-// TODO (not drafted yet, 0x204 bytes at 0x801B0654): game logic
-extern "C" void fn_801B0654();
+int EnemyEnterMode6(EnemyObj* o) {
+    if (o == 0) {
+        return 0;
+    }
+    EnemyData* d = o->data;
+    d->state = 6;
+    d->f0 = 0;
+    d->f8 = fn_801B1594(o, d);
+    if (d->f8 == -1) {
+        EnemyEnterWanderBody(o);
+        return 1;
+    }
+    float speed = 2500.0f;
+    ClearStateMachine(o);
+    SetStateMachineState(o, 0xDF1271D9);
+    fn_80118084(o->link, 0x315C41D, &d->f8);
+    fn_80118084(o->link, 0x33FA508, &speed);
+    fn_80118084(o->link, 0x4A6C281E, (void*)1);
+    return 1;
+}
 
 // TODO (not drafted yet, 0x1E4 bytes at 0x801B0858): game logic
 extern "C" void fn_801B0858();
 
-// TODO (not drafted yet, 0x168 bytes at 0x801B0A3C): game logic
-extern "C" void fn_801B0A3C();
+int EnemyEnterWander(EnemyObj* o) {
+    if (o == 0) {
+        return 0;
+    }
+    EnemyData* d = o->data;
+    d->state = 4;
+    d->f0 = 0;
+    d->f8 = EnemyPickGoal(o);
+    float speed = 1000.0f;
+    ClearStateMachine(o);
+    SetStateMachineState(o, 0xF1C37C5C);
+    fn_80118084(o->link, 0x315C41D, &d->f8);
+    fn_80118084(o->link, 0x33FA508, &speed);
+    fn_80118084(o->link, 0x99A725C, (void*)1);
+    return 1;
+}
 
 // TODO (not drafted yet, 0x1B8 bytes at 0x801B0BA4): game logic
 extern "C" void fn_801B0BA4();
@@ -426,13 +533,11 @@ extern "C" void fn_801B0F14();
 extern "C" void fn_801B135C();
 
 // TODO (not drafted yet, 0x338 bytes at 0x801B1594): game logic
-extern "C" void fn_801B1594();
 
 // TODO (not drafted yet, 0x64C bytes at 0x801B18CC): game logic
 extern "C" void fn_801B18CC();
 
 // TODO (not drafted yet, 0x250 bytes at 0x801B1F18): game logic
-extern "C" void fn_801B1F18();
 
 // TODO (not drafted yet, 0x100 bytes at 0x801B2168): game logic
 extern "C" void fn_801B2168();
