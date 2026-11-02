@@ -272,6 +272,18 @@ extern "C" void fn_800B1AB8(float f, void* o, int r, int n);
 extern "C" void fn_80131798(u32 a, int b, int* c, int d);
 int Fn80175D60(u32 a);
 void* VAlloc(int n);
+struct GunData {
+    int mode;        // 0x00
+    int h4;          // 0x04
+    int f8;          // 0x08
+    int hC;          // 0x0C
+    int f10;         // 0x10
+};
+struct GunBeh {
+    u8 pad00[0xE0];
+    GunData* data;   // 0xE0
+};
+extern "C" int fn_80175EF8();
 struct FoeState {
     int (*enter)(FoeObj*, FoeBeh*);
     int (*unk4)();
@@ -1598,14 +1610,17 @@ extern "C" void fn_80132D40();
 // TODO (not drafted yet, 0x158 bytes at 0x80132D80): game logic (string: hotgun)
 extern "C" void fn_80132D80();
 
-// TODO (not drafted yet, 0x24 bytes at 0x80132ED8): game logic
-extern "C" void fn_80132ED8();
+int GunWeaponReset() {
+    fn_80175EF8();
+    return 1;
+}
 
 // TODO (not drafted yet, 0xC0 bytes at 0x80132EFC): game logic
 extern "C" void fn_80132EFC();
 
-// TODO (not drafted yet, 0x8 bytes at 0x80132FBC): game logic
-extern "C" void fn_80132FBC();
+int GunMaxRange() {
+    return 1000;
+}
 
 // TODO (not drafted yet, 0xDC bytes at 0x80132FC4): game logic
 extern "C" void fn_80132FC4();
@@ -1619,11 +1634,13 @@ extern "C" void fn_801334E4();
 // TODO (not drafted yet, 0xC0 bytes at 0x80133574): game logic
 extern "C" void fn_80133574();
 
-// TODO (not drafted yet, 0x8 bytes at 0x80133634): game logic
-extern "C" void fn_80133634();
+int GunReturnFalse_80133634() {
+    return 0;
+}
 
-// TODO (not drafted yet, 0x8 bytes at 0x8013363C): game logic
-extern "C" void fn_8013363C();
+int GunReturnFalse_8013363C() {
+    return 0;
+}
 
 // TODO (not drafted yet, 0x220 bytes at 0x80133644): game logic
 extern "C" void fn_80133644();
@@ -1631,35 +1648,77 @@ extern "C" void fn_80133644();
 // TODO (not drafted yet, 0x2C0 bytes at 0x80133864): game logic
 extern "C" void fn_80133864();
 
-// TODO (not drafted yet, 0x24 bytes at 0x80133B24): game logic
-extern "C" void fn_80133B24();
+int GunDetach(FoeObj* o) {
+    fn_800BBCA8(o);
+    return 1;
+}
 
-// TODO (not drafted yet, 0x8 bytes at 0x80133B48): game logic
-extern "C" void fn_80133B48();
+int GunReturnTrue_80133B48() {
+    return 1;
+}
 
-// TODO (not drafted yet, 0x8 bytes at 0x80133B50): game logic
-extern "C" void fn_80133B50();
+int GunReturnTrue_80133B50() {
+    return 1;
+}
 
-// TODO (not drafted yet, 0x30 bytes at 0x80133B58): game logic
-extern "C" void fn_80133B58();
+int GunClearBit(FoeObj* o) {
+    ConditionUpdateBit(o->cond, 0x17, 0);
+    return 1;
+}
 
-// TODO (not drafted yet, 0x8 bytes at 0x80133B88): game logic
-extern "C" void fn_80133B88();
+int GunReturnTrue_80133B88() {
+    return 1;
+}
 
-// TODO (not drafted yet, 0x84 bytes at 0x80133B90): game logic
-extern "C" void fn_80133B90();
+int GunEnterTrack(FoeObj* o, GunBeh* b) {
+    int msg[8];
+    if (o == 0) {
+        return 0;
+    }
+    GunData* d = b->data;
+    d->mode = 4;
+    SendMsg(d->h4, 0x400, msg);
+    FollowSetTargetObj(o->cond, (void*)msg[0]);
+    ConditionUpdateBit(o->cond, 3, 1);
+    o->f288 = 3;
+    fn_800BC56C(o, (void*)msg[0]);
+    return 1;
+}
 
-// TODO (not drafted yet, 0x8 bytes at 0x80133C14): game logic
-extern "C" void fn_80133C14();
+int GunReturnTrue_80133C14() {
+    return 1;
+}
 
-// TODO (not drafted yet, 0x8 bytes at 0x80133C1C): game logic
-extern "C" void fn_80133C1C();
+int GunReturnTrue_80133C1C() {
+    return 1;
+}
 
-// TODO (not drafted yet, 0x98 bytes at 0x80133C24): game logic
-extern "C" void fn_80133C24();
+int GunEnterFollow(FoeObj* o, GunBeh* b) {
+    int msg[8];
+    if (o == 0) {
+        return 0;
+    }
+    GunData* d = b->data;
+    d->mode = 1;
+    d->f10 = 0;
+    ConditionUpdateBit(o->cond, 3, 1);
+    ConditionUpdateBit(o->cond, 4, 1);
+    o->f288 = 2;
+    SendMsg(d->hC, 0x400, msg);
+    FollowSetTargetObj(o->cond, (void*)msg[0]);
+    return 1;
+}
 
-// TODO (not drafted yet, 0x6C bytes at 0x80133CBC): game logic
-extern "C" void fn_80133CBC();
+int GunEnterIdle(FoeObj* o, GunBeh* b) {
+    if (o == 0) {
+        return 0;
+    }
+    b->data->mode = 0;
+    ConditionUpdateBit(o->cond, 4, 0);
+    ConditionUpdateBit(o->cond, 3, 1);
+    o->f288 = 0;
+    return 1;
+}
 
 // TODO (not drafted yet, 0xC4 bytes at 0x80133D28): game logic
 extern "C" void fn_80133D28();
@@ -1670,8 +1729,11 @@ extern "C" void fn_80133DEC();
 // TODO (not drafted yet, 0x18C bytes at 0x80133ED0): game logic
 extern "C" void fn_80133ED0();
 
-// TODO (not drafted yet, 0x2C bytes at 0x8013405C): game logic
-extern "C" void fn_8013405C();
+void GunFree(FoeObj* o, GunBeh* b) {
+    if (o != 0) {
+        VFree(b->data);
+    }
+}
 
 // TODO (not drafted yet, 0xDC bytes at 0x80134088): game logic
 extern "C" void fn_80134088();
