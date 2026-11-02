@@ -7,6 +7,7 @@
 #include <dolphin/mtx.h>
 #include <dolphin/os.h>
 #include <string.h>
+#include <dolphin/vi.h>
 
 typedef unsigned char u8;
 typedef unsigned short u16;
@@ -379,7 +380,6 @@ extern int lbl_804D4050;
 extern int lbl_804D4054;
 extern int lbl_804D4058;
 extern int lbl_804D2550;
-extern char lbl_803CFF80[];
 
 static inline void Ortho2D(float t, float b, float l, float r) {
     Mtx44 id;
@@ -476,3 +476,171 @@ extern "C" void fn_8000AA14(void) { lbl_804D4058 = 1; }
 extern "C" void fn_8000ADD0(int v) { lbl_804D2550 = v; }
 
 extern "C" void fn_8000ADD8(void) {}
+
+extern "C" {
+void fn_80013560(void);
+void fn_8004065C(void);
+void fn_80013710(void);
+void fn_8010F0AC(void);
+void fn_801D8D30(void);
+void fn_80234DAC(void);
+void fn_800F724C(void);
+void fn_8010EFB0(void);
+void fn_801D8D3C(void);
+int fn_80286EAC(void);
+void fn_800E23CC(void);
+void fn_8000BC5C(int arg);
+void* MemAlloc(int size, const char* file, int line);
+void MemFree(void* p, const char* file, int line);
+}
+void MeshNop1(void);
+void TextureReleaseAll(void);
+void GfxLightsClearStats(void);
+void ModelTableInit(void);
+void TextureSystemInit(void);
+void MeshEnable(void);
+void DeferNop(void);
+void DeferShutdown(void);
+void MemShutdown(void);
+void ARQReset(void);
+extern float gAspectScale;
+extern float lbl_804D2540;
+extern int lbl_804D404C;
+extern OSThread* lbl_804D40E8;
+extern int lbl_804D40FC;
+extern int lbl_804D40F0;
+extern int lbl_804D40EC;
+extern int lbl_804D4110;
+extern int lbl_804D4070;
+extern int lbl_804D4078;
+
+struct CameraState {
+    u8 pad0[0x64];
+    Mtx pos;      // 0x64
+    Mtx nrm;      // 0xA4 (stride 0x40)
+    u8 pad_[0xE4 - 0xA4 - sizeof(Mtx)];
+    Mtx44 proj;   // 0xE4
+};
+extern CameraState lbl_803CFF80;
+
+// LoadCameraMatrices: loads the current camera's projection and position/normal matrices into GX.
+extern "C" void fn_800092CC(void) {
+    CameraState* c = &lbl_803CFF80;
+
+    GXSetProjection(c->proj, GX_PERSPECTIVE);
+    GXLoadPosMtxImm(c->pos, 0);
+    GXLoadNrmMtxImm(c->nrm, 0);
+    GXSetCurrentMtx(0);
+}
+
+extern "C" void fn_800097F0(void) {
+    CameraState* c = &lbl_803CFF80;
+
+    GXSetProjection(c->proj, GX_PERSPECTIVE);
+    GXLoadPosMtxImm(c->pos, 0);
+    GXLoadNrmMtxImm(c->nrm, 0);
+    GXSetCurrentMtx(0);
+}
+
+// LoadModelMatrix: concatenates a matrix with the view matrix and loads it into GX slot `slot`.
+extern "C" void fn_80009324(Mtx m, int slot) {
+    Mtx n;
+    Mtx c;
+
+    PSMTXConcat((float(*)[4])lbl_803CFFE4, m, c);
+    GXLoadPosMtxImm(c, slot);
+    PSMTXInvXpose(c, n);
+    GXLoadNrmMtxImm(n, slot);
+    GXSetCurrentMtx(slot);
+    lbl_804D4038 = 1;
+}
+
+// TextureProjectionMatrix: out = lightPerspective * in.
+extern "C" void fn_80009848(Mtx out, Mtx in, float fov) {
+    Mtx m;
+
+    C_MTXLightPerspective(m, lbl_804D2540 + fov, gAspectScale, 0.5f, -0.5f, 0.5f, 0.5f);
+    PSMTXConcat(m, in, out);
+}
+
+extern "C" void fn_8000AE40(void) {
+    fn_80013560();
+    fn_8004065C();
+    MeshNop1();
+    TextureReleaseAll();
+}
+
+extern "C" void fn_8000AFB0(void) {
+    GfxLightsClearStats();
+    fn_80013710();
+    ModelTableInit();
+    TextureSystemInit();
+    MeshEnable();
+    DeferNop();
+    lbl_804D4034 = 0;
+    fn_8010F0AC();
+    fn_801D8D30();
+    fn_80234DAC();
+    lbl_804D404C = VIGetRetraceCount();
+}
+
+extern "C" void fn_8000B000(void) {
+    fn_800F724C();
+    ARQReset();
+    DeferShutdown();
+    fn_8010EFB0();
+    fn_801D8D3C();
+    MemShutdown();
+}
+
+extern "C" void fn_8000B5CC(void) {
+    if (lbl_804D40FC != 0 && lbl_804D40E8 != 0) {
+        OSResumeThread(lbl_804D40E8);
+    }
+}
+
+extern "C" void fn_8000C328(void) { lbl_804D40F0 = 1; }
+
+extern "C" void fn_8000C334(void) { lbl_804D40EC += fn_80286EAC(); }
+
+// FrameCountersAdd
+extern "C" void fn_8000C354(int a, int b, int c, int d, int doExtra) {
+    lbl_804D4074 = lbl_804D4074 + 1;
+    lbl_804D4078 = lbl_804D4078 + d;
+    if (doExtra != 0) {
+        lbl_804D407C = lbl_804D407C + 1;
+    }
+}
+
+extern "C" void* fn_8000D024(int size) { return MemAlloc(size, "Cube.cpp", 0x24A); }
+extern "C" void fn_8000D054(void* p) { MemFree(p, "Cube.cpp", 0x243); }
+
+extern "C" void fn_80006558(int on) {
+    if (on != 0) {
+        lbl_804D40FC = 1;
+    } else {
+        lbl_804D40FC = 0;
+        lbl_804D2580 |= 1;
+        lbl_804D4110 = 0;
+        GXSetCurrentGXThread();
+    }
+}
+
+extern "C" void fn_800065A4(void) {
+    fn_8000BC5C(0);
+    fn_8000BC5C(-1);
+    lbl_804D4070 = 0;
+}
+
+extern "C" void fn_80005CEC(void) {
+    PADStatus* p = lbl_803CFEE0;
+
+    memset((char*)p + 0x30, 0, 0x30);
+    memset((char*)p, 0, 0x30);
+    memset((char*)p + 0x60, 0, 0x40);
+    PADInit();
+    fn_800E23CC();
+    lbl_804D3FE0 = 0;
+    lbl_804D3FE4 = 0;
+    lbl_804D3FE8 = 0;
+}
