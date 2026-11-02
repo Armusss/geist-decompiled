@@ -1012,14 +1012,16 @@ extern "C" int fn_80118084(U80116B28Sub* sub, int arg1, int arg2)
 // there is no state block or the id is not registered.
 const char* U80116B28GetTypeName(U80116B28Owner* owner)
 {
+    unsigned long id;
     int count;
     int i;
 
     if (owner->field_5EC == 0)
         return &lbl_803457B0[0x47];
     count = lbl_804D2E08;
+    id = owner->field_5EC->field_CC;
     for (i = 0; i < count; i++) {
-        if (owner->field_5EC->field_CC == lbl_8039ED68[i].id)
+        if (id == lbl_8039ED68[i].id)
             return lbl_8039ED68[i].name;
     }
     return &lbl_803457B0[0x47];
