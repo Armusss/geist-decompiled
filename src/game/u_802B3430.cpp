@@ -411,13 +411,13 @@ void ClockActorTick(Actor* self, float dt) {
     }
 
     work = self->clock;
+    amount = 0.0f;
     lbl_804D5780 = lbl_804D5780 + dt;
     base = fn_8008E5CC(player->field_7C, 0);
-    amount = 0.0f;
 
     if (work->field_30 == 1) {
         if (player->field_588 == 2) {
-            if (1.1920929e-7f < fabs(player->field_38C)) {
+            if (fabsf(player->field_38C) > 1.1920929e-7f) {
                 if (2000.0f < lbl_804D5780) {
                     lbl_804D5780 = 0.0f;
                     FxStart(lbl_804D3900, 0, 0);
@@ -425,7 +425,7 @@ void ClockActorTick(Actor* self, float dt) {
                 amount = -((45.0f * player->field_38C) * dt / 1000.0f);
             }
         } else {
-            if (1.1920929e-7f < fabs(player->field_390)) {
+            if (fabsf(player->field_390) > 1.1920929e-7f) {
                 if (2000.0f < lbl_804D5780) {
                     lbl_804D5780 = 0.0f;
                     FxStart(lbl_804D3900, 0, 0);
@@ -438,17 +438,17 @@ void ClockActorTick(Actor* self, float dt) {
             player->field_354 == 0 && player->field_358 == 0 &&
             player->field_35C == 0 && player->field_360 == 0 &&
             ActorPlayAnim(self->field_38, 0xEBE74F6A, self->field_38) == 0) {
-            if (work->field_34 != work->field_3C ||
-                1.0f <= fabs(work->field_38 - (float)work->field_40)) {
-                ActorPlayAnim(self->field_38, 0xA738DF81, self->field_38);
-                FxStart(lbl_804D3908, 0, 0);
-                work->field_4C = 0;
-                work->field_30 = 2;
-            } else {
+            if (work->field_34 == work->field_3C &&
+                fabsf(work->field_38 - (float)work->field_40) < 1.0f) {
                 work->field_4C = 1;
                 ActorPlayAnim(self->field_38, 0xA4DBBCA0, self->field_38);
                 FxStart(lbl_804D3904, 0, 0);
                 work->field_30 = 3;
+            } else {
+                ActorPlayAnim(self->field_38, 0xA738DF81, self->field_38);
+                FxStart(lbl_804D3908, 0, 0);
+                work->field_4C = 0;
+                work->field_30 = 2;
             }
         } else if (amount == 0.0f) {
             Fn8006CDE8(player, 0, 0);
