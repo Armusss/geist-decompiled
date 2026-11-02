@@ -152,6 +152,7 @@ struct Query400 {
     int unk10;     // 0x10
     int unk14;     // 0x14
     u32 flags;     // 0x18
+    int unk1C;     // 0x1C
 };
 
 struct FearRivetHitMsg {
@@ -365,12 +366,12 @@ void FearRivetSpawn(u32 id, int mode, SpawnInfo* info, int arg) {
     SpawnDesc desc;
     Vec3 tmp;
     Vec3 v;
-    int n;
     float a1;
     float a2;
 
-    if (lbl_803B9E58.nameHash == 0) {
-        lbl_803B9E58.nameHash = StrHash(lbl_803B9E58.name);
+    AssetType* at = &lbl_803B9E58;
+    if (at->nameHash == 0) {
+        at->nameHash = StrHash(at->name);
     }
 
     memset(&desc, 0, sizeof(desc));
@@ -389,9 +390,14 @@ void FearRivetSpawn(u32 id, int mode, SpawnInfo* info, int arg) {
         SendMsg((void*)id, 0x400, &q);
         t = q.actor;
         vel = PlayerGetGunVec(t);
-        desc.offset.x += vel->x * 1000.0f;
-        desc.offset.y += vel->y * 1000.0f;
-        desc.offset.z += vel->z * 1000.0f;
+        {
+            float sx = vel->x * 1000.0f;
+            float sy = vel->y * 1000.0f;
+            float sz = vel->z * 1000.0f;
+            desc.offset.x += sx;
+            desc.offset.y += sy;
+            desc.offset.z += sz;
+        }
         if (t->unk1C6C == 0) {
             fn_800C5E00(t->unk248, 1, info->unk0C, info->unk10, 0);
         } else {
@@ -403,7 +409,8 @@ void FearRivetSpawn(u32 id, int mode, SpawnInfo* info, int arg) {
         }
     }
 
-    n = 3 + actor->unk50;
+    int n = 3;
+    n += actor->unk50;
     fn_8016D440(&v, &actor->vec3C);
     a1 = 360.0f * (float)(rand() % n) / 4096.0f;
     a2 = 360.0f * (float)(rand() % n) / 4096.0f;
@@ -684,17 +691,19 @@ void FearRivetDraw(FearRivet* self, Actor* actor) {
     Vec3 pos = sFearRivetOffset;
     Vec3 p;
     Mtx34 mtx;
+    float* wp;
     int alpha;
 
     ActorGetMatrix(&mtx, actor);
+    wp = &mtx.m[9];
     fn_800A0100(&mtx);
     fn_800A0094(&p, &pos);
-    p.x += mtx.m[9];
-    p.y += mtx.m[10];
-    p.z += mtx.m[11];
+    p.x += wp[0];
+    p.y += wp[1];
+    p.z += wp[2];
     fn_8013B6F8(4.0f, -4, 0);
     alpha = (int)(((self->unk14 - actor->unkC4) / 1000.0f) * 255.0f);
-    fn_8013B608(&mtx.m[9], &p, 0x6B, 0xF, 6, 0, 0xFF, 0, 0, alpha & 0xFF);
+    fn_8013B608(wp, &p, 0x6B, 0xF, 6, 0, 0xFF, 0, 0, alpha & 0xFF);
     fn_8013B5D4();
 }
 
