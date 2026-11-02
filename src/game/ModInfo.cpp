@@ -471,11 +471,10 @@ void LightsLoad(int type, void* data, int size, void* ctx) {
     void* hdr = (size > 0) ? data : 0;
     FileFlushBuffer(hdr, 0x10);
     if (*(int*)hdr == 0xF) {
-        int count = ((int*)hdr)[1];
         int i;
-        lbl_804D4288 = count;
-        lbl_804D4280 = (Actor*)(Fits(size - 0x10, count * 0x1C8) ? base + 0x10 : 0);
-        lbl_804D4284 = (LightRender*)VAlloc(count * 0x64);
+        lbl_804D4288 = ((int*)hdr)[1];
+        lbl_804D4280 = (Actor*)(Fits(size - 0x10, lbl_804D4288 * 0x1C8) ? base + 0x10 : 0);
+        lbl_804D4284 = (LightRender*)VAlloc(lbl_804D4288 * 0x64);
         for (i = 0; i < lbl_804D4288; i++) {
             FileFlushBuffer(&lbl_804D4280[i], 0x50);
             FileFlushBuffer((char*)&lbl_804D4280[i] + 0x50, 0x178);
