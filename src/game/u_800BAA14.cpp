@@ -138,14 +138,17 @@ extern u8 lbl_804D2B90[8];      // 0x804D2B90
 extern int gNavGraphB;       // 0x804D2B98
 extern int gNavGraph;        // 0x804D2B9C
 extern RouteTable* gRoutes;  // 0x804D4848
-extern RouteInfo* gRouteList[]; // 0x804499D0
 struct RouteBlock {
     int count;
     int* list;
 };
-extern RouteBlock gRouteBlocks[]; // 0x80449BD0 (0x80 entries: member count, heap list)
-extern u32 gRouteItems[];       // 0x80449FD0
 extern RouteTable* gItems;      // 0x804D484C
+
+// .bss at 0x804499D0, reached from one anchor (gRouteList): the route table, the per-route member lists and
+// the item table (the item area continues up to 0x8044F400).
+static RouteInfo* gRouteList[128];
+static RouteBlock gRouteBlocks[128];
+static u32 gRouteItems[0x150C];
 
 void VFree(void* p);
 void GraphDestroy(u32 graph);
@@ -166,6 +169,12 @@ struct Owner;
 int OwnerId(Owner* o);
 // TODO (not drafted yet, 0x384 bytes at 0x800C2B0C): distance from a position to a route's path
 extern "C" int fn_800C2B0C(Vec3* pos, RouteInfo* route, float* outDist);
+extern "C" void fn_80026660(int kind, void* cb, int arg);
+extern "C" void fn_80026680(int kind, void* cb, int arg);
+// TODO (not drafted yet, 0x184 bytes at 0x800C451C): load the item records
+void NavItemsLoad(int kind, int* data, int size);
+// TODO (not drafted yet, 0x400 bytes at 0x800C411C): load the route records
+void NavRoutesLoad(int kind, int* data, int size);
 extern "C" int fn_800B9388(u32 id, int skipUnused);
 extern "C" int fn_800B949C(u32 id, u32* out, int max, int includeUnused);
 
@@ -733,13 +742,38 @@ static inline int RouteScan(Vec3* pos) {
     return found;
 }
 
+static inline void RouteBlockRemove(int route, int id) {
+    int i;
+    for (i = 0; i < gRouteBlocks[route].count; i++) {
+        if (id == gRouteBlocks[route].list[i]) {
+            gRouteBlocks[route].list[i] = -1;
+            break;
+        }
+    }
+}
+
+static inline void RouteBlockAdd(int route, int id) {
+    int i;
+    int slot = -1;
+    for (i = 0; i < gRouteBlocks[route].count; i++) {
+        if (id == gRouteBlocks[route].list[i]) {
+            return;
+        }
+        if (gRouteBlocks[route].list[i] == -1 && slot == -1) {
+            slot = i;
+        }
+    }
+    if (slot != -1) {
+        gRouteBlocks[route].list[slot] = id;
+    }
+}
+
 // NavUpdateRoute: track which route an actor is in, keeping the per-route member lists current.
 int NavUpdateRoute(void* owner) {
     Actor* actor;
     int route;
     int cur;
     int id;
-    int i;
     if (owner == 0) {
         return -1;
     }
@@ -749,30 +783,13 @@ int NavUpdateRoute(void* owner) {
     if (route != cur && route != -1) {
         id = OwnerId((Owner*)actor);
         if (id != -1 && cur >= 0 && cur < gRoutes->count) {
-            for (i = 0; i < gRouteBlocks[cur].count; i++) {
-                if (id == gRouteBlocks[cur].list[i]) {
-                    gRouteBlocks[cur].list[i] = -1;
-                    break;
-                }
-            }
+            RouteBlockRemove(cur, id);
         }
         id = OwnerId((Owner*)actor);
         if (id != -1 && route >= 0 && route < gRoutes->count) {
-            int slot = -1;
-            for (i = 0; i < gRouteBlocks[route].count; i++) {
-                if (id == gRouteBlocks[route].list[i]) {
-                    goto done;
-                }
-                if (gRouteBlocks[route].list[i] == -1 && slot == -1) {
-                    slot = i;
-                }
-            }
-            if (slot != -1) {
-                gRouteBlocks[route].list[slot] = id;
-            }
+            RouteBlockAdd(route, id);
         }
     }
-done:
     actor->navCurRoute = route;
     return actor->navCurRoute;
 }
