@@ -228,22 +228,23 @@ void PlayerBatsqueekUpdate(Player* player, float seek)
 void PlayerBatsqueekSetup(Player* player)
 {
     int slot = PlayerInHost((Actor*)player);
+    int idx = player->field73C;
 
     player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14,
                                    player->slots26C4[slot]->field18,
-                                   lbl_803BA2B0.ids[player->field73C], 0, 0);
+                                   lbl_803BA2B0.ids[idx], 0, 0);
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 1;
 
     player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14,
                                    player->slots26C4[slot]->field1C,
-                                   lbl_803BA2B0.ids[player->field73C], 0, 0);
+                                   lbl_803BA2B0.ids[idx], 0, 0);
     player->field0FC = 1;
     player->field7D0 = 0;
-    if (player->field7D0 == 0)
-        PlayerSetValue4(&player->field7A4, 1);
-    else
+    if (player->field7D0 != 0)
         PlayerSetValue4(&player->field7A4, 3);
+    else
+        PlayerSetValue4(&player->field7A4, 1);
 }
 
 // Per-frame update while the player is leaving the Batsqueeks host mode.
@@ -1042,18 +1043,20 @@ void BatsqueekTriggerModeSounds(SoundList* list, float seek, Vec3* pos, Vec3* ve
 // source object to the trigger routine; if nothing matches, restarts the delay.
 void SoundListTriggerEntry(SoundList* list, u32 hash, void* param)
 {
+    int off;
+    int i;
+
     if (list->entries != 0)
     {
-        int off = 0x28;
-
-        for (int i = 1; i < list->count; i++)
+        i = 1;
+        off = 0x28;
+        for (; i < list->count; i++)
         {
             u8* entry = list->entries + off;
-            void* source = *(void**)(entry + 0x24);
 
-            if (source != 0 && hash == *(u32*)(entry + 4))
+            if (*(void**)(entry + 0x24) != 0 && hash == *(u32*)(entry + 4))
             {
-                fn_801D5010(source, param);
+                fn_801D5010(*(void**)(list->entries + i * 0x28 + 0x24), param);
                 return;
             }
             off += 0x28;
