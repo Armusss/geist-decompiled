@@ -13,6 +13,16 @@ typedef unsigned long u32;
 typedef signed long s32;
 typedef float f32;
 
+#ifdef __cplusplus
+void* memset(void* dst, int val, u32 n);
+#else
+extern void* memset(void* dst, int val, u32 n);
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Script machine state.  Integer registers start at 0 (r1 is the stack pointer, r3 the result),
 // float registers start at 0x60.
 struct ScriptFunc;
@@ -61,7 +71,6 @@ extern int lbl_8044069C[0x40];      // call stack of function indices
 #define INS_SUB(i) (((i) >> 5) & 7)
 #define INS_OFF(i) ((int)((i) & 0xFFFF0000) >> 16)
 
-extern void* memset(void* dst, int val, u32 n);
 extern void fn_800050B4(void);
 
 // 0x80083360: run a script function to completion; returns the function's result (r3) or -1
@@ -639,3 +648,7 @@ void fn_80085A94();
 void fn_80085A98();
 // TODO (not drafted yet, 0x1AC bytes at 0x80085B30): script VM function
 void fn_80085B30();
+
+#ifdef __cplusplus
+}
+#endif

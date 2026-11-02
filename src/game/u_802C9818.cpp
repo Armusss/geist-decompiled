@@ -11,6 +11,7 @@ typedef signed long s32;
 typedef float f32;
 
 struct Beh;
+struct Actor;
 
 // Per-actor state control block (actor + 0x130), 0x88 bytes.
 struct StateBlock {
@@ -56,6 +57,19 @@ struct Actor {
     /*0x920*/ u8 unk920[0x994 - 0x920];
 };
 
+// Tuning values (.sdata).
+static f32 sFollowScale = 0.85f;
+static f32 sTimerMin = 3000.0f;
+static f32 sTimerMax = 5000.0f;
+
+// Reply to message 0x400 (sent to the followed actor and to the target).
+struct Reply400 {
+    /*0x00*/ Actor* actor;
+    /*0x04*/ u8 unk04[0x0C - 0x04];
+    /*0x0C*/ int hit;
+    /*0x10*/ u8 unk10[0x20 - 0x10];
+};
+
 // Name hashes of the model nodes this actor animates (8 each), and the asset ids found for them.
 static const u32 sHashA[8] = {0x9CA18DD0, 0x9C9EC4D7, 0xF74B24F1, 0xEF40825B, 0xEF408315, 0x014BE569, 0x014BE623, 0x9FAFABBD};
 static const u32 sHashB[8] = {0x3D33E0B9, 0xF65F386F, 0x5C7672B5, 0x05E3C5C2, 0xBF9C6C7C, 0xC2A29D50, 0x7C5B440A, 0x4494EE74};
@@ -66,6 +80,9 @@ static int sIdC[8];
 static int sIdD[8];
 
 extern "C" {
+int rand();
+
+int fn_80162940(void* beh, int id);
 extern int lbl_804D3B3C;
 extern int lbl_804D3B40;
 extern int lbl_804D3B44;
@@ -83,6 +100,11 @@ void fn_800BBCA8(Actor* actor);
 void fn_800BC56C(Actor* actor, void* target);
 void fn_80162610(Actor* actor, void* beh, int arg);
 }
+int MemFlagIsSet(void* flags, int id);
+int SendMsg(int to, int msg, void* data);
+float ActorAimAngleToPos(void* actor, f32* pos);
+struct Owner;
+float OwnerValue(Owner* owner, void* actor);
 int fn_80037EC0(int model, int node, int a, int r, int g, int b, int al);
 void BehReset(Beh* beh);
 void* VAlloc(int size);
@@ -201,5 +223,37 @@ void FollowInit(Actor* a) {
         lbl_804D3B48 = AssetFind(0xF2E2BEB8, 0x0A28D02B);
         lbl_804D3B4C = AssetFind(0xF2E2BEB8, 0x4A9BE9A9);
         lbl_804D3B54 = FxFind("stat_hit");
+    }
+}
+
+// 0x802CA79C: update while in state 2 (waiting for the target to come within range)
+int FollowState2Update(void* owner) {
+    Actor* a = (Actor*)owner;
+    StateBlock* b = a->block;
+    void* target = FollowGetTargetObj(a->conditions);
+    Reply400 reply;
+    if (MemFlagIsSet(a->conditions, 0x24) != 0)
+        return 0;
+    if (target == 0 || SendMsg(*(int*)((u8*)target + 0x38), 0x400, &reply) == 0 || reply.hit == 0)
+        return 0;
+    if (fn_80162940(a->beh, 1) != 0 && fn_80162940(a->beh, 4) != 0 && b->timer <= 0.0f) {
+        fn_80162610(a, a->beh, 1);
+        b->timer = (sTimerMax - sTimerMin) * ((f32)rand() / 32767.0f) + sTimerMin;
+    }
+    b->timer -= a->dt;
+    if (SendMsg(a->targetId, 0x400, &reply) == 0 || reply.hit == 0)
+        return 1;
+    {
+        Actor* other = reply.actor;
+        f32 d1 = ActorAimAngleToPos(target, a->pos);
+        f32 d2 = ActorAimAngleToPos(target, other->pos);
+        f32 s = sFollowScale * OwnerValue((Owner*)other, target);
+        f32 t = OwnerValue((Owner*)a, target);
+        if (s <= t || 40.0f <= __fabsf(d1)) {
+            if (__fabsf(d2) <= 50.0f)
+                return b->state;
+            return 1;
+        }
+        return 1;
     }
 }
