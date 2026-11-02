@@ -19,9 +19,11 @@ struct Mtx34 {
     f32 m[12];
 };
 
-// One record of the global actor array (lbl_804D4280, count lbl_804D4288).
+// One record of the global dynamic-light array (lbl_804D4280, count lbl_804D4288).
 struct Actor {
-    /*0x00*/ u8 unk00[0x38 - 0x00];
+    /*0x00*/ u8 unk00[0x24 - 0x00];
+    /*0x24*/ s32 ipos[3];
+    /*0x30*/ u8 unk30[0x38 - 0x30];
     /*0x38*/ u32 id;
     /*0x3C*/ u8 unk3C[0x50 - 0x3C];
     /*0x50*/ f32 pos[3];
@@ -29,13 +31,29 @@ struct Actor {
     /*0x68*/ f32 fieldF68;
     /*0x6C*/ s32 owner;
     /*0x70*/ u32 flags;
-    /*0x74*/ u8 unk74[0xB4 - 0x74];
+    /*0x74*/ f32 field74;
+    /*0x78*/ f32 field78;
+    /*0x7C*/ u8 unk7C[0xB4 - 0x7C];
     /*0xB4*/ f32 sphere[3];
-    /*0xC0*/ u8 unkC0[0xCC - 0xC0];
-    /*0xCC*/ f32 color[3];
-    /*0xD8*/ u8 unkD8[0xFC - 0xD8];
+    /*0xC0*/ f32 dir[3];
+    /*0xCC*/ f32 color[4];
+    /*0xDC*/ u8 unkDC[0xF8 - 0xDC];
+    /*0xF8*/ f32 fieldF8;
     /*0xFC*/ f32 radius;
-    /*0x100*/ u8 unk100[0x1C8 - 0x100];
+    /*0x100*/ f32 field100;
+    /*0x104*/ f32 field104;
+    /*0x108*/ u8 unk108[0x1BC - 0x108];
+    /*0x1BC*/ s32 field1BC;
+    /*0x1C0*/ s32 field1C0;
+    /*0x1C4*/ u8 unk1C4[0x1C8 - 0x1C4];
+};
+
+// Render record of one light (lbl_804D4284, 0x64 bytes each).
+struct LightRender {
+    /*0x00*/ u8 unk00[0x0C - 0x00];
+    /*0x0C*/ f32 scaled[3];
+    /*0x18*/ f32 color[4];
+    /*0x28*/ u8 unk28[0x64 - 0x28];
 };
 
 typedef int (*MsgHandler)(int to, int msg, void* data, void* ctx);
@@ -67,6 +85,7 @@ extern "C" {
 extern int lbl_804D427C;
 extern ModInfoHeader* lbl_804D4278;
 extern Actor* lbl_804D4280;
+extern LightRender* lbl_804D4284;
 extern int lbl_804D4288;
 extern int lbl_804D428C;
 extern int lbl_804D4290;
@@ -79,6 +98,8 @@ void fn_800070C0(void*);
 void FileFlushBuffer(void* dst, int size);
 void fn_8016D864(Vec3* out, void* in);
 void fn_8021284C(u32);
+void fn_80029F4C(Actor* a, void* pos);
+void fn_80028A98(int index);
 }
 
 typedef int (*FileHandlerFn)(void*, int, void*);
@@ -88,6 +109,7 @@ void DebugDrawSphere(int r, int g, int b, int a, float x, float y, float z, floa
 void DebugDrawBoneBox(Vec3* pos, void* mtx, int r, int g, int b);
 void ActorGetMatrix(Mtx34* m, Actor* a);
 void ActorUnlinkOwnerObjects(Actor* a);
+float GfxLuma(float* color);
 
 // 0x800265C8
 void ModInfoResetCount() {
@@ -274,5 +296,104 @@ extern "C" void fn_80027690(int id) {
     }
 }
 
-// 0x800277B0 / 0x800277E0
-// TODO (not drafted yet, 0x278 bytes at 0x800277E0)
+// 0x800277E0: update an existing light (called from other units under this placeholder name)
+extern "C" void fn_800277E0(int id, float* pos, void* pos2, float* color, int* delay, float* extra) {
+    int idx;
+    if (lbl_804D4280 != 0 && (int)((u32)id >> 24) == 0xC) {
+        idx = id & 0xFFFFFF;
+        if (idx >= 0x20)
+            return;
+        {
+            Actor* a = &lbl_804D4280[idx];
+            if (pos != 0) {
+                a->ipos[0] = (int)pos[0];
+                a->ipos[1] = (int)pos[1];
+                a->ipos[2] = (int)pos[2];
+                a->flags |= 0x60000000;
+            }
+            if (pos2 != 0) {
+                fn_80029F4C(a, pos2);
+                a->flags |= 0x60000000;
+            }
+            if (color != 0) {
+                a->color[0] = color[0];
+                a->color[1] = color[1];
+                a->color[2] = color[2];
+                a->color[3] = color[3];
+                a->flags |= 0x20000000;
+            }
+            if (delay != 0) {
+                a->field104 = (float)*delay;
+                a->field74 = (float)*delay;
+                a->flags |= 0x60000000;
+            }
+            if (extra != 0) {
+                a->field78 = *extra;
+                a->flags |= 0x20000000;
+            }
+            {
+                Actor* b = &lbl_804D4280[idx];
+                if (b->owner == 0) {
+                    LightRender* r = &lbl_804D4284[idx];
+                    float luma = GfxLuma(b->color);
+                    r->scaled[0] = b->dir[0] * luma;
+                    r->scaled[1] = b->dir[1] * luma;
+                    r->scaled[2] = b->dir[2] * luma;
+                    lbl_804D4284[idx].color[0] = lbl_804D4280[idx].color[0];
+                    lbl_804D4284[idx].color[1] = lbl_804D4280[idx].color[1];
+                    lbl_804D4284[idx].color[2] = lbl_804D4280[idx].color[2];
+                    lbl_804D4284[idx].color[3] = lbl_804D4280[idx].color[3];
+                    ActiveListRebuild();
+                    a->flags &= 0x9FFFFFFF;
+                }
+            }
+        }
+    }
+}
+
+// 0x800277B0 (called from other units under this placeholder name): move/recolour a light
+extern "C" void fn_800277B0(int id, float* pos, float* color, int* delay) {
+    fn_800277E0(id, pos, pos, color, delay, 0);
+}
+
+// 0x80027A8C: allocate a light slot (called from other units under this placeholder name)
+extern "C" int fn_80027A8C(float spread, int owner, float* pos, void* pos2, float* color, int delay, u32 flags);
+
+// 0x80027A58 (called from other units under this placeholder name)
+extern "C" int fn_80027A58(int owner, float* pos, float* color, int delay, int flags) {
+    return fn_80027A8C(180.0f, owner, pos, pos, color, delay, flags);
+}
+
+extern "C" int fn_80027A8C(float spread, int owner, float* pos, void* pos2, float* color, int delay, u32 flags) {
+    int i;
+    if (lbl_804D4280 != 0) {
+        for (i = 0; i < 0x20; i++) {
+            if ((lbl_804D4280[i].flags & 4) == 0) {
+                lbl_804D4280[i].flags = flags | 6;
+                lbl_804D4280[i].owner = owner;
+                lbl_804D4280[i].color[0] = color[0];
+                lbl_804D4280[i].color[1] = color[1];
+                lbl_804D4280[i].color[2] = color[2];
+                lbl_804D4280[i].color[3] = color[3];
+                lbl_804D4280[i].field74 = (float)delay;
+                lbl_804D4280[i].field78 = spread;
+                lbl_804D4280[i].field1BC = 0;
+                lbl_804D4280[i].field1C0 = 0;
+                lbl_804D4280[i].fieldF8 = 0.0f;
+                lbl_804D4280[i].radius = 0.0f;
+                lbl_804D4280[i].field100 = 0.0f;
+                lbl_804D4280[i].field104 = (float)delay;
+                lbl_804D4280[i].ipos[0] = (int)pos[0];
+                lbl_804D4280[i].ipos[1] = (int)pos[1];
+                lbl_804D4280[i].ipos[2] = (int)pos[2];
+                fn_80029F4C(&lbl_804D4280[i], pos2);
+                fn_80028A98(i);
+                if (lbl_804D4280[i].owner == 0)
+                    ActiveListRebuild();
+                return (i & 0xFFFFFF) | 0xC000000;
+            }
+        }
+    }
+    return -1;
+}
+
