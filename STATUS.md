@@ -19,10 +19,10 @@ published; generate your own from your copy of the game if you want it.
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | retired 2026-10-27 (user): Sonnet drafts untouched units instead | retired |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | retired 2026-10-27 (user): Sonnet drafts untouched units instead | retired |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | near-miss sweep 4 done 2026-10-27: +22 functions (1,724 -> 1,746); paused | paused |
-| sonnet-1 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-1` / `ds/sonnet-1` | 2026-11-01/02 round done and merged | idle |
-| sonnet-2 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-2` / `ds/sonnet-2` | 2026-11-01/02 round done and merged | idle |
-| sonnet-3 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-3` / `ds/sonnet-3` | 2026-11-01/02 round done and merged | idle |
-| sonnet-4 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-4` / `ds/sonnet-4` | 2026-11-01/02 round done and merged | idle |
+| sonnet-1 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-1` / `ds/sonnet-1` | 2026-11-02: last untouched named units: FearActor, AppMain, linkObjSys | running |
+| sonnet-2 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-2` / `ds/sonnet-2` | 2026-11-02: last untouched named units: ModInfo, Script, u_802C9818 | running |
+| sonnet-3 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-3` / `ds/sonnet-3` | 2026-11-02: last untouched named units: CubeTev, FearMap2, Turf | running |
+| sonnet-4 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-4` / `ds/sonnet-4` | 2026-11-02: last untouched named units: DbRoom, Msx, Cube | running |
 | sonnet-5 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-5` / `ds/sonnet-5` | 2026-11-01/02 round done and merged | idle |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
