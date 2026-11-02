@@ -54,6 +54,18 @@ struct ModelSlot {
     /*0x0C*/ u8 unk0C[0x70 - 0x0C];
 };
 
+// Stream slot table (lbl_804D42E4, count lbl_804D42E8), 0x40 bytes per slot.
+struct StreamEntry;
+struct StreamSlot {
+    /*0x00*/ u8 unk00[0x0C - 0x00];
+    /*0x0C*/ void* buffer;
+    /*0x10*/ u8 unk10[0x30 - 0x10];
+    /*0x30*/ u16 state;
+    /*0x32*/ u8 unk32[0x38 - 0x32];
+    /*0x38*/ int size;
+    /*0x3C*/ u8 unk3C[0x40 - 0x3C];
+};
+
 // One record of the global dynamic-light array (lbl_804D4280, count lbl_804D4288).
 struct Actor {
     /*0x00*/ u8 unk00[0x24 - 0x00];
@@ -131,6 +143,12 @@ extern int lbl_804D429C;
 extern Actor* lbl_803DE1D8[];
 extern Actor* lbl_803DE3D8[];
 extern int lbl_804D4298;
+extern StreamSlot* lbl_804D42E4;
+extern int lbl_804D42E8;
+extern int lbl_804D42D4;
+extern int lbl_804D42D8;
+extern int lbl_804D2678;
+void fn_8002FC30(int, void*, void*);
 extern ModelDb* lbl_804D4300;
 extern ModelSlot lbl_803E4998[];
 
@@ -150,6 +168,11 @@ int fn_80112188(void* p);
 }
 
 typedef int (*FileHandlerFn)(void*, int, void*);
+void StreamRead(int pri, StreamEntry* e, void (*done)(int, void*, void*), void* arg);
+void StreamFree(void* p);
+void GunStateTimerTick8017BAD0(void* p);
+void GunStateStep8017BBBC(void* p);
+void GunStateFinish8017BC5C(void* p);
 void FileRemoveHandler(int type, FileHandlerFn fn, void* ctx);
 void FileAddHandler(int type, FileHandlerFn fn, void* ctx);
 void DebugDrawSphere(int r, int g, int b, int a, float x, float y, float z, float radius);
@@ -604,4 +627,97 @@ extern "C" ModelNode* fn_8003A1C0(int model) {
     if (idx >= 0 && idx < lbl_804D4300->count)
         return (ModelNode*)((u8*)lbl_804D4300->nodes + idx * 0x48);
     return 0;
+}
+
+// TODO (not drafted yet, 0x1450 bytes at 0x8002FE64 and others between 0x80029080 and 0x8002FA34)
+
+// 0x8002FA34
+bool StreamSlotIdle(int index) {
+    if (index >= 0 && index < lbl_804D42E8) {
+        bool r = false;
+        StreamSlot* s = &lbl_804D42E4[index];
+        if (s->buffer != 0 || s->size == 0)
+            r = true;
+        return r;
+    }
+    return false;
+}
+
+// 0x8002FA84 (called from another unit under this placeholder name): total bytes of all slots, and of the slots in state 1 or 4
+extern "C" void fn_8002FA84(int* loaded, int* total) {
+    int a = 0;
+    int b = 0;
+    StreamSlot* s = lbl_804D42E4;
+    int i;
+    for (i = 0; i < lbl_804D42E8; i++) {
+        b += s->size;
+        if (s->state == 1 || s->state == 4)
+            a += s->size;
+        s++;
+    }
+    if (loaded != 0)
+        *loaded = a;
+    if (total != 0)
+        *total = b;
+}
+
+// 0x8002FAE4: start reading every slot that is waiting (state 2)
+void StreamSlotsStartPending() {
+    if (lbl_804D42D4 != 0 && lbl_804D2678 != 0) {
+        int i;
+        lbl_804D42D4 = 0;
+        for (i = 0; i < lbl_804D42E8; i++) {
+            StreamSlot* s = &lbl_804D42E4[i];
+            if (s->state == 2) {
+                s->state = 1;
+                StreamRead(0x2E, (StreamEntry*)&s->state, fn_8002FC30, s);
+            }
+        }
+    }
+}
+
+// 0x8002FB90: release finished slots (state 3)
+void StreamSlotsRelease() {
+    if (lbl_804D42D8 != 0 && lbl_804D2678 != 0) {
+        int i;
+        lbl_804D42D8 = 0;
+        for (i = 0; i < lbl_804D42E8; i++) {
+            StreamSlot* s = &lbl_804D42E4[i];
+            if (s->state == 3) {
+                if (s->buffer != 0) {
+                    s->state = 0;
+                    StreamFree(s->buffer);
+                    s->buffer = 0;
+                } else {
+                    lbl_804D42D8 = 1;
+                }
+            }
+        }
+    }
+}
+
+// TODO (not drafted yet, 0x138 bytes at 0x8002FC30)
+
+// 0x8002FD68 (called from another unit under this placeholder name)
+extern "C" void fn_8002FD68() {
+    int i;
+    lbl_804D42D8 = 1;
+    for (i = 0; i < lbl_804D42E8; i++)
+        GunStateFinish8017BC5C(&lbl_804D42E4[i].state);
+}
+
+// 0x8002FDCC
+void StreamSlotTick(int index) {
+    if (index >= 0 && index < lbl_804D42E8) {
+        lbl_804D42D8 = 1;
+        GunStateTimerTick8017BAD0(&lbl_804D42E4[index].state);
+    }
+}
+
+// 0x8002FE18
+void StreamSlotStep(int index) {
+    if (index >= 0 && index < lbl_804D42E8) {
+        lbl_804D42D4 = 1;
+        GunStateStep8017BBBC(&lbl_804D42E4[index].state);
+    }
 }
