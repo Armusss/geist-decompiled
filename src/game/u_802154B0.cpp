@@ -91,6 +91,25 @@ struct MenuPage {
     int unka8;        // 0xa8
 };
 
+// A label item: text plus three user words.
+struct MenuLabel : MenuItem {
+    const char* text; // 0x20
+    u8 kind;          // 0x24
+    u8 style;         // 0x25
+    u8 pad26[2];
+    float scale;      // 0x28
+    int arg0;         // 0x2c
+    int arg1;         // 0x30
+    int arg2;         // 0x34
+};
+
+// An item with a list of key hashes.
+struct MenuKeyList {
+    u8 unk0[0x3c];
+    u32 keys[12];  // 0x3c
+    int keyCount;  // 0x6c
+};
+
 // A selectable widget on a menu screen.
 struct MenuWidget {
     u8 unk0[0x9c];
@@ -139,7 +158,7 @@ extern int lbl_804D3450;        // 0x804D3450
 extern "C" void FxStart(int handle, int a, int b);
 extern "C" void fn_8000F60C(int x);
 extern "C" void fn_8000F874(int x);
-u32 StrFindKey(u32 key);
+u32 StrFindKeySkip(u32 key);
 void VFree(void* p);
 
 // TODO (not drafted yet, 0xDC bytes at 0x80217B60): menu message handler
@@ -415,4 +434,24 @@ void MenuPageClear(MenuPage* page) {
     page->unka4 = 0;
     page->unka8 = 0;
     page->unk84 = 0;
+}
+
+// MenuKeyListAdd: add the hash of a key name to the list.
+void MenuKeyListAdd(MenuKeyList* list, u32 key) {
+    u32 hash = StrFindKeySkip(key);
+    if (list->keyCount < 12) {
+        list->keys[list->keyCount] = hash;
+        list->keyCount++;
+    }
+}
+
+// MenuLabelInit
+void MenuLabelInit(MenuLabel* label, u8 kind, const char* text, int a, int b, int c) {
+    label->kind = kind;
+    label->style = 2;
+    label->scale = 1.0f;
+    label->text = text ? text : "<missing string>";
+    label->arg0 = a;
+    label->arg1 = b;
+    label->arg2 = c;
 }
