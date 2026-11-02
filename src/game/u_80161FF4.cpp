@@ -48,10 +48,16 @@ struct Hud {
     float unk1500;            // 0x1500
     u8 pad1504[0x1510 - 0x1504];  // 0x1504
     int unk1510;              // 0x1510
-    u8 pad1514[0x1590 - 0x1514];  // 0x1514
+    u8 pad1514[0x1518 - 0x1514];  // 0x1514
+    float unk1518;            // 0x1518
+    u8 pad151C[0x1564 - 0x151C];  // 0x151C
+    float unk1564;            // 0x1564
+    u8 pad1568[0x1590 - 0x1568];  // 0x1568
     int unk1590[4];           // 0x1590
     int unk15A0[4];           // 0x15A0
-    u8 pad15B0[0x26E4 - 0x15B0];  // 0x15B0
+    u8 pad15B0[0x15B4 - 0x15B0];  // 0x15B0
+    int unk15B4;              // 0x15B4
+    u8 pad15B8[0x26E4 - 0x15B8];  // 0x15B8
     Actor* unk26E4;           // 0x26E4
     u8 pad26E8[0x2730 - 0x26E8];  // 0x26E8
     float unk2730;            // 0x2730
@@ -85,9 +91,9 @@ struct SplineNameEntry;
 int SplineAssetResolve(SplineNameEntry* names, int a, int b);   // 0x80101FC8
 extern "C" void fn_8000F60C(int id);
 extern "C" void fn_8000F874(int id);
-extern "C" void fn_8016A3D0(int a, int b, int c, int d, int e);
 extern SplineNameEntry lbl_803A7B58[];
 extern int lbl_804D2F90;
+extern "C" void fn_8016A3D0(int a, int b, int c, int d, int e);
 
 // Sets the argument slot of a behaviour.
 extern "C" int fn_801625AC(Owner* owner, Beh* beh, int value);
@@ -417,3 +423,77 @@ void HudBlockSet(void* unused, int* block, int value) {
     }
     block[0] = value;
 }
+
+// Clears the HUD flag at +0x15B4 (called from another unit).
+extern "C" void fn_80165D9C(Hud* hud);
+void fn_80165D9C(Hud* hud) {
+    hud->unk15B4 = 0;
+}
+
+// Sets the HUD flag at +0x15B4 (called from another unit).
+extern "C" void fn_80165DA8(Hud* hud);
+void fn_80165DA8(Hud* hud) {
+    hud->unk15B4 = 1;
+}
+
+// Lowers two HUD gauges by the given amount.
+void HudGaugesSubtract(Hud* hud, float amount) {
+    if (hud == 0) {
+        return;
+    }
+    hud->unk1564 = hud->unk1564 - amount;
+    hud->unk1518 = hud->unk1518 - amount;
+}
+
+// TODO (not drafted yet, 0x5C bytes at 0x80163FB0): clears six HUD words, calls fn_80111404 and resets two fields
+extern "C" void fn_80163FB0(Hud* hud);
+// TODO (not drafted yet, 0x48 bytes at 0x80168B70): stores five values into globals and the table at 0x803A7BFC
+extern "C" void fn_80168B70(int a, int b, int c, int d, int e, int f);
+
+// TODO (not drafted yet, 0x5B8 bytes at 0x80161FF4): behaviour spawn helper
+void Fn80161FF4(Owner* owner, void* data, float t);
+// TODO (not drafted yet, 0x560 bytes at 0x8016295C): behaviour state update
+void Fn8016295C(Owner* owner, Beh* beh);
+// TODO (not drafted yet, 0x380 bytes at 0x80162EDC): resets a behaviour slot
+extern "C" int fn_80162EDC(Beh* beh);
+// TODO (not drafted yet, 0x158 bytes at 0x801633FC): HUD marker sprite by player kind
+extern "C" void fn_801633FC(u32 id, float* color, int arg);
+// TODO (not drafted yet, 0x21C bytes at 0x801635F4): draws a HUD frame from six quads
+extern "C" void fn_801635F4();
+// TODO (not drafted yet, 0x530 bytes at 0x80163A80): HUD init
+extern "C" void fn_80163A80();
+// TODO (not drafted yet, 0x12C bytes at 0x8016400C)
+extern "C" void fn_8016400C();
+// TODO (not drafted yet, 0xB80 bytes at 0x80164138): HUD update
+extern "C" void fn_80164138();
+// TODO (not drafted yet, 0x584 bytes at 0x80164CB8)
+extern "C" void fn_80164CB8();
+// TODO (not drafted yet, 0x4A8 bytes at 0x8016523C)
+extern "C" void fn_8016523C();
+// TODO (not drafted yet, 0x6B8 bytes at 0x801656E4)
+extern "C" void fn_801656E4();
+// TODO (not drafted yet, 0xCBC bytes at 0x80165DB4)
+extern "C" void fn_80165DB4();
+// TODO (not drafted yet, 0x470 bytes at 0x80166A70)
+extern "C" void fn_80166A70();
+// TODO (not drafted yet, 0x398 bytes at 0x80166EE0)
+extern "C" void fn_80166EE0();
+// TODO (not drafted yet, 0x53C bytes at 0x80167278)
+extern "C" void fn_80167278();
+// TODO (not drafted yet, 0x550 bytes at 0x801677B4)
+extern "C" void fn_801677B4();
+// TODO (not drafted yet, 0x198 bytes at 0x80167D04): host_action message
+extern "C" void fn_80167D04();
+// TODO (not drafted yet, 0x5EC bytes at 0x80167E9C)
+extern "C" void fn_80167E9C();
+// TODO (not drafted yet, 0x4DC bytes at 0x80168488)
+extern "C" void fn_80168488();
+// TODO (not drafted yet, 0x1E8 bytes at 0x80168988)
+extern "C" void fn_80168988();
+// TODO (not drafted yet, 0x1438 bytes at 0x80168BB8)
+extern "C" void fn_80168BB8();
+// TODO (not drafted yet, 0x168 bytes at 0x80169FF0)
+extern "C" void fn_80169FF0();
+// TODO (not drafted yet, 0x278 bytes at 0x8016A158)
+extern "C" void fn_8016A158();
+// TODO (not drafted yet, 0x3A4 bytes at 0x8016A3D0): HUD message printer
