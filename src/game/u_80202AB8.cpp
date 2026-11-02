@@ -908,307 +908,30 @@ extern "C" void fn_8016f120(u32 handle, int pos);
 extern "C" void fn_800265d4(u32 handle, int msg, void* data);
 extern "C" void fn_801D550C(void* link);
 extern "C" void fn_800E0CB8(int* v, int* out);
-void HostActorHoldTimerDone(int from, Actor* actor);
-
-// request block of the 0xc12 "restart the hold timer" message
-struct HostTimerReq {
-    s32 unk00;                      // 0x00
-    s32 hold;                       // 0x04
-    s32 unk08;                      // 0x08
-    s32 unk0c;                      // 0x0c
-    s32 unk10;                      // 0x10
-    void (*callback)(int, Actor*);  // 0x14
-    Actor* owner;                   // 0x18
-};
-
-// 0x80204804: aborts or restarts the current hold. It runs from the behaviour
-// state machine and from the message handlers when a hold has to be abandoned
-// (the target is gone, the host was released, the grabbed actor was hit, ...).
-void HostActorReset(Actor* actor)
-{
-    HostBehaviour* beh = actor->behaviour;
-    s32 hold;
-    u32 sound;
-
-    if (beh->state == 0 || (beh->flags & 8) != 0)
-        return;
-
-    if (beh->state == 0xb || (u32)(beh->state - 2) < 2 || beh->state == 10) {
-        beh->state = (u32)(beh->state - 2) < 2 ? 4 : 0xc;
-        if ((beh->flags & 1) == 0 || (hold = actor->model->unkA0) == -1)
-            hold = actor->model->unk98;
-        ActorPlayAnim((int)actor->unk38, 0xC62BD5D6, beh->unk0c);
-        sound = actor->model->unkB8;
-    } else {
-        beh->state = 5;
-        hold = actor->model->unkC8;
-        sound = actor->model->unkD8;
-        fn_8001BA30(beh->unk14, 0);
-    }
-
-    if (hold < 0) {
-        beh = actor->behaviour;
-        if (beh->state == 5) {
-            beh->state = 0;
-            ActorPlayAnim((int)actor->unk38, 0xA34BBC0B, beh->unk0c);
-        } else if (beh->state < 5) {
-            if (beh->state > 3) {
-                beh->state = 5;
-                HostActorReset(actor);
-            }
-        } else if (beh->state == 0xc) {
-            fn_8001BA6C(0);
-            lbl_804D5394 = 0;
-            lbl_804D3398 = (s32)actor->unk38;
-            beh->state = 5;
-            HostActorReset(actor);
-        }
-    } else {
-        HostTimerReq req;
-
-        req.unk00 = 0;
-        req.hold = hold;
-        req.unk08 = 0;
-        req.unk0c = 0x10;
-        req.unk10 = 0x1000;
-        req.callback = HostActorHoldTimerDone;
-        req.owner = actor;
-
-        beh = actor->behaviour;
-        if (actor != 0 && actor->unk128 != 0) {
-            int ofs = 0;
-
-            for (int i = 0; i < actor->unk124; i++) {
-                fn_801D550C(*(void**)((u8*)actor->unk128 + ofs + 4));
-                ofs += 8;
-                beh->flags |= 2;
-            }
-        }
-
-        fn_800265d4(actor->unk8c, 0xc12, &req);
-
-        if (beh->state == 4 || beh->state == 0xc) {
-            if ((beh->flags & 0x40) == 0)
-                fn_8016f120(sound, (int)&actor->unk24);
-            beh->flags &= ~0x40;
-        }
-    }
-}
-
-extern u8* OwnerGetInfo(u32 id);
-extern "C" void fn_800A0168(void* dst, void* src);
-extern "C" void fn_800A0030(void* out, void* mtx, void* in);
-extern "C" int fn_8001e9d4(void* start, void* out, int count);
-extern f32 lbl_804D9254;
-
-// 0x80204a6c: starts a hold on `id`. It verifies that the owner is still the
-// host's current target, checks the line of sight between the two collision
-// volumes, then switches the behaviour into the grab state (6 for a possessed
-// actor, 1 otherwise), runs the begin sequence and plays the grab animation.
-extern "C" void fn_80204A6C(Actor* actor, u32 id)
-{
-    u8* info = OwnerGetInfo(id);
-    HostBehaviour* beh = actor->behaviour;
-
-    if ((beh->flags & 8) == 0 && PlayerInHost(GetPlayer()) == 0)
-        return;
-
-    if (beh->state != 0)
-        return;
-
-    if ((beh->unk0c >> 24) == 2)
-        lbl_804D5398 = 1;
-
-    if ((beh->unk0c >> 24) == 2 && lbl_804D5394 == 1 && fn_802A1D04() == 0)
-        return;
-
-    if (info != 0 && (*(u32*)(info + 0x38) >> 24) == 2) {
-        Mtx34 mtx;
-        Vec3 tmp;
-        Vec3i hits[8];
-        s32 start[3];
-        s32 end[3];
-        u8* vol;
-        f32 px;
-        f32 py;
-        f32 pz;
-        int count;
-        int first;
-
-        ActorGetMatrix(&mtx, (Actor*)info);
-        fn_800A0168(&mtx, &mtx);
-        px = (f32)*(s32*)(info + 0x24);
-        py = (f32)*(s32*)(info + 0x28);
-        pz = (f32)*(s32*)(info + 0x2c);
-        fn_800A0030(&tmp, &mtx, &tmp);
-
-        vol = *(u8**)(info + 0x40);
-        start[0] = (s32)(px + (f32)*(s32*)(vol + 0xc));
-        start[1] = (s32)(py + (f32)*(s32*)(vol + 0x10));
-        start[2] = (s32)(pz + (f32)*(s32*)(vol + 0x14));
-
-        count = fn_8001e9d4(start, hits, 8);
-        if (count < 1)
-            return;
-        first = hits[0].x;
-
-        ActorGetMatrix(&mtx, (Actor*)info);
-        fn_800A0168(&mtx, &mtx);
-        px = (f32)*(s32*)(info + 0x24);
-        py = (f32)*(s32*)(info + 0x28);
-        pz = (f32)*(s32*)(info + 0x2c);
-        fn_800A0030(&tmp, &mtx, &tmp);
-
-        vol = *(u8**)(info + 0x40);
-        end[0] = (s32)(px + (f32)*(s32*)(vol + 0));
-        end[1] = (s32)(py + (f32)*(s32*)(vol + 4));
-        end[2] = (s32)(pz + (f32)*(s32*)(vol + 8) + lbl_804D9254);
-
-        count = fn_8001e9d4(end, hits, 8);
-        if (count < 1 || hits[0].x != first)
-            return;
-    }
-
-    beh->unk0c = (s32)id;
-    if ((beh->unk0c >> 24) == 2)
-        beh->state = 6;
-    else
-        beh->state = 1;
-
-    HostActorBegin(actor);
-    ActorPlayAnim((int)actor->unk38, 0x473ACE79, beh->unk0c);
-}
-
-void HostActorBeginTimerDone(int from, Actor* actor);
-
-// Re-attaches the actors already linked to this one (used when a new hold begins).
-static inline void AttachHostLinks(Actor* actor)
-{
-    HostBehaviour* beh = actor->behaviour;
-
-    if (actor != 0 && actor->unk128 != 0) {
-        int ofs = 0;
-
-        for (int i = 0; i < actor->unk124; i++) {
-            fn_801D550C(*(void**)((u8*)actor->unk128 + ofs + 4));
-            ofs += 8;
-            beh->flags |= 2;
-        }
-    }
-}
-
-// 0x80204e1c: starts the hold sequence for the target stored in the behaviour:
-// picks the hold length and sound, re-attaches the linked actors, restarts the
-// hold timer (0xc12) and walks the state machine through its begin states.
-void HostActorBegin(Actor* actor)
-{
-    HostBehaviour* beh = actor->behaviour;
-    s32 hold;
-    u32 sound;
-
-    if (beh->state == 6 || beh->state == 1) {
-        hold = actor->model->unkC4;
-        sound = actor->model->unkD4;
-        if ((beh->unk0c >> 24) == 2) {
-            lbl_804D5390 = (s32)actor->unk38;
-            lbl_804D5398 = 0;
-        }
-    } else {
-        beh->flags &= ~1;
-        if (beh->unk0c != -1) {
-            HostMsg400 pos;
-
-            if (SendMsg(beh->unk0c, 0x400, &pos) != 0 && pos.obj != 0) {
-                int aim[3];
-                Vec3i d;
-                int angle = (int)actor->model->unk40;
-
-                ActorAim(aim, actor, angle);
-                aim[2] = 0;
-                fn_800E0CB8(aim, aim);
-
-                d.x = pos.obj->unk24.x - actor->unk24.x;
-                d.y = pos.obj->unk24.y - actor->unk24.y;
-                d.z = pos.obj->unk24.z - actor->unk24.z;
-                fn_800E0CB8((int*)&d, (int*)&d);
-
-                if (aim[0] * d.x + aim[1] * d.y + aim[2] * d.z < 0)
-                    beh->flags |= 1;
-            }
-        }
-        if ((beh->flags & 1) == 0 || (hold = actor->model->unk9c) == -1)
-            hold = actor->model->unk94;
-        sound = actor->model->unkAC;
-        AttachHostLinks(actor);
-        fn_8001BA30(beh->unk14, 1);
-    }
-
-    if (hold < 0) {
-        HostBehaviour* b = actor->behaviour;
-
-        switch (b->state) {
-        case 1:
-            b->state = 2;
-            HostActorBegin(actor);
-            break;
-        case 2:
-            b->state = 3;
-            ActorPlayAnim((int)actor->unk38, 0xB7F9A308, b->unk0c);
-            break;
-        case 6:
-            b->state = 8;
-            break;
-        case 7:
-            b->state = 9;
-            break;
-        case 10:
-            b->state = 0xb;
-            ActorPlayAnim((int)actor->unk38, 0xB7F9A308, b->unk0c);
-            break;
-        }
-    } else {
-        HostTimerReq req;
-
-        req.hold = hold;
-        req.unk08 = 0;
-        req.unk0c = 0x10;
-        req.unk10 = 0x1000;
-        req.callback = HostActorBeginTimerDone;
-        req.owner = actor;
-        SendMsg(actor->unk8c, 0xc12, &req);
-
-        if ((beh->flags & 0x40) == 0)
-            fn_8016f120(sound, (int)&actor->unk24);
-        else if (beh->state == 2 || beh->state == 10)
-            beh->flags &= ~0x40;
-    }
-}
-
-// 0x80205124: callback of the 0xc12 "restart hold timer" message. When the
-// timer expires it advances the hold state machine and, in the states where the
-// hold cannot continue, releases the target through HostActorReset.
 void HostActorHoldTimerDone(int from, Actor* actor)
 {
     HostBehaviour* beh = actor->behaviour;
 
-    if (from == 0x1B83833F) {
-        s32 state = beh->state;
-
-        if (state == 5) {
+    switch (from) {
+    case 0x1B83833F:
+        switch (beh->state) {
+        case 5:
             beh->state = 0;
             ActorPlayAnim((int)actor->unk38, 0xA34BBC0B, beh->unk0c);
-        } else if (state < 5) {
-            if (state > 3) {
-                beh->state = 5;
-                HostActorReset(actor);
-            }
-        } else if (state == 0xc) {
+            break;
+        case 4:
+            beh->state = 5;
+            HostActorReset(actor);
+            break;
+        case 0xc:
             fn_8001BA6C(0);
             lbl_804D5394 = 0;
             lbl_804D3398 = (s32)actor->unk38;
             beh->state = 5;
             HostActorReset(actor);
+            break;
         }
+        break;
     }
 }
 
@@ -1219,16 +942,9 @@ void HostActorBeginTimerDone(int from, Actor* actor)
 {
     HostBehaviour* beh = actor->behaviour;
 
-    if (from == 0x1B83833F) {
+    switch (from) {
+    case 0x1B83833F:
         switch (beh->state) {
-        case 1:
-            beh->state = 2;
-            HostActorBegin(actor);
-            break;
-        case 2:
-            beh->state = 3;
-            ActorPlayAnim((int)actor->unk38, 0xB7F9A308, beh->unk0c);
-            break;
         case 6:
             beh->state = 8;
             break;
@@ -1239,6 +955,15 @@ void HostActorBeginTimerDone(int from, Actor* actor)
             beh->state = 0xb;
             ActorPlayAnim((int)actor->unk38, 0xB7F9A308, beh->unk0c);
             break;
+        case 1:
+            beh->state = 2;
+            HostActorBegin(actor);
+            break;
+        case 2:
+            beh->state = 3;
+            ActorPlayAnim((int)actor->unk38, 0xB7F9A308, beh->unk0c);
+            break;
         }
+        break;
     }
 }
