@@ -406,7 +406,6 @@ void fn_80085490(void);
 void PadRecordStart(int pad);
 void ActorPlayAnim(int a, u32 b, int c);
 static int sPadRecord;
-// TODO (not drafted yet, 0x154 bytes at 0x80088574): fn_80088574, draws the two start-up frames
 
 #ifdef __cplusplus
 extern "C" {
@@ -655,4 +654,70 @@ extern "C" void fn_800880D0(void)
     FrameCounterReset();
     SaveInit();
     fn_80158744();
+}
+
+void GfxFrameEnd(void);
+void GfxFrameSwap(void);
+void GfxFrameBegin(void);
+void TextSetBox(int x, int y, int w, int h);
+void TextSetStyle(int r, int g, int b, int a, int font, int c, int d, int e, int f, int g2, int h, int i);
+void TextDraw(const char* s, u32 len);
+void Draw2DBegin(void);
+void Draw2DEnd(void);
+void DrawTexQuad(int tex, float x0, float y0, float x1, float y1, u8 r, u8 g, u8 b, u8 a);
+void GfxGetViewportRect(short* rect);
+void GfxSetCopyFilter(int on);
+#ifdef __cplusplus
+extern "C" {
+#endif
+unsigned long strlen(const char* s);
+void fn_80009E10(void);
+void fn_801EAEAC(void);
+void fn_80115A34(int a, int b, short* rect);
+void fn_80006D20(void);
+void fn_80006558(int a);
+#ifdef __cplusplus
+}
+#endif
+extern const char* lbl_804D2A04[2];  // text drawn on the start-up frames
+extern int lbl_804D2A00;          // texture of the start-up frames (-1 = none)
+extern int gWideScreen;
+extern const float lbl_804D686C;
+extern const float lbl_804D687C;
+extern const float lbl_804D6880;
+extern const float lbl_804D6884;
+extern const float lbl_804D6888;
+
+// Draws the two start-up frames (text and picture) and restores the viewport.
+extern "C" void fn_80088574(void)
+{
+    const char** text;
+    int i;
+    short rect[8];
+    GfxFrameEnd();
+    i = 0;
+    text = lbl_804D2A04;
+    for (; i != 2; i++) {
+        GfxFrameSwap();
+        TextSetBox(0x1B8, 0x26C, 0x14, 0x3C);
+        TextSetStyle(0xFF, 0xFF, 0xFF, 0xFF, 0xE, 0, 0, 0, 2, 0, 0, 0);
+        TextDraw(text[0], strlen(text[0]) + 1);
+        Draw2DBegin();
+        if (lbl_804D2A00 != -1) {
+            if (gWideScreen != 0) {
+                DrawTexQuad(lbl_804D2A00, lbl_804D687C, lbl_804D686C, lbl_804D6880, lbl_804D6884, 0xFF, 0xFF, 0xFF, 0xFF);
+            } else {
+                DrawTexQuad(lbl_804D2A00, lbl_804D686C, lbl_804D686C, lbl_804D6888, lbl_804D6884, 0xFF, 0xFF, 0xFF, 0xFF);
+            }
+        }
+        Draw2DEnd();
+        GfxFrameBegin();
+    }
+    GfxGetViewportRect(rect);
+    fn_80009E10();
+    fn_801EAEAC();
+    GfxSetCopyFilter(0);
+    fn_80115A34(0, 1, rect);
+    fn_80006D20();
+    fn_80006558(1);
 }
