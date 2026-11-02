@@ -21,6 +21,39 @@ struct Mtx34 {
     f32 m[12];
 };
 
+// Model database (lbl_804D4300) and its 0x48-byte node records; layouts are partial.
+struct ModelNode {
+    /*0x00*/ u8 unk00[0x18 - 0x00];
+    /*0x18*/ u8 field18[0x34 - 0x18];
+    /*0x34*/ u16 field34;
+    /*0x36*/ u16 field36;
+    /*0x38*/ u8 unk38[0x40 - 0x38];
+    /*0x40*/ u16 boneCount;
+    /*0x42*/ u16 field42;
+    /*0x44*/ u8 unk44[0x46 - 0x44];
+    /*0x46*/ u16 positionIndex;
+};
+
+struct ModelDb {
+    /*0x00*/ u8 unk00[0x04 - 0x00];
+    /*0x04*/ int count;
+    /*0x08*/ u8 unk08[0x28 - 0x08];
+    /*0x28*/ ModelNode* nodes;
+    /*0x2C*/ u8 unk2C[0x34 - 0x2C];
+    /*0x34*/ Vec3* positions;
+    /*0x38*/ u8 unk38[0x44 - 0x38];
+    /*0x44*/ s16* array44;
+    /*0x48*/ s16* array48;
+};
+
+// Per-model draw slot (lbl_803E4998, 0x70 bytes each, 0x300 slots).
+struct ModelSlot {
+    /*0x00*/ u8 unk00[4];
+    /*0x04*/ int field04;
+    /*0x08*/ u8 color[4];
+    /*0x0C*/ u8 unk0C[0x70 - 0x0C];
+};
+
 // One record of the global dynamic-light array (lbl_804D4280, count lbl_804D4288).
 struct Actor {
     /*0x00*/ u8 unk00[0x24 - 0x00];
@@ -98,6 +131,8 @@ extern int lbl_804D429C;
 extern Actor* lbl_803DE1D8[];
 extern Actor* lbl_803DE3D8[];
 extern int lbl_804D4298;
+extern ModelDb* lbl_804D4300;
+extern ModelSlot lbl_803E4998[];
 
 void fn_80007118(void*);
 void fn_800070C0(void*);
@@ -492,4 +527,81 @@ int LightMsgNone(int id, int msg, void* data, void* ctx) {
 void LightMsg(int id, int msg, void* data, void* ctx) {
     *(Actor**)data = &lbl_804D4280[id];
     fn_80029080(msg, data);
+}
+
+// TODO (not drafted yet, 0x234 bytes at 0x80037230 .. 0x240 bytes at 0x800376F0 and others between 0x80029080 and 0x80037B6C)
+
+// 0x80037B6C (called from other units under this placeholder name)
+extern "C" s16* fn_80037B6C(int model) {
+    int idx = (u16)model;
+    if (idx >= 0 && idx < lbl_804D4300->count)
+        return lbl_804D4300->array48 + lbl_804D4300->nodes[idx].field42;
+    return 0;
+}
+
+// 0x80037BAC
+s16* ModelArray44(int model) {
+    int idx = (u16)model;
+    if (idx >= 0 && idx < lbl_804D4300->count)
+        return lbl_804D4300->array44 + lbl_804D4300->nodes[idx].field36;
+    return 0;
+}
+
+// 0x80037BEC
+int ModelBoneCount(int model) {
+    int idx = (u16)model;
+    if (idx >= 0 && idx < lbl_804D4300->count)
+        return *(u16*)((u8*)lbl_804D4300->nodes + idx * 0x48 + 0x40);
+    return -1;
+}
+
+// 0x80037C20 (called from other units under this placeholder name)
+extern "C" int fn_80037C20(int model) {
+    int idx = (u16)model;
+    if (idx >= 0 && idx < lbl_804D4300->count)
+        return *(u16*)((u8*)lbl_804D4300->nodes + idx * 0x48 + 0x34);
+    return -1;
+}
+
+// 0x800381F8 (called from other units under this placeholder name)
+extern "C" void fn_800381F8(u32 handle, int value, u8 r, u8 g, u8 b, u8 a) {
+    int idx = handle >> 16;
+    if (idx > 0 && idx < 0x300) {
+        lbl_803E4998[idx].field04 = value;
+        lbl_803E4998[idx].color[0] = r;
+        lbl_803E4998[idx].color[1] = g;
+        lbl_803E4998[idx].color[2] = b;
+        lbl_803E4998[idx].color[3] = a;
+    }
+}
+
+// 0x800390D8 (called from other units under this placeholder name)
+extern "C" int fn_800390D8(int handle, int index) {
+    if (index < 0)
+        return -1;
+    return (handle & 0xFFFF0000) | (index & 0xFFFF);
+}
+
+// 0x8003A14C
+Vec3* ModelBonePositions(int model) {
+    int idx = (u16)model;
+    if (idx >= 0 && idx < lbl_804D4300->count)
+        return &lbl_804D4300->positions[*(u16*)((u8*)lbl_804D4300->nodes + idx * 0x48 + 0x46)];
+    return 0;
+}
+
+// 0x8003A18C (called from other units under this placeholder name)
+extern "C" void* fn_8003A18C(int model) {
+    int idx = (u16)model;
+    if (idx >= 0 && idx < lbl_804D4300->count)
+        return lbl_804D4300->nodes[idx].field18;
+    return 0;
+}
+
+// 0x8003A1C0 (called from other units under this placeholder name)
+extern "C" ModelNode* fn_8003A1C0(int model) {
+    int idx = (u16)model;
+    if (idx >= 0 && idx < lbl_804D4300->count)
+        return (ModelNode*)((u8*)lbl_804D4300->nodes + idx * 0x48);
+    return 0;
 }
