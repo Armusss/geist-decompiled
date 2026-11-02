@@ -72,7 +72,8 @@ struct Actor {
     /*0x24*/ s32 ipos[3];
     /*0x30*/ u8 unk30[0x38 - 0x30];
     /*0x38*/ u32 id;
-    /*0x3C*/ u8 unk3C[0x50 - 0x3C];
+    /*0x3C*/ u8 unk3C[0x4C - 0x3C];
+    /*0x4C*/ u32 actorFlags;
     /*0x50*/ f32 pos[3];
     /*0x5C*/ u8 unk5C[0x68 - 0x5C];
     /*0x68*/ f32 fieldF68;
@@ -158,6 +159,8 @@ void FileFlushBuffer(void* dst, int size);
 void fn_8016D864(Vec3* out, void* in);
 void fn_8021284C(u32);
 void fn_80029F4C(Actor* a, void* pos);
+void fn_80027158(Actor** arr, int lo, int hi);
+void fn_8002828C(float dt, Actor* a, int b, int c);
 void fn_80028A98(int index);
 void fn_80029080(int msg, void* data);
 void* VAlloc(int size);
@@ -709,13 +712,65 @@ void StreamSlotStep(int index) {
     }
 }
 
+// 0x800270AC: depth-sort an array of light pointers (quick sort pass, then insertion sort)
+void LightsSort(Actor** arr, int n) {
+    int i;
+    int j;
+    Actor* x;
+    float key;
+    n--;
+    fn_80027158(arr, 0, n);
+    for (i = 1; i <= n; i++) {
+        x = arr[i];
+        key = x->fieldF68;
+        for (j = i; j > 0 && arr[j - 1]->fieldF68 > key; j--)
+            arr[j] = arr[j - 1];
+        arr[j] = x;
+    }
+}
+
+// 0x80028060: recompute all lights and rebuild the active list
+int LightsRefresh() {
+    if (lbl_804D4280 != 0) {
+        int i;
+        for (i = 0; i < lbl_804D4288; i++)
+            fn_80028A98(i);
+        ActiveListRebuild();
+    }
+    return 1;
+}
+
+static inline bool ActorShouldUpdate(Actor* a) {
+    bool r = false;
+    if (a != 0) {
+        if ((a->actorFlags & 0x40) || (a->actorFlags & 1) || (int)(a->id >> 24) == 0xC)
+            r = true;
+    }
+    return r;
+}
+
+// 0x800281B0: per-frame update of every actor
+int ActorsUpdate(float dt) {
+    int i;
+    for (i = 0; i < lbl_804D4288; i++) {
+        Actor* a = &lbl_804D4280[i];
+        if (a->actorFlags & 0x400) {
+            a->actorFlags &= ~0x400;
+        } else {
+            if (ActorShouldUpdate(a))
+                fn_8002828C(dt, a, 0, 0);
+        }
+    }
+    lbl_804D4298 += (int)dt;
+    return 1;
+}
+
 // ---- Functions not drafted yet (declarations only; retail assembly is used for them) ----
 // TODO (not drafted yet, 0x55C bytes at 0x80026B50): ModInfo function
 extern "C" void fn_80026B50();
 // TODO (not drafted yet, 0xAC bytes at 0x800270AC): ModInfo function
 extern "C" void fn_800270AC();
 // TODO (not drafted yet, 0x3F8 bytes at 0x80027158): ModInfo function
-extern "C" void fn_80027158();
 // TODO (not drafted yet, 0x300 bytes at 0x80027CD8): ModInfo function
 extern "C" void fn_80027CD8();
 // TODO (not drafted yet, 0xE0 bytes at 0x80028060): ModInfo function
@@ -723,7 +778,6 @@ extern "C" void fn_80028060();
 // TODO (not drafted yet, 0xDC bytes at 0x800281B0): ModInfo function
 extern "C" void fn_800281B0();
 // TODO (not drafted yet, 0x76C bytes at 0x8002828C): ModInfo function
-extern "C" void fn_8002828C();
 // TODO (not drafted yet, 0x1D4 bytes at 0x800298B4): ModInfo function
 extern "C" void fn_800298B4();
 // TODO (not drafted yet, 0x4C4 bytes at 0x80029A88): ModInfo function
