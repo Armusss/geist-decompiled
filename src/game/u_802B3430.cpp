@@ -250,9 +250,10 @@ int ClockActorMsg(Actor* self, int msg, void* data, int arg) {
         break;
     case 0xC14: {
         void* player = GetPlayer();
+        Actor* t = m->target;
         switch (m->value) {
         case 0x39CB0CB0:
-            fn_8021284C(*(int*)((u8*)m->target + 0x38));
+            fn_8021284C(*(int*)((u8*)t + 0x38));
             PlayerApplyHeldSlotState(player);
             break;
         }
@@ -260,10 +261,10 @@ int ClockActorMsg(Actor* self, int msg, void* data, int arg) {
         break;
     }
     }
-    if (handled == 0) {
-        return PossessableMsg(self, msg, data, arg);
+    if (handled != 0) {
+        return handled;
     }
-    return handled;
+    return PossessableMsg(self, msg, data, arg);
 }
 
 // Drive the hour and minute hands of the clock: build their rotation from
