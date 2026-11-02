@@ -13,7 +13,27 @@ static const char* sActionNames[] = {
 };
 
 // Display name of the actor (its descriptor lives in retail data, unused here).
-static const char* sClockName = "Possessable Clock";
+class Actor;
+int ClockActorMsg(Actor* self, int msg, void* data, int arg);
+void ClockActorUpdate(Actor* self, float dt);
+int ClockActorInit(Actor* self);
+void HostActionFree(Actor* actor);
+
+// Actor type descriptor (0x803C42A0).
+struct PossessableClockType {
+    int unk0;
+    const char* name;
+    int (*msg)(Actor*, int, void*, int);
+    void (*update)(Actor*, float);
+    int (*init)(Actor*);
+    void* unk14;
+    void (*free)(Actor*);
+    void* unk1C[5];
+};
+
+PossessableClockType gPossessableClockType = {
+    0, "Possessable Clock", ClockActorMsg, ClockActorUpdate, ClockActorInit, 0, HostActionFree,
+};
 
 extern u8 __upper_map[];
 
