@@ -36,11 +36,16 @@ typedef struct Msg {
 } Msg;
 
 // A portal between rooms (0x70 bytes).
+
 typedef struct Portal {
     u8 pad0[0x1c];
     s16 id;     // 0x1c
-    s16 other;  // 0x1e
-    u8 pad20[0x70 - 0x20];
+    s16 other;  // 0x1e (also read as unsigned flag bits)
+    int volCount;  // 0x20
+    int* vols;     // 0x24
+    u8 pad28[0x58 - 0x28];
+    IBox box;      // 0x58
+    u8 pad70[0x70 - 0x70];
 } Portal;
 
 // A room (0x68 bytes). The name hash is taken from the string at offset 0.
@@ -289,10 +294,11 @@ static inline void IBoxGrow(IBox* b, IVec3* m) {
     b->max.z += m->z;
 }
 
-static inline int IBoxHas(IBox* b, IVec3* p) {
-    return (p->x - b->min.x | p->y - b->min.y | p->z - b->min.z | b->max.x - p->x | b->max.y - p->y |
-            b->max.z - p->z) >= 0;
+static inline int IBoxHasXYZ(IBox* b, int x, int y, int z) {
+    return ((x - b->min.x | y - b->min.y | z - b->min.z | b->max.x - x | b->max.y - y | b->max.z - z) >> 31) == 0;
 }
+
+static inline int IBoxHas(IBox* b, IVec3* p) { return IBoxHasXYZ(b, p->x, p->y, p->z); }
 
 // RoomFindAt: index of the first room (from 1) whose box, grown by a margin, contains the point (0 if none).
 extern "C" int fn_8001A1B4(Vec3* pos) {
@@ -390,8 +396,8 @@ extern int lbl_804D4240;
 extern int lbl_804D4244;
 extern u32 lbl_803DCF7C[0x400 / 32];   // bitset of visible rooms
 
+extern "C" void fn_8001C23C(u32* bits, int n, Vec3* pos);   // marks the room around a position
 extern "C" {
-void fn_8001C23C(void* bits, int n, void* pos);   // marks the rooms around a position
 void fn_8001C6F4(void* dst, void* src, int n);
 int fn_8001D89C(void);
 void fn_80012F78(void);
@@ -435,7 +441,7 @@ void RoomsSelectCurrent(void) {
     u32 bits[0x400 / 32];
     int idx[0x400];
 
-    fn_8001C23C(bits, 0x400, (char*)fn_800C6448() + 0x24);
+    fn_8001C23C(bits, 0x400, (Vec3*)((char*)fn_800C6448() + 0x24));
     if (BitsetToIndices(idx, 0x400, bits, 0x400) != 0) {
         lbl_804D4230 = &lbl_804D41D4[idx[0]];
         lbl_804D4234 = (int)(lbl_804D4230->fogNear / 8.0f);
@@ -468,4 +474,49 @@ void RoomsLoadedReset(void) {
     fn_8002FB90();
     fn_80093180();
     BitsetClear(lbl_803DCF7C, 0x400);
+}
+
+static inline void BitSetAt(u32* bits, int i) { bits[i / 32] |= 1 << (i & 31); }
+
+// RoomsMarkAt: sets the bit of the room(s) that contain a world position. A portal box wins over a room
+// box; if no portal contains the point, the first room box that does is used.
+extern "C" void fn_8001C23C(u32* bits, int n, Vec3* pos) {
+    int px = (int)pos->x;
+    int py = (int)pos->y;
+    int pz = (int)pos->z;
+    int found = 0;
+    int r;
+    int j;
+
+    BitsetClear(bits, n);
+    for (r = 1; r < lbl_804D41D0; r++) {
+        Room* room = &lbl_804D41D4[r];
+        for (j = 0; j < room->portalCount; j++) {
+            IBox* b = &room->portals[j].box;
+            if (IBoxHasXYZ(b, px, py, pz)) {
+                found = 1;
+                BitSetAt(bits, r);
+                break;
+            }
+        }
+    }
+    if (!found) {
+        for (r = 1; r < lbl_804D41D0; r++) {
+            IBox* b = &lbl_804D41D4[r].box;
+            if (IBoxHasXYZ(b, px, py, pz)) {
+                found = 1;
+                BitSetAt(bits, r);
+                break;
+            }
+        }
+    }
+    if (!found) {
+        for (r = 1; r < lbl_804D41D0; r++) {
+            IBox* b = &lbl_804D41D4[r].box;
+            if (IBoxHasXYZ(b, px, py, pz)) {
+                BitSetAt(bits, r);
+                return;
+            }
+        }
+    }
 }
