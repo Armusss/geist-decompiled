@@ -230,21 +230,14 @@ extern "C" void fn_802113F0(float* pts, int stride, int count, float delta,
     float vy = vec[1] * delta;
     float vz = vec[2] * delta;
     float zero = 0.0f;
-    if (count < 1) {
-        return;
-    }
-    do {
-        float y = pts[1];
-        if (zero < y) {
-            float x = pts[0];
-            if (zero < x) {
-                pts[5] += vx;
-                pts[6] += vy;
-                pts[7] += vz;
-            }
+    for (int i = 0; i < count; i++) {
+        if (pts[1] > zero && pts[0] > zero) {
+            pts[5] += vx;
+            pts[6] += vy;
+            pts[7] += vz;
         }
         pts = (float*)((int)pts + stride);
-    } while (--count);
+    }
 }
 
 // Advances each particle in the array by `dt`: integrates the position from the
