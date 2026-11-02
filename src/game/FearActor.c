@@ -23,7 +23,8 @@ struct PlayerAnimSet {
 struct Actor {
     u8 mUnk00[0x38];            // 0x00
     u32 mId;                    // 0x38
-    u8 mUnk3C[0x50 - 0x3C];     // 0x3C
+    u8 mUnk3C[0x4C - 0x3C];     // 0x3C
+    u32 mFlags4C;               // 0x4C 0x400 = skip the update once
     u32 mFlags;                 // 0x50 0x200000 = inside a host
     u8 mUnk54[0x184 - 0x54];    // 0x54
     int mCamera;                // 0x184
@@ -39,7 +40,11 @@ struct Actor {
     u32 mState;                 // 0x7B4
     u8 mUnk7B8[0x14A8 - 0x7B8];  // 0x7B8
     int mHud;                   // 0x14A8
-    u8 mUnk14AC[0x1DA8 - 0x14AC];  // 0x14AC
+    u8 mUnk14AC[0x14B8 - 0x14AC];  // 0x14AC
+    int mUnk14B8;               // 0x14B8
+    int mFontA;                 // 0x14BC
+    int mFontB;                 // 0x14C0
+    u8 mUnk14C4[0x1DA8 - 0x14C4];  // 0x14C4
     int mAnimSet;               // 0x1DA8 currently active animation set
     u8 mUnk1DAC[0x26C4 - 0x1DAC];  // 0x1DAC
     PlayerAnimSet* mSet[2];     // 0x26C4
@@ -76,6 +81,11 @@ int fn_800A1BC8(int a, int b, int c, int d, int e);
 int fn_800C5E6C(void);
 int fn_802A1E90(void);
 void fn_80093478(int anim, int a);
+void fn_8016EEF4(int a);
+int fn_800F9614(int camera);
+void fn_8010FB1C(float dt);
+int HookFalse0(void);
+int fn_8004A370(float dt, Actor* p);
 #ifdef __cplusplus
 }
 #endif
@@ -83,6 +93,10 @@ int fn_8007EF48(int a, int b, const char* name, int c, int d, int e, int f, int 
 int AnimBankGetSetCount(int a, int b, int c);
 void AnimUnref(int anim);
 void CameraSetFov(int camera, float fov);
+void FontRelease(int font);
+struct Player;
+int PlayerMeterFull(Player* p);
+void FearRegionSetup(int a, Actor* p);
 
 // Whether the player is inside a host (selects which animation set is current).
 static inline int PlayerInHostInline(Actor* a)
@@ -372,4 +386,96 @@ Actor* GetPlayer(void)
         return 0;
     }
     return lbl_804D43E0;
+}
+
+// Data the host kinds expose that the player reads (host kind 1 at 0x84, kind 0x13 at 0xC4).
+struct HostKind1 {
+    u8 mUnk00[0x44];
+    float mFov;
+};
+struct HostKind19 {
+    u8 mUnk00[0x104];
+    int mFov;
+};
+struct HostObj {
+    u8 mUnk00[0x38];
+    u32 mId;
+    u8 mUnk3C[0x84 - 0x3C];
+    HostKind1* mKind1;
+    u8 mUnk88[0xC4 - 0x88];
+    HostKind19* mKind19;
+};
+
+extern const float lbl_804D629C;
+
+// 0x8004853C: ends the blur/font effects and resets the field of view for the current host
+extern "C" void fn_8004853C(Actor** pp)
+{
+    Actor* a = *pp;
+    HostObj* host;
+    int kind;
+    if (a->mFontA != -1) {
+        FontRelease(a->mFontA);
+        a->mFontA = -1;
+    }
+    if (a->mFontB != -1) {
+        FontRelease(a->mFontB);
+        a->mFontB = -1;
+    }
+    if (a->mUnk14B8 != -1) {
+        fn_8016EEF4(a->mUnk14B8);
+        a->mUnk14B8 = -1;
+    }
+    a->mFov = (float)fn_800F9614(a->mCamera);
+    host = (HostObj*)a->mHost;
+    kind = (int)(host->mId >> 24);
+    if (kind == 1) {
+        a->mFovTarget = host->mKind1->mFov;
+    } else if (kind == 0x13) {
+        a->mFovTarget = (float)host->mKind19->mFov;
+    } else {
+        a->mFovTarget = lbl_804D629C;
+    }
+}
+
+// 0x8004A254: per-frame update of every player, then the shared HUD and the "MainMenu" check
+extern "C" int fn_8004A254(float dt)
+{
+    int i;
+    int off;
+    int full;
+    struct {
+        int mUnk0;
+        const char* mText;
+    } msg;
+    off = 0;
+    for (i = 0; i < lbl_804D43E4; i++) {
+        Actor* p = (Actor*)((u8*)lbl_804D43E0 + off);
+        if (p->mFlags4C & 0x400) {
+            p->mFlags4C &= ~0x400;
+        } else {
+            fn_8004A370(dt, p);
+        }
+        off += sizeof(Actor);
+    }
+    fn_8010FB1C(dt);
+    if (HookFalse0() == 0) {
+        i = 0;
+        full = 0;
+        off = i;
+        for (; i < lbl_804D43E4; i++) {
+            if (PlayerMeterFull((Player*)((u8*)lbl_804D43E0 + off)) != 0) {
+                full++;
+            }
+            off += sizeof(Actor);
+        }
+        if (full == lbl_804D43E4) {
+            msg.mText = "MainMenu";
+            SendMsg(0x38000000, 0x5600, &msg);
+        }
+    }
+    if (lbl_804D43E4 == 1) {
+        FearRegionSetup(0, lbl_804D43E0);
+    }
+    return 1;
 }
