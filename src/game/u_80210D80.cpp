@@ -318,23 +318,23 @@ extern "C" void fn_80211638(float x, float y, float alpha, float depth, float* o
     }
     out[0] = x;
     out[1] = y;
-    if (rot == 0) {
-        out[2] = 0.0f;
-        out[3] = 0.0f;
-        out[4] = 0.0f;
-    } else {
+    if (rot != 0) {
         out[2] = rot[0];
         out[3] = rot[1];
         out[4] = rot[2];
-    }
-    if (scale == 0) {
-        out[5] = 0.0f;
-        out[6] = 0.0f;
-        out[7] = 0.0f;
     } else {
+        out[2] = 0.0f;
+        out[3] = 0.0f;
+        out[4] = 0.0f;
+    }
+    if (scale != 0) {
         out[5] = scale[0];
         out[6] = scale[1];
         out[7] = scale[2];
+    } else {
+        out[5] = 0.0f;
+        out[6] = 0.0f;
+        out[7] = 0.0f;
     }
     if (tint == 0) {
         out[8] = 0.0f;
@@ -369,23 +369,23 @@ void SetParticleDrawTransform(float x, float y, float* out, float* rot, float* s
     }
     out[0] = x;
     out[1] = y;
-    if (rot == 0) {
-        out[2] = 0.0f;
-        out[3] = 0.0f;
-        out[4] = 0.0f;
-    } else {
+    if (rot != 0) {
         out[2] = rot[0];
         out[3] = rot[1];
         out[4] = rot[2];
-    }
-    if (scale == 0) {
-        out[5] = 0.0f;
-        out[6] = 0.0f;
-        out[7] = 0.0f;
     } else {
+        out[2] = 0.0f;
+        out[3] = 0.0f;
+        out[4] = 0.0f;
+    }
+    if (scale != 0) {
         out[5] = scale[0];
         out[6] = scale[1];
         out[7] = scale[2];
+    } else {
+        out[5] = 0.0f;
+        out[6] = 0.0f;
+        out[7] = 0.0f;
     }
 }
 
@@ -621,6 +621,7 @@ void ModelNodeSetup(int node, int asset, int a, int b);
 // marks the actor possessable and sets up its overlay model node.
 extern "C" void fn_80211E38(Actor* actor)
 {
+    int node;
     GhostState* beh = actor->fieldA4;
     if (beh == 0) {
         beh = (GhostState*)VAlloc(0x3c);
@@ -628,29 +629,32 @@ extern "C" void fn_80211E38(Actor* actor)
     }
     memset(beh, 0, 0x3c);
 
-    bool active;
+    int active;
     if (PossessableInit(actor) == 0) {
-        active = false;
+        active = 0;
         actor->fieldAC |= 0x1000000;
     } else {
         actor->fieldAC &= 0xdfffffff;
         if (actor->field84->field4 != 0xa303c34 && actor->field84->field2C != 0) {
-            int node = AssetFind(0xd9044cbb,
+            node = AssetFind(0xd9044cbb,
                                  (unsigned long)actor->field84->field2C);
             if (node != -1) {
                 ModelNodeSetupByName(actor->field90, 0, 0, 1);
                 ModelNodeSetup(actor->field90, node, 1, 1);
             }
         }
-        active = true;
+        active = 1;
         beh->field18 |= 0x8000000;
         beh->field18 &= 0xfffffff7;
         beh->field34 = 1800.0f;
         beh->field38 = 100000.0f;
     }
 
-    if (active && actor->fieldA4 != 0) {
-        actor->fieldA4->field18 |= 0x30000000;
+    if (active) {
+        GhostState* g = actor->fieldA4;
+        if (g != 0) {
+            g->field18 |= 0x30000000;
+        }
     }
 }
 
