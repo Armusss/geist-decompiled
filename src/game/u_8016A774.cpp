@@ -975,6 +975,8 @@ void SltEffectUpdate(float dt) {
     while (fn_80187148(&sEffects, &it) != 0) {
         SltEffect* e = (SltEffect*)fn_80187108(&sEffects, &it);
         switch (e->state) {
+        case 0:
+            break;
         case 1:
             if (e->timer <= dt) {
                 e->timer = 2900.0f;
