@@ -138,6 +138,19 @@ extern "C" void fn_8021E09C();
 // TODO (not drafted yet, 0x188 bytes at 0x8021DCF4): widget callback
 extern "C" void fn_8021DCF4();
 extern MenuWidget* lbl_8049EE58[];
+extern int lbl_804D53C8;
+extern int lbl_804D53F0;
+extern "C" int SendMsg(int to, int msg, void* data);
+void TextSysInit();
+void GfxFbSave(int n);
+void GfxFbCommit();
+void GfxSetCopyFilter(int n);
+extern "C" int fn_80115850(int a, int b, int c);
+extern "C" void fn_801EAEAC();
+// TODO (not drafted yet, 0x6EC bytes at 0x8022034C): draw the current menu screen
+extern "C" void fn_8022034C(int alpha);
+// TODO (not drafted yet, 0x4B4 bytes at 0x8021E9FC): draw one menu page
+extern "C" void fn_8021E9FC(MenuWidget* widget, int a, int alpha);
 
 extern int gWideScreen;         // 0x804D4008
 extern int lbl_804D345C;        // current menu selection index (also read by u_8021427C)
@@ -454,4 +467,56 @@ void MenuLabelInit(MenuLabel* label, u8 kind, const char* text, int a, int b, in
     label->arg0 = a;
     label->arg1 = b;
     label->arg2 = c;
+}
+
+// MenuFramePrepare: capture the framebuffer when the menu opens or is resumed.
+extern "C" void fn_80215A24() {
+    if ((lbl_804D53E0 > 1 || lbl_804D53E0 < 0) && lbl_804D3430 != 0) {
+        if (lbl_804D53C4 == 0) {
+            if (lbl_804D53D0 == 2) {
+                if (0.0f <= lbl_804D53C0) {
+                    GfxFbSave(0);
+                    GfxFbCommit();
+                    GfxSetCopyFilter(2);
+                    lbl_804D53F0 = fn_80115850(0, 1, 0);
+                }
+            } else if (lbl_804D53C8 != 0) {
+                GfxFbSave(0);
+                GfxFbCommit();
+                GfxSetCopyFilter(2);
+                lbl_804D53F0 = fn_80115850(0, 1, 0);
+                lbl_804D53C8 = 0;
+            }
+        } else {
+            GfxFbSave(0);
+            GfxFbCommit();
+            GfxSetCopyFilter(2);
+            lbl_804D53F0 = fn_80115850(0, 1, 0);
+            GfxFbSave(1);
+            if (lbl_804D53E0 == 4) {
+                lbl_804D53C4 = 0;
+                lbl_804D53CC = 1;
+            }
+        }
+    }
+}
+
+// MenuDraw: draw the current screen or widget page; returns 1 if the menu is showing.
+extern "C" int fn_80215B40(int widget) {
+    if ((u32)lbl_804D53E0 <= 1 || lbl_804D53E0 == 4) {
+        return 0;
+    } else if (lbl_804D53CC != 0 || lbl_804D53D0 == 1) {
+        TextSysInit();
+        if (widget != -1) {
+            if (lbl_804D345C > -1 && (lbl_804D3430 == 0 || lbl_804D53CC != 0)) {
+                fn_8021E9FC(lbl_8049EE58[lbl_804D345C], widget, 0xFF);
+            } else {
+                fn_8022034C(0xFF);
+            }
+            fn_801EAEAC();
+        }
+        return 1;
+    } else {
+        return 0;
+    }
 }
