@@ -238,6 +238,9 @@ extern float lbl_804D31AC;
 extern "C" int rand();
 extern "C" void fn_8016EEF4(int v);
 extern "C" void fn_80073E80(Actor* a);
+extern "C" void fn_8016D68C(void* dst, void* src);
+extern "C" int fn_80116E08(Actor* a);
+extern "C" int fn_800E0DBC(void* v);
 
 // TODO (not drafted yet, 0x500 bytes at 0x801AE50C): game logic
 extern "C" void fn_801AE50C();
@@ -245,17 +248,85 @@ extern "C" void fn_801AE50C();
 // TODO (not drafted yet, 0x1A4 bytes at 0x801AEA0C): game logic
 extern "C" void fn_801AEA0C();
 
-// TODO (not drafted yet, 0xB0 bytes at 0x801AEBB0): game logic
-extern "C" void fn_801AEBB0();
+struct PhysLink {
+    u8 pad00[0xBC];
+    int handle;      // 0xBC
+};
 
-// TODO (not drafted yet, 0x8 bytes at 0x801AEC60): game logic
-extern "C" void fn_801AEC60();
+struct PhysObj {
+    u8 pad00[0x270];
+    float vel[3];    // 0x270
+    float v27C[4];   // 0x27C
+    float f28C;      // 0x28C
+    u8 pad290[0x2A8 - 0x290];
+    float f2A8;      // 0x2A8
+    float f2AC;      // 0x2AC
+    u8 pad2B0[0x5EC - 0x2B0];
+    PhysLink* link;  // 0x5EC
+};
+
+int EnemyCopyState(PhysObj* o) {
+    PhysObj* msg[8];
+    int r;
+    if (o == 0) {
+        r = 0;
+    } else if (SendMsg(o->link->handle, 0x400, msg) != 0 && msg[0] != 0) {
+        PhysObj* src = msg[0];
+        o->vel[0] = src->vel[0];
+        o->vel[1] = src->vel[1];
+        o->vel[2] = src->vel[2];
+        fn_8016D68C(o->v27C, src->v27C);
+        r = 1;
+        o->f2AC = src->f2AC;
+        o->f2A8 = src->f2A8;
+        o->f28C = src->f28C;
+    } else {
+        r = 1;
+    }
+    return r;
+}
+
+float EnemyZero() {
+    return 0.0f;
+}
 
 // TODO (not drafted yet, 0x1B0 bytes at 0x801AEC68): game logic
 extern "C" void fn_801AEC68();
 
-// TODO (not drafted yet, 0xD8 bytes at 0x801AEE18): game logic
-extern "C" void fn_801AEE18();
+struct HitQuery {
+    Actor* ignore;   // 0x00
+    int* target;     // 0x04
+    u8 pad08[0x20 - 0x08];
+    Actor* owner;    // 0x20
+    u8 pad24[0x30 - 0x24];
+    int x;           // 0x30
+    int y;           // 0x34
+    int z;           // 0x38
+};
+
+int EnemyHitFilter(HitQuery* q, int* out) {
+    Actor* h = q->ignore;
+    if (h != 0) {
+        if (h == q->owner) {
+            return 0;
+        }
+        int t = (int)((u32)h->handle >> 24);
+        if (t == 0x13) {
+            if (fn_80116E08(h) == 0) {
+                return 0;
+            }
+        } else if (t == 2 && PlayerInHost(h) != 0) {
+            return 0;
+        }
+    }
+    int* p = q->target;
+    int v[3];
+    v[0] = q->x - p[0];
+    v[1] = q->y - p[1];
+    v[2] = q->z - p[2];
+    *out = fn_800E0DBC(v);
+    return 2;
+}
 
 // TODO (not drafted yet, 0x520 bytes at 0x801AEEF0): game logic
 extern "C" void fn_801AEEF0();
