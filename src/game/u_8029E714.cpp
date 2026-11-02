@@ -51,7 +51,9 @@ struct HostObj {
     int pos24; // 0x24
     int pos28; // 0x28
     int pos2C; // 0x2C
-    char pad30[0x20];
+    char pad30[8];
+    int handle38; // 0x38
+    char pad3C[0x14];
     u32 flags50; // 0x50
     char pad54[0x24];
     int i78; // 0x78
@@ -112,6 +114,18 @@ extern "C" int fn_8016325C(void* anim);
 extern "C" void fn_8029B3B0(void* o, int v);
 extern "C" void fn_800B26B8(void* o);
 extern "C" void fn_800BC56C(void* o, void* t);
+
+extern "C" int fn_800B84E4(int a, int b, int c);
+extern "C" int fn_800B7CE0(int a);
+extern "C" void* memset(void* p, int c, u32 n);
+extern "C" int SendMsg(int to, int msg, void* data);
+
+struct RideMsg {
+    int unk0;
+    int id;             // 0x04
+    int tag;            // 0x08
+    char pad0C[0x14];
+};
 
 struct HostObjFx {
     char pad00[0xC8];
@@ -295,9 +309,45 @@ bool HostResetFollowB(HostObj* o) {
     return true;
 }
 
-// TODO (not drafted yet, 0xCC bytes at 0x8029F3EC): not analysed
+bool HostEnterCarry(HostObj* o) {
+    if (o == 0) {
+        return false;
+    }
+    *o->ptr130 = 7;
+    fn_8029B3B0(o, 0x13E6B);
+    ConditionUpdateBit(o->conditions, 4, 1);
+    ConditionUpdateBit(o->conditions, 0x16, 1);
+    ConditionUpdateBit(o->conditions, 0x17, 1);
+    int id = fn_800B7CE0(o->handle38);
+    if (id != -1) {
+        RideMsg m;
+        memset(&m, 0, 0x20);
+        m.id = id;
+        m.tag = 0x13E6B;
+        SendMsg(o->handle38, 0x1800, &m);
+    }
+    return true;
+}
+
 // TODO (not drafted yet, 0x39C bytes at 0x8029F4B8): not analysed
-// TODO (not drafted yet, 0xA4 bytes at 0x8029F854): not analysed
+bool HostResetFollowD(HostObj* o) {
+    float zero = lbl_804DA7C0;
+    if (o == 0) {
+        return false;
+    }
+    o->cb10C = FollowOffsetUpdate;
+    *(float*)(o->ptr130 + 5) = zero;
+    o->i288 = 0;
+    o->i21C = 0;
+    o->i220 = 0;
+    fn_800BBCA8(o);
+    o->cb10C = FollowOffsetUpdate;
+    ConditionUpdateBit(o->conditions, 0x16, 0);
+    fn_8029B070(o, 0x73B1E248);
+    fn_8029B070(o, 0x13E6B);
+    return true;
+}
+
 // TODO (not drafted yet, 0xE0 bytes at 0x8029F8F8): not analysed
 bool HostRideDone(HostObj* o) {
     if (o == 0) {
@@ -325,7 +375,7 @@ bool CondObjClearFlag2A(CondObj* o) {
 // TODO (not drafted yet, 0x16C bytes at 0x8029FB70): not analysed
 bool HostResetFollow(HostObj* o) {
     float zero = lbl_804DA7C0;
-    if (o == 0) {
+    if ((u32)o == 0) {
         return false;
     }
     o->cb10C = FollowOffsetUpdate;
@@ -342,8 +392,47 @@ bool HostResetFollow(HostObj* o) {
 
 // TODO (not drafted yet, 0xE4 bytes at 0x8029FD70): not analysed
 // TODO (not drafted yet, 0x39C bytes at 0x8029FE54): not analysed
-// TODO (not drafted yet, 0xA4 bytes at 0x802A01F0): not analysed
-// TODO (not drafted yet, 0xE4 bytes at 0x802A0294): not analysed
+bool HostResetFollowC(HostObj* o) {
+    float zero = lbl_804DA7C0;
+    if (o == 0) {
+        return false;
+    }
+    o->cb10C = FollowOffsetUpdate;
+    *(float*)(o->ptr130 + 5) = zero;
+    o->i288 = 0;
+    o->i21C = 0;
+    o->i220 = 0;
+    fn_800BBCA8(o);
+    o->cb10C = FollowOffsetUpdate;
+    ConditionUpdateBit(o->conditions, 0x16, 0);
+    fn_8029B070(o, 0x73B1E248);
+    fn_8029B070(o, 0x13E6B);
+    return true;
+}
+
+bool HostEnterGrab(HostObj* o) {
+    if (o == 0) {
+        return false;
+    }
+    *o->ptr130 = 3;
+    fn_8029B3B0(o, 0x13E6B);
+    ConditionUpdateBit(o->conditions, 4, 1);
+    ConditionUpdateBit(o->conditions, 0x16, 1);
+    ConditionUpdateBit(o->conditions, 0x17, 1);
+    HostObj* t = (HostObj*)FollowGetTargetObj(o->conditions);
+    if (t != 0) {
+        int id = fn_800B84E4(o->handle38, t->handle38, 0);
+        if (id != -1) {
+            RideMsg m;
+            memset(&m, 0, 0x20);
+            m.id = id;
+            m.tag = 0x13E6B;
+            SendMsg(o->handle38, 0x1800, &m);
+        }
+    }
+    return true;
+}
+
 // TODO (not drafted yet, 0x1C0 bytes at 0x802A0378): not analysed
 bool CondObjActivate(CondObj* o) {
     if (o == 0) {
