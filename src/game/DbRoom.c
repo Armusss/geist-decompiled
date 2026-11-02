@@ -520,3 +520,40 @@ extern "C" void fn_8001C23C(u32* bits, int n, Vec3* pos) {
         }
     }
 }
+
+// Functions not drafted yet (symbol names are still the placeholders):
+// TODO (not drafted yet, 0x178 bytes at 0x8001BB00): fn_8001BB00
+// TODO (not drafted yet, 0x1B0 bytes at 0x8001BC84): fn_8001BC84
+// TODO (not drafted yet, 0x408 bytes at 0x8001BE34): fn_8001BE34
+// TODO (not drafted yet, 0x240 bytes at 0x8001C4B4): fn_8001C4B4
+// TODO (not drafted yet, 0x1DC bytes at 0x8001C6F4): fn_8001C6F4
+// TODO (not drafted yet, 0x1DC bytes at 0x8001C8D0): fn_8001C8D0
+// TODO (not drafted yet, 0x2C0 bytes at 0x8001CAAC): fn_8001CAAC
+// TODO (not drafted yet, 0x218 bytes at 0x8001CE28): fn_8001CE28
+// TODO (not drafted yet, 0x218 bytes at 0x8001D040): fn_8001D040
+// TODO (not drafted yet, 0x384 bytes at 0x8001D258): fn_8001D258
+// TODO (not drafted yet, 0x27C bytes at 0x8001D5DC): fn_8001D5DC
+// TODO (not drafted yet, 0xAD4 bytes at 0x8001D89C): fn_8001D89C
+// TODO (not drafted yet, 0x664 bytes at 0x8001E370): fn_8001E370
+// TODO (not drafted yet, 0x2A0 bytes at 0x8001EAF8): fn_8001EAF8
+// TODO (not drafted yet, 0x344 bytes at 0x8001ED98): fn_8001ED98
+// TODO (not drafted yet, 0x28C bytes at 0x8001F0DC): fn_8001F0DC
+// TODO (not drafted yet, 0xF4 bytes at 0x8001F368): fn_8001F368
+// TODO (not drafted yet, 0x2BC bytes at 0x8001F45C): fn_8001F45C
+// TODO (not drafted yet, 0x210 bytes at 0x8001F718): fn_8001F718
+// TODO (not drafted yet, 0x8BC bytes at 0x8001F928): fn_8001F928
+// TODO (not drafted yet, 0x9C bytes at 0x800201E4): fn_800201E4
+// TODO (not drafted yet, 0x134 bytes at 0x80020280): fn_80020280
+// TODO (not drafted yet, 0x280 bytes at 0x80020414): fn_80020414
+// TODO (not drafted yet, 0x1FC bytes at 0x80020694): fn_80020694
+// TODO (not drafted yet, 0x6C8 bytes at 0x80020890): fn_80020890
+// TODO (not drafted yet, 0x32C bytes at 0x80020F58): fn_80020F58
+// TODO (not drafted yet, 0x708 bytes at 0x80021284): fn_80021284
+// TODO (not drafted yet, 0xCC bytes at 0x8002198C): fn_8002198C
+// TODO (not drafted yet, 0x30C bytes at 0x80021A58): fn_80021A58
+// TODO (not drafted yet, 0x7F0 bytes at 0x80021D64): fn_80021D64
+// TODO (not drafted yet, 0x74 bytes at 0x80022554): fn_80022554
+// TODO (not drafted yet, 0x70 bytes at 0x800225C8): fn_800225C8
+// TODO (not drafted yet, 0x60 bytes at 0x80022638): fn_80022638
+// TODO (not drafted yet, 0x25C bytes at 0x80022698): fn_80022698
+// TODO (not drafted yet, 0x21C bytes at 0x800228F4): fn_800228F4

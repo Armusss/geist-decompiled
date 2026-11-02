@@ -349,6 +349,7 @@ void fn_8000FF7C(void);
 void fn_8010F7EC(void);
 void fn_801D8FC8(void);
 void fn_80013F50(void);
+void fn_800F0FAC(void);
 void fn_80040600(void);
 double tan(double x);
 }
@@ -644,3 +645,96 @@ extern "C" void fn_80005CEC(void) {
     lbl_804D3FE4 = 0;
     lbl_804D3FE8 = 0;
 }
+
+// Empty in retail (variadic stubs): the game's own OSReport/OSPanic do nothing in this build.
+extern "C" void OSReport(const char* msg, ...) {}
+extern "C" void OSPanic(const char* file, int line, const char* msg, ...) {}
+
+extern int lbl_804D252C;
+extern float lbl_804D2538;
+extern float lbl_804D253C;
+extern float lbl_804D254C;
+extern int lbl_804D4064;
+
+struct FogParams {
+    float a;      // 0x00
+    int b;        // 0x04
+    u8 color[4];  // 0x08
+    float c;      // 0x0C
+    float d;      // 0x10
+};
+
+// FogGetParams
+extern "C" void fn_80008AD8(FogParams* out) {
+    out->b = lbl_804D252C;
+    out->color[0] = lbl_804D4040[0];
+    out->color[1] = lbl_804D4040[1];
+    out->color[2] = lbl_804D4040[2];
+    out->color[3] = lbl_804D4040[3];
+    out->c = lbl_804D2538;
+    out->d = lbl_804D253C;
+    out->a = lbl_804D254C;
+}
+
+void GfxLightsBeginFrame(void);
+
+// FrameSetup: resets render state at the start of a frame unless `skip` is set.
+extern "C" void fn_80009E44(int arg, int skip) {
+    if (skip != 0) {
+        lbl_804D4064 = arg;
+        fn_8000BC5C(-1);
+    } else {
+        lbl_804D2548 = -2;
+        fn_800F0FAC();
+        fn_80013F50();
+        fn_80040600();
+        MeshNop0();
+        GfxSetCullMode(1);
+        lbl_804D4064 = arg;
+        fn_8000BC5C(-1);
+        GfxLightsBeginFrame();
+    }
+}
+
+// Functions not drafted yet (symbol names are still the placeholders):
+// TODO (not drafted yet, 0x288 bytes at 0x80005A64): fn_80005A64
+// TODO (not drafted yet, 0x588 bytes at 0x80005D64): fn_80005D64
+// TODO (not drafted yet, 0x26C bytes at 0x800062EC): fn_800062EC
+// TODO (not drafted yet, 0x180 bytes at 0x800065D8): fn_800065D8
+// TODO (not drafted yet, 0x524 bytes at 0x800067F8): fn_800067F8
+// TODO (not drafted yet, 0x334 bytes at 0x80006D2C): fn_80006D2C
+// TODO (not drafted yet, 0x1AC bytes at 0x80007254): fn_80007254
+// TODO (not drafted yet, 0x21C bytes at 0x80007400): fn_80007400
+// TODO (not drafted yet, 0x200 bytes at 0x8000761C): fn_8000761C
+// TODO (not drafted yet, 0x50 bytes at 0x8000781C): DebugPrintf__FPCce
+// TODO (not drafted yet, 0x354 bytes at 0x8000786C): fn_8000786C
+// TODO (not drafted yet, 0x300 bytes at 0x80007BC0): FileReadSync__FPvPvii
+// TODO (not drafted yet, 0x54 bytes at 0x80007EC0): SystemIdle__Fv
+// TODO (not drafted yet, 0x3F0 bytes at 0x80007F14): fn_80007F14
+// TODO (not drafted yet, 0x48C bytes at 0x80008304): fn_80008304
+// TODO (not drafted yet, 0x158 bytes at 0x800087E8): fn_800087E8
+// TODO (not drafted yet, 0x17C bytes at 0x8000895C): fn_8000895C
+// TODO (not drafted yet, 0x94 bytes at 0x80008E5C): fn_80008E5C
+// TODO (not drafted yet, 0x158 bytes at 0x80008F64): fn_80008F64
+// TODO (not drafted yet, 0xB4 bytes at 0x800090BC): fn_800090BC
+// TODO (not drafted yet, 0xF8 bytes at 0x800091D4): fn_800091D4
+// TODO (not drafted yet, 0x140 bytes at 0x80009398): fn_80009398
+// TODO (not drafted yet, 0x2DC bytes at 0x800094D8): fn_800094D8
+// TODO (not drafted yet, 0x558 bytes at 0x800098B8): fn_800098B8
+// TODO (not drafted yet, 0x148 bytes at 0x80009EE0): GfxFrameBegin__Fv
+// TODO (not drafted yet, 0x9B8 bytes at 0x8000A028): GfxFrameSwap__Fv
+// TODO (not drafted yet, 0x240 bytes at 0x8000AA20): SystemPoll__Fv
+// TODO (not drafted yet, 0x170 bytes at 0x8000AC60): fn_8000AC60
+// TODO (not drafted yet, 0x64 bytes at 0x8000ADDC): GfxFrameEnd__Fv
+// TODO (not drafted yet, 0x88 bytes at 0x8000AE6C): fn_8000AE6C
+// TODO (not drafted yet, 0xBC bytes at 0x8000AEF4): fn_8000AEF4
+// TODO (not drafted yet, 0x598 bytes at 0x8000B034): fn_8000B034
+// TODO (not drafted yet, 0x36C bytes at 0x8000B604): fn_8000B604
+// TODO (not drafted yet, 0x11C bytes at 0x8000B970): fn_8000B970
+// TODO (not drafted yet, 0x1D0 bytes at 0x8000BA8C): fn_8000BA8C
+// TODO (not drafted yet, 0x3D4 bytes at 0x8000BC5C): fn_8000BC5C
+// TODO (not drafted yet, 0x2F8 bytes at 0x8000C030): fn_8000C030
+// TODO (not drafted yet, 0x5B8 bytes at 0x8000C384): fn_8000C384
+// TODO (not drafted yet, 0x4EC bytes at 0x8000C93C): fn_8000C93C
+// TODO (not drafted yet, 0x1FC bytes at 0x8000CE28): fn_8000CE28
+// TODO (not drafted yet, 0xBA0 bytes at 0x8000D084): fn_8000D084

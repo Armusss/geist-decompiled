@@ -797,3 +797,61 @@ extern "C" int fn_8016F018(int handle, int volume) {
 }
 
 extern "C" int fn_8016F118(void) { return 0; }
+
+// Functions not drafted yet (symbol names are still the placeholders):
+// TODO (not drafted yet, 0x2C bytes at 0x8016E578): fn_8016E578
+// TODO (not drafted yet, 0x134 bytes at 0x8016E5A4): fn_8016E5A4
+// TODO (not drafted yet, 0x1A8 bytes at 0x8016E768): fn_8016E768
+// TODO (not drafted yet, 0x188 bytes at 0x8016E910): fn_8016E910
+// TODO (not drafted yet, 0x220 bytes at 0x8016EA98): fn_8016EA98
+// TODO (not drafted yet, 0x11C bytes at 0x8016EEF4): fn_8016EEF4
+// TODO (not drafted yet, 0x13C bytes at 0x8016F120): fn_8016F120
+// TODO (not drafted yet, 0x134 bytes at 0x8016F25C): fn_8016F25C
+// TODO (not drafted yet, 0xEC bytes at 0x8016F390): FxStart
+// TODO (not drafted yet, 0x60 bytes at 0x8016F47C): fn_8016F47C
+// TODO (not drafted yet, 0x1C4 bytes at 0x8016F4DC): fn_8016F4DC
+// TODO (not drafted yet, 0x178 bytes at 0x8016F6A0): fn_8016F6A0
+// TODO (not drafted yet, 0xD4 bytes at 0x8016F818): fn_8016F818
+// TODO (not drafted yet, 0x64 bytes at 0x8016F8EC): fn_8016F8EC
+// TODO (not drafted yet, 0x864 bytes at 0x8016F950): fn_8016F950
+// TODO (not drafted yet, 0x60 bytes at 0x801701B4): fn_801701B4
+// TODO (not drafted yet, 0x134 bytes at 0x80170214): fn_80170214
+// TODO (not drafted yet, 0x4EC bytes at 0x80170348): fn_80170348
+// TODO (not drafted yet, 0x7C bytes at 0x80170834): FxFind__FPCc
+// TODO (not drafted yet, 0xF4 bytes at 0x801708B0): LevelUnload__Fv
+// TODO (not drafted yet, 0x100 bytes at 0x801709A4): LevelLoaded__FPCc
+// TODO (not drafted yet, 0x70 bytes at 0x80170AA4): fn_80170AA4
+// TODO (not drafted yet, 0x114 bytes at 0x80170B14): fn_80170B14
+// TODO (not drafted yet, 0x8 bytes at 0x80170C28): fn_80170C28
+// TODO (not drafted yet, 0x8C bytes at 0x80170C30): fn_80170C30
+// TODO (not drafted yet, 0x8C bytes at 0x80170CBC): fn_80170CBC
+// TODO (not drafted yet, 0x8C bytes at 0x80170D48): fn_80170D48
+// TODO (not drafted yet, 0x8C bytes at 0x80170DD4): fn_80170DD4
+// TODO (not drafted yet, 0x9C bytes at 0x80170E60): fn_80170E60
+// TODO (not drafted yet, 0x68 bytes at 0x80170EFC): fn_80170EFC
+// TODO (not drafted yet, 0x180 bytes at 0x80170F64): fn_80170F64
+// TODO (not drafted yet, 0x16C bytes at 0x801710E4): fn_801710E4
+// TODO (not drafted yet, 0x3C8 bytes at 0x80171250): fn_80171250
+// TODO (not drafted yet, 0x3A4 bytes at 0x80171618): fn_80171618
+// TODO (not drafted yet, 0x344 bytes at 0x801719BC): fn_801719BC
+// TODO (not drafted yet, 0x240 bytes at 0x80171D00): fn_80171D00
+// TODO (not drafted yet, 0x478 bytes at 0x80171F40): fn_80171F40
+// TODO (not drafted yet, 0x2A8 bytes at 0x801723B8): fn_801723B8
+// TODO (not drafted yet, 0x1278 bytes at 0x80172660): fn_80172660
+// TODO (not drafted yet, 0x484 bytes at 0x801738D8): fn_801738D8
+// TODO (not drafted yet, 0x74 bytes at 0x80173D5C): fn_80173D5C
+// TODO (not drafted yet, 0x28 bytes at 0x80173DD0): fn_80173DD0
+// TODO (not drafted yet, 0x28 bytes at 0x80173DF8): fn_80173DF8
+// TODO (not drafted yet, 0x2CC bytes at 0x80173E20): fn_80173E20
+// TODO (not drafted yet, 0x294 bytes at 0x801740EC): fn_801740EC
+// TODO (not drafted yet, 0x524 bytes at 0x80174380): fn_80174380
+// TODO (not drafted yet, 0x2CC bytes at 0x801748A4): fn_801748A4
+// TODO (not drafted yet, 0x418 bytes at 0x80174B70): fn_80174B70
+// TODO (not drafted yet, 0x2C bytes at 0x80174F88): fn_80174F88
+// TODO (not drafted yet, 0x1C bytes at 0x80174FB4): fn_80174FB4
+// TODO (not drafted yet, 0x30 bytes at 0x80174FD0): fn_80174FD0
+// TODO (not drafted yet, 0x30 bytes at 0x80175000): fn_80175000
+// TODO (not drafted yet, 0x72C bytes at 0x80175030): fn_80175030
+// TODO (not drafted yet, 0x334 bytes at 0x8017575C): fn_8017575C
+// TODO (not drafted yet, 0x2A8 bytes at 0x80175A90): fn_80175A90
+// TODO (not drafted yet, 0x28 bytes at 0x80175D38): fn_80175D38
