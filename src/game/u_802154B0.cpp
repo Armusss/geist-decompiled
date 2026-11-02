@@ -70,6 +70,27 @@ struct MenuOps {
     void (*activate)(MenuItem* item, int flag); // 0x24
 };
 
+// A menu page: owned strings plus up to five (label, id) shortcut pairs.
+struct MenuPage {
+    void* items[20];  // 0x00
+    int itemCount;    // 0x50
+    u8 unk54[4];
+    struct {
+        void* label;
+        int id;
+    } pairs[5];       // 0x58
+    int pairCount;    // 0x80
+    int unk84;        // 0x84
+    int unk88;
+    int unk8c;
+    int unk90;
+    int unk94;
+    int unk98;
+    u8 unk9c[8];
+    int unka4;        // 0xa4
+    int unka8;        // 0xa8
+};
+
 // A selectable widget on a menu screen.
 struct MenuWidget {
     u8 unk0[0x9c];
@@ -360,4 +381,38 @@ void MenuButtonAFire(MenuButtonA* b) {
         b->onPress(b->arg);
         FxStart(lbl_804D344C, 0, 0);
     }
+}
+
+// MenuPageAdd: append an owned string (and optionally a shortcut pair) to a page.
+void MenuPageAdd(MenuPage* page, void* item, int id) {
+    if (page->itemCount >= 20) {
+        return;
+    }
+    page->items[page->itemCount] = item;
+    if (id != -1 && page->pairCount < 5) {
+        page->pairs[page->pairCount].label = item;
+        page->pairs[page->pairCount].id = id;
+        page->pairCount++;
+    }
+    page->itemCount++;
+}
+
+// MenuPageClear: free a page's strings and reset it.
+void MenuPageClear(MenuPage* page) {
+    void** p = page->items;
+    int i;
+    for (i = 0; i < page->itemCount; i++) {
+        VFree(*p);
+        p++;
+    }
+    page->itemCount = 0;
+    page->pairCount = 0;
+    page->unk88 = 0;
+    page->unk8c = 0;
+    page->unk90 = 0;
+    page->unk94 = 0;
+    page->unk98 = 0;
+    page->unka4 = 0;
+    page->unka8 = 0;
+    page->unk84 = 0;
 }
