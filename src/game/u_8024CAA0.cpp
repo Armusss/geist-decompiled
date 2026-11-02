@@ -6,6 +6,11 @@ typedef unsigned short u16;
 typedef signed int s32;
 typedef unsigned long u32;
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
 struct Vec3 {
     float x, y, z;
 };
@@ -271,6 +276,10 @@ struct CamQuery {
 };
 
 // Point/delta pair returned by fn_8016F120.
+struct Pos3 {
+    s32 x, y, z;
+};
+
 struct CamLine {
     s32 x, y, z;        // 0x00
     s32 dx, dy, dz;     // 0x0c
@@ -308,7 +317,7 @@ extern "C" void fn_8016D648(Vec3* out, const Vec3* a, const Vec3* b);
 extern "C" void fn_8016D6A8(Vec3* v);
 extern "C" void fn_8016E13C(void* m, Vec3i* v, int flag);
 extern "C" void fn_8016EDD8(s32 id, s32* pos);
-extern "C" int fn_8016F120(void* obj, CamLine* out);
+extern "C" int fn_8016F120(void* obj, void* out);
 extern "C" void fn_80027690(void* p);
 extern "C" void fn_8016EEF4(s32 id);
 void* VAlloc(int size);
@@ -607,6 +616,38 @@ void RailFireloopDestroy(int owner, CamActor* actor) {
     }
 }
 
+// Runtime string buffer; the 0x41e query message carries a String slot whose
+// first word the receiver overwrites with the answer.
+class Buffer {
+public:
+    Buffer();
+    virtual ~Buffer();
+    virtual void Release(char* p);
+
+    char* mData;
+    int mLength;
+    int mUnk0C;
+    int mOwned;
+};
+
+class String : public Buffer {
+public:
+    String();
+    ~String() {}
+    virtual void Release(char* p);
+};
+
+struct RailQueryResult {
+    String name;
+};
+
+struct RailQueryMsg {
+    u32 unk00;
+    u32 hash;
+    u32 unk08;
+    RailQueryResult result;
+};
+
 // Payload of message 0x41e: the actor's id, a request hash and a value the
 // receiver fills in.
 struct RailMsg41E {
@@ -620,23 +661,29 @@ struct RailMsg41E {
 // its 0x41e parameter, scales the actor's rotation by it and spawns the
 // "demonboss_fireloop" effect at the actor's position. 0x8024DAB0.
 int RailFireloopStart(int owner, CamActor* actor) {
+    Pos3 line;
     ActorHandle* h = (ActorHandle*)VAlloc(0x10);
     actor->ff0 = h;
     if (!h) {
         return 0;
     }
     u32 id = actor->unkcc;
-    if ((id >> 24) != 0x13) {
+    if ((int)(id >> 24) != 0x13) {
         return 0;
     }
-    RailMsg41E msg;
-    msg.value = 0;
-    msg.hash = 0x607eed34;
-    msg.unk08 = 0;
-    if (SendMsg(id, 0x41e, &msg)) {
-        fn_800E1098(&actor->rot, &actor->rot, (float)msg.value);
+    int hit;
+    int value;
+    {
+        RailQueryMsg msg;
+        *(int*)&msg.result = 0;
+        msg.hash = 0x607eed34;
+        msg.unk08 = 0;
+        hit = SendMsg(id, 0x41e, &msg);
+        value = *(int*)&msg.result;
     }
-    CamLine line;
+    if (hit) {
+        fn_800E1098(&actor->rot, &actor->rot, (float)value);
+    }
     line.x = (s32)actor->rot.x;
     line.y = (s32)actor->rot.y;
     line.z = (s32)actor->rot.z;
