@@ -19,12 +19,30 @@ typedef struct ScriptVM {
     /*0x00*/ int r[24];
     /*0x60*/ f32 f[8];
     /*0x80*/ int pc;
-    /*0x84*/ u8 unk84[0x94 - 0x84];
+    /*0x84*/ u8* code;
+    /*0x88*/ u8 unk88[0x94 - 0x88];
     /*0x94*/ int functionCount;
     /*0x98*/ u8* functions;
     /*0x9C*/ u8 unk9C[0x20AC - 0x9C];
     /*0x20AC*/ int currentFunction;
 } ScriptVM;
+
+// One 12-byte function record of a script.
+typedef struct ScriptFunc {
+    /*0x00*/ int field00;
+    /*0x04*/ int entry;
+    /*0x08*/ int field08;
+} ScriptFunc;
+
+typedef int (*ScriptOpFn)(int ins, ScriptVM* vm);
+
+extern ScriptVM lbl_8043CAF0;       // the running machine
+extern ScriptOpFn lbl_80398148[32]; // handler table
+extern int lbl_804D4670;            // pending error code
+extern int lbl_804D46A0;            // executed instruction counter
+extern int lbl_804D46A4;            // return address of the running call
+extern int lbl_804D29DC;            // call depth
+extern int lbl_8044069C[0x40];      // call stack of function indices
 
 // Instruction fields.
 #define INS_SUB(i) (((i) >> 5) & 7)
@@ -32,6 +50,54 @@ typedef struct ScriptVM {
 
 extern void* memset(void* dst, int val, u32 n);
 extern void fn_800050B4(void);
+
+// 0x80083360: run a script function to completion; returns the function's result (r3) or -1
+int ScriptRun(ScriptFunc* func, ScriptVM* vm) {
+    int savedPc;
+    int state = -1;
+    int savedFunc;
+    int savedRet;
+    int ret = lbl_804D4670;
+    int res;
+    if (ret > 0x40000000)
+        return ret;
+    savedPc = vm->pc;
+    savedRet = lbl_804D46A4;
+    lbl_804D46A4 = savedPc + 4;
+    savedFunc = vm->currentFunction;
+    vm->pc = func->entry;
+    vm->currentFunction = (u32)((u8*)func - vm->functions) / 12;
+    lbl_804D29DC++;
+    if (lbl_804D29DC < 0x40)
+        lbl_8044069C[lbl_804D29DC] = vm->currentFunction;
+    do {
+        if (state >= 0) {
+            switch (state) {
+            case 3:
+                break;
+            case 4:
+            case 5:
+                state = -1;
+                break;
+            }
+        }
+        res = lbl_80398148[*(u32*)(lbl_8043CAF0.code + lbl_8043CAF0.pc) & 0x1F](
+            *(u32*)(lbl_8043CAF0.code + lbl_8043CAF0.pc), vm);
+        if (res > 0x40000000)
+            return -1;
+        if (state >= 0 && res == 1 && state != 0) {
+            vm->pc = savedPc;
+            state = 2;
+        }
+        lbl_804D46A0++;
+    } while (res == 0);
+    if (lbl_804D29DC >= 0)
+        lbl_804D29DC--;
+    vm->pc = savedPc;
+    vm->currentFunction = savedFunc;
+    lbl_804D46A4 = savedRet;
+    return vm->r[3];
+}
 
 // 0x800834C0: stack adjust (sub 0 = release n bytes of stack and clear them, otherwise grow)
 int ScriptOpStack(int ins, ScriptVM* vm) {
