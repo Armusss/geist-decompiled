@@ -636,3 +636,47 @@ void MenuGotoScreen(const char* name) {
         armed->state = 3;
     }
 }
+
+struct SysObj {
+    u8 unk0[0x30];
+    void (*onMsg)(int code, void* data); // 0x30
+};
+
+struct SysMsgOut {
+    SysObj* obj;
+    int unk4[3];
+};
+
+struct SysCall {
+    SysObj* obj;
+    int value;
+    u8 unk8[16];
+};
+
+// MenuSendValue: send a value to the system object, then close the current page.
+void MenuSendValue(int value) {
+    SysMsgOut out;
+    SysCall call;
+    MenuPage* page;
+    MenuPage* armed;
+    SendMsg(0x2000000, 0x5C00, &out);
+    call.obj = out.obj;
+    call.value = value;
+    out.obj->onMsg(0x1000, &call);
+    HookNop1();
+    if (lbl_804D345C != -1) {
+        lbl_804D53D4 = 1;
+        page = lbl_8049EE58[lbl_804D345C];
+        if (page->unkb4 != 0) {
+            MenuPageClear(page);
+        }
+        armed = lbl_8049EE58[lbl_804D345C];
+        armed->callback = (void*)MenuPopPage;
+        armed->unka0 = 0;
+        if (armed->state != 1) {
+            armed->timer = 500;
+        }
+        armed->state = 3;
+    }
+    fn_8001BC78();
+}
