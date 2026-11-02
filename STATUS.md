@@ -19,10 +19,10 @@ published; generate your own from your copy of the game if you want it.
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | retired 2026-10-27 (user): Sonnet drafts untouched units instead | retired |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | retired 2026-10-27 (user): Sonnet drafts untouched units instead | retired |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | near-miss sweep 4 done 2026-10-27: +22 functions (1,724 -> 1,746); paused | paused |
-| sonnet-1 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-1` / `ds/sonnet-1` | 2026-11-02: last untouched named units: FearActor, AppMain, linkObjSys | running |
-| sonnet-2 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-2` / `ds/sonnet-2` | 2026-11-02: last untouched named units: ModInfo, Script, u_802C9818 | running |
-| sonnet-3 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-3` / `ds/sonnet-3` | 2026-11-02: last untouched named units: CubeTev, FearMap2, Turf | running |
-| sonnet-4 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-4` / `ds/sonnet-4` | 2026-11-02: last untouched named units: DbRoom, Msx, Cube | running |
+| sonnet-1 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-1` / `ds/sonnet-1` | 2026-11-02: last named units drafted and merged | idle |
+| sonnet-2 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-2` / `ds/sonnet-2` | 2026-11-02: last named units drafted and merged | idle |
+| sonnet-3 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-3` / `ds/sonnet-3` | 2026-11-02: last named units drafted and merged | idle |
+| sonnet-4 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-4` / `ds/sonnet-4` | 2026-11-02: last named units drafted and merged | idle |
 | sonnet-5 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-5` / `ds/sonnet-5` | 2026-11-01/02 round done and merged | idle |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
@@ -121,6 +121,16 @@ u_8006C604 19/61 (ds-3 draft): 9 TODO functions incl. fn_80074018 (0xD50), fn_80
 u_80120D98 12/49 (ds-1 draft): HazardTargetAimDir TODO; HazardTrackTarget 155, TrackListUpdate 137; Clear vtable slot vs base class; lbl_8039EED8 needs a struct type (0x14C entries)
 u_8011818C 15/49 (ds-2 draft): fn_8011F66C (0x660) and fn_8011FCEC (0x674) not drafted; ItemSetupNearest/StatusEvent etc. have large diffs
 - u_800D32E8 16/50 (emitters/pads, ds-3 3 runs): 34 left.
+- **Named-units round (2026-11-02): every game unit now has C source, verified with the fixed picker.** 2,503 -> 2,720
+  functions. linkObjSys 18/23, AppMain 15/23 (auto_inline off: retail calls ChunkStart/ChunkTableWalk), FearActor 15/128
+  (~110 undrafted), ModInfo 36/133 (auto_inline off: retail calls fn_80026660/80026680 from LightsInit; tables
+  0x803DDB98-0x803DE1D8 and lists 0x803DE1D8/0x803DE3D8 belong to it), Script 9/37 (unmangled C names via an extern "C"
+  block; fn_80084540 is called with 3 and 4 args from Audio.c), u_802C9818 8/15, CubeTev 22/73 (TevStageSelect
+  unfolded-stage puzzle), FearMap2 8/35 (extern "C" block), Turf 9/22, DbRoom 15/62 (named .c but is C++), Msx 13/93
+  (0x8016D440-0x8016E200 is shared Euler/box math: candidate split), Cube 49/112 (four byte-swap functions are
+  hand-written asm in retail: lwbrx/lhbrx with fralloc; kept as asm, Lead/user review). Note: .c units compile as C++
+  (cflags_game) unless given cflags_game_c like Audio.c. Still grey (source, 0 exact matches): u_800E0CB8, u_80157730,
+  u_80202AB8, u_8024CAA0, u_802C8900.
 - **Five-agent round (2026-11-01/02): every `u_` placeholder unit now has C source.** 2,084 -> 2,503 functions.
   Correction (2026-11-02): pick_untouched.py only listed `u_` units, so 11 already-named units still have no
   source: linkObjSys, AppMain, Script, Turf, FearMap2, Cube, DbRoom, Msx, CubeTev, ModInfo, FearActor (761
