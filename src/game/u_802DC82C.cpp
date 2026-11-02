@@ -384,7 +384,7 @@ extern float gAspectScale;  // owned by another unit
 
 static const TrailVecs sTrailDirs0 = {{0}};
 static const TrailVecs sTrailPos0 = {{0}};
-static const Vec3 sZeroVec = {0.0f, 0.0f, 0.0f};
+static const IVec3 sZeroVec = {0, 0, 0};
 
 static TrailTarget sTrailTarget;
 
@@ -414,12 +414,12 @@ void HostCardCleanup(void);
 void HostCreateEmitters(Actor* a) {
     EmitterDesc highDesc;
     EmitterDesc lowDesc;
-    BoneOff* bone;
-    char index;
+    Vec3* off;
+    int index;
 
     memset(&highDesc, 0, sizeof(highDesc));
     memset(&lowDesc, 0, sizeof(lowDesc));
-    index = ((unsigned char*)ModelAnimate(a->model, a->bones, 1))[a->unk12DC];
+    index = *(unsigned char*)((char*)ModelAnimate(a->model, a->bones, 1) + a->unk12DC);
     if (index == 0xFF) {
         return;
     }
@@ -427,10 +427,10 @@ void HostCreateEmitters(Actor* a) {
     lowDesc.pos.x = (float)a->posX;
     lowDesc.pos.y = (float)a->posY;
     lowDesc.pos.z = (float)a->posZ;
-    bone = &a->boneOffsets[index];
-    lowDesc.pos.x += bone->off.x;
-    lowDesc.pos.y += bone->off.y;
-    lowDesc.pos.z += bone->off.z;
+    off = &a->boneOffsets[index].off;
+    lowDesc.pos.x += off->x;
+    lowDesc.pos.y += off->y;
+    lowDesc.pos.z += off->z;
     lowDesc.pos.z += 150.0f;
 
     lowDesc.unk1C = 1;
@@ -595,16 +595,19 @@ void HostUpdate(Actor* a, float dt) {
                 a->unk970 = 1.0f;
             }
             if (PlayerInHost(a) || a->unk9E4 == 1) {
-                v = sZeroVec;
+                *(IVec3*)&v = sZeroVec;
                 v.y = (float)a->unk9A8;
                 MtxGetEuler(&rot, &a->mat);
-                rot.y += 0.02f * dt;
+                rot.z += 0.02f * dt;
                 MtxSetEuler(&a->mat, &rot);
                 fn_800A0168(&m, &a->mat);
                 fn_800A0030(&v, &m, &v);
-                msg.x = (int)(a->mat.m[2][1] + v.x);
-                msg.y = (int)(a->mat.m[2][2] + v.y);
-                msg.z = (int)(a->mat.m[2][3] + v.z);
+                float fx = a->mat.m[2][1] + v.x;
+                float fy = a->mat.m[2][2] + v.y;
+                float fz = a->mat.m[2][3] + v.z;
+                msg.x = (int)fx;
+                msg.y = (int)fy;
+                msg.z = (int)fz;
                 MtxGetEuler(&rot, &a->mat);
                 fn_8016D220(&tmp, &rot);
                 fn_8016D18C(&v68, &tmp);
@@ -616,7 +619,7 @@ void HostUpdate(Actor* a, float dt) {
                 return;
             }
             if (a->unk9E4 != 0 && a->unk9E0 != 0 && a->unk9E0 != -1 &&
-                ((u32)a->unk9E0 >> 24) == 0x13) {
+                (int)((u32)a->unk9E0 >> 24) == 0x13) {
                 out.actor = 0;
                 SendMsg(a->unk9E0, 0x400, &out);
                 q = (QueryActor*)out.actor;
@@ -958,8 +961,10 @@ void HostDeathCallback(int msg, void* data) {
     m.arg = msg;
     m.target = sFxTarget;
     if (fn_800C5210(sFxTarget, 0xC06, &m) != 1) {
-        if (msg == 0x1B83833F) {
+        switch (msg) {
+        case 0x1B83833F:
             a->flags7B4 |= 0x20000;
+            break;
         }
     }
 }
