@@ -193,6 +193,8 @@ extern "C" void fn_80050EB0(Actor* a);
 extern "C" int fn_800F7994(int a, u32 b);
 extern "C" int FxStart(void* fx, int a, int b);
 extern "C" int fn_8012AF68(Actor* a);
+extern "C" void fn_80136594(Actor* a);
+extern "C" void fn_801362A4(Actor* a);
 extern int lbl_804D2E44;
 extern int lbl_804D2E40;
 extern int lbl_804D2E6C;
@@ -1584,20 +1586,70 @@ void AiState80134CF4(Actor* a, float dt) {
     PlayerSetValue4(&a->state, 3);
 }
 
-// TODO (not drafted yet, 0x1F8 bytes at 0x80134D60): game logic
-extern "C" void fn_80134D60();
+void AiState80134D60(Actor* a) {
+    int id1;
+    int id2;
+    QueryGet(&id1, a->handle, 0x2DA8293C);
+    QueryGet(&id2, a->handle, 0xDFF3097A);
+    fn_80048BA8(a, a->unk1D04, 0);
+    Fn800F7F5C(id1, id2, 0xBC792AF5, fn_800498D0(a), a->unk1D04, a->unk14FC);
+    int idx = PlayerInHost(a);
+    int v = a->variant;
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a18, lbl_803A00D0[15].byVariant[v], 0, 0);
+    a->cb8C = (void*)PlayerGunAction;
+    a->animFlagA4 = 0x11;
+    a->animF0 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a1C, lbl_803A00D0[15].byVariant[v], 0, 0);
+    int r = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a1C, lbl_803A00D0[3].byVariant[v], 0, 0);
+    if (a->animF0 == r) {
+        a->animFlagFC = 1;
+    } else {
+        a->animFlagFC = 0x11;
+    }
+}
 
-// TODO (not drafted yet, 0x7C bytes at 0x80134F58): game logic
-extern "C" void fn_80134F58();
+void AiState80134F58(Actor* a, float dt) {
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    fn_800769A0(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
+    DashUpdate(a);
+    fn_80136594(a);
+    fn_801362A4(a);
+    PlayerSetValue4(&a->state, 10);
+}
 
 // TODO (not drafted yet, 0xFC bytes at 0x80134FD4): game logic
 extern "C" void fn_80134FD4();
 
-// TODO (not drafted yet, 0x6C bytes at 0x801350D0): game logic
-extern "C" void fn_801350D0();
+void AiState801350D0(Actor* a, float dt) {
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    fn_800769A0(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
+    DashUpdate(a);
+    PlayerSetValue4(&a->state, 10);
+}
 
-// TODO (not drafted yet, 0x1F8 bytes at 0x8013513C): game logic
-extern "C" void fn_8013513C();
+void AiState8013513C(Actor* a) {
+    int id1;
+    int id2;
+    QueryGet(&id1, a->handle, 0x2DA8293C);
+    QueryGet(&id2, a->handle, 0xDFF3097A);
+    fn_80048BA8(a, a->unk1D04, 0);
+    Fn800F7F5C(id1, id2, 0x0E567C7E, fn_800498D0(a), a->unk1D04, a->unk14FC);
+    int idx = PlayerInHost(a);
+    int v = a->variant;
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a18, lbl_803A00D0[14].byVariant[v], 0, 0);
+    a->cb8C = (void*)PlayerGunAction;
+    a->animFlagA4 = 0x11;
+    a->animF0 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a1C, lbl_803A00D0[14].byVariant[v], 0, 0);
+    int r = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a1C, lbl_803A00D0[3].byVariant[v], 0, 0);
+    if (a->animF0 == r) {
+        a->animFlagFC = 1;
+    } else {
+        a->animFlagFC = 0x11;
+    }
+}
 
 void AiState80135334(Actor* a) {
     ActorPlayAnim(0x2000000, 0xD39F69B4, fn_800498D0(a));
@@ -1629,14 +1681,28 @@ void AiState801353D4(Actor* a) {
 // TODO (not drafted yet, 0x90 bytes at 0x80135514): game logic
 extern "C" void fn_80135514();
 
-// TODO (not drafted yet, 0xB4 bytes at 0x801355A4): game logic
-extern "C" void fn_801355A4();
+void AiState801355A4(Actor* a) {
+    int idx = PlayerInHost(a);
+    int v = a->variant;
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a18, lbl_803A00D0[8].byVariant[v], 0, 0);
+    a->cb8C = (void*)PlayerGunAction;
+    a->animFlagA4 = 1;
+    a->animF0 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a1C, lbl_803A00D0[8].byVariant[v], 0, 0);
+    a->animFlagFC = 1;
+}
 
 // TODO (not drafted yet, 0x90 bytes at 0x80135658): game logic
 extern "C" void fn_80135658();
 
-// TODO (not drafted yet, 0xB4 bytes at 0x801356E8): game logic
-extern "C" void fn_801356E8();
+void AiState801356E8(Actor* a) {
+    int idx = PlayerInHost(a);
+    int v = a->variant;
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a18, lbl_803A00D0[5].byVariant[v], 0, 0);
+    a->cb8C = (void*)PlayerGunAction;
+    a->animFlagA4 = 1;
+    a->animF0 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a1C, lbl_803A00D0[5].byVariant[v], 0, 0);
+    a->animFlagFC = 1;
+}
 
 // TODO (not drafted yet, 0x124 bytes at 0x8013579C): game logic
 extern "C" void fn_8013579C();
@@ -1719,8 +1785,6 @@ void AiState80135E00(Actor* a) {
 extern "C" void fn_80135F6C();
 
 // TODO (not drafted yet, 0x2F0 bytes at 0x801362A4): game logic
-extern "C" void fn_801362A4();
 
 // TODO (not drafted yet, 0x2F0 bytes at 0x80136594): game logic
-extern "C" void fn_80136594();
 
