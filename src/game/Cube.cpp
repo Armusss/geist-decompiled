@@ -228,3 +228,119 @@ extern "C" float fn_80007244(float v) {
     lbl_804D2560 = v;
     return old;
 }
+
+extern "C" {
+void fn_8002FB90(void);
+void fn_80012F78(void);
+void fn_8003CF98(void);
+void fn_80093180(void);
+void fn_8002FAE4(void);
+void fn_80012ECC(void);
+void fn_800930D0(void);
+void GXSetScissorBoxOffset(int x, int y);
+void GXSetCullMode(int mode);
+void GXSetClipMode(int mode);
+}
+void TextureFlushReleases(void);
+void ModelFlushRequests(void);
+void TextureFlushRequests(void);
+
+struct ScreenRect {
+    short x0, x1, y0, y1;
+};
+extern ScreenRect lbl_804D400C;   // screen rectangle
+extern int lbl_804D4084;
+extern int lbl_804D2548;
+extern float lbl_804D2540;
+extern int lbl_804D405C;
+extern int lbl_804D4060;
+extern int lbl_804D4048;
+extern u8 lbl_804D403C, lbl_804D403D, lbl_804D403E;
+extern u8 lbl_804D4040[4];   // clear color
+extern void* lbl_804D4024;
+extern char lbl_8034EE8C[];
+extern "C" char* strcpy(char* d, const char* s);
+extern "C" void OSPanic(const char* file, int line, const char* msg, ...);
+extern "C" int OSCheckHeap(void* heap);
+extern "C" void PSMTXCopy(void* src, void* dst);
+extern char lbl_803CFFE4[];
+
+// ResourceFlush: lets every cache release and request what it queued.
+extern "C" void fn_80007158(void) {
+    fn_8002FB90();
+    fn_80012F78();
+    fn_8003CF98();
+    TextureFlushReleases();
+    fn_80093180();
+    fn_8002FAE4();
+    fn_80012ECC();
+    ModelFlushRequests();
+    TextureFlushRequests();
+    fn_800930D0();
+}
+
+// SetScissorOffset: converts a position in 640x448 screen units to the current screen rectangle.
+extern "C" void fn_800071CC(int x, int y) {
+    ScreenRect* r = &lbl_804D400C;
+    x = x * (r->x1 - r->x0);
+    y = y * (r->y1 - r->y0);
+    GXSetScissorBoxOffset(x / 640, y / 448);
+}
+
+extern "C" void fn_80008790(int a, int b) {
+    lbl_804D405C = a;
+    lbl_804D4060 = b;
+}
+
+extern "C" void fn_8000879C(const char* s) { strcpy(lbl_8034EE8C, s); }
+
+// Swaps in a new value, returning the old one.
+extern "C" int fn_800087C8(int v) {
+    int old = lbl_804D4048;
+    lbl_804D4048 = v;
+    return old;
+}
+
+extern "C" void fn_800087D8(u8 r, u8 g, u8 b) {
+    lbl_804D403C = r;
+    lbl_804D403D = g;
+    lbl_804D403E = b;
+}
+
+extern "C" void fn_80008940(u8 r, u8 g, u8 b) {
+    lbl_804D4040[0] = r;
+    lbl_804D4040[1] = g;
+    lbl_804D4040[2] = b;
+    lbl_804D4040[3] = 0xFF;
+}
+
+int SysHeapFreeBytes(void) { return OSCheckHeap(lbl_804D4024); }
+
+// GfxSetCullMode: swaps front/back culling when mirrored.
+void GfxSetCullMode(int mode) {
+    if (lbl_804D4084 == 0) {
+        GXSetCullMode(mode);
+    } else {
+        if (mode == 1) {
+            mode = 2;
+        } else if (mode == 2) {
+            mode = 1;
+        }
+        GXSetCullMode(mode);
+    }
+}
+
+extern "C" void fn_80008B94(int mode) {
+    if (lbl_804D2548 != mode) {
+        lbl_804D2548 = mode;
+        GXSetClipMode(0);
+    }
+}
+
+extern "C" void fn_80008BC8(void) { OSPanic("Cube.cpp", 0xCA8, ""); }
+extern "C" void fn_80008C00(void) { OSPanic("Cube.cpp", 0xC7E, ""); }
+void FatalError(const char* msg) { OSPanic("Cube.cpp", 0xC5F, ""); }
+
+extern "C" float fn_80008C70(void) { return lbl_804D2540; }
+
+extern "C" void fn_80008C78(void* m) { PSMTXCopy(lbl_803CFFE4, m); }
