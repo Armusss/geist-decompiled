@@ -32,8 +32,7 @@ extern TevSlot gTevSlots[8];   // 0x8045E800
 extern int gTevPrevA;          // 0x804D2DC4
 extern int gTevPrevB;          // 0x804D2DC8
 extern Mtx gTevBaseMtx;        // 0x8045E860
-extern GXTexObj gTevTexObj;    // 0x8045E970
-extern GXTexObj gTevTexObj2;   // 0x8045E8F0
+extern GXTexObj gTevTexObjs[5];   // 0x8045E8F0 (texture objects set up by the effect code)
 extern "C" float fn_80008C70(void);
 
 extern "C" void fn_8000FF7C(void);
@@ -393,7 +392,7 @@ extern "C" void fn_801060C4(float strength, GXColor* color) {   // called from o
     GXSetNumChans(0);
     GXSetNumTexGens(2);
     GfxSetChannelEnables(0, 0, 0);
-    GXLoadTexObj(&gTevTexObj, GX_TEXMAP1);
+    GXLoadTexObj(&gTevTexObjs[4], GX_TEXMAP1);
     c = *color;
     GXSetTevColor(GX_TEVREG0, c);
     TexGen(0, 0, 0, 0x39, 0, 0x43);
@@ -417,8 +416,8 @@ extern "C" void fn_801060C4(float strength, GXColor* color) {   // called from o
     TevStageWords(0, 0x08F82F, 0x083FF0);
 }
 
-// Seven texture coordinates sampling a hexagon around each pixel (center and six corners).
-static inline void TevRingTexCoords(float x, float y) {
+// Six texture matrices offsetting the picture around a hexagon (x horizontally, y vertically).
+static inline void TevRingMatrices(float x, float y) {
     Mtx m;
     float hx;
     float hy;
@@ -439,6 +438,11 @@ static inline void TevRingTexCoords(float x, float y) {
     GXLoadTexMtxImm(m, 0x2A, GX_MTX2x4);
     PSMTXTrans(m, nx, hy, 0.0f);
     GXLoadTexMtxImm(m, 0x2D, GX_MTX2x4);
+}
+
+// Seven texture coordinates sampling a hexagon around each pixel (center and six corners).
+static inline void TevRingTexCoords(float x, float y) {
+    TevRingMatrices(x, y);
     TexGen(0, 1, 4, 0x3C, 0, 0x7D);
     TexGen(1, 1, 4, 0x1E, 0, 0x7D);
     TexGen(2, 1, 4, 0x21, 0, 0x7D);
@@ -618,7 +622,7 @@ extern "C" void fn_8010829C(void) {   // placeholder name kept: checked below
     float ind[2][3];
     GXColorS10 bias;
     TevStateReset();
-    GXLoadTexObj(&gTevTexObj2, GX_TEXMAP2);
+    GXLoadTexObj(&gTevTexObjs[0], GX_TEXMAP2);
     TexGen(0, 1, 4, 0x3C, 0, 0x7D);
     GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_RED, GX_CH_RED, GX_CH_RED);
     bias.r = 0;
@@ -681,7 +685,7 @@ extern "C" void fn_8010883C(void) {   // placeholder name kept: checked below
     GXSetNumChans(1);
     GXSetNumTexGens(1);
     GfxSetChannelEnables(0, 0, 0);
-    GXLoadTexObj(&gTevTexObj2, GX_TEXMAP1);
+    GXLoadTexObj(&gTevTexObjs[0], GX_TEXMAP1);
     TexGen(0, 1, 0, 0x3C, 0, 0x7D);
     GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_RED, GX_CH_RED, GX_CH_RED);
     ind[0][0] = 0.0f;
@@ -862,4 +866,438 @@ extern "C" void fn_8010D024() {   // called from other units
     TevStageSelect(0);
     TevOrder(0, 0xff, 0xff, 4);
     TevStageWords(0, 0x08AFFF, 0x08BFF0);
+}
+
+// 0x80108A60 hexagon ring plus an extra scaled sample (eight stages)
+void CubeTevSetupRingAndBlend(float x, float y) {
+    Mtx m;
+    Mtx scale;
+    float hx;
+    float hy;
+    float nx;
+    GXColor c;
+    TevStateReset();
+    GXSetNumTevStages(8);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(8);
+    GfxSetChannelEnables(0,0,0);
+    GXLoadTexObj(&gTevTexObjs[2], GX_TEXMAP1);
+    PSMTXTrans(m, x, 0.0f, 0.0f);
+    GXLoadTexMtxImm(m, 0x1e, GX_MTX2x4);
+    PSMTXTrans(m, (float)(-1.0f * x), 0.0f, 0.0f);
+    GXLoadTexMtxImm(m, 0x21, GX_MTX2x4);
+    hx = (float)(0.5f * x);
+    hy = (float)(0.865999997f * y);
+    PSMTXTrans(m, hx, hy, 0.0f);
+    GXLoadTexMtxImm(m, 0x24, GX_MTX2x4);
+    nx = (float)(-0.5f * x);
+    PSMTXTrans(m, nx, hy, 0.0f);
+    GXLoadTexMtxImm(m, 0x27, GX_MTX2x4);
+    hy = (float)(-0.865999997f * y);
+    PSMTXTrans(m, hx, hy, 0.0f);
+    GXLoadTexMtxImm(m, 0x2a, GX_MTX2x4);
+    PSMTXTrans(m, nx, hy, 0.0f);
+    GXLoadTexMtxImm(m, 0x2d, GX_MTX2x4);
+    PSMTXScale(scale, 2.0f, 2.0f, 1.0f);
+    GXLoadTexMtxImm(scale, 0x30, GX_MTX2x4);
+    TexGen(0,1,4,0x3c,0,0x7d);
+    TexGen(1,1,4,0x1e,0,0x7d);
+    TexGen(2,1,4,0x21,0,0x7d);
+    TexGen(3,1,4,0x24,0,0x7d);
+    TexGen(4,1,4,0x27,0,0x7d);
+    TexGen(5,1,4,0x2a,0,0x7d);
+    TexGen(6,1,4,0x2d,0,0x7d);
+    TexGen(7,1,4,0x30,0,0x7d);
+    c.r = c.g = c.b = c.a = 0x2A;
+    GXSetTevColor(GX_TEVREG1, c);
+    int stage = 0;
+    TevStageSelect(stage);
+    TevOrder(stage, 0, 0, 0xff);
+    TevStageWords(stage++, 0x488FFF, 0x48FFF0);
+    TevStageSelect(stage);
+    TevOrder(stage, 1, 0, 0xff);
+    TevStageWords(stage++, 0x00F84F, 0x08FFF0);
+    TevStageSelect(stage);
+    TevOrder(stage, 2, 0, 0xff);
+    TevStageWords(stage++, 0x00F840, 0x08FFF0);
+    TevStageSelect(stage);
+    TevOrder(stage, 3, 0, 0xff);
+    TevStageWords(stage++, 0x00F840, 0x08FFF0);
+    TevStageSelect(stage);
+    TevOrder(stage, 4, 0, 0xff);
+    TevStageWords(stage++, 0x00F840, 0x08FFF0);
+    TevStageSelect(stage);
+    TevOrder(stage, 5, 0, 0xff);
+    TevStageWords(stage++, 0x00F840, 0x08FFF0);
+    TevStageSelect(stage);
+    TevOrder(stage, 6, 0, 0xff);
+    TevStageWords(stage++, 0x00F840, 0x08FFF0);
+    TevStageSelect(stage);
+    TevOrder(stage, 7, 1, 4);
+    TevStageWords(stage++, 0x08208A, 0x08BFF0);
+}
+
+// 0x80109204 three stages with two channel-swap tables
+void CubeTevSetupChannelSwap() {
+    TevStateReset();
+    GXSetNumTevStages(3);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(1);
+    GfxSetChannelEnables(0,0,0);
+    TexGen(0,1,4,0x3c,0,0x7d);
+    GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_GREEN, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+    GXSetTevSwapModeTable(GX_TEV_SWAP2, GX_CH_BLUE, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+    int stage = 0;
+    TevStageSelect(stage);
+    TevOrder(stage, 0, 0, 4);
+    TevStageWords(stage++, 0x78FA8F, 0x78F675);
+    TevStageSelect(stage);
+    TevOrder(stage, 0, 0, 4);
+    TevStageWords(stage++, 0xB8FA8F, 0xB8F67A);
+    TevStageSelect(stage);
+    TevOrder(stage, 0xff, 0xff, 0xff);
+    TevStageWords(stage++, 0x08FC4F, 0x08F930);
+}
+
+// 0x801094B4 hexagon ring whose eighth sample is perturbed through an indirect stage
+void CubeTevSetupRingIndirect(float x, float y) {
+    float ind[2][3];
+    GXColor c;
+    TevStateReset();
+    GXLoadTexObj(&gTevTexObjs[0], GX_TEXMAP2);
+    TevRingTexCoords(x, y);
+    TexGen(7,1,4,0x3c,0,0x7d);
+    c.r = c.g = c.b = c.a = 0x55;
+    GXSetTevColor(GX_TEVREG1, c);
+    GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_GREEN, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+    GXSetTevSwapModeTable(GX_TEV_SWAP2, GX_CH_RED, GX_CH_RED, GX_CH_RED, GX_CH_RED);
+    ind[0][0] = 0.0f;
+    ind[0][1] = 0.5f;
+    ind[0][2] = 0.0f;
+    ind[1][0] = 0.5f;
+    ind[1][1] = 0.0f;
+    ind[1][2] = 0.0f;
+    GXSetIndTexOrder(GX_INDTEXSTAGE0, GX_TEXCOORD7, GX_TEXMAP1);
+    GXSetIndTexCoordScale(GX_INDTEXSTAGE0, GX_ITS_1, GX_ITS_1);
+    GXSetIndTexMtx(GX_ITM_0, ind, 1);
+    int stage = 0;
+    TevStageSelect(stage);
+    TevOrder(stage, 0, 0, 0xff);
+    TevStageWords(stage++, 0x488FFF, 0x48FFF4);
+    TevStageSelect(stage);
+    TevOrder(stage, 1, 0, 0xff);
+    TevStageWords(stage++, 0x00F84F, 0x08FFF4);
+    TevStageSelect(stage);
+    TevOrder(stage, 2, 0, 0xff);
+    TevStageWords(stage++, 0x00F840, 0x08FFF4);
+    TevStageSelect(stage);
+    TevOrder(stage, 3, 0, 0xff);
+    TevStageWords(stage++, 0x00F840, 0x08FFF4);
+    TevStageSelect(stage);
+    TevOrder(stage, 4, 0, 0xff);
+    TevStageWords(stage++, 0x00F840, 0x08FFF4);
+    TevStageSelect(stage);
+    TevOrder(stage, 5, 0, 0xff);
+    TevStageWords(stage++, 0x00F840, 0x08FFF4);
+    TevStageSelect(stage);
+    TevOrder(stage, 6, 0, 0xff);
+    TevStageWords(stage++, 0x38F840, 0x08FFF4);
+    GXSetTevIndirect(GX_TEVSTAGE7, GX_INDTEXSTAGE0, GX_ITF_8, GX_ITB_T, GX_ITM_0, GX_ITW_0, GX_ITW_0, GX_FALSE, GX_FALSE, GX_ITBA_OFF);
+    TevOrder(stage, 0xff, 2, 4);
+    TevStageWords(stage++, 0x08209A, 0x08BFF8);
+    GXSetNumTevStages(8);
+    GXSetNumIndStages(1);
+    GXSetNumTexGens(8);
+    GXSetNumChans(1);
+    GfxSetChannelEnables(0,0,0);
+}
+
+// 0x8010A888 two-stage indirect warp (texture coordinate 1 drives the indirect stage)
+void CubeTevSetupIndirectTwo() {
+    float ind[2][3];
+    TevStateReset();
+    GXSetNumTevStages(2);
+    GXSetNumIndStages(1);
+    GXSetNumChans(1);
+    GXSetNumTexGens(2);
+    GfxSetChannelEnables(0,0,0);
+    GXLoadTexObj(&gTevTexObjs[0], GX_TEXMAP2);
+    TexGen(0,1,0,0x3c,0,0x7d);
+    TexGen(1,1,4,0x3c,0,0x7d);
+    GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_RED, GX_CH_RED, GX_CH_RED);
+    ind[0][0] = 0.0f;
+    ind[0][1] = 0.5f;
+    ind[0][2] = 0.0f;
+    ind[1][0] = 0.5f;
+    ind[1][1] = 0.0f;
+    ind[1][2] = 0.0f;
+    GXSetIndTexOrder(GX_INDTEXSTAGE0, GX_TEXCOORD1, GX_TEXMAP1);
+    GXSetIndTexCoordScale(GX_INDTEXSTAGE0, GX_ITS_1, GX_ITS_1);
+    GXSetIndTexMtx(GX_ITM_0, ind, 1);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 4);
+    TevStageWords(0, 0x08F8AF, 0x08FFF0);
+    GXSetTevIndirect(GX_TEVSTAGE1, GX_INDTEXSTAGE0, GX_ITF_8, GX_ITB_T, GX_ITM_0, GX_ITW_0, GX_ITW_0, GX_FALSE, GX_FALSE, GX_ITBA_OFF);
+    TevOrder(1, 0xff, 2, 4);
+    TevStageWords(1, 0x080FFF, 0x08F2F4);
+}
+
+
+// 0x80109CD4 hexagon ring plus an extra scaled sample (fifteen stages, two per sample)
+void CubeTevSetupRingBlend15(float x, float y) {
+    Mtx scale;
+    GXColor c;
+    TevStateReset();
+    GXSetNumTevStages(0xf);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(8);
+    GfxSetChannelEnables(0,0,0);
+    GXLoadTexObj(&gTevTexObjs[2], GX_TEXMAP1);
+    TevRingTexCoords(x, y);
+    TexGen(7,1,4,0x30,0,0x7d);
+    c.r = c.g = c.b = c.a = 0x2A;
+    GXSetTevColor(GX_TEVREG1, c);
+    GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_BLUE, GX_CH_GREEN, GX_CH_RED, GX_CH_ALPHA);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 0xff);
+    TevStageWords(0, 0x088FFF, 0x08FFF0);
+    TevStageSelect(1);
+    TevOrder(1, 0, 0, 0xff);
+    TevStageWords(1, 0x788FF0, 0x08FFF4);
+    TevStageSelect(2);
+    TevOrder(2, 1, 0, 0xff);
+    TevStageWords(2, 0x00F84F, 0x08FFF0);
+    TevStageSelect(3);
+    TevOrder(3, 1, 0, 0xff);
+    TevStageWords(3, 0x00F840, 0x08FFF4);
+    TevStageSelect(4);
+    TevOrder(4, 2, 0, 0xff);
+    TevStageWords(4, 0x00F840, 0x08FFF0);
+    TevStageSelect(5);
+    TevOrder(5, 2, 0, 0xff);
+    TevStageWords(5, 0x00F840, 0x08FFF4);
+    TevStageSelect(6);
+    TevOrder(6, 3, 0, 0xff);
+    TevStageWords(6, 0x00F840, 0x08FFF0);
+    TevStageSelect(7);
+    TevOrder(7, 3, 0, 0xff);
+    TevStageWords(7, 0x00F840, 0x08FFF4);
+    TevStageSelect(8);
+    TevOrder(8, 4, 0, 0xff);
+    TevStageWords(8, 0x00F840, 0x08FFF0);
+    TevStageSelect(9);
+    TevOrder(9, 4, 0, 0xff);
+    TevStageWords(9, 0x00F840, 0x08FFF4);
+    TevStageSelect(10);
+    TevOrder(10, 5, 0, 0xff);
+    TevStageWords(10, 0x00F840, 0x08FFF0);
+    TevStageSelect(11);
+    TevOrder(11, 5, 0, 0xff);
+    TevStageWords(11, 0x00F840, 0x08FFF4);
+    TevStageSelect(12);
+    TevOrder(12, 6, 0, 0xff);
+    TevStageWords(12, 0x00F840, 0x08FFF0);
+    TevStageSelect(13);
+    TevOrder(13, 6, 0, 0xff);
+    TevStageWords(13, 0x38F840, 0x08FFF4);
+    TevStageSelect(14);
+    TevOrder(14, 7, 1, 4);
+    TevStageWords(14, 0x08208A, 0x08BFF0);
+}
+
+// 0x8010AAD0 six-sample hexagon ring (no center sample)
+void CubeTevSetupRingSix(float x, float y) {
+    GXColor c;
+    TevStateReset();
+    GXSetNumTevStages(6);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(6);
+    GfxSetChannelEnables(0,0,0);
+    TevRingMatrices(x, y);
+    TexGen(0,1,4,0x1e,0,0x7d);
+    TexGen(1,1,4,0x21,0,0x7d);
+    TexGen(2,1,4,0x24,0,0x7d);
+    TexGen(3,1,4,0x27,0,0x7d);
+    TexGen(4,1,4,0x2a,0,0x7d);
+    TexGen(5,1,4,0x2d,0,0x7d);
+    c.r = c.g = c.b = c.a = 0x55;
+    GXSetTevColor(GX_TEVREG1, c);
+    int stage = 0;
+    TevStageSelect(stage);
+    TevOrder(stage, 0, 0, 0xff);
+    TevStageWords(stage++, 0x00F84F, 0x08FFF0);
+    TevStageSelect(stage);
+    TevOrder(stage, 1, 0, 0xff);
+    TevStageWords(stage++, 0x00F840, 0x08FFF0);
+    TevStageSelect(stage);
+    TevOrder(stage, 2, 0, 0xff);
+    TevStageWords(stage++, 0x00F840, 0x08FFF0);
+    TevStageSelect(stage);
+    TevOrder(stage, 3, 0, 0xff);
+    TevStageWords(stage++, 0x00F840, 0x08FFF0);
+    TevStageSelect(stage);
+    TevOrder(stage, 4, 0, 0xff);
+    TevStageWords(stage++, 0x00F840, 0x08FFF0);
+    TevStageSelect(stage);
+    TevOrder(stage, 5, 0, 4);
+    TevStageWords(stage++, 0x30F840, 0x08BFF0);
+}
+
+// 0x8010B0E4 six hexagon samples combined in pairs (thirteen stages)
+void CubeTevSetupRingPairs(float x, float y) {
+    GXColor c;
+    TevStateReset();
+    GXSetNumTevStages(0xd);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(6);
+    GfxSetChannelEnables(0,0,0);
+    TevRingMatrices(x, y);
+    TexGen(0,1,4,0x1e,0,0x7d);
+    TexGen(1,1,4,0x21,0,0x7d);
+    TexGen(2,1,4,0x24,0,0x7d);
+    TexGen(3,1,4,0x27,0,0x7d);
+    TexGen(4,1,4,0x2a,0,0x7d);
+    TexGen(5,1,4,0x2d,0,0x7d);
+    c.r = c.g = c.b = c.a = 0x7F;
+    GXSetTevColor(GX_TEVREG1, c);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 0xff);
+    TevStageWords(0, 0x0C2FF8, 0x08FFF0);
+    TevStageSelect(1);
+    TevOrder(1, 0xff, 0xff, 0xff);
+    TevStageWords(1, 0xC0F04F, 0x08FFF0);
+    TevStageSelect(2);
+    TevOrder(2, 1, 0, 0xff);
+    TevStageWords(2, 0x0C2FF8, 0x08FFF0);
+    TevStageSelect(3);
+    TevOrder(3, 0xff, 0xff, 0xff);
+    TevStageWords(3, 0xC0F046, 0x08FFF0);
+    TevStageSelect(4);
+    TevOrder(4, 2, 0, 0xff);
+    TevStageWords(4, 0x0C2FF8, 0x08FFF0);
+    TevStageSelect(5);
+    TevOrder(5, 0xff, 0xff, 0xff);
+    TevStageWords(5, 0xC0F046, 0x08FFF0);
+    TevStageSelect(6);
+    TevOrder(6, 3, 0, 0xff);
+    TevStageWords(6, 0x0C2FF8, 0x08FFF0);
+    TevStageSelect(7);
+    TevOrder(7, 0xff, 0xff, 0xff);
+    TevStageWords(7, 0xC0F046, 0x08FFF0);
+    TevStageSelect(8);
+    TevOrder(8, 4, 0, 0xff);
+    TevStageWords(8, 0x0C2FF8, 0x08FFF0);
+    TevStageSelect(9);
+    TevOrder(9, 0xff, 0xff, 0xff);
+    TevStageWords(9, 0xC0F046, 0x08FFF0);
+    TevStageSelect(10);
+    TevOrder(10, 5, 0, 0xff);
+    TevStageWords(10, 0x0C2FF8, 0x08FFF0);
+    TevStageSelect(11);
+    TevOrder(11, 0xff, 0xff, 0xff);
+    TevStageWords(11, 0x08F046, 0x08FFF0);
+    TevStageSelect(12);
+    TevOrder(12, 0xff, 0xff, 4);
+    TevStageWords(12, 0x08FA0F, 0x08BFF0);
+}
+
+// 0x8010BB10 six stages: texture, konstant color and four constant-alpha steps
+void CubeTevSetupKonstSteps() {
+    TevStateReset();
+    GXSetNumTevStages(6);
+    GXSetNumChans(1);
+    GXSetNumTexGens(2);
+    GfxSetChannelEnables(0,0,0);
+    TexGen(0,1,4,0x3c,0,0x7d);
+    TexGen(1,1,4,0x3c,0,0x7d);
+    GXSetTevKColorSel(GX_TEVSTAGE0, GX_TEV_KCSEL_K0);
+    GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_RED, GX_CH_RED, GX_CH_RED);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 4);
+    TevStageWords(0, 0x08FFFF, 0x3B9A74);
+    TevStageSelect(1);
+    TevOrder(1, 0xff, 0xff, 4);
+    TevStageWords(1, 0x08FFFF, 0x28E2F4);
+    TevStageSelect(2);
+    TevOrder(2, 1, 1, 4);
+    TevStageWords(2, 0x08FFFF, 0x08F284);
+    TevStageSelect(3);
+    TevOrder(3, 1, 2, 4);
+    TevStageWords(3, 0x08FFFF, 0x08F284);
+    TevStageSelect(4);
+    TevOrder(4, 1, 3, 4);
+    TevStageWords(4, 0x08FFFF, 0x08F284);
+    TevStageSelect(5);
+    TevOrder(5, 1, 4, 4);
+    TevStageWords(5, 0x08FFFF, 0x08F284);
+}
+
+// 0x8010BE8C five stages: four textures each scaled by one konstant color, then combined
+void CubeTevSetupKonstQuad() {
+    TevStateReset();
+    GXSetNumTevStages(5);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(4);
+    GfxSetChannelEnables(0,0,0);
+    TexGen(0,1,4,0x3c,0,0x7d);
+    TexGen(1,1,4,0x3c,0,0x7d);
+    TexGen(2,1,4,0x3c,0,0x7d);
+    TexGen(3,1,4,0x3c,0,0x7d);
+    GXSetTevKColorSel(GX_TEVSTAGE0, GX_TEV_KCSEL_K0);
+    GXSetTevKColorSel(GX_TEVSTAGE1, GX_TEV_KCSEL_K1);
+    GXSetTevKColorSel(GX_TEVSTAGE2, GX_TEV_KCSEL_K2);
+    GXSetTevKColorSel(GX_TEVSTAGE3, GX_TEV_KCSEL_K3);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 0xff);
+    TevStageWords(0, 0x08F8EF, 0x08FFF0);
+    TevStageSelect(1);
+    TevOrder(1, 1, 1, 0xff);
+    TevStageWords(1, 0x08F8E0, 0x08FFF0);
+    TevStageSelect(2);
+    TevOrder(2, 2, 2, 0xff);
+    TevStageWords(2, 0x08F8E0, 0x08FFF0);
+    TevStageSelect(3);
+    TevOrder(3, 3, 3, 0xff);
+    TevStageWords(3, 0x08F8E0, 0x08FFF0);
+    TevStageSelect(4);
+    TevOrder(4, 0xff, 0xff, 4);
+    TevStageWords(4, 0x08F0AF, 0x08BFF0);
+}
+
+// 0x8010C1E8 two stages with no color channel
+void CubeTevSetupTwoTexGens() {
+    TevStateReset();
+    GXSetNumTevStages(2);
+    GXSetNumIndStages(0);
+    GXSetNumChans(0);
+    GXSetNumTexGens(2);
+    GfxSetChannelEnables(0,0,0);
+    TexGen(0,1,0,0x3c,0,0x7d);
+    TexGen(1,1,4,0x3c,0,0x7d);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 0xff);
+    TevStageWords(0, 0x08F8DF, 0x08FFF0);
+    TevStageSelect(1);
+    TevOrder(1, 1, 0, 0xff);
+    TevStageWords(1, 0x08F8D0, 0x08DFF0);
+}
+
+// 0x8010D130 restore the default one-stage modulate-like TEV setup
+void GfxResetTev() {
+    TevStateReset();
+    GXSetNumTevStages(1);
+    GXSetNumIndStages(0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(1);
+    GfxSetChannelEnables(1,0,0);
+    TexGen(0,1,4,0x3c,0,0x7d);
+    TevStageSelect(0);
+    TevOrder(0, 0, 0, 4);
+    TevStageWords(0, 0x08FA8F, 0x08F670);
 }
