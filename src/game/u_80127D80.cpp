@@ -197,13 +197,17 @@ extern int lbl_804D2E44;
 extern int lbl_804D2E40;
 // Animation lookup table: one row per animation kind, one slot per character variant (data of another unit).
 struct AnimRow {
-    int head[3];
-    int byVariant[15];
+    void (*cb00)(Actor*);  // 0x00
+    void (*cb04)(Actor*);  // 0x04
+    void (*msg)(Actor*);   // 0x08
+    int byVariant[15];     // 0x0C
 };
 extern AnimRow lbl_8039F7C8[];
 extern AnimRow lbl_803A00D0[];
 int PlayerGunAction(int action, void* p);
-extern int lbl_8046D1F0[];
+extern int lbl_8046D1F0[16];
+u32 AssetFind(u32 table, u32 key);
+extern "C" int fn_800F7D28(int a, int b);
 extern "C" int fn_8012B4C8(int action, void* p);
 
 // TODO (not drafted yet, 0x590 bytes at 0x80127D80): game logic
