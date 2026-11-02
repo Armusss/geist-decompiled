@@ -675,8 +675,8 @@ int RailFireloopStart(int owner, CamActor* actor) {
     int value;
     {
         RailQueryMsg msg;
-        *(int*)&msg.result = 0;
         msg.hash = 0x607eed34;
+        *(int*)&msg.result = 0;
         msg.unk08 = 0;
         hit = SendMsg(id, 0x41e, &msg);
         value = *(int*)&msg.result;
