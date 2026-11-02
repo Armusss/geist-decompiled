@@ -417,6 +417,29 @@ extern "C" void fn_800C6558(float v)
     lbl_804D48A8 = v;
 }
 
+// An actor, as far as the target-tracking code needs it (offsets only).
+struct TargetPoint {
+    int x;  // 0x24
+    int y;  // 0x28
+    int z;  // 0x2c
+};
+struct Actor {
+    char pad0[0x84];
+    float pos[3];       // 0x84
+    char pad90[0x218 - 0x90];
+    int unk218;         // 0x218
+    int unk21C;         // 0x21c
+    int targetMode;     // 0x220
+    int unk224;         // 0x224
+    int unk228;         // 0x228
+    union {
+        float point[3]; // 0x22c  mode 1: a point
+        TargetPoint* target;  // mode 2: a target object (the point is at +0x24)
+    };
+    int unk238;         // 0x238
+    int unk23C;         // 0x23c
+};
+
 // Takes a slot out of its view's list; true when it was found (or the list ran out).
 static inline int SlotUnlink(int slot, int view)
 {
@@ -724,6 +747,39 @@ extern "C" void fn_800C6DD8()
     lbl_8039B760[3] = -1;
 }
 
+// 0x800C6E8C: the point an actor is aiming at; true when it is a real target
+int ActorAimPoint(Actor* a, float* out)
+{
+    if (a->targetMode == 1) {
+        out[0] = a->point[0];
+        out[1] = a->point[1];
+        out[2] = a->point[2];
+        return 1;
+    } else if (a->targetMode == 2 && a->target != 0) {
+        out[0] = (float)a->target->x;
+        out[1] = (float)a->target->y;
+        out[2] = (float)a->target->z;
+        return 1;
+    } else {
+        out[0] = a->pos[0];
+        out[1] = a->pos[1];
+        out[2] = a->pos[2];
+        return 0;
+    }
+}
+
+// 0x800C6F58: clears an actor's aim state
+extern "C" int fn_800C6F58(Actor* a)
+{
+    if (a == 0) {
+        return 0;
+    }
+    a->targetMode = 0;
+    a->unk238 = -1;
+    a->unk23C = -1;
+    return 1;
+}
+
 // TODO (not drafted yet, 0x4 bytes at 0x800C50EC): actor/game routine
 extern "C" void fn_800C50EC();
 
@@ -790,11 +846,7 @@ extern "C" void fn_800C6200();
 // TODO (not drafted yet, 0x4 bytes at 0x800C6E88): actor/game routine
 extern "C" void fn_800C6E88();
 
-// TODO (not drafted yet, 0xCC bytes at 0x800C6E8C): actor/game routine
-extern "C" void fn_800C6E8C();
 
-// TODO (not drafted yet, 0x2C bytes at 0x800C6F58): actor/game routine
-extern "C" void fn_800C6F58();
 
 // TODO (not drafted yet, 0xA8 bytes at 0x800C6F84): actor/game routine
 extern "C" void fn_800C6F84();
