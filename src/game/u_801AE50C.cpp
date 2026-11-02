@@ -777,8 +777,43 @@ void AiState801B58F0(Actor* a, float dt) {
     PlayerSelectCollisionUpdate(a, dt);
 }
 
-// TODO (not drafted yet, 0x158 bytes at 0x801B5948): game logic
-extern "C" void fn_801B5948();
+void AiState801B5948(Actor* a) {
+    PlayerResetGunTimer(a);
+    a->flags |= 0x40000;
+    fn_80050EB0(a);
+    int idx = PlayerInHost(a);
+    int v = a->variant;
+    int anim;
+    if (a->flags7B4 & 0x80000) {
+        anim = a->set[idx]->a20;
+    } else {
+        anim = a->set[idx]->a18;
+    }
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, anim, lbl_803AAE98[13].byVariant[v], 0, 0);
+    a->animFlagA4 = 0x50;
+    int n;
+    int e = a->unk26B0;
+    if (e == -1) {
+        n = 8;
+    } else {
+        int bone = ModelBoneName(a->model);
+        int r = ModelBoneNodeChain(a->model, bone, lbl_80496C98, 0x10);
+        if (r == -1) {
+            n = 8;
+        } else {
+            n = r;
+        }
+    }
+    AiAnimSet* set = a->set[idx];
+    if (a->flags7B4 & 0x80000) {
+        anim = set->a24;
+    } else {
+        anim = set->a1C;
+    }
+    a->animF0 = fn_800A1BC8(set->a14, anim, lbl_803AAE98[13].byVariant[v], n << 1, 0);
+    a->cbE4 = (void*)fn_801B7B88;
+    a->animFlagFC = 0x50;
+}
 
 void AiState801B5AA0(Actor* a, float dt) {
     a->unk638 = 1;

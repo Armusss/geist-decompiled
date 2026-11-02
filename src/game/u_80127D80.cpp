@@ -659,7 +659,8 @@ void AiState80129804(Actor* a) {
     a->anim98 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a18, lbl_8039F7C8[13].byVariant[v], 0, 0);
     a->animFlagA4 = 0x50;
     int n;
-    if (a->unk26B0 == -1) {
+    int e = a->unk26B0;
+    if (e == -1) {
         n = 8;
     } else {
         int bone = ModelBoneName(a->model);
