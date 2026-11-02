@@ -1309,13 +1309,13 @@ int ShellUpdateE(Actor* a) {
     ShellBeh* b = a->beh;
 
     ShellCrabStep(a);
-    if (HasCondition(a->conditions, 6) == 0) {
-        if (HasCondition(a->conditions, 0x34) == 0 && HasCondition(a->conditions, 0x35) == 0) {
-            return 0x22;
-        }
-        return b->state;
+    if (HasCondition(a->conditions, 6) != 0) {
+        return 0x22;
     }
-    return 0x22;
+    if (HasCondition(a->conditions, 0x34) == 0 && HasCondition(a->conditions, 0x35) == 0) {
+        return 0x22;
+    }
+    return b->state;
 }
 
 int ShellUpdateF(Actor* a) {
@@ -1368,7 +1368,7 @@ int ShellUpdateI(Actor* a) {
 
     b->timer += a->dt;
     ShellCrabStep(a);
-    if (b->limit < b->timer) {
+    if (b->timer > b->limit) {
         if (HasCondition(a->conditions, 0x2F)) {
             b->i58 = 1;
         }
