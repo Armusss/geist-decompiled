@@ -158,13 +158,12 @@ extern const char* lbl_804D3458; // "MainMenu"
 extern "C" int fn_800498D0(MenuScreen* screen);
 extern "C" int fn_800C5654(int a, u32 hash, int b);
 extern "C" void fn_80142E88();
-// TODO (not drafted yet, 0x1A0 bytes at 0x8021DAA0): widget callback
-extern "C" void fn_8021DAA0();
 int GunPoolFreeSize8017BA2C();
 extern "C" void fn_8002FD68();
 extern int lbl_804D3444;
 extern int lbl_804D3448;
 extern int lbl_804D3454;
+extern int lbl_804D3440;
 extern "C" void FxStart(int handle, int a, int b);
 extern "C" void fn_8021DCF4();
 extern MenuPage* lbl_8049EE58[];
@@ -711,6 +710,24 @@ static inline void MenuPageOpen(MenuPage* page) {
     page->state = 1;
 }
 
+// MenuPageSetup: lay out every item and focus the first focusable one.
+static inline void MenuPageSetup(MenuPage* page) {
+    page->cursor = 0;
+    while (page->cursor < page->itemCount) {
+        page->items[page->cursor]->layout();
+        page->cursor++;
+    }
+    page->cursor = 0;
+    for (; page->cursor < page->itemCount; page->cursor++) {
+        if (page->items[page->cursor]->canFocus() != 0) {
+            break;
+        }
+    }
+    if (page->cursor == page->itemCount) {
+        page->cursor = -1;
+    }
+}
+
 // MenuReturn: pop back to the previous page.
 extern "C" void fn_8021DCF4() {
     MenuPage* prev;
@@ -732,20 +749,7 @@ extern "C" void fn_8021DCF4() {
 void MenuEnter(MenuPage* page) {
     lbl_804D345C++;
     lbl_8049EE58[lbl_804D345C] = page;
-    page->cursor = 0;
-    while (page->cursor < page->itemCount) {
-        page->items[page->cursor]->layout();
-        page->cursor++;
-    }
-    page->cursor = 0;
-    for (; page->cursor < page->itemCount; page->cursor++) {
-        if (page->items[page->cursor]->canFocus() != 0) {
-            break;
-        }
-    }
-    if (page->cursor == page->itemCount) {
-        page->cursor = -1;
-    }
+    MenuPageSetup(page);
     MenuPageOpen(page);
     FxStart(lbl_804D3448, 0, 0);
 }
@@ -800,4 +804,23 @@ void MenuCursorPrev(MenuPage* page) {
             return;
         }
     }
+}
+
+// MenuPageShow: (re)open a page, optionally laying its items out first.
+void MenuPageShow(MenuPage* page, int setup) {
+    if (setup != 0) {
+        MenuPageSetup(page);
+    }
+    MenuPageOpen(page);
+}
+
+// MenuReplace: replace the current page.
+void MenuReplace(MenuPage* page) {
+    int top = lbl_804D345C;
+    MenuPage* cur;
+    lbl_8049EE58[top] = page;
+    cur = lbl_8049EE58[top];
+    MenuPageSetup(cur);
+    MenuPageOpen(cur);
+    FxStart(lbl_804D3440, 0, 0);
 }
