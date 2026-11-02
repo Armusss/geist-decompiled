@@ -174,7 +174,7 @@ int fn_8001ED98(int* p, int len, int (*cb)(Actor*, Actor*), Actor* a, int b);
 int fn_8001F45C(Actor* a, int* box, int* pos, int flags, int b, int c);
 int fn_800A1BC8(u32 key, u32 value, int a, int b, int c);
 int fn_80073E80(Actor* a);
-void fn_800E1098(float* dst, float* src);
+void fn_800E1098(float* out, float* in, float length);
 }
 void PlayerSetValue28(void* owner, int value);
 void PlayerSetActionMode(void* owner, int mode);
@@ -429,7 +429,13 @@ int DashAim(Actor* a, Actor* target) {
     int ok;
     int value;
 
-    if (a == 0 || (u32)target->handle >> 24 != 2 || (u32)a->handle >> 24 != 1) {
+    int h;
+
+    if (a == 0 || (int)((u32)target->handle >> 24) != 2) {
+        return 0;
+    }
+    h = a->handle;
+    if ((int)((u32)h >> 24) != 1) {
         return 0;
     }
 
@@ -439,7 +445,7 @@ int DashAim(Actor* a, Actor* target) {
         q.hash = 0x914B98A8;
         *(int*)&q.result = 0;
         q.unk8 = 0;
-        ok = SendMsg(target->handle, 0x41E, &q);
+        ok = SendMsg(h, 0x41E, &q);
         value = *(int*)&q.result;
     }
     if (ok != 0 && value >= 0) {
@@ -474,7 +480,7 @@ int DashAim(Actor* a, Actor* target) {
             float py = -r[1] + target->vy;
             float pz = -r[2] + target->vz;
 
-            fn_800E1098(&r[0], &r[0]);
+            fn_800E1098(&r[0], &r[0], limit);
             r[0] += px;
             r[1] += py;
             r[2] += pz;
