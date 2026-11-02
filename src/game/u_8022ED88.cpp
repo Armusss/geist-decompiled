@@ -321,10 +321,7 @@ void SwarmUpdate(Actor* a, float dt) {
     float t;
     int i;
 
-    if (!d) {
-        return;
-    }
-    if ((d->children.size >> 2) == 0) {
+    if (!d || (d->children.size >> 2) == 0) {
         return;
     }
     a->flags2 |= 0x800000;
@@ -343,11 +340,7 @@ void SwarmUpdate(Actor* a, float dt) {
     }
 
     t = (d->dist - d->blendInner * d->blendInner) / (d->blendOuter * d->blendOuter - d->blendInner * d->blendInner);
-    if (t < 0.0f) {
-        t = 0.0f;
-    } else if (t > 1.0f) {
-        t = 1.0f;
-    }
+    t = (t < 0.0f) ? 0.0f : ((t > 1.0f) ? 1.0f : t);
     blend = d->blendNear * (1.0f - t) + d->blendFar * t;
 
     d->dist = 0.0f;
@@ -615,7 +608,9 @@ int SwarmInit(Actor* a) {
     {
     Vector* children = &d->children;
     for (i = 0; i < 10; i++) {
-        Vec3Set(&euler, 360.0f * ((float)rand() / 32767.0f), 20.0f * ((float)rand() / 32767.0f) - 10.0f, 0.0f);
+        float r = (float)rand() / 32767.0f;
+
+        Vec3Set(&euler, 360.0f * ((float)rand() / 32767.0f), 20.0f * r - 10.0f, 0.0f);
         fn_8016D4EC(&spawn.pos, &euler);
         fn_800E1098(&spawn.pos, &spawn.pos, d->radius);
         spawn.pos.x += px;
