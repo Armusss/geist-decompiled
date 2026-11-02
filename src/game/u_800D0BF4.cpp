@@ -72,9 +72,9 @@ struct ActorType;
 
 struct Actor {
     char pad0[0x24];
-    u32 x;             // 0x24 (integer world position)
-    u32 y;             // 0x28
-    u32 z;             // 0x2C
+    int x;             // 0x24 (integer world position)
+    int y;             // 0x28
+    int z;             // 0x2C
     int (*handle)(int cmd, void* data);  // 0x30 (message handler)
     char pad34[0x4];   // 0x34
     u32 unk38;         // 0x38 (actor id)
@@ -296,6 +296,7 @@ struct ZoneSpawnDesc {
     int unk1C;     // 0x1C
     void* param;   // 0x20
     u32 pad24;     // 0x24
+    u32 pad28[4];  // 0x28
 };
 
 void ZonePowerUpUpdate(Actor* actor, float dt) {
@@ -319,7 +320,20 @@ void ZonePowerUpUpdate(Actor* actor, float dt) {
 int ZonePowerUpMsg(Actor* actor, int msg, void* data, int arg) {
     ZoneSaveMsg* m = (ZoneSaveMsg*)data;
 
-    if (msg == 0x409) {
+    switch (msg) {
+    case 0x40A:
+        if (m->unk08 == 0x7C44EC3D) {
+            int buf[4];
+
+            buf[1] = 0;
+            buf[3] = -1;
+            m->unk0C = -0xDEA7E22;
+            buf[2] = m->unk0C;
+            buf[3] = AssetFind(0xC0A77187, 0x7EC7F65C);
+            SendMsg(m->target, 0x40B, buf);
+        }
+        return 1;
+    case 0x409: {
         Actor* a = m->actor;
         ZoneMsgTarget* target = (ZoneMsgTarget*)m->target;
 
@@ -345,31 +359,19 @@ int ZonePowerUpMsg(Actor* actor, int msg, void* data, int arg) {
             }
             return 1;
         }
-    } else if (msg < 0x409) {
-        if (msg == 0x400) {
-            Actor* a = m->actor;
+    }
+    case 0x400: {
+        Actor* a = m->actor;
 
-            m->target = a->id;
-            m->unk0C = 1;
-            m->unk10 = ActorIsActive(a) ? 1.0f : 0.0f;
-            m->unk14 = 0.0f;
-            m->self = a;
-            m->unk08 = 0;
-            m->unk18 = 3;
-            return 1;
-        }
-    } else if (msg < 0x40B) {
-        if (m->unk08 == 0x7C44EC3D) {
-            int buf[4];
-
-            buf[1] = 0;
-            buf[3] = -1;
-            m->unk0C = -0xDEA7E22;
-            buf[2] = m->unk0C;
-            buf[3] = AssetFind(0xC0A77187, 0x7EC7F65C);
-            SendMsg(m->target, 0x40B, buf);
-        }
+        m->target = a->id;
+        m->unk0C = 1;
+        m->unk10 = ActorIsActive(a) ? 1.0f : 0.0f;
+        m->unk14 = 0.0f;
+        m->self = a;
+        m->unk08 = 0;
+        m->unk18 = 3;
         return 1;
+    }
     }
     return ActorDefaultMsg(actor, msg, data, arg);
 }
@@ -380,7 +382,8 @@ bool ZoneSpawnActorMsg(Actor* actor, int msg, void* data) {
     Actor* spawned;
     bool ok;
 
-    if (msg == 0x1500) {
+    switch (msg) {
+    case 0x1500:
         d = (int*)data;
         desc.unk1C = -1;
         desc.x = ((float*)d)[8];
@@ -388,9 +391,11 @@ bool ZoneSpawnActorMsg(Actor* actor, int msg, void* data) {
         desc.z = ((float*)d)[10];
         desc.param = (void*)d[1];
         spawned = fn_800C7E80(&desc);
-        ok = spawned != 0;
-        if (ok) {
+        if (spawned != 0) {
             spawned->type = &lbl_8039B9F0;
+            ok = true;
+        } else {
+            ok = false;
         }
         return ok;
     }
@@ -646,8 +651,8 @@ int ZoneListInit(ZoneList* list) {
 // every node onto the free list.
 int ZoneInit(void* zone, Actor* actor, IVec3* pos, void* buf, int count, float radius) {
     Zone* z = (Zone*)zone;
-    ZoneListNode* node;
     int i;
+    int off;
 
     memset(z, 0, 0x3C);
     z->actor = actor;
@@ -659,12 +664,13 @@ int ZoneInit(void* zone, Actor* actor, IVec3* pos, void* buf, int count, float r
     z->target.y = pos->y;
     z->target.z = pos->z;
     memset(z->buf, 0, z->count << 4);
-    z->head = 0;
-    z->free = 0;
-    for (i = 0; i < z->count; i++) {
-        node = (ZoneListNode*)(z->buf + i * 0x10);
-        node->next = z->free;
-        z->free = node;
+    z->head = z->free = 0;
+    i = 0;
+    off = 0;
+    for (; i < z->count; i++) {
+        *(ZoneListNode**)(z->buf + off + 12) = z->free;
+        z->free = (ZoneListNode*)(z->buf + off);
+        off += 16;
     }
     return 1;
 }
@@ -741,17 +747,19 @@ int ZoneHitListAddRaw(Actor* actor, ZoneList* list, float value) {
                 if (node->key == (u32)actor) {
                     node->unk04 = value;
                     node->unk08 = 1;
-                    return 1;
+                    break;
                 }
             }
-            node = list->free;
-            if (node != 0) {
-                list->free = node->next;
-                node->key = (u32)actor;
-                node->unk04 = value;
-                node->unk08 = 0;
-                node->next = list->head;
-                list->head = node;
+            if (node == 0) {
+                node = list->free;
+                if (node != 0) {
+                    list->free = node->next;
+                    node->key = (u32)actor;
+                    node->unk04 = value;
+                    node->unk08 = 0;
+                    node->next = list->head;
+                    list->head = node;
+                }
             }
         }
     }
@@ -844,8 +852,6 @@ struct ZoneRefHandler {
     int (*handle)(int cmd, ZoneRefInfo* info);  // 0x30
 };
 
-extern float lbl_804D7020;
-extern float lbl_804D7024;
 extern void* lbl_804D4948;
 
 void MtxSetEuler(Mtx34* m, Vec3* rot);        // 0x8009FAC0
@@ -897,10 +903,10 @@ Actor* ZoneGetLinked(Actor* actor) {
 void ZoneDashInit(ZoneDash* dash) {
     dash->linkedA = 0;
     dash->linkedB = 0;
-    dash->unk14 = lbl_804D7020;
-    dash->unk18 = lbl_804D7020;
-    dash->unk1C = lbl_804D7020;
-    dash->unk20 = lbl_804D7024;
+    dash->unk14 = 0.0f;
+    dash->unk18 = 0.0f;
+    dash->unk1C = 0.0f;
+    dash->unk20 = 3.4028235e+38f;
     dash->unk10 = -1;
     dash->unk24 = 0;
     dash->unk28 = 0;
@@ -942,10 +948,10 @@ void ZoneDashUpdate(ZoneDash* dash, Actor* actor) {
     }
     dash->linkedA = 0;
     dash->linkedB = 0;
-    dash->unk14 = lbl_804D7020;
-    dash->unk18 = lbl_804D7020;
-    dash->unk1C = lbl_804D7020;
-    dash->unk20 = lbl_804D7024;
+    dash->unk14 = 0.0f;
+    dash->unk18 = 0.0f;
+    dash->unk1C = 0.0f;
+    dash->unk20 = 3.4028235e+38f;
     dash->unk10 = -1;
     dash->unk24 = 0;
     dash->unk28 = 0;
@@ -1009,7 +1015,7 @@ void ZoneDashUpdate(ZoneDash* dash, Actor* actor) {
     msg.fpos[2] = (float)msg.pos[2];
     lbl_804D4948 = &actor->unk1D68;
     keep = actor->unk1D84;
-    actor->unk1D84 = lbl_804D7024;
+    actor->unk1D84 = 3.4028235e+38f;
     fn_8001F928(actor, (int*)&msg, 0x16002800, (void (*)())ZoneLineFilter,
                 (void**)&msg.owner);
 
@@ -1561,7 +1567,7 @@ void ZoneLinkedUpdate(Actor* owner) {
     id = owner->unk1D9C;
     if (id == ids->unk4C || id == ids->unk04 || id == ids->unk7C ||
         id == ids->unk94) {
-        if (owner->unk2798 != -1 || lbl_804D7020 != owner->unk2648) {
+        if (owner->unk2798 != -1 || 0.0f != owner->unk2648) {
             owner->unk1D94 = 0;
             return;
         }
