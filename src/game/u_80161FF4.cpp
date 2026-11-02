@@ -388,7 +388,7 @@ void HudElemInit(Hud* hud, HudElem* e) {
             } else {
                 e->unk10 = hud->unk1500;
             }
-        } else if (PlayerInHost((Actor*)hud) != 0 && ((u32)hud->unk26E4->id >> 24) != 1) {
+        } else if (PlayerInHost((Actor*)hud) != 0 && (int)((u32)hud->unk26E4->id >> 24) != 1) {
             e->unk10 = hud->unk2730;
         } else {
             e->unk10 = hud->unk1500;
