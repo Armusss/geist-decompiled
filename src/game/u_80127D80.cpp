@@ -195,6 +195,33 @@ extern "C" int FxStart(void* fx, int a, int b);
 extern "C" int fn_8012AF68(Actor* a);
 extern int lbl_804D2E44;
 extern int lbl_804D2E40;
+
+// Proximity mine slots (24 pointers at 0x8039FF00, in-use bits at 0x804D2E58).
+struct MineSlot {
+    int state;       // 0x00
+    int handle;      // 0x04
+    u8 pad08[0xC];
+    int f14;         // 0x14
+    int f18;         // 0x18
+    float f1C;       // 0x1C
+    u8 pad20[0xC];
+    u8 flag2C80 : 1; // 0x2C top bit
+    u8 flags2C : 7;
+};
+struct MineMsg {
+    u32 size;
+    int on;
+    int target;
+    u32 event;
+};
+extern MineSlot* lbl_8039FF00[24];
+extern u32 lbl_804D2E58;
+inline int MineSlotUsed(int i) {
+    return (1 << (i & 0x1F)) & (&lbl_804D2E58)[i / 32];
+}
+void VFree(void* p);
+void ListRemoveFree(void* a, void** list, u32* bits, int n);
+extern "C" void fn_800F86A0(int h);
 // Animation lookup table: one row per animation kind, one slot per character variant (data of another unit).
 struct AnimRow {
     void (*cb00)(Actor*);  // 0x00
@@ -1035,29 +1062,76 @@ int AiActionResult(AiGunOwner* owner, int action) {
 // TODO (not drafted yet, 0x4A0 bytes at 0x8012BF4C): game logic
 extern "C" void fn_8012BF4C();
 
-// TODO (not drafted yet, 0x38 bytes at 0x8012C3EC): game logic
-extern "C" void fn_8012C3EC();
+struct MineBlock {
+    u8 pad00[0xC];
+    int handle;      // 0x0C
+};
+
+struct MineOwner {
+    u8 pad00[0xC];
+    MineBlock* block; // 0x0C
+};
+
+void MineBlockFree(MineOwner* o) {
+    MineBlock* b = o->block;
+    fn_800F86A0(b->handle);
+    VFree(b);
+}
 
 // TODO (not drafted yet, 0x17C bytes at 0x8012C424): game logic (string: Proximity Mine)
 extern "C" void fn_8012C424();
 
-// TODO (not drafted yet, 0x70 bytes at 0x8012C5A0): game logic
-extern "C" void fn_8012C5A0();
+void MineSlotsFree() {
+    for (int i = 0; i < 24; i++) {
+        if (lbl_8039FF00[i] != 0) {
+            VFree(lbl_8039FF00[i]);
+        }
+        lbl_8039FF00[i] = 0;
+    }
+    lbl_804D2E58 = 0;
+}
 
-// TODO (not drafted yet, 0x70 bytes at 0x8012C610): game logic
-extern "C" void fn_8012C610();
+void MineSlotsClear() {
+    for (int i = 0; i < 24; i++) {
+        lbl_8039FF00[i] = 0;
+    }
+    lbl_804D2E58 = 0;
+}
 
-// TODO (not drafted yet, 0x134 bytes at 0x8012C680): game logic
-extern "C" void fn_8012C680();
+void MineSetStateByOwner(int owner, int value) {
+    for (int i = 0; i < 24; i++) {
+        if (MineSlotUsed(i)) {
+            MineSlot* m = lbl_8039FF00[i];
+            if (m != 0) {
+                if (m->f18 == owner) {
+                    m->state = value;
+                }
+            }
+        }
+    }
+}
 
 // TODO (not drafted yet, 0x1B4 bytes at 0x8012C7B4): game logic
 extern "C" void fn_8012C7B4();
 
-// TODO (not drafted yet, 0xC4 bytes at 0x8012C968): game logic
-extern "C" void fn_8012C968();
+void MineSlotsNotify(int owner) {
+    for (int i = 0; i < 24; i++) {
+        MineSlot* m = lbl_8039FF00[i];
+        if (m != 0) {
+            m->flag2C80 = 0;
+            if (MineSlotUsed(i) && m->f14 == owner) {
+                MineMsg msg;
+                msg.target = m->handle;
+                msg.event = 0x3700759A;
+                SendMsg(msg.target, 0xC14, &msg);
+            }
+        }
+    }
+}
 
-// TODO (not drafted yet, 0x34 bytes at 0x8012CA2C): game logic
-extern "C" void fn_8012CA2C();
+void MineSlotsRelease(Actor* a) {
+    ListRemoveFree((void*)a->animFlagA4, (void**)lbl_8039FF00, &lbl_804D2E58, 24);
+}
 
 // TODO (not drafted yet, 0x100 bytes at 0x8012CA60): game logic
 extern "C" void fn_8012CA60();
