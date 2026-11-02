@@ -23,12 +23,12 @@ struct MenuItem : MenuItemBase {
     virtual void v0();
     virtual void v1();
     virtual void v2();
-    virtual void v3();
+    virtual int canFocus();          // vtable offset 0x14
     virtual void v4();
-    virtual void v5();
+    virtual void layout();           // 0x1c
     virtual void v6();
     virtual void activate(int flag); // vtable offset 0x24
-    virtual void v8();
+    virtual void open();             // 0x28
     virtual void close();            // vtable offset 0x2c
     MenuItem(int a, int b, int c, int d);
 };
@@ -96,22 +96,22 @@ struct MenuMsgData {
 struct MenuPage {
     MenuItem* items[20]; // 0x00
     int itemCount;    // 0x50
-    u8 unk54[4];
+    int cursor;       // 0x54
     struct {
         void* label;
         int id;
     } pairs[5];       // 0x58
     int pairCount;    // 0x80
-    int unk84;        // 0x84
+    int minFree;      // 0x84
     int unk88;
     int unk8c;
-    u32 unk90;
+    void (*onOpen)(int);  // 0x90
     void (*onClose)(int); // 0x94
     int unk98;
     void* callback;   // 0x9c
     int unka0;        // 0xa0
     int state;        // 0xa4
-    int unka8;        // 0xa8
+    int unka8;        // 0xa8 (page is open)
     int timer;        // 0xac
     u8 unkb0[4];
     int unkb4;        // 0xb4
@@ -160,7 +160,11 @@ extern "C" int fn_800C5654(int a, u32 hash, int b);
 extern "C" void fn_80142E88();
 // TODO (not drafted yet, 0x1A0 bytes at 0x8021DAA0): widget callback
 extern "C" void fn_8021DAA0();
-// TODO (not drafted yet, 0x188 bytes at 0x8021DCF4): widget callback
+int GunPoolFreeSize8017BA2C();
+extern "C" void fn_8002FD68();
+extern int lbl_804D3444;
+extern int lbl_804D3448;
+extern "C" void FxStart(int handle, int a, int b);
 extern "C" void fn_8021DCF4();
 extern MenuPage* lbl_8049EE58[];
 extern MenuPage lbl_8049E9A8;
@@ -468,12 +472,12 @@ void MenuPageClear(MenuPage* page) {
     page->pairCount = 0;
     page->unk88 = 0;
     page->unk8c = 0;
-    page->unk90 = 0;
+    page->onOpen = 0;
     page->onClose = 0;
     page->unk98 = 0;
     page->state = 0;
     page->unka8 = 0;
-    page->unk84 = 0;
+    page->minFree = 0;
 }
 
 // MenuKeyListAdd: add the hash of a key name to the list.
@@ -591,7 +595,7 @@ void MenuPageClose(MenuPage* page) {
     MenuItem** p;
     int i;
     if (page->unka8 == 1) {
-        if (page->unk90 != 0) {
+        if (page->onOpen != 0) {
             page->onClose(0);
         }
         p = page->items;
@@ -679,4 +683,68 @@ void MenuSendValue(int value) {
         armed->state = 3;
     }
     fn_8001BC78();
+}
+
+// MenuPageOpen: run the page's hooks the first time it is shown.
+static inline void MenuPageOpen(MenuPage* page) {
+    MenuItem** p;
+    int i;
+    if (page->state != 3) {
+        page->timer = 0;
+    }
+    if (page->unka8 == 0) {
+        if (lbl_804D53E4 == 0 && page->minFree > GunPoolFreeSize8017BA2C()) {
+            fn_8002FD68();
+            lbl_804D53E4 = 1;
+        }
+        if (page->onOpen != 0) {
+            page->onOpen(0);
+        }
+        p = page->items;
+        for (i = 0; i < page->itemCount; i++) {
+            (*p)->open();
+            p++;
+        }
+        page->unka8 = 1;
+    }
+    page->state = 1;
+}
+
+// MenuReturn: pop back to the previous page.
+extern "C" void fn_8021DCF4() {
+    MenuPage* prev;
+    MenuPage* page = lbl_8049EE58[lbl_804D345C];
+    if (page->unkb4 != 0) {
+        MenuPageClear(page);
+    }
+    lbl_804D345C--;
+    if (lbl_804D345C > -1) {
+        prev = lbl_8049EE58[lbl_804D345C];
+        MenuPageOpen(prev);
+        FxStart(lbl_804D3444, 0, 0);
+    } else {
+        fn_8021DE7C();
+    }
+}
+
+// MenuEnter: push a page and focus its first focusable item.
+void MenuEnter(MenuPage* page) {
+    lbl_804D345C++;
+    lbl_8049EE58[lbl_804D345C] = page;
+    page->cursor = 0;
+    while (page->cursor < page->itemCount) {
+        page->items[page->cursor]->layout();
+        page->cursor++;
+    }
+    page->cursor = 0;
+    for (; page->cursor < page->itemCount; page->cursor++) {
+        if (page->items[page->cursor]->canFocus() != 0) {
+            break;
+        }
+    }
+    if (page->cursor == page->itemCount) {
+        page->cursor = -1;
+    }
+    MenuPageOpen(page);
+    FxStart(lbl_804D3448, 0, 0);
 }
