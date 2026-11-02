@@ -45,12 +45,17 @@ struct CameraObj {
     float fov;  // 0x34
 };
 struct CameraSlot {
-    CameraObj* camera;             // 0x00
-    int unk04;                     // 0x04
-    void (*callback)(CameraObj*);  // 0x08
-    char pad0C[0x24 - 0x0C];
+    CameraObj* camera;                             // 0x00
+    void (*update)(float dt, CameraObj*, int top);  // 0x04
+    void (*callback)(CameraObj*);                  // 0x08
+    int view;                                      // 0x0c
+    int next[4];                                   // 0x10  next slot per view
+    float lastTime;                                // 0x20
 };
 extern int lbl_8039B760[4];
+extern int lbl_804D2BA0;  // first free slot
+extern "C" float fn_802A1DA4();
+void LinkInfoInit(void* p);
 extern CameraSlot lbl_8044FE00[];
 extern int lbl_804D48C4;  // current view
 extern int lbl_804D48C8;  // view count
@@ -63,6 +68,7 @@ extern int lbl_804D48B8;
 extern int lbl_804D48BC;
 extern int lbl_804D48C0;
 CameraObj* CameraTable();
+extern "C" void fn_800C5E00(int view);
 
 // Binary search of the animation table: 1 if the state list of `key` holds `state`, 0 if not,
 // -1 if the key is missing.
@@ -342,14 +348,14 @@ extern "C" CameraObj* fn_800C6448()
 {
     CameraObj* c;
 
-    if (lbl_804D4B98 == 0) {
+    if (lbl_804D4B98 != 0) {
+        c = CameraTable();
+    } else {
         if (lbl_8039B760[lbl_804D48C4] == -1) {
             c = 0;
         } else {
             c = lbl_8044FE00[lbl_8039B760[lbl_804D48C4]].camera;
         }
-    } else {
-        c = CameraTable();
     }
     return c;
 }
@@ -411,6 +417,313 @@ extern "C" void fn_800C6558(float v)
     lbl_804D48A8 = v;
 }
 
+// Takes a slot out of its view's list; true when it was found (or the list ran out).
+static inline int SlotUnlink(int slot, int view)
+{
+    int cur = lbl_8039B760[view];
+    int found;
+
+    if (cur == -1) {
+        found = 0;
+    } else if (slot == cur) {
+        lbl_8039B760[view] = lbl_8044FE00[slot].next[view];
+        found = 1;
+    } else {
+        int n;
+
+        do {
+            n = lbl_8044FE00[cur].next[view];
+            if (slot == n) {
+                lbl_8044FE00[cur].next[view] = lbl_8044FE00[slot].next[view];
+                found = 1;
+                goto done;
+            }
+            cur = n;
+        } while (n != -1);
+        found = 1;
+    }
+done:
+    return found;
+}
+
+// Appends a slot to the end of a view's list.
+static inline void SlotAppend(int slot, int view)
+{
+    int cur = lbl_8039B760[view];
+
+    lbl_8044FE00[slot].next[view] = -1;
+    if (cur != -1) {
+        int prev;
+
+        do {
+            prev = cur;
+            cur = lbl_8044FE00[prev].next[view];
+        } while (lbl_8044FE00[prev].next[view] != -1);
+        lbl_8044FE00[prev].next[view] = slot;
+        return;
+    }
+    lbl_8039B760[view] = slot;
+}
+
+// 0x800C6560: moves a slot to the end of a view's list
+extern "C" void fn_800C6560(int slot, int view)
+{
+    if (slot < 0) {
+        return;
+    }
+    if (!SlotUnlink(slot, view)) {
+        return;
+    }
+    SlotAppend(slot, view);
+}
+
+// 0x800C6664: moves a slot to the end of its own view's list
+extern "C" void fn_800C6664(int slot)
+{
+    int view;
+
+    if (slot < 0) {
+        return;
+    }
+    view = lbl_8044FE00[slot].view;
+    if (slot < 0) {
+        return;
+    }
+    if (!SlotUnlink(slot, view)) {
+        return;
+    }
+    SlotAppend(slot, view);
+}
+
+// 0x800C6760: moves a slot to the front of a view's list
+extern "C" void fn_800C6760(int slot, int view)
+{
+    if (slot < 0) {
+        return;
+    }
+    if (SlotUnlink(slot, view)) {
+        int head = lbl_8039B760[view];
+
+        lbl_8039B760[view] = slot;
+        lbl_8044FE00[slot].next[view] = head;
+    }
+}
+
+// 0x800C6834: moves a slot to the front of its own view's list
+extern "C" void fn_800C6834(int slot)
+{
+    int view;
+
+    if (slot < 0) {
+        return;
+    }
+    view = lbl_8044FE00[slot].view;
+    if (slot < 0) {
+        return;
+    }
+    if (SlotUnlink(slot, view)) {
+        int head = lbl_8039B760[view];
+
+        lbl_8039B760[view] = slot;
+        lbl_8044FE00[slot].next[view] = head;
+    }
+}
+
+// 0x800C6900: frees a slot
+extern "C" void fn_800C6900(int slot)
+{
+    int view;
+    int cur;
+
+    if (slot < 0) {
+        return;
+    }
+    view = lbl_8044FE00[slot].view;
+    cur = lbl_8039B760[view];
+    if (cur != -1) {
+        if (slot == cur) {
+            lbl_8039B760[view] = lbl_8044FE00[slot].next[view];
+        } else {
+            int n;
+
+            do {
+                n = lbl_8044FE00[cur].next[view];
+                if (slot == n) {
+                    lbl_8044FE00[cur].next[view] = lbl_8044FE00[slot].next[view];
+                    break;
+                }
+                cur = n;
+            } while (n != -1);
+        }
+    }
+    lbl_8044FE00[slot].next[0] = lbl_804D2BA0;
+    lbl_804D2BA0 = slot;
+    lbl_8044FE00[slot].next[1] = -1;
+    lbl_8044FE00[slot].next[2] = -1;
+    lbl_8044FE00[slot].next[3] = -1;
+}
+
+// Fills in a freshly allocated camera slot.
+static inline void SlotInit(CameraObj* cam, int slot, void (*update)(float, CameraObj*, int),
+                            void (*callback)(CameraObj*))
+{
+    int* c = (int*)cam;
+
+    LinkInfoInit(cam);
+    c[0x30 / 4] = 0;
+    *(float*)&c[0x34 / 4] = lbl_804D48A8;
+    *(float*)&c[0x40 / 4] = lbl_804D48AC;
+    *(float*)&c[0x44 / 4] = lbl_804D48B0;
+    *(float*)&c[0x48 / 4] = lbl_804D48B4;
+    c[0x4c / 4] = lbl_804D48B8;
+    c[0x50 / 4] = lbl_804D48BC;
+    c[0x54 / 4] = lbl_804D48C0;
+    c[0x58 / 4] = -1;
+    lbl_8044FE00[slot].camera = cam;
+    lbl_8044FE00[slot].update = update;
+    lbl_8044FE00[slot].callback = callback;
+}
+
+// 0x800C69B8: allocates a camera slot on view 0
+extern "C" int fn_800C69B8(CameraObj* cam, void (*update)(float, CameraObj*, int),
+                           void (*callback)(CameraObj*))
+{
+    int slot = lbl_804D2BA0;
+    int head = lbl_8039B760[0];
+
+    if (slot == -1) {
+        slot = -1;
+    } else {
+        int next = lbl_8044FE00[slot].next[0];
+        int isEmpty = head == -1;
+
+        lbl_8044FE00[slot].view = 0;
+        lbl_804D2BA0 = next;
+        lbl_8044FE00[slot].next[0] = -1;
+        if (isEmpty) {
+            lbl_8039B760[0] = slot;
+        } else {
+            int prev;
+
+            do {
+                prev = head;
+                head = lbl_8044FE00[prev].next[0];
+            } while (lbl_8044FE00[prev].next[0] != -1);
+            lbl_8044FE00[prev].next[0] = slot;
+        }
+    }
+    if (slot != -1) {
+        SlotInit(cam, slot, update, callback);
+    }
+    return slot;
+}
+
+// 0x800C6AE8: allocates a camera slot on the given view
+extern "C" int fn_800C6AE8(CameraObj* cam, void (*update)(float, CameraObj*, int),
+                           void (*callback)(CameraObj*), int view)
+{
+    int slot = lbl_804D2BA0;
+
+    if (slot == -1) {
+        slot = -1;
+    } else {
+        int head = lbl_8039B760[view];
+        int next = lbl_8044FE00[slot].next[0];
+
+        lbl_8044FE00[slot].view = view;
+        lbl_804D2BA0 = next;
+        lbl_8044FE00[slot].next[view] = -1;
+        if (head == -1) {
+            lbl_8039B760[view] = slot;
+        } else {
+            int prev;
+
+            do {
+                prev = head;
+                head = lbl_8044FE00[prev].next[view];
+            } while (lbl_8044FE00[prev].next[view] != -1);
+            lbl_8044FE00[prev].next[view] = slot;
+        }
+    }
+    if (slot != -1) {
+        SlotInit(cam, slot, update, callback);
+    }
+    return slot;
+}
+
+// 0x800C6C28: runs every view's camera updates
+extern "C" void fn_800C6C28(float dt)
+{
+    float now = fn_802A1DA4();
+    int view;
+
+    for (view = 0; view < 4; view++) {
+        int cur = lbl_8039B760[view];
+
+        while (cur != -1) {
+            CameraSlot* s = &lbl_8044FE00[cur];
+            int next = s->next[view];
+
+            if (s->update != 0 && now != s->lastTime) {
+                s->update(dt, s->camera, lbl_8039B760[view] == cur);
+                s->lastTime = now;
+            }
+            cur = next;
+        }
+    }
+}
+
+// 0x800C6D08: runs one slot's camera update
+extern "C" void fn_800C6D08(float dt, int slot)
+{
+    float now = fn_802A1DA4();
+
+    if (slot > -1 && slot < 0x80) {
+        CameraSlot* s = &lbl_8044FE00[slot];
+
+        if (s->update != 0 && now != s->lastTime) {
+            s->update(dt, s->camera, lbl_8039B760[lbl_804D48C4] == slot);
+            s->lastTime = now;
+        }
+    }
+}
+
+// 0x800C6DD4: empty
+extern "C" void fn_800C6DD4()
+{
+}
+
+// 0x800C6DD8: resets the camera slots into one free list
+extern "C" void fn_800C6DD8()
+{
+    int i;
+
+    lbl_804D48A8 = 50.0f;
+    lbl_804D48AC = 24000.0f;
+    lbl_804D48B0 = 20000.0f;
+    lbl_804D48B4 = 24000.0f;
+    lbl_804D48B8 = 0;
+    lbl_804D48BC = 0;
+    lbl_804D48C0 = 0;
+    lbl_804D48C4 = 0;
+    lbl_804D48C8 = 0;
+    for (i = 0; i < 0x7f; i++) {
+        lbl_8044FE00[i].next[0] = i + 1;
+        lbl_8044FE00[i].next[1] = -1;
+        lbl_8044FE00[i].next[2] = -1;
+        lbl_8044FE00[i].next[3] = -1;
+    }
+    lbl_8044FE00[i].next[0] = -1;
+    lbl_8044FE00[i].next[1] = -1;
+    lbl_8039B760[0] = -1;
+    lbl_8044FE00[i].next[2] = -1;
+    lbl_8044FE00[i].next[3] = -1;
+    lbl_804D2BA0 = 0;
+    lbl_8039B760[1] = -1;
+    lbl_8039B760[2] = -1;
+    lbl_8039B760[3] = -1;
+}
+
 // TODO (not drafted yet, 0x4 bytes at 0x800C50EC): actor/game routine
 extern "C" void fn_800C50EC();
 
@@ -463,38 +776,16 @@ extern "C" void fn_800C6200();
 
 
 
-// TODO (not drafted yet, 0x104 bytes at 0x800C6560): actor/game routine
-extern "C" void fn_800C6560();
 
-// TODO (not drafted yet, 0xFC bytes at 0x800C6664): actor/game routine
-extern "C" void fn_800C6664();
 
-// TODO (not drafted yet, 0xD4 bytes at 0x800C6760): actor/game routine
-extern "C" void fn_800C6760();
 
-// TODO (not drafted yet, 0xCC bytes at 0x800C6834): actor/game routine
-extern "C" void fn_800C6834();
 
-// TODO (not drafted yet, 0xB8 bytes at 0x800C6900): actor/game routine
-extern "C" void fn_800C6900();
 
-// TODO (not drafted yet, 0x130 bytes at 0x800C69B8): actor/game routine
-extern "C" void fn_800C69B8();
 
-// TODO (not drafted yet, 0x140 bytes at 0x800C6AE8): actor/game routine
-extern "C" void fn_800C6AE8();
 
-// TODO (not drafted yet, 0xE0 bytes at 0x800C6C28): actor/game routine
-extern "C" void fn_800C6C28();
 
-// TODO (not drafted yet, 0xCC bytes at 0x800C6D08): actor/game routine
-extern "C" void fn_800C6D08();
 
-// TODO (not drafted yet, 0x4 bytes at 0x800C6DD4): actor/game routine
-extern "C" void fn_800C6DD4();
 
-// TODO (not drafted yet, 0xB0 bytes at 0x800C6DD8): actor/game routine
-extern "C" void fn_800C6DD8();
 
 // TODO (not drafted yet, 0x4 bytes at 0x800C6E88): actor/game routine
 extern "C" void fn_800C6E88();
