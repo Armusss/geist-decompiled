@@ -62,19 +62,31 @@ void TickCallbackTimer(float amount, u8020A650Owner* o)
 }
 
 // Two vtables of the class hierarchy this object belongs to.
-extern void* lbl_803BB8CC;
-extern void* lbl_803ADE00;
+extern char lbl_803BB8CC[];
+extern char lbl_803ADE00[];
 
 void* VAlloc(int size);
 void VFree(void* p);
 
 // Tears the object down (derived vtable, virtual cleanup, base vtable) and
 // optionally frees the storage.
+// Virtual-call view of the object: vptr at 0, cleanup in vtable slot 0x24.
+struct VtObject {
+    virtual void slot08();
+    virtual void slot0C();
+    virtual void slot10();
+    virtual void slot14();
+    virtual void slot18();
+    virtual void slot1C();
+    virtual void slot20();
+    virtual void cleanup();  // 0x24
+};
+
 void* DestroyVtObject(void* p, short flag)
 {
     if (p != 0) {
         *(void**)p = &lbl_803BB8CC;
-        (*(void (**)(void*))(*(char**)p + 0x24))(p);
+        ((VtObject*)p)->cleanup();
         if (p != 0) {
             *(void**)p = &lbl_803ADE00;
         }
@@ -128,6 +140,7 @@ struct u8020A650AttachName {
     unsigned char unk2C[0x4];       // 0x2C
     float f30;                      // 0x30
     float f34;                      // 0x34
+    unsigned char unk38[4];         // 0x38
     char* name;                     // 0x3C
     char* name2;                    // 0x40
 };
@@ -141,28 +154,28 @@ struct u8020A650NameTables {
 };
 
 extern u8020A650NameTables lbl_803BA9B8;
-extern unsigned char lbl_804D53A0;
+extern int lbl_804D53A0;
 
 extern "C" unsigned long AssetFind(unsigned long kind, unsigned long hash);
 
 // Lazy string hash used by every name table: 31x multiply, upper-cased
 // characters, with 0xFF meaning "keep -1".
-static inline unsigned long HashName(const char* name)
+static inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
+
+static inline unsigned long HashName(const char* s)
 {
-    unsigned long hash = 0;
-    if (name != 0) {
-        for (; *name != 0; name++) {
-            unsigned long c;
-            if (*name == -1) {
-                c = 0xFFFFFFFF;
-            } else {
-                c = __upper_map[(unsigned char)*name];
-            }
-            hash = hash * 31 + (c & 0xFF);
-        }
-        hash %= 0xFFFFFFFF;
+    int i;
+    unsigned long h;
+
+    if (s == 0) {
+        return 0;
     }
-    return hash;
+    h = 0;
+    for (i = 0; s[i] != 0; i++) {
+        h = h * 31 + (unsigned char)toupper(s[i]);
+    }
+    h = h % 0xFFFFFFFF;
+    return h;
 }
 
 // Fills in the cached name hashes and asset ids of the model, body-part and
@@ -170,21 +183,24 @@ static inline unsigned long HashName(const char* name)
 void u8020A650InitNameTables(void)
 {
     u8020A650NameTables* t = &lbl_803BA9B8;
+    u8020A650ModelName* m;
+    u8020A650PartName* p;
+    u8020A650AttachName* a;
     int i;
 
-    for (i = 3; i != 0; i--) {
-        u8020A650ModelName* m = t->models + (3 - i);
+    m = t->models;
+    for (i = 0; i < 3; i++, m++) {
         m->hash = HashName(m->name);
     }
-    for (i = 0; i < 0x26; i++) {
-        u8020A650PartName* p = t->parts + i;
+    p = t->parts;
+    for (i = 0; i < 0x26; i++, p++) {
         p->hash = HashName(p->name);
         p->asset = AssetFind(0xF1754BF2, p->hash);
         p->hash2 = HashName(p->name2);
         p->asset2 = AssetFind(0xF1754BF2, p->hash2);
     }
-    for (i = 0; i < 0x20; i++) {
-        u8020A650AttachName* a = t->attach + i;
+    a = t->attach;
+    for (i = 0; i < 0x20; i++, a++) {
         a->asset = AssetFind(0xF1754BF2, HashName(a->name));
         a->asset2 = AssetFind(0xF1754BF2, HashName(a->name2));
     }
