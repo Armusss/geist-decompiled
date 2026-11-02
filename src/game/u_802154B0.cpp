@@ -6,6 +6,8 @@
 
 struct MenuItem;
 struct MenuOps;
+struct MenuLabel;
+struct MenuButtonC;
 
 // A menu entry (button/toggle/slider state shared by the menu screens).
 struct MenuItemBase {
@@ -114,6 +116,9 @@ struct MenuPage {
     int timer;        // 0xac
     int unkb0;        // 0xb0
     int unkb4;        // 0xb4
+    MenuLabel* title; // 0xb8
+    MenuButtonC* okButton;     // 0xbc
+    MenuButtonC* cancelButton; // 0xc0
 };
 
 // A label item: text plus three user words.
@@ -173,6 +178,9 @@ extern "C" void fn_8000719C(float v);
 extern "C" void fn_8014CEDC(int v);
 void SaveCommand(int a, int b);
 extern "C" int fn_802A1FA0();
+extern MenuPage lbl_8049EC00;
+// TODO (not drafted yet, 0x18C bytes at 0x8021B41C): confirmation page cancel handler
+void MenuReturnToMain(MenuPage* page);
 extern "C" int fn_80010448(int a, int b);
 extern "C" void fn_80010330(int a, int b);
 extern "C" void fn_801D8A68(int a);
@@ -1037,4 +1045,21 @@ extern "C" void fn_802154B0(int alpha) {
     fn_8010475C(lbl_804D53B8 >> 2);
     GXSetZMode(GX_TRUE, GX_ALWAYS, GX_FALSE);
     MenuQuad(0.0f, 0.0f, 1.0f, 1.0f, 0x48, 0x48, 0x48, alpha);
+}
+
+// MenuConfirmPageInit: fill in the title and the two buttons of a confirmation page.
+void MenuConfirmPageInit(MenuPage* page) {
+    MenuLabel* title = page->title;
+    const char* text;
+    if (page == &lbl_8049EC00) {
+        text = (const char*)StrFindKeySkip(0x9CE42C96);
+        title->text = text ? text : "<missing string>";
+    } else {
+        text = (const char*)StrFindKeySkip(0xE7D3A1E6);
+        title->text = text ? text : "<missing string>";
+    }
+    page->okButton->onPress = (void (*)(int))MenuPageClose;
+    page->okButton->arg = (int)page;
+    page->cancelButton->onPress = (void (*)(int))MenuReturnToMain;
+    page->cancelButton->arg = (int)page;
 }
