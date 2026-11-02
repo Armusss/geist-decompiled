@@ -525,7 +525,6 @@ int SltUnload(SltIdMsg* msg) {
     int target = sSlots[slot].unk2C;
     int arg = sSlots[slot].unk30;
     sSlots[slot].ptr = 0;
-    sLoadedMask &= ~(1 << slot);
     sSlots[slot].id = -1;
     sSlots[slot].stamp = 0;
     sSlots[slot].flags = 0;
@@ -541,6 +540,7 @@ int SltUnload(SltIdMsg* msg) {
     sSlots[slot].unk30 = 0;
     sSlots[slot].id = -1;
     out.id = arg;
+    sLoadedMask &= ~(1 << slot);
     sSlots[slot].ptr = 0;
     if (target != -1) {
         SendMsg(target, 0x3005, &out);
@@ -864,7 +864,6 @@ int SltRelease(int handle) {
         int target = sSlots[slot].unk2C;
         int arg = sSlots[slot].unk30;
         sSlots[slot].ptr = 0;
-        sLoadedMask &= ~(1 << slot);
         sSlots[slot].id = -1;
         sSlots[slot].stamp = 0;
         sSlots[slot].flags = 0;
@@ -881,6 +880,7 @@ int SltRelease(int handle) {
         sSlots[slot].id = -1;
         SltIdMsg m;
         m.id = arg;
+        sLoadedMask &= ~(1 << slot);
         sSlots[slot].ptr = 0;
         if (target != -1) {
             SendMsg(target, 0x3005, &m);
