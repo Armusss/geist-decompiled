@@ -4,6 +4,8 @@
 // FPS counter and fade, and the start-up sequence that initialises every game system in order.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#pragma auto_inline off
+
 typedef unsigned char u8;
 typedef unsigned long u32;
 
@@ -271,3 +273,386 @@ void fn_80086B60(ListNode** list, ListNode* node)
 #ifdef __cplusplus
 }
 #endif
+
+// Callees in other files.
+#ifdef __cplusplus
+extern "C" {
+#endif
+void AudioInit(void);
+void AudioShutdown(void);
+void fn_80005A38(void);
+void fn_80005CEC(void);
+void fn_8000AE40(void);
+void fn_8000AFB0(int arg);
+void fn_80020280(void);
+void fn_80020694(void);
+void fn_80026660(int tag, void* handler, int arg);
+void fn_800266A0(void);
+void fn_800267EC(void);
+void fn_80028140(void);
+void fn_800289F8(void);
+void fn_80049F70(void);
+void fn_8004BD64(void);
+void fn_8007CA44(void);
+void fn_8007CB14(void);
+void fn_800849B8(void);
+void fn_80084B34(void);
+void fn_80085A98(void);
+void fn_80093710(void);
+void fn_800938C4(void);
+void fn_800BA8A0(void);
+void fn_800BA9BC(void);
+void fn_800C6DD4(void);
+void fn_800C6DD8(void);
+void fn_800C843C(void);
+void fn_800C8EC8(void);
+void fn_800C990C(void);
+void fn_800CF2E0(void);
+void fn_800CF390(void);
+void fn_80157730(void);
+void fn_8015860C(void);
+void fn_80158744(void);
+void fn_8016F818(void);
+void fn_80170348(void);
+void fn_801D7BC8(void);
+void fn_801D7C24(void);
+void fn_801D8134(void);
+void fn_801D8368(void);
+void fn_801E0850(void);
+void fn_801E08FC(void);
+void fn_801E4830(void);
+void fn_801E4A74(void);
+void fn_80201F5C(void);
+void fn_80202090(void);
+void fn_80228608(void);
+void fn_80228AE4(void);
+void fn_80237690(void);
+void fn_802379CC(void);
+#ifdef __cplusplus
+}
+#endif
+void ActorAnimTableClear(void);
+void ActorFileHandlerInit(void);
+void ActorNoOp24518(void);
+void ActorPendingMsgsInit(void);
+void AnimTrackInit(void);
+void AnimTrackReset(void);
+void CamTuneInit(void);
+void CameraSystemInit(void);
+void ClockInitRenderState(void);
+void EffectEmitterInit(void);
+void EffectEmitterShutdown(void);
+void EmitterDestroyAll(void);
+void EmitterSystemShutdown(void);
+void FileInit(void);
+void FileShutdown(void);
+void FlickerInit(void);
+void FlickerResetCount(void);
+void FrameCounterReset(void);
+void FxFreeScrollSources(void);
+void FxListFree(void);
+void FxListInit(void);
+void FxResetScrollSources(void);
+void HazardSplineClearAll(void);
+void HazardZoneBufferInit(void);
+void HookNop2(void);
+void InitLoadManager(void);
+void LightFxFreeAll(void);
+void LightFxInit(void);
+void MainNop(void);
+void MirrorObjInitModule(void);
+void ModelPhysicsShutdown(void);
+void ModelSystemInit(void);
+void OLTFree(void);
+void OLTInit(void);
+void PadManagerInit(void);
+void PadRecordStop(void);
+void Q12Noop(void);
+void QueueInit(void);
+void QueueShutdown(void);
+void RegisterAuxMsgHandlers(void);
+void ResetLoadManager(void);
+void SAMInit(void);
+void SAMStop(void);
+void SaveInit(void);
+void SaveNop(void);
+void SaveRegister(void);
+void ShotArrayInit(void);
+void ShotArrayShutdown(void);
+void SltGroupReset(void);
+void SltInit(void);
+void StoreNop(void);
+void StoreTrue(void);
+void StrTableFree(void);
+void StrTableLoad(void);
+void TimerInit(void);
+void TimerNop(void);
+void VarInit(void);
+void VarReset(void);
+void fn_8007EE68(void);
+void fn_8007F3A4(void);
+
+void LinkObjSysInit(void);
+void LinkObjSysShutdown(void);
+int fn_80087428(void);
+
+// TODO (not drafted yet, 0x720 bytes at 0x80086B9C): fn_80086B9C, the "AppMain" loop (pre-load, fade in, FPS counter, fade out)
+// TODO (not drafted yet, 0x3C8 bytes at 0x80087428): fn_80087428, loading/splash screen state machine
+// TODO (not drafted yet, 0x3C0 bytes at 0x800877F0): fn_800877F0, per-frame render of all views
+// TODO (not drafted yet, 0x314 bytes at 0x80087BB0): fn_80087BB0
+// TODO (not drafted yet, 0x47C bytes at 0x800880F8): fn_800880F8, chunk 0x38 handler
+void fn_800880F8(int a, int size, int* out, int b);
+void fn_80085490(void);
+void PadRecordStart(int pad);
+void ActorPlayAnim(int a, u32 b, int c);
+static int sPadRecord;
+// TODO (not drafted yet, 0x154 bytes at 0x80088574): fn_80088574, draws the two start-up frames
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+// 0x800872BC: debug print, compiled out in the retail build
+void fn_800872BC(int channel, const char* format, ...)
+{
+}
+#ifdef __cplusplus
+}
+#endif
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+int fn_8000AEF4(void);
+void SoundSetsAlloc(void);
+void fn_800071AC(void);
+void fn_80020F58(void);
+void fn_80028060(void);
+void fn_80028A38(void);
+void fn_8004B2A8(void);
+void fn_8004B378(void);
+void fn_800848F4(void);
+void fn_80085A94(void);
+void fn_800938C0(void);
+void fn_800BA970(void);
+void fn_800BA994(void);
+void fn_800C81DC(void);
+void fn_800C8944(void);
+void fn_800CF33C(void);
+void fn_801582AC(void);
+void fn_801584F8(void);
+void fn_801D7BA8(void);
+void fn_801D8168(void);
+void fn_801D81F4(void);
+void fn_801D9028(void);
+void fn_801E08CC(void);
+void fn_80202038(void);
+#ifdef __cplusplus
+}
+#endif
+void ActorCounterClear(void);
+void ActorNoOp24514(void);
+void AlwaysTrue(void);
+void AnimTrackTimerStart(void);
+void CamTuneNop(void);
+void EffectTablesLoad(void);
+void EmitterNotifyRelease(void);
+void EmitterSystemInit(void);
+void FlickerSpawnAll(void);
+void FxListBroadcast(void);
+void FxListSpawnAll(void);
+void HazardSplineNoop(void);
+void LightFxSpawnAll(void);
+void ModelPhysicsStart(void);
+void SaveClearBusy(void);
+void StrTableRelease(void);
+void StreamNop(void);
+
+// Start-up: initialises every game system in order.
+int AppSystemsInit(void)
+{
+    int init[4];
+    if (fn_8000AEF4() == 0) {
+        return 0;
+    }
+    {
+        StreamNop();
+        fn_800848F4();
+        ActorCounterClear();
+        ModelPhysicsStart();
+        ActorNoOp24514();
+        AlwaysTrue();
+        fn_800938C0();
+        fn_80020F58();
+        fn_801D7BA8();
+        fn_801E08CC();
+        StrTableRelease();
+        EffectTablesLoad();
+        EmitterSystemInit();
+        fn_80202038();
+        fn_800C8944();
+        fn_800BA994();
+        FlickerSpawnAll();
+        FxListSpawnAll();
+        LightFxSpawnAll();
+        HazardSplineNoop();
+        fn_801D81F4();
+        fn_8004B378();
+        fn_80028060();
+        SoundSetsAlloc();
+        fn_801D9028();
+        AnimTrackTimerStart();
+        ChunkStart();
+        fn_801584F8();
+        CamTuneNop();
+        fn_80085A94();
+        SaveClearBusy();
+        fn_8004B2A8();
+        fn_800C81DC();
+        fn_800BA970();
+        fn_80028A38();
+        FxListBroadcast();
+        EmitterNotifyRelease();
+        fn_801D8168();
+        fn_800CF33C();
+        fn_801582AC();
+        init[0] = 0;
+        init[1] = 0;
+        fn_800880F8(0, 0x800, init, 0);
+        fn_80085490();
+        fn_80087428();
+        PadRecordStart(sPadRecord);
+        fn_800071AC();
+        ActorPlayAnim(0x2000000, 0xFEF24188, 0x2000000);
+    }
+    return 1;
+}
+
+// Shutdown: tears every game system down.
+void AppSystemsShutdown(void)
+{
+    fn_80157730();
+    fn_80049F70();
+    SaveNop();
+    ActorNoOp24518();
+    AudioShutdown();
+    FlickerResetCount();
+    fn_800849B8();
+    ActorAnimTableClear();
+    fn_800CF2E0();
+    fn_801E4830();
+    fn_800BA8A0();
+    Q12Noop();
+    fn_80093710();
+    fn_80237690();
+    EmitterDestroyAll();
+    fn_800C843C();
+    LightFxFreeAll();
+    fn_800C6DD4();
+    TimerNop();
+    FxListFree();
+    HazardSplineClearAll();
+    fn_801D8134();
+    fn_800289F8();
+    LinkObjSysShutdown();
+    SAMStop();
+    AnimTrackReset();
+    OLTFree();
+    SltGroupReset();
+    ResetLoadManager();
+    QueueInit();
+    EffectEmitterShutdown();
+    ShotArrayShutdown();
+    fn_801D7BC8();
+    fn_801E0850();
+    PadRecordStop();
+    fn_80005A38();
+    FxFreeScrollSources();
+    fn_80228608();
+    fn_8000AE40();
+    ModelPhysicsShutdown();
+    FileShutdown();
+    StoreNop();
+    StrTableFree();
+    fn_8016F818();
+    fn_800266A0();
+    fn_8007CA44();
+    fn_80201F5C();
+    VarReset();
+    fn_8007EE68();
+    fn_80020280();
+}
+
+// Start-up part two: brings the systems up that need the file handlers.
+int AppSystemsStart(void)
+{
+    fn_8007CB14();
+    StoreTrue();
+    fn_800267EC();
+    FxResetScrollSources();
+    fn_8000AFB0(0);
+    fn_80228AE4();
+    ChunkTableWalk();
+    fn_80170348();
+    ModelSystemInit();
+    fn_80005CEC();
+    PadManagerInit();
+    StrTableLoad();
+    fn_80085A98();
+    fn_801E08FC();
+    fn_8007F3A4();
+    fn_801D7C24();
+    LinkObjSysInit();
+    RegisterAuxMsgHandlers();
+    AudioInit();
+    fn_800C6DD8();
+    fn_800C990C();
+    CameraSystemInit();
+    HookNop2();
+    MirrorObjInitModule();
+    ClockInitRenderState();
+    fn_80020694();
+    fn_800C8EC8();
+    LightFxInit();
+    EmitterSystemShutdown();
+    fn_800938C4();
+    fn_802379CC();
+    ActorFileHandlerInit();
+    fn_8004BD64();
+    fn_800BA9BC();
+    fn_80084B34();
+    ActorPendingMsgsInit();
+    fn_800CF390();
+    fn_801E4A74();
+    FlickerInit();
+    TimerInit();
+    FxListInit();
+    HazardZoneBufferInit();
+    fn_801D8368();
+    fn_80028140();
+    QueueShutdown();
+    InitLoadManager();
+    SltInit();
+    OLTInit();
+    SAMInit();
+    AnimTrackInit();
+    MainNop();
+    ChunkInit();
+    SaveRegister();
+    VarInit();
+    fn_80202090();
+    EffectEmitterInit();
+    CamTuneInit();
+    ShotArrayInit();
+    fn_80026660(0x38, (void*)fn_800880F8, 0);
+    fn_8015860C();
+    FileInit();
+    return 1;
+}
+
+extern "C" void fn_800880D0(void)
+{
+    FrameCounterReset();
+    SaveInit();
+    fn_80158744();
+}
