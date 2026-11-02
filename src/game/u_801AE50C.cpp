@@ -2,7 +2,200 @@
 // Only the functions drafted so far have bodies; every other function is declared with a TODO comment.
 // Names are descriptive guesses; unmatched against retail so far.
 
+typedef unsigned char u8;
+typedef unsigned short u16;
 typedef unsigned long u32;
+
+
+extern unsigned char __upper_map[256];
+inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
+
+// Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
+class Buffer {
+public:
+    Buffer();                                  // 0x8028BA9C
+    virtual ~Buffer();                         // 0x8028B9C0
+    virtual void Release(char* p);
+
+    char* mData;
+    int mLength;
+    int mUnk0C;
+    int mOwned;
+};
+
+class String : public Buffer {
+public:
+    String();                                  // 0x8028C500
+    String(const char* s);                     // 0x8028C400
+    ~String() {}
+    virtual void Release(char* p);
+};
+
+// Query messages: the receiver writes its answer over the first word of the String.
+struct QueryResult {
+    String name;
+};
+
+struct QueryMsg {
+    int unk0;
+    u32 hash;
+    int unk8;
+    QueryResult result;
+};
+
+extern "C" int SendMsg(int to, int msg, void* data);                 // 0x800265D4
+extern "C" void fn_800872BC(int flags, const char* fmt, ...);        // debug log
+
+inline void QueryGet(int* out, int target, u32 hash) {
+    QueryMsg m;
+    m.hash = hash;
+    *(int*)&m.result = 0;
+    m.unk8 = 0;
+    SendMsg(target, 0x41E, &m);
+    *out = *(int*)&m.result;
+}
+
+// Animation set of a character type (three words used here).
+struct AiAnimSet {
+    u8 pad00[0x14];
+    int a14;         // 0x14
+    int a18;         // 0x18
+    int a1C;         // 0x1C
+};
+
+// The actor a character is currently targeting / carried by.
+struct AiTarget {
+    u8 pad00[0x38];
+    u32 handle;      // 0x38: type in the top byte
+    u8 pad3C[0x270 - 0x3C];
+    u8 conditions[4]; // 0x270
+};
+
+// Current / next state of a character (a Player-style state record).
+struct AiStateRec {
+    int cur;         // 0x00
+    int next;        // 0x04
+    int unk8;        // 0x08
+    int unkC;        // 0x0C
+};
+
+// Enemy character actor (descriptive guess; only the fields used in this file).
+struct Actor {
+    u8 pad00[0x38];
+    int handle;      // 0x38
+    u8 pad3C[0x50 - 0x3C];
+    u32 flags;       // 0x50
+    u8 pad54[0x58 - 0x54];
+    int model;       // 0x58
+    u8 pad5C[0x78 - 0x5C];
+    int hold;        // 0x78
+    int unk7C;       // 0x7C
+    u8 pad80[0x8C - 0x80];
+    void* cb8C;      // 0x8C
+    u8 pad90[0x98 - 0x90];
+    int anim98;      // 0x98
+    u8 pad9C[0xA4 - 0x9C];
+    int animFlagA4;  // 0xA4
+    u8 padA8[0xC4 - 0xA8];
+    int animC4;      // 0xC4
+    u8 padC8[0xE4 - 0xC8];
+    void* cbE4;      // 0xE4
+    u8 padE8[0xF0 - 0xE8];
+    int animF0;      // 0xF0
+    u8 padF4[0xFC - 0xF4];
+    int animFlagFC;  // 0xFC
+    u8 pad100[0x11C - 0x100];
+    int anim11C;     // 0x11C
+    u8 pad120[0x2F4 - 0x120];
+    u8 sub2F4[0x20]; // 0x2F4
+    int unk314;      // 0x314
+    int unk318;      // 0x318
+    u8 pad31C[4];
+    u32 flags320;    // 0x320
+    u8 pad324[4];
+    int unk328;      // 0x328
+    u8 pad32C[0x38C - 0x32C];
+    float f38C;      // 0x38C
+    float f390;      // 0x390
+    float f394;      // 0x394
+    float f398;      // 0x398
+    u8 pad39C[0x638 - 0x39C];
+    int unk638;      // 0x638
+    u8 pad63C[0x678 - 0x63C];
+    u32 flags678;    // 0x678
+    u8 pad67C[0x73C - 0x67C];
+    int variant;     // 0x73C
+    u8 pad740[0x7A4 - 0x740];
+    AiStateRec state;   // 0x7A4
+    u32 flags7B4;    // 0x7B4
+    u8 pad7B8[0x7D0 - 0x7B8];
+    int unk7D0;      // 0x7D0
+    int unk7D4;      // 0x7D4
+    float unk7D8;    // 0x7D8
+    u8 pad7DC[0x14FC - 0x7DC];
+    float unk14FC;   // 0x14FC
+    u8 pad1500[0x1D04 - 0x1500];
+    u8 unk1D04[0x26B0 - 0x1D04];
+    int unk26B0;     // 0x26B0
+    u8 pad26B4[0x26C4 - 0x26B4];
+    AiAnimSet* set[7]; // 0x26C4
+    u8 sub26E0[4];   // 0x26E0
+    Actor* host;   // 0x26E4
+    AiTarget* target; // 0x26E8
+    u8 pad26EC[0x279C - 0x26EC];
+    int unk279C;     // 0x279C
+};
+
+// Engine services (names in symbols.txt come from other units).
+void PlayerSetValue4(void* state, int v);
+void PlayerResetGunTimer(void* a);
+void PlayerSelectCollisionUpdate(void* a, float dt);
+extern "C" void fn_800769A0(void* a, float dt);
+int PlayerInHost(Actor* a);
+void PlayerSetHeldSlotIndex(void* a, int slot);
+void PlayerSetHeldSlotMode(void* a, int mode);
+extern "C" int fn_802A1D04();
+extern "C" int fn_800C5210(int to, int msg, void* data);
+
+struct MsgQuery {
+    int result;      // 0x00
+    u32 hash;        // 0x04
+    int pad08;       // 0x08
+    int handle;      // 0x0C
+};
+extern "C" void fn_800699A8(void* a);
+void PlayerSetActionMode(void* a, int mode);
+void DashUpdate(Actor* a);
+int HasCondition(void* conditions, int id);
+void ActorPlayAnim(int a, u32 b, int c);
+int ModelBoneName(int model);
+int ModelBoneNodeChain(int model, int bone, int* out, int n);
+int Fn800F7DEC(int a, int b, int c, int d, void* e);
+int Fn800F7F5C(int a, int b, int c, int d, void* e, float f);
+extern "C" int fn_80175EFC(int v);
+extern "C" void fn_80155A84(void* a, void* b, int c);
+extern "C" int fn_800A1BC8(int a, int b, int c, int d, int e);
+extern "C" void* fn_800A384C(void* t);
+extern "C" int fn_800498D0(Actor* a);
+extern "C" void fn_80048BA8(Actor* a, void* b, int c);
+extern "C" void fn_80050EB0(Actor* a);
+extern "C" int fn_800F7994(int a, u32 b);
+extern "C" int FxStart(void* fx, int a, int b);
+
+
+// Animation lookup table: one row per animation kind, one slot per character variant (data of another unit).
+struct AnimRow {
+    void (*cb00)(Actor*);  // 0x00
+    void (*cb04)(Actor*);  // 0x04
+    void (*msg)(Actor*);   // 0x08
+    int byVariant[15];     // 0x0C
+};
+extern AnimRow lbl_803AAE98[];
+extern AnimRow lbl_803A00D0[];
+int PlayerGunAction(int action, void* p);
+extern int lbl_80496C98[16];
+u32 AssetFind(u32 table, u32 key);
+extern "C" int fn_801B7B88(int action, void* p);
 
 // TODO (not drafted yet, 0x500 bytes at 0x801AE50C): game logic
 extern "C" void fn_801AE50C();
@@ -49,14 +242,17 @@ extern "C" void fn_801AFF7C();
 // TODO (not drafted yet, 0x14 bytes at 0x801B027C): game logic
 extern "C" void fn_801B027C();
 
-// TODO (not drafted yet, 0x8 bytes at 0x801B0290): game logic
-extern "C" void fn_801B0290();
+int AiReturnTrue_801B0290() {
+    return 1;
+}
 
-// TODO (not drafted yet, 0x8 bytes at 0x801B0298): game logic
-extern "C" void fn_801B0298();
+int AiReturnTrue_801B0298() {
+    return 1;
+}
 
-// TODO (not drafted yet, 0x8 bytes at 0x801B02A0): game logic
-extern "C" void fn_801B02A0();
+int AiReturnTrue_801B02A0() {
+    return 1;
+}
 
 // TODO (not drafted yet, 0x14 bytes at 0x801B02A8): game logic
 extern "C" void fn_801B02A8();
@@ -133,44 +329,186 @@ extern "C" void fn_801B44E4();
 // TODO (not drafted yet, 0x260 bytes at 0x801B455C): game logic (string: Ghost_Speed_01_L)
 extern "C" void fn_801B455C();
 
-// TODO (not drafted yet, 0x10 bytes at 0x801B47BC): game logic
-extern "C" void fn_801B47BC();
+bool AiIsZero_801B47BC(int* p) {
+    return *p == 0;
+}
 
-// TODO (not drafted yet, 0x9C bytes at 0x801B47CC): game logic
-extern "C" void fn_801B47CC();
+void AiState801B47CC(Actor* a, float dt) {
+    a->unk638 = 0;
+    a->flags7B4 &= ~1;
+    fn_800769A0(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
+    if (a->animC4 == -1) {
+        if (a->unk7D0 != 0) {
+            PlayerSetValue4(&a->state, 3);
+        } else {
+            PlayerSetValue4(&a->state, 1);
+        }
+    } else {
+        PlayerSetValue4(&a->state, 0x16);
+    }
+}
 
-// TODO (not drafted yet, 0x2C bytes at 0x801B4868): game logic
-extern "C" void fn_801B4868();
+void AiState801B4868(Actor* a) {
+    a->cb8C = 0;
+    if (a->animC4 != -1) {
+        a->anim98 = a->animC4;
+    }
+    if (a->anim11C == -1) {
+        return;
+    }
+    a->animF0 = a->anim11C;
+}
 
-// TODO (not drafted yet, 0x80 bytes at 0x801B4894): game logic
-extern "C" void fn_801B4894();
+void AiState801B4894(Actor* a) {
+    PlayerResetGunTimer(a);
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    PlayerSetValue4(&a->state, 0x15);
+    if (a->unk279C == -1 || fn_80175EFC(a->unk279C) != 0) {
+        PlayerSetValue4(&a->state, 3);
+        fn_80155A84(a->sub26E0, a->target, 1);
+    }
+}
 
-// TODO (not drafted yet, 0xFC bytes at 0x801B4914): game logic
-extern "C" void fn_801B4914();
+void AiState801B4914(Actor* a) {
+    AiTarget* t;
+    AiAnimSet* set;
+    int ride;
+
+    ride = 0;
+    t = a->target;
+    if ((int)(t->handle >> 24) == 0x13) {
+        set = (AiAnimSet*)fn_800A384C(t);
+        if (HasCondition(t->conditions, 0xB) != 0) {
+            ride = 1;
+        }
+    }
+    PlayerInHost(a);
+    int v = a->variant;
+    a->anim98 = fn_800A1BC8(set->a14, set->a18, lbl_803AAE98[21].byVariant[v], ride, 0);
+    a->cb8C = (void*)fn_801B7B88;
+    a->animFlagA4 = 0x19;
+    a->animF0 = fn_800A1BC8(set->a14, set->a1C, lbl_803AAE98[21].byVariant[v], ride, 0);
+    a->animFlagFC = 0x19;
+    PlayerSetValue4(&a->state, 0x15);
+}
 
 // TODO (not drafted yet, 0xB0 bytes at 0x801B4A10): game logic
 extern "C" void fn_801B4A10();
 
-// TODO (not drafted yet, 0x170 bytes at 0x801B4AC0): game logic
-extern "C" void fn_801B4AC0();
+void AiState801B4AC0(Actor* a) {
+    int idx = PlayerInHost(a);
+    int v = a->variant;
+    a->hold = 0;
+    a->flags &= ~0x20000;
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a18, lbl_803AAE98[20].byVariant[v], 0, 0);
+    a->cb8C = (void*)fn_801B7B88;
+    a->animFlagA4 = 1;
+    a->animF0 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a1C, lbl_803AAE98[20].byVariant[v], 0, 0);
+    a->animFlagFC = 1;
+    QueryMsg m;
+    m.hash = 0x8783452;
+    SendMsg(a->host->handle, 0x41E, &m);
+    if (*(int*)&m.result != 0) {
+        PlayerSetHeldSlotIndex(a, 0);
+        if (a->anim98 == -1) {
+            PlayerSetActionMode(a, 1);
+        }
+    } else {
+        PlayerSetHeldSlotIndex(a, 1);
+        if (a->anim98 == -1) {
+            PlayerSetActionMode(a, 3);
+        }
+    }
+}
 
-// TODO (not drafted yet, 0x5C bytes at 0x801B4C30): game logic
-extern "C" void fn_801B4C30();
+void AiState801B4C30(Actor* a) {
+    PlayerResetGunTimer(a);
+    a->unk638 = 1;
+    if (a->flags7B4 & 1) {
+        a->flags7B4 &= ~1;
+    } else {
+        a->flags |= 0x20000;
+        a->hold = 1;
+    }
+}
 
-// TODO (not drafted yet, 0x160 bytes at 0x801B4C8C): game logic
-extern "C" void fn_801B4C8C();
+void AiState801B4C8C(Actor* a) {
+    int idx;
+    AiTarget* t;
+    AiAnimSet* set;
+    int ride;
 
-// TODO (not drafted yet, 0x2C bytes at 0x801B4DEC): game logic
-extern "C" void fn_801B4DEC();
+    ride = 0;
+    t = a->target;
+    if ((int)(t->handle >> 24) == 0x13) {
+        set = (AiAnimSet*)fn_800A384C(t);
+        if (HasCondition(t->conditions, 0xB) != 0) {
+            ride = 1;
+        }
+    }
+    idx = PlayerInHost(a);
+    int v = a->variant;
+    a->anim98 = fn_800A1BC8(set->a14, set->a18, lbl_803AAE98[19].byVariant[v], ride, 0);
+    a->cb8C = (void*)fn_801B7B88;
+    a->animFlagA4 = 0x19;
+    a->animF0 = fn_800A1BC8(a->set[idx]->a14, a->set[idx]->a1C, lbl_803AAE98[19].byVariant[v], 0, 0);
+    a->animFlagFC = 0x19;
+    QueryMsg m;
+    m.hash = 0x8783452;
+    SendMsg(a->target->handle, 0x41E, &m);
+    if (*(int*)&m.result != 0) {
+        PlayerSetHeldSlotIndex(a, 0);
+    } else {
+        PlayerSetHeldSlotIndex(a, 1);
+    }
+}
 
-// TODO (not drafted yet, 0x5C bytes at 0x801B4E18): game logic
-extern "C" void fn_801B4E18();
+void AiState801B4DEC(Actor* a) {
+    fn_80155A84(a->sub26E0, a->target, 1);
+}
 
-// TODO (not drafted yet, 0x15C bytes at 0x801B4E74): game logic
-extern "C" void fn_801B4E74();
+void AiState801B4E18(Actor* a) {
+    PlayerResetGunTimer(a);
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    a->flags |= 0x20000;
+    a->hold = 1;
+    PlayerSetValue4(&a->state, 0x13);
+}
 
-// TODO (not drafted yet, 0x10 bytes at 0x801B4FD0): game logic
-extern "C" void fn_801B4FD0();
+void AiState801B4E74(Actor* a) {
+    AiAnimSet* set;
+    int idx = PlayerInHost(a);
+    AiTarget* t = a->target;
+    int v = a->variant;
+    int ride = 0;
+    if ((int)(t->handle >> 24) == 0x13) {
+        set = (AiAnimSet*)fn_800A384C(t);
+        if (HasCondition(t->conditions, 0xB) != 0) {
+            ride = 1;
+        }
+    }
+    a->anim98 = fn_800A1BC8(set->a14, set->a18, lbl_803AAE98[18].byVariant[v], ride, 0);
+    a->cb8C = (void*)fn_801B7B88;
+    a->animFlagA4 = 0x59;
+    AiAnimSet* set2 = a->set[idx];
+    a->animF0 = fn_800A1BC8(set2->a14, set2->a1C, lbl_803AAE98[18].byVariant[v], 0, 0);
+    a->animFlagFC = 0x59;
+    QueryMsg m;
+    m.hash = 0x8783452;
+    SendMsg(a->target->handle, 0x41E, &m);
+    if (*(int*)&m.result != 0) {
+        PlayerSetHeldSlotIndex(a, 0);
+    } else {
+        PlayerSetHeldSlotIndex(a, 1);
+    }
+}
+
+void AiState801B4FD0(Actor* a) {
+    a->flags &= ~0x40000;
+}
 
 // TODO (not drafted yet, 0x284 bytes at 0x801B4FE0): game logic
 extern "C" void fn_801B4FE0();
@@ -178,8 +516,9 @@ extern "C" void fn_801B4FE0();
 // TODO (not drafted yet, 0x1F4 bytes at 0x801B5264): game logic
 extern "C" void fn_801B5264();
 
-// TODO (not drafted yet, 0x10 bytes at 0x801B5458): game logic
-extern "C" void fn_801B5458();
+void AiState801B5458(Actor* a) {
+    a->flags &= ~0x40000;
+}
 
 // TODO (not drafted yet, 0x284 bytes at 0x801B5468): game logic
 extern "C" void fn_801B5468();
@@ -187,11 +526,16 @@ extern "C" void fn_801B5468();
 // TODO (not drafted yet, 0x1F4 bytes at 0x801B56EC): game logic
 extern "C" void fn_801B56EC();
 
-// TODO (not drafted yet, 0x10 bytes at 0x801B58E0): game logic
-extern "C" void fn_801B58E0();
+void AiState801B58E0(Actor* a) {
+    a->flags &= ~0x40000;
+}
 
-// TODO (not drafted yet, 0x58 bytes at 0x801B58F0): game logic
-extern "C" void fn_801B58F0();
+void AiState801B58F0(Actor* a, float dt) {
+    PlayerResetGunTimer(a);
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    PlayerSelectCollisionUpdate(a, dt);
+}
 
 // TODO (not drafted yet, 0x158 bytes at 0x801B5948): game logic
 extern "C" void fn_801B5948();
@@ -250,8 +594,9 @@ extern "C" void fn_801B731C();
 // TODO (not drafted yet, 0xFC bytes at 0x801B7560): game logic
 extern "C" void fn_801B7560();
 
-// TODO (not drafted yet, 0x20 bytes at 0x801B765C): game logic
-extern "C" void fn_801B765C();
+void AiState801B765C(Actor* a) {
+    PlayerResetGunTimer(a);
+}
 
 // TODO (not drafted yet, 0x248 bytes at 0x801B767C): game logic
 extern "C" void fn_801B767C();
@@ -260,22 +605,47 @@ extern "C" void fn_801B767C();
 extern "C" void fn_801B78C4();
 
 // TODO (not drafted yet, 0x414 bytes at 0x801B7B88): game logic
-extern "C" void fn_801B7B88();
 
-// TODO (not drafted yet, 0x1C bytes at 0x801B7F9C): game logic
-extern "C" void fn_801B7F9C();
+int AiState801B7F9C(Actor* a) {
+    return lbl_803AAE98[a->state.cur].byVariant[14];
+}
 
-// TODO (not drafted yet, 0x44 bytes at 0x801B7FB8): game logic
-extern "C" void fn_801B7FB8();
+void AiTypeMsg_801B7FB8(Actor* a) {
+    if (lbl_803AAE98[a->state.cur].msg) {
+        lbl_803AAE98[a->state.cur].msg(a);
+    }
+}
 
-// TODO (not drafted yet, 0x44 bytes at 0x801B7FFC): game logic
-extern "C" void fn_801B7FFC();
+void AiTypeCallback04_801B7FFC(Actor* a) {
+    if (lbl_803AAE98[a->state.cur].cb04) {
+        lbl_803AAE98[a->state.cur].cb04(a);
+    }
+}
 
-// TODO (not drafted yet, 0x40 bytes at 0x801B8040): game logic
-extern "C" void fn_801B8040();
+void AiTypeCallback00_801B8040(Actor* a) {
+    if (lbl_803AAE98[a->state.cur].cb00) {
+        lbl_803AAE98[a->state.cur].cb00(a);
+    }
+}
 
-// TODO (not drafted yet, 0x21C bytes at 0x801B8080): game logic
-extern "C" void fn_801B8080();
+void AiLoadAssets_801B8080() {
+    lbl_80496C98[0] = AssetFind(0xF1754BF2, 0x0021C5E0);
+    lbl_80496C98[1] = AssetFind(0xF1754BF2, 0x0024805F);
+    lbl_80496C98[2] = AssetFind(0xF1754BF2, 0x101844CC);
+    lbl_80496C98[3] = AssetFind(0xF1754BF2, 0x48874F6E);
+    lbl_80496C98[4] = AssetFind(0xF1754BF2, 0x04A53FC1);
+    lbl_80496C98[5] = AssetFind(0xF1754BF2, 0x967DAAC6);
+    lbl_80496C98[6] = AssetFind(0xF1754BF2, 0xD9404234);
+    lbl_80496C98[7] = AssetFind(0xF1754BF2, 0x0450B2BB);
+    lbl_80496C98[8] = AssetFind(0xF1754BF2, 0x922BF04E);
+    lbl_80496C98[9] = AssetFind(0xF1754BF2, 0x8C73DFA9);
+    lbl_80496C98[10] = AssetFind(0xF1754BF2, 0x90AEEEE4);
+    lbl_80496C98[11] = AssetFind(0xF1754BF2, 0x04A2F9AA);
+    lbl_80496C98[12] = AssetFind(0xF1754BF2, 0x04A48BC0);
+    lbl_80496C98[13] = AssetFind(0xF1754BF2, 0x8671DB2A);
+    lbl_80496C98[14] = AssetFind(0xF1754BF2, 0x044E6CA4);
+    lbl_80496C98[15] = AssetFind(0xF1754BF2, 0x044FFEBA);
+}
 
 // TODO (not drafted yet, 0x1EC bytes at 0x801B829C): game logic
 extern "C" void fn_801B829C();
@@ -283,8 +653,9 @@ extern "C" void fn_801B829C();
 // TODO (not drafted yet, 0x30 bytes at 0x801B8488): game logic
 extern "C" void fn_801B8488();
 
-// TODO (not drafted yet, 0x20 bytes at 0x801B84B8): game logic
-extern "C" void fn_801B84B8();
+void AiState801B84B8(Actor* a) {
+    PlayerResetGunTimer(a);
+}
 
 // TODO (not drafted yet, 0x474 bytes at 0x801B84D8): game logic (string: QUERY)
 extern "C" void fn_801B84D8();
@@ -430,17 +801,19 @@ extern "C" void fn_801BDDA4();
 // TODO (not drafted yet, 0x184 bytes at 0x801BDE6C): game logic
 extern "C" void fn_801BDE6C();
 
-// TODO (not drafted yet, 0x8 bytes at 0x801BDFF0): game logic
-extern "C" void fn_801BDFF0();
+int AiReturnFalse_801BDFF0() {
+    return 0;
+}
 
-// TODO (not drafted yet, 0x8 bytes at 0x801BDFF8): game logic
-extern "C" void fn_801BDFF8();
+int AiReturnFalse_801BDFF8() {
+    return 0;
+}
 
-// TODO (not drafted yet, 0x4 bytes at 0x801BE000): game logic
-extern "C" void fn_801BE000();
+void AiNoOp_801BE000() {
+}
 
-// TODO (not drafted yet, 0x4 bytes at 0x801BE004): game logic
-extern "C" void fn_801BE004();
+void AiNoOp_801BE004() {
+}
 
 // TODO (not drafted yet, 0x4B0 bytes at 0x801BE008): game logic
 extern "C" void fn_801BE008();
