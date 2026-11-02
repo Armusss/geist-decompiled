@@ -10,6 +10,31 @@ typedef unsigned long u32;
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
 
+inline u32 StrHash(const char* s) {
+    u32 h;
+    int i;
+    if (s == 0) {
+        h = 0;
+    } else {
+        h = 0;
+        for (i = 0; s[i] != 0; i++) {
+            h = h * 31 + (u8)toupper(s[i]);
+        }
+        h = h % 0xFFFFFFFF;
+    }
+    return h;
+}
+
+// Description handed to the bot spawner (descriptive guess).
+struct BotSpawn {
+    u32 hash;        // 0x00
+    int a;           // 0x04
+    int b;           // 0x08
+    int unkC[3];     // 0x0C
+    float pos[3];    // 0x18
+    u8 matrix[0x10]; // 0x24
+};
+
 // Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
 class Buffer {
 public:
@@ -90,7 +115,11 @@ struct AiStateRec {
 
 // Enemy character actor (descriptive guess; only the fields used in this file).
 struct Actor {
-    u8 pad00[0x38];
+    u8 pad00[0x24];
+    int px;          // 0x24
+    int py;          // 0x28
+    int pz;          // 0x2C
+    u8 pad30[0x38 - 0x30];
     int handle;      // 0x38
     u8 pad3C[0x50 - 0x3C];
     u32 flags;       // 0x50
@@ -193,6 +222,13 @@ extern "C" void fn_80050EB0(Actor* a);
 extern "C" int fn_800F7994(int a, u32 b);
 extern "C" int FxStart(void* fx, int a, int b);
 extern "C" int fn_8012AF68(Actor* a);
+extern "C" int fn_800B93DC(int* list, int a, int* out, int b, int c);
+extern "C" int fn_800A2DE8(void* desc, int a, int b, int c);
+extern "C" void fn_800A3990(int id);
+extern "C" void fn_800A31A0();
+extern "C" void fn_8016D6A8(void* m);
+int MinigameAddBot();
+void MinigameRemovePlayer(int id);
 extern "C" void fn_80136594(Actor* a);
 extern "C" void fn_801362A4(Actor* a);
 extern int lbl_804D2E44;
@@ -257,11 +293,61 @@ int BotQuerySet(int target, u32 hash, int value) {
     return SendMsg(target, 0x41D, &m);
 }
 
-// TODO (not drafted yet, 0x2BC bytes at 0x801289D0): game logic (string: FearAIBot : Starting up bots)
-extern "C" void fn_801289D0();
+void BotEngineStart(const char** names) {
+    fn_800872BC(0x40000, "FearAIBot : Starting up bots");
+    BotEngine* e = &lbl_8039F788;
+    for (int n = 0; n < e->maxBots; n++) {
+        BotSpawn spawn;
+        int target;
+        Actor* found[8];
+        u32 h = StrHash(names[0]);
+        if (e->count != 7) {
+            spawn.hash = h;
+            spawn.a = 0;
+            spawn.b = 0;
+            spawn.pos[0] = 0.0f;
+            spawn.pos[1] = 0.0f;
+            spawn.pos[2] = 0.0f;
+            fn_8016D6A8(spawn.matrix);
+            int r = fn_800B93DC(&e->unk24, 7, &target, 1, 1);
+            if (r > 0 && target != -1 && SendMsg(target, 0x400, found) != 0) {
+                spawn.pos[0] = (float)found[0]->px;
+                spawn.pos[1] = (float)found[0]->py;
+                spawn.pos[2] = (float)found[0]->pz;
+            }
+            int bot = fn_800A2DE8(&spawn, 0, 0, 0);
+            if (bot != -1) {
+                if (MinigameAddBot() == -1) {
+                    fn_800A3990(bot);
+                    fn_800A31A0();
+                } else {
+                    e->slot[e->count++] = bot;
+                    int tag;
+                    QueryGet(&tag, 0x4B000000, 0xC343772);
+                    BotQuerySet(bot, 0xC343772, tag);
+                }
+            }
+        }
+    }
+}
 
-// TODO (not drafted yet, 0xF0 bytes at 0x80128C8C): game logic (string: FearAIBot : Terminating bots | FearAIBot : Removing last bot | FearAIBot : No more bots to remove!!)
-extern "C" void fn_80128C8C();
+void BotEngineShutdown() {
+    fn_800872BC(0x40000, "FearAIBot : Terminating bots");
+    while (lbl_8039F788.count > 0) {
+        fn_800872BC(0x40000, "FearAIBot : Removing last bot");
+        if (lbl_8039F788.count == 0) {
+            fn_800872BC(0x40000, "FearAIBot : No more bots to remove!!");
+        } else {
+            int i = lbl_8039F788.count - 1;
+            int id = lbl_8039F788.slot[i];
+            MinigameRemovePlayer(id);
+            fn_800A3990(id);
+            fn_800A31A0();
+            lbl_8039F788.count--;
+            lbl_8039F788.slot[i] = -1;
+        }
+    }
+}
 
 void BotEngineInit() {
     fn_800872BC(0x40000, "FearAIBot : Initializing bot engine");
