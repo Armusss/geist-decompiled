@@ -793,3 +793,48 @@ int NavUpdateRoute(void* owner) {
     actor->navCurRoute = route;
     return actor->navCurRoute;
 }
+
+// Retail has an empty function here (4 bytes).
+void NavNop() {
+}
+
+// TODO (not drafted yet, 0x220 bytes at 0x800BAFF8): nav query helper
+extern "C" void fn_800BAFF8();
+// TODO (not drafted yet, 0x188 bytes at 0x800BB218): sweep a segment against the route geometry
+extern "C" void fn_800BB218();
+// TODO (not drafted yet, 0x518 bytes at 0x800BB3A0): nav geometry query
+extern "C" void fn_800BB3A0();
+// TODO (not drafted yet, 0x208 bytes at 0x800BB8B8): nav geometry query
+extern "C" void fn_800BB8B8();
+// TODO (not drafted yet, 0x1E8 bytes at 0x800BBAC0): nav helper
+extern "C" void fn_800BBAC0();
+// TODO (not drafted yet, 0x278 bytes at 0x800BBCA8): reset an actor's navigation state
+extern "C" void fn_800BBCA8();
+// TODO (not drafted yet, 0x314 bytes at 0x800BE218): nav helper
+extern "C" void fn_800BE218();
+// TODO (not drafted yet, 0x278 bytes at 0x800BAB34): project a position onto a link
+extern "C" void fn_800BAB34();
+// TODO (not drafted yet, 0x528 bytes at 0x800C1AD8): nav helper
+extern "C" void fn_800C1AD8();
+// TODO (not drafted yet, 0x254 bytes at 0x800C2000): nav helper
+extern "C" void fn_800C2000();
+// TODO (not drafted yet, 0x2C0 bytes at 0x800C2254): nav helper
+extern "C" void fn_800C2254();
+// TODO (not drafted yet, 0x2C0 bytes at 0x800C2514): nav helper
+extern "C" void fn_800C2514();
+// TODO (not drafted yet, 0x338 bytes at 0x800C27D4): nav helper
+extern "C" void fn_800C27D4();
+// TODO (not drafted yet, 0x26C bytes at 0x800C2E90): nav helper
+extern "C" void fn_800C2E90();
+// TODO (not drafted yet, 0x914 bytes at 0x800C30FC): nav helper
+extern "C" void fn_800C30FC();
+// TODO (not drafted yet, 0xC0 bytes at 0x800C3A10): item state query via the String type
+extern "C" void fn_800C3A10();
+// TODO (not drafted yet, 0x46C bytes at 0x800C3AD0): nav helper
+extern "C" void fn_800C3AD0();
+// TODO (not drafted yet, 0x1E0 bytes at 0x800C3F3C): nav helper
+extern "C" void fn_800C3F3C();
+// TODO (not drafted yet, 0x5F8 bytes at 0x800C4A30): nav helper
+extern "C" void fn_800C4A30();
+// TODO (not drafted yet, 0x1A0 bytes at 0x800BDA0C): replan a route toward a target
+extern "C" void fn_800BDA0C();
