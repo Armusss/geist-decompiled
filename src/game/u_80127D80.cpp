@@ -200,7 +200,9 @@ extern int lbl_804D2E40;
 struct MineSlot {
     int state;       // 0x00
     int handle;      // 0x04
-    u8 pad08[0xC];
+    u32 f08;         // 0x08
+    u8 pad0C[4];
+    u32 f10;         // 0x10
     int f14;         // 0x14
     int f18;         // 0x18
     float f1C;       // 0x1C
@@ -1142,8 +1144,20 @@ extern "C" void fn_8012CB60();
 // TODO (not drafted yet, 0x598 bytes at 0x8012D2A8): game logic
 extern "C" void fn_8012D2A8();
 
-// TODO (not drafted yet, 0xD4 bytes at 0x8012D840): game logic
-extern "C" void fn_8012D840();
+void MineSetFlagByOwner(int owner, int on) {
+    for (int i = 0; i < 24; i++) {
+        MineSlot* m = lbl_8039FF00[i];
+        if (m != 0) {
+            m->flag2C80 = on;
+            if (MineSlotUsed(i) && (m->f18 == owner || owner == -1)) {
+                MineMsg msg;
+                msg.target = m->handle;
+                msg.event = 0x3700759A;
+                SendMsg(msg.target, 0xC14, &msg);
+            }
+        }
+    }
+}
 
 // TODO (not drafted yet, 0x1D4 bytes at 0x8012D914): game logic
 extern "C" void fn_8012D914();
@@ -1154,17 +1168,40 @@ extern "C" void fn_8012DAE8();
 // TODO (not drafted yet, 0x48C bytes at 0x8012DC68): game logic
 extern "C" void fn_8012DC68();
 
-// TODO (not drafted yet, 0x28 bytes at 0x8012E0F4): game logic
-extern "C" void fn_8012E0F4();
+int MineHitFilter(u32* ignore, u32 target) {
+    u32 x = *ignore;
+    if (x != 0) {
+        return x != target;
+    }
+    return 1;
+}
 
 // TODO (not drafted yet, 0x3F8 bytes at 0x8012E11C): game logic
 extern "C" void fn_8012E11C();
 
-// TODO (not drafted yet, 0x94 bytes at 0x8012E514): game logic
-extern "C" void fn_8012E514();
+void MineSlotsNotifyTarget(u32 target) {
+    for (int i = 0; i < 24; i++) {
+        MineSlot* m = lbl_8039FF00[i];
+        if (m != 0 && target == m->f10) {
+            MineMsg msg;
+            msg.target = m->handle;
+            msg.event = 0x3700759A;
+            SendMsg(msg.target, 0xC14, &msg);
+        }
+    }
+}
 
-// TODO (not drafted yet, 0xA0 bytes at 0x8012E5A8): game logic
-extern "C" void fn_8012E5A8();
+void MineSlotsNotifyEither(u32 target) {
+    for (int i = 0; i < 24; i++) {
+        MineSlot* m = lbl_8039FF00[i];
+        if (m != 0 && (target == m->f10 || target == m->f08)) {
+            MineMsg msg;
+            msg.target = m->handle;
+            msg.event = 0x505DC9AA;
+            SendMsg(msg.target, 0xC14, &msg);
+        }
+    }
+}
 
 // TODO (not drafted yet, 0x378 bytes at 0x8012E648): game logic
 extern "C" void fn_8012E648();
