@@ -92,7 +92,7 @@ struct MenuPage {
     int unk84;        // 0x84
     int unk88;
     int unk8c;
-    int unk90;
+    u32 unk90;
     void (*onClose)(int); // 0x94
     int unk98;
     void* callback;   // 0x9c
@@ -569,8 +569,8 @@ void MenuPopPage() {
 
 // MenuPageClose: close a page (running the item close hooks) and re-arm its widget.
 void MenuPageClose(MenuPage* page) {
-    int i;
     MenuItem** p;
+    int i;
     if (page->unka8 == 1) {
         if (page->unk90 != 0) {
             page->onClose(0);
