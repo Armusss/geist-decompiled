@@ -122,3 +122,96 @@ int ScriptOpJump(int ins, ScriptVM* vm) {
         vm->pc += INS_OFF(ins);
     return 0;
 }
+
+typedef union FloatBits {
+    f32 f;
+    u32 u;
+} FloatBits;
+
+// 0x80083CF0: float multiply (sub 0) / divide (sub 2): f[dst] = f[b] op f[a]
+int ScriptOpFloatMul(int ins, ScriptVM* vm) {
+    f32 b = *(f32*)((u8*)vm + (((u32)ins >> 10) & 0x3C) + 0x60);
+    int sub = INS_SUB(ins);
+    f32 a = *(f32*)((u8*)vm + (((u32)ins >> 6) & 0x3C) + 0x60);
+    int dst = ((u32)ins >> 16) & 0xF;
+    FloatBits res;
+    res.f = b;
+    switch (sub) {
+    case 0: res.f = b * a; break;
+    case 2: res.f = a / b; break;
+    default: return 0x40000001;
+    }
+    ((u32*)vm->f)[dst] = res.u;
+    vm->pc += 4;
+    return 0;
+}
+
+// 0x80083D88: integer multiply / divide / remainder
+int ScriptOpIntMul(int ins, ScriptVM* vm) {
+    int sub = INS_SUB(ins);
+    u32 a = *(u32*)((u8*)vm + (((u32)ins >> 6) & 0x3C));
+    u32 b = *(u32*)((u8*)vm + (((u32)ins >> 10) & 0x3C));
+    int dst = ((u32)ins >> 16) & 0xF;
+    u32 res;
+    switch (sub) {
+    case 0: res = b * a; break;
+    case 2: if ((s32)b != 0) res = (s32)a / (s32)b; else res = 0; break;
+    case 3: if ((s32)b != 0) res = a / b; else res = 0; break;
+    case 4: res = a - (s32)a / (s32)b * b; break;
+    case 5: res = a - a / b * b; break;
+    default: return 0x40000001;
+    }
+    *(u32*)((u8*)vm + dst * 4) = res;
+    vm->pc += 4;
+    return 0;
+}
+
+// 0x80083E54: float add (sub 0) / subtract (sub 3)
+int ScriptOpFloatAdd(int ins, ScriptVM* vm) {
+    f32 b = *(f32*)((u8*)vm + (((u32)ins >> 10) & 0x3C) + 0x60);
+    int sub = INS_SUB(ins);
+    f32 a = *(f32*)((u8*)vm + (((u32)ins >> 6) & 0x3C) + 0x60);
+    int dst = ((u32)ins >> 16) & 0xF;
+    FloatBits res;
+    res.f = b;
+    switch (sub) {
+    case 0: res.f = a + b; break;
+    case 3: res.f = a - b; break;
+    }
+    ((u32*)vm->f)[dst] = res.u;
+    vm->pc += 4;
+    return 0;
+}
+
+// 0x80083ED0: integer add / subtract (sub 2 = add a signed 16-bit immediate)
+int ScriptOpIntAdd(int ins, ScriptVM* vm) {
+    int sub = INS_SUB(ins);
+    int a = *(int*)((u8*)vm + (((u32)ins >> 6) & 0x3C));
+    int b = *(int*)((u8*)vm + (((u32)ins >> 10) & 0x3C));
+    int dstA = ((u32)ins >> 12) & 0xF;
+    int dst = ((u32)ins >> 16) & 0xF;
+    switch (sub) {
+    case 2:
+        b = a + (s16)((int)(ins & 0xFFFF0000) >> 16);
+        dst = dstA;
+        break;
+    case 0:
+    case 1:
+        b = a + b;
+        break;
+    case 3:
+    case 4:
+        b = a - b;
+        break;
+    }
+    *(int*)((u8*)vm + dst * 4) = b;
+    vm->pc += 4;
+    return 0;
+}
+
+// 0x80083F68: load an upper-half immediate into a register
+int ScriptOpLoadHigh(int ins, ScriptVM* vm) {
+    *(u32*)((u8*)vm + (((u32)ins >> 10) & 0x3C)) = ins & 0xFFFF0000;
+    vm->pc += 4;
+    return 0;
+}
