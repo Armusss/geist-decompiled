@@ -68,6 +68,8 @@ struct MenuButtonF : MenuItem {
 struct MenuOps {
     u8 unk0[0x24];
     void (*activate)(MenuItem* item, int flag); // 0x24
+    u8 unk28[4];
+    void (*close)(MenuItem* item);              // 0x2c
 };
 
 // Message block of the menu command message (0xC14).
@@ -79,7 +81,7 @@ struct MenuMsgData {
 
 // A menu page: owned strings plus up to five (label, id) shortcut pairs.
 struct MenuPage {
-    void* items[20];  // 0x00
+    MenuItem* items[20]; // 0x00
     int itemCount;    // 0x50
     u8 unk54[4];
     struct {
@@ -91,11 +93,15 @@ struct MenuPage {
     int unk88;
     int unk8c;
     int unk90;
-    int unk94;
+    void (*onClose)(int); // 0x94
     int unk98;
-    u8 unk9c[8];
-    int unka4;        // 0xa4
+    void* callback;   // 0x9c
+    int unka0;        // 0xa0
+    int state;        // 0xa4
     int unka8;        // 0xa8
+    int timer;        // 0xac
+    u8 unkb0[4];
+    int unkb4;        // 0xb4
 };
 
 // A label item: text plus three user words.
@@ -117,15 +123,6 @@ struct MenuKeyList {
     int keyCount;  // 0x6c
 };
 
-// A selectable widget on a menu screen.
-struct MenuWidget {
-    u8 unk0[0x9c];
-    void* callback;  // 0x9c
-    int unka0;       // 0xa0
-    int state;       // 0xa4
-    u8 unka8[4];
-    int timer;       // 0xac
-};
 
 extern "C" void fn_80026660(int kind, void* cb, int arg);
 extern "C" void fn_80054094(int handle, int value);
@@ -142,9 +139,11 @@ void HookNop1();
 extern "C" void fn_8001BC78();
 // TODO (not drafted yet, 0x410 bytes at 0x8021E09C): menu screen handler
 extern "C" void fn_8021E09C(MenuPage* page);
+// TODO (not drafted yet, 0x220 bytes at 0x8021DE7C): menu page redraw
+extern "C" void fn_8021DE7C();
 // TODO (not drafted yet, 0x188 bytes at 0x8021DCF4): widget callback
 extern "C" void fn_8021DCF4();
-extern MenuWidget* lbl_8049EE58[];
+extern MenuPage* lbl_8049EE58[];
 extern MenuPage lbl_8049E9A8;
 extern MenuPage lbl_8049EB38;
 int MenuMsg(int sender, int msg, MenuMsgData* data);
@@ -160,7 +159,7 @@ extern "C" void fn_801EAEAC();
 // TODO (not drafted yet, 0x6EC bytes at 0x8022034C): draw the current menu screen
 extern "C" void fn_8022034C(int alpha);
 // TODO (not drafted yet, 0x4B4 bytes at 0x8021E9FC): draw one menu page
-extern "C" void fn_8021E9FC(MenuWidget* widget, int a, int alpha);
+extern "C" void fn_8021E9FC(MenuPage* widget, int a, int alpha);
 
 extern int gWideScreen;         // 0x804D4008
 extern int lbl_804D345C;        // current menu selection index (also read by u_8021427C)
@@ -344,7 +343,7 @@ int MenuHookState() {
 }
 
 void MenuArmWidget() {
-    MenuWidget* w;
+    MenuPage* w;
     if (lbl_804D345C == -1) {
         return;
     }
@@ -424,7 +423,8 @@ void MenuButtonAFire(MenuButtonA* b) {
 }
 
 // MenuPageAdd: append an owned string (and optionally a shortcut pair) to a page.
-void MenuPageAdd(MenuPage* page, void* item, int id) {
+void MenuPageAdd(MenuPage* page, void* itemp, int id) {
+    MenuItem* item = (MenuItem*)itemp;
     if (page->itemCount >= 20) {
         return;
     }
@@ -439,7 +439,7 @@ void MenuPageAdd(MenuPage* page, void* item, int id) {
 
 // MenuPageClear: free a page's strings and reset it.
 void MenuPageClear(MenuPage* page) {
-    void** p = page->items;
+    MenuItem** p = page->items;
     int i;
     for (i = 0; i < page->itemCount; i++) {
         VFree(*p);
@@ -450,9 +450,9 @@ void MenuPageClear(MenuPage* page) {
     page->unk88 = 0;
     page->unk8c = 0;
     page->unk90 = 0;
-    page->unk94 = 0;
+    page->onClose = 0;
     page->unk98 = 0;
-    page->unka4 = 0;
+    page->state = 0;
     page->unka8 = 0;
     page->unk84 = 0;
 }
@@ -555,4 +555,33 @@ int MenuMsg(int sender, int msg, MenuMsgData* data) {
         return 0;
     }
     return 0;
+}
+
+// MenuPopPage: close the current page and clear the selection.
+void MenuPopPage() {
+    MenuPage* page = lbl_8049EE58[lbl_804D345C];
+    if (page->unkb4 != 0) {
+        MenuPageClear(page);
+    }
+    lbl_804D345C = -1;
+    fn_8021DE7C();
+}
+
+// MenuPageClose: close a page (running the item close hooks) and re-arm its widget.
+void MenuPageClose(MenuPage* page) {
+    int i;
+    MenuItem** p;
+    if (page->unka8 == 1) {
+        if (page->unk90 != 0) {
+            page->onClose(0);
+        }
+        p = page->items;
+        for (i = 0; i < page->itemCount; i++) {
+            (*p)->ops->close(*p);
+            p++;
+        }
+        page->unka8 = 0;
+    }
+    MenuPageClear(page);
+    MenuArmWidget();
 }
