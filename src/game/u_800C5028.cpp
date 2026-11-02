@@ -39,6 +39,31 @@ extern PendingMsg* lbl_804D4890;      // queued messages
 extern PendingMsg* lbl_804D4894;      // free pool
 extern PendingMsg lbl_8044F600[64];   // message pool
 
+// The camera slots: lbl_8039B760 maps a view number to a slot (-1 when unused).
+struct CameraObj {
+    char pad0[0x34];
+    float fov;  // 0x34
+};
+struct CameraSlot {
+    CameraObj* camera;             // 0x00
+    int unk04;                     // 0x04
+    void (*callback)(CameraObj*);  // 0x08
+    char pad0C[0x24 - 0x0C];
+};
+extern int lbl_8039B760[4];
+extern CameraSlot lbl_8044FE00[];
+extern int lbl_804D48C4;  // current view
+extern int lbl_804D48C8;  // view count
+extern int lbl_804D4B98;
+extern float lbl_804D48A8;
+extern float lbl_804D48AC;
+extern float lbl_804D48B0;
+extern float lbl_804D48B4;
+extern int lbl_804D48B8;
+extern int lbl_804D48BC;
+extern int lbl_804D48C0;
+CameraObj* CameraTable();
+
 // Binary search of the animation table: 1 if the state list of `key` holds `state`, 0 if not,
 // -1 if the key is missing.
 static inline int AnimTableFind(u32 key, u32 state, int unused, AnimTableEntry* table, int lo, int hi,
@@ -248,6 +273,144 @@ int ActorPendingMsgHandler(int self, int msg, int* data)
     return 0;
 }
 
+// 0x800C5DD8: the current view's camera
+extern "C" CameraObj* fn_800C5DD8()
+{
+    return lbl_8044FE00[lbl_8039B760[lbl_804D48C4]].camera;
+}
+
+// 0x800C5E00: runs a view's callback
+extern "C" void fn_800C5E00(int view)
+{
+    if (lbl_8039B760[view] != -1) {
+        CameraSlot* s = &lbl_8044FE00[lbl_8039B760[view]];
+
+        if (s->callback != 0) {
+            s->callback(s->camera);
+        }
+    }
+}
+
+// 0x800C5E5C: counts one more view
+extern "C" void fn_800C5E5C()
+{
+    lbl_804D48C8 = lbl_804D48C8 + 1;
+}
+
+// 0x800C5E6C: the current view number
+extern "C" int fn_800C5E6C()
+{
+    return lbl_804D48C4;
+}
+
+// 0x800C5E74: selects a view; true when it has a camera
+extern "C" int fn_800C5E74(int view)
+{
+    lbl_804D48C4 = view;
+    return lbl_8039B760[view] != -1;
+}
+
+// 0x800C63A0: a view's field of view
+extern "C" float fn_800C63A0(int view)
+{
+    if (lbl_8039B760[view] != -1) {
+        return lbl_8044FE00[lbl_8039B760[view]].camera->fov;
+    }
+    return 0.0f;
+}
+
+// 0x800C63D8: the current view's field of view
+extern "C" float fn_800C63D8()
+{
+    if (lbl_8039B760[lbl_804D48C4] != -1) {
+        return lbl_8044FE00[lbl_8039B760[lbl_804D48C4]].camera->fov;
+    }
+    return 0.0f;
+}
+
+// 0x800C6414: a view's camera or null
+extern "C" CameraObj* fn_800C6414(int view)
+{
+    if (lbl_8039B760[view] != -1) {
+        return lbl_8044FE00[lbl_8039B760[view]].camera;
+    }
+    return 0;
+}
+
+// 0x800C6448: the active camera (the shared one when lbl_804D4B98 is set)
+extern "C" CameraObj* fn_800C6448()
+{
+    CameraObj* c;
+
+    if (lbl_804D4B98 == 0) {
+        if (lbl_8039B760[lbl_804D48C4] == -1) {
+            c = 0;
+        } else {
+            c = lbl_8044FE00[lbl_8039B760[lbl_804D48C4]].camera;
+        }
+    } else {
+        c = CameraTable();
+    }
+    return c;
+}
+
+// 0x800C64AC: the current view's camera or null
+extern "C" CameraObj* fn_800C64AC()
+{
+    if (lbl_8039B760[lbl_804D48C4] != -1) {
+        return lbl_8044FE00[lbl_8039B760[lbl_804D48C4]].camera;
+    }
+    return 0;
+}
+
+// 0x800C64E4: the current view's slot
+extern "C" int fn_800C64E4()
+{
+    return lbl_8039B760[lbl_804D48C4];
+}
+
+// 0x800C64FC: a view's slot
+extern "C" int fn_800C64FC(int view)
+{
+    return lbl_8039B760[view];
+}
+
+// 0x800C6510: a slot's camera or null
+extern "C" CameraObj* fn_800C6510(int slot)
+{
+    if (slot > -1) {
+        return lbl_8044FE00[slot].camera;
+    }
+    return 0;
+}
+
+// 0x800C6534
+extern "C" void fn_800C6534(float v)
+{
+    lbl_804D48AC = v;
+}
+
+// 0x800C653C
+extern "C" void fn_800C653C(int a, int b, int c)
+{
+    lbl_804D48B8 = a;
+    lbl_804D48BC = b;
+    lbl_804D48C0 = c;
+}
+
+// 0x800C654C
+extern "C" void fn_800C654C(float a, float b)
+{
+    lbl_804D48B0 = a;
+    lbl_804D48B4 = b;
+}
+
+// 0x800C6558
+extern "C" void fn_800C6558(float v)
+{
+    lbl_804D48A8 = v;
+}
+
 // TODO (not drafted yet, 0x4 bytes at 0x800C50EC): actor/game routine
 extern "C" void fn_800C50EC();
 
@@ -271,20 +434,10 @@ extern "C" void fn_800C5210();
 // TODO (not drafted yet, 0x26C bytes at 0x800C5B6C): actor/game routine
 extern "C" void fn_800C5B6C();
 
-// TODO (not drafted yet, 0x28 bytes at 0x800C5DD8): actor/game routine
-extern "C" void fn_800C5DD8();
 
-// TODO (not drafted yet, 0x5C bytes at 0x800C5E00): actor/game routine
-extern "C" void fn_800C5E00();
 
-// TODO (not drafted yet, 0x10 bytes at 0x800C5E5C): actor/game routine
-extern "C" void fn_800C5E5C();
 
-// TODO (not drafted yet, 0x8 bytes at 0x800C5E6C): actor/game routine
-extern "C" void fn_800C5E6C();
 
-// TODO (not drafted yet, 0x28 bytes at 0x800C5E74): actor/game routine
-extern "C" void fn_800C5E74();
 
 // TODO (not drafted yet, 0x118 bytes at 0x800C5E9C): actor/game routine
 extern "C" void fn_800C5E9C();
@@ -298,41 +451,17 @@ extern "C" void fn_800C60C4();
 // TODO (not drafted yet, 0x1A0 bytes at 0x800C6200): actor/game routine
 extern "C" void fn_800C6200();
 
-// TODO (not drafted yet, 0x38 bytes at 0x800C63A0): actor/game routine
-extern "C" void fn_800C63A0();
 
-// TODO (not drafted yet, 0x3C bytes at 0x800C63D8): actor/game routine
-extern "C" void fn_800C63D8();
 
-// TODO (not drafted yet, 0x34 bytes at 0x800C6414): actor/game routine
-extern "C" void fn_800C6414();
 
-// TODO (not drafted yet, 0x64 bytes at 0x800C6448): actor/game routine
-extern "C" void fn_800C6448();
 
-// TODO (not drafted yet, 0x38 bytes at 0x800C64AC): actor/game routine
-extern "C" void fn_800C64AC();
 
-// TODO (not drafted yet, 0x18 bytes at 0x800C64E4): actor/game routine
-extern "C" void fn_800C64E4();
 
-// TODO (not drafted yet, 0x14 bytes at 0x800C64FC): actor/game routine
-extern "C" void fn_800C64FC();
 
-// TODO (not drafted yet, 0x24 bytes at 0x800C6510): actor/game routine
-extern "C" void fn_800C6510();
 
-// TODO (not drafted yet, 0x8 bytes at 0x800C6534): actor/game routine
-extern "C" void fn_800C6534();
 
-// TODO (not drafted yet, 0x10 bytes at 0x800C653C): actor/game routine
-extern "C" void fn_800C653C();
 
-// TODO (not drafted yet, 0xC bytes at 0x800C654C): actor/game routine
-extern "C" void fn_800C654C();
 
-// TODO (not drafted yet, 0x8 bytes at 0x800C6558): actor/game routine
-extern "C" void fn_800C6558();
 
 // TODO (not drafted yet, 0x104 bytes at 0x800C6560): actor/game routine
 extern "C" void fn_800C6560();
