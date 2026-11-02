@@ -597,7 +597,7 @@ void ScannableDrawRail(int mode, CamActor* actor) {
 // and the effect itself are destroyed, then the handle buffer is freed. 0x8024DA40.
 void RailFireloopDestroy(int owner, CamActor* actor) {
     ActorHandle* h = actor->ff0;
-    if (h) {
+    if (actor->ff0) {
         fn_80027690(h->obj);
         EmitterDestroy(h->emitterA);
         EmitterDestroy(h->emitterB);
@@ -888,14 +888,14 @@ struct ScannableBeam {
 // which one. 0x8024E0D4.
 int ScannableBeamSetParam(ScannableBeam* beam, RailMsg41E* msg) {
     switch ((s32)msg->hash) {
+    case (s32)0x51979712:
+        beam->f5c8 = lbl_804D9D48 * (float)(s32)msg->value;
+        return 1;
     case (s32)0xb9af66bf:
-        beam->f5b8 = lbl_804D9D48 * (float)msg->value;
+        beam->f5b8 = lbl_804D9D48 * (float)(s32)msg->value;
         return 1;
     case (s32)0xba683b26:
-        beam->f5c4 = lbl_804D9D48 * (float)msg->value;
-        return 1;
-    case (s32)0x51979712:
-        beam->f5c8 = lbl_804D9D48 * (float)msg->value;
+        beam->f5c4 = lbl_804D9D48 * (float)(s32)msg->value;
         return 1;
     }
     return 0;
