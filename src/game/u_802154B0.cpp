@@ -471,23 +471,8 @@ void MenuLabelInit(MenuLabel* label, u8 kind, const char* text, int a, int b, in
 
 // MenuFramePrepare: capture the framebuffer when the menu opens or is resumed.
 extern "C" void fn_80215A24() {
-    if ((lbl_804D53E0 > 1 || lbl_804D53E0 < 0) && lbl_804D3430 != 0) {
-        if (lbl_804D53C4 == 0) {
-            if (lbl_804D53D0 == 2) {
-                if (0.0f <= lbl_804D53C0) {
-                    GfxFbSave(0);
-                    GfxFbCommit();
-                    GfxSetCopyFilter(2);
-                    lbl_804D53F0 = fn_80115850(0, 1, 0);
-                }
-            } else if (lbl_804D53C8 != 0) {
-                GfxFbSave(0);
-                GfxFbCommit();
-                GfxSetCopyFilter(2);
-                lbl_804D53F0 = fn_80115850(0, 1, 0);
-                lbl_804D53C8 = 0;
-            }
-        } else {
+    if ((lbl_804D53E0 >= 2 || lbl_804D53E0 < 0) && lbl_804D3430 != 0) {
+        if (lbl_804D53C4 != 0) {
             GfxFbSave(0);
             GfxFbCommit();
             GfxSetCopyFilter(2);
@@ -497,6 +482,19 @@ extern "C" void fn_80215A24() {
                 lbl_804D53C4 = 0;
                 lbl_804D53CC = 1;
             }
+        } else if (lbl_804D53D0 == 2) {
+            if (!(lbl_804D53C0 < 0.0f)) {
+                GfxFbSave(0);
+                GfxFbCommit();
+                GfxSetCopyFilter(2);
+                lbl_804D53F0 = fn_80115850(0, 1, 0);
+            }
+        } else if (lbl_804D53C8 != 0) {
+            GfxFbSave(0);
+            GfxFbCommit();
+            GfxSetCopyFilter(2);
+            lbl_804D53F0 = fn_80115850(0, 1, 0);
+            lbl_804D53C8 = 0;
         }
     }
 }
