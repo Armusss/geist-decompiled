@@ -69,7 +69,8 @@ struct Actor {
     int navRoute;           // 0x2d0
     u8 unk2d4[8];           // 0x2d4
     Waypoint wp[15];        // 0x2dc
-    u8 unk4bc[0x4c8 - 0x4bc]; // 0x4bc
+    Actor* goalActor;       // 0x4bc
+    u8 unk4c0[0x4c8 - 0x4c0]; // 0x4c0
     int navPhase;           // 0x4c8
     u8 unk4cc[0x4fc - 0x4cc]; // 0x4cc
     GraphQuery query;       // 0x4fc
@@ -400,16 +401,16 @@ void NavSetTarget(Actor* actor, Vec3* target) {
 }
 
 struct NavStopCtx {
-    int (*test)(u32 a, u32 b, int arg);
-    int arg;
+    int (*test)(int a, int b, void* arg);
+    void* arg;
 };
 
 // NavStopTest: goal test for graph searches, forwards the two node data words to a callback.
 int NavStopTest(int node, int ctxp, SearchState* state) {
     NavStopCtx* ctx = (NavStopCtx*)ctxp;
     if (state != 0 && state->parent != 0) {
-        u32 a = GraphGetNodeData(gNavGraph, node);
-        u32 b = GraphGetNodeData(gNavGraph, state->parent->node);
+        int a = GraphGetNodeData(gNavGraph, node);
+        int b = GraphGetNodeData(gNavGraph, state->parent->node);
         return ctx->test(b, a, ctx->arg);
     }
     return 0;
@@ -835,5 +836,49 @@ extern "C" void fn_800C3AD0();
 extern "C" void fn_800C3F3C();
 // TODO (not drafted yet, 0x5F8 bytes at 0x800C4A30): nav helper
 extern "C" void fn_800C4A30();
-// TODO (not drafted yet, 0x1A0 bytes at 0x800BDA0C): replan a route toward a target
-extern "C" void fn_800BDA0C();
+
+// NavReplan: search a route for the actor with a caller-supplied goal test and build its waypoint list.
+extern "C" void fn_800BDA0C(void* owner, int (*test)(int, int, void*), void* arg) {
+    Actor* actor;
+    NavStopCtx ctx;
+    Actor* target[10];
+    int count;
+    int k;
+    int n;
+    if (owner != 0) {
+        actor = (Actor*)owner;
+        fn_800BBCA8(actor);
+        actor->navPhase = 1;
+        if ((actor->navLinkA != -1 || actor->navLinkB != -1 ||
+             GraphFindBestLink(gNavGraph, NavLinkCost, actor, &actor->navLinkA, &actor->navLinkB) != 0) &&
+            (ctx.test = test, ctx.arg = arg,
+             GraphSearchFrom(gNavGraph, 2, actor->navLinkB, actor, NavRouteCost, NavStopTest, (int)&ctx,
+                             &actor->query) != 1e9f)) {
+            count = 0;
+            k = 0;
+            if (SendMsg(GraphGetNodeData(gNavGraph, actor->query.endNode), 0x400, target) != 0) {
+                actor->wp[0].at.target = target[0];
+                actor->wp[0].kind = 2;
+                actor->wp[0].link[0] = -1;
+                actor->wp[0].link[1] = -1;
+                actor->wp[0].link[2] = -1;
+                actor->navPhase = 2;
+                actor->goalActor = target[0];
+            }
+            for (n = 0; actor->query.path[n] != -1; n++) {
+                count++;
+            }
+            actor->navRoute = count - 1;
+            actor->unk598 = -3;
+            for (n = count; n > 1; n--, k++) {
+                if (SendMsg(GraphGetNodeData(gNavGraph, actor->query.path[k]), 0x400, target) != 0) {
+                    actor->wp[n - 1].at.target = target[0];
+                    actor->wp[n - 1].kind = 2;
+                    actor->wp[n - 1].link[0] = -1;
+                    actor->wp[n - 1].link[1] = -1;
+                    actor->wp[n - 1].link[2] = -1;
+                }
+            }
+        }
+    }
+}
