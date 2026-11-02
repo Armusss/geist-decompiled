@@ -1283,26 +1283,26 @@ int ShellUpdateC(Actor* a) {
     ShellBeh* b = a->beh;
 
     ShellCrabStep(a);
-    if (HasCondition(a->conditions, 6) == 0) {
-        if (fn_8016325C(a->animState) == 4 || fn_8016325C(a->animState) == 5) {
-            return b->state;
-        }
+    if (HasCondition(a->conditions, 6) != 0) {
         return 10;
     }
-    return 10;
+    if (fn_8016325C(a->animState) != 4 && fn_8016325C(a->animState) != 5) {
+        return 10;
+    }
+    return b->state;
 }
 
 int ShellUpdateD(Actor* a) {
     ShellBeh* b = a->beh;
 
     ShellCrabStep(a);
-    if (HasCondition(a->conditions, 6) == 0) {
-        if (fn_8016325C(a->animState) == 4 || fn_8016325C(a->animState) == 5) {
-            return b->state;
-        }
+    if (HasCondition(a->conditions, 6) != 0) {
         return 1;
     }
-    return 1;
+    if (fn_8016325C(a->animState) != 4 && fn_8016325C(a->animState) != 5) {
+        return 1;
+    }
+    return b->state;
 }
 
 int ShellUpdateE(Actor* a) {
@@ -1322,13 +1322,13 @@ int ShellUpdateF(Actor* a) {
     ShellBeh* b = a->beh;
 
     ShellCrabStep(a);
-    if (HasCondition(a->conditions, 6) == 0) {
-        if (fn_8016325C(a->animState) == 4 || fn_8016325C(a->animState) == 5) {
-            return b->state;
-        }
+    if (HasCondition(a->conditions, 6) != 0) {
         return 5;
     }
-    return 5;
+    if (fn_8016325C(a->animState) != 4 && fn_8016325C(a->animState) != 5) {
+        return 5;
+    }
+    return b->state;
 }
 
 int ShellUpdateG(Actor* a) {
@@ -1394,13 +1394,13 @@ int ShellUpdateJ(Actor* a) {
 
     b->timer += a->dt;
     ShellCrabStep(a);
-    if (HasCondition(a->conditions, 6) == 0) {
-        if (fn_8016325C(a->animState) == 4 || fn_8016325C(a->animState) == 5) {
-            return b->state;
-        }
+    if (HasCondition(a->conditions, 6) != 0) {
         return 0x14;
     }
-    return 0x14;
+    if (fn_8016325C(a->animState) != 4 && fn_8016325C(a->animState) != 5) {
+        return 0x14;
+    }
+    return b->state;
 }
 
 int ShellUpdateK(Actor* a) {
