@@ -61,6 +61,8 @@ struct AiAnimSet {
     int a14;         // 0x14
     int a18;         // 0x18
     int a1C;         // 0x1C
+    int a20;         // 0x20
+    int a24;         // 0x24
 };
 
 // The actor a character is currently targeting / carried by.
@@ -110,7 +112,7 @@ struct Actor {
     u8 sub2F4[0x20]; // 0x2F4
     int unk314;      // 0x314
     int unk318;      // 0x318
-    u8 pad31C[4];
+    u32 flags31C;    // 0x31C
     u32 flags320;    // 0x320
     u8 pad324[4];
     int unk328;      // 0x328
@@ -135,7 +137,9 @@ struct Actor {
     u8 pad7DC[0x14FC - 0x7DC];
     float unk14FC;   // 0x14FC
     u8 pad1500[0x1D04 - 0x1500];
-    u8 unk1D04[0x26B0 - 0x1D04];
+    u8 unk1D04[0x1D94 - 0x1D04];
+    int unk1D94;     // 0x1D94
+    u8 pad1D98[0x26B0 - 0x1D98];
     int unk26B0;     // 0x26B0
     u8 pad26B4[0x26C4 - 0x26B4];
     AiAnimSet* set[7]; // 0x26C4
@@ -222,6 +226,10 @@ inline float Lerp(float lo, float hi, float t) {
     float d = hi - lo;
     return lo + d * t;
 }
+extern int lbl_804D31C4;
+extern int lbl_804D31C0;
+extern "C" int fn_800F7994(int a, u32 b);
+extern "C" int FxStart(void* fx, int a, int b);
 extern float lbl_804D31A8;
 extern float lbl_804D31AC;
 extern "C" int rand();
@@ -653,8 +661,31 @@ void AiState801B5FC8(Actor* a, float dt) {
     PlayerSetValue4(&a->state, 1);
 }
 
-// TODO (not drafted yet, 0x180 bytes at 0x801B6064): game logic
-extern "C" void fn_801B6064();
+void AiState801B6064(Actor* a) {
+    int id;
+    QueryGet(&id, a->handle, 0xDFF3097A);
+    int idx = PlayerInHost(a);
+    int v = a->variant;
+    int anim;
+    if (a->flags7B4 & 0x80000) {
+        anim = a->set[idx]->a20;
+    } else {
+        anim = a->set[idx]->a18;
+    }
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, anim, lbl_803AAE98[9].byVariant[v], 0, 0);
+    a->cb8C = (void*)fn_801B7B88;
+    a->animFlagA4 = 0x10;
+    AiAnimSet* set = a->set[idx];
+    if (a->flags7B4 & 0x80000) {
+        anim = set->a24;
+    } else {
+        anim = set->a1C;
+    }
+    a->animF0 = fn_800A1BC8(set->a14, anim, lbl_803AAE98[9].byVariant[v], 0, 0);
+    a->animFlagFC = 0x10;
+    lbl_804D31C4 = fn_800F7994(id, 0x9D1C245C);
+    FxStart((void*)lbl_804D31C4, 0, 0);
+}
 
 // TODO (not drafted yet, 0x228 bytes at 0x801B61E4): game logic
 extern "C" void fn_801B61E4();
@@ -695,14 +726,88 @@ void AiState801B7100(Actor* a, float dt) {
     PlayerSetValue4(&a->state, 3);
 }
 
-// TODO (not drafted yet, 0x180 bytes at 0x801B719C): game logic
-extern "C" void fn_801B719C();
+void AiState801B719C(Actor* a) {
+    int id;
+    QueryGet(&id, a->handle, 0xDFF3097A);
+    int idx = PlayerInHost(a);
+    int v = a->variant;
+    int anim;
+    if (a->flags7B4 & 0x80000) {
+        anim = a->set[idx]->a20;
+    } else {
+        anim = a->set[idx]->a18;
+    }
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, anim, lbl_803AAE98[2].byVariant[v], 0, 0);
+    a->animFlagA4 = 0x10;
+    a->cb8C = (void*)fn_801B7B88;
+    AiAnimSet* set = a->set[idx];
+    if (a->flags7B4 & 0x80000) {
+        anim = set->a24;
+    } else {
+        anim = set->a1C;
+    }
+    a->animF0 = fn_800A1BC8(set->a14, anim, lbl_803AAE98[2].byVariant[v], 0, 0);
+    a->animFlagFC = 0x10;
+    lbl_804D31C0 = fn_800F7994(id, 0xAFEF562B);
+    FxStart((void*)lbl_804D31C0, 0, 0);
+}
 
-// TODO (not drafted yet, 0x244 bytes at 0x801B731C): game logic
-extern "C" void fn_801B731C();
+void AiState801B731C(Actor* a, float dt) {
+    a->unk638 = 1;
+    a->flags7B4 &= ~1;
+    fn_800769A0(a, dt);
+    PlayerSelectCollisionUpdate(a, dt);
+    if (a->flags678 & 0x80) {
+        a->flags678 &= ~0x80;
+        PlayerSetActionMode(a, 1);
+    }
+    PlayerSetActionMode(a, 3);
+    a->unk7D0 = 0;
+    if (a->unk328 & 1) {
+        if (PlayerInHost(a) != 0) {
+            if (!(a->flags7B4 & 0x40000) && !(a->flags7B4 & 0x80000)) {
+                fn_80073E80(a);
+            }
+        }
+    }
+    if ((a->flags31C & 1) && a->unk1D94 == 0) {
+        int id1;
+        int id2;
+        QueryGet(&id1, a->handle, 0x2DA8293C);
+        QueryGet(&id2, a->handle, 0xDFF3097A);
+        fn_80048BA8(a, a->unk1D04, 1);
+        Fn800F7F5C(id1, id2, 0x0D19E338, fn_800498D0(a), a->unk1D04, a->unk14FC);
+        Fn800F7F5C(id1, id2, 0x4E424290, fn_800498D0(a), a->unk1D04, a->unk14FC);
+        if (a->state.cur != 3) {
+            PlayerSetHeldSlotMode(a, 7);
+        } else {
+            PlayerSetActionMode(a, 7);
+        }
+    }
+}
 
-// TODO (not drafted yet, 0xFC bytes at 0x801B7560): game logic
-extern "C" void fn_801B7560();
+void AiState801B7560(Actor* a) {
+    int idx = PlayerInHost(a);
+    int v = a->variant;
+    int anim;
+    if (a->flags7B4 & 0x80000) {
+        anim = a->set[idx]->a20;
+    } else {
+        anim = a->set[idx]->a18;
+    }
+    a->anim98 = fn_800A1BC8(a->set[idx]->a14, anim, lbl_803AAE98[1].byVariant[v], 0, 0);
+    a->animFlagA4 = 1;
+    AiAnimSet* set = a->set[idx];
+    if (a->flags7B4 & 0x80000) {
+        anim = set->a24;
+    } else {
+        anim = set->a1C;
+    }
+    a->animF0 = fn_800A1BC8(set->a14, anim, lbl_803AAE98[1].byVariant[v], 0, 0);
+    a->cbE4 = (void*)fn_801B7B88;
+    a->animFlagFC = 1;
+    a->unk7D0 = 0;
+}
 
 void AiState801B765C(Actor* a) {
     PlayerResetGunTimer(a);
