@@ -1376,13 +1376,11 @@ void TextureLoad(short* dst, int mode);
 // Other units call this by its placeholder name, so the symbol stays fn_8028A6B8.
 extern "C" void fn_8028A6B8()
 {
-    ClockSideSample* side = lbl_803C0D78;
-    int              i;
+    u32 i;
 
-    for (i = 0; i != 3; i++, side++)
-    {
-        side->sample = (short)AssetFind(0xF2E2BEB8, side->asset);
-        TextureLoad(&side->sample, 1);
+    for (i = 0; i != 3; i++) {
+        lbl_803C0D78[i].sample = (short)AssetFind(0xF2E2BEB8, lbl_803C0D78[i].asset);
+        TextureLoad(&lbl_803C0D78[i].sample, 1);
     }
 }
 
