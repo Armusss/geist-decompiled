@@ -808,15 +808,15 @@ int StoneMenChargeStateUpdate(void* owner)
     Actor* self = (Actor*)owner;
     StateControl* ctrl = self->control;
 
-    if (!HasCondition(self->conditions, 9) ||
-        HasCondition(self->conditions, 10) ||
-        HasCondition(self->conditions, 11)) {
-        if (!MemFlagIsSet(self->conditions, 0x24))
-            ctrl->pending = 7;
-        StoneMenUpdate(owner);
-        return ctrl->state;
+    if (HasCondition(self->conditions, 9) &&
+        !HasCondition(self->conditions, 10) &&
+        !HasCondition(self->conditions, 11)) {
+        return 8;
     }
-    return 8;
+    if (!MemFlagIsSet(self->conditions, 0x24))
+        ctrl->pending = 7;
+    StoneMenUpdate(owner);
+    return ctrl->state;
 }
 
 // Charge-state tick with an early aim abort: requests state 3 when the stun
@@ -827,17 +827,17 @@ int StoneMenChargeAimStateUpdate(void* owner)
     Actor* self = (Actor*)owner;
     StateControl* ctrl = self->control;
 
-    if (!HasCondition(self->conditions, 9) ||
-        HasCondition(self->conditions, 10) ||
-        HasCondition(self->conditions, 11)) {
-        if (MemFlagIsSet(self->conditions, 0x24))
-            ctrl->pending = 3;
-        if (self->field26C == 0 || __fabs(self->field284) > 50.0f)
-            ctrl->pending = 3;
-        StoneMenUpdate(owner);
-        return ctrl->state;
+    if (HasCondition(self->conditions, 9) &&
+        !HasCondition(self->conditions, 10) &&
+        !HasCondition(self->conditions, 11)) {
+        return 8;
     }
-    return 8;
+    if (MemFlagIsSet(self->conditions, 0x24))
+        ctrl->pending = 3;
+    if (self->field26C == 0 || __fabsf(self->field284) > 50.0f)
+        ctrl->pending = 3;
+    StoneMenUpdate(owner);
+    return ctrl->state;
 }
 
 // Stun/charge state update: once the entry conditions fail it checks how far
@@ -852,7 +852,7 @@ int StoneMenStunStateUpdate(void* owner)
     if (!HasCondition(self->conditions, 9) ||
         HasCondition(self->conditions, 10) ||
         HasCondition(self->conditions, 11)) {
-        if (__fabs(self->field284) <= 35.0f) {
+        if (__fabsf(self->field284) <= 35.0f) {
             if (MemFlagIsSet(self->conditions, 0x24))
                 return 5;
             if (self->field26C != 0)
@@ -1204,14 +1204,15 @@ int StoneMenClearState(void* owner)
     Actor* self = (Actor*)owner;
     StateControl* ctrl;
 
-    if (self) {
-        ctrl = self->control;
-        ctrl->state = 0;
-        ctrl->pending = 0;
-        ctrl->field0C = 0;
-        StoneMenApplyStateAnim(self, 0);
+    if (self == 0) {
+        return 0;
     }
-    return self != 0;
+    ctrl = self->control;
+    ctrl->state = 0;
+    ctrl->pending = 0;
+    ctrl->field0C = 0;
+    StoneMenApplyStateAnim(self, 0);
+    return 1;
 }
 
 extern "C" void* fn_800AFD20(void* actor);
@@ -1434,7 +1435,7 @@ void StoneMenUpdate(void* owner)
                 float step = 60.0f *
                              (0.001f * self->field138);
 
-                if (__fabs(self->field2B0) > 90.0f) {
+                if (__fabsf(self->field2B0) > 90.0f) {
                     if (self->field258 > 0.0f) {
                         self->field258 -= step;
                         if (self->field258 < 0.0f)
