@@ -162,12 +162,6 @@ void EulerNormalize(Vec3* out, Vec3* in);
 void SkinnedActorUpdateModel(Actor* actor);
 
 extern float lbl_803BE6F8[];
-extern float lbl_804D9AC4;
-extern float lbl_804D9AC8;
-extern float lbl_804D9ACC;
-extern float lbl_804D9AD0;
-extern float lbl_804D9AD4;
-extern float lbl_804D9AD8;
 
 int ModelAnimate(int model, char* name, int arg);
 int ModelFindBone(int model, int bone);
@@ -207,10 +201,6 @@ extern int lbl_804D54A8;
 extern int lbl_804D54AC;
 extern float lbl_804D54B0;
 extern float lbl_804D54B4;
-extern float lbl_804D9A80;
-extern float lbl_804D9A84;
-extern float lbl_804D9A88;
-extern float lbl_804D9A8C;
 extern float lbl_804D9A98;
 extern int lbl_804D34F8;
 extern int lbl_804D34FC;
@@ -277,31 +267,31 @@ int SkinnedActorOnMessage(int msg, void* p)
         int a;
         int b;
 
-        if (actor->mTimer > lbl_804D9A80) {
+        if (actor->mTimer > 20000.0f) {
             ActorPlayAnim(actor->mModel, 0xdbe2cae6UL, actor->mModel);
         }
-        actor->mTimer = lbl_804D9A84;
+        actor->mTimer = 0.0f;
 
         a = fn_800AFD20(actor);
         b = ModelAnimate(actor->mSkin, 0, 0);
         b = fn_8003A1F0(a, actor->mUnkF0, b);
 
         skin = (Skin*)((u8*)p + 0x10);
-        if (beh->mTime18 >= lbl_804D9A88) {
+        if (beh->mTime18 >= 700.0f) {
             beh->mFlags &= ~4;
         } else if (beh->mFlags & 4) {
-            float t = (lbl_804D9A88 - beh->mTime18) / lbl_804D9A88;
-            if (t < lbl_804D9A84) {
-                t = lbl_804D9A84;
-            } else if (t > lbl_804D9A8C) {
-                t = lbl_804D9A8C;
+            float t = (700.0f - beh->mTime18) / 700.0f;
+            if (t < 0.0f) {
+                t = 0.0f;
+            } else if (t > 1.0f) {
+                t = 1.0f;
             }
             skin = SkinBlendTint(skin, 0xff, 0, 0, t);
         }
         if (actor->mMode == 6) {
             return 1;
         }
-        fn_8003F15C(lbl_804D9A8C, a, b, actor->mUnkD0, skin, 0);
+        fn_8003F15C(1.0f, a, b, actor->mUnkD0, skin, 0);
         return 1;
     }
     case 10:
@@ -381,10 +371,10 @@ int SkinnedActorUpdateBehaviour(void* owner)
             Vec4 color = lbl_8034A1D0;
 
             beh->mFxHandle = fn_80027A58(1, &actor->mPos, &color, lbl_804D3538, 8);
-        } else if (beh->mFxTimer < lbl_804D9A8C) {
+        } else if (beh->mFxTimer < 1.0f) {
             beh->mFxTimer += actor->mDeltaTime / (float)lbl_804D3544;
-            if (beh->mFxTimer >= lbl_804D9A8C) {
-                beh->mFxTimer = lbl_804D9A8C;
+            if (beh->mFxTimer >= 1.0f) {
+                beh->mFxTimer = 1.0f;
                 beh->mFlags |= 2;
             }
         }
@@ -393,17 +383,17 @@ int SkinnedActorUpdateBehaviour(void* owner)
             Vec4 color = lbl_8034A1E0;
 
             beh->mFxHandle = fn_80027A58(1, &actor->mPos, &color, lbl_804D3538, 8);
-            beh->mFxTimer = lbl_804D9A8C;
-        } else if (beh->mFxTimer < lbl_804D9A8C) {
+            beh->mFxTimer = 1.0f;
+        } else if (beh->mFxTimer < 1.0f) {
             beh->mFxTimer += actor->mDeltaTime / (float)lbl_804D3544;
-            if (beh->mFxTimer >= lbl_804D9A8C) {
-                beh->mFxTimer = lbl_804D9A8C;
+            if (beh->mFxTimer >= 1.0f) {
+                beh->mFxTimer = 1.0f;
             }
         }
     } else if (beh->mFxHandle != -1) {
         beh->mFxTimer -= actor->mDeltaTime / (float)lbl_804D3548;
-        if (beh->mFxTimer <= lbl_804D9A84) {
-            beh->mFxTimer = lbl_804D9A84;
+        if (beh->mFxTimer <= 0.0f) {
+            beh->mFxTimer = 0.0f;
             fn_80027690(beh->mFxHandle);
             beh->mFxHandle = -1;
         }
@@ -442,14 +432,14 @@ int SkinnedActorUpdateBehaviour(void* owner)
         color.w = lbl_804D3540 * t;
 
         if ((beh->mFlags & 2) || (beh->mFlags & 1)) {
-            color.y = lbl_804D9A84;
-            color.x = lbl_804D9A8C;
-            color.z = lbl_804D9A84;
+            color.y = 0.0f;
+            color.x = 1.0f;
+            color.z = 0.0f;
             color.w = beh->mFxTimer;
         } else if (beh->mFlags & 0x10) {
-            color.x = lbl_804D9A84;
-            color.y = lbl_804D9A84;
-            color.z = lbl_804D9A8C;
+            color.x = 0.0f;
+            color.y = 0.0f;
+            color.z = 1.0f;
             color.w = t;
         }
 
@@ -504,7 +494,7 @@ void HydraSetupBehaviour(void* owner, void* actorPtr)
         beh->mPad22 = 0;
         beh->mUnk1C = -1;
         beh->mFxHandle = -1;
-        beh->mFxTimer = lbl_804D9A84;
+        beh->mFxTimer = 0.0f;
         beh->mState = 1;
         beh->mNextState = 1;
 
@@ -553,13 +543,6 @@ extern float lbl_804D3550;
 extern float lbl_804D3554;
 extern float lbl_804D3558;
 extern float lbl_804D355C;
-extern float lbl_804D9A9C;
-extern float lbl_804D9AAC;
-extern float lbl_804D9AB0;
-extern float lbl_804D9AB4;
-extern float lbl_804D9AB8;
-extern float lbl_804D9ABC;
-extern float lbl_804D9AC0;
 
 // Hydra behaviour message handler: starts/stops the state and picks the Fx rate
 // from the value the actor carries at 0xC4->0x30.
@@ -583,11 +566,11 @@ int HydraOnBehaviourStateMessage(int msg, void* p)
             u32 value = actor->mDataC4->mValue30;
             if (actor->mUnk904 >= (float)value * lbl_804D3558) {
                 if (actor->mUnk904 >= (float)value * lbl_804D355C)
-                    fn_8008E824(lbl_804D9A9C / lbl_804D354C, actor->mUnkD4, 0);
+                    fn_8008E824(1330.0f / lbl_804D354C, actor->mUnkD4, 0);
                 else
-                    fn_8008E824(lbl_804D9A9C / lbl_804D3550, actor->mUnkD4, 0);
+                    fn_8008E824(1330.0f / lbl_804D3550, actor->mUnkD4, 0);
             } else {
-                fn_8008E824(lbl_804D9A9C / lbl_804D3554, actor->mUnkD4, 0);
+                fn_8008E824(1330.0f / lbl_804D3554, actor->mUnkD4, 0);
             }
         }
         break;
@@ -758,9 +741,6 @@ struct BoneHitBox {
     float mPosZ;      // 0x2C
 };
 
-extern float lbl_804D9AA0;
-extern float lbl_804D9AA4;
-extern float lbl_804D9AA8;
 
 Actor* FollowGetTargetObj(void* owner);
 Vec3* ModelBonePositions(int model);
@@ -804,7 +784,7 @@ int HydraGetNextState(Actor* actor)
         int sent = SendMsg(target->mModel, 0x400, &reply);
 
         if (sent != 0 && (reply.mFlags & 2) != 0) {
-            Vec3 offset = {lbl_804D9AA0, lbl_804D9AA0, lbl_804D9AA0};
+            Vec3 offset = {100.0f, 100.0f, 100.0f};
             Mtx34 mtx;
             TargetBoneXform xform;
             Vec3 pos;
@@ -849,11 +829,11 @@ int HydraGetNextState(Actor* actor)
 
                 memset(&msg, 0, 0x5c);
                 msg.mUnk14 = 0x1f336d;
-                msg.mUnk4C = lbl_804D9A8C;
+                msg.mUnk4C = 1.0f;
                 msg.mUnk3C = -1;
                 msg.mUnk40 = -1;
                 msg.mUnk44 = -1;
-                msg.mUnk0C = lbl_804D9AA4 * (lbl_804D9AA8 * actor->mDeltaTime);
+                msg.mUnk0C = 0.001f * (10000.0f * actor->mDeltaTime);
                 msg.mTarget = target;
                 msg.mOwner = actor;
                 msg.mModel = actor->mModel;
@@ -898,23 +878,23 @@ int HydraGetHitNextState(Actor* actor)
 
     if (beh->mPad22 > 0) {
         beh->mTime14 -= actor->mDeltaTime;
-        if (beh->mTime14 <= lbl_804D9A84) {
-            beh->mTime10 = lbl_804D9A84;
+        if (beh->mTime14 <= 0.0f) {
+            beh->mTime10 = 0.0f;
             beh->mPad22 = beh->mPad22 - 1;
             roll = (u32)rand();
-            beh->mTime14 = lbl_804D9AB4 * ((float)roll / lbl_804D9AAC) + lbl_804D9AB0;
+            beh->mTime14 = 400.0f * ((float)roll / 32767.0f) + 900.0f;
             c4v = fn_800A1BC8(*(int*)((u8*)actor->mDataC4 + 0x14),
                               *(int*)((u8*)actor->mDataC4 + 0x1c),
                               0x20ee36, 0, 0);
-            fn_80090974(lbl_804D9A8C, actor->mUnkD4, 1, c4v, 0x10,
+            fn_80090974(1.0f, actor->mUnkD4, 1, c4v, 0x10,
                         HydraOnBehaviourHitMessage, actor);
-            fn_8008F4F0(lbl_804D9A8C, actor->mUnkD4, 1);
+            fn_8008F4F0(1.0f, actor->mUnkD4, 1);
             beh->mFlags |= 0x10;
         }
     }
 
     if (fn_8008EA9C(actor->mUnkD4, 1) == 1 || beh->mPad22 > 0 ||
-        beh->mState != 3 || beh->mTime10 <= lbl_804D9AB8) {
+        beh->mState != 3 || beh->mTime10 <= 1000.0f) {
         return beh->mState;
     }
 
@@ -1138,11 +1118,11 @@ int HydraEnterBehaviourState2(Actor* actor)
 
     value = (int)actor->mDataC4->mValue30;
     if (actor->mUnk904 < (float)value * lbl_804D3558) {
-        fn_8008E824(lbl_804D9ABC, actor->mUnkD4, 0);
+        fn_8008E824(1.75f, actor->mUnkD4, 0);
     } else if (actor->mUnk904 < (float)value * lbl_804D355C) {
-        fn_8008E824(lbl_804D9AC0, actor->mUnkD4, 0);
+        fn_8008E824(1.25f, actor->mUnkD4, 0);
     } else {
-        fn_8008E824(lbl_804D9A8C, actor->mUnkD4, 0);
+        fn_8008E824(1.0f, actor->mUnkD4, 0);
     }
 
     if (beh->mUnk1C != -1) {
@@ -1217,10 +1197,10 @@ int HydraEnterBehaviourState3(Actor* actor)
     int i;
 
     if (MemFlagIsSet(actor->mCondition, 0) == 0) {
-        total = lbl_804D9A84;
+        total = 0.0f;
         ConditionUpdateBit(actor->mCondition, 0, 1);
         beh->mFlags &= ~8;
-        roll = (float)rand() / lbl_804D9AAC;
+        roll = (float)rand() / 32767.0f;
         value = (float)(int)actor->mDataC4->mValue30;
         if (actor->mUnk904 < value * lbl_804D3558) {
             table = lbl_803BE6F8 + 12;
@@ -1248,7 +1228,7 @@ int HydraEnterBehaviourState3(Actor* actor)
             beh->mFlags |= 8;
         }
         beh->mTime14 =
-            lbl_804D9AB4 * ((float)rand() / lbl_804D9AAC) + lbl_804D9AB0;
+            400.0f * ((float)rand() / 32767.0f) + 900.0f;
     }
     beh->mState = 3;
     beh->mNextState = 3;
@@ -1294,7 +1274,7 @@ void SkinnedActorUpdateModel(Actor* actor)
                 ipos[1] = (int)placePos[1];
                 ipos[2] = (int)placePos[2];
             } else {
-                Vec3Set(&angles, actor->mAngles.z, lbl_804D9A84, lbl_804D9A84);
+                Vec3Set(&angles, actor->mAngles.z, 0.0f, 0.0f);
                 EulerNormalize(&angles, &angles);
                 MtxSetEuler(&mtx, &angles);
                 mtx.mTranslation.x = (float)ipos[0];
@@ -1314,8 +1294,8 @@ void SkinnedActorUpdateModel(Actor* actor)
         actor->mVec240.x = offset.x;
         actor->mVec240.y = offset.y;
         actor->mVec240.z = offset.z;
-        actor->mVec240.z = lbl_804D9A84;
-        scale = lbl_804D9AA4 * actor->mDeltaTime;
+        actor->mVec240.z = 0.0f;
+        scale = 0.001f * actor->mDeltaTime;
         actor->mVec240.x = actor->mVec240.x * scale;
         actor->mVec240.y = actor->mVec240.y * scale;
         actor->mVec240.z = actor->mVec240.z * scale;
@@ -1325,34 +1305,34 @@ void SkinnedActorUpdateModel(Actor* actor)
         mtx.mTranslation.z = (float)ipos[2];
         PlacementToMatrix((Place*)actor, &mtx);
         placePos = (float*)((u8*)actor->mUnkF0 + 0x10);
-        placePos[0] = lbl_804D9A84;
-        placePos[1] = lbl_804D9A84;
-        placePos[2] = lbl_804D9A84;
+        placePos[0] = 0.0f;
+        placePos[1] = 0.0f;
+        placePos[2] = 0.0f;
         ModelSetMatrix(actor->mSkin, &mtx, (char*)actor->mUnkF0);
         return;
     }
 
     placePos = (float*)((u8*)actor->mUnkF0 + 0x10);
-    placePos[0] = lbl_804D9A84;
-    placePos[1] = lbl_804D9A84;
-    placePos[2] = lbl_804D9A84;
+    placePos[0] = 0.0f;
+    placePos[1] = 0.0f;
+    placePos[2] = 0.0f;
 
     angle = actor->mUnk284;
     if (actor->mUnk26C == 1) {
-        speed = *(float*)((u8*)actor->mDataC4 + 0xC0) * lbl_804D9AC4;
-    } else if (angle > lbl_804D9AC8 || angle < lbl_804D9ACC) {
-        speed = lbl_804D9AD0 * *(float*)((u8*)actor->mDataC4 + 0xC0);
+        speed = *(float*)((u8*)actor->mDataC4 + 0xC0) * 0.5f;
+    } else if (angle > 80.0f || angle < -80.0f) {
+        speed = 3.0f * *(float*)((u8*)actor->mDataC4 + 0xC0);
     } else {
         speed = *(float*)((u8*)actor->mDataC4 + 0xC0);
     }
-    if (angle > lbl_804D9AD4) {
-        step = speed * actor->mDeltaTime / lbl_804D9AB8;
+    if (angle > 1.1920929e-07f) {
+        step = speed * actor->mDeltaTime / 1000.0f;
         if (step > angle) {
             step = angle;
         }
         actor->mAngles.z = actor->mAngles.z + step;
-    } else if (angle < lbl_804D9AD8) {
-        step = -(speed * actor->mDeltaTime / lbl_804D9AB8);
+    } else if (angle < -1.1920929e-07f) {
+        step = -(speed * actor->mDeltaTime / 1000.0f);
         if (step < angle) {
             step = angle;
         }
@@ -1366,8 +1346,8 @@ void SkinnedActorUpdateModel(Actor* actor)
         actor->mVec240.x = offset.x;
         actor->mVec240.y = offset.y;
         actor->mVec240.z = offset.z;
-        actor->mVec240.z = lbl_804D9A84;
-        scale = lbl_804D9AB8 / actor->mDeltaTime;
+        actor->mVec240.z = 0.0f;
+        scale = 1000.0f / actor->mDeltaTime;
         actor->mVec240.x = actor->mVec240.x * scale;
         actor->mVec240.y = actor->mVec240.y * scale;
         actor->mVec240.z = actor->mVec240.z * scale;
@@ -1382,8 +1362,8 @@ void SkinnedActorUpdateModel(Actor* actor)
 
     ActorGetMatrix(&actorMtx, actor);
     fn_800A0168(&actorMtx, &actorMtx);
-    offset.y = lbl_804D9A84;
-    offset.z = lbl_804D9A84;
+    offset.y = 0.0f;
+    offset.z = 0.0f;
     fn_800A0030(&offset, &actorMtx, &offset);
     mtx.mTranslation.x = mtx.mTranslation.x + offset.x;
     mtx.mTranslation.y = mtx.mTranslation.y + offset.y;
@@ -1396,7 +1376,6 @@ extern "C" void fn_8008F230(float value, int handle, int, int);
 extern "C" void fn_8008F4E8(int handle, int);
 extern "C" void fn_8008F378(int handle);
 extern "C" void fn_8008F4EC(int handle, int);
-extern float lbl_804D9ADC;
 
 // Switches the animation the model of the current behaviour state plays to
 // `anim` of the state's animation set (a negative index picks a random one of
@@ -1436,19 +1415,19 @@ void SkinnedActorPlayAnimSet(Actor* actor, int flags, int anim)
             unchanged = 1;
         }
         if (HasCondition(actor->mCondition, 0xe) != 0 || unchanged != 0) {
-            fn_8008F230(lbl_804D9A84, actor->mUnkD4, 0, 0);
+            fn_8008F230(0.0f, actor->mUnkD4, 0, 0);
             ConditionSetBit(actor->mCondition, 0xe, 0);
         } else {
-            fn_8008F230(lbl_804D9ADC, actor->mUnkD4, 0, 1);
+            fn_8008F230(150.0f, actor->mUnkD4, 0, 1);
         }
         if (flags & 8) {
             ConditionSetBit(actor->mCondition, 0, 1);
         } else {
             ConditionSetBit(actor->mCondition, 0, 0);
         }
-        fn_80090974(lbl_804D9A8C, actor->mUnkD4, 0, beh->mUnk04, flags,
+        fn_80090974(1.0f, actor->mUnkD4, 0, beh->mUnk04, flags,
                     lbl_803BE590[beh->mState].mUnk10, actor);
-        fn_8008F4F0(lbl_804D9A8C, actor->mUnkD4, 0);
+        fn_8008F4F0(1.0f, actor->mUnkD4, 0);
     }
 }
 
@@ -1457,8 +1436,6 @@ int OwnerId(Owner* owner);
 int ModelBoneName(int model, int bone);
 extern "C" int fn_800C5210(int owner, int msg, void* data);
 extern "C" void fn_800B20B8(Actor* actor, int value);
-extern float lbl_804D9AE0;
-extern float lbl_804D9AE4;
 
 // Message handler of the skinned actor: drops the event unless the bone it hit
 // is one of the actor's guard bones, then applies the "damage" the event carries
@@ -1513,10 +1490,10 @@ int SkinnedActorOnHitEvent(int* event)
 
     // 0x0C holds the remaining movement the event gives the actor, as a float.
     elapsed = (float*)event + 3;
-    *elapsed = *elapsed * (lbl_804D9AE0 * (float)fn_800BA84C(6));
+    *elapsed = *elapsed * (0.01f * (float)fn_800BA84C(6));
 
     if (MemFlagIsSet(actor->mCondition, 0xa) != 0) {
-        limit = actor->mUnk904 - lbl_804D9A8C;
+        limit = actor->mUnk904 - 1.0f;
         if (*elapsed < limit) {
             limit = *elapsed;
         }
@@ -1529,11 +1506,11 @@ int SkinnedActorOnHitEvent(int* event)
     }
 
     value = actor->mDataC4->mValue30;
-    limit = lbl_804D9AC4 * (float)value;
+    limit = 0.5f * (float)value;
     if (actor->mUnk904 > limit && actor->mUnk904 - *elapsed <= limit) {
         ActorPlayAnim(actor->mModel, 0x24AE8385UL, event[2]);
     } else {
-        limit = lbl_804D9AE4 * (float)value;
+        limit = 0.25f * (float)value;
         if (actor->mUnk904 > limit && actor->mUnk904 - *elapsed <= limit) {
             ActorPlayAnim(actor->mModel, 0xECC78791UL, event[2]);
         }
@@ -1546,8 +1523,8 @@ int SkinnedActorOnHitEvent(int* event)
         actor->mUnk904 = limit;
     }
 
-    beh->mTime18 = lbl_804D9A84;
-    if (actor->mUnk904 <= lbl_804D9A84 && actor->mMode != 4 &&
+    beh->mTime18 = 0.0f;
+    if (actor->mUnk904 <= 0.0f && actor->mMode != 4 &&
         actor->mMode != 6 && HasCondition(actor->mCondition, 9) == 0 &&
         HasCondition(actor->mCondition, 0xa) == 0) {
         if (HasCondition(actor->mCondition, 0xc) != 0) {
@@ -1561,7 +1538,7 @@ int SkinnedActorOnHitEvent(int* event)
     }
 
     if (hash != 0x6CA5F172u) {
-        if (actor->mUnk904 > lbl_804D9A84 &&
+        if (actor->mUnk904 > 0.0f &&
             HasCondition(actor->mCondition, 0x20) == 0) {
             ConditionSetBit(actor->mCondition, 4, 1);
         }
