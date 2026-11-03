@@ -377,12 +377,12 @@ int NpcSveCheckTarget(Owner* o) {
     if (o == 0) {
         return 0;
     }
+    void* target;
     PathEvent* ev = (PathEvent*)o->evt;
     int mode = fn_800B26B8(o);
     if (mode != 4) {
-        u32 target[3];
-        fn_800B261C(o, mode, target);
-        if (target[0] != (u32)FollowGetTargetObj(o->cond270)) {
+        fn_800B261C(o, mode, &target);
+        if (target != FollowGetTargetObj(o->cond270)) {
             return 1;
         }
         mode = fn_800B22F8(o, mode);
@@ -390,7 +390,10 @@ int NpcSveCheckTarget(Owner* o) {
             return 1;
         }
     }
-    return 3000.0f < ev->timer;
+    if (ev->timer > 3000.0f) {
+        return 1;
+    }
+    return 0;
 }
 
 void ConditionUpdateBit(void* cond, int id, int value);
