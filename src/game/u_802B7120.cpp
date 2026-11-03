@@ -548,22 +548,9 @@ int ActorFindSendSlot802B7EFC(int want0, int want1, void* owner)
     ExtraState* extra = actor->extra;
     int i;
 
-    for (i = 0; i < 0xd; i++) {
-        int base = i * 4;
-        if (want0 == lbl_803C44F0[base].unk10 && want1 == lbl_803C44F0[base].id) {
-            extra->slot = base;
-            return 1;
-        }
-        if (want0 == lbl_803C44F0[base + 1].unk10 && want1 == lbl_803C44F0[base + 1].id) {
-            extra->slot = base + 1;
-            return 1;
-        }
-        if (want0 == lbl_803C44F0[base + 2].unk10 && want1 == lbl_803C44F0[base + 2].id) {
-            extra->slot = base + 2;
-            return 1;
-        }
-        if (want0 == lbl_803C44F0[base + 3].unk10 && want1 == lbl_803C44F0[base + 3].id) {
-            extra->slot = base + 3;
+    for (i = 0; i < 0x34; i++) {
+        if (want0 == lbl_803C44F0[i].unk10 && want1 == lbl_803C44F0[i].id) {
+            extra->slot = i;
             return 1;
         }
     }
