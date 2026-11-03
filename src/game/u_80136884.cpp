@@ -117,6 +117,8 @@ struct MsgQuery {
     int result;                   // 0x00
     u32 hash;                     // 0x04
     int pad08;                    // 0x08
+    int handle;                   // 0x0C
+    int pad10[4];                 // 0x10
 };
 
 // Runtime string buffer (shared runtime layout, 20 bytes); the receiver of the
@@ -218,6 +220,16 @@ void Fn800F7F5C(int a, int b, int c, int d, void* e, float f); // 0x800F7F5C
 void* FxFind(const char* name);                               // 0x80170834
 
 // Requests a name through message 0x41E; the receiver leaves it in the trailing object.
+static inline void NameQueryOut(int* out, int target, int msg, u32 hash) {
+    NameMsg m;
+
+    *(int*)&m.name = 0;
+    m.nameHash = hash;
+    m.pad08 = 0;
+    SendMsg(target, msg, &m);
+    *out = *(int*)&m.name;
+}
+
 static inline int NameQuery(int target, int msg, u32 hash) {
     NameMsg m;
 
@@ -231,17 +243,17 @@ static inline int NameQuery(int target, int msg, u32 hash) {
 // 0x80136884: player gun action handler.
 int PlayerGunAction(int action, void* p) {
     Actor* actor = (Actor*)p;
-    MsgQuery q0;
-    int handle = actor->handle;
     int r1;
     int r2;
+    MsgQuery q0;
 
+    q0.handle = actor->handle;
     q0.hash = action;
-    if (fn_800C5210(handle, 0xC06, &q0) == 1) {
+    if (fn_800C5210(q0.handle, 0xC06, &q0) == 1) {
         return 0;
     }
-    r1 = NameQuery(actor->handle, 0x41E, 0x2DA8293C);
-    r2 = NameQuery(actor->handle, 0x41E, 0xDFF3097A);
+    NameQueryOut(&r1, actor->handle, 0x41E, 0x2DA8293C);
+    NameQueryOut(&r2, actor->handle, 0x41E, 0xDFF3097A);
 
     switch (action) {
     case 0x1B83833F:
@@ -472,7 +484,7 @@ void PlayerGunStartActionSlot(void* p) {
     a->fieldA4 = 1;
     a->fieldF0 = fn_800A1BC8(ref->field14, ref->field1C, *types, 0, 0);
     a->fieldFC = 1;
-    name = NameQuery(a->field26E4->flags38, 0x41E, 0x08783452);
+    NameQueryOut(&name, a->field26E4->flags38, 0x41E, 0x08783452);
     if (name != 0) {
         PlayerSetHeldSlotIndex(a, 0);
         if (a->field98 == -1) {
@@ -530,7 +542,7 @@ void PlayerGunStartActionWeapon(void* p) {
     a->fieldF0 = fn_800A1BC8(a->refs[slot]->field14, a->refs[slot]->field1C,
                              *types, 0, 0);
     a->fieldFC = 0x19;
-    name = NameQuery(g->flags38, 0x41E, 0x08783452);
+    NameQueryOut(&name, g->flags38, 0x41E, 0x08783452);
     if (name != 0) {
         PlayerSetHeldSlotIndex(a, 0);
     } else {
@@ -591,8 +603,10 @@ void PlayerGunNoop(void) {}
 // mode 0x11. Then it clears the active state, runs the shared update, queries the
 // names again and either starts the slot-0x11 name intro or rearms the gun timer.
 void PlayerGunFollowUpdate(Actor* actor, float dt) {
-    int r1 = NameQuery(actor->handle, 0x41E, 0x2DA8293C);
-    int r2 = NameQuery(actor->handle, 0x41E, 0xDFF3097A);
+    int r1;
+    NameQueryOut(&r1, actor->handle, 0x41E, 0x2DA8293C);
+    int r2;
+    NameQueryOut(&r2, actor->handle, 0x41E, 0xDFF3097A);
 
     if (Fn800F7DEC(r1, r2, 0x6FAB23FE, fn_800498D0(actor), 0) != actor->field7DC) {
         PlayerSetActionMode(actor, 0x11);
@@ -602,8 +616,8 @@ void PlayerGunFollowUpdate(Actor* actor, float dt) {
     fn_800769A0(actor, dt);
     PlayerSelectCollisionUpdate(actor, dt);
     DashUpdate(actor);
-    r1 = NameQuery(actor->handle, 0x41E, 0x2DA8293C);
-    r2 = NameQuery(actor->handle, 0x41E, 0xDFF3097A);
+    NameQueryOut(&r1, actor->handle, 0x41E, 0x2DA8293C);
+    NameQueryOut(&r2, actor->handle, 0x41E, 0xDFF3097A);
     if (actor->field314 == 0) {
         PlayerSetValue4(&actor->type, 3);
         if (actor->type == 0x11) {
@@ -631,8 +645,8 @@ void PlayerGunSetupNames(void* p) {
     PlayerRef* ref;
     u32* types;
 
-    r1 = NameQuery(a->handle, 0x41E, 0x2DA8293C);
-    r2 = NameQuery(a->handle, 0x41E, 0xDFF3097A);
+    NameQueryOut(&r1, a->handle, 0x41E, 0x2DA8293C);
+    NameQueryOut(&r2, a->handle, 0x41E, 0xDFF3097A);
     h = Fn800F7DEC(r1, r2, 0x6FAB23FE, fn_800498D0(a), 0);
     a->field7DC = h;
     switch (h) {
@@ -689,8 +703,8 @@ void PlayerGunSetupState(void* p) {
     PlayerRef* ref;
     u32* types;
 
-    r1 = NameQuery(a->handle, 0x41E, 0x2DA8293C);
-    r2 = NameQuery(a->handle, 0x41E, 0xDFF3097A);
+    NameQueryOut(&r1, a->handle, 0x41E, 0x2DA8293C);
+    NameQueryOut(&r2, a->handle, 0x41E, 0xDFF3097A);
     PlayerResetGunTimer(a);
     a->field50 |= 0x40000;
     fn_800F7AF0(r1, r2);
@@ -734,8 +748,10 @@ void PlayerGunReengage(void* p, float dt) {
 // per-type motion tables. The second slot keeps the type's first variant (1) when
 // it equals the motion name, and uses the follow-up variant (0x11) otherwise.
 void PlayerGunFollowSetup(Actor* a) {
-    int name1 = NameQuery(a->handle, 0x41E, 0x2DA8293C);
-    int name2 = NameQuery(a->handle, 0x41E, 0xDFF3097A);
+    int name1;
+    NameQueryOut(&name1, a->handle, 0x41E, 0x2DA8293C);
+    int name2;
+    NameQueryOut(&name2, a->handle, 0x41E, 0xDFF3097A);
     PlayerRef* ref;
     int* types;
     int slot;
@@ -779,8 +795,10 @@ void PlayerGunResume(void* p, float dt) {
 // per-type motion tables. The second slot keeps the type's first variant (1) when
 // it equals the motion name, and uses the follow-up variant (0x11) otherwise.
 void PlayerGunReadySetup(Actor* a) {
-    int name1 = NameQuery(a->handle, 0x41E, 0x2DA8293C);
-    int name2 = NameQuery(a->handle, 0x41E, 0xDFF3097A);
+    int name1;
+    NameQueryOut(&name1, a->handle, 0x41E, 0x2DA8293C);
+    int name2;
+    NameQueryOut(&name2, a->handle, 0x41E, 0xDFF3097A);
     PlayerRef* ref;
     int* types;
     int slot;
@@ -837,7 +855,7 @@ void PlayerGunIdleEffectStart(void* p) {
     int kind;
     int name;
 
-    name = NameQuery(a->handle, 0x41E, 0xDFF3097A);
+    NameQueryOut(&name, a->handle, 0x41E, 0xDFF3097A);
     slot = PlayerInHost(a);
     kind = a->field73C;
     ref = a->refs[slot];
@@ -973,8 +991,8 @@ void PlayerGunFollowNameCheck(void* p, float f) {
     if (PlayerGunGaugeState(a) != 0) {
         return;
     }
-    r1 = NameQuery(a->handle, 0x41E, 0x2DA8293C);
-    r2 = NameQuery(a->handle, 0x41E, 0xDFF3097A);
+    NameQueryOut(&r1, a->handle, 0x41E, 0x2DA8293C);
+    NameQueryOut(&r2, a->handle, 0x41E, 0xDFF3097A);
     handled = 0;
     if (a->field318 < 1) {
         if (a->type == 8) {
@@ -1094,8 +1112,8 @@ void PlayerGunActionUpdate(void* p, float f) {
     if (PlayerGunGaugeState(a) != 0) {
         return;
     }
-    name0 = NameQuery(a->handle, 0x41E, 0x2DA8293C);
-    name1 = NameQuery(a->handle, 0x41E, 0xDFF3097A);
+    NameQueryOut(&name0, a->handle, 0x41E, 0x2DA8293C);
+    NameQueryOut(&name1, a->handle, 0x41E, 0xDFF3097A);
 
     if (a->field318 < 1) {
         if (a->type == 8) {
@@ -1182,8 +1200,8 @@ void PlayerGunFollowCommitUpdate(void* p, float f) {
     PlayerSetValue4(&a->type, 3);
     DashUpdate(a);
     if (PlayerGunGaugeState(a) == 0) {
-        name0 = NameQuery(a->handle, 0x41E, 0x2DA8293C);
-        name1 = NameQuery(a->handle, 0x41E, 0xDFF3097A);
+        NameQueryOut(&name0, a->handle, 0x41E, 0x2DA8293C);
+        NameQueryOut(&name1, a->handle, 0x41E, 0xDFF3097A);
         if (a->field318 < 1) {
             if (a->type == 8) {
                 PlayerSetHeldSlotMode(a, 3);
@@ -1272,8 +1290,10 @@ void PlayerGunSetupActionRandSlot(void* p) {
 // mode; the timer branch also charges/ticks the weapon's gauge.
 int PlayerGunActionFallback(void* p, float f) {
     Actor* a = (Actor*)p;
-    int name1 = NameQuery(a->handle, 0x41E, 0x2DA8293C);
-    int name2 = NameQuery(a->handle, 0x41E, 0xDFF3097A);
+    int name1;
+    NameQueryOut(&name1, a->handle, 0x41E, 0x2DA8293C);
+    int name2;
+    NameQueryOut(&name2, a->handle, 0x41E, 0xDFF3097A);
     float t;
 
     if (a->field588 == 5 || a->field588 == 4) {
@@ -1346,8 +1366,8 @@ int PlayerGunGaugeState(void* p) {
     int name1;
     int hash;
 
-    name0 = NameQuery(a->handle, 0x41E, 0x2DA8293C);
-    name1 = NameQuery(a->handle, 0x41E, 0xDFF3097A);
+    NameQueryOut(&name0, a->handle, 0x41E, 0x2DA8293C);
+    NameQueryOut(&name1, a->handle, 0x41E, 0xDFF3097A);
     if (a->field314 < 1) {
         if (a->type == 5) {
             PlayerSetHeldSlotMode(a, 3);
@@ -1400,8 +1420,8 @@ int PlayerGunActionMsg(int action, void* p) {
     if (fn_800C5210(q.handle, 0xC06, &q) == 1) {
         return 0;
     }
-    name0 = NameQuery(a->handle, 0x41E, 0x2DA8293C);
-    name1 = NameQuery(a->handle, 0x41E, 0xDFF3097A);
+    NameQueryOut(&name0, a->handle, 0x41E, 0x2DA8293C);
+    NameQueryOut(&name1, a->handle, 0x41E, 0xDFF3097A);
     switch (action) {
     case 0x20EE36:
     case 0x96224FCC:
