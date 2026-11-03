@@ -2,7 +2,7 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 typedef unsigned char u8;
-typedef unsigned int u32;
+typedef unsigned long u32;
 
 // Reference-counted byte buffer and the String built on top of it. Both are
 // part of the shared runtime (defined in u_8028A77C.cpp).
@@ -10,12 +10,19 @@ class Buffer {
 public:
     Buffer();
     virtual ~Buffer();
+    virtual void Release(char* p);
+
+    char* mData;
+    int mLength;
+    int mUnk0C;
+    int mOwned;
 };
 
 class String : public Buffer {
 public:
     String();
-    int data;   // 0x004 resolved character data
+    ~String() {}
+    virtual void Release(char* p);
 };
 
 // Per-local-player view data block (pointed to by Actor::views).
@@ -57,7 +64,8 @@ struct Actor {
     float field1F8;               // 0x1F8
     u8  unk1FC[0x248 - 0x1FC];    // 0x1FC
     int field248;                 // 0x248
-    u8  unk24C[0x314 - 0x24C];    // 0x24C
+    u8  unk24C[0x2F4 - 0x24C];    // 0x24C
+    int zoomTable[8];             // 0x2F4 (per-slot zoom state; later slots index past it)
     int field314;                 // 0x314
     int field318;                 // 0x318
     int field31C;                 // 0x31C
@@ -146,9 +154,6 @@ extern void fn_8000F60C(void);
 extern void fn_8000F7E4(int, int);
 extern int fn_800C5210(void*, int, int*);
 extern void fn_80165DA8(void*);
-extern float lbl_804D8F0C;
-extern float lbl_804D8F10;
-extern float lbl_804D8F14;
 extern float lbl_804D32F8;
 extern float lbl_804D32FC;
 extern float lbl_804D3300;
@@ -157,8 +162,6 @@ extern int lbl_804D330C;
 extern int fn_800F7994(int, u32);
 extern void FxStart(int, int, int);
 extern int rand(void);
-extern float lbl_804D8F04;
-extern float lbl_804D8F08;
 }
 
 int FxFind(const char* name);
@@ -176,7 +179,6 @@ extern void PlayerSelectCollisionUpdate(void*, float);
 extern void PlayerSetValue4(void*, int);
 extern void Fn800F7F5C(int, int, int, int, void*, float);
 extern int Fn800F7DEC(int, int, int, int, void*);
-extern float lbl_804D8F00;
 extern void PlayerSetHeldSlotMode(void*, int);
 extern void PlayerSetActionMode(void*, int);
 extern int ActorPlayAnim(int, u32, int);
@@ -248,14 +250,26 @@ struct NameQuery {
 };
 
 // Asks the actor's host for the name handle selected by `hash`.
-static int PlayerWeaponQueryName(Actor* actor, u32 hash)
+static inline int PlayerWeaponQueryName(void* host, u32 hash)
 {
     NameQuery query;
 
     query.hash = hash;
+    *(int*)&query.name = 0;
     query.unk08 = 0;
-    SendMsg(actor->host38, 0x41e, &query);
-    return query.name.data;
+    SendMsg(host, 0x41e, &query);
+    return *(int*)&query.name;
+}
+
+// Tells the actor's host to switch to the name handle `value` for `hash`.
+static inline void PlayerWeaponSetName(Actor* actor, u32 hash, int value)
+{
+    NameQuery query;
+
+    query.hash = hash;
+    *(int*)&query.name = value;
+    query.unk08 = 0;
+    SendMsg(actor->host38, 0x41d, &query);
 }
 
 // First-person "weapon held" view setup: resolves the model and animation
@@ -265,8 +279,8 @@ void PlayerWeaponFirstPersonInit(Actor* actor)
 {
     actor->field15B4 = 0;
 
-    int modelName = PlayerWeaponQueryName(actor, 0x2da8293c);
-    int animName = PlayerWeaponQueryName(actor, 0xdff3097a);
+    int modelName = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
+    int animName = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
 
     fn_80048BA8(actor, actor->field1D04, 1);
     int anim = fn_800498D0(actor);
@@ -322,7 +336,7 @@ void PlayerCollisionViewUpdate(Actor* actor, float dt)
 // starts the weapon-tied effect.
 void PlayerWeaponViewSetup(Actor* actor)
 {
-    int name = PlayerWeaponQueryName(actor, 0xdff3097a);
+    int name = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
 
     int localPlayer = PlayerInHost(actor);
     int slot = actor->weaponSlot;
@@ -403,8 +417,8 @@ void PlayerWeaponHandlesInit(Actor* actor)
 // view angles, and runs the shared "leave to weapon select" checks.
 void PlayerWeaponIdleStateUpdate(Actor* actor, float dt)
 {
-    PlayerWeaponQueryName(actor, 0x2da8293c);
-    PlayerWeaponQueryName(actor, 0xdff3097a);
+    PlayerWeaponQueryName(actor->host38, 0x2da8293c);
+    PlayerWeaponQueryName(actor->host38, 0xdff3097a);
 
     actor->field638 = 1;
     actor->flags7B4 &= ~1u;
@@ -416,11 +430,11 @@ void PlayerWeaponIdleStateUpdate(Actor* actor, float dt)
     if (fovAbs < __fabsf(actor->field38C)) {
         fovAbs = __fabsf(actor->field38C);
     }
-    if (lbl_804D8F00 != fovAbs) {
+    if (0.0f != fovAbs) {
         fn_8008E824(actor->field7C, 0);
     }
 
-    if (lbl_804D8F00 == actor->field7D8) {
+    if (0.0f == actor->field7D8) {
         PlayerSetHeldSlotMode(actor, 0);
     } else if (!(actor->field678 & 0x80)) {
         PlayerSetValue4(&actor->state7A4, 3);
@@ -468,8 +482,8 @@ void PlayerWeaponIdleStateUpdate(Actor* actor, float dt)
 // valid one, and asks for the weapon-select state when the player is able.
 void PlayerWeaponEnterState(Actor* actor)
 {
-    int nameA = PlayerWeaponQueryName(actor, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor, 0xdff3097a);
+    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
+    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
 
     int localPlayer = PlayerInHost(actor);
     int slot = actor->weaponSlot;
@@ -544,7 +558,7 @@ extern int lbl_804D3308;
 // weapon-tied effect and syncs the camera field of view.
 void PlayerWeaponDrawnSetup(Actor* actor)
 {
-    int name = PlayerWeaponQueryName(actor, 0xdff3097a);
+    int name = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
 
     int localPlayer = PlayerInHost(actor);
     int slot = actor->weaponSlot;
@@ -687,10 +701,10 @@ void PlayerAimStateUpdate(Actor* actor, float dt)
         }
     }
 
-    if (lbl_804D8F00 != actor->field394 ||
-        lbl_804D8F00 != actor->field38C ||
-        lbl_804D8F00 != actor->field390 ||
-        lbl_804D8F00 != actor->field398 ||
+    if (0.0f != actor->field394 ||
+        0.0f != actor->field38C ||
+        0.0f != actor->field390 ||
+        0.0f != actor->field398 ||
         actor->flags328 != 0) {
         PlayerSetActionMode(actor, 3);
     }
@@ -702,14 +716,14 @@ void PlayerAimStateUpdate(Actor* actor, float dt)
 // once with the un-matched variant when the host returns no handle.
 void PlayerWeaponTimerEnter(Actor* actor)
 {
-    int nameA = PlayerWeaponQueryName(actor, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor, 0xdff3097a);
+    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
+    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
     int anim = fn_800498D0(actor);
     int result = Fn800F7DEC(nameA, nameB, 0x20ee36, anim, 0);
 
     if (result == -0x3f413082 || result == 0x11d2c025) {
         actor->field7D4 = 2;
-    } else if ((float)rand() / lbl_804D8F04 < lbl_804D8F08) {
+    } else if ((float)rand() / 32767.0f < 0.5f) {
         actor->field7D4 = 1;
     } else {
         actor->field7D4 = 0;
@@ -734,20 +748,13 @@ void PlayerWeaponTimerEnter(Actor* actor)
     actor->fieldFC = 1;
 }
 
-// Per-slot zoom state table (element size 4) at 0x2F4. Its entries overlap
-// fields other states read directly, so it is reached from the object base.
-static inline int* ZoomStateTable(Actor* actor)
-{
-    return (int*)((u8*)actor + 0x2F4);
-}
-
 // Zoom/aim state update for the first-person weapon states: asks the host for
 // both weapon name handles and either re-enters the zoomed weapon view or
 // advances the hold timer.
 int PlayerZoomStateUpdate(Actor* actor, float dt)
 {
-    int nameA = PlayerWeaponQueryName(actor, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor, 0xdff3097a);
+    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
+    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
 
     if (actor->field588 == 5 || actor->field588 == 4) {
         if (actor->flags320 & 1) {
@@ -779,12 +786,12 @@ int PlayerZoomStateUpdate(Actor* actor, float dt)
         }
     } else if (actor->flags320 == 0) {
         float level = fn_800699B8(actor);
-        if (lbl_804D8F10 < level && level < lbl_804D8F00) {
+        if (-1.0f < level && level < 0.0f) {
             int anim = fn_800498D0(actor);
             int result = Fn800F7DEC(nameA, nameB, 0xe6b71bcc, anim, 0);
             if (result == 0x4a3e183) {
                 PlayerSetHeldSlotMode(actor, 10);
-                fn_800699A8(ZoomStateTable(actor));
+                fn_800699A8(actor->zoomTable);
                 return 1;
             }
 
@@ -792,22 +799,22 @@ int PlayerZoomStateUpdate(Actor* actor, float dt)
             result = Fn800F7DEC(nameA, nameB, 0x968cbe3d, anim, 0);
             if (result == 0x4a3e183) {
                 PlayerSetHeldSlotMode(actor, 11);
-                fn_800699A8(ZoomStateTable(actor));
+                fn_800699A8(actor->zoomTable);
                 return 1;
             }
         }
-        fn_800699A8(ZoomStateTable(actor));
+        fn_800699A8(actor->zoomTable);
     } else {
         PlayerResetGunTimer(actor);
         actor->field5E8 += dt;
 
-        if (fn_800699B8(actor) == lbl_804D8F0C) {
+        if (fn_800699B8(actor) == 1.0f) {
             if (actor->field7D0 == 0) {
                 PlayerSetHeldSlotMode(actor, 2);
             } else {
                 PlayerSetHeldSlotMode(actor, 9);
             }
-            fn_800699A8(ZoomStateTable(actor));
+            fn_800699A8(actor->zoomTable);
             return 1;
         }
     }
@@ -822,74 +829,62 @@ int PlayerZoomLevelUpdate(Actor* actor, int slotA, int slotB)
     int oldLevel = actor->field7E0;
 
     if (fn_80049940() == 0) {
-        if (ZoomStateTable(actor)[slotB] == 0) {
-            if (ZoomStateTable(actor)[slotA] == 0) {
-                actor->field7E8 = lbl_804D8F00;
-                actor->field7E0 = 0;
-            } else {
-                if (actor->state7A4 == 1) {
-                    PlayerSetHeldSlotMode(actor, 2);
-                    return 1;
-                }
-                actor->field7E8 = (lbl_804D8F14 - fn_800F95E4(actor->cameraIndex)) / lbl_804D3300;
-                actor->field7EC = lbl_804D8F14;
-                actor->field7E0 = 1;
-            }
-        } else {
+        if (actor->zoomTable[slotB] != 0) {
             if (actor->state7A4 == 1) {
                 PlayerSetHeldSlotMode(actor, 2);
                 return 1;
             }
-            actor->field7E8 = (lbl_804D8F0C - fn_800F95E4(actor->cameraIndex)) / lbl_804D3304;
-            actor->field7EC = lbl_804D8F0C;
+            actor->field7E8 = (1.0f - fn_800F95E4(actor->cameraIndex)) / lbl_804D3304;
+            actor->field7EC = 1.0f;
             actor->field7E0 = 2;
+        } else if (actor->zoomTable[slotA] != 0) {
+            if (actor->state7A4 == 1) {
+                PlayerSetHeldSlotMode(actor, 2);
+                return 1;
+            }
+            actor->field7E8 = (8.0f - fn_800F95E4(actor->cameraIndex)) / lbl_804D3300;
+            actor->field7EC = 8.0f;
+            actor->field7E0 = 1;
+        } else {
+            actor->field7E8 = 0.0f;
+            actor->field7E0 = 0;
         }
     } else {
-        int slotState = ZoomStateTable(actor)[slotA];
+        int slotState = actor->zoomTable[slotA];
         if (slotState == 1 || slotState == 3) {
             if (actor->state7A4 == 1) {
                 PlayerSetHeldSlotMode(actor, 2);
                 return 1;
             }
-            int level = actor->field7E0;
-            if (level == 1) {
-                actor->field7E8 = (lbl_804D8F0C - fn_800F95E4(actor->cameraIndex)) / lbl_804D32FC;
-                actor->field7EC = lbl_804D8F0C;
+            switch (actor->field7E0) {
+            case 0:
+                actor->field7E8 = (8.0f - fn_800F95E4(actor->cameraIndex)) / lbl_804D32F8;
+                actor->field7EC = 8.0f;
+                actor->field7E0 = 1;
+                break;
+            case 1:
+                actor->field7E8 = (1.0f - fn_800F95E4(actor->cameraIndex)) / lbl_804D32FC;
+                actor->field7EC = 1.0f;
                 actor->field7E0 = 2;
-            } else if (level < 1) {
-                if (level >= 0) {
-                    actor->field7E8 = (lbl_804D8F14 - fn_800F95E4(actor->cameraIndex)) / lbl_804D32F8;
-                    actor->field7EC = lbl_804D8F14;
-                    actor->field7E0 = 1;
-                }
-            } else if (level < 3) {
-                actor->field7E8 = lbl_804D8F00;
+                break;
+            case 2:
+                actor->field7E8 = 0.0f;
                 actor->field7E0 = 0;
+                break;
             }
         }
     }
 
-    if (actor->field7E0 == 0) {
-        actor->flags7B4 &= ~0x01000000;
-        fn_80165D9C(actor);
-    } else {
+    if (actor->field7E0 != 0) {
         PlayerResetGunTimer(actor);
         actor->flags7B4 |= 0x01000000;
         fn_80165DA8(actor);
+    } else {
+        actor->flags7B4 &= ~0x01000000;
+        fn_80165D9C(actor);
     }
 
-    if (lbl_804D8F00 == actor->field7E8) {
-        int state = actor->field7E0;
-        if (state == 1) {
-            CameraSetFov(actor->cameraIndex, lbl_804D8F14);
-        } else if (state < 1) {
-            if (state >= 0) {
-                CameraSetFov(actor->cameraIndex, (float)actor->views[1]->fov);
-            }
-        } else if (state < 3) {
-            CameraSetFov(actor->cameraIndex, lbl_804D8F0C);
-        }
-    } else {
+    if (0.0f != actor->field7E8) {
         float fov = fn_800F95E4(actor->cameraIndex);
         float step = actor->field7E8 * actor->field14FC;
         float next;
@@ -899,28 +894,42 @@ int PlayerZoomLevelUpdate(Actor* actor, int slotA, int slotB)
             if (fov > target) {
                 next = fov + step;
                 if (next < target) {
-                    actor->field7E8 = lbl_804D8F00;
+                    actor->field7E8 = 0.0f;
                     next = target;
                 }
             } else if (fov < target) {
                 next = fov + step;
                 if (next > target) {
-                    actor->field7E8 = lbl_804D8F00;
+                    actor->field7E8 = 0.0f;
                     next = target;
                 }
             }
         } else {
+            float target = actor->field7EC;
             next = fov + step;
-            if (next < actor->field7EC) {
-                actor->field7E8 = lbl_804D8F00;
-                next = actor->field7EC;
+            if (next < target) {
+                actor->field7E8 = 0.0f;
+                next = target;
             }
         }
         CameraSetFov(actor->cameraIndex, next);
+    
+    } else {
+        switch (actor->field7E0) {
+        case 0:
+            CameraSetFov(actor->cameraIndex, (float)actor->views[1]->fov);
+            break;
+        case 1:
+            CameraSetFov(actor->cameraIndex, 8.0f);
+            break;
+        case 2:
+            CameraSetFov(actor->cameraIndex, 1.0f);
+            break;
+        }
     }
 
     int level = actor->field7E0;
-    if (oldLevel != level) {
+    if (level != oldLevel) {
         if (oldLevel < level) {
             FxStart(FxFind("zoom_out"), 0, 0);
         } else if (level == 1) {
@@ -937,8 +946,8 @@ int PlayerZoomLevelUpdate(Actor* actor, int slotA, int slotB)
 // a mode change was made.
 int PlayerHeldSlotActionCheck(Actor* actor)
 {
-    int nameA = PlayerWeaponQueryName(actor, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor, 0xdff3097a);
+    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
+    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
 
     if (actor->field314 < 1) {
         if (actor->state7A4 == 5) {
@@ -956,11 +965,7 @@ int PlayerHeldSlotActionCheck(Actor* actor)
 
         if (result == 0x11d2c025) {
             if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
-                NameQuery query;
-                query.hash = 0x7ffcfd4f;
-                query.name.data = 0x91a0cef7;
-                query.unk08 = 0;
-                SendMsg(actor->host38, 0x41d, &query);
+                PlayerWeaponSetName(actor, 0x7ffcfd4f, 0x91a0cef7);
             }
             if (actor->state7A4 == 5) {
                 PlayerSetHeldSlotMode(actor, 3);
@@ -997,8 +1002,8 @@ int PlayerGunActionMessage(int msg, Actor* actor)
         return 0;
     }
 
-    int nameA = PlayerWeaponQueryName(actor, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor, 0xdff3097a);
+    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
+    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
 
     switch (msg) {
     case 0x20ee36:
@@ -1104,10 +1109,6 @@ int PlayerWeaponStateId(Actor* actor)
 extern "C" {
 extern signed char lbl_804D528C;
 extern float lbl_804D5288;
-extern float lbl_804D8F18;
-extern float lbl_804D8F1C;
-extern float lbl_804D8F20;
-extern float lbl_804D8F24;
 extern float lbl_804D8F28;
 }
 
@@ -1138,19 +1139,19 @@ void PlayerWeaponStateFrameUpdate(float dt, Actor* actor, int arg)
 {
     if (lbl_804D528C == 0) {
         lbl_804D528C = 1;
-        lbl_804D5288 = lbl_804D8F00;
+        lbl_804D5288 = 0.0f;
     }
 
     if (actor->state7A4 == 3 || actor->state7A4 == 5) {
         if (actor->field7E0 == 1) {
             lbl_804D5288 = lbl_804D5288 + dt;
-            actor->field1F0 += fn_80017084(lbl_804D8F18 * lbl_804D5288) * lbl_804D8F1C;
-            actor->field1F8 += fn_80017084(lbl_804D8F18 * (lbl_804D8F20 + lbl_804D5288)) * lbl_804D8F24;
+            actor->field1F0 += fn_80017084(0.0003f * lbl_804D5288) * 0.008f;
+            actor->field1F8 += fn_80017084(0.0003f * (5000.0f + lbl_804D5288)) * 0.004f;
             PlayerResetGunTimer(actor);
         } else if (actor->field7E0 == 2) {
             lbl_804D5288 = lbl_804D5288 + dt;
-            actor->field1F0 += fn_80017084(lbl_804D8F18 * lbl_804D5288) * lbl_804D8F24;
-            actor->field1F8 += fn_80017084(lbl_804D8F18 * (lbl_804D8F20 + lbl_804D5288)) * lbl_804D8F28;
+            actor->field1F0 += fn_80017084(0.0003f * lbl_804D5288) * 0.004f;
+            actor->field1F8 += fn_80017084(0.0003f * (5000.0f + lbl_804D5288)) * lbl_804D8F28;
             PlayerResetGunTimer(actor);
         }
     }
