@@ -542,11 +542,39 @@ struct SplineCmdMsg {
 
 extern int lbl_8045E7BC[8];
 extern int lbl_8045E7DC[8];
-extern char lbl_80345737[];
 extern "C" int fn_8002394C(u32 id);
 extern "C" void fn_800FF4E4(int a);
 
 void SplineSceneUnload(SplineGroup* g);
+void SplineResetState(void);
+void SplineSetup(int* cfg);
+void SplineShutdown(void);
+void SplineTick(float time, SplineGroup* g);
+void SplineModeUpdate(SplineGroup* g, int msg);
+int SplineMsg(int owner, int msg, void* p);
+
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
+// Spline subsystem descriptor (0x8039EB50): name plus the seven entry points.
+struct SplineSystemType {
+    const char* name;
+    void (*reset)(void);
+    void (*setup)(int*);
+    void (*shutdown)(void);
+    void (*tick)(float, SplineGroup*);
+    void (*modeUpdate)(SplineGroup*, int);
+    int (*msg)(int, int, void*);
+    void (*sceneUnload)(SplineGroup*);
+};
+
+SplineSystemType gSplineSystemType = {
+    "CTH Bot",    SplineResetState, SplineSetup,   SplineShutdown,
+    SplineTick,   SplineModeUpdate, SplineMsg,     SplineSceneUnload,
+};
+
 void SplineEntryUpdate(SplineGroup* g, int index);
 int SplineEntryLink(int owner, int a, int b);
 int SplineEntryAttach(int owner, int a, int b);
@@ -1124,7 +1152,7 @@ void SplineEntryUpdate(SplineGroup* g, int index) {
                (int)(255.0f * color[2]) & 0xff, 0xff);
     fn_8007E1E8(text[3]);
     fn_8007E570(text[0], text[1], 2);
-    Fn801EB188(lbl_80345737 + 8, score);
+    Fn801EB188(" %02d", score);
     if (score != lbl_8045E7BC[index]) {
         lbl_8045E7BC[index] = score;
     }
@@ -1144,7 +1172,7 @@ void SplineEntryUpdate(SplineGroup* g, int index) {
             Fn801ED1E4((int)(255.0f * color[0]) & 0xff,
                        (int)(255.0f * color[1]) & 0xff,
                        (int)(255.0f * color[2]) & 0xff, 0xff);
-            Fn801EB188(lbl_80345737 + 0xe, s);
+            Fn801EB188("+%d", s);
         }
         if (s == 0) {
             lbl_8045E7DC[index] = 0;
@@ -1283,7 +1311,7 @@ int SplineEntryAttach(int owner, int a, int b) {
                 ent = fn_800FD334(h);
                 fl = mag > 1 ? 0x73 : 0;
                 fn_802F09EC(buf, key, ent, add, fl);
-                text = fn_80170834(lbl_80345737 + 0x12);
+                text = fn_80170834("multi_score");
                 fn_8016F390(text, 0, 0);
                 for (i = 0; i < ((SplineGroup*)owner)->count; i++) {
                     if (fn_800FD6EC(i) >> 24 == 2) {
