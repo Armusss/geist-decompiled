@@ -533,8 +533,8 @@ extern "C" void fn_8008E824(int handle, int a, float speed);
 extern "C" void fn_80090390(int handle, int);
 extern "C" int rand(void);
 extern "C" int fn_800A1BC8(int, int, int, int, int);
-extern "C" void fn_80090974(int, float, int, int, int,
-                            int (*callback)(int, void*), void*);
+extern "C" void fn_80090974(int, int, int, int,
+                            int (*callback)(int, void*), void*, float);
 extern "C" void fn_8008F4F0(int, float, int);
 void ConditionUpdateBit(void* owner, int bit, int value);
 
@@ -886,8 +886,8 @@ int HydraGetHitNextState(Actor* actor)
             c4v = fn_800A1BC8(*(int*)((u8*)actor->mDataC4 + 0x14),
                               *(int*)((u8*)actor->mDataC4 + 0x1c),
                               0x20ee36, 0, 0);
-            fn_80090974(actor->mUnkD4, 1.0f, 1, c4v, 0x10,
-                        HydraOnBehaviourHitMessage, actor);
+            fn_80090974(actor->mUnkD4, 1, c4v, 0x10,
+                        HydraOnBehaviourHitMessage, actor, 1.0f);
             fn_8008F4F0(actor->mUnkD4, 1.0f, 1);
             beh->mFlags |= 0x10;
         }
@@ -1425,8 +1425,8 @@ void SkinnedActorPlayAnimSet(Actor* actor, int flags, int anim)
         } else {
             ConditionSetBit(actor->mCondition, 0, 0);
         }
-        fn_80090974(actor->mUnkD4, 1.0f, 0, beh->mUnk04, flags,
-                    lbl_803BE590[beh->mState].mUnk10, actor);
+        fn_80090974(actor->mUnkD4, 0, beh->mUnk04, flags,
+                    lbl_803BE590[beh->mState].mUnk10, actor, 1.0f);
         fn_8008F4F0(actor->mUnkD4, 1.0f, 0);
     }
 }
