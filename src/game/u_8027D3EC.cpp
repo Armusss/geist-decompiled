@@ -51,9 +51,9 @@ struct EffTarget;
 // Object returned by fn_800C7E80.
 struct SpawnOwner {
     u8  unk00[0x24];         // 0x00
-    u32 a24;                 // 0x24
-    u32 a28;                 // 0x28
-    u32 a2c;                 // 0x2c
+    s32 a24;                 // 0x24
+    s32 a28;                 // 0x28
+    s32 a2c;                 // 0x2c
     u8  unk30[0x08];         // 0x30
     u32 a38;                 // 0x38
     u8  unk3c[0x68];         // 0x3c
@@ -120,7 +120,7 @@ struct EffectParams {
 u32 ActorCreateEffects(u32 param_1, u32 param_2, f32* param_3, u32 param_4, int param_5) {
     SpawnDesc desc;
     EffectParams fx;
-    EffObject* out;
+    EffObject* outs[8];
     SpawnOwner* owner;
     EffTarget* ent;
 
@@ -165,13 +165,13 @@ u32 ActorCreateEffects(u32 param_1, u32 param_2, f32* param_3, u32 param_4, int 
     ent->a48 = fn_801DE990(&fx);
     fx.f20 = lbl_804DA3D0;
     ent->a4c = fn_801DE990(&fx);
-    fn_800265D4(ent->a48, 0x400, (void**)&out);
-    if (out != 0) {
-        out->flags &= 0xfffdffff;
+    fn_800265D4(ent->a48, 0x400, (void**)&outs[0]);
+    if (outs[0] != 0) {
+        outs[0]->flags &= 0xfffdffff;
     }
-    fn_800265D4(ent->a4c, 0x400, (void**)&out);
-    if (out != 0) {
-        out->flags &= 0xfffdffff;
+    fn_800265D4(ent->a4c, 0x400, (void**)&outs[0]);
+    if (outs[0] != 0) {
+        outs[0]->flags &= 0xfffdffff;
     }
 
     fx.owner = 0xffffffff;
@@ -192,9 +192,9 @@ u32 ActorCreateEffects(u32 param_1, u32 param_2, f32* param_3, u32 param_4, int 
     fx.f10 = lbl_804DA3D4;
     fx.mode = 0xffffffff;
     ent->a3c = fn_801DE990(&fx);
-    fn_800265D4(ent->a3c, 0x400, (void**)&out);
-    if (out != 0) {
-        out->flags &= 0xfffdffff;
+    fn_800265D4(ent->a3c, 0x400, (void**)&outs[0]);
+    if (outs[0] != 0) {
+        outs[0]->flags &= 0xfffdffff;
     }
 
     fx.f24 = lbl_804DA3DC;
@@ -202,9 +202,9 @@ u32 ActorCreateEffects(u32 param_1, u32 param_2, f32* param_3, u32 param_4, int 
     fx.f18 = lbl_804DA3D4;
     fx.f20 = lbl_804DA3E4;
     ent->a40 = fn_801DE990(&fx);
-    fn_800265D4(ent->a40, 0x400, (void**)&out);
-    if (out != 0) {
-        out->flags &= 0xfffdffff;
+    fn_800265D4(ent->a40, 0x400, (void**)&outs[0]);
+    if (outs[0] != 0) {
+        outs[0]->flags &= 0xfffdffff;
     }
 
     fx.f24 = lbl_804DA3E8;
@@ -212,9 +212,9 @@ u32 ActorCreateEffects(u32 param_1, u32 param_2, f32* param_3, u32 param_4, int 
     fx.f18 = lbl_804DA3D4;
     fx.f20 = lbl_804DA3F0;
     ent->a44 = fn_801DE990(&fx);
-    fn_800265D4(ent->a44, 0x400, (void**)&out);
-    if (out != 0) {
-        out->flags &= 0xfffdffff;
+    fn_800265D4(ent->a44, 0x400, (void**)&outs[0]);
+    if (outs[0] != 0) {
+        outs[0]->flags &= 0xfffdffff;
     }
 
     if (param_5 != 0) {
@@ -348,9 +348,8 @@ typedef void (*QueryFn)(s32, QueryOut*);
 extern f32 lbl_804D3784;
 extern f32 lbl_804DA400;
 extern f32 lbl_804DA404;
-extern s32 lbl_804A3208;
-extern s32 lbl_804A320C;
-extern s32 lbl_804A3210;
+struct S32Vec { s32 x, y, z; };
+extern S32Vec lbl_804A3208;
 extern s32 lbl_804D5548;
 extern s32 lbl_804D554C;
 
@@ -497,9 +496,9 @@ void PossessedEffectUpdate(Actor* actor, f32 dt) {
             }
         } else if (lbl_804D554C != 0 || lbl_804D3784 < self->f30 ||
                    fn_80049940() != 0) {
-            actor->x24 = lbl_804A3208;
-            actor->x28 = lbl_804A320C;
-            actor->x2c = lbl_804A3210;
+            actor->x24 = lbl_804A3208.x;
+            actor->x28 = lbl_804A3208.y;
+            actor->x2c = lbl_804A3208.z;
             PossessionEffectWhiteOut(actor, self->a34);
         }
     }
@@ -518,8 +517,9 @@ int PossessedEffectQuery(void* ctx, void* target) {
     QueryOut out;
 
     if (q->object != 0) {
-        QueryFn fn = *(QueryFn*)((u8*)q->object + 0x30);
+        QueryFn fn;
         out.object = q->object;
+        fn = *(QueryFn*)((u8*)q->object + 0x30);
         fn(0x400, &out);
         if (out.found == *handle || (out.flags & 2) == 0) {
             if (out.found == *handle) {
@@ -529,9 +529,9 @@ int PossessedEffectQuery(void* ctx, void* target) {
         }
         lbl_804D554C = 1;
     }
-    lbl_804A3208 = q->a30;
-    lbl_804A320C = q->a34;
-    lbl_804A3210 = q->a38;
+    lbl_804A3208.x = q->a30;
+    lbl_804A3208.y = q->a34;
+    lbl_804A3208.z = q->a38;
     return 1;
 }
 
@@ -543,10 +543,11 @@ int PossessedEffectCreate(Actor* actor) {
     s32 id;
     short ids[4];
 
-    self = actor->target;
-    if (self == 0) {
+    if (actor->target == 0) {
         self = (EffTarget*)VAlloc(0x78);
         actor->target = self;
+    } else {
+        self = actor->target;
     }
     memset(self, 0, 0x78);
     if (PossessableInit(actor) == 0) {
@@ -859,7 +860,7 @@ void VFree(void* ptr);
 extern "C" void fn_8000F60C(void* handle);
 extern "C" void fn_801ED838(int enable);
 extern "C" void fn_800C6900(void* handle);
-extern "C" void fn_800C7B14(Actor* actor);
+extern "C" Actor* fn_800C7B14(Actor* actor);
 u32 Fn800DF3B8(u32 asset, int index, u32 hash);
 void AnimUnref(int id);
 
@@ -1218,12 +1219,12 @@ u32 WhiteOutMaskSave(void* data) {
 // layers (freeing each allocated sub-object, unrefing its animation and
 // releasing its actor), the two effect assets and the cached effect object.
 void WhiteOutShutdown(void) {
-    u32 reply0[2];
-    u32 reply1[2];
-    u32 reply2[2];
-    u32 reply3[2];
+    u32 reply0[4];
+    u32 reply1[4];
+    u32 reply2[4];
+    u32 reply3[4];
+    s32 obj;
     int i;
-    u32 obj;
 
     lbl_804D5554 = 0;
     fn_801ED838(1);
@@ -1242,8 +1243,7 @@ void WhiteOutShutdown(void) {
             reply0[1] = 0;
             SendMsg((int)obj, 6, reply0);
             AnimUnref((int)Fn800DF3B8(0x5e130113, lbl_804D5574, 0x6f9e1166));
-            fn_800C7B14((Actor*)obj);
-            ActorRender((Actor*)obj);
+            ActorRender(fn_800C7B14((Actor*)obj));
         }
         lbl_804D557C = 0;
     }
@@ -1256,8 +1256,7 @@ void WhiteOutShutdown(void) {
         if (obj != 0) {
             reply1[1] = 0;
             SendMsg((int)obj, 6, reply1);
-            fn_800C7B14((Actor*)obj);
-            ActorRender((Actor*)obj);
+            ActorRender(fn_800C7B14((Actor*)obj));
         }
         lbl_804D559C = 0;
     }
@@ -1270,8 +1269,7 @@ void WhiteOutShutdown(void) {
         if (obj != 0) {
             reply2[1] = 0;
             SendMsg((int)obj, 6, reply2);
-            fn_800C7B14((Actor*)obj);
-            ActorRender((Actor*)obj);
+            ActorRender(fn_800C7B14((Actor*)obj));
         }
         lbl_804D55B4 = 0;
     }
@@ -1284,8 +1282,7 @@ void WhiteOutShutdown(void) {
         if (obj != 0) {
             reply3[1] = 0;
             SendMsg((int)obj, 6, reply3);
-            fn_800C7B14((Actor*)obj);
-            ActorRender((Actor*)obj);
+            ActorRender(fn_800C7B14((Actor*)obj));
         }
         lbl_804D55CC = 0;
     }
