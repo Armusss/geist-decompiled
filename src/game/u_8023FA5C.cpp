@@ -533,9 +533,9 @@ extern "C" void fn_8008E824(int handle, int a, float speed);
 extern "C" void fn_80090390(int handle, int);
 extern "C" int rand(void);
 extern "C" int fn_800A1BC8(int, int, int, int, int);
-extern "C" void fn_80090974(float, int, int, int, int,
+extern "C" void fn_80090974(int, float, int, int, int,
                             int (*callback)(int, void*), void*);
-extern "C" void fn_8008F4F0(float, int, int);
+extern "C" void fn_8008F4F0(int, float, int);
 void ConditionUpdateBit(void* owner, int bit, int value);
 
 extern float lbl_804D354C;
@@ -886,9 +886,9 @@ int HydraGetHitNextState(Actor* actor)
             c4v = fn_800A1BC8(*(int*)((u8*)actor->mDataC4 + 0x14),
                               *(int*)((u8*)actor->mDataC4 + 0x1c),
                               0x20ee36, 0, 0);
-            fn_80090974(1.0f, actor->mUnkD4, 1, c4v, 0x10,
+            fn_80090974(actor->mUnkD4, 1.0f, 1, c4v, 0x10,
                         HydraOnBehaviourHitMessage, actor);
-            fn_8008F4F0(1.0f, actor->mUnkD4, 1);
+            fn_8008F4F0(actor->mUnkD4, 1.0f, 1);
             beh->mFlags |= 0x10;
         }
     }
@@ -1372,7 +1372,7 @@ void SkinnedActorUpdateModel(Actor* actor)
 }
 
 int AnimBankGetSetCount(int, int, int);
-extern "C" void fn_8008F230(float value, int handle, int, int);
+extern "C" void fn_8008F230(int handle, float value, int, int);
 extern "C" void fn_8008F4E8(int handle, int);
 extern "C" void fn_8008F378(int handle);
 extern "C" void fn_8008F4EC(int handle, int);
@@ -1415,19 +1415,19 @@ void SkinnedActorPlayAnimSet(Actor* actor, int flags, int anim)
             unchanged = 1;
         }
         if (HasCondition(actor->mCondition, 0xe) != 0 || unchanged != 0) {
-            fn_8008F230(0.0f, actor->mUnkD4, 0, 0);
+            fn_8008F230(actor->mUnkD4, 0.0f, 0, 0);
             ConditionSetBit(actor->mCondition, 0xe, 0);
         } else {
-            fn_8008F230(150.0f, actor->mUnkD4, 0, 1);
+            fn_8008F230(actor->mUnkD4, 150.0f, 0, 1);
         }
         if (flags & 8) {
             ConditionSetBit(actor->mCondition, 0, 1);
         } else {
             ConditionSetBit(actor->mCondition, 0, 0);
         }
-        fn_80090974(1.0f, actor->mUnkD4, 0, beh->mUnk04, flags,
+        fn_80090974(actor->mUnkD4, 1.0f, 0, beh->mUnk04, flags,
                     lbl_803BE590[beh->mState].mUnk10, actor);
-        fn_8008F4F0(1.0f, actor->mUnkD4, 0);
+        fn_8008F4F0(actor->mUnkD4, 1.0f, 0);
     }
 }
 
