@@ -195,8 +195,8 @@ void HuntBotReset(HuntScreen* screen);
 int HuntBotPick(void* obj, int* out, float radius);
 void HuntBotSetFlag(int i);
 u32 HuntBotPickable(u32 handle);
-int HuntBotScore(void* screen, u32 handle, u32 index);
-int HuntBotHit(void* obj, float* p);
+int HuntBotScore(void* screen, u32 handle, u32 index);  // TODO (not drafted yet, 0x4BC bytes at 0x80142950)
+int HuntBotHit(void* obj, float* p);  // TODO (not drafted yet, 0x7C bytes at 0x80142E0C)
 
 static HuntScreenType sHuntBotScreen = {
     "Hunt Bot", HuntBotInit, HuntBotEnter, HuntBotExit, HuntBotUpdate, HuntBotDraw, HuntBotMsg, HuntBotReset,
@@ -782,11 +782,11 @@ int HuntBotPick(void* obj, int* out, float radius) {
     }
     {
         int d = (int)best;
-        if (d > 0) {
-            return (int)(float)sqrt((double)d);
+        if (d <= 0) {
+            return 0;
         }
+        return (int)(float)sqrt((double)d);
     }
-    return 0;
 }
 
 void HuntBotSetFlag(int i) {
@@ -819,15 +819,5 @@ u32 HuntBotPickable(u32 handle) {
     return (lbl_804D4D54 & (1 << player)) != 0;
 }
 
-int HuntBotScore(void* screen, u32 handle, u32 index) {
-    (void)screen;
-    (void)handle;
-    (void)index;
-    return 1;
-}
 
-int HuntBotHit(void* obj, float* p) {
-    (void)obj;
-    (void)p;
-    return 1;
-}
+
