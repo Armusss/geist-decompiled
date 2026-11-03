@@ -151,7 +151,16 @@ int HasCondition(void*, int);
 extern "C" void fn_801F0ED8(void);
 extern "C" void FxStart(void*, int, int);
 extern "C" int SendMsg(int to, int msg, void* data);
-extern "C" unsigned char lbl_803B9378[];
+// One 0x48-byte row of the held-item state table: three state callbacks, then
+// per-state data.
+struct PlayerSlotEntry {
+    void (*callback0)(void);            // 0x0
+    void (*callback4)(void);            // 0x4
+    void (*callback)(void);             // 0x8
+    u8 unkC[0x44 - 0xc];                // 0xc
+    s32 value44;                        // 0x44
+};
+extern "C" PlayerSlotEntry lbl_803B9378[];
 extern "C" void fn_8008E824(void*, int);
 extern "C" float fabsf(float);
 extern "C" int fn_801F0994(void*, float);
@@ -1682,23 +1691,18 @@ void PlayerResetZoomFovStateAlt(void* pv)
 // 0x801F1418: reads the 32-bit field at 0x44 of the 0x48-byte table entry
 // selected by the player's held-slot state at 0x7a4. Names are descriptive
 // guesses.
-struct PlayerSlotEntry {
-    u8 unk0[0x8];                       // 0x0
-    void (*callback)(void);             // 0x8
-    u8 unkC[0x44 - 0xc];                // 0xc
-    s32 value44;                        // 0x44
-};
+
 
 s32 PlayerHeldSlotField44(PlayerObj* p)
 {
-    PlayerSlotEntry* table = (PlayerSlotEntry*)lbl_803B9378;
+    PlayerSlotEntry* table = lbl_803B9378;
     return table[p->field7a4].value44;
 }
 
 // 0x801F1434: calls the callback at 0x8 of the same table entry, if any.
 void PlayerHeldSlotDispatchCallback(PlayerObj* p)
 {
-    PlayerSlotEntry* entry = &((PlayerSlotEntry*)lbl_803B9378)[p->field7a4];
+    PlayerSlotEntry* entry = &lbl_803B9378[p->field7a4];
     void (*callback)(void);
 
     callback = entry->callback;
@@ -1710,16 +1714,11 @@ void PlayerHeldSlotDispatchCallback(PlayerObj* p)
 // clamping it between the two state thresholds, then runs the state's update
 // callback. Names and constants are descriptive guesses.
 
-struct PlayerSlotFxEntry {
-    void (*callback0)(void);            // 0x0
-    void (*callback4)(void);            // 0x4
-    u8 unk8[0x48 - 0x8];                // 0x8
-};
 
 void PlayerUpdateHeldEffectDelta(PlayerObj* p, float dt)
 {
     float* value = (float*)&p->field800;
-    PlayerSlotFxEntry* entry;
+    PlayerSlotEntry* entry;
     void (*callback)(void);
     float v;
 
@@ -1735,7 +1734,7 @@ void PlayerUpdateHeldEffectDelta(PlayerObj* p, float dt)
         *value = (v <= 0.0f) ? 0.0f : v;
     }
 
-    entry = &((PlayerSlotFxEntry*)lbl_803B9378)[p->field7a4];
+    entry = &lbl_803B9378[p->field7a4];
     callback = entry->callback4;
     if (callback != 0)
         callback();
@@ -1745,7 +1744,7 @@ void PlayerUpdateHeldEffectDelta(PlayerObj* p, float dt)
 // slot, if there is one. Names are descriptive guesses.
 void PlayerHeldSlotCallback0(PlayerObj* p)
 {
-    PlayerSlotFxEntry* entry = &((PlayerSlotFxEntry*)lbl_803B9378)[p->field7a4];
+    PlayerSlotEntry* entry = &lbl_803B9378[p->field7a4];
     void (*callback)(void);
 
     callback = entry->callback0;
