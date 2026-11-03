@@ -529,7 +529,7 @@ void HydraSetupBehaviour(void* owner, void* actorPtr)
 extern "C" int fn_80162610(Actor* actor, void* state, int newState = 0);
 extern "C" int fn_8016325C(void* state);
 extern "C" int fn_8016F120(int handle, void* block);
-extern "C" void fn_8008E824(float value, int handle, int);
+extern "C" void fn_8008E824(int handle, int a, float speed);
 extern "C" void fn_80090390(int handle, int);
 extern "C" int rand(void);
 extern "C" int fn_800A1BC8(int, int, int, int, int);
@@ -566,11 +566,11 @@ int HydraOnBehaviourStateMessage(int msg, void* p)
             u32 value = actor->mDataC4->mValue30;
             if (actor->mUnk904 >= (float)value * lbl_804D3558) {
                 if (actor->mUnk904 >= (float)value * lbl_804D355C)
-                    fn_8008E824(1330.0f / lbl_804D354C, actor->mUnkD4, 0);
+                    fn_8008E824(actor->mUnkD4, 0, 1330.0f / lbl_804D354C);
                 else
-                    fn_8008E824(1330.0f / lbl_804D3550, actor->mUnkD4, 0);
+                    fn_8008E824(actor->mUnkD4, 0, 1330.0f / lbl_804D3550);
             } else {
-                fn_8008E824(1330.0f / lbl_804D3554, actor->mUnkD4, 0);
+                fn_8008E824(actor->mUnkD4, 0, 1330.0f / lbl_804D3554);
             }
         }
         break;
@@ -1118,11 +1118,11 @@ int HydraEnterBehaviourState2(Actor* actor)
 
     value = (int)actor->mDataC4->mValue30;
     if (actor->mUnk904 < (float)value * lbl_804D3558) {
-        fn_8008E824(1.75f, actor->mUnkD4, 0);
+        fn_8008E824(actor->mUnkD4, 0, 1.75f);
     } else if (actor->mUnk904 < (float)value * lbl_804D355C) {
-        fn_8008E824(1.25f, actor->mUnkD4, 0);
+        fn_8008E824(actor->mUnkD4, 0, 1.25f);
     } else {
-        fn_8008E824(1.0f, actor->mUnkD4, 0);
+        fn_8008E824(actor->mUnkD4, 0, 1.0f);
     }
 
     if (beh->mUnk1C != -1) {
