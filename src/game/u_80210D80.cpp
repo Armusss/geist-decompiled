@@ -330,27 +330,27 @@ extern "C" void fn_80211638(float x, float y, float alpha, float depth, float* o
         out[6] = 0.0f;
         out[7] = 0.0f;
     }
-    if (tint == 0) {
-        out[8] = 0.0f;
-        out[9] = 0.0f;
-        out[10] = 1.0f;
-    } else {
+    if (tint != 0) {
         out[8] = tint[0];
         out[9] = tint[1];
         out[10] = tint[2];
+    } else {
+        out[8] = 0.0f;
+        out[9] = 0.0f;
+        out[10] = 1.0f;
     }
     out[11] = alpha;
     out[12] = depth;
-    if (uv == 0) {
-        out[13] = 0.0f;
-        out[14] = 0.0f;
-        out[15] = 0.0f;
-        out[16] = 1.0f;
-    } else {
+    if (uv != 0) {
         out[13] = uv[0];
         out[14] = uv[1];
         out[15] = uv[2];
         out[16] = uv[3];
+    } else {
+        out[13] = 0.0f;
+        out[14] = 0.0f;
+        out[15] = 0.0f;
+        out[16] = 1.0f;
     }
 }
 
