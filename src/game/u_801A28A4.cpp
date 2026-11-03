@@ -5,9 +5,29 @@ typedef unsigned char u8;
 typedef unsigned long u32;
 typedef signed int s32;
 
-extern u8 lbl_803C6B08[];
-extern u8 lbl_80348390[];
-extern char lbl_803483DA[];
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
+extern u8 __upper_map[];
+
+inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
+
+inline u32 StrHash(const char* s, u32 h) {
+    int i;
+
+    if (s == 0) {
+        return 0;
+    }
+    for (i = 0; s[i] != 0; i++) {
+        h *= 31;
+        h += (unsigned char)toupper(s[i]);
+    }
+    h %= 0xFFFFFFFF;
+    return h;
+}
+
 
 // Runtime state-machine table: 16-byte records.
 struct GeistStateEntry {
@@ -90,7 +110,7 @@ int u801A28A4MsgHandler(int msg, int* p)
                     return 0;
                 state = (u8*)*(int*)(p[0] + 0x130);
                 String first(lbl_803AAA08[state[0x14]].name);
-                String second((const char*)(lbl_80348390 + 0x48));
+                String second("\n");
                 String joined(first, second);
                 fn_8028C188(&p[3], joined.mData, joined.mSize);
                 return 0;
@@ -123,23 +143,10 @@ int u801A28A4MsgHandler(int msg, int* p)
             int arg[2];
             int flags;
             u32 hash;
-            char* name;
-            char* end;
-            u32 c;
             arg[0] = actor;
             arg[1] = fn_800A3A40(actor);
             (*(void (**)(int, void*))(*(int*)actor + 0x30))(0x400, arg);
-            hash = p[2];
-            name = lbl_803483DA;
-            for (end = name; *end != 0; end++) {
-                if (*name == (char)0xFF)
-                    c = 0xFFFFFFFF;
-                else
-                    c = lbl_803C6B08[(u8)*name];
-                hash *= 31;
-                hash += c & 0xFF;
-                name++;
-            }
+            hash = StrHash("QUERY", p[2]);
             if (fn_800C5654(fn_800A3A40(actor), hash, p[1]) != 0) {
                 p[3] = 0;
                 return 1;
@@ -310,7 +317,7 @@ void GeistA28A4DogFetchInit(int self)
 
     lbl_804D3090 = AssetFind(0xF1754BF2, 0x46B8BB2);
     lbl_804D3094 = AssetFind(0xF1754BF2, 0x68539EA1);
-    lbl_804D3098 = FxFind((const char*)(lbl_80348390 + 0x50));
+    lbl_804D3098 = FxFind("dog_fetch");
 }
 
 // Dog-fetch state check: while the actor's condition flag is clear it
