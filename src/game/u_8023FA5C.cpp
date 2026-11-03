@@ -1,6 +1,9 @@
 // u_8023FA5C.cpp: "large actor" states, aiming and follow helpers (0x8023FA5C-0x80243B0C).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+// Retail calls small helpers (MemBlockInit, BlockPoolFree, ...) out of line.
+#pragma auto_inline off
+
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned int u32;
