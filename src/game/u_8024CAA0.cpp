@@ -6,6 +6,11 @@ typedef unsigned short u16;
 typedef signed int s32;
 typedef unsigned long u32;
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
 struct Vec3 {
     float x, y, z;
 };
@@ -271,6 +276,10 @@ struct CamQuery {
 };
 
 // Point/delta pair returned by fn_8016F120.
+struct Pos3 {
+    s32 x, y, z;
+};
+
 struct CamLine {
     s32 x, y, z;        // 0x00
     s32 dx, dy, dz;     // 0x0c
@@ -308,7 +317,7 @@ extern "C" void fn_8016D648(Vec3* out, const Vec3* a, const Vec3* b);
 extern "C" void fn_8016D6A8(Vec3* v);
 extern "C" void fn_8016E13C(void* m, Vec3i* v, int flag);
 extern "C" void fn_8016EDD8(s32 id, s32* pos);
-extern "C" int fn_8016F120(void* obj, CamLine* out);
+extern "C" int fn_8016F120(void* obj, void* out);
 extern "C" void fn_80027690(void* p);
 extern "C" void fn_8016EEF4(s32 id);
 void* VAlloc(int size);
@@ -607,6 +616,38 @@ void RailFireloopDestroy(int owner, CamActor* actor) {
     }
 }
 
+// Runtime string buffer; the 0x41e query message carries a String slot whose
+// first word the receiver overwrites with the answer.
+class Buffer {
+public:
+    Buffer();
+    virtual ~Buffer();
+    virtual void Release(char* p);
+
+    char* mData;
+    int mLength;
+    int mUnk0C;
+    int mOwned;
+};
+
+class String : public Buffer {
+public:
+    String();
+    ~String() {}
+    virtual void Release(char* p);
+};
+
+struct RailQueryResult {
+    String name;
+};
+
+struct RailQueryMsg {
+    u32 unk00;
+    u32 hash;
+    u32 unk08;
+    RailQueryResult result;
+};
+
 // Payload of message 0x41e: the actor's id, a request hash and a value the
 // receiver fills in.
 struct RailMsg41E {
@@ -620,23 +661,29 @@ struct RailMsg41E {
 // its 0x41e parameter, scales the actor's rotation by it and spawns the
 // "demonboss_fireloop" effect at the actor's position. 0x8024DAB0.
 int RailFireloopStart(int owner, CamActor* actor) {
+    Pos3 line;
     ActorHandle* h = (ActorHandle*)VAlloc(0x10);
     actor->ff0 = h;
     if (!h) {
         return 0;
     }
     u32 id = actor->unkcc;
-    if ((id >> 24) != 0x13) {
+    if ((int)(id >> 24) != 0x13) {
         return 0;
     }
-    RailMsg41E msg;
-    msg.value = 0;
-    msg.hash = 0x607eed34;
-    msg.unk08 = 0;
-    if (SendMsg(id, 0x41e, &msg)) {
-        fn_800E1098(&actor->rot, &actor->rot, (float)msg.value);
+    int hit;
+    int value;
+    {
+        RailQueryMsg msg;
+        msg.hash = 0x607eed34;
+        *(int*)&msg.result = 0;
+        msg.unk08 = 0;
+        hit = SendMsg(id, 0x41e, &msg);
+        value = *(int*)&msg.result;
     }
-    CamLine line;
+    if (hit) {
+        fn_800E1098(&actor->rot, &actor->rot, (float)value);
+    }
     line.x = (s32)actor->rot.x;
     line.y = (s32)actor->rot.y;
     line.z = (s32)actor->rot.z;
@@ -901,10 +948,6 @@ int ScannableBeamSetParam(ScannableBeam* beam, RailMsg41E* msg) {
     return 0;
 }
 
-extern float lbl_804D9D58;
-extern float lbl_804D9D5C;
-extern float lbl_804D9D60;
-extern float lbl_804D9D64;
 float VarFindFloat(u32 set, u32 id, u32 key);
 void ConditionUpdateBit(void* cond, int bit, int value);
 
@@ -913,26 +956,28 @@ void ConditionUpdateBit(void* cond, int bit, int value);
 // its owner, then reads the seven float tunables and three fixed floats and
 // flags condition 0x26 when the variant's 0x5ede8673 value is set. 0x8024E1C0.
 int ScannableBeamInit(ScannableBeam* beam) {
-    u32 variant = beam->f910;
-    if (variant == 0) {
+    u32 variant;
+    if (beam->f910 == 0) {
         beam->state = 4;
         beam->i5e0 = -1;
-        beam->f5e4 = lbl_804D9D58;
+        beam->f5e4 = 0.0f;
         beam->i5e8 = -1;
         variant = beam->owner->id;
+    } else {
+        variant = beam->f910;
     }
 
-    beam->f5b4 = lbl_804D9D48 * VarFindFloat(0x6249ec5a, variant, 0x9782a85b);
-    beam->f5b8 = lbl_804D9D48 * VarFindFloat(0x6249ec5a, variant, 0xb9af66bf);
-    beam->f5bc = lbl_804D9D48 * VarFindFloat(0x6249ec5a, variant, 0x03ff5cb8);
-    beam->f5c0 = lbl_804D9D48 * VarFindFloat(0x6249ec5a, variant, 0x1d9b4d25);
-    beam->f5c4 = lbl_804D9D48 * VarFindFloat(0x6249ec5a, variant, 0xba683b26);
-    beam->f5c8 = lbl_804D9D48 * VarFindFloat(0x6249ec5a, variant, 0x51979712);
-    beam->f5cc = lbl_804D9D48 * VarFindFloat(0x6249ec5a, variant, 0xc3cabadf);
-    beam->f5d4 = lbl_804D9D5C;
-    beam->f5dc = lbl_804D9D60;
-    beam->f5d8 = lbl_804D9D64;
-    if (VarFindFloat(0x6249ec5a, variant, 0x5ede8673) != lbl_804D9D58) {
+    beam->f5b4 = 0.01f * VarFindFloat(0x6249ec5a, variant, 0x9782a85b);
+    beam->f5b8 = 0.01f * VarFindFloat(0x6249ec5a, variant, 0xb9af66bf);
+    beam->f5bc = 0.01f * VarFindFloat(0x6249ec5a, variant, 0x03ff5cb8);
+    beam->f5c0 = 0.01f * VarFindFloat(0x6249ec5a, variant, 0x1d9b4d25);
+    beam->f5c4 = 0.01f * VarFindFloat(0x6249ec5a, variant, 0xba683b26);
+    beam->f5c8 = 0.01f * VarFindFloat(0x6249ec5a, variant, 0x51979712);
+    beam->f5cc = 0.01f * VarFindFloat(0x6249ec5a, variant, 0xc3cabadf);
+    beam->f5d4 = 2000.0f;
+    beam->f5dc = 1280.0f;
+    beam->f5d8 = 4000.0f;
+    if (VarFindFloat(0x6249ec5a, variant, 0x5ede8673) != 0.0f) {
         ConditionUpdateBit(&beam->cond, 0x26, 1);
     }
     return 1;
