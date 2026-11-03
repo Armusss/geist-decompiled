@@ -43,7 +43,7 @@ struct HostBehaviour {
     int   unk24;      // 0x24
     int   unk28;      // 0x28
     int   stream;     // 0x2c
-    char  unk30;      // 0x30
+    unsigned char unk30;      // 0x30
     u8    unk31;      // 0x31
     u8    unk32[2];   // 0x32
 };
@@ -351,9 +351,8 @@ extern "C" void fn_8008F4EC(int handle, int arg);
 extern "C" void fn_8008F230(int handle, int a, int b, float value);
 extern "C" void fn_80090974(int handle, int a, int anim, int mode,
                              void (*callback)(void*), void* actor, float time);
-extern "C" int fn_800A1BC8(unsigned short a, unsigned short b,
-                            unsigned short c, int index, int arg);
-int AnimBankGetSetCount(unsigned short a, unsigned short b, unsigned short c);
+extern "C" int fn_800A1BC8(int a, int b, int c, int index, int arg);
+int AnimBankGetSetCount(int a, int b, int c);
 
 void Vec3Set(Vec3* v, float x, float y, float z);
 void ModelNodeSetup(int node, int asset, int a, int b);
@@ -909,13 +908,17 @@ int HostBehaviourEnterWaitState(void* actorArg)
 // random animation from the state's bank (descriptive name).
 int HostBehaviourEnterAttackState(void* actorArg)
 {
-    HostActor* actor = (HostActor*)actorArg;
-    HostBehaviour* beh = actor->beh;
-    HostBehaviour* beh2;
-    HostAssetSet* set;
-    int count;
+    int same;
     int oldAnim;
-    int same = 0;
+    int count;
+    HostAssetSet* set;
+    HostBehaviour* beh2;
+    HostBehaviour* beh;
+    HostActor* actor;
+
+    same = 0;
+    actor = (HostActor*)actorArg;
+    beh = actor->beh;
 
     beh->state = 10;
     beh->unk14 = 10;
@@ -929,17 +932,13 @@ int HostBehaviourEnterAttackState(void* actorArg)
         fn_8008F378(actor->unk0d4);
         fn_8008F4EC(actor->unk0d4, 0);
     }
-    set = actor->unk0c4;
-    count = AnimBankGetSetCount(set->unk014, set->unk01c, lbl_803BEB88[beh2->state].unk00);
+    count = AnimBankGetSetCount(actor->unk0c4->unk014, actor->unk0c4->unk01c, lbl_803BEB88[beh2->state].unk00);
     if (count != 0) {
         oldAnim = beh2->unk04;
-        {
-            int r = rand();
-
-            beh2->unk04 = fn_800A1BC8(set->unk014, set->unk01c,
-                                      lbl_803BEB88[beh2->state].unk00,
-                                      r - (r / count) * count, 0);
-        }
+        set = actor->unk0c4;
+        beh2->unk04 = fn_800A1BC8(set->unk014, set->unk01c,
+                                  lbl_803BEB88[beh2->state].unk00,
+                                  rand() % count, 0);
         if (oldAnim == beh2->unk04) {
             same = 1;
         }
@@ -949,16 +948,17 @@ int HostBehaviourEnterAttackState(void* actorArg)
         } else {
             fn_8008F230(actor->unk0d4, 0, 1, lbl_804D9D9C);
         }
-        ConditionSetBit(actor->cond, 0, 1);
+        ConditionSetBit(actor->cond, 0, 0);
         fn_80090974(actor->unk0d4, 0, beh2->unk04, 0, lbl_803BEB88[beh2->state].unk10,
                     actor, lbl_804D9D70);
     }
-    if (beh->unk30 == 0) {
-        if (beh->unk28 == -1) {
-            beh->unk28 = fn_8016F120(lbl_804D35EC, &actor->unk024);
+    {
+        int key = lbl_804D35EC;
+        if (beh->unk30 != 0) {
+            beh->unk30 = beh->unk30 - 1;
+        } else if (beh->unk28 == -1) {
+            beh->unk28 = fn_8016F120(key, &actor->unk024);
         }
-    } else {
-        beh->unk30 = beh->unk30 - 1;
     }
     return 1;
 }
@@ -967,13 +967,17 @@ int HostBehaviourEnterAttackState(void* actorArg)
 // random animation from the state's bank (descriptive name).
 int HostBehaviourEnterSearchState(void* actorArg)
 {
-    HostActor* actor = (HostActor*)actorArg;
-    HostBehaviour* beh = actor->beh;
-    HostBehaviour* beh2;
-    HostAssetSet* set;
-    int count;
+    int same;
     int oldAnim;
-    int same = 0;
+    int count;
+    HostAssetSet* set;
+    HostBehaviour* beh2;
+    HostBehaviour* beh;
+    HostActor* actor;
+
+    same = 0;
+    actor = (HostActor*)actorArg;
+    beh = actor->beh;
 
     beh->state = 9;
     beh->unk14 = 9;
@@ -987,17 +991,13 @@ int HostBehaviourEnterSearchState(void* actorArg)
         fn_8008F378(actor->unk0d4);
         fn_8008F4EC(actor->unk0d4, 0);
     }
-    set = actor->unk0c4;
-    count = AnimBankGetSetCount(set->unk014, set->unk01c, lbl_803BEB88[beh2->state].unk00);
+    count = AnimBankGetSetCount(actor->unk0c4->unk014, actor->unk0c4->unk01c, lbl_803BEB88[beh2->state].unk00);
     if (count != 0) {
         oldAnim = beh2->unk04;
-        {
-            int r = rand();
-
-            beh2->unk04 = fn_800A1BC8(set->unk014, set->unk01c,
-                                      lbl_803BEB88[beh2->state].unk00,
-                                      r - (r / count) * count, 0);
-        }
+        set = actor->unk0c4;
+        beh2->unk04 = fn_800A1BC8(set->unk014, set->unk01c,
+                                  lbl_803BEB88[beh2->state].unk00,
+                                  rand() % count, 0);
         if (oldAnim == beh2->unk04) {
             same = 1;
         }
@@ -1007,16 +1007,17 @@ int HostBehaviourEnterSearchState(void* actorArg)
         } else {
             fn_8008F230(actor->unk0d4, 0, 1, lbl_804D9D9C);
         }
-        ConditionSetBit(actor->cond, 0, 1);
+        ConditionSetBit(actor->cond, 0, 0);
         fn_80090974(actor->unk0d4, 0, beh2->unk04, 0, lbl_803BEB88[beh2->state].unk10,
                     actor, lbl_804D9D70);
     }
-    if (beh->unk30 == 0) {
-        if (beh->unk28 == -1) {
-            beh->unk28 = fn_8016F120(lbl_804D35EC, &actor->unk024);
+    {
+        int key = lbl_804D35EC;
+        if (beh->unk30 != 0) {
+            beh->unk30 = beh->unk30 - 1;
+        } else if (beh->unk28 == -1) {
+            beh->unk28 = fn_8016F120(key, &actor->unk024);
         }
-    } else {
-        beh->unk30 = beh->unk30 - 1;
     }
     return 1;
 }
@@ -1207,12 +1208,10 @@ int HostBehaviourEnterState6(void* actorArg)
                     lbl_803BEB88[beh2->state].unk10, actor, lbl_804D9D70);
     }
     fn_8016F120(lbl_804D35F0, &actor->unk024);
-    if (beh->unk30 == 0) {
-        if (beh->unk28 == -1) {
-            beh->unk28 = fn_8016F120(lbl_804D35EC, &actor->unk024);
-        }
-    } else {
+    if (beh->unk30 != 0) {
         beh->unk30 = beh->unk30 - 1;
+    } else if (beh->unk28 == -1) {
+        beh->unk28 = fn_8016F120(lbl_804D35EC, &actor->unk024);
     }
     fn_800C5654(actor->unk038, 0xa30cfd53, actor->unk038);
     return 1;
@@ -1269,12 +1268,10 @@ int HostBehaviourEnterState5(void* actorArg)
         fn_80090974(actor->unk0d4, 0, beh2->unk04, 8,
                     lbl_803BEB88[beh2->state].unk10, actor, lbl_804D9D70);
     }
-    if (beh->unk30 == 0) {
-        if (beh->unk28 == -1) {
-            beh->unk28 = fn_8016F120(lbl_804D35EC, &actor->unk024);
-        }
-    } else {
+    if (beh->unk30 != 0) {
         beh->unk30 = beh->unk30 - 1;
+    } else if (beh->unk28 == -1) {
+        beh->unk28 = fn_8016F120(lbl_804D35EC, &actor->unk024);
     }
     return 1;
 }
@@ -1328,12 +1325,10 @@ int HostBehaviourEnterMountState(void* actorArg)
         fn_80090974(actor->unk0d4, 0, beh2->unk04, 9, lbl_803BEB88[beh2->state].unk10,
                     actor, lbl_804D9D70);
     }
-    if (beh->unk30 == 0) {
-        if (beh->unk28 == -1) {
-            beh->unk28 = fn_8016F120(lbl_804D35EC, &actor->unk024);
-        }
-    } else {
+    if (beh->unk30 != 0) {
         beh->unk30 = beh->unk30 - 1;
+    } else if (beh->unk28 == -1) {
+        beh->unk28 = fn_8016F120(lbl_804D35EC, &actor->unk024);
     }
     return 1;
 }
@@ -1386,12 +1381,10 @@ int HostBehaviourEnterChaseState(void* actorArg)
         fn_80090974(actor->unk0d4, 0, beh2->unk04, 9, lbl_803BEB88[beh2->state].unk10,
                     actor, lbl_804D9D70);
     }
-    if (beh->unk30 == 0) {
-        if (beh->unk28 == -1) {
-            beh->unk28 = fn_8016F120(lbl_804D35EC, &actor->unk024);
-        }
-    } else {
+    if (beh->unk30 != 0) {
         beh->unk30 = beh->unk30 - 1;
+    } else if (beh->unk28 == -1) {
+        beh->unk28 = fn_8016F120(lbl_804D35EC, &actor->unk024);
     }
     return 1;
 }
@@ -1445,12 +1438,10 @@ int HostBehaviourEnterState2(void* actorArg)
         fn_80090974(actor->unk0d4, 0, beh2->unk04, 8,
                     lbl_803BEB88[beh2->state].unk10, actor, lbl_804D9D70);
     }
-    if (beh->unk30 == 0) {
-        if (beh->unk28 == -1) {
-            beh->unk28 = fn_8016F120(lbl_804D35EC, &actor->unk024);
-        }
-    } else {
+    if (beh->unk30 != 0) {
         beh->unk30 = beh->unk30 - 1;
+    } else if (beh->unk28 == -1) {
+        beh->unk28 = fn_8016F120(lbl_804D35EC, &actor->unk024);
     }
     return 1;
 }
@@ -1459,13 +1450,17 @@ int HostBehaviourEnterState2(void* actorArg)
 // random animation from the state's bank and restarts the effect (descriptive name).
 int HostBehaviourEnterState1(void* actorArg)
 {
-    HostActor* actor = (HostActor*)actorArg;
-    HostBehaviour* beh = actor->beh;
-    HostBehaviour* beh2;
-    HostAssetSet* set;
-    int count;
+    int same;
     int oldAnim;
-    int same = 0;
+    int count;
+    HostAssetSet* set;
+    HostBehaviour* beh2;
+    HostBehaviour* beh;
+    HostActor* actor;
+
+    same = 0;
+    actor = (HostActor*)actorArg;
+    beh = actor->beh;
 
     beh->unk14 = beh->state;
     beh->state = 1;
@@ -1478,17 +1473,13 @@ int HostBehaviourEnterState1(void* actorArg)
         fn_8008F378(actor->unk0d4);
         fn_8008F4EC(actor->unk0d4, 0);
     }
-    set = actor->unk0c4;
-    count = AnimBankGetSetCount(set->unk014, set->unk01c, lbl_803BEB88[beh2->state].unk00);
+    count = AnimBankGetSetCount(actor->unk0c4->unk014, actor->unk0c4->unk01c, lbl_803BEB88[beh2->state].unk00);
     if (count != 0) {
         oldAnim = beh2->unk04;
-        {
-            int r = rand();
-
-            beh2->unk04 = fn_800A1BC8(set->unk014, set->unk01c,
-                                      lbl_803BEB88[beh2->state].unk00,
-                                      r - (r / count) * count, 0);
-        }
+        set = actor->unk0c4;
+        beh2->unk04 = fn_800A1BC8(set->unk014, set->unk01c,
+                                  lbl_803BEB88[beh2->state].unk00,
+                                  rand() % count, 0);
         if (oldAnim == beh2->unk04) {
             same = 1;
         }
@@ -1503,12 +1494,13 @@ int HostBehaviourEnterState1(void* actorArg)
                     lbl_803BEB88[beh2->state].unk10, actor, lbl_804D9D70);
     }
     beh->unk0c = 0;
-    if (beh->unk30 == 0) {
-        if (beh->unk28 == -1) {
-            beh->unk28 = fn_8016F120(lbl_804D35EC, &actor->unk024);
+    {
+        int key = lbl_804D35EC;
+        if (beh->unk30 != 0) {
+            beh->unk30 = beh->unk30 - 1;
+        } else if (beh->unk28 == -1) {
+            beh->unk28 = fn_8016F120(key, &actor->unk024);
         }
-    } else {
-        beh->unk30 = beh->unk30 - 1;
     }
     return 1;
 }
@@ -1559,13 +1551,17 @@ extern float lbl_804D9DB4;
 // from the state's bank and restarts the effect (descriptive name).
 int HostBehaviourUpdateState0(void* actorArg)
 {
-    HostActor* actor = (HostActor*)actorArg;
-    HostBehaviour* beh = actor->beh;
-    HostBehaviour* beh2;
-    HostAssetSet* set;
-    int count;
+    int same;
     int oldAnim;
-    int same = 0;
+    int count;
+    HostAssetSet* set;
+    HostBehaviour* beh2;
+    HostBehaviour* beh;
+    HostActor* actor;
+
+    same = 0;
+    actor = (HostActor*)actorArg;
+    beh = actor->beh;
 
     beh->state = 0;
     beh->unk14 = 0;
@@ -1578,17 +1574,13 @@ int HostBehaviourUpdateState0(void* actorArg)
         fn_8008F378(actor->unk0d4);
         fn_8008F4EC(actor->unk0d4, 0);
     }
-    set = actor->unk0c4;
-    count = AnimBankGetSetCount(set->unk014, set->unk01c, lbl_803BEB88[beh2->state].unk00);
+    count = AnimBankGetSetCount(actor->unk0c4->unk014, actor->unk0c4->unk01c, lbl_803BEB88[beh2->state].unk00);
     if (count != 0) {
         oldAnim = beh2->unk04;
-        {
-            int r = rand();
-
-            beh2->unk04 = fn_800A1BC8(set->unk014, set->unk01c,
-                                      lbl_803BEB88[beh2->state].unk00,
-                                      r - (r / count) * count, 0);
-        }
+        set = actor->unk0c4;
+        beh2->unk04 = fn_800A1BC8(set->unk014, set->unk01c,
+                                  lbl_803BEB88[beh2->state].unk00,
+                                  rand() % count, 0);
         if (HasCondition(actor->cond, 0xe) == 0 && oldAnim != beh2->unk04) {
             fn_8008F230(actor->unk0d4, 0, 1, lbl_804D9D9C);
         } else {
@@ -1601,12 +1593,13 @@ int HostBehaviourUpdateState0(void* actorArg)
     }
     beh->unk0c = 0;
     beh->unk20 = lbl_804D9D98 * ((float)rand() / lbl_804D9D78) + lbl_804D9D90;
-    if (beh->unk30 == 0) {
-        if (beh->unk28 == -1) {
-            beh->unk28 = fn_8016F120(lbl_804D35EC, &actor->unk024);
+    {
+        int key = lbl_804D35EC;
+        if (beh->unk30 != 0) {
+            beh->unk30 = beh->unk30 - 1;
+        } else if (beh->unk28 == -1) {
+            beh->unk28 = fn_8016F120(key, &actor->unk024);
         }
-    } else {
-        beh->unk30 = beh->unk30 - 1;
     }
     return 1;
 }
