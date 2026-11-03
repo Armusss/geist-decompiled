@@ -213,25 +213,12 @@ void AramInitPageTable(void)
 // zero-fills it. The table is indexed by 4 KB page number.
 void AramAllocPageBuffer(void)
 {
-    lbl_804D569C = (u32*)OSGetArenaLo();
-    OSSetArenaLo((u32)lbl_804D569C + 0x8000);
+    u32 lo = (u32)OSGetArenaLo();
+    lbl_804D569C = (u32*)lo;
+    OSSetArenaLo(lo + 0x8000);
 
     int off = 0;
-    for (int n = 0x400; n != 0; n--) {
-        *(u32*)((u8*)lbl_804D569C + off) = 0;
-        off += 4;
-        *(u32*)((u8*)lbl_804D569C + off) = 0;
-        off += 4;
-        *(u32*)((u8*)lbl_804D569C + off) = 0;
-        off += 4;
-        *(u32*)((u8*)lbl_804D569C + off) = 0;
-        off += 4;
-        *(u32*)((u8*)lbl_804D569C + off) = 0;
-        off += 4;
-        *(u32*)((u8*)lbl_804D569C + off) = 0;
-        off += 4;
-        *(u32*)((u8*)lbl_804D569C + off) = 0;
-        off += 4;
+    for (int n = 0x2000; n != 0; n--) {
         *(u32*)((u8*)lbl_804D569C + off) = 0;
         off += 4;
     }
