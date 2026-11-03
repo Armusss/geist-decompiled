@@ -14,13 +14,8 @@ struct Entry12 {
 };
 
 void ClearEntryRange(Entry12* begin, Entry12* end) {
-    u32 count = (u32)((u8*)end + 11 - (u8*)begin) / 12;
-    if (begin >= end) {
-        return;
+    for (; begin < end; begin++) {
     }
-    do {
-        count--;
-    } while (count != 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -29,10 +24,6 @@ void ClearEntryRange(Entry12* begin, Entry12* end) {
 
 extern u8 __upper_map[];
 extern char lbl_8034B818[];
-extern float lbl_804DA778;
-extern float lbl_804DA77C;
-extern float lbl_804DA780;
-extern float lbl_804DA784;
 extern int lbl_804D3848;
 
 struct Owner;
@@ -180,9 +171,9 @@ int NpcSveHandleMsg(int msg, int* p) {
     switch (msg) {
     case 0x400:
         p[1] = OwnerId(o);
-        p[3] = o->f904 > lbl_804DA778;
-        *(float*)&p[4] = lbl_804DA77C;
-        *(float*)&p[5] = lbl_804DA77C;
+        p[3] = o->f904 > 0.0f;
+        *(float*)&p[4] = 1.0f;
+        *(float*)&p[5] = 1.0f;
         p[6] = 2;
         p[7] = 0;
         return 1;
@@ -314,7 +305,7 @@ int NpcSveUpdateActor(Owner* o) {
         if (next != evt->state &&
             lbl_803C3188[evt->state].fn4(o) != 0) {
             lbl_803C3188[next].fn0(o);
-            evt->timer = lbl_804DA778;
+            evt->timer = 0.0f;
             ConditionSetBit(o->cond270, 0x40, 0);
             ConditionSetBit(o->cond270, 0x41, 0);
             ConditionSetBit(o->cond270, 0x43, 0);
@@ -363,10 +354,10 @@ void NpcSveInitActor(Owner* o) {
     o->fn5fc = fn_800CC984;
     o->fn600 = fn_800CC984;
     o->unk288 = 0;
-    ev->unk04 = lbl_804DA778;
+    ev->unk04 = 0.0f;
     ev->state = 0;
     ev->flags = 0;
-    ev->timer = lbl_804DA778;
+    ev->timer = 0.0f;
     lbl_804D3848 = AssetFind(0xf1754bf2, 0x21c5e0);
     if (o->unkC4->type == 0x17c92eb2 || o->unkC4->type == 0xd06b7dcc ||
         o->unkC4->type == 0x23d7f0f0 || o->unkC4->type == 0x956698c2) {
@@ -386,12 +377,12 @@ int NpcSveCheckTarget(Owner* o) {
     if (o == 0) {
         return 0;
     }
+    void* target;
     PathEvent* ev = (PathEvent*)o->evt;
     int mode = fn_800B26B8(o);
     if (mode != 4) {
-        u32 target[3];
-        fn_800B261C(o, mode, target);
-        if (target[0] != (u32)FollowGetTargetObj(o->cond270)) {
+        fn_800B261C(o, mode, &target);
+        if (target != FollowGetTargetObj(o->cond270)) {
             return 1;
         }
         mode = fn_800B22F8(o, mode);
@@ -399,19 +390,23 @@ int NpcSveCheckTarget(Owner* o) {
             return 1;
         }
     }
-    return lbl_804DA780 < ev->timer;
+    if (ev->timer > 3000.0f) {
+        return 1;
+    }
+    return 0;
 }
 
 void ConditionUpdateBit(void* cond, int id, int value);
 
 // Tells whether the owner is a live actor, after clearing the follow-condition
 // bits. Used as the "stop following" step of the path-follow state machine.
-bool NpcSveStopFollow(Owner* o) {
-    if (o != 0) {
-        ConditionUpdateBit(o->cond270, 4, 0);
-        ConditionUpdateBit(o->cond270, 9, 0);
+int NpcSveStopFollow(Owner* o) {
+    if (o == 0) {
+        return 0;
     }
-    return o != 0;
+    ConditionUpdateBit(o->cond270, 4, 0);
+    ConditionUpdateBit(o->cond270, 9, 0);
+    return 1;
 }
 
 extern "C" void SendMsg(int to, int msg, void* data);
@@ -449,7 +444,7 @@ int NpcSveBeginFollow(Owner* o) {
     o->unk288 = 0;
     o->unk268 = 3;
     ev->state = 5;
-    ev->unk04 = lbl_804DA778;
+    ev->unk04 = 0.0f;
     ConditionUpdateBit(o->cond270, 4, 1);
     ConditionUpdateBit(o->cond270, 9, 1);
     FollowSetTargetObj(o->cond270, target);
@@ -468,29 +463,30 @@ int NpcSveCheckFollowReady(Owner* o) {
     }
     PathEvent* ev = (PathEvent*)o->evt;
     int mode = fn_800B26B8(o);
-    if (mode == 4) {
-        return 1;
+    if (mode != 4) {
+        void* target;
+        fn_800B261C(o, mode, &target);
+        if (target != FollowGetTargetObj(o->cond270)) {
+            return 1;
+        }
+        mode = fn_800B22F8(o, mode);
+        if (mode <= 2) {
+            return 1;
+        }
+        return ev->timer > 3000.0f;
     }
-    u32 target[3];
-    fn_800B261C(o, mode, target);
-    if (target[0] != (u32)FollowGetTargetObj(o->cond270)) {
-        return 1;
-    }
-    mode = fn_800B22F8(o, mode);
-    if (mode <= 2) {
-        return 1;
-    }
-    return ev->timer > lbl_804DA780;
+    return 1;
 }
 
 // Clears the follow-condition bits and reports whether the owner was valid;
 // used as the "cancel following" step of the path-follow state machine.
-bool NpcSveCancelFollow(Owner* o) {
-    if (o != 0) {
-        ConditionUpdateBit(o->cond270, 4, 0);
-        ConditionUpdateBit(o->cond270, 9, 0);
+int NpcSveCancelFollow(Owner* o) {
+    if (o == 0) {
+        return 0;
     }
-    return o != 0;
+    ConditionUpdateBit(o->cond270, 4, 0);
+    ConditionUpdateBit(o->cond270, 9, 0);
+    return 1;
 }
 
 void NpcSveAdvanceToTargetFollowState(Owner* o);
@@ -524,7 +520,7 @@ int NpcSveStartFollowTarget(Owner* o) {
     o->unk288 = 0;
     o->unk268 = 3;
     ev->state = 4;
-    ev->unk04 = lbl_804DA778;
+    ev->unk04 = 0.0f;
     ConditionUpdateBit(o->cond270, 4, 1);
     ConditionUpdateBit(o->cond270, 9, 1);
     FollowSetTargetObj(o->cond270, target);
@@ -556,7 +552,7 @@ int NpcSveUpdateFollowTarget(Owner* o) {
     if (target == 0) {
         return 1;
     }
-    if (OwnerValue(o, 0) < lbl_804DA784 || (ev->flags & 1) != 0) {
+    if (OwnerValue(o, 0) < 600.0f || (ev->flags & 1) != 0) {
         if (o->unk288 != 0) {
             fn_800BBCA8(o);
             o->unk288 = 0;
@@ -625,12 +621,6 @@ struct SveFollowState {
     u32 flags;                            // 0x18
 };
 
-extern float lbl_804DA788;
-extern float lbl_804DA78C;
-extern float lbl_804DA790;
-extern float lbl_804DA794;
-extern double lbl_804DA798;
-extern double lbl_804DA7A0;
 
 extern "C" int fn_800B1ED4(void* owner, int mode);
 extern "C" void fn_800E1098(float scale, Vec3* io, Vec3* in);
@@ -673,13 +663,13 @@ int NpcSveUpdateFollow(Owner* o) {
     if ((st.flags & 2) == 0) {
         return 1;
     }
-    if (OwnerValue(o, target) < lbl_804DA788) {
+    if (OwnerValue(o, target) < 1500.0f) {
         float angle = ActorAimAngleToPos(target, &o->pos84);
-        active = fabsf((float)(angle < lbl_804DA78C)) != lbl_804DA778;
+        active = fabsf((float)(angle < 10.0f)) != 0.0f;
     }
     if (active == 0) {
         if ((ev->flags & 1) == 0) {
-            if (lbl_804DA790 < ev->timer) {
+            if (200.0f < ev->timer) {
                 Vec3 pos;
                 pos.x = (float)target->i24;
                 pos.y = (float)target->i28;
@@ -690,12 +680,12 @@ int NpcSveUpdateFollow(Owner* o) {
                 off.x = (float)dir[0];
                 off.y = (float)dir[1];
                 off.z = 0.0f;
-                fn_800E1098(lbl_804DA794, &off, &off);
+                fn_800E1098(1350.0f, &off, &off);
                 pos.x += off.x;
                 pos.y += off.y;
                 pos.z += off.z;
                 fn_800BC5A8(o, &pos);
-                ev->timer = lbl_804DA778;
+                ev->timer = 0.0f;
             }
             if (fn_800BAF40(o) == -1) {
                 o->unk288 = 0;
@@ -740,7 +730,6 @@ int NpcSveExitFollowTarget(Owner* o) {
 }
 
 extern "C" int fn_8020B97C(void* obj);
-extern float lbl_804DA7A8;
 Owner* GetPlayer();
 
 // Target object reported by FollowGetTargetObj: fixed-point position at
@@ -824,11 +813,11 @@ int NpcSveUpdateTargetFollow(Owner* o) {
         pos.x = (float)target->x24;
         pos.y = (float)target->y28;
         pos.z = (float)target->z2c;
-        if (fabsf(ActorAngleToPos(o, &pos)) < lbl_804DA78C ||
-            ev->timer > lbl_804DA7A8) {
+        if (fabsf(ActorAngleToPos(o, &pos)) < 10.0f ||
+            ev->timer > 5000.0f) {
             ConditionUpdateBit(o->cond270, 4, 0);
             ev->flags |= 1;
-            ev->timer = lbl_804DA778;
+            ev->timer = 0.0f;
         }
     } else if ((ev->flags & 4) == 0) {
         ev->flags |= 4;
@@ -880,7 +869,7 @@ int NpcSveBeginTargetFollow(Owner* o) {
     ev->state = 3;
     ev->flags &= ~1;
     ev->flags &= ~4;
-    ev->timer = lbl_804DA778;
+    ev->timer = 0.0f;
     if (MemFlagIsSet(o->cond270, 0x1f) == 0) {
         ConditionUpdateBit(o->cond270, 4, 1);
         ConditionUpdateBit(o->cond270, 3, 0);
@@ -904,17 +893,17 @@ int NpcSveRefreshFollowTarget(Owner* o) {
     PathEvent* ev = (PathEvent*)o->evt;
     int mode = fn_800B26B8(o);
     if (mode != 4) {
-        u32 target[3];
+        void* target;
         if (fn_800B1EF4(o, mode) == 0) {
-            fn_800B261C(o, mode, target);
+            fn_800B261C(o, mode, &target);
             fn_800B22F8(o, mode);
             fn_800B1F20(o, mode);
         }
         if ((fn_800B1ED4(o, mode) & 0x10) == 0 || fn_800B22F8(o, mode) < 3) {
-            ev->timer = lbl_804DA778;
+            ev->timer = 0.0f;
         }
     }
-    if (ev->timer <= lbl_804DA780) {
+    if (ev->timer <= 3000.0f) {
         return 0;
     }
     o->unk268 = 3;
@@ -922,14 +911,15 @@ int NpcSveRefreshFollowTarget(Owner* o) {
 }
 
 // Switches the path-follow actor to state 3 and re-arms its follow conditions.
-bool NpcSveEnterStateThree(Owner* o) {
-    if (o != 0) {
-        o->unk268 = 3;
-        RangeResetPending(o->cond270);
-        ConditionUpdateBit(o->cond270, 4, 0);
-        ConditionSetBit(o->cond270, 0x1e, 0);
+int NpcSveEnterStateThree(Owner* o) {
+    if (o == 0) {
+        return 0;
     }
-    return o != 0;
+    o->unk268 = 3;
+    RangeResetPending(o->cond270);
+    ConditionUpdateBit(o->cond270, 4, 0);
+    ConditionSetBit(o->cond270, 0x1e, 0);
+    return 1;
 }
 
 // Enters the first path-follow state: resets the event block, raises the follow
@@ -941,14 +931,14 @@ int NpcSveBeginPathFollow(Owner* o) {
     PathEvent* ev = (PathEvent*)o->evt;
     o->unk288 = 0;
     ev->state = 1;
-    ev->unk04 = lbl_804DA778;
+    ev->unk04 = 0.0f;
     ConditionUpdateBit(o->cond270, 4, 1);
     ConditionSetBit(o->cond270, 0x1e, 1);
     int mode = fn_800B26B8(o);
     if (mode == 4) {
         return 0;
     }
-    u32 target[5];
+    u32 target[3];
     fn_800B261C(o, mode, target);
     return target[0] != 0;
 }
@@ -962,8 +952,8 @@ int NpcSveUpdatePathFollow(Owner* o) {
     int mode = fn_800B26B8(o);
     if (mode != 4) {
         int lowest = fn_800B22F8(o, mode);
-        u8 target[12];
-        fn_800B261C(o, mode, target);
+        void* target;
+        fn_800B261C(o, mode, &target);
         if (lowest != 4) {
             o->unk268 = lowest;
             if (MemFlagIsSet(o->cond270, 5) == 0) {
@@ -992,7 +982,7 @@ int NpcSveUpdatePathFollow(Owner* o) {
         o->unk288 = 0;
     }
     float pathTime = fn_80115F68(o->unk38);
-    if (pathTime < lbl_804DA77C) {
+    if (pathTime < 1.0f) {
         ConditionUpdateBit(o->cond270, 9, 1);
     } else {
         ConditionUpdateBit(o->cond270, 9, 0);
@@ -1032,9 +1022,6 @@ int NpcFollowClearState(void* p) {
 }
 
 extern float lbl_804DA7AC;
-extern float lbl_804DA7B0;
-extern float lbl_804DA7B4;
-extern float lbl_804DA7B8;
 void ActorAimOffset3D(void* owner, float* pos, float* dist, float* height);
 
 // Per-frame update of the follow-offset query: advances the follow timer, aims
@@ -1067,15 +1054,15 @@ int NpcSveUpdateFollowAim(void* p) {
             aimPos.z = (float)target->z2c;
             ActorAimOffset3D(o, &aimPos.x, &dist, &height);
         }
-        if (fabsf(dist) < lbl_804DA7B0 && height < lbl_804DA780) {
+        if (fabsf(dist) < 45.0f && height < 3000.0f) {
             FollowSetTargetObj(o->cond270, target);
-        } else if (fabsf(dist) > lbl_804DA7B4 || height > lbl_804DA7B8) {
+        } else if (fabsf(dist) > 70.0f || height > 6000.0f) {
             RangeResetPending(o->cond270);
         }
     }
     fn_800BBCA8(o);
     float pathTime = fn_80115F68(o->unk38);
-    if (pathTime < lbl_804DA77C) {
+    if (pathTime < 1.0f) {
         ConditionUpdateBit(o->cond270, 9, 1);
     } else {
         ConditionUpdateBit(o->cond270, 9, 0);
@@ -1086,10 +1073,11 @@ int NpcSveUpdateFollowAim(void* p) {
 // Clears the target-follow condition bit; returns whether the owner is valid.
 int NpcSveClearTargetFollow(void* p) {
     Owner* o = (Owner*)p;
-    if (o != 0) {
-        ConditionUpdateBit(o->cond270, 0x16, 0);
+    if (o == 0) {
+        return 0;
     }
-    return o != 0;
+    ConditionUpdateBit(o->cond270, 0x16, 0);
+    return 1;
 }
 
 void ConditionUpdateBit(void* cond, int id, int value);
@@ -1103,14 +1091,13 @@ extern "C" int NpcSveResetEvent(int owner) {
     PathEvent* evt = *(PathEvent**)(owner + 0x130);
     *(int*)(owner + 0x288) = 0;
     evt->state = 0;
-    evt->unk04 = lbl_804DA778;
+    evt->unk04 = 0.0f;
     ConditionUpdateBit((void*)(owner + 0x270), 0x16, 1);
     return 1;
 }
 
 extern "C" int fn_800F7A90(void* handle);
 extern "C" void fn_800B1AB8(float value, void* owner, int mode, int arg);
-extern float lbl_804DA7BC;
 
 // Chooses the actor's next state from its follow mode, the condition block and
 // the distance to the follow target; -1/1/0/2/4/5 are the state codes.
@@ -1135,18 +1122,18 @@ extern "C" int fn_8029E058(void* actor) {
             }
             return 1;
         }
-        if ((flags & 8) != 0 && dist < lbl_804DA7A8) {
-            fn_800B1AB8(lbl_804DA7BC, o, mode, 3);
+        if ((flags & 8) != 0 && dist < 5000.0f) {
+            fn_800B1AB8(-1.0f, o, mode, 3);
             return 5;
         }
-        if ((flags & 4) != 0 && dist < lbl_804DA7A8 &&
+        if ((flags & 4) != 0 && dist < 5000.0f &&
             MemFlagIsSet(o->cond270, 0x27) == 0) {
             return 4;
         }
         if ((flags & 0x10) == 0 && (flags & 0x40) == 0 &&
-            (flags & 0x20) == 0 && dist < lbl_804DA788 &&
+            (flags & 0x20) == 0 && dist < 1500.0f &&
             fabsf(ActorAimAngleToPos((void*)target[0], &o->pos84)) <
-                lbl_804DA78C) {
+                10.0f) {
             o->unk268 = 1;
             return 1;
         }
