@@ -119,19 +119,33 @@ struct MsgQuery {
     int pad08;                    // 0x08
 };
 
-// Payload of the 0x41E name request; the name object follows it in memory.
+// Runtime string buffer (shared runtime layout, 20 bytes); the receiver of the
+// 0x41E name request writes its answer over the first word.
+class Buffer {
+public:
+    Buffer();
+    virtual ~Buffer();
+    virtual void Release(char* p);
+
+    char* mData;
+    int mLength;
+    int mUnk0C;
+    int mOwned;
+};
+
+class String : public Buffer {
+public:
+    String();
+    ~String() {}
+    virtual void Release(char* p);
+};
+
+// Payload of the 0x41E name request: the answer String follows the header.
 struct NameMsg {
     int pad00;                    // 0x00
     u32 nameHash;                 // 0x04
     int pad08;                    // 0x08
-};
-
-// Local view of the String object the receiver writes the queried name into.
-class String {
-public:
-    String();
-    ~String();
-    int field_0;                  // 0x00
+    String name;                  // 0x0C
 };
 
 extern "C" {
@@ -206,13 +220,12 @@ void* FxFind(const char* name);                               // 0x80170834
 // Requests a name through message 0x41E; the receiver leaves it in the trailing object.
 static inline int NameQuery(int target, int msg, u32 hash) {
     NameMsg m;
-    String name;
 
-    name.field_0 = 0;
+    *(int*)&m.name = 0;
     m.nameHash = hash;
     m.pad08 = 0;
     SendMsg(target, msg, &m);
-    return name.field_0;
+    return *(int*)&m.name;
 }
 
 // 0x80136884: player gun action handler.
