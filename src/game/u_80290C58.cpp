@@ -324,11 +324,12 @@ void ConditionSetBit(void* state, int bit, int value);
 // 0x802911AC: per-frame update of the host's behaviour state.
 int HostUpdateBehaviour(void* owner)
 {
-    if (owner == 0) {
+    Host* host = (Host*)owner;
+
+    if (host == 0) {
         return 0;
     }
 
-    Host* host = (Host*)owner;
     HostBehaviour* behaviour = host->behaviour;
     void* weapon = behaviour->weapon;
 
@@ -528,15 +529,15 @@ void HostInitBehaviour(void* owner)
 // 0x80291728: randomised reappearance update of the carrier's behaviour.
 int HostAppearUpdate(void* owner)
 {
-    if (owner == 0) {
+    Host* host = (Host*)owner;
+
+    if (host == 0) {
         return 0;
     }
 
-    Host* host = (Host*)owner;
     HostBehaviour* behaviour = host->behaviour;
 
-    float random = (float)rand();
-    behaviour->field34 = lbl_804DA618 * (random / lbl_804DA610) + lbl_804DA614;
+    behaviour->field34 = lbl_804DA618 * ((float)rand() / lbl_804DA610) + lbl_804DA614;
 
     fn_8029B070(host, 0x766a16b4);
     fn_800BBCA8(host);
@@ -748,11 +749,12 @@ void* FollowGetTargetObj(void* state);
 // actor's target query helpers report.
 int HostTrackTargetUpdate(void* owner)
 {
-    if (owner == 0) {
+    Host* host = (Host*)owner;
+
+    if (host == 0) {
         return 0;
     }
 
-    Host* host = (Host*)owner;
     HostBehaviour* behaviour = host->behaviour;
     void* weapon = behaviour->weapon;
 
@@ -892,11 +894,12 @@ extern "C" void  fn_80294548(void*);
 // the traced floor height and the fall is reported to the effect helper.
 int HostCarrierDropUpdate(void* owner)
 {
-    if (owner == 0) {
+    Host* host = (Host*)owner;
+
+    if (host == 0) {
         return 0;
     }
 
-    Host* host = (Host*)owner;
     HostBehaviour* behaviour = host->behaviour;
 
     void* target = FollowGetTargetObj(host->field270);
@@ -970,11 +973,12 @@ float HostFollowTargetDirection(void* owner, float* out);
 // the carried-object bit is cleared and the behaviour timer is reset.
 int HostFleeExitState(void* owner)
 {
-    if (owner == 0) {
+    Host* host = (Host*)owner;
+
+    if (host == 0) {
         return 0;
     }
 
-    Host* host = (Host*)owner;
     HostBehaviour* behaviour = host->behaviour;
 
     fn_800B6CAC(host, (void (*)(void))HostFollowTargetDirection);
@@ -997,11 +1001,12 @@ int HostFleeExitState(void* owner)
 // is registered.
 int HostFleeEnterState(void* owner)
 {
-    if (owner == 0) {
+    Host* host = (Host*)owner;
+
+    if (host == 0) {
         return 0;
     }
 
-    Host* host = (Host*)owner;
     HostBehaviour* behaviour = host->behaviour;
 
     ConditionUpdateBit(host->field270, 4, 1);
@@ -1127,11 +1132,12 @@ extern float lbl_804DA630;
 // 0x80292784: enter action of the follow-line behaviour state (state 5).
 bool HostFollowLineAction(void* owner)
 {
-    if (owner == 0) {
+    Host* host = (Host*)owner;
+
+    if (host == 0) {
         return false;
     }
 
-    Host* host = (Host*)owner;
     HostBehaviour* behaviour = host->behaviour;
 
     ConditionUpdateBit(host->field270, 4, 1);
@@ -1151,11 +1157,12 @@ bool HostFollowLineAction(void* owner)
 // attack mode.
 int HostFollowLineCheckUpdate(void* owner)
 {
-    if (owner == 0) {
+    Host* host = (Host*)owner;
+
+    if (host == 0) {
         return 0;
     }
 
-    Host* host = (Host*)owner;
     HostBehaviour* behaviour = host->behaviour;
     Host* weapon = (Host*)behaviour->weapon;
     void* target;
