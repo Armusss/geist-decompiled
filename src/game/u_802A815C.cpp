@@ -6,6 +6,10 @@ typedef unsigned char u8;
 typedef unsigned long u32;
 typedef float f32;
 
+struct IVec3 {
+    int x, y, z;
+};
+
 struct Vec3 {
     f32 x, y, z;
 };
@@ -27,21 +31,24 @@ struct Mtx34 {
 
 // The 0x30-byte block at the start of an actor; message 0x411 copies it out.
 struct ActorHdr {
-    int w[12];
+    int a[8];
+    int b;
+    int c[2];
+    int d;
 };
 
 struct Actor {
     ActorHdr hdr;                // 0x00
     void (*handler)(int, int*);  // 0x30
     u8 pad_34[4];                // 0x34
-    u32 id;                      // 0x38
-    Vec3* posPtr;                // 0x3C (points at pos)
+    int id;                      // 0x38
+    IVec3* posPtr;               // 0x3C (points at pos)
     u8 pad_40[4];                // 0x40
     int field_44;                // 0x44
     u8 pad_48[4];                // 0x48
     int field_4C;                // 0x4C
-    Vec3 pos;                    // 0x50
-    Vec3 size;                   // 0x5C
+    IVec3 pos;                   // 0x50
+    IVec3 size;                  // 0x5C
     int state;                   // 0x68
     int field_6C;                // 0x6C
     u8* field_70;                // 0x70 (points at field_80)
@@ -71,25 +78,6 @@ extern f32    lbl_804D3890;
 extern f32    lbl_804D3894;
 extern f32    lbl_804D3898;
 extern f32    lbl_804D389C;
-extern f32    lbl_804DA918;
-extern f32    lbl_804DA91C;
-extern f32    lbl_804DA920;
-extern f32    lbl_804DA924;
-extern f32    lbl_804DA928;
-extern f32    lbl_804DA92C;
-extern f32    lbl_804DA930;
-extern f32    lbl_804DA934;
-extern f32    lbl_804DA938;
-extern f32    lbl_804DA93C;
-extern f32    lbl_804DA940;
-extern f32    lbl_804DA944;
-extern f32    lbl_804DA948;
-extern f32    lbl_804DA94C;
-extern f32    lbl_804DA950;
-extern f32    lbl_804DA954;
-extern f32    lbl_804DA958;
-extern f32    lbl_804DA95C;
-extern f32    lbl_804DA968;
 
 extern void* memset(void*, int, u32);
 extern void* memcpy(void*, const void*, u32);
@@ -181,7 +169,7 @@ extern "C" void fn_802A8204(void)
 }
 
 // Look up a type-0x62 actor by its low 24-bit id.
-static inline Actor* FindActor62(u32 id)
+static inline Actor* FindActor62(int id)
 {
     for (Actor* a = lbl_804D5768; a != 0; a = a->next) {
         if ((a->id & 0xFFFFFF) == id) {
@@ -203,7 +191,6 @@ static inline u32 CreateActor62(void)
     }
 
     Actor* n = (Actor*)VAlloc(0xFA4);
-    u32 id = 0;
     if (n != 0) {
         lbl_804D576C++;
         memset(n, 0, 0xFA4);
@@ -214,12 +201,12 @@ static inline u32 CreateActor62(void)
         n->field_4C = 0x44;
         n->state = 0;
         n->field_6C = 1;
-        n->pos.x = -100.0f;
-        n->pos.y = 0.0f;
-        n->pos.z = -100.0f;
-        n->size.x = 100.0f;
-        n->size.y = lbl_804D5760;
-        n->size.z = 100.0f;
+        n->pos.x = -100;
+        n->pos.y = 0;
+        n->pos.z = -100;
+        n->size.x = 100;
+        n->size.y = (int)lbl_804D5760;
+        n->size.z = 100;
         n->field_70 = (u8*)&n->field_80;
         n->field_74 = 3;
         AssetFind(0xF2E2BEB8, 0xF6298F9);
@@ -228,10 +215,10 @@ static inline u32 CreateActor62(void)
         if (lbl_804D5768 != 0) {
             lbl_804D5768->prev = n;
         }
-        id = n->id;
         lbl_804D5768 = n;
+        return n->id;
     }
-    return id;
+    return 0;
 }
 
 // Message handler for the type-0x62 actors: find, query, create and dispatch.
@@ -259,7 +246,7 @@ u32 Actor62Msg(u32 id, int msg, int* data, int param)
             if (msg == 0) {
                 obj = FindActor62(id);
                 if (obj != 0) {
-                    DeferAdd(1, &obj->pos, Actor62DrawPathTrail, obj);
+                    DeferAdd(1, (Vec3*)&obj->pos, Actor62DrawPathTrail, obj);
                 }
                 return 0;
             }
@@ -310,35 +297,8 @@ u32 Actor62SpawnMsg(u32 id, int* data)
     id &= 0xFFFFFF;
     Actor* obj = FindActor62(id);
 
-    if (data[1] == 0x7A281983) {
-        if (data[3] != 0 && obj->state == 0) {
-            obj->state = 1;
-            obj->field_F98 = lbl_804DA918;
-            obj->field_6C = 1;
-            return 1;
-        }
-        if (data[3] == 0 && obj->state == 1) {
-            int out;
-            f32 scale = lbl_804D5770;
-            u32 newId = CreateActor62();
-            Actor* n = FindActor62(newId);
-
-            if (n != 0) {
-                n->state = 2;
-                memcpy(&n->field_80, &obj->field_80, 0x24);
-                memcpy(&n->field_A4, &obj->field_A4, 0x24);
-                memcpy(n->path, obj->path, 0xED0);
-                n->hdr = obj->hdr;
-                int v = fn_80212730(obj->id);
-                fn_80212814(n->id, v, -1, 1, 0, 0);
-                ActorFn800231A8(n);
-                v = fn_80212730(obj->id);
-                Actor62UpdatePath(n->id, &out, v);
-            }
-            obj->state = 0;
-            memset(obj->path, 0, 0xED0);
-        }
-    } else if (data[1] == 0x210E6C) {
+    switch (data[1]) {
+    case 0x210E6C:
         if (obj != 0) {
             AssetFind(0xF2E2BEB8, 0xF6298F9);
             fn_8000F60C();
@@ -355,7 +315,37 @@ u32 Actor62SpawnMsg(u32 id, int* data)
             }
             VFree(obj);
         }
-    } else {
+        break;
+    case 0x7A281983:
+        if (data[3] != 0 && obj->state == 0) {
+            obj->state = 1;
+            obj->field_F98 = 0.0f;
+            obj->field_6C = 1;
+            break;
+        }
+        if (data[3] == 0 && obj->state == 1) {
+            int out[8];
+            u32 newId = CreateActor62();
+            *(f32*)(out + 1) = lbl_804D5770;
+            Actor* n = FindActor62(newId);
+
+            if (n != 0) {
+                n->state = 2;
+                memcpy(&n->field_80, &obj->field_80, 0x24);
+                memcpy(&n->field_A4, &obj->field_A4, 0x24);
+                memcpy(n->path, obj->path, 0xED0);
+                n->hdr = obj->hdr;
+                int v = fn_80212730(obj->id);
+                fn_80212814(n->id, v, -1, 1, 0, 0);
+                ActorFn800231A8(n);
+                v = fn_80212730(obj->id);
+                Actor62UpdatePath(n->id, out, v);
+            }
+            obj->state = 0;
+            memset(obj->path, 0, 0xED0);
+        }
+        break;
+    default:
         return 0;
     }
     return 1;
@@ -376,42 +366,42 @@ u32 Actor62SetupTransform(u32 id, int* data)
 {
     id &= 0xFFFFFF;
     Actor* a = FindActor62(id);
-    if (a == 0) {
-        return 0;
-    }
-    if (a->state == 1) {
-        int* src = (int*)data[1];
-        a->hdr = *(ActorHdr*)src;
+    if (a != 0) {
+        if (a->state == 1) {
+            int* src = (int*)data[1];
+            a->hdr = *(ActorHdr*)src;
 
-        Mtx34 mtx;
-        ActorGetMatrix(&mtx, a);
+            Mtx34 mtx;
+            ActorGetMatrix(&mtx, a);
 
-        a->field_80 = mtx.t;
-        fn_800A025C(&a->field_B0, &mtx, 1);
-        f32 scale = lbl_804D5760 * lbl_804DA91C;
-        a->field_B0.x *= scale;
-        a->field_B0.y *= scale;
-        a->field_B0.z *= scale;
-        a->field_B0.x += a->field_80.x;
-        a->field_B0.y += a->field_80.y;
-        a->field_B0.z += a->field_80.z;
+            a->field_80 = mtx.t;
+            fn_800A025C(&a->field_B0, &mtx, 1);
+            f32 scale = lbl_804D5760 * 0.5f;
+            a->field_B0.x *= scale;
+            a->field_B0.y *= scale;
+            a->field_B0.z *= scale;
+            a->field_B0.x += a->field_80.x;
+            a->field_B0.y += a->field_80.y;
+            a->field_B0.z += a->field_80.z;
 
-        fn_800A025C(&a->field_BC, &mtx, 1);
-        f32 base = lbl_804D5760;
-        a->field_BC.x *= base;
-        a->field_BC.y *= base;
-        a->field_BC.z *= base;
-        a->field_BC.x += a->field_80.x;
-        a->field_BC.y += a->field_80.y;
-        a->field_BC.z += a->field_80.z;
+            fn_800A025C(&a->field_BC, &mtx, 1);
+            f32 base = lbl_804D5760;
+            a->field_BC.x *= base;
+            a->field_BC.y *= base;
+            a->field_BC.z *= base;
+            a->field_BC.x += a->field_80.x;
+            a->field_BC.y += a->field_80.y;
+            a->field_BC.z += a->field_80.z;
 
-        if (a->field_6C != 0) {
-            a->field_8C = a->field_B0;
-            a->field_98 = a->field_BC;
-            a->field_6C = 0;
+            if (a->field_6C != 0) {
+                a->field_8C = a->field_B0;
+                a->field_98 = a->field_BC;
+                a->field_6C = 0;
+            }
         }
+        return 1;
     }
-    return 1;
+    return 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -423,7 +413,12 @@ u32 Actor62SetupTransform(u32 id, int* data)
 
 // The 0x48-byte snapshot block that fn_800201E4 hands back through its hook.
 struct Actor62State {
-    u32 w[0x12];
+    int f0, f1, f2, f3, f4, f5, f6, f7, f8, f9;  // 0x00
+    int p0[2];   // 0x28
+    int p1[2];   // 0x30
+    int f10;     // 0x38
+    int p2[2];   // 0x3C
+    int f11;     // 0x44
 };
 
 u32 Actor62CopyState(Actor62State* src, Actor62State* dst);
@@ -471,16 +466,16 @@ u32 Actor62UpdatePath(u32 id, int* data, int owner)
     f32 dt = *(f32*)(data + 1);
     lbl_804D5770 = dt;
 
-    a->field_8C.x = a->field_8C.x * lbl_804DA920 + a->field_B0.x * lbl_804DA924;
-    a->field_8C.y = a->field_8C.y * lbl_804DA920 + a->field_B0.y * lbl_804DA924;
-    a->field_8C.z = a->field_8C.z * lbl_804DA920 + a->field_B0.z * lbl_804DA924;
-    a->field_98.x = a->field_98.x * lbl_804DA928 + a->field_BC.x * lbl_804DA92C;
-    a->field_98.y = a->field_98.y * lbl_804DA928 + a->field_BC.y * lbl_804DA92C;
-    a->field_98.z = a->field_98.z * lbl_804DA928 + a->field_BC.z * lbl_804DA92C;
+    a->field_8C.x = a->field_8C.x * 0.8f + a->field_B0.x * 0.2f;
+    a->field_8C.y = a->field_8C.y * 0.8f + a->field_B0.y * 0.2f;
+    a->field_8C.z = a->field_8C.z * 0.8f + a->field_B0.z * 0.2f;
+    a->field_98.x = a->field_98.x * 0.9f + a->field_BC.x * 0.1f;
+    a->field_98.y = a->field_98.y * 0.9f + a->field_BC.y * 0.1f;
+    a->field_98.z = a->field_98.z * 0.9f + a->field_BC.z * 0.1f;
 
     if (a->state == 1) {
         f32 slip = lbl_804D5760 / lbl_804D5764;
-        f32 rate = lbl_804DA930 / lbl_804D5764;
+        f32 rate = 158.0f / lbl_804D5764;
         f32 rem;
         int n;
         int i;
@@ -491,11 +486,11 @@ u32 Actor62UpdatePath(u32 id, int* data, int owner)
         a->field_F98 -= rem;
         i = 0;
         while (i < 0x9E && n != 0) {
-            if (a->path[i].f == lbl_804DA918) {
+            if (a->path[i].f == 0.0f) {
                 n--;
                 a->path[i].f = lbl_804D5760 - slip * (rem / (f32)n);
                 a->path[i].g = (f32)(rand() % 360);
-                a->path[i].h = lbl_804DA934 - (f32)(rand() % 50 - 25) / lbl_804DA938;
+                a->path[i].h = 1.0f - (f32)(rand() % 50 - 25) / 100.0f;
             }
             i++;
         }
@@ -506,22 +501,22 @@ u32 Actor62UpdatePath(u32 id, int* data, int owner)
         f32 v;
 
         v = a->path[i * 2].f - dt * (lbl_804D5760 / lbl_804D5764);
-        if (v > lbl_804DA918) {
+        if (v > 0.0f) {
             a->path[i * 2].f = v;
         } else {
-            a->path[i * 2].f = lbl_804DA918;
+            a->path[i * 2].f = 0.0f;
         }
-        if (a->path[i * 2].f > lbl_804DA918) {
+        if (a->path[i * 2].f > 0.0f) {
             moved = 1;
         }
 
         v = a->path[i * 2 + 1].f - dt * (lbl_804D5760 / lbl_804D5764);
-        if (v > lbl_804DA918) {
+        if (v > 0.0f) {
             a->path[i * 2 + 1].f = v;
         } else {
-            a->path[i * 2 + 1].f = lbl_804DA918;
+            a->path[i * 2 + 1].f = 0.0f;
         }
-        if (a->path[i * 2 + 1].f > lbl_804DA918) {
+        if (a->path[i * 2 + 1].f > 0.0f) {
             moved = 1;
         }
     }
@@ -530,9 +525,9 @@ u32 Actor62UpdatePath(u32 id, int* data, int owner)
     pts[0].p.x = a->field_80.x;
     pts[0].p.y = a->field_80.y;
     pts[0].p.z = a->field_80.z;
-    pts[0].w = lbl_804DA918;
+    pts[0].w = 0.0f;
 
-    f32 step = lbl_804DA93C;
+    f32 step = 0.03125f;
     f32 t = step;
     for (int i = 1; i < 32; i++) {
         Vec3 d;
@@ -560,11 +555,11 @@ u32 Actor62UpdatePath(u32 id, int* data, int owner)
         dir.x = (f32)q.dirX;
         dir.y = (f32)q.dirY;
         dir.z = (f32)q.dirZ;
-        if (fabsf(dir.x) <= lbl_804DA940 && fabsf(dir.y) <= lbl_804DA940 &&
-            fabsf(dir.z) <= lbl_804DA940) {
-            dir.x = lbl_804DA918;
-            dir.y = lbl_804DA918;
-            dir.z = lbl_804DA918;
+        if (fabsf(dir.x) <= 1.1920929e-7f && fabsf(dir.y) <= 1.1920929e-7f &&
+            fabsf(dir.z) <= 1.1920929e-7f) {
+            dir.x = 0.0f;
+            dir.y = 0.0f;
+            dir.z = 0.0f;
         } else {
             f32 inv = 1.0f / sqrtf(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
 
@@ -577,18 +572,18 @@ u32 Actor62UpdatePath(u32 id, int* data, int owner)
         delta.x = (f32)q.startX - pts[0].p.x;
         delta.y = (f32)q.startY - pts[0].p.y;
         delta.z = (f32)q.startZ - pts[0].p.z;
-        range = fn_800E1020(&delta) - lbl_804DA944;
-        if (range < lbl_804DA918) {
-            range = lbl_804DA918;
+        range = fn_800E1020(&delta) - 32.0f;
+        if (range < 0.0f) {
+            range = 0.0f;
         }
-        if (range == lbl_804DA918) {
+        if (range == 0.0f) {
             for (int i = 1; i < 32; i++) {
                 pts[i].p = pts[0].p;
             }
         } else {
             for (int i = 1; i < 32; i++) {
                 if (pts[i].w >= range) {
-                    pts[i].w = lbl_804DA918;
+                    pts[i].w = 0.0f;
                 }
             }
         }
@@ -597,7 +592,7 @@ u32 Actor62UpdatePath(u32 id, int* data, int owner)
     for (int i = 0; i < 0x9E; i++) {
         f32 f = a->path[i].f;
 
-        if (f > lbl_804DA918) {
+        if (f > 0.0f) {
             f32 want = lbl_804D5760 - f;
             for (int j = 1; j < 32; j++) {
                 if (pts[j].w >= want) {
@@ -617,18 +612,18 @@ u32 Actor62UpdatePath(u32 id, int* data, int owner)
     }
 
     for (int i = 0; i < 0x9E; i++) {
-        if (a->path[i].f > lbl_804DA918 && i % 40 == 0) {
-            f32 k = lbl_804DA934 - a->path[i].f / lbl_804D5760;
-            f32 s = lbl_804DA948 * (lbl_804DA950 * k + lbl_804DA94C);
+        if (a->path[i].f > 0.0f && i % 40 == 0) {
+            f32 k = 1.0f - a->path[i].f / lbl_804D5760;
+            f32 s = 0.75f * (560.0f * k + 40.0f);
 
             if (fn_802A1D04() == 0) {
                 fn_80122108(handle, owner, &a->path[i].pos, 0xC8769B80,
-                            lbl_804DA934, s, lbl_804DA954, lbl_804DA954,
-                            lbl_804DA948, lbl_804DA958, lbl_804DA934);
+                            1.0f, s, 400.0f, 400.0f,
+                            0.75f, 0.4f, 1.0f);
             } else {
                 fn_80122108(handle, owner, &a->path[i].pos, 0xC8769B80,
-                            lbl_804DA934, s, lbl_804DA95C, lbl_804DA95C,
-                            lbl_804DA948, lbl_804DA958, lbl_804DA934);
+                            1.0f, s, 500.0f, 500.0f,
+                            0.75f, 0.4f, 1.0f);
             }
         }
     }
@@ -666,25 +661,22 @@ u32 Actor62CopyState(Actor62State* src, Actor62State* dst)
 // fades as the segment's remaining length shrinks.
 void Actor62DrawPathTrail(void* p)
 {
-    if (p != 0) {
-        Actor* a = (Actor*)p;
-        f32 cutoff = lbl_804DA918;
-        int i = 0;
-        PathSeg* seg = a->path;
+    Actor* a = (Actor*)p;
+    int i;
 
+    if (a != 0) {
         Draw3DBegin((int)AssetFind(0xF2E2BEB8, 0xF6298F9), 0);
-        do {
-            if (seg->f > cutoff) {
-                f32 k = lbl_804DA934 - seg->f / lbl_804D5760;
-                f32 alpha = lbl_804DA968 * (lbl_804DA934 - k);
+        for (i = 0; i < 0x9E; i++) {
+            PathSeg* seg = &a->path[i];
+            if (a->path[i].f > 0.0f) {
+                f32 k = 1.0f - a->path[i].f / lbl_804D5760;
+                f32 alpha = 255.0f * (1.0f - k);
 
-                DrawWorldQuadFlipped((lbl_804DA950 * k + lbl_804DA94C) * seg->h,
+                DrawWorldQuadFlipped((560.0f * k + 40.0f) * seg->h,
                                      seg->g, &seg->pos, 0xff, 0xff, 0xff,
                                      (int)alpha & 0xff);
             }
-            i++;
-            seg++;
-        } while (i < 0x9E);
+        }
         Draw3DEnd();
     }
 }
