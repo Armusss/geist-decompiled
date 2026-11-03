@@ -14,13 +14,8 @@ struct Entry12 {
 };
 
 void ClearEntryRange(Entry12* begin, Entry12* end) {
-    u32 count = (u32)((u8*)end + 11 - (u8*)begin) / 12;
-    if (begin >= end) {
-        return;
+    for (; begin < end; begin++) {
     }
-    do {
-        count--;
-    } while (count != 0);
 }
 
 // ---------------------------------------------------------------------------
