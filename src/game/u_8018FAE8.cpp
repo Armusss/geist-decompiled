@@ -196,20 +196,17 @@ void GhostHintReset(void)
     lbl_803A8F68.z = 0.0f;
 
     Vec3 v = lbl_803470F8;
-    float sx = v.x * 250.0f + 0.0f;
-    float sy = v.y * 250.0f + 0.0f;
-    float sz = v.z * 250.0f + 0.0f;
 
+    lbl_804D3060 = 250.0f;
     lbl_80495B40.x = 20.0f;
     lbl_80495B40.z = 0.0f;
-    lbl_804D3060 = 250.0f;
     lbl_804D50F0 = 2.0f;
     lbl_804D510C = 250.0f;
     lbl_804D5104 = 0;
     lbl_804D5108 = 0.0f;
-    lbl_80495AE0.offset.x = sx;
-    lbl_80495AE0.offset.y = sy;
-    lbl_80495AE0.offset.z = sz;
+    lbl_80495AE0.offset.x = v.x * lbl_804D3060 + lbl_803A8F68.x;
+    lbl_80495AE0.offset.y = v.y * lbl_804D3060 + lbl_803A8F68.y;
+    lbl_80495AE0.offset.z = v.z * lbl_804D3060 + lbl_803A8F68.z;
     v.x = -v.x;
     v.y = -v.y;
     v.z = -v.z;
