@@ -157,11 +157,6 @@ void fn_80050EB0(Actor* a);                                    // 0x80050EB0
 int ModelBoneName(int model, int bone);                        // 0x80018B44
 int ModelBoneNodeChain(int model, int name, int* table, int count); // 0x80018814
 extern int lbl_8046D270[16];                                   // 0x8046D270
-extern float lbl_804D7A58;                                     // 0x804D7A58
-extern float lbl_804D7A5C;                                     // 0x804D7A5C
-extern float lbl_804D7A60;                                     // 0x804D7A60
-extern float lbl_804D7A70;                                     // 0x804D7A70
-extern float lbl_804D7A74;                                     // 0x804D7A74
 float fn_800699B8(void* p);                                    // 0x800699B8
 void fn_800699A8(void* p);                                     // 0x800699A8
 void fn_8008E824(int a, int b);                                // 0x8008E824
@@ -174,7 +169,16 @@ void PlayerSetValue4(void* p, int v);                          // 0x8006D17C
 void PlayerResetGunTimer(void* p);                             // 0x8006D76C
 u32 AssetFind(u32 group, u32 hash);                            // 0x8007EB34
 extern u32 lbl_8046D230[16];                                   // 0x8046D230
-extern u8 lbl_803A07D8[];                                      // 0x803A07D8
+// Per-held-type row of the table at lbl_803A07D8 (25 rows, stride 0x48): three
+// callbacks, fourteen asset ids indexed by weapon kind, and a value word.
+struct HeldTypeEntry {
+    void (*stop)(void*);          // 0x00
+    void (*begin)(void*);         // 0x04
+    void (*msg)(void*);           // 0x08
+    u32 ids[14];                  // 0x0C
+    int value;                    // 0x44
+};
+extern HeldTypeEntry lbl_803A07D8[];                           // 0x803A07D8
 extern u32 lbl_804D4D00;                                       // 0x804D4D00
 extern char lbl_804D4D04;                                      // 0x804D4D04
 extern void* lbl_804D4D20;                                     // 0x804D4D20
@@ -404,7 +408,7 @@ void PlayerGunStartAction(void* p) {
     }
     PlayerInHost((Actor*)p);
     kind = ((Actor*)p)->field73C;
-    types = (int*)(lbl_803A07D8 + 0x5F4);
+    types = (int*)lbl_803A07D8[21].ids;
     ((Actor*)p)->field98 = fn_800A1BC8(ref->field14, ref->field18, types[kind], flag, 0);
     ((Actor*)p)->field8C = (int)PlayerGunActionMsg;
     ((Actor*)p)->fieldA4 = 0x19;
@@ -449,7 +453,7 @@ void PlayerGunStartActionSlot(void* p) {
     a->field78 = 0;
     a->field50 &= ~0x20000u;
     ref = a->refs[slot];
-    types = (int*)(lbl_803A07D8 + 0x5AC) + kind;
+    types = (int*)lbl_803A07D8[20].ids + kind;
     a->field98 = fn_800A1BC8(ref->field14, ref->field18, *types, 0, 0);
     a->field8C = (int)PlayerGunActionMsg;
     a->fieldA4 = 1;
@@ -506,7 +510,7 @@ void PlayerGunStartActionWeapon(void* p) {
     }
     slot = PlayerInHost(a);
     kind = a->field73C;
-    types = (int*)(lbl_803A07D8 + 0x564) + kind;
+    types = (int*)lbl_803A07D8[19].ids + kind;
     a->field98 = fn_800A1BC8(ref->field14, ref->field18, *types, flag, 0);
     a->field8C = (int)PlayerGunActionMsg;
     a->fieldA4 = 0x19;
@@ -555,12 +559,12 @@ void PlayerGunSetup(Actor* actor) {
         }
     }
     actor->field98 = fn_800A1BC8(ref->field14, ref->field18,
-                                 ((u32*)(lbl_803A07D8 + 0x51C))[idx], flag, 0);
+                                 lbl_803A07D8[18].ids[idx], flag, 0);
     actor->field8C = (int)PlayerGunActionMsg;
     actor->fieldA4 = 0x59;
     ref = actor->refs[slot];
     actor->fieldF0 = fn_800A1BC8(ref->field14, ref->field1C,
-                                 ((u32*)(lbl_803A07D8 + 0x51C))[idx], 0, 0);
+                                 lbl_803A07D8[18].ids[idx], 0, 0);
     actor->fieldFC = 0x59;
     name = (u32)NameQuery(owner->flags38, 0x41E, 0x08783452);
     PlayerSetHeldSlotIndex(actor, name == 0 ? 1 : 0);
@@ -632,7 +636,7 @@ void PlayerGunSetupNames(void* p) {
     slot = PlayerInHost(a);
     kind = a->field73C;
     ref = a->refs[slot];
-    types = (u32*)(lbl_803A07D8 + 0x4D4);
+    types = lbl_803A07D8[17].ids;
     a->field98 = fn_800A1BC8(ref->field14, ref->field18, types[kind], mode, 0);
     a->field8C = (int)PlayerGunActionMsg;
     a->fieldA4 = 1;
@@ -682,7 +686,7 @@ void PlayerGunSetupState(void* p) {
     slot = PlayerInHost(a);
     kind = a->field73C;
     ref = a->refs[slot];
-    types = (u32*)(lbl_803A07D8 + 0x3B4);
+    types = lbl_803A07D8[13].ids;
     a->field98 = fn_800A1BC8(ref->field14, ref->field18, types[kind], 0, 0);
     a->fieldA4 = 0x50;
     if (a->field26B0 == -1) {
@@ -730,13 +734,13 @@ void PlayerGunFollowSetup(Actor* a) {
     slot = PlayerInHost(a);
     kind = a->field73C;
     ref = a->refs[slot];
-    types = (int*)(lbl_803A07D8 + 0x324) + kind;
+    types = (int*)lbl_803A07D8[11].ids + kind;
     a->field98 = fn_800A1BC8(ref->field14, ref->field18, *types, 0, 0);
     a->field8C = (int)PlayerGunActionMsg;
     a->fieldA4 = 0x11;
     a->fieldF0 = fn_800A1BC8(ref->field14, ref->field1C, *types, 0, 0);
     motion = fn_800A1BC8(ref->field14, ref->field1C,
-                         ((int*)(lbl_803A07D8 + 0xE4))[kind], 0, 0);
+                         ((int*)lbl_803A07D8[3].ids)[kind], 0, 0);
     if (a->fieldF0 == motion) {
         a->fieldFC = 1;
     } else {
@@ -775,13 +779,13 @@ void PlayerGunReadySetup(Actor* a) {
     slot = PlayerInHost(a);
     kind = a->field73C;
     ref = a->refs[slot];
-    types = (int*)(lbl_803A07D8 + 0x2DC);
+    types = (int*)lbl_803A07D8[10].ids;
     a->field98 = fn_800A1BC8(ref->field14, ref->field18, types[kind], 0, 0);
     a->field8C = (int)PlayerGunActionMsg;
     a->fieldA4 = 0x11;
     a->fieldF0 = fn_800A1BC8(ref->field14, ref->field1C, types[kind], 0, 0);
     motion = fn_800A1BC8(ref->field14, ref->field1C,
-                         ((int*)(lbl_803A07D8 + 0xE4))[kind], 0, 0);
+                         ((int*)lbl_803A07D8[3].ids)[kind], 0, 0);
     if (a->fieldF0 == motion) {
         a->fieldFC = 1;
     } else {
@@ -824,7 +828,7 @@ void PlayerGunIdleEffectStart(void* p) {
     slot = PlayerInHost(a);
     kind = a->field73C;
     ref = a->refs[slot];
-    types = (int*)(lbl_803A07D8 + 0x294);
+    types = (int*)lbl_803A07D8[9].ids;
     a->field98 = fn_800A1BC8(ref->field14, ref->field18, types[kind], 0, 0);
     a->field8C = (int)PlayerGunActionMsg;
     a->fieldA4 = 0x10;
@@ -865,7 +869,7 @@ void PlayerGunSetupActionSlot1(Actor* a) {
     slot = PlayerInHost(a);
     kind = a->field73C;
     ref = a->refs[slot];
-    types = (u32*)(lbl_803A07D8 + 0x24C);
+    types = lbl_803A07D8[8].ids;
     a->field98 = fn_800A1BC8(ref->field14, ref->field18, types[kind], 0, 0);
     a->field8C = (int)PlayerGunActionMsg;
     a->fieldA4 = 1;
@@ -909,7 +913,7 @@ void PlayerGunStoredHashIntro(void* p) {
     slot = PlayerInHost(a);
     kind = a->field73C;
     ref = a->refs[slot];
-    types = (u32*)(lbl_803A07D8 + 0x174);
+    types = lbl_803A07D8[5].ids;
     a->field98 = fn_800A1BC8(ref->field14, ref->field18, types[kind], mode, 0);
     a->field8C = (int)PlayerGunActionMsg;
     a->fieldA4 = 1;
@@ -939,10 +943,10 @@ void PlayerGunFollowNameCheck(void* p, float f) {
     if (speed < fabsf(a->field38C)) {
         speed = fabsf(a->field38C);
     }
-    if (speed != lbl_804D7A58) {
+    if (speed != 0.0f) {
         fn_8008E824(a->field7C, 0);
     }
-    if (lbl_804D7A58 == a->field7D8) {
+    if (0.0f == a->field7D8) {
         PlayerSetHeldSlotMode(a, 0);
         return;
     }
@@ -1006,7 +1010,7 @@ void PlayerGunSetupActionSlot2(void* p) {
     Actor* a = (Actor*)p;
     int slot = PlayerInHost(a);
     int kind = a->field73C;
-    u32* types = (u32*)(lbl_803A07D8 + 0xE4);
+    u32* types = lbl_803A07D8[3].ids;
 
     a->field98 = fn_800A1BC8(a->refs[slot]->field14, a->refs[slot]->field18,
                              types[kind], 0, 0);
@@ -1045,12 +1049,10 @@ void PlayerGunStartWeaponFx(void* p) {
     u32 name = NameQuery(handle, 0x41E, 0xDFF3097A);
     int slot = PlayerInHost(a);
     PlayerRef* ref = a->refs[slot];
-    u32* entry = (u32*)(lbl_803A07D8 + slot * 4);
-
-    a->field98 = fn_800A1BC8(ref->field14, ref->field18, entry[0x27], 0, 0);
+    a->field98 = fn_800A1BC8(ref->field14, ref->field18, lbl_803A07D8[2].ids[slot], 0, 0);
     a->fieldA4 = 0x10;
     a->field8C = (int)PlayerGunActionMsg;
-    a->fieldF0 = fn_800A1BC8(ref->field14, ref->field1C, entry[0x27], 0, 0);
+    a->fieldF0 = fn_800A1BC8(ref->field14, ref->field1C, lbl_803A07D8[2].ids[slot], 0, 0);
     a->fieldFC = 0x10;
     lbl_804D2E70 = fn_800F7994(name, 0xAFEF562B);
     FxStart((void*)lbl_804D2E70, 0, 0);
@@ -1131,13 +1133,12 @@ void PlayerGunStartSlotState(void* p) {
     Actor* a = (Actor*)p;
     int slot = PlayerInHost(a);
     int kind = a->field73C;
-    u32* names = (u32*)(lbl_803A07D8 + kind * 4);
 
     a->field98 = fn_800A1BC8(a->refs[slot]->field14, a->refs[slot]->field18,
-                             names[0x15], 0, 0);
+                             lbl_803A07D8[1].ids[kind], 0, 0);
     a->fieldA4 = 1;
     a->fieldF0 = fn_800A1BC8(a->refs[slot]->field14, a->refs[slot]->field1C,
-                             names[0x15], 0, 0);
+                             lbl_803A07D8[1].ids[kind], 0, 0);
     a->fieldE4 = (int)PlayerGunActionMsg;
     a->fieldFC = 1;
     a->field7D0 = 0;
@@ -1209,8 +1210,8 @@ void PlayerGunFollowCommitUpdate(void* p, float f) {
             PlayerGunActionFallback(a, f);
         }
     }
-    if (lbl_804D7A58 != a->field394 || lbl_804D7A58 != a->field38C ||
-        lbl_804D7A58 != a->field390 || lbl_804D7A58 != a->field398 ||
+    if (0.0f != a->field394 || 0.0f != a->field38C ||
+        0.0f != a->field390 || 0.0f != a->field398 ||
         a->field328 != 0) {
         PlayerSetActionMode(a, 3);
     }
@@ -1225,29 +1226,28 @@ void PlayerGunSetupActionRandSlot(void* p) {
     u32* types;
     int slot;
 
-    if ((float)r / lbl_804D7A5C < lbl_804D7A60) {
+    if ((float)r / 32767.0f < 0.5f) {
         a->field7D4 = 1;
     } else {
         a->field7D4 = 0;
     }
     slot = PlayerInHost(a);
-    types = (u32*)lbl_803A07D8;
 
     a->field98 = fn_800A1BC8(a->refs[slot]->field14, a->refs[slot]->field18,
-                             types[3], a->field7D4, 0);
+                             lbl_803A07D8[0].ids[0], a->field7D4, 0);
     if (a->field98 == -1) {
         a->field7D4 = 0;
         a->field98 = fn_800A1BC8(a->refs[slot]->field14, a->refs[slot]->field18,
-                                 types[3], a->field7D4, 0);
+                                 lbl_803A07D8[0].ids[0], a->field7D4, 0);
     }
     a->field8C = (int)PlayerGunActionMsg;
     a->fieldA4 = 1;
     a->fieldF0 = fn_800A1BC8(a->refs[slot]->field14, a->refs[slot]->field1C,
-                             types[3], a->field7D4, 0);
+                             lbl_803A07D8[0].ids[0], a->field7D4, 0);
     if (a->fieldF0 == -1) {
         a->field7D4 = 0;
         a->fieldF0 = fn_800A1BC8(a->refs[slot]->field14, a->refs[slot]->field1C,
-                                 types[3], a->field7D4, 0);
+                                 lbl_803A07D8[0].ids[0], a->field7D4, 0);
     }
     a->fieldE4 = (int)PlayerGunActionMsg;
     a->fieldFC = 1;
@@ -1286,7 +1286,7 @@ int PlayerGunActionFallback(void* p, float f) {
         }
     } else if (a->field320 == 0) {
         t = fn_800699B8(a);
-        if (lbl_804D7A74 < t && t < lbl_804D7A58) {
+        if (-1.0f < t && t < 0.0f) {
             if (Fn800F7DEC(name1, name2, 0xE6B71BCC, fn_800498D0(a), 0) == 0x04A3E183) {
                 PlayerSetHeldSlotMode(a, 10);
                 fn_800699A8(&a->field2F4);
@@ -1302,7 +1302,7 @@ int PlayerGunActionFallback(void* p, float f) {
     } else {
         PlayerResetGunTimer(a);
         a->field5E8 += f;
-        if (fn_800699B8(a) == lbl_804D7A70) {
+        if (fn_800699B8(a) == 1.0f) {
             if (a->field7D0 == 0) {
                 PlayerSetHeldSlotMode(a, 2);
             } else {
@@ -1430,24 +1430,15 @@ int PlayerGunActionMsg(int action, void* p) {
     return 0;
 }
 
-// Per-held-type entry in the dispatch table at lbl_803A07D8 (stride 0x48).
-struct HeldTypeEntry {
-    void (*stop)(void*);          // 0x00
-    void (*begin)(void*);         // 0x04
-    void (*msg)(void*);           // 0x08
-    u8 pad0C[0x44 - 0x0C];        // 0x0C
-    int value;                    // 0x44
-};
-
 // 0x80139FCC: returns the current held type's value from the 0x44 table field.
 int PlayerGunHeldTypeValue(Actor* a) {
-    HeldTypeEntry* table = (HeldTypeEntry*)lbl_803A07D8;
+    HeldTypeEntry* table = lbl_803A07D8;
     return table[a->type].value;
 }
 
 // 0x80139FE8: runs the current held type's message handler, if it has one.
 void PlayerGunHeldTypeCallback(void* p) {
-    HeldTypeEntry* table = (HeldTypeEntry*)lbl_803A07D8;
+    HeldTypeEntry* table = lbl_803A07D8;
 
     if (table[((Actor*)p)->type].msg) {
         table[((Actor*)p)->type].msg(p);
@@ -1462,7 +1453,7 @@ void PlayerGunHeldTypeBegin(void* p) {
         lbl_804D4D00 = 0;
         lbl_804D4D04 = 1;
     }
-    e = &((HeldTypeEntry*)lbl_803A07D8)[((Actor*)p)->type];
+    e = &lbl_803A07D8[((Actor*)p)->type];
     if (e->begin) {
         e->begin(p);
     }
@@ -1470,7 +1461,7 @@ void PlayerGunHeldTypeBegin(void* p) {
 
 // 0x8013A08C: runs the held type's "stop" callback (table +0x00), if it has one.
 void PlayerGunHeldTypeEnd(void* p) {
-    HeldTypeEntry* e = &((HeldTypeEntry*)lbl_803A07D8)[((Actor*)p)->type];
+    HeldTypeEntry* e = &lbl_803A07D8[((Actor*)p)->type];
 
     if (e->stop) {
         e->stop(p);
