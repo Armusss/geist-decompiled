@@ -99,14 +99,6 @@ extern int lbl_804D5124;      // state
 extern float lbl_804D5128;    // hold timer
 extern int lbl_804D512C;      // hint string table
 extern float lbl_804D3060;    // blend factor
-extern float lbl_804D8598;    // blend rate (in)
-extern float lbl_804D859C;    // blend minimum
-extern float lbl_804D85A0;    // message colour
-extern float lbl_804D85A4;    // message alpha
-extern float lbl_804D85A8;    // hold timer end
-extern float lbl_804D85AC;    // blend rate (out)
-extern float lbl_804D85B0;    // blend maximum
-extern float lbl_804D85B4;    // spin rate
 
 extern Vec3 lbl_803470F8;     // offset scale
 extern Vec3 lbl_803A8F68;     // offset origin
@@ -114,12 +106,6 @@ extern Vec3 lbl_80495B40;     // hint angle
 extern GhostHintObject lbl_80495AE0;
 extern char lbl_80347110[];   // data block holding debug text at +0x47
 
-extern float lbl_804D85B8;    // hint object alpha
-extern float lbl_804D85C0;    // hint object colour (green)
-extern float lbl_804D85C4;    // hint angle x
-extern float lbl_804D85C8;    // hint colour
-extern float lbl_804D85CC;    // hold timer start
-extern float lbl_804D85D0;    // blend value after reset
 extern float lbl_804D50F0;    // hint colour
 extern float lbl_804D510C;    // hint blend value
 extern int lbl_804D50F4;      // number of hint pages
@@ -127,15 +113,10 @@ extern int lbl_804D50F8;      // current hint page
 extern int lbl_804959E0[];    // string id per hint page
 extern int lbl_80495A20[];    // string table per hint page
 
-extern float lbl_804D85BC;    // hint object colour (red)
-extern float lbl_804D85E0;    // hint model scale
-extern float lbl_804D85E4;    // hint model frame period
-extern float lbl_804D85E8;    // hint page timer rate
 extern int lbl_804D50FC;      // hint model bone count
 extern int lbl_804D5104;      // hint page state
 extern float lbl_804D5108;    // hint page timer
 
-extern double lbl_804D85D8;   // 2^52: unsigned-int to float conversion bias
 extern Vec3 lbl_80347104;     // hint model offset scale
 extern float lbl_80495AA0[];  // per-page vertical offset
 
@@ -144,36 +125,36 @@ void GhostHintUpdate(float dt)
 {
     switch (lbl_804D5124) {
     case 1:
-        lbl_804D3060 -= lbl_804D8598 * dt;
-        if (lbl_804D3060 <= lbl_804D859C) {
-            lbl_804D3060 = lbl_804D859C;
+        lbl_804D3060 -= 25.0f * dt;
+        if (lbl_804D3060 <= 250.0f) {
+            lbl_804D3060 = 250.0f;
             lbl_804D5124 = 2;
             unsigned long index = 0;
             const char* str = StrGetIndex(lbl_804D512C, &index);
-            HudMessageN(PlayerHud(GetPlayer()), str, index, lbl_804D85A0,
-                        lbl_804D85A0, lbl_804D85A0, lbl_804D85A4);
+            HudMessageN(PlayerHud(GetPlayer()), str, index, 1.0f,
+                        1.0f, 1.0f, 15.0f);
         }
         break;
     case 2:
         lbl_804D5128 -= dt;
         fn_800FF530();
-        if (lbl_804D5128 <= lbl_804D85A8) {
-            lbl_804D5128 = lbl_804D85A8;
+        if (lbl_804D5128 <= 0.0f) {
+            lbl_804D5128 = 0.0f;
             lbl_804D5124 = 3;
         }
         break;
     case 3:
-        lbl_804D3060 += lbl_804D85AC * dt;
+        lbl_804D3060 += 55.0f * dt;
         fn_800FF530();
-        if (lbl_804D3060 >= lbl_804D85B0) {
-            lbl_804D3060 = lbl_804D85B0;
+        if (lbl_804D3060 >= 15000.0f) {
+            lbl_804D3060 = 15000.0f;
             lbl_804D5124 = 0;
             GhostActionSetActive(1);
         }
         break;
     }
 
-    lbl_80495B40.y += lbl_804D85B4 * dt;
+    lbl_80495B40.y += 0.07f * dt;
     EulerNormalize(&lbl_80495B40, &lbl_80495B40);
 
     Vec3 v = lbl_803470F8;
@@ -202,30 +183,30 @@ void GhostHintReset(void)
 {
     ModelLoadIds(&lbl_804D5122, 1);
     lbl_804D5100 = fn_800C6AE8(&lbl_80495AE0, 0, 0, 0);
-    lbl_80495AE0.alpha = lbl_804D85B8;
-    lbl_80495AE0.colorR = lbl_804D85BC;
-    lbl_80495AE0.colorG = lbl_804D85C0;
-    lbl_80495AE0.colorB = lbl_804D85BC;
+    lbl_80495AE0.alpha = 50.0f;
+    lbl_80495AE0.colorR = 40000.0f;
+    lbl_80495AE0.colorG = 39500.0f;
+    lbl_80495AE0.colorB = 40000.0f;
     lbl_80495AE0.mode = 0;
     lbl_80495AE0.blend = 8;
     lbl_80495AE0.priority = 0x10;
     fn_8016D6A8(&lbl_80495B40);
-    lbl_803A8F68.x = lbl_804D85A8;
-    lbl_803A8F68.y = lbl_804D85A8;
-    lbl_803A8F68.z = lbl_804D85A8;
+    lbl_803A8F68.x = 0.0f;
+    lbl_803A8F68.y = 0.0f;
+    lbl_803A8F68.z = 0.0f;
 
     Vec3 v = lbl_803470F8;
-    float sx = v.x * lbl_804D859C + lbl_804D85A8;
-    float sy = v.y * lbl_804D859C + lbl_804D85A8;
-    float sz = v.z * lbl_804D859C + lbl_804D85A8;
+    float sx = v.x * 250.0f + 0.0f;
+    float sy = v.y * 250.0f + 0.0f;
+    float sz = v.z * 250.0f + 0.0f;
 
-    lbl_80495B40.x = lbl_804D85C4;
-    lbl_80495B40.z = lbl_804D85A8;
-    lbl_804D3060 = lbl_804D859C;
-    lbl_804D50F0 = lbl_804D85C8;
-    lbl_804D510C = lbl_804D859C;
+    lbl_80495B40.x = 20.0f;
+    lbl_80495B40.z = 0.0f;
+    lbl_804D3060 = 250.0f;
+    lbl_804D50F0 = 2.0f;
+    lbl_804D510C = 250.0f;
     lbl_804D5104 = 0;
-    lbl_804D5108 = lbl_804D85A8;
+    lbl_804D5108 = 0.0f;
     lbl_80495AE0.offset.x = sx;
     lbl_80495AE0.offset.y = sy;
     lbl_80495AE0.offset.z = sz;
@@ -234,15 +215,15 @@ void GhostHintReset(void)
     v.z = -v.z;
     fn_8009F7A8(&lbl_80495AE0, &v);
     lbl_804D5124 = 1;
-    lbl_804D5128 = lbl_804D85CC;
-    lbl_804D3060 = lbl_804D85D0;
+    lbl_804D5128 = 3000.0f;
+    lbl_804D3060 = 5000.0f;
 }
 
 // Draws the two text blocks shown for the current hint page.
 int GhostHintDrawText(int unnamed, unsigned long frame)
 {
     unsigned long index;
-    float t = (float)frame - lbl_804D85D8;
+    float t = (float)frame;
 
     if (t <= lbl_804D5108) {
         fn_80190018(lbl_804959E0[lbl_804D50F8]);
@@ -291,9 +272,9 @@ extern "C" void fn_80190018(int modelId, unsigned int frame)
         int anim;
 
         MtxSetEuler(&mtx, &lbl_80495B40);
-        mtx.m[3][0] = lbl_804D85A8;
+        mtx.m[3][0] = 0.0f;
         mtx.m[3][1] = -lbl_80495AA0[lbl_804D50F8];
-        mtx.m[3][2] = lbl_804D85A8;
+        mtx.m[3][2] = 0.0f;
         anim = ModelAnimate(modelId, (char*)bones, 1);
         ModelSetMatrix(modelId, &mtx, (char*)bones);
         node = fn_8003A1F0(modelId, bones, anim);
@@ -314,22 +295,22 @@ extern "C" void fn_80190018(int modelId, unsigned int frame)
         params.colorBot[3] = 0xff;
         params.offset = offset;
         params.unk20 = 0;
-        params.scale = lbl_804D85E0;
+        params.scale = 16384.0f;
         params.unk2c = 0;
-        params.colorA[0] = lbl_804D85A0;
-        params.colorA[1] = lbl_804D85A0;
-        params.colorA[2] = lbl_804D85A0;
-        params.colorA[3] = lbl_804D85A0;
-        params.colorB[0] = lbl_804D85A8;
-        params.colorB[1] = lbl_804D85A8;
-        params.colorB[2] = lbl_804D85A8;
+        params.colorA[0] = 1.0f;
+        params.colorA[1] = 1.0f;
+        params.colorA[2] = 1.0f;
+        params.colorA[3] = 1.0f;
+        params.colorB[0] = 0.0f;
+        params.colorB[1] = 0.0f;
+        params.colorB[2] = 0.0f;
         params.offsetEnd = offset;
         params.priority = -0x20;
 
         fn_800C6834(lbl_804D5100);
         fn_800C5E9C(0);
         fn_8003F15C(modelId, node, lbl_804D50FC, &params, 0,
-                    (float)frame / lbl_804D85E4);
+                    (float)frame / 255.0f);
         DeferFlush3();
         fn_80009E10();
         fn_80008F64();
@@ -351,32 +332,32 @@ extern "C" void GhostHintInput(int pad, float dt)
         lbl_804D5104 = 2;
     }
     if (lbl_804D5104 == 2) {
-        if (lbl_804D5108 <= lbl_804D85A8) {
+        if (lbl_804D5108 <= 0.0f) {
             lbl_804D50F8++;
-            lbl_804D5108 = lbl_804D85A8;
+            lbl_804D5108 = 0.0f;
             if (lbl_804D50F8 >= lbl_804D50F4) {
                 lbl_804D50F8 = 0;
             }
             fn_8016D6A8(&lbl_80495B40);
-            lbl_803A8F68.x = lbl_804D85A8;
-            lbl_803A8F68.y = lbl_804D85A8;
-            lbl_803A8F68.z = lbl_804D85A8;
-            lbl_80495B40.x = lbl_804D85C4;
-            lbl_80495B40.z = lbl_804D85A8;
-            lbl_804D3060 = lbl_804D859C;
-            lbl_804D50F0 = lbl_804D85C8;
-            lbl_804D510C = lbl_804D859C;
+            lbl_803A8F68.x = 0.0f;
+            lbl_803A8F68.y = 0.0f;
+            lbl_803A8F68.z = 0.0f;
+            lbl_80495B40.x = 20.0f;
+            lbl_80495B40.z = 0.0f;
+            lbl_804D3060 = 250.0f;
+            lbl_804D50F0 = 2.0f;
+            lbl_804D510C = 250.0f;
             lbl_804D5104 = 0;
-            lbl_804D5108 = lbl_804D85A8;
+            lbl_804D5108 = 0.0f;
         } else {
-            lbl_804D5108 -= lbl_804D85E8 * dt;
+            lbl_804D5108 -= 0.6f * dt;
         }
     } else if (lbl_804D5104 == 0) {
-        if (lbl_804D5108 >= lbl_804D85E4) {
-            lbl_804D5108 = lbl_804D85E4;
+        if (lbl_804D5108 >= 255.0f) {
+            lbl_804D5108 = 255.0f;
             lbl_804D5104 = 1;
         } else {
-            lbl_804D5108 += lbl_804D85E8 * dt;
+            lbl_804D5108 += 0.6f * dt;
         }
     }
     GhostHintUpdateModel(pad, dt);
@@ -453,7 +434,7 @@ extern "C" void GhostHintInit(int index)
     lbl_804D50F4 = 0;
     lbl_804D50F8 = 0;
     pageCount = fn_800F81EC(list);
-    lbl_804D50F0 = lbl_804D85A8;
+    lbl_804D50F0 = 0.0f;
     if (pageCount > 0) {
         for (i = 0; i < pageCount; i++) {
             int entry = fn_800F8130(list, i);
@@ -467,7 +448,7 @@ extern "C" void GhostHintInit(int index)
                         fn_800F7994(entry, 0x5edd9dc7);
                     lbl_80495A60[lbl_804D50F4] =
                         fn_800F7994(entry, 0x94001120);
-                    lbl_80495AA0[lbl_804D50F4] = lbl_804D85A8;
+                    lbl_80495AA0[lbl_804D50F4] = 0.0f;
                     lbl_804D50F4 = lbl_804D50F4 + 1;
                 } else if ((type == 0x9860B61Cu || type == 0x276198) &&
                            fn_800F8AF4(entry) != 0x3BAD43EFu) {
@@ -500,33 +481,33 @@ extern "C" void GhostHintInit(int index)
     }
 
     lbl_804D5100 = fn_800C6AE8(&lbl_80495AE0, 0, 0, 0);
-    lbl_80495AE0.alpha = lbl_804D85B8;
-    lbl_80495AE0.colorR = lbl_804D85BC;
-    lbl_80495AE0.colorG = lbl_804D85C0;
-    lbl_80495AE0.colorB = lbl_804D85BC;
+    lbl_80495AE0.alpha = 50.0f;
+    lbl_80495AE0.colorR = 40000.0f;
+    lbl_80495AE0.colorG = 39500.0f;
+    lbl_80495AE0.colorB = 40000.0f;
     lbl_80495AE0.mode = 0;
     lbl_80495AE0.blend = 8;
     lbl_80495AE0.priority = 0x10;
     fn_8016D6A8(&lbl_80495B40);
-    lbl_803A8F68.x = lbl_804D85A8;
-    lbl_803A8F68.y = lbl_804D85A8;
-    lbl_803A8F68.z = lbl_804D85A8;
+    lbl_803A8F68.x = 0.0f;
+    lbl_803A8F68.y = 0.0f;
+    lbl_803A8F68.z = 0.0f;
 
     Vec3 neg;
 
-    lbl_80495AE0.offset.x = lbl_803470F8.x * lbl_804D859C + lbl_804D85A8;
+    lbl_80495AE0.offset.x = lbl_803470F8.x * 250.0f + 0.0f;
     neg.x = -lbl_803470F8.x;
-    lbl_80495AE0.offset.y = lbl_803470F8.y * lbl_804D859C + lbl_804D85A8;
+    lbl_80495AE0.offset.y = lbl_803470F8.y * 250.0f + 0.0f;
     neg.y = -lbl_803470F8.y;
-    lbl_80495B40.x = lbl_804D85C4;
-    lbl_80495AE0.offset.z = lbl_803470F8.z * lbl_804D859C + lbl_804D85A8;
+    lbl_80495B40.x = 20.0f;
+    lbl_80495AE0.offset.z = lbl_803470F8.z * 250.0f + 0.0f;
     neg.z = -lbl_803470F8.z;
-    lbl_80495B40.z = lbl_804D85A8;
-    lbl_804D3060 = lbl_804D859C;
-    lbl_804D50F0 = lbl_804D85C8;
-    lbl_804D510C = lbl_804D859C;
+    lbl_80495B40.z = 0.0f;
+    lbl_804D3060 = 250.0f;
+    lbl_804D50F0 = 2.0f;
+    lbl_804D510C = 250.0f;
     lbl_804D5104 = 0;
-    lbl_804D5108 = lbl_804D85A8;
+    lbl_804D5108 = 0.0f;
     fn_8009F7A8(&lbl_80495AE0, &neg);
 }
 
@@ -536,15 +517,6 @@ extern char lbl_804D5120;     // blend defaults installed
 extern float lbl_804D5114;    // time step of the last update
 extern int lbl_804D511C;      // hint is pinned in place
 extern int lbl_804D5110;      // hint origin was moved this frame
-extern float lbl_804D85EC;    // "no input" axis value
-extern float lbl_804D85F0;    // blend upper bound
-extern float lbl_804D85F4;    // turn rate
-extern float lbl_804D85F8;    // turn divisor
-extern float lbl_804D85FC;    // angle lower bound
-extern float lbl_804D8600;    // angle upper bound
-extern float lbl_804D8604;    // blend lower bound
-extern float lbl_804D8608;    // camera follow factor
-extern double lbl_804D8610;   // blend return factor
 extern Vec3 lbl_80495B70;     // movement target (same block as lbl_80495B40)
 extern Vec3 lbl_80495B88;     // previous position (same block as lbl_80495B40)
 
@@ -577,7 +549,7 @@ void GhostHintUpdateModel(int pad, float dt)
 {
     if (lbl_804D5118 == 0) {
         lbl_804D5118 = 1;
-        lbl_804D5114 = lbl_804D85A8;
+        lbl_804D5114 = 0.0f;
     }
     if (lbl_804D5120 == 0) {
         lbl_804D511C = 0;
@@ -588,7 +560,7 @@ void GhostHintUpdateModel(int pad, float dt)
     int forced = 0;
 
     float a0 = fn_800D8BE4(pad, 0xc, 0, 0);
-    if (a0 == lbl_804D85EC) {
+    if (a0 == -99.0f) {
         return;
     }
     float a1 = fn_800D8BE4(pad, 0xc, 1, 0);
@@ -597,41 +569,41 @@ void GhostHintUpdateModel(int pad, float dt)
     float a5 = fn_800D8BE4(pad, 0xc, 5, 0);
     float a4 = fn_800D8BE4(pad, 0xc, 4, 0);
 
-    float rate = lbl_804D3060 / lbl_804D85F0;
-    if (rate < lbl_804D85A0) {
-        rate = lbl_804D85A0;
+    float rate = lbl_804D3060 / 1000.0f;
+    if (rate < 1.0f) {
+        rate = 1.0f;
     }
 
-    if (a0 != lbl_804D85A8) {
-        float v = lbl_80495B40.x + (lbl_804D85F4 * a0 * dt) / lbl_804D85F8;
+    if (a0 != 0.0f) {
+        float v = lbl_80495B40.x + (5.0f * a0 * dt) / 16.666666f;
         lbl_80495B40.x = v;
-        if (v < lbl_804D85FC) {
-            lbl_80495B40.x = lbl_804D85FC;
-        } else if (v > lbl_804D8600) {
-            lbl_80495B40.x = lbl_804D8600;
+        if (v < -180.0f) {
+            lbl_80495B40.x = -180.0f;
+        } else if (v > 180.0f) {
+            lbl_80495B40.x = 180.0f;
         }
     }
-    if (a1 != lbl_804D85A8) {
-        float v = lbl_80495B40.z + (lbl_804D85F4 * a1 * dt) / lbl_804D85F8;
+    if (a1 != 0.0f) {
+        float v = lbl_80495B40.z + (5.0f * a1 * dt) / 16.666666f;
         lbl_80495B40.z = v;
-        if (v < lbl_804D85FC) {
-            lbl_80495B40.z = lbl_804D85FC;
-        } else if (v > lbl_804D8600) {
-            lbl_80495B40.z = lbl_804D8600;
+        if (v < -180.0f) {
+            lbl_80495B40.z = -180.0f;
+        } else if (v > 180.0f) {
+            lbl_80495B40.z = 180.0f;
         }
     }
-    if (a3 != lbl_804D85A8 || a2 != lbl_804D85A8) {
-        lbl_804D3060 += rate * ((lbl_804D85C4 * a3 * dt) / lbl_804D85F8);
-        lbl_804D3060 -= rate * ((lbl_804D85C4 * a2 * dt) / lbl_804D85F8);
-        if (lbl_804D3060 < lbl_804D8604) {
-            lbl_804D3060 = lbl_804D8604;
-        } else if (lbl_804D3060 > lbl_804D85F0) {
-            lbl_804D3060 = lbl_804D85F0;
+    if (a3 != 0.0f || a2 != 0.0f) {
+        lbl_804D3060 += rate * ((20.0f * a3 * dt) / 16.666666f);
+        lbl_804D3060 -= rate * ((20.0f * a2 * dt) / 16.666666f);
+        if (lbl_804D3060 < 125.0f) {
+            lbl_804D3060 = 125.0f;
+        } else if (lbl_804D3060 > 1000.0f) {
+            lbl_804D3060 = 1000.0f;
         }
     }
 
     if (PadPressed(pad, 0xc, 3)) {
-        lbl_804D5114 = lbl_804D85A8;
+        lbl_804D5114 = 0.0f;
         lbl_80495B88 = lbl_80495B70;
         lbl_804D511C = 1;
         forced = 1;
@@ -639,22 +611,22 @@ void GhostHintUpdateModel(int pad, float dt)
 
     int pan = forced != 0;
     if (!pan) {
-        if (a5 == lbl_804D85A8 && a4 == lbl_804D85A8 && a0 == lbl_804D85A8 &&
-            a1 == lbl_804D85A8 && a3 == lbl_804D85A8 && a2 == lbl_804D85A8) {
+        if (a5 == 0.0f && a4 == 0.0f && a0 == 0.0f &&
+            a1 == 0.0f && a3 == 0.0f && a2 == 0.0f) {
             pan = 1;
         } else {
             lbl_804D511C = 0;
-            lbl_804D5114 = lbl_804D85D0;
-            if (a5 != lbl_804D85A8 || a4 != lbl_804D85A8) {
+            lbl_804D5114 = 5000.0f;
+            if (a5 != 0.0f || a4 != 0.0f) {
                 Mtx34 mtx;
                 Vec3 v;
 
                 v.x = a5;
-                v.y = lbl_804D85A8;
+                v.y = 0.0f;
                 v.z = a4;
                 fn_800A0168(&mtx, &lbl_80495AE0);
                 fn_800A0030(&v, &mtx, &v);
-                float k = lbl_804D85C8 * (rate * (dt / lbl_804D85F8));
+                float k = 2.0f * (rate * (dt / 16.666666f));
                 lbl_804D5110 = 1;
                 v.x *= k;
                 v.y *= k;
@@ -671,7 +643,7 @@ void GhostHintUpdateModel(int pad, float dt)
 
     if (pan) {
         lbl_804D5114 = -dt;
-        if (-dt < lbl_804D85A8) {
+        if (-dt < 0.0f) {
             Vec3 t;
             Vec3 u;
             Vec3 w;
@@ -684,11 +656,11 @@ void GhostHintUpdateModel(int pad, float dt)
             t.y = lbl_80495AE0.offset.y - lbl_80495B88.y;
             t.z = lbl_80495AE0.offset.z - lbl_80495B88.z;
             fn_800A0030(&w, &lbl_80495AE0, &t);
-            lbl_804D3060 -= lbl_804D8608 * (w.y - u.y);
-            if (lbl_804D3060 < lbl_804D8604) {
-                lbl_804D3060 = lbl_804D8604;
-            } else if (lbl_804D3060 > lbl_804D85F0) {
-                lbl_804D3060 = lbl_804D85F0;
+            lbl_804D3060 -= 0.1f * (w.y - u.y);
+            if (lbl_804D3060 < 125.0f) {
+                lbl_804D3060 = 125.0f;
+            } else if (lbl_804D3060 > 1000.0f) {
+                lbl_804D3060 = 1000.0f;
             }
 
             Vec3 d;
@@ -697,14 +669,14 @@ void GhostHintUpdateModel(int pad, float dt)
             d.z = w.z - u.z;
             fn_800A0100(&lbl_80495AE0);
             fn_800A0094(&d, &d);
-            lbl_803A8F68.x -= lbl_804D8608 * d.x;
-            lbl_803A8F68.y -= lbl_804D8608 * d.y;
-            lbl_803A8F68.z -= lbl_804D8608 * d.z;
+            lbl_803A8F68.x -= 0.1f * d.x;
+            lbl_803A8F68.y -= 0.1f * d.y;
+            lbl_803A8F68.z -= 0.1f * d.z;
         }
         if (lbl_804D511C != 0) {
-            lbl_80495B40.z -= lbl_804D8608 * lbl_80495B40.z;
-            lbl_80495B40.x += lbl_804D8608 * (lbl_804D85C4 - lbl_80495B40.x);
-            lbl_804D3060 = (float)(lbl_804D8610 * (lbl_804D859C - lbl_804D3060) +
+            lbl_80495B40.z -= 0.1f * lbl_80495B40.z;
+            lbl_80495B40.x += 0.1f * (20.0f - lbl_80495B40.x);
+            lbl_804D3060 = (float)(0.1 * (250.0f - lbl_804D3060) +
                                    lbl_804D3060);
         }
         lbl_804D5110 = 0;
@@ -727,7 +699,7 @@ void GhostHintUpdateModel(int pad, float dt)
 
     float frustum[29];
     ViewFrustumUpdate(frustum, &lbl_80495AE0.offset, &v2, &v1,
-                      lbl_80495AE0.alpha, lbl_804D85A8, lbl_804D85A8,
+                      lbl_80495AE0.alpha, 0.0f, 0.0f,
                       lbl_80495AE0.colorR);
 
     void* node = fn_8003A18C(lbl_804959E0[lbl_804D50F8]);
@@ -778,7 +750,7 @@ int GhostHintDebugDraw(void)
     }
     case 6: {
         char buf[40];
-        float frame = lbl_804D85E4 * fn_8013E988();
+        float frame = 255.0f * fn_8013E988();
         const char* a = StrFindKeySkip(0xb125b682);
         const char* b = StrFindKeySkip(0x2725d0e7);
 
@@ -800,7 +772,7 @@ int GhostHintDebugDraw(void)
     }
     case 7: {
         char buf[40];
-        float frame = lbl_804D85E4 * fn_8013E988();
+        float frame = 255.0f * fn_8013E988();
         const char* a = StrFindKeySkip(0xb125b682);
         const char* b = StrFindKeySkip(0xee96818a);
 
@@ -824,7 +796,7 @@ int GhostHintDebugDraw(void)
     }
     case 8: {
         char buf[40];
-        float frame = lbl_804D85E4 * fn_8013E988();
+        float frame = 255.0f * fn_8013E988();
         const char* a = StrFindKeySkip(0xb125b682);
         const char* b = StrFindKeySkip(0xbd92e05b);
 
@@ -902,7 +874,7 @@ void ScoreBoardDrawTeams(void)
 
     teamCount = fn_800FD3DC();
     playerCount = fn_800FD3EC();
-    alpha = (int)(lbl_804D85E4 * (lbl_804D85A0 - fn_8013E988()));
+    alpha = (int)(255.0f * (1.0f - fn_8013E988()));
 
     StatRank(0xe2d6a9c0, 1, teams, 8, 1);
     StatRank(0xe2d6a9c0, 0, players, 8, 1);
@@ -961,9 +933,9 @@ void ScoreBoardDrawTeams(void)
                 StrFindKeySkip(ScoreBoardNameHash(buf)));
         TextSetMode(0);
         TextSetSize(0x12);
-        TextSetColor((int)(lbl_804D85E4 * pos->x) & 0xff,
-                     (int)(lbl_804D85E4 * pos->y) & 0xff,
-                     (int)(lbl_804D85E4 * pos->z) & 0xff, alpha & 0xff);
+        TextSetColor((int)(255.0f * pos->x) & 0xff,
+                     (int)(255.0f * pos->y) & 0xff,
+                     (int)(255.0f * pos->z) & 0xff, alpha & 0xff);
         TextSetBox(x, w, 0x1e, rowY);
         DebugText(buf);
 
@@ -979,9 +951,9 @@ void ScoreBoardDrawTeams(void)
             if (PlayerTeam(players[j]) == teams[i]) {
                 sprintf(buf, &lbl_80347110[0x8a],
                         fn_800FD334(players[j]));
-                TextSetColor((int)(lbl_804D85E4 * pos->x) & 0xff,
-                             (int)(lbl_804D85E4 * pos->y) & 0xff,
-                             (int)(lbl_804D85E4 * pos->z) & 0xff,
+                TextSetColor((int)(255.0f * pos->x) & 0xff,
+                             (int)(255.0f * pos->y) & 0xff,
+                             (int)(255.0f * pos->z) & 0xff,
                              alpha & 0xff);
                 TextSetMode(0);
                 TextSetSize(0xe);
@@ -1019,7 +991,7 @@ void ScoreBoardDrawPlayers(void)
 
     teamCount = fn_800FD3DC();
     playerCount = fn_800FD3EC();
-    alpha = (int)(lbl_804D85E4 * (lbl_804D85A0 - fn_8013E988()));
+    alpha = (int)(255.0f * (1.0f - fn_8013E988()));
 
     StatRank(0xe2d6a9c0, 0, players, 8, 1);
 
@@ -1058,9 +1030,9 @@ void ScoreBoardDrawPlayers(void)
         sprintf(buf, &lbl_80347110[0x84], fn_800FD334(players[i]));
         TextSetMode(0);
         TextSetSize(0x12);
-        TextSetColor((int)(lbl_804D85E4 * pos->x) & 0xff,
-                     (int)(lbl_804D85E4 * pos->y) & 0xff,
-                     (int)(lbl_804D85E4 * pos->z) & 0xff, alpha & 0xff);
+        TextSetColor((int)(255.0f * pos->x) & 0xff,
+                     (int)(255.0f * pos->y) & 0xff,
+                     (int)(255.0f * pos->z) & 0xff, alpha & 0xff);
         TextSetBox(0xc8, 0x1b8, 0x1e, rowY);
         DebugText(buf);
 
