@@ -54,7 +54,7 @@ extern "C" void fn_8028750C(u32 handle);
 extern "C" u32 fn_8028757C(u32 handle);
 u32 AramPageIsResident(u32 addr);
 int AramPageIsMapped(u32 addr);
-void AramReportUnmappedAddress(u32 addr);
+inline void AramReportUnmappedAddress(u32 addr);
 
 // Converts the current OS time to the audio transfer timestamp unit
 // (timebase ticks scaled by 8, divided by bus clock / 4 / 500000).
@@ -251,7 +251,7 @@ extern "C" void fn_8028750C(u32 handle)
 }
 
 // Reports a virtual address that was never handed out by VMAlloc, then halts.
-void AramReportUnmappedAddress(u32 addr)
+inline void AramReportUnmappedAddress(u32 addr)
 {
     char msg[0x408];
     sprintf(msg, "Virtual address (%x) has not been allocated. Call VMAlloc on virtual address ranges before using them.", addr);
@@ -270,11 +270,11 @@ int AramPageIsMapped(u32 addr)
 extern "C" u32 fn_8028757C(u32 addr)
 {
     u32 flags = lbl_804D569C[(addr >> 12) & 0x1FFF] & 0x7FFFFFFF;
-    if (flags == 0) {
-        AramReportUnmappedAddress(addr);
-        flags = 0;
+    if (flags != 0) {
+        return flags;
     }
-    return flags;
+    AramReportUnmappedAddress(addr);
+    return 0;
 }
 
 // ARAM page allocation cursor state.
