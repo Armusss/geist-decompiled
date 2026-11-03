@@ -463,19 +463,19 @@ int NpcSveCheckFollowReady(Owner* o) {
     }
     PathEvent* ev = (PathEvent*)o->evt;
     int mode = fn_800B26B8(o);
-    if (mode == 4) {
-        return 1;
+    if (mode != 4) {
+        void* target;
+        fn_800B261C(o, mode, &target);
+        if (target != FollowGetTargetObj(o->cond270)) {
+            return 1;
+        }
+        mode = fn_800B22F8(o, mode);
+        if (mode <= 2) {
+            return 1;
+        }
+        return ev->timer > 3000.0f;
     }
-    void* target;
-    fn_800B261C(o, mode, &target);
-    if (target != FollowGetTargetObj(o->cond270)) {
-        return 1;
-    }
-    mode = fn_800B22F8(o, mode);
-    if (mode <= 2) {
-        return 1;
-    }
-    return ev->timer > 3000.0f;
+    return 1;
 }
 
 // Clears the follow-condition bits and reports whether the owner was valid;
