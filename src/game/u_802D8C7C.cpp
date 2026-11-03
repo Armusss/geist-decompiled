@@ -1126,7 +1126,7 @@ u32 FollowSearchTimerArm(Owner* self)
 {
     StateData* st;
     int index;
-    int target[4];
+    TargetRef* target;
 
     if (self == 0)
         return 0;
@@ -1148,9 +1148,9 @@ u32 FollowSearchTimerArm(Owner* self)
     if (index < 4 && fn_800B1EF4(self, index) == 0) {
         fn_800B1F20(self, index);
         fn_800B1AB8(lbl_804DB1A8, self, index, 1);
-        fn_800B261C(self, index, target);
-        if (target[0] != 0)
-            fn_800C9FC0(lbl_804DB1C4, self, *(void**)(target[0] + 0x38));
+        fn_800B261C(self, index, (int*)&target);
+        if (target != 0)
+            fn_800C9FC0(lbl_804DB1C4, self, (void*)target->unk38);
     }
     return 1;
 }
