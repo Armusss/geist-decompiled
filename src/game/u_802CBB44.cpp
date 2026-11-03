@@ -1516,9 +1516,8 @@ void StoneMenUpdate(void* owner)
 // as the state argument.  Name is a guess from the state-entry callers.
 void StoneMenApplyStateAnim(void* owner, int variant)
 {
-    Actor* self = (Actor*)owner;
     StateControl* ctrl;
-    AnimOwner* animOwner;
+    Actor* self = (Actor*)owner;
     float scale = 1.0f;
     int count;
     int handle;
@@ -1536,41 +1535,40 @@ void StoneMenApplyStateAnim(void* owner, int variant)
         fn_8008F4EC(self->field0D4, 0);
     }
 
-    animOwner = self->field0C4;
-    count = AnimBankGetSetCount((unsigned short)animOwner->field14,
-                                (unsigned short)animOwner->field1C,
-                                (unsigned short)lbl_803C51F8[ctrl->state].field00);
-    if (count == 0)
-        return;
-    if (variant >= count)
-        return;
-    if (variant < 0)
-        variant = rand() % count;
+    count = AnimBankGetSetCount(self->field0C4->field14,
+                                self->field0C4->field1C,
+                                lbl_803C51F8[ctrl->state].field00);
+    if (count != 0) {
+        if (variant < count) {
+            if (variant < 0)
+                variant = rand() % count;
 
-    if (ctrl->field14 == 1 &&
-        (ctrl->state == 1 || ctrl->state == 2 || ctrl->state == 3)) {
-        Msg400Reply reply;
-        int result = SendMsg(self->field608, 0x400, &reply);
+            if (ctrl->field14 == 1 &&
+                (ctrl->state == 1 || ctrl->state == 2 || ctrl->state == 3)) {
+                Msg400Reply reply;
+                int result = SendMsg(self->field608, 0x400, &reply);
 
-        if (result == 0 || reply.hit == 0)
-            scale = 6.5f;
-        else
-            scale = 5.0f;
-    }
+                if (result != 0 && reply.hit != 0)
+                    scale = 5.0f;
+                else
+                    scale = 6.5f;
+            }
 
-    handle = fn_800A1BC8(animOwner->field14, animOwner->field1C,
-                         lbl_803C51F8[ctrl->state].field00, variant, 0);
-    if (fn_8008E7D0() != 0) {
-        ConditionSetBit(self->conditions, 0x1c, 0);
-        if (HasCondition(self->conditions, 0xe) != 0) {
-            ConditionSetBit(self->conditions, 0xe, 0);
-            fn_8008F230(self->field0D4, 0.0f, 0, 0);
-        } else {
-            fn_8008F230(self->field0D4, 52776558133248.0, 0, 1);
+            handle = fn_800A1BC8(self->field0C4->field14, self->field0C4->field1C,
+                                 lbl_803C51F8[ctrl->state].field00, variant, 0);
+            if (fn_8008E7D0() != 0) {
+                ConditionSetBit(self->conditions, 0x1c, 0);
+                if (HasCondition(self->conditions, 0xe) != 0) {
+                    ConditionSetBit(self->conditions, 0xe, 0);
+                    fn_8008F230(self->field0D4, 0.0f, 0, 0);
+                } else {
+                    fn_8008F230(self->field0D4, 52776558133248.0, 0, 1);
+                }
+                fn_80090974(self->field0D4, scale, 0, handle, 9,
+                            lbl_803C51F8[ctrl->state].fn10, self);
+                ctrl->arg = handle;
+            }
         }
-        fn_80090974(self->field0D4, scale, 0, handle, 9,
-                    lbl_803C51F8[ctrl->state].fn10, self);
-        ctrl->arg = handle;
     }
 }
 
