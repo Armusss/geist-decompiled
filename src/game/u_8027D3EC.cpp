@@ -860,7 +860,7 @@ void VFree(void* ptr);
 extern "C" void fn_8000F60C(void* handle);
 extern "C" void fn_801ED838(int enable);
 extern "C" void fn_800C6900(void* handle);
-extern "C" void fn_800C7B14(Actor* actor);
+extern "C" Actor* fn_800C7B14(Actor* actor);
 u32 Fn800DF3B8(u32 asset, int index, u32 hash);
 void AnimUnref(int id);
 
@@ -1219,12 +1219,12 @@ u32 WhiteOutMaskSave(void* data) {
 // layers (freeing each allocated sub-object, unrefing its animation and
 // releasing its actor), the two effect assets and the cached effect object.
 void WhiteOutShutdown(void) {
-    u32 reply0[2];
-    u32 reply1[2];
-    u32 reply2[2];
-    u32 reply3[2];
+    u32 reply0[4];
+    u32 reply1[4];
+    u32 reply2[4];
+    u32 reply3[4];
+    s32 obj;
     int i;
-    u32 obj;
 
     lbl_804D5554 = 0;
     fn_801ED838(1);
@@ -1243,8 +1243,7 @@ void WhiteOutShutdown(void) {
             reply0[1] = 0;
             SendMsg((int)obj, 6, reply0);
             AnimUnref((int)Fn800DF3B8(0x5e130113, lbl_804D5574, 0x6f9e1166));
-            fn_800C7B14((Actor*)obj);
-            ActorRender((Actor*)obj);
+            ActorRender(fn_800C7B14((Actor*)obj));
         }
         lbl_804D557C = 0;
     }
@@ -1257,8 +1256,7 @@ void WhiteOutShutdown(void) {
         if (obj != 0) {
             reply1[1] = 0;
             SendMsg((int)obj, 6, reply1);
-            fn_800C7B14((Actor*)obj);
-            ActorRender((Actor*)obj);
+            ActorRender(fn_800C7B14((Actor*)obj));
         }
         lbl_804D559C = 0;
     }
@@ -1271,8 +1269,7 @@ void WhiteOutShutdown(void) {
         if (obj != 0) {
             reply2[1] = 0;
             SendMsg((int)obj, 6, reply2);
-            fn_800C7B14((Actor*)obj);
-            ActorRender((Actor*)obj);
+            ActorRender(fn_800C7B14((Actor*)obj));
         }
         lbl_804D55B4 = 0;
     }
@@ -1285,8 +1282,7 @@ void WhiteOutShutdown(void) {
         if (obj != 0) {
             reply3[1] = 0;
             SendMsg((int)obj, 6, reply3);
-            fn_800C7B14((Actor*)obj);
-            ActorRender((Actor*)obj);
+            ActorRender(fn_800C7B14((Actor*)obj));
         }
         lbl_804D55CC = 0;
     }
