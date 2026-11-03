@@ -431,46 +431,42 @@ int PickupKeyQueryMsg(Actor* actor, int* data) {
     int answer;
 
     d = (KeyData*)actor->unkA4;
-    if (data[1] == 0x12868306) {
+    switch (data[1]) {
+    case (int)0x9BD4EF06:
+        data[3] = (int)d;
+        return 1;
+    case 0x5ED5BF20:
+        if (ActorIsActive(actor) == 0 && lbl_8039F568.handle < 0) {
+            return 0;
+        }
+        KeyQuerySend(&answer, 0x4B000000, 0x56CF46F2);
+        if (answer == 0) {
+            data[3] = (int)0xEAFE2C46;
+        } else if (lbl_8039F568.handle < 0) {
+            data[3] = (int)0xEAFE2C46;
+        } else {
+            switch (PlayerTeam(HandleToPlayer(lbl_8039F568.handle))) {
+            default: data[3] = (int)0xEAFE2C46; break;
+            case 0: data[3] = 0x114F1979; break;
+            case 1: data[3] = 0x6B4B4A10; break;
+            case 2: data[3] = 0x21425B82; break;
+            case 3: data[3] = (int)0xFAD5AC93; break;
+            case 4: data[3] = 0x6BA1BC35; break;
+            case 5: data[3] = (int)0xDBEC014D; break;
+            case 6: data[3] = (int)0xE54B6BDB; break;
+            case 7: data[3] = 0x154F7C95; break;
+            }
+        }
+        return 1;
+    case 0x029AE71B:
+        data[3] = d->unk10;
+        return 1;
+    case 0x5C8F66F9:
+        data[3] = 0x5E5BCE3E;
+        return 1;
+    case 0x12868306:
         data[3] = d->unkC;
-    } else if (data[1] < 0x12868306) {
-        if (data[1] == 0x029AE71B) {
-            data[3] = d->unk10;
-            return 1;
-        }
-        if (data[1] < 0x029AE71B && data[1] == (int)0x9BD4EF06) {
-            data[3] = (int)d;
-            return 1;
-        }
-    } else {
-        if (data[1] == 0x5ED5BF20) {
-            if (ActorIsActive(actor) == 0 && lbl_8039F568.handle < 0) {
-                return 0;
-            }
-            KeyQuerySend(&answer, 0x4B000000, 0x56CF46F2);
-            if (answer == 0) {
-                data[3] = (int)0xEAFE2C46;
-            } else if (lbl_8039F568.handle < 0) {
-                data[3] = (int)0xEAFE2C46;
-            } else {
-                switch (PlayerTeam(HandleToPlayer(lbl_8039F568.handle))) {
-                case 0: data[3] = 0x114F1979; break;
-                case 1: data[3] = 0x6B4B4A10; break;
-                case 2: data[3] = 0x21425B82; break;
-                case 3: data[3] = (int)0xFAD5AC93; break;
-                case 4: data[3] = 0x6BA1BC35; break;
-                case 5: data[3] = (int)0xDBEC014D; break;
-                case 6: data[3] = (int)0xE54B6BDB; break;
-                case 7: data[3] = 0x154F7C95; break;
-                default: data[3] = (int)0xEAFE2C46; break;
-                }
-            }
-            return 1;
-        }
-        if (data[1] < 0x5ED5BF20 && data[1] == 0x5C8F66F9) {
-            data[3] = 0x5E5BCE3E;
-            return 1;
-        }
+        break;
     }
     return 0;
 }
