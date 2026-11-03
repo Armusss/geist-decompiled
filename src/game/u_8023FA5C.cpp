@@ -1774,19 +1774,19 @@ extern "C" unsigned int fn_80242BA4(unsigned int* root)
 // Descriptive name; retail: 0x80242BAC.
 ChildNode* AppendChildNode(ChildNode** root, ChildNode* parent, ChildNode* node)
 {
-    if (*root == 0 || parent == 0 || node == 0) {
-        return 0;
+    if (*root != 0 && parent != 0 && node != 0) {
+        if (parent->mLast == 0) {
+            parent->mFirst = node;
+        } else {
+            parent->mLast->mNext = node;
+        }
+        node->mPrev = parent->mLast;
+        node->mNext = 0;
+        node->mParent = parent;
+        parent->mLast = node;
+        return node;
     }
-    if (parent->mLast == 0) {
-        parent->mFirst = node;
-    } else {
-        parent->mLast->mNext = node;
-    }
-    node->mPrev = parent->mLast;
-    node->mNext = 0;
-    node->mParent = parent;
-    parent->mLast = node;
-    return node;
+    return 0;
 }
 
 // Stores node as the tree root when the root slot is still empty.
