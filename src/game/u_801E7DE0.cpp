@@ -2,7 +2,7 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 typedef unsigned char u8;
-typedef unsigned int u32;
+typedef unsigned long u32;
 
 // Reference-counted byte buffer and the String built on top of it. Both are
 // part of the shared runtime (defined in u_8028A77C.cpp).
@@ -10,12 +10,19 @@ class Buffer {
 public:
     Buffer();
     virtual ~Buffer();
+    virtual void Release(char* p);
+
+    char* mData;
+    int mLength;
+    int mUnk0C;
+    int mOwned;
 };
 
 class String : public Buffer {
 public:
     String();
-    int data;   // 0x004 resolved character data
+    ~String() {}
+    virtual void Release(char* p);
 };
 
 // Per-local-player view data block (pointed to by Actor::views).
@@ -243,14 +250,26 @@ struct NameQuery {
 };
 
 // Asks the actor's host for the name handle selected by `hash`.
-static int PlayerWeaponQueryName(Actor* actor, u32 hash)
+static inline int PlayerWeaponQueryName(void* host, u32 hash)
 {
     NameQuery query;
 
     query.hash = hash;
+    *(int*)&query.name = 0;
     query.unk08 = 0;
-    SendMsg(actor->host38, 0x41e, &query);
-    return query.name.data;
+    SendMsg(host, 0x41e, &query);
+    return *(int*)&query.name;
+}
+
+// Tells the actor's host to switch to the name handle `value` for `hash`.
+static inline void PlayerWeaponSetName(Actor* actor, u32 hash, int value)
+{
+    NameQuery query;
+
+    query.hash = hash;
+    *(int*)&query.name = value;
+    query.unk08 = 0;
+    SendMsg(actor->host38, 0x41d, &query);
 }
 
 // First-person "weapon held" view setup: resolves the model and animation
@@ -260,8 +279,8 @@ void PlayerWeaponFirstPersonInit(Actor* actor)
 {
     actor->field15B4 = 0;
 
-    int modelName = PlayerWeaponQueryName(actor, 0x2da8293c);
-    int animName = PlayerWeaponQueryName(actor, 0xdff3097a);
+    int modelName = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
+    int animName = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
 
     fn_80048BA8(actor, actor->field1D04, 1);
     int anim = fn_800498D0(actor);
@@ -317,7 +336,7 @@ void PlayerCollisionViewUpdate(Actor* actor, float dt)
 // starts the weapon-tied effect.
 void PlayerWeaponViewSetup(Actor* actor)
 {
-    int name = PlayerWeaponQueryName(actor, 0xdff3097a);
+    int name = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
 
     int localPlayer = PlayerInHost(actor);
     int slot = actor->weaponSlot;
@@ -398,8 +417,8 @@ void PlayerWeaponHandlesInit(Actor* actor)
 // view angles, and runs the shared "leave to weapon select" checks.
 void PlayerWeaponIdleStateUpdate(Actor* actor, float dt)
 {
-    PlayerWeaponQueryName(actor, 0x2da8293c);
-    PlayerWeaponQueryName(actor, 0xdff3097a);
+    PlayerWeaponQueryName(actor->host38, 0x2da8293c);
+    PlayerWeaponQueryName(actor->host38, 0xdff3097a);
 
     actor->field638 = 1;
     actor->flags7B4 &= ~1u;
@@ -463,8 +482,8 @@ void PlayerWeaponIdleStateUpdate(Actor* actor, float dt)
 // valid one, and asks for the weapon-select state when the player is able.
 void PlayerWeaponEnterState(Actor* actor)
 {
-    int nameA = PlayerWeaponQueryName(actor, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor, 0xdff3097a);
+    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
+    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
 
     int localPlayer = PlayerInHost(actor);
     int slot = actor->weaponSlot;
@@ -539,7 +558,7 @@ extern int lbl_804D3308;
 // weapon-tied effect and syncs the camera field of view.
 void PlayerWeaponDrawnSetup(Actor* actor)
 {
-    int name = PlayerWeaponQueryName(actor, 0xdff3097a);
+    int name = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
 
     int localPlayer = PlayerInHost(actor);
     int slot = actor->weaponSlot;
@@ -697,8 +716,8 @@ void PlayerAimStateUpdate(Actor* actor, float dt)
 // once with the un-matched variant when the host returns no handle.
 void PlayerWeaponTimerEnter(Actor* actor)
 {
-    int nameA = PlayerWeaponQueryName(actor, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor, 0xdff3097a);
+    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
+    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
     int anim = fn_800498D0(actor);
     int result = Fn800F7DEC(nameA, nameB, 0x20ee36, anim, 0);
 
@@ -734,8 +753,8 @@ void PlayerWeaponTimerEnter(Actor* actor)
 // advances the hold timer.
 int PlayerZoomStateUpdate(Actor* actor, float dt)
 {
-    int nameA = PlayerWeaponQueryName(actor, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor, 0xdff3097a);
+    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
+    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
 
     if (actor->field588 == 5 || actor->field588 == 4) {
         if (actor->flags320 & 1) {
@@ -927,8 +946,8 @@ int PlayerZoomLevelUpdate(Actor* actor, int slotA, int slotB)
 // a mode change was made.
 int PlayerHeldSlotActionCheck(Actor* actor)
 {
-    int nameA = PlayerWeaponQueryName(actor, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor, 0xdff3097a);
+    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
+    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
 
     if (actor->field314 < 1) {
         if (actor->state7A4 == 5) {
@@ -946,11 +965,7 @@ int PlayerHeldSlotActionCheck(Actor* actor)
 
         if (result == 0x11d2c025) {
             if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
-                NameQuery query;
-                query.hash = 0x7ffcfd4f;
-                query.name.data = 0x91a0cef7;
-                query.unk08 = 0;
-                SendMsg(actor->host38, 0x41d, &query);
+                PlayerWeaponSetName(actor, 0x7ffcfd4f, 0x91a0cef7);
             }
             if (actor->state7A4 == 5) {
                 PlayerSetHeldSlotMode(actor, 3);
@@ -987,8 +1002,8 @@ int PlayerGunActionMessage(int msg, Actor* actor)
         return 0;
     }
 
-    int nameA = PlayerWeaponQueryName(actor, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor, 0xdff3097a);
+    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
+    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
 
     switch (msg) {
     case 0x20ee36:
