@@ -117,7 +117,7 @@ struct EffectParams {
 };
 
 // Builds the effect set for an object spawned from a descriptor.
-u32 ActorCreateEffects(u32 param_1, u32 param_2, f32* param_3, u32 param_4, int param_5) {
+u32 ActorCreateEffects(u32 effectId, u32 ownerHandle, f32* pos, u32 orient, int persistent) {
     SpawnDesc desc;
     EffectParams fx;
     EffObject* outs[8];
@@ -125,12 +125,12 @@ u32 ActorCreateEffects(u32 param_1, u32 param_2, f32* param_3, u32 param_4, int 
     EffTarget* ent;
 
     memset(&desc, 0, sizeof(desc));
-    desc.id = param_1;
+    desc.id = effectId;
     desc.handle = 0xffffffff;
-    desc.posX = param_3[0];
-    desc.posY = param_3[1];
-    desc.posZ = param_3[2];
-    fn_8016D68C(desc.unk0c, param_4);
+    desc.posX = pos[0];
+    desc.posY = pos[1];
+    desc.posZ = pos[2];
+    fn_8016D68C(desc.unk0c, orient);
 
     owner = (SpawnOwner*)fn_800C7E80(&desc);
     if (owner == 0 || owner->target == 0) {
@@ -139,8 +139,8 @@ u32 ActorCreateEffects(u32 param_1, u32 param_2, f32* param_3, u32 param_4, int 
     ent = owner->target;
 
     ent->flags |= 0x20000000;
-    ent->a34 = param_2;
-    ent->a38 = param_2;
+    ent->a34 = ownerHandle;
+    ent->a38 = ownerHandle;
     ent->f58 = lbl_804D3780;
     ent->f30 = lbl_804DA3C0;
 
@@ -217,7 +217,7 @@ u32 ActorCreateEffects(u32 param_1, u32 param_2, f32* param_3, u32 param_4, int 
         outs[0]->flags &= 0xfffdffff;
     }
 
-    if (param_5 != 0) {
+    if (persistent != 0) {
         ent->flags |= 0x40000000;
     }
 
