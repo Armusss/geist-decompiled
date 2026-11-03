@@ -1100,9 +1100,12 @@ int GeistA28A4DogFetchApproachUpdate(int actor)
                     *(int*)(actor + 0x2c4), actorPos, tgtPos, (void*)actor,
                     &factor, &out1, &out2) != 0) {
         factor *= 0.95f;
-        tgtPos[0] = actorPos[0] + (tgtPos[0] - actorPos[0]) * factor;
-        tgtPos[1] = actorPos[1] + (tgtPos[1] - actorPos[1]) * factor;
-        tgtPos[2] = actorPos[2] + (tgtPos[2] - actorPos[2]) * factor;
+        float dx = (tgtPos[0] - actorPos[0]) * factor;
+        float dy = (tgtPos[1] - actorPos[1]) * factor;
+        float dz = (tgtPos[2] - actorPos[2]) * factor;
+        tgtPos[0] = actorPos[0] + dx;
+        tgtPos[1] = actorPos[1] + dy;
+        tgtPos[2] = actorPos[2] + dz;
     }
     fn_800BC5A8(actor, tgtPos);
     *(int*)(actor + 0x288) = 2;
