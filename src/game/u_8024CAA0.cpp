@@ -948,10 +948,6 @@ int ScannableBeamSetParam(ScannableBeam* beam, RailMsg41E* msg) {
     return 0;
 }
 
-extern float lbl_804D9D58;
-extern float lbl_804D9D5C;
-extern float lbl_804D9D60;
-extern float lbl_804D9D64;
 float VarFindFloat(u32 set, u32 id, u32 key);
 void ConditionUpdateBit(void* cond, int bit, int value);
 
@@ -960,26 +956,28 @@ void ConditionUpdateBit(void* cond, int bit, int value);
 // its owner, then reads the seven float tunables and three fixed floats and
 // flags condition 0x26 when the variant's 0x5ede8673 value is set. 0x8024E1C0.
 int ScannableBeamInit(ScannableBeam* beam) {
-    u32 variant = beam->f910;
-    if (variant == 0) {
+    u32 variant;
+    if (beam->f910 == 0) {
         beam->state = 4;
         beam->i5e0 = -1;
-        beam->f5e4 = lbl_804D9D58;
+        beam->f5e4 = 0.0f;
         beam->i5e8 = -1;
         variant = beam->owner->id;
+    } else {
+        variant = beam->f910;
     }
 
-    beam->f5b4 = lbl_804D9D48 * VarFindFloat(0x6249ec5a, variant, 0x9782a85b);
-    beam->f5b8 = lbl_804D9D48 * VarFindFloat(0x6249ec5a, variant, 0xb9af66bf);
-    beam->f5bc = lbl_804D9D48 * VarFindFloat(0x6249ec5a, variant, 0x03ff5cb8);
-    beam->f5c0 = lbl_804D9D48 * VarFindFloat(0x6249ec5a, variant, 0x1d9b4d25);
-    beam->f5c4 = lbl_804D9D48 * VarFindFloat(0x6249ec5a, variant, 0xba683b26);
-    beam->f5c8 = lbl_804D9D48 * VarFindFloat(0x6249ec5a, variant, 0x51979712);
-    beam->f5cc = lbl_804D9D48 * VarFindFloat(0x6249ec5a, variant, 0xc3cabadf);
-    beam->f5d4 = lbl_804D9D5C;
-    beam->f5dc = lbl_804D9D60;
-    beam->f5d8 = lbl_804D9D64;
-    if (VarFindFloat(0x6249ec5a, variant, 0x5ede8673) != lbl_804D9D58) {
+    beam->f5b4 = 0.01f * VarFindFloat(0x6249ec5a, variant, 0x9782a85b);
+    beam->f5b8 = 0.01f * VarFindFloat(0x6249ec5a, variant, 0xb9af66bf);
+    beam->f5bc = 0.01f * VarFindFloat(0x6249ec5a, variant, 0x03ff5cb8);
+    beam->f5c0 = 0.01f * VarFindFloat(0x6249ec5a, variant, 0x1d9b4d25);
+    beam->f5c4 = 0.01f * VarFindFloat(0x6249ec5a, variant, 0xba683b26);
+    beam->f5c8 = 0.01f * VarFindFloat(0x6249ec5a, variant, 0x51979712);
+    beam->f5cc = 0.01f * VarFindFloat(0x6249ec5a, variant, 0xc3cabadf);
+    beam->f5d4 = 2000.0f;
+    beam->f5dc = 1280.0f;
+    beam->f5d8 = 4000.0f;
+    if (VarFindFloat(0x6249ec5a, variant, 0x5ede8673) != 0.0f) {
         ConditionUpdateBit(&beam->cond, 0x26, 1);
     }
     return 1;
