@@ -977,15 +977,14 @@ int EnterStunFxState(void* owner)
 // Enters state 4, clears the pending state and the state argument, and hands
 // the (zero) state argument on to the shared state entry.  Returns 0 without
 // an owner.
-bool StoneMenEnterStateFour(void* owner)
+int StoneMenEnterStateFour(void* owner)
 {
-    Actor* self;
     StateControl* ctrl;
+    Actor* self = (Actor*)owner;
 
-    if (owner == 0)
-        return false;
+    if (self == 0)
+        return 0;
 
-    self = (Actor*)owner;
     ctrl = self->control;
     ctrl->state = 4;
     ctrl->pending = 0;
@@ -998,15 +997,14 @@ bool StoneMenEnterStateFour(void* owner)
 // reaction field, sets condition 0 and notifies the walk handler before handing
 // the (zero) state argument to the shared state entry.  Returns 0 without an
 // owner.
-bool StoneMenEnterStateThree(void* owner)
+int StoneMenEnterStateThree(void* owner)
 {
-    Actor* self;
     StateControl* ctrl;
+    Actor* self = (Actor*)owner;
 
-    if (owner == 0)
-        return false;
+    if (self == 0)
+        return 0;
 
-    self = (Actor*)owner;
     ctrl = self->control;
     ctrl->state = 3;
     ctrl->pending = 0;
