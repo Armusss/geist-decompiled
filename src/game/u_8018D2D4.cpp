@@ -171,9 +171,9 @@ void GhostShotDrawAll(void) {
                 fn_8013A3D4();
                 fn_8013AC68(o->asset, 0);
                 if (o->count > 0 && i % 3 == 0) {
-                    fn_8013A834(&pos, alpha * 0.5f, 0.0f, col, col, col, col / 2);
+                    { float h = alpha; h *= 0.5f; fn_8013A834(&pos, h, 0.0f, col, col, col, col / 2); }
                 } else if (o->count == 0) {
-                    fn_8013A834(&pos, alpha * 0.5f, 0.0f, col, col, col, col);
+                    { float h = alpha; h *= 0.5f; fn_8013A834(&pos, h, 0.0f, col, col, col, col); }
                 }
                 fn_8013A3D4();
             }
