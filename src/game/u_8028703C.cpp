@@ -46,7 +46,7 @@ extern "C" void OSSetArenaLo(u32 lo);
 // Audio driver registration helper (placeholder name) and its callback.
 extern "C" void fn_80340418(void (*callback)(void));
 extern "C" void fn_802870F0(void);
-extern "C" void fn_80287E84(void* arg);
+extern "C" void fn_80287E84(int msg, int* data);
 extern "C" int fn_80287EB8(u32 handle, int* data);
 
 // Helpers of this unit, defined below.
@@ -54,7 +54,7 @@ extern "C" void fn_8028750C(u32 handle);
 extern "C" u32 fn_8028757C(u32 handle);
 u32 AramPageIsResident(u32 addr);
 int AramPageIsMapped(u32 addr);
-void AramReportUnmappedAddress(u32 addr);
+inline void AramReportUnmappedAddress(u32 addr);
 
 // Converts the current OS time to the audio transfer timestamp unit
 // (timebase ticks scaled by 8, divided by bus clock / 4 / 500000).
@@ -213,25 +213,12 @@ void AramInitPageTable(void)
 // zero-fills it. The table is indexed by 4 KB page number.
 void AramAllocPageBuffer(void)
 {
-    lbl_804D569C = (u32*)OSGetArenaLo();
-    OSSetArenaLo((u32)lbl_804D569C + 0x8000);
+    u32 lo = (u32)OSGetArenaLo();
+    lbl_804D569C = (u32*)lo;
+    OSSetArenaLo(lo + 0x8000);
 
     int off = 0;
-    for (int n = 0x400; n != 0; n--) {
-        *(u32*)((u8*)lbl_804D569C + off) = 0;
-        off += 4;
-        *(u32*)((u8*)lbl_804D569C + off) = 0;
-        off += 4;
-        *(u32*)((u8*)lbl_804D569C + off) = 0;
-        off += 4;
-        *(u32*)((u8*)lbl_804D569C + off) = 0;
-        off += 4;
-        *(u32*)((u8*)lbl_804D569C + off) = 0;
-        off += 4;
-        *(u32*)((u8*)lbl_804D569C + off) = 0;
-        off += 4;
-        *(u32*)((u8*)lbl_804D569C + off) = 0;
-        off += 4;
+    for (int n = 0x2000; n != 0; n--) {
         *(u32*)((u8*)lbl_804D569C + off) = 0;
         off += 4;
     }
@@ -251,7 +238,7 @@ extern "C" void fn_8028750C(u32 handle)
 }
 
 // Reports a virtual address that was never handed out by VMAlloc, then halts.
-void AramReportUnmappedAddress(u32 addr)
+inline void AramReportUnmappedAddress(u32 addr)
 {
     char msg[0x408];
     sprintf(msg, "Virtual address (%x) has not been allocated. Call VMAlloc on virtual address ranges before using them.", addr);
@@ -270,11 +257,11 @@ int AramPageIsMapped(u32 addr)
 extern "C" u32 fn_8028757C(u32 addr)
 {
     u32 flags = lbl_804D569C[(addr >> 12) & 0x1FFF] & 0x7FFFFFFF;
-    if (flags == 0) {
-        AramReportUnmappedAddress(addr);
-        flags = 0;
+    if (flags != 0) {
+        return flags;
     }
-    return flags;
+    AramReportUnmappedAddress(addr);
+    return 0;
 }
 
 // ARAM page allocation cursor state.
@@ -436,7 +423,7 @@ struct AramPageHeader {
 
 struct AramPageNode {
     AramPageHeader header;   // 0x00
-    void (*callback)(void*); // 0x30
+    void (*callback)(int msg, int* data); // 0x30: message handler
     u32 pad34;               // 0x34
     u32 id;                  // 0x38
     void* state;             // 0x3c
@@ -640,7 +627,7 @@ int OwnerGetInfo(u32 ownerId);
 void ActorGetMatrix(Mtx34* out, Actor* actor);
 
 extern "C" Mtx34* fn_800C6448(void);
-extern "C" void fn_8028787C(u32 id, u32 handle, int* data, int flag);
+extern "C" void fn_8028787C(u32 handle, int msg, int* data, int flag);
 extern "C" void fn_800A025C(float* out, Mtx34* mtx, int axis);
 extern "C" void fn_800E1098(float angle, float* out, float* in);
 extern "C" float fn_800E1020(float* v);
@@ -744,10 +731,14 @@ int AramPageUpdateNodeState(u32 handle, int* data)
 }
 
 // TODO fn_8028787C (0x608 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
-extern "C" void fn_8028787C(u32 id, u32 handle, int* data, int flag);
+extern "C" void fn_8028787C(u32 handle, int msg, int* data, int flag);
 
-// TODO fn_80287E84 (0x34 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
-extern "C" void fn_80287E84(void* arg);
+// Message handler of a page node: forwards the message to fn_8028787C together with
+// the handle of the object that sent it (first word of the message data).
+extern "C" void fn_80287E84(int msg, int* data)
+{
+    fn_8028787C(*(u32*)(data[0] + 0x38), msg, data, 0);
+}
 
 // TODO fn_80287EB8 (0x32C bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
 extern "C" int fn_80287EB8(u32 handle, int* data);
