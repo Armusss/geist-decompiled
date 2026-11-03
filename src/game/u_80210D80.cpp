@@ -12,11 +12,6 @@ extern "C" void DrawLine(float* from, float* to, unsigned char c0, unsigned char
                          unsigned char c5, unsigned char c6, unsigned char c7);
 extern "C" void DrawDisableTexOffsets();
 
-extern "C" float lbl_804D9440;
-extern "C" float lbl_804D9444;
-extern "C" float lbl_804D9448;
-extern "C" float lbl_804D944C;
-extern "C" double lbl_804D9450;
 
 extern "C" double fmod(double x, double y);
 
@@ -29,7 +24,7 @@ extern "C" void fn_80210D80(float* pts, int stride, int count, int texture,
         return;
     }
     Draw3DBegin(texture, arg);
-    float zero = lbl_804D9440;
+    float zero = 0.0f;
     float* p = pts;
     for (int i = 0; i < count; i++) {
         float y = p[1];
@@ -41,8 +36,8 @@ extern "C" void fn_80210D80(float* pts, int stride, int count, int texture,
                 float c2;
                 float c3;
                 if (x < colorRamp[0]) {
-                    float t = lbl_804D9444;
-                    if (colorRamp[0] > lbl_804D9448) {
+                    float t = 1.0f;
+                    if (colorRamp[0] > 1.1920929e-07f) {
                         t = x / colorRamp[0];
                     }
                     c0 = t * (colorRamp[6] - colorRamp[2]) + colorRamp[2];
@@ -50,8 +45,8 @@ extern "C" void fn_80210D80(float* pts, int stride, int count, int texture,
                     c2 = t * (colorRamp[8] - colorRamp[4]) + colorRamp[4];
                     c3 = t * (colorRamp[9] - colorRamp[5]) + colorRamp[5];
                 } else if (y < colorRamp[1]) {
-                    float t = lbl_804D9444;
-                    if (colorRamp[1] > lbl_804D9448) {
+                    float t = 1.0f;
+                    if (colorRamp[1] > 1.1920929e-07f) {
                         t = y / colorRamp[1];
                     }
                     c0 = t * (colorRamp[6] - colorRamp[10]) + colorRamp[10];
@@ -66,21 +61,21 @@ extern "C" void fn_80210D80(float* pts, int stride, int count, int texture,
                 }
                 float alpha;
                 if (x < alphaRamp[0]) {
-                    float t = lbl_804D9444;
-                    if (alphaRamp[0] > lbl_804D9448) {
+                    float t = 1.0f;
+                    if (alphaRamp[0] > 1.1920929e-07f) {
                         t = x / alphaRamp[0];
                     }
                     alpha = t * (alphaRamp[3] - alphaRamp[2]) + alphaRamp[2];
                 } else if (y < alphaRamp[1]) {
-                    float t = lbl_804D9444;
-                    if (alphaRamp[1] > lbl_804D9448) {
+                    float t = 1.0f;
+                    if (alphaRamp[1] > 1.1920929e-07f) {
                         t = y / alphaRamp[1];
                     }
                     alpha = t * (alphaRamp[3] - alphaRamp[4]) + alphaRamp[4];
                 } else {
                     alpha = alphaRamp[3];
                 }
-                float s = lbl_804D944C;
+                float s = 255.0f;
                 DrawWorldQuadFlipped(alpha, p[11], p + 2,
                                      (unsigned char)(int)(s * c0),
                                      (unsigned char)(int)(s * c1),
@@ -103,7 +98,7 @@ extern "C" void fn_80210FC8(float* pts, int stride, int count, int texture,
         return;
     }
     Draw3DBeginLine(texture, arg, width);
-    float zero = lbl_804D9440;
+    float zero = 0.0f;
     float scale = -num / den;
     float* p = pts;
     for (int i = 0; i < count; i++) {
@@ -116,8 +111,8 @@ extern "C" void fn_80210FC8(float* pts, int stride, int count, int texture,
                 float a2;
                 float a3;
                 if (x < rampA[0]) {
-                    float t = lbl_804D9444;
-                    if (rampA[0] > lbl_804D9448) {
+                    float t = 1.0f;
+                    if (rampA[0] > 1.1920929e-07f) {
                         t = x / rampA[0];
                     }
                     a0 = t * (rampA[6] - rampA[2]) + rampA[2];
@@ -125,8 +120,8 @@ extern "C" void fn_80210FC8(float* pts, int stride, int count, int texture,
                     a2 = t * (rampA[8] - rampA[4]) + rampA[4];
                     a3 = t * (rampA[9] - rampA[5]) + rampA[5];
                 } else if (y < rampA[1]) {
-                    float t = lbl_804D9444;
-                    if (rampA[1] > lbl_804D9448) {
+                    float t = 1.0f;
+                    if (rampA[1] > 1.1920929e-07f) {
                         t = y / rampA[1];
                     }
                     a0 = t * (rampA[6] - rampA[10]) + rampA[10];
@@ -144,8 +139,8 @@ extern "C" void fn_80210FC8(float* pts, int stride, int count, int texture,
                 float b2;
                 float b3;
                 if (x < rampB[0]) {
-                    float t = lbl_804D9444;
-                    if (rampB[0] > lbl_804D9448) {
+                    float t = 1.0f;
+                    if (rampB[0] > 1.1920929e-07f) {
                         t = x / rampB[0];
                     }
                     b0 = t * (rampB[6] - rampB[2]) + rampB[2];
@@ -153,8 +148,8 @@ extern "C" void fn_80210FC8(float* pts, int stride, int count, int texture,
                     b2 = t * (rampB[8] - rampB[4]) + rampB[4];
                     b3 = t * (rampB[9] - rampB[5]) + rampB[5];
                 } else if (y < rampB[1]) {
-                    float t = lbl_804D9444;
-                    if (rampB[1] > lbl_804D9448) {
+                    float t = 1.0f;
+                    if (rampB[1] > 1.1920929e-07f) {
                         t = y / rampB[1];
                     }
                     b0 = t * (rampB[6] - rampB[10]) + rampB[10];
@@ -171,7 +166,7 @@ extern "C" void fn_80210FC8(float* pts, int stride, int count, int texture,
                 end[0] = p[5] * scale;
                 end[1] = p[6] * scale;
                 end[2] = p[7] * scale;
-                float s = lbl_804D944C;
+                float s = 255.0f;
                 DrawLine(p + 2, end,
                          (unsigned char)(int)(s * a0),
                          (unsigned char)(int)(s * a1),
@@ -204,7 +199,7 @@ void DrawParticlePoints(float* pts, int stride, int count, int texture, void* ar
         return;
     }
     Draw3DBeginPoint(texture, arg, size);
-    float zero = lbl_804D9440;
+    float zero = 0.0f;
     float* p = pts;
     for (int i = 0; i < count; i++) {
         float y = p[1];
@@ -234,22 +229,15 @@ extern "C" void fn_802113F0(float* pts, int stride, int count, float delta,
     float vx = vec[0] * delta;
     float vy = vec[1] * delta;
     float vz = vec[2] * delta;
-    float zero = lbl_804D9440;
-    if (count < 1) {
-        return;
-    }
-    do {
-        float y = pts[1];
-        if (zero < y) {
-            float x = pts[0];
-            if (zero < x) {
-                pts[5] += vx;
-                pts[6] += vy;
-                pts[7] += vz;
-            }
+    float zero = 0.0f;
+    for (int i = 0; i < count; i++) {
+        if (pts[1] > zero && pts[0] > zero) {
+            pts[5] += vx;
+            pts[6] += vy;
+            pts[7] += vz;
         }
         pts = (float*)((int)pts + stride);
-    } while (--count);
+    }
 }
 
 // Advances each particle in the array by `dt`: integrates the position from the
@@ -259,7 +247,7 @@ extern "C" void fn_802113F0(float* pts, int stride, int count, float delta,
 extern "C" int fn_80211470(float dt, float* particles, int stride, int count) {
     int live = 0;
     if (particles) {
-        float zero = lbl_804D9440;
+        float zero = 0.0f;
         for (int i = 0; i < count; i++) {
             if (particles[1] > zero) {
                 particles[0] = particles[0] + dt;
@@ -273,7 +261,7 @@ extern "C" int fn_80211470(float dt, float* particles, int stride, int count) {
                     particles[3] = particles[3] + particles[6] * step;
                     particles[4] = particles[4] + particles[7] * step;
                     particles[11] = (float)fmod((double)(particles[12] * step + particles[11]),
-                                                lbl_804D9450);
+                                                360.0);
                 }
                 live++;
             }
@@ -287,26 +275,27 @@ extern "C" int fn_80211470(float dt, float* particles, int stride, int count) {
 // wrap and with a count-down loop. Returns the number of live particles advanced.
 int ParticleStepPlain(float dt, float* particles, int stride, int count) {
     int live = 0;
-    if (particles && count > 0) {
-        float zero = lbl_804D9440;
-        do {
+    if (particles != 0) {
+        float zero = 0.0f;
+        for (int i = 0; i < count; i++) {
             if (particles[1] > zero) {
                 particles[0] = particles[0] + dt;
                 float x = particles[0];
                 if (x > zero) {
                     float step = dt;
-                    if (x < dt)
+                    if (x >= dt) {
+                    } else {
                         step = x;
+                    }
                     particles[1] = particles[1] - step;
-                    particles[2] = particles[2] + particles[5] * step;
-                    particles[3] = particles[3] + particles[6] * step;
-                    particles[4] = particles[4] + particles[7] * step;
+                    particles[2] += particles[5] * step;
+                    particles[3] += particles[6] * step;
+                    particles[4] += particles[7] * step;
                 }
                 live++;
             }
             particles = (float*)((char*)particles + stride);
-            count--;
-        } while (count != 0);
+        }
     }
     return live;
 }
@@ -323,45 +312,45 @@ extern "C" void fn_80211638(float x, float y, float alpha, float depth, float* o
     }
     out[0] = x;
     out[1] = y;
-    if (rot == 0) {
-        out[2] = lbl_804D9440;
-        out[3] = lbl_804D9440;
-        out[4] = lbl_804D9440;
-    } else {
+    if (rot != 0) {
         out[2] = rot[0];
         out[3] = rot[1];
         out[4] = rot[2];
-    }
-    if (scale == 0) {
-        out[5] = lbl_804D9440;
-        out[6] = lbl_804D9440;
-        out[7] = lbl_804D9440;
     } else {
+        out[2] = 0.0f;
+        out[3] = 0.0f;
+        out[4] = 0.0f;
+    }
+    if (scale != 0) {
         out[5] = scale[0];
         out[6] = scale[1];
         out[7] = scale[2];
-    }
-    if (tint == 0) {
-        out[8] = lbl_804D9440;
-        out[9] = lbl_804D9440;
-        out[10] = lbl_804D9444;
     } else {
+        out[5] = 0.0f;
+        out[6] = 0.0f;
+        out[7] = 0.0f;
+    }
+    if (tint != 0) {
         out[8] = tint[0];
         out[9] = tint[1];
         out[10] = tint[2];
+    } else {
+        out[8] = 0.0f;
+        out[9] = 0.0f;
+        out[10] = 1.0f;
     }
     out[11] = alpha;
     out[12] = depth;
-    if (uv == 0) {
-        out[13] = lbl_804D9440;
-        out[14] = lbl_804D9440;
-        out[15] = lbl_804D9440;
-        out[16] = lbl_804D9444;
-    } else {
+    if (uv != 0) {
         out[13] = uv[0];
         out[14] = uv[1];
         out[15] = uv[2];
         out[16] = uv[3];
+    } else {
+        out[13] = 0.0f;
+        out[14] = 0.0f;
+        out[15] = 0.0f;
+        out[16] = 1.0f;
     }
 }
 
@@ -374,23 +363,23 @@ void SetParticleDrawTransform(float x, float y, float* out, float* rot, float* s
     }
     out[0] = x;
     out[1] = y;
-    if (rot == 0) {
-        out[2] = lbl_804D9440;
-        out[3] = lbl_804D9440;
-        out[4] = lbl_804D9440;
-    } else {
+    if (rot != 0) {
         out[2] = rot[0];
         out[3] = rot[1];
         out[4] = rot[2];
-    }
-    if (scale == 0) {
-        out[5] = lbl_804D9440;
-        out[6] = lbl_804D9440;
-        out[7] = lbl_804D9440;
     } else {
+        out[2] = 0.0f;
+        out[3] = 0.0f;
+        out[4] = 0.0f;
+    }
+    if (scale != 0) {
         out[5] = scale[0];
         out[6] = scale[1];
         out[7] = scale[2];
+    } else {
+        out[5] = 0.0f;
+        out[6] = 0.0f;
+        out[7] = 0.0f;
     }
 }
 
@@ -400,14 +389,12 @@ void SetParticleDrawTransform(float x, float y, float* out, float* rot, float* s
 extern "C" int rand(void);
 extern "C" float sqrtf(float x);
 extern "C" double fabs(double x);
-extern "C" float lbl_804D9458;
-extern "C" float lbl_804D945C;
 
 // Uniform random component built from rand(); the shared constants scale and
 // centre it.
 static inline float RandomComponent()
 {
-    return (float)rand() / lbl_804D9458 - lbl_804D945C;
+    return (float)rand() / 32767.0f - 0.5f;
 }
 
 // Scales a three-component vector to unit length.
@@ -427,11 +414,11 @@ void PerturbDirectionRandom(float* out, float* in, float amount)
     r[0] = RandomComponent();
     r[1] = RandomComponent();
     r[2] = RandomComponent();
-    if ((fabs(r[0]) > lbl_804D9448) + (fabs(r[1]) > lbl_804D9448) +
-            (fabs(r[2]) > lbl_804D9448) == 0) {
-        r[0] = lbl_804D9440;
-        r[1] = lbl_804D9440;
-        r[2] = lbl_804D9440;
+    if ((fabs(r[0]) > 1.1920929e-07f) + (fabs(r[1]) > 1.1920929e-07f) +
+            (fabs(r[2]) > 1.1920929e-07f) == 0) {
+        r[0] = 0.0f;
+        r[1] = 0.0f;
+        r[2] = 0.0f;
     } else {
         NormalizeVector3(r);
     }
@@ -439,11 +426,11 @@ void PerturbDirectionRandom(float* out, float* in, float amount)
     out[0] = amount * (r[0] - in[0] * dot) + in[0];
     out[1] = amount * (r[1] - in[1] * dot) + in[1];
     out[2] = amount * (r[2] - in[2] * dot) + in[2];
-    if ((fabs(out[0]) > lbl_804D9448) + (fabs(out[1]) > lbl_804D9448) +
-            (fabs(out[2]) > lbl_804D9448) == 0) {
-        out[0] = lbl_804D9440;
-        out[1] = lbl_804D9440;
-        out[2] = lbl_804D9440;
+    if ((fabs(out[0]) > 1.1920929e-07f) + (fabs(out[1]) > 1.1920929e-07f) +
+            (fabs(out[2]) > 1.1920929e-07f) == 0) {
+        out[0] = 0.0f;
+        out[1] = 0.0f;
+        out[2] = 0.0f;
     } else {
         NormalizeVector3(out);
     }
@@ -462,14 +449,6 @@ void Fn80211A84(Actor* actor)
 // ---------------------------------------------------------------------------
 // White-out ghost actor behaviour.
 
-extern "C" float lbl_804D9468;
-extern "C" float lbl_804D946C;
-extern "C" float lbl_804D9470;
-extern "C" float lbl_804D9474;
-extern "C" float lbl_804D9478;
-extern "C" float lbl_804D947C;
-extern "C" float lbl_804D9488;
-extern "C" float lbl_804D948C;
 extern "C" float lbl_804D3410;
 
 extern "C" float fabsf(float x);
@@ -580,18 +559,18 @@ void Fn80211AA4(Actor* actor, float dt)
                 }
                 ghost->field14CC = fn_8007EF48(ghost->field248, 1, "White Out", 0,
                                                0, 0x3c, 0x3c, 0x3c, 0, (int)ghost);
-                ghost->field264C = lbl_804D9468;
+                ghost->field264C = 60.0f;
                 GhostNotify(ghost->field26E0, 0, 1);
             }
             float pos[3];
             pos[0] = (float)actor->field24;
             pos[1] = (float)actor->field28;
             pos[2] = (float)actor->field2C;
-            fn_800B4C50(lbl_804D946C, lbl_804D9470, pos, actor->field38, 2, 0x12);
-            beh->field10 = lbl_804D9474;
+            fn_800B4C50(201.0f, 8000.0f, pos, actor->field38, 2, 0x12);
+            beh->field10 = 0.0f;
             WhiteOutEffectStart(actor, id, 1);
         }
-    } else if (beh->field30 == lbl_804D9474) {
+    } else if (beh->field30 == 0.0f) {
         CameraInfo* cam = fn_800C5DD8();
         float view[3];
         fn_800A025C(view, cam, 1);
@@ -603,23 +582,23 @@ void Fn80211AA4(Actor* actor, float dt)
         dir[1] = dir[1] - cam->field28;
         dir[2] = dir[2] - cam->field2C;
         float len2 = dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2];
-        if ((fabsf(dir[0]) > lbl_804D9478) + (fabsf(dir[1]) > lbl_804D9478) +
-                (fabsf(dir[2]) > lbl_804D9478) == 0) {
-            dir[0] = lbl_804D9474;
-            dir[1] = lbl_804D9474;
-            dir[2] = lbl_804D9474;
+        if ((fabsf(dir[0]) > 1.1920929e-07f) + (fabsf(dir[1]) > 1.1920929e-07f) +
+                (fabsf(dir[2]) > 1.1920929e-07f) == 0) {
+            dir[0] = 0.0f;
+            dir[1] = 0.0f;
+            dir[2] = 0.0f;
         } else {
             NormalizeVector3(dir);
         }
         float dot = dir[0] * view[0] + dir[1] * view[1] + dir[2] * view[2];
-        if ((dot < lbl_804D947C && len2 > lbl_804D3410) ||
+        if ((dot < 0.5f && len2 > lbl_804D3410) ||
                 fn_802A1D04() != 0) {
             fn_800C7B78(actor);
         }
     } else if ((flags & 0x8000000) != 0) {
         beh->field30 = beh->field30 - dt;
-        if (beh->field30 < lbl_804D9474) {
-            beh->field30 = lbl_804D9474;
+        if (beh->field30 < 0.0f) {
+            beh->field30 = 0.0f;
         }
     }
     PossessableUpdate(actor, dt);
@@ -636,6 +615,7 @@ void ModelNodeSetup(int node, int asset, int a, int b);
 // marks the actor possessable and sets up its overlay model node.
 extern "C" void fn_80211E38(Actor* actor)
 {
+    int node;
     GhostState* beh = actor->fieldA4;
     if (beh == 0) {
         beh = (GhostState*)VAlloc(0x3c);
@@ -643,29 +623,32 @@ extern "C" void fn_80211E38(Actor* actor)
     }
     memset(beh, 0, 0x3c);
 
-    bool active;
+    int active;
     if (PossessableInit(actor) == 0) {
-        active = false;
+        active = 0;
         actor->fieldAC |= 0x1000000;
     } else {
         actor->fieldAC &= 0xdfffffff;
         if (actor->field84->field4 != 0xa303c34 && actor->field84->field2C != 0) {
-            int node = AssetFind(0xd9044cbb,
+            node = AssetFind(0xd9044cbb,
                                  (unsigned long)actor->field84->field2C);
             if (node != -1) {
                 ModelNodeSetupByName(actor->field90, 0, 0, 1);
                 ModelNodeSetup(actor->field90, node, 1, 1);
             }
         }
-        active = true;
+        active = 1;
         beh->field18 |= 0x8000000;
         beh->field18 &= 0xfffffff7;
-        beh->field34 = lbl_804D9488;
-        beh->field38 = lbl_804D948C;
+        beh->field34 = 1800.0f;
+        beh->field38 = 100000.0f;
     }
 
-    if (active && actor->fieldA4 != 0) {
-        actor->fieldA4->field18 |= 0x30000000;
+    if (active) {
+        GhostState* g = actor->fieldA4;
+        if (g != 0) {
+            g->field18 |= 0x30000000;
+        }
     }
 }
 
@@ -695,13 +678,11 @@ int Fn80211F78(Actor* actor)
     }
     beh->field18 |= 0x8000000;
     beh->field18 &= 0xfffffff7;
-    beh->field34 = lbl_804D9488;
-    beh->field38 = lbl_804D948C;
+    beh->field34 = 1800.0f;
+    beh->field38 = 100000.0f;
     return 1;
 }
 
-extern "C" float lbl_804D9490;
-extern "C" float lbl_804D9494;
 
 // Info record returned by OwnerGetInfo; only the type hash at 0x128 is used.
 struct OwnerInfo {
@@ -762,7 +743,7 @@ int Fn802120A0(Actor* actor, int msg, void* data, int arg)
             switch (msgData->animHash) {
             case 0x1ba3ee4a:
             case -0x4603bd0b:
-                beh->field10 = lbl_804D9474;
+                beh->field10 = 0.0f;
                 break;
             case 0x11a6b:
             case 0x403548d0:
@@ -771,11 +752,11 @@ int Fn802120A0(Actor* actor, int msg, void* data, int arg)
                 beh->field10 = beh->field10 - msgData->value.amount;
                 break;
             }
-            if (beh->field10 > lbl_804D9474) {
-                beh->field14 = lbl_804D9474;
+            if (beh->field10 > 0.0f) {
+                beh->field14 = 0.0f;
             }
             if ((beh->field18 & 0x80000000) == 0 &&
-                    beh->field10 <= lbl_804D9474) {
+                    beh->field10 <= 0.0f) {
                 WhiteOutEffectStart(target, msgData->modelId, 1);
             }
         }
@@ -793,8 +774,8 @@ int Fn802120A0(Actor* actor, int msg, void* data, int arg)
                 if (player >= 0) {
                     unsigned long key;
                     const char* text = StrFindKey(0x2df0c512, &key);
-                    HudMessageN(player, text, key, lbl_804D9490,
-                                lbl_804D9490, lbl_804D9490, lbl_804D9494);
+                    HudMessageN(player, text, key, 1.0f,
+                                1.0f, 1.0f, 32.0f);
                 }
             }
             break;
@@ -850,10 +831,6 @@ int Fn802120A0(Actor* actor, int msg, void* data, int arg)
 // ---------------------------------------------------------------------------
 // White-out effect trigger.
 
-extern "C" float lbl_804D9498;
-extern "C" float lbl_804D949C;
-extern "C" float lbl_804D94A0;
-extern "C" float lbl_804D94A4;
 extern "C" void fn_80158C3C(float* pos, int a, int b, int c, int d, int e,
                             int f);
 extern "C" void fn_80122108(float a, float b, float c, float d, float e,
@@ -885,7 +862,7 @@ void WhiteOutEffectStart(Actor* actor, unsigned int id, int flag)
         return;
     }
     beh->field18 |= 0x80000000;
-    beh->field30 = lbl_804D9498;
+    beh->field30 = 30000.0f;
 
     float pos[3];
     pos[0] = (float)actor->field24;
@@ -904,9 +881,9 @@ void WhiteOutEffectStart(Actor* actor, unsigned int id, int flag)
         if (SendMsg(id, 0x400, msg) != 0 && msg[0] != 0) {
             target = (Actor*)msg[0];
         }
-        fn_80122108(lbl_804D949C * beh->field34, beh->field34,
-                    lbl_804D949C * beh->field38, beh->field38,
-                    lbl_804D94A0, lbl_804D9474, lbl_804D94A4,
+        fn_80122108(0.2f * beh->field34, beh->field34,
+                    0.2f * beh->field38, beh->field38,
+                    0.75f, 0.0f, 200.0f,
                     0, target->field38, pos, 0xb9fc42f5, actor->field38);
     }
 
@@ -991,18 +968,14 @@ extern "C" int fn_80212730(int id)
     if (id == -1) {
         return -1;
     }
-    int* entry = (int*)fn_80243448(fn_80242BA4(lbl_804D53A8), fn_80213970, key);
-    if (entry == 0) {
-        return -1;
+    void** entry = (void**)fn_80243448(fn_80242BA4(lbl_804D53A8), fn_80213970, key);
+    if (entry != 0 && *entry != 0) {
+        int* value = (int*)((char*)*entry + 0x14);
+        if (value != 0) {
+            return *value;
+        }
     }
-    if (*entry == 0) {
-        return -1;
-    }
-    int* value = (int*)((char*)*entry + 0x14);
-    if (value == 0) {
-        return -1;
-    }
-    return *value;
+    return -1;
 }
 
 extern "C" void fn_80212A58(void* a, void* b, void* c, void* info, void* d,
@@ -1043,20 +1016,18 @@ extern "C" int fn_8021284C(int id)
     int key;
 
     key = id;
-    if (id == -1) {
-        return 0;
+    if (id != -1) {
+        if (fn_80243448(fn_80242BA4(lbl_804D53A8), fn_80213970, &key) != 0) {
+            if (lbl_804D53B0 < 0x100) {
+                int* entry = (int*)(lbl_804D53AC + lbl_804D53B0 * 0x44);
+                entry[0] = 2;
+                entry[1] = key;
+                entry[2] = -1;
+                entry[3] = -1;
+                lbl_804D53B0++;
+                return 1;
+            }
+        }
     }
-    if (fn_80243448(fn_80242BA4(lbl_804D53A8), fn_80213970, &key) == 0) {
-        return 0;
-    }
-    if (lbl_804D53B0 >= 0x100) {
-        return 0;
-    }
-    int* entry = (int*)(lbl_804D53AC + lbl_804D53B0 * 0x44);
-    entry[0] = 2;
-    entry[1] = key;
-    entry[2] = -1;
-    entry[3] = -1;
-    lbl_804D53B0++;
-    return 1;
+    return 0;
 }
