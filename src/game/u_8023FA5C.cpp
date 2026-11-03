@@ -1734,17 +1734,17 @@ ChildNode* DetachChildNode(ChildNode** root, ChildNode* node)
             if (parent != 0) {
                 if (parent->mFirst == node) {
                     parent->mFirst = node->mNext;
-                    if (parent->mFirst == 0) {
-                        parent->mLast = 0;
-                    } else {
+                    if (parent->mFirst != 0) {
                         parent->mFirst->mPrev = 0;
+                    } else {
+                        parent->mLast = 0;
                     }
                 } else if (parent->mLast == node) {
                     parent->mLast = node->mPrev;
-                    if (parent->mLast == 0) {
-                        parent->mFirst = 0;
-                    } else {
+                    if (parent->mLast != 0) {
                         parent->mLast->mNext = 0;
+                    } else {
+                        parent->mFirst = 0;
                     }
                 } else {
                     if (node->mPrev != 0) {
