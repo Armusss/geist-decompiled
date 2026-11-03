@@ -1,6 +1,8 @@
 // u_8028A77C.cpp: Buffer/String classes, screen-effect slots and buffers, and comm helpers (0x8028A77C-0x8028C54C).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#pragma auto_inline off
+
 // Type and member names are descriptive guesses.
 
 #include <stdarg.h>
@@ -105,25 +107,17 @@ int Buffer::GetAlignment()
 // (count is derived from the byte range; the loop body optimises away).
 void DestroyWordRange(u32 start, u32 end)
 {
-    u32 count = (end + 3 - start) >> 2;
-    if (start >= end) {
-        return;
+    u32 p;
+    for (p = start; p < end; p += 4) {
     }
-    do {
-        count--;
-    } while (count != 0);
 }
 
 // fn_8028A8B4: same range walk for the byte buffer append path.
 void ClearWordRange(u32 start, u32 end)
 {
-    u32 count = (end + 3 - start) >> 2;
-    if (start >= end) {
-        return;
+    u32 p;
+    for (p = start; p < end; p += 4) {
     }
-    do {
-        count--;
-    } while (count != 0);
 }
 
 extern int lbl_804D37B8;
@@ -160,8 +154,6 @@ extern int lbl_804D37C0;
 extern int lbl_804D37C4;
 extern int lbl_804D5700;
 extern int gWideScreen;
-extern float lbl_804DA568;
-extern float lbl_804DA56C;
 
 extern "C" int SendMsg(int to, int msg, void* data);
 extern "C" void fn_8000706C(int a, int b);
@@ -244,7 +236,7 @@ int ScreenEffectMessage(void* p)
         ScreenEffectNotify(1);
         return 1;
     case 0x195DA922:
-        fn_800F47FC(lbl_804DA56C);
+        fn_800F47FC(0.0f);
         return 1;
     case (int)0xCAE448F3: // Boost Flash
         FontLoad(0, "Boost Flash", 0, 0, (int)ScreenEffectAnimFinish, 0);
@@ -266,7 +258,7 @@ int ScreenEffectMessage(void* p)
         ScreenEffectStart("Fade In", (int)ScreenEffectFadeFinish, duration);
         return 1;
     case 0x2A1BCBAC:
-        fn_800F47FC(lbl_804DA568);
+        fn_800F47FC(1.0f);
         return 1;
     case 0x286D828F:
         for (i = 0; i < 3; i++)
@@ -442,8 +434,9 @@ void ScreenEffectSlot::Clear()
 extern "C" void fn_8028B2D4(ScreenEffectSlot* slot)
 {
     int size = slot->Query();
-    int pos = slot->Query();
-    fn_8028BC5C(slot, (slot->unk0C + slot->mSize) - pos, size);
+    int pos;
+    pos = slot->Query();
+    fn_8028BC5C(slot, slot->unk0C + (slot->mSize - pos), size);
     slot->mSize -= size;
 }
 
