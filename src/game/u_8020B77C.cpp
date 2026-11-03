@@ -1,6 +1,11 @@
 // u_8020B77C.cpp: FX actor emitter helpers (text-out, spawn and update) (0x8020B77C-0x8020D47C).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
 extern "C" void* memset(void* dst, int val, unsigned long size);
 extern "C" int SendMsg(int to, int msg, void* data);
 int FxEmitterAimUpdate(float value, struct FxActor* actor);
@@ -181,26 +186,34 @@ extern "C" int fn_8020B97C(FxActor* actor)
 // Engine string object (constructor/destructor live in another unit).
 class Buffer {
 public:
-    ~Buffer();
-    void* data;             // 0x00
-    int unk04;
-    int unk08;
+    Buffer();                                        // 0x8028BA9C
+    virtual ~Buffer();                               // 0x8028B9C0
+    virtual void Release(char* p);
+
+    char* data;
+    int length;
     int unk0C;
+    int owned;
 };
 
 class String : public Buffer {
 public:
-    String();
-    int unk10;
+    String();                                        // 0x8028C500
+    ~String() {}
+    virtual void Release(char* p);
 };
 
 // Message sent to the owner to ask for the asset name; the name is filled in
 // by the handler through the trailing String.
+struct FxNameResult {
+    String str;
+};
+
 struct FxNameMsg {
     int result;             // 0x08
     unsigned long hash;     // 0x0C
     int unused;             // 0x10
-    String name;            // 0x14
+    FxNameResult name;      // 0x14
 };
 
 int StrGetIndex(int asset, unsigned long* out);
@@ -230,7 +243,7 @@ void FxEmitterSetAsset(FxActor* actor, unsigned long id)
     msg.hash = 0x17F428F8;
     msg.unused = 0;
     started = SendMsg(actor->cfg.unk08, 0x41E, &msg);
-    name = msg.name.data;
+    name = *(void**)&msg.name;
     if (started != 0 && name != (void*)-1) {
         if (SendMsg(actor->cfg.unk08, 0x400, &out) == 0 || out == 0) {
             FxStart(name, 0, 0);
@@ -243,22 +256,30 @@ void FxEmitterSetAsset(FxActor* actor, unsigned long id)
 
 // Sends the "text_out" request to the host actor, switches the emitter to
 // state 0x41 and starts the text effect. (fn_8020BAF4)
-void FxEmitterStartTextOut(FxActor* actor)
+// Asks the owner for a named value; the String filled in by the handler is
+// released before the result is used.
+static inline int FxQueryName(int target, unsigned long hash)
 {
     FxNameMsg msg;
-    void* name;
+
+    msg.hash = hash;
+    *(int*)&msg.name = 0;
+    msg.unused = 0;
+    SendMsg(target, 0x41E, &msg);
+    return *(int*)&msg.name;
+}
+
+void FxEmitterStartTextOut(FxActor* actor)
+{
+    int name;
 
     actor->cfg.flags &= ~0x2;
     actor->cfg.flags |= 0x40;
-    msg.name.data = 0;
-    msg.hash = 0x18E1630C;
-    msg.unused = 0;
-    SendMsg(actor->cfg.unk08, 0x41E, &msg);
-    name = msg.name.data;
+    name = FxQueryName(actor->cfg.unk08, 0x18E1630C);
     if (name != 0) {
         actor->cfg.flags |= 0x1000;
     }
-    if (PlayerInHost((Actor*)actor) == 0) {
+    if (PlayerInHost((Actor*)actor) != 0) {
         actor->cfg.state = 0x41;
     } else {
         actor->cfg.state = 0x41;
@@ -681,7 +702,7 @@ int FxEmitterStateUpdate(FxActor* actor)
             nmsg.hash = 0x17F428F8;
             nmsg.unused = 0;
             started = SendMsg(actor->cfg.unk08, 0x41E, &nmsg);
-            name = nmsg.name.data;
+            name = *(void**)&nmsg.name;
             if (started != 0 && name != (void*)-1) {
                 int out;
 
@@ -819,7 +840,7 @@ void FxEmitterRollText(float dt, FxActor* actor)
                     FxNameMsg msg;
 
                     SendMsg(actor->cfg.unk08, 0x41E, &msg);
-                    if (msg.name.data != 0) {
+                    if (*(void**)&msg.name != 0) {
                         actor->cfg.flags |= 0x1000;
                     }
                 }
