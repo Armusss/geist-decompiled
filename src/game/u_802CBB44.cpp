@@ -214,10 +214,6 @@ struct CollisionHolder {
 
 extern StateEntry lbl_803C51F8[];
 extern const char lbl_8034C0A8[];   // TODO: 0x8034C0A8 has no symbol yet
-extern float lbl_804DAF98;
-extern float lbl_804DAF9C;
-extern float lbl_804DAFA8;
-extern float lbl_804DAFAC;
 extern int lbl_804D3B74;
 extern int lbl_804D3B78;
 extern int lbl_804D3B84;
@@ -257,7 +253,6 @@ extern "C" void fn_8009F63C(void* out, void* actor);
 extern "C" int fn_800BB218(double scale, void* a, int b, Vec3* localPos,
                            Vec3* worldPos, void* c, int* out1, int* out2,
                            int* out3);
-extern float lbl_804DAFE0;
 void VFree(void* p);
 
 int ActorCollisionHitCallback(void* result, void* arg);
@@ -307,18 +302,8 @@ extern float lbl_804D3BC4;
 extern float lbl_804D3BC8;
 extern float lbl_804D3BCC;
 extern float lbl_804D3BD0;
-extern float lbl_804DAFB0;
-extern float lbl_804DAFB4;
-extern float lbl_804DAFB8;
-extern float lbl_804DAFBC;
-extern float lbl_804DAFC0;
-extern float lbl_804DAFC4;
 extern float lbl_804DAFC8;
 extern float lbl_804DAFCC;
-extern float lbl_804DAFD0;
-extern float lbl_804DAFD4;
-extern float lbl_804DAFD8;
-extern float lbl_804DAFDC;
 
 // Asset / effect ids and walk-state scalars.
 extern int lbl_804D3B7C;
@@ -394,16 +379,16 @@ int MessageHandler802CBB44(int msg, void* data)
         lbl_803C51F8[ctrl->pending].fn04(actor);
         ctrl->arg = d[1];
         ConditionSetBit(actor->conditions, 0xe, 1);
-        fn_8008F230(actor->field0D4, lbl_804DAF98, 0, 1);
+        fn_8008F230(actor->field0D4, 0.0f, 0, 1);
         actor->field220 = 4;
         ConditionSetBit(actor->conditions, 0xd, 1);
-        fn_80090974(actor->field0D4, lbl_804DAF9C, 0, ctrl->arg, 0x58,
+        fn_80090974(actor->field0D4, 1.0f, 0, ctrl->arg, 0x58,
                     lbl_803C51F8[ctrl->state].fn10, actor);
         RangeResetPending(actor->conditions);
         ConditionSetBit(actor->conditions, 0xc, 1);
         ConditionSetBit(actor->conditions, 0xd, 1);
-        actor->field13C = lbl_804DAF98;
-        fn_800913EC(actor->field0D4, 0, lbl_804DAF98);
+        actor->field13C = 0.0f;
+        fn_800913EC(actor->field0D4, 0, 0.0f);
         return 1;
 
     case 0xc14:
@@ -532,9 +517,9 @@ int ActorCollisionHitCallback(void* result, void* arg)
     msg.actor = hit->actor;
     msg.target = other;
     msg.field08 = other->field038;
-    msg.field0C = lbl_804DAFA8 * lbl_804DAFAC * other->field138;
+    msg.field0C = 0.001f * 500.0f * other->field138;
     msg.hash = 0x44dc6ab;
-    msg.field4C = lbl_804DAF9C;
+    msg.field4C = 1.0f;
     msg.dX = hit->actor->field024 - other->field024;
     msg.dY = hit->actor->field028 - other->field028;
     msg.dZ = hit->actor->field02C - other->field02C;
@@ -587,7 +572,7 @@ void StoneMenActorInit(void* unused, void* owner)
     }
     ctrl->state = 0;
     ctrl->pending = 0;
-    ctrl->field10 = lbl_804DAF98;
+    ctrl->field10 = 0.0f;
     ctrl->field14 = 0;
     lo = lbl_804D3B7C;
     roll = Rand();
@@ -687,30 +672,30 @@ int StoneMenStateMessage(int msg, void* owner)
         vec.x = (float)m.x;
         vec.y = (float)m.y;
         vec.z = (float)m.z;
-        if (lbl_804DAFB0 != f31)
+        if (-999999.0f != f31)
             vec.z = f31 + lbl_804D3B70;
         HazardCreateSpline(self, self->field038, &vec, 0xE0490B9B,
-                           lbl_804DAFB4, lbl_804DAFB8, lbl_804DAFBC,
-                           lbl_804DAFBC, lbl_804DAFC0, lbl_804DAFC4,
-                           lbl_804DAFB4);
+                           200.0f, 800.0f, 6000.0f,
+                           6000.0f, 0.75f, 0.4f,
+                           200.0f);
         fn_8016F120(lbl_804D3BEC, &self->field024);
         if (ctrl->field14 == 0 || flag) {
             fn_802D1640(self, &vec, 0xE0490B9B, 0, 0, f30, f29,
                         lbl_804D3B68, lbl_804D3B6C,
-                        lbl_804DAF98, lbl_804DAF98, lbl_804DAF98,
-                        lbl_804DAF98, lbl_804DAFC8, lbl_804DAFCC,
-                        lbl_804DAFD0);
+                        0.0f, 0.0f, 0.0f,
+                        0.0f, lbl_804DAFC8, lbl_804DAFCC,
+                        -1.0f);
         }
         player = GetPlayer();
         rel.x = player->x - vec.x;
         rel.y = player->y - vec.y;
         rel.z = player->z - vec.z;
         t = fn_800E1020(&rel);
-        t = lbl_804DAF9C - (t - lbl_804D3B94) / (lbl_804D3B98 - lbl_804D3B94);
-        if (t < lbl_804DAF98) {
-            t = lbl_804DAF98;
-        } else if (t > lbl_804DAF9C) {
-            t = lbl_804DAF9C;
+        t = 1.0f - (t - lbl_804D3B94) / (lbl_804D3B98 - lbl_804D3B94);
+        if (t < 0.0f) {
+            t = 0.0f;
+        } else if (t > 1.0f) {
+            t = 1.0f;
         }
         a1 = (int)(t * (lbl_804D3BA0 - lbl_804D3B9C) + lbl_804D3B9C);
         a2 = (int)(t * (lbl_804D3BA8 - lbl_804D3BA4) + lbl_804D3BA4);
@@ -786,7 +771,7 @@ int StoneMenTimedStateUpdate(void* owner)
     if (!HasCondition(self->conditions, 9) ||
         HasCondition(self->conditions, 10) ||
         HasCondition(self->conditions, 11)) {
-        if (ctrl->field10 <= lbl_804DAF98 &&
+        if (ctrl->field10 <= 0.0f &&
             (fn_8016325C(self->field894) == 4 ||
              fn_8016325C(self->field894) == 5)) {
             fn_80162610(self, self->field894, 0xF829DB93);
@@ -847,7 +832,7 @@ int StoneMenChargeAimStateUpdate(void* owner)
         HasCondition(self->conditions, 11)) {
         if (MemFlagIsSet(self->conditions, 0x24))
             ctrl->pending = 3;
-        if (self->field26C == 0 || __fabs(self->field284) > lbl_804DAFD4)
+        if (self->field26C == 0 || __fabs(self->field284) > 50.0f)
             ctrl->pending = 3;
         StoneMenUpdate(owner);
         return ctrl->state;
@@ -867,7 +852,7 @@ int StoneMenStunStateUpdate(void* owner)
     if (!HasCondition(self->conditions, 9) ||
         HasCondition(self->conditions, 10) ||
         HasCondition(self->conditions, 11)) {
-        if (__fabs(self->field284) <= lbl_804DAFD8) {
+        if (__fabs(self->field284) <= 35.0f) {
             if (MemFlagIsSet(self->conditions, 0x24))
                 return 5;
             if (self->field26C != 0)
@@ -883,7 +868,7 @@ int StoneMenStunStateUpdate(void* owner)
             }
             return ctrl->state;
         }
-        if (self->field284 <= lbl_804DAFDC)
+        if (self->field284 <= 1.1920929e-07f)
             ctrl->field0C = 1;
         else
             ctrl->field0C = 0;
@@ -1084,9 +1069,9 @@ int StoneMenProbeWalkState(void* owner)
     localPos.y = (float)(u32)self->field028;
     localPos.z = (float)(u32)self->field02C;
     fn_8009F44C(&sample, mtx, &rel);
-    worldPos.x = (float)(u32)sample.x * lbl_804DAFE0 + self->field084;
-    worldPos.y = (float)(u32)sample.y * lbl_804DAFE0 + self->field088;
-    worldPos.z = (float)(u32)sample.z * lbl_804DAFE0 + self->field08C;
+    worldPos.x = (float)(u32)sample.x * 1.1f + self->field084;
+    worldPos.y = (float)(u32)sample.y * 1.1f + self->field088;
+    worldPos.z = (float)(u32)sample.z * 1.1f + self->field08C;
 
     if (fn_800BB218(self->field900, self, self->field2C4, &localPos, &worldPos,
                     self, &out1, &out2, &out3) != 0) {
@@ -1193,9 +1178,9 @@ int StoneMenBeginWalkState(void* owner)
     localPos.y = (float)(u32)self->field028;
     localPos.z = (float)(u32)self->field02C;
     fn_8009F44C(&sample, mtx, &rel);
-    worldPos.x = (float)(u32)sample.x * lbl_804DAFE0 + self->field084;
-    worldPos.y = (float)(u32)sample.y * lbl_804DAFE0 + self->field088;
-    worldPos.z = (float)(u32)sample.z * lbl_804DAFE0 + self->field08C;
+    worldPos.x = (float)(u32)sample.x * 1.1f + self->field084;
+    worldPos.y = (float)(u32)sample.y * 1.1f + self->field088;
+    worldPos.z = (float)(u32)sample.z * 1.1f + self->field08C;
 
     if (fn_800BB218(self->field900, self, self->field2C4, &localPos, &worldPos,
                     self, &out1, &out2, &out3) != 0)
@@ -1229,9 +1214,6 @@ int StoneMenClearState(void* owner)
     return self != 0;
 }
 
-extern float lbl_804DAFE4;
-extern double lbl_804DAFA0;
-extern float lbl_804DAFE8;
 extern "C" void* fn_800AFD20(void* actor);
 extern "C" void* fn_8003A1F0(void* a, int b, int c);
 extern "C" void fn_8003F15C(float t, void* a, void* b, int c, void* pos, int e);
@@ -1253,9 +1235,9 @@ int StoneMenTick(void* data)
     void* anim;
     void* model;
 
-    if (lbl_804DAFE4 < self->field13C)
+    if (20000.0f < self->field13C)
         ActorPlayAnim(self->field038, 0xdbe2cae6, self->field038);
-    self->field13C = lbl_804DAF98;
+    self->field13C = 0.0f;
 
     anim = fn_800AFD20(self);
     model = fn_8003A1F0(anim, self->field0F0,
@@ -1267,16 +1249,16 @@ int StoneMenTick(void* data)
         float t;
 
         f = (f - self->field8FC) / f;
-        t = lbl_804DAF98;
-        if (f >= lbl_804DAF98) {
-            t = lbl_804DAF9C;
-            if (f <= lbl_804DAF9C)
+        t = 0.0f;
+        if (f >= 0.0f) {
+            t = 1.0f;
+            if (f <= 1.0f)
                 t = f;
         }
-        if (t > lbl_804DAF98)
+        if (t > 0.0f)
             fn_8003F15C(t, anim, model, self->field0D0, &d[4], 0);
     } else {
-        fn_8003F15C(lbl_804DAF9C, anim, model, self->field0D0, &d[4], 0);
+        fn_8003F15C(1.0f, anim, model, self->field0D0, &d[4], 0);
     }
 
     if (fn_801633BC(&self->field894) == 1) {
@@ -1290,7 +1272,7 @@ int StoneMenTick(void* data)
         linePos.x = (float)msg.x;
         linePos.y = (float)msg.y;
         linePos.z = (float)msg.z;
-        Draw3DBeginLine(-3, 0, lbl_804DAFE8);
+        Draw3DBeginLine(-3, 0, 2.0f);
         DrawLine(&linePos.x, &tracked.x, 0xff, 100, 100, 0x32, 0xff, 0x14,
                  0x14, 0xff);
         DrawDisableTexOffsets();
@@ -1300,7 +1282,7 @@ int StoneMenTick(void* data)
             linePos.x = (float)msg.x;
             linePos.y = (float)msg.y;
             linePos.z = (float)msg.z;
-            Draw3DBeginLine(-3, 0, lbl_804DAFE8);
+            Draw3DBeginLine(-3, 0, 2.0f);
             DrawLine(&linePos.x, &tracked.x, 0xff, 100, 100, 0x32, 0xff,
                      0x14, 0x14, 0xff);
             DrawDisableTexOffsets();
@@ -1309,14 +1291,6 @@ int StoneMenTick(void* data)
     return 1;
 }
 
-extern float lbl_804DAFEC;
-extern float lbl_804DAFF0;
-extern float lbl_804DAFF4;
-extern float lbl_804DAFF8;
-extern float lbl_804DAFFC;
-extern float lbl_804DB000;
-extern float lbl_804DB004;
-extern float lbl_804DB008;
 
 struct Mtx34 {
     /*0x00*/ float m[12];
@@ -1376,7 +1350,7 @@ void StoneMenUpdate(void* owner)
         pos.x = (float)aim[0];
         pos.y = (float)aim[1];
         pos.z = (float)aim[2];
-        fn_800E1098(lbl_804DAF9C, &pos, &pos);
+        fn_800E1098(1.0f, &pos, &pos);
         fn_800913EC(self->field0D4, &placement, self->field138);
 
         AnimApply(self->field0D4, (char*)self->field0F0,
@@ -1402,45 +1376,45 @@ void StoneMenUpdate(void* owner)
         !HasCondition(self->conditions, 0xc)) {
         float ground = fn_800CC2D0(self, 0, 0, 0);
 
-        if (ground != lbl_804DAFB0)
+        if (ground != -999999.0f)
             self->field08C = ground + anim[6];
         self->field02C = (int)self->field08C;
-        anim[4] = lbl_804DAF98;
-        anim[5] = lbl_804DAF98;
-        anim[6] = lbl_804DAF98;
+        anim[4] = 0.0f;
+        anim[5] = 0.0f;
+        anim[6] = 0.0f;
 
         animOwner = self->field0C4;
         {
             float rate = animOwner->fieldC4;
             float pitch = self->field284;
-            float turnRate = lbl_804DAFC4 * rate;
+            float turnRate = 0.4f * rate;
             float roll = self->field27C;
 
             if (ctrl->state != 4)
-                rate = rate * lbl_804DAFEC;
+                rate = rate * 0.3f;
 
-            if (pitch > lbl_804DAFDC) {
-                float t = (rate * self->field138) / lbl_804DAFF0;
+            if (pitch > 1.1920929e-07f) {
+                float t = (rate * self->field138) / 1000.0f;
 
                 if (t >= pitch)
                     t = pitch;
                 self->field254 += t;
-            } else if (pitch < lbl_804DAFF4) {
-                float t = -((rate * self->field138) / lbl_804DAFF0);
+            } else if (pitch < -1.1920929e-07f) {
+                float t = -((rate * self->field138) / 1000.0f);
 
                 if (t <= pitch)
                     t = pitch;
                 self->field254 += t;
             }
 
-            if (roll > lbl_804DAFDC) {
-                float t = (turnRate * self->field138) / lbl_804DAFF0;
+            if (roll > 1.1920929e-07f) {
+                float t = (turnRate * self->field138) / 1000.0f;
 
                 if (t >= roll)
                     t = roll;
                 self->field24C += t;
-            } else if (roll < lbl_804DAFF4) {
-                float t = -((turnRate * self->field138) / lbl_804DAFF0);
+            } else if (roll < -1.1920929e-07f) {
+                float t = -((turnRate * self->field138) / 1000.0f);
 
                 if (t <= roll)
                     t = roll;
@@ -1457,18 +1431,18 @@ void StoneMenUpdate(void* owner)
             }
 
             {
-                float step = lbl_804DAFFC *
-                             (lbl_804DAFA8 * self->field138);
+                float step = 60.0f *
+                             (0.001f * self->field138);
 
-                if (__fabs(self->field2B0) > lbl_804DAFF8) {
-                    if (self->field258 > lbl_804DAF98) {
+                if (__fabs(self->field2B0) > 90.0f) {
+                    if (self->field258 > 0.0f) {
                         self->field258 -= step;
-                        if (self->field258 < lbl_804DAF98)
-                            self->field258 = lbl_804DAF98;
-                    } else if (self->field258 < lbl_804DAF98) {
+                        if (self->field258 < 0.0f)
+                            self->field258 = 0.0f;
+                    } else if (self->field258 < 0.0f) {
                         self->field258 += step;
-                        if (self->field258 > lbl_804DAF98)
-                            self->field258 = lbl_804DAF98;
+                        if (self->field258 > 0.0f)
+                            self->field258 = 0.0f;
                     }
                 } else {
                     if (self->field258 > self->field2B0) {
@@ -1489,26 +1463,26 @@ void StoneMenUpdate(void* owner)
         Mtx34 mtx;
         Vec3 v;
 
-        v.x = lbl_804DAF98;
-        v.y = lbl_804DAF98;
-        v.z = lbl_804DAF98;
+        v.x = 0.0f;
+        v.y = 0.0f;
+        v.z = 0.0f;
         ActorGetMatrix(&mtx, self);
         fn_800A0168(&mtx, &mtx);
         fn_800A0030(&v, &mtx, &v);
-        if (self->field138 > lbl_804DAF98) {
-            float inv = lbl_804DAFF0 / self->field138;
+        if (self->field138 > 0.0f) {
+            float inv = 1000.0f / self->field138;
 
             self->field240 = v.x;
             self->field244 = v.y;
             self->field248 = v.z;
-            self->field248 = lbl_804DAF98;
+            self->field248 = 0.0f;
             self->field240 *= inv;
             self->field244 *= inv;
             self->field248 *= inv;
         } else {
-            self->field240 = lbl_804DAF98;
-            self->field244 = lbl_804DAF98;
-            self->field248 = lbl_804DAF98;
+            self->field240 = 0.0f;
+            self->field244 = 0.0f;
+            self->field248 = 0.0f;
         }
     }
 
@@ -1520,7 +1494,7 @@ void StoneMenUpdate(void* owner)
         Vec3 offset;
         PlaceF place;
 
-        Vec3Set(&lean, self->field254, lbl_804DAF98, lbl_804DAF98);
+        Vec3Set(&lean, self->field254, 0.0f, 0.0f);
         EulerNormalize(&lean, &lean);
         MtxSetEuler(&modelMtx, &lean);
         place.x = (float)self->field024;
@@ -1529,9 +1503,9 @@ void StoneMenUpdate(void* owner)
         PlacementToMatrix(&modelMtx, &place);
         ActorGetMatrix(&actorMtx, self);
         fn_800A0168(&actorMtx, &actorMtx);
-        offset.x = lbl_804DAF98;
-        offset.y = lbl_804DAF98;
-        offset.z = lbl_804DAF98;
+        offset.x = 0.0f;
+        offset.y = 0.0f;
+        offset.z = 0.0f;
         fn_800A0030(&offset, &actorMtx, &offset);
         place.x += offset.x;
         place.y += offset.y;
@@ -1548,7 +1522,7 @@ void StoneMenApplyStateAnim(void* owner, int variant)
     Actor* self = (Actor*)owner;
     StateControl* ctrl;
     AnimOwner* animOwner;
-    float scale = lbl_804DAF9C;
+    float scale = 1.0f;
     int count;
     int handle;
 
@@ -1582,9 +1556,9 @@ void StoneMenApplyStateAnim(void* owner, int variant)
         int result = SendMsg(self->field608, 0x400, &reply);
 
         if (result == 0 || reply.hit == 0)
-            scale = lbl_804DB004;
+            scale = 6.5f;
         else
-            scale = lbl_804DB000;
+            scale = 5.0f;
     }
 
     handle = fn_800A1BC8(animOwner->field14, animOwner->field1C,
@@ -1593,9 +1567,9 @@ void StoneMenApplyStateAnim(void* owner, int variant)
         ConditionSetBit(self->conditions, 0x1c, 0);
         if (HasCondition(self->conditions, 0xe) != 0) {
             ConditionSetBit(self->conditions, 0xe, 0);
-            fn_8008F230(self->field0D4, lbl_804DAF98, 0, 0);
+            fn_8008F230(self->field0D4, 0.0f, 0, 0);
         } else {
-            fn_8008F230(self->field0D4, lbl_804DB008, 0, 1);
+            fn_8008F230(self->field0D4, 52776558133248.0, 0, 1);
         }
         fn_80090974(self->field0D4, scale, 0, handle, 9,
                     lbl_803C51F8[ctrl->state].fn10, self);
