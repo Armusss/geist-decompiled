@@ -175,9 +175,6 @@ int PickupKeyProbeHit(int* probe, int* hit);           // 0x80127240
 }
 
 extern "C" int lbl_804D2E34;                          // 0x804D2E34
-extern "C" float lbl_804D7890;                        // 0x804D7890
-extern "C" float lbl_804D7894;                        // 0x804D7894
-extern "C" double lbl_804D78A0;                       // 0x804D78A0
 extern "C" int lbl_8039F610[9];                       // 0x8039F610
 extern "C" KeySlotTable lbl_8039F568;                 // 0x8039F568
 extern "C" unsigned long lbl_804D2E30;                // 0x804D2E30
@@ -193,19 +190,19 @@ void PickupKeyUpdate(Actor* actor, float dt) {
     if (d != 0) {
         if (ActorIsActive(actor)) {
             d->timer += dt;
-            if (d->timer >= lbl_804D7890 * (float)lbl_804D2E34) {
+            if (d->timer >= 1000.0f * (float)lbl_804D2E34) {
                 if (fn_800FC764(actor->unk8C, 0) == 0) {
                     float* p = actor->pos;
                     actor->posX = (int)p[0];
                     actor->posY = (int)p[1];
                     actor->posZ = (int)p[2];
                 }
-                d->timer = lbl_804D7894;
+                d->timer = 0.0f;
             }
             if (answer != 0) {
-                ScreenPrintf("Key is at %d %d %d", actor->posX, actor->posY, actor->posZ);
-                ScreenPrintf("Key will reset in %.0f ms",
-                             lbl_804D7890 * (float)lbl_804D2E34 - d->timer);
+                ScreenPrintf("Key is at %d %d %d\n", actor->posX, actor->posY, actor->posZ);
+                ScreenPrintf("Key will reset in %.0f ms\n",
+                             1000.0f * (float)lbl_804D2E34 - d->timer);
             }
         }
         ActorUpdate(actor, dt);
@@ -258,7 +255,7 @@ int PickupKeyMessage(Actor* a, int msg, void* dataPtr, int arg) {
         } else {
             sm.unk4 = 0;
             SendMsg(actor->unk8C, 0xC00, &sm);
-            d->timer = lbl_804D7894;
+            d->timer = 0.0f;
             d->unk10 = 1;
             q.object = (void*)data[1];
             target->send(0x400, &q);
@@ -291,10 +288,10 @@ int PickupKeyMessage(Actor* a, int msg, void* dataPtr, int arg) {
                         ModelNodeSetup(actor->model, asset, 1, 1);
                         c = fn_800FD3FC(value);
                         fn_80037EC0(actor->model, asset, 1,
-                                    (int)(float)(lbl_804D78A0 * c[0]) & 0xFF,
-                                    (int)(float)(lbl_804D78A0 * c[1]) & 0xFF,
-                                    (int)(float)(lbl_804D78A0 * c[2]) & 0xFF,
-                                    (int)(float)(lbl_804D78A0 * c[3]) & 0xFF);
+                                    (int)(float)(255.0 * c[0]) & 0xFF,
+                                    (int)(float)(255.0 * c[1]) & 0xFF,
+                                    (int)(float)(255.0 * c[2]) & 0xFF,
+                                    (int)(float)(255.0 * c[3]) & 0xFF);
                         asset = AssetFind(0xD9044CBB, 0xD1EB3B71);
                         ModelNodeSetup(actor->model, asset, 0, 1);
                     } else {
@@ -356,7 +353,7 @@ int PickupKeyInit(Actor* actor) {
         return 0;
     }
     d->unk4 = (int)actor;
-    d->timer = lbl_804D7894;
+    d->timer = 0.0f;
     d->unkC = -1;
     d->unk10 = 0;
     actor->unkA4 = d;
@@ -378,10 +375,10 @@ int PickupKeyInit(Actor* actor) {
             ModelNodeSetup(actor->model, asset, 1, 1);
             c = fn_800FD3FC(0);
             fn_80037EC0(actor->model, asset, 1,
-                        (int)(float)(lbl_804D78A0 * c[0]) & 0xFF,
-                        (int)(float)(lbl_804D78A0 * c[1]) & 0xFF,
-                        (int)(float)(lbl_804D78A0 * c[2]) & 0xFF,
-                        (int)(float)(lbl_804D78A0 * c[3]) & 0xFF);
+                        (int)(float)(255.0 * c[0]) & 0xFF,
+                        (int)(float)(255.0 * c[1]) & 0xFF,
+                        (int)(float)(255.0 * c[2]) & 0xFF,
+                        (int)(float)(255.0 * c[3]) & 0xFF);
             ModelNodeSetup(actor->model, AssetFind(0xD9044CBB, 0xD1EB3B71), 0, 1);
         } else {
             ModelNodeSetup(actor->model, AssetFind(0xD9044CBB, 0x3691C91A), 0, 1);
@@ -434,46 +431,42 @@ int PickupKeyQueryMsg(Actor* actor, int* data) {
     int answer;
 
     d = (KeyData*)actor->unkA4;
-    if (data[1] == 0x12868306) {
+    switch (data[1]) {
+    case (int)0x9BD4EF06:
+        data[3] = (int)d;
+        return 1;
+    case 0x5ED5BF20:
+        if (ActorIsActive(actor) == 0 && lbl_8039F568.handle < 0) {
+            return 0;
+        }
+        KeyQuerySend(&answer, 0x4B000000, 0x56CF46F2);
+        if (answer == 0) {
+            data[3] = (int)0xEAFE2C46;
+        } else if (lbl_8039F568.handle < 0) {
+            data[3] = (int)0xEAFE2C46;
+        } else {
+            switch (PlayerTeam(HandleToPlayer(lbl_8039F568.handle))) {
+            default: data[3] = (int)0xEAFE2C46; break;
+            case 0: data[3] = 0x114F1979; break;
+            case 1: data[3] = 0x6B4B4A10; break;
+            case 2: data[3] = 0x21425B82; break;
+            case 3: data[3] = (int)0xFAD5AC93; break;
+            case 4: data[3] = 0x6BA1BC35; break;
+            case 5: data[3] = (int)0xDBEC014D; break;
+            case 6: data[3] = (int)0xE54B6BDB; break;
+            case 7: data[3] = 0x154F7C95; break;
+            }
+        }
+        return 1;
+    case 0x029AE71B:
+        data[3] = d->unk10;
+        return 1;
+    case 0x5C8F66F9:
+        data[3] = 0x5E5BCE3E;
+        return 1;
+    case 0x12868306:
         data[3] = d->unkC;
-    } else if (data[1] < 0x12868306) {
-        if (data[1] == 0x029AE71B) {
-            data[3] = d->unk10;
-            return 1;
-        }
-        if (data[1] < 0x029AE71B && data[1] == (int)0x9BD4EF06) {
-            data[3] = (int)d;
-            return 1;
-        }
-    } else {
-        if (data[1] == 0x5ED5BF20) {
-            if (ActorIsActive(actor) == 0 && lbl_8039F568.handle < 0) {
-                return 0;
-            }
-            KeyQuerySend(&answer, 0x4B000000, 0x56CF46F2);
-            if (answer == 0) {
-                data[3] = (int)0xEAFE2C46;
-            } else if (lbl_8039F568.handle < 0) {
-                data[3] = (int)0xEAFE2C46;
-            } else {
-                switch (PlayerTeam(HandleToPlayer(lbl_8039F568.handle))) {
-                case 0: data[3] = 0x114F1979; break;
-                case 1: data[3] = 0x6B4B4A10; break;
-                case 2: data[3] = 0x21425B82; break;
-                case 3: data[3] = (int)0xFAD5AC93; break;
-                case 4: data[3] = 0x6BA1BC35; break;
-                case 5: data[3] = (int)0xDBEC014D; break;
-                case 6: data[3] = (int)0xE54B6BDB; break;
-                case 7: data[3] = 0x154F7C95; break;
-                default: data[3] = (int)0xEAFE2C46; break;
-                }
-            }
-            return 1;
-        }
-        if (data[1] < 0x5ED5BF20 && data[1] == 0x5C8F66F9) {
-            data[3] = 0x5E5BCE3E;
-            return 1;
-        }
+        break;
     }
     return 0;
 }
@@ -565,10 +558,10 @@ int PickupKeyCmdMsg(Actor* actor, int* dataPtr) {
                     ModelNodeSetup(actor->model, asset, 1, 1);
                     c = fn_800FD3FC(value);
                     fn_80037EC0(actor->model, asset, 1,
-                                (int)(lbl_804D78A0 * c[0]) & 0xFF,
-                                (int)(lbl_804D78A0 * c[1]) & 0xFF,
-                                (int)(lbl_804D78A0 * c[2]) & 0xFF,
-                                (int)(lbl_804D78A0 * c[3]) & 0xFF);
+                                (int)(255.0 * c[0]) & 0xFF,
+                                (int)(255.0 * c[1]) & 0xFF,
+                                (int)(255.0 * c[2]) & 0xFF,
+                                (int)(255.0 * c[3]) & 0xFF);
                     ModelNodeSetup(actor->model,
                                    AssetFind(0xD9044CBB, 0xD1EB3B71), 0, 1);
                 } else {
@@ -601,10 +594,10 @@ int PickupKeyCmdMsg(Actor* actor, int* dataPtr) {
                 ModelNodeSetup(actor->model, asset, 1, 1);
                 c = fn_800FD3FC(0);
                 fn_80037EC0(actor->model, asset, 1,
-                            (int)(lbl_804D78A0 * c[0]) & 0xFF,
-                            (int)(lbl_804D78A0 * c[1]) & 0xFF,
-                            (int)(lbl_804D78A0 * c[2]) & 0xFF,
-                            (int)(lbl_804D78A0 * c[3]) & 0xFF);
+                            (int)(255.0 * c[0]) & 0xFF,
+                            (int)(255.0 * c[1]) & 0xFF,
+                            (int)(255.0 * c[2]) & 0xFF,
+                            (int)(255.0 * c[3]) & 0xFF);
                 ModelNodeSetup(actor->model,
                                AssetFind(0xD9044CBB, 0xD1EB3B71), 0, 1);
             }
@@ -621,22 +614,19 @@ int PickupKeyCmdMsg(Actor* actor, int* dataPtr) {
 int PickupKeySlotProbe(int* slot, int* out) {
     Actor* owner;
     int answer;
-    int reply[2];
+    int reply[8];  // 0x400 query reply (owner, ownerId, ...)
 
     owner = (Actor*)*slot;
-    if (owner == 0) {
-        return 0;
+    if (owner != 0) {
+        reply[0] = (int)owner;
+        if (owner->send(0x400, reply) != 0) {
+            if (KeyQuerySend(&answer, reply[1], 0x5C8F66F9) != 0 && answer == 0x1AF27550) {
+                *out = (int)owner;
+                return 1;
+            }
+        }
     }
-    reply[0] = (int)owner;
-    if (owner->send(0x400, reply) == 0) {
-        return 0;
-    }
-    KeyQuerySend(&answer, reply[1], 0x5C8F66F9);
-    if (answer != 0x1AF27550) {
-        return 0;
-    }
-    *out = (int)owner;
-    return 1;
+    return 0;
 }
 
 // Collision-probe callback of the pickup key: accepts the probe result `probe` when its
@@ -693,8 +683,6 @@ struct KeyLimits {
 extern "C" KeyOptions lbl_8039F6B0;      // 0x8039F6B0
 extern "C" KeyLimits lbl_8045E768;       // 0x8045E768
 extern "C" int lbl_804D2E38;             // 0x804D2E38
-extern "C" float lbl_804D78A8;           // 0x804D78A8
-extern "C" float lbl_804D78AC;           // 0x804D78AC
 
 // "changed" notification of the next unit, still an fn_ placeholder there.
 extern "C" void fn_80127D80(int id);     // 0x80127D80
@@ -807,7 +795,7 @@ extern "C" int fn_80127274(int mode, SettingMsg* msg) {
     case -0x2E25ED19: {                  // 0xD1DA12E7
         if (mode == 0) {
             float v = msg->value.f;
-            lbl_8045E768.unk04 = CLAMP(v, lbl_804D78A8, lbl_804D78AC);
+            lbl_8045E768.unk04 = CLAMP(v, 5000.0f, 1200000.0f);
         } else {
             msg->value.f = lbl_8045E768.unk04;
         }
