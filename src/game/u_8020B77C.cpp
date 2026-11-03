@@ -117,11 +117,12 @@ struct FxMsg {
 void FxEmitterStart(FxActor* actor, int owner)
 {
     FxMsg msg;
+    FxCfg* cfg = &actor->cfg;
 
-    memset(&actor->cfg, 0, sizeof(actor->cfg));
-    actor->cfg.flags |= 0x400;
-    actor->cfg.unk08 = owner;
-    actor->cfg.unk2A = 0;
+    memset(cfg, 0, sizeof(*cfg));
+    cfg->flags |= 0x400;
+    cfg->unk08 = owner;
+    cfg->unk2A = 0;
     actor->flags |= 2;
     msg.asset = AssetFind(0xF1754BF2, 0x21C5E0);
     SendMsg(owner, 0x411, &msg);
