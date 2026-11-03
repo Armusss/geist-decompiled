@@ -397,12 +397,13 @@ void ConditionUpdateBit(void* cond, int id, int value);
 
 // Tells whether the owner is a live actor, after clearing the follow-condition
 // bits. Used as the "stop following" step of the path-follow state machine.
-bool NpcSveStopFollow(Owner* o) {
-    if (o != 0) {
-        ConditionUpdateBit(o->cond270, 4, 0);
-        ConditionUpdateBit(o->cond270, 9, 0);
+int NpcSveStopFollow(Owner* o) {
+    if (o == 0) {
+        return 0;
     }
-    return o != 0;
+    ConditionUpdateBit(o->cond270, 4, 0);
+    ConditionUpdateBit(o->cond270, 9, 0);
+    return 1;
 }
 
 extern "C" void SendMsg(int to, int msg, void* data);
@@ -476,12 +477,13 @@ int NpcSveCheckFollowReady(Owner* o) {
 
 // Clears the follow-condition bits and reports whether the owner was valid;
 // used as the "cancel following" step of the path-follow state machine.
-bool NpcSveCancelFollow(Owner* o) {
-    if (o != 0) {
-        ConditionUpdateBit(o->cond270, 4, 0);
-        ConditionUpdateBit(o->cond270, 9, 0);
+int NpcSveCancelFollow(Owner* o) {
+    if (o == 0) {
+        return 0;
     }
-    return o != 0;
+    ConditionUpdateBit(o->cond270, 4, 0);
+    ConditionUpdateBit(o->cond270, 9, 0);
+    return 1;
 }
 
 void NpcSveAdvanceToTargetFollowState(Owner* o);
@@ -906,14 +908,15 @@ int NpcSveRefreshFollowTarget(Owner* o) {
 }
 
 // Switches the path-follow actor to state 3 and re-arms its follow conditions.
-bool NpcSveEnterStateThree(Owner* o) {
-    if (o != 0) {
-        o->unk268 = 3;
-        RangeResetPending(o->cond270);
-        ConditionUpdateBit(o->cond270, 4, 0);
-        ConditionSetBit(o->cond270, 0x1e, 0);
+int NpcSveEnterStateThree(Owner* o) {
+    if (o == 0) {
+        return 0;
     }
-    return o != 0;
+    o->unk268 = 3;
+    RangeResetPending(o->cond270);
+    ConditionUpdateBit(o->cond270, 4, 0);
+    ConditionSetBit(o->cond270, 0x1e, 0);
+    return 1;
 }
 
 // Enters the first path-follow state: resets the event block, raises the follow
