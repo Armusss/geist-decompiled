@@ -898,7 +898,8 @@ void ImpThrowFireball802B8A24(int id, int phase, int* payload, void* owner, floa
 bool OwnerStateMessage802B898C(int* owner, int msg, unsigned long value, int arg, float scale)
 {
     unsigned long resolved = Fn80175D60(value);
-    if (msg == 0x14967) {
+    switch (msg) {
+    case 0x14967:
         ImpThrowFireball802B8A24((int)value, (int)resolved, (int*)arg,
                                  (void*)*owner, scale);
         return true;
