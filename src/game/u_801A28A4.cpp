@@ -684,14 +684,15 @@ int GeistA28A4FetchStateCheck(int actor)
         ConditionUpdateBit((void*)(actor + 0x270), 0, 0);
         return 1;
     }
-    if (HasCondition((void*)(actor + 0x270), 0x10) == 0)
-        return 0;
-    if (HasCondition((void*)(actor + 0x270), 4) == 0 &&
-        1000.0f <= *(float*)(actor + 0x904))
-        return 0;
-    ConditionSetBit((void*)(actor + 0x270), 0x10, 0);
-    ConditionUpdateBit((void*)(actor + 0x270), 0, 0);
-    return 1;
+    if (HasCondition((void*)(actor + 0x270), 0x10) != 0) {
+        if (HasCondition((void*)(actor + 0x270), 4) != 0 ||
+            *(float*)(actor + 0x904) < 1000.0f) {
+            ConditionSetBit((void*)(actor + 0x270), 0x10, 0);
+            ConditionUpdateBit((void*)(actor + 0x270), 0, 0);
+            return 1;
+        }
+    }
+    return 0;
 }
 
 // Fetch state enter (0x801A3E64): switches to the fetch sub-state, resets the
@@ -987,7 +988,7 @@ int GeistA28A4FetchSlotCheck(int actor)
 // fetch condition bits and clears the pending step.
 int GeistA28A4DogFetchRetreat(int actor)
 {
-    char* state = *(char**)(actor + 0x130);
+    u8* state = *(u8**)(actor + 0x130);
 
     if (state[0x14] != 5) {
         int target = FollowGetTargetObj((void*)(actor + 0x270));
