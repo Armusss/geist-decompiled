@@ -1441,6 +1441,8 @@ struct PossessTextQuery {
     unsigned int hash;                     // 0x04
     int unk08;                             // 0x08
     String text;                           // 0x0C
+    // First word of the reply block (the host overwrites the start of the block).
+    int answer() { return *(int*)&text; }
 };
 
 void PlayerSetHeldSlotIndex(void* self, int index);
@@ -1451,25 +1453,25 @@ void PlayerSetActionMode(void* self, int mode);
 // the answer. Name and field meaning are guesses.
 void PossessSelectCheckHost(PossessSelectActor* obj)
 {
-    PossessTextQuery q;
-
     PlayerInHost((Actor*)obj);
     obj->unk78 = 0;
     obj->flags &= ~0x20000u;
+
+    PossessTextQuery q;
 
     q.hash = 0x08783452;
     SendMsg(((PossessSelectHost*)obj->unk26E4)->unk38, 0x41E, &q);
 
     // The answer is empty when the host reports nothing to hold.
-    if (q.text.unk04 == 0) {
-        PlayerSetHeldSlotIndex(obj, 1);
-        if (obj->unk98 == -1) {
-            PlayerSetActionMode(obj, 3);
-        }
-    } else {
+    if (q.answer() != 0) {
         PlayerSetHeldSlotIndex(obj, 0);
         if (obj->unk98 == -1) {
             PlayerSetActionMode(obj, 1);
+        }
+    } else {
+        PlayerSetHeldSlotIndex(obj, 1);
+        if (obj->unk98 == -1) {
+            PlayerSetActionMode(obj, 3);
         }
     }
 }
@@ -1522,10 +1524,10 @@ void PossessSelectEnterHostQuery(PlayerSelectObj* obj)
 
         q.hash = 0x08783452;
         SendMsg(((PossessSelectHost*)(void*)obj->unk26E8)->unk38, 0x41E, &q);
-        if (q.text.unk04 == 0)
-            PlayerSetHeldSlotIndex(obj, 1);
-        else
+        if (q.text.unk04 != 0)
             PlayerSetHeldSlotIndex(obj, 0);
+        else
+            PlayerSetHeldSlotIndex(obj, 1);
     }
 }
 
@@ -1587,10 +1589,10 @@ void PossessSelectEnterHostSlot(PlayerSelectObj* obj)
 
         q.hash = 0x08783452;
         SendMsg(((PossessSelectHost*)(void*)obj->unk26E8)->unk38, 0x41E, &q);
-        if (q.text.unk04 == 0)
-            PlayerSetHeldSlotIndex(obj, 1);
-        else
+        if (q.text.unk04 != 0)
             PlayerSetHeldSlotIndex(obj, 0);
+        else
+            PlayerSetHeldSlotIndex(obj, 1);
     }
 }
 
@@ -2107,7 +2109,7 @@ static inline void PossessSlotAnim(PossessSlotAnimObj* obj, float value,
             ActorPlayAnim(((PossessSelectHost*)obj->unk26E4)->unk38, lowId,
                           0x2000000);
         }
-    } else if (lbl_804D9438 < value && obj->unk26E4 != 0) {
+    } else if (value > lbl_804D9438 && obj->unk26E4 != 0) {
         ActorPlayAnim(((PossessSelectHost*)obj->unk26E4)->unk38, highId,
                       0x2000000);
     }
