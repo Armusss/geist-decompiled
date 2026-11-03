@@ -275,26 +275,27 @@ extern "C" int fn_80211470(float dt, float* particles, int stride, int count) {
 // wrap and with a count-down loop. Returns the number of live particles advanced.
 int ParticleStepPlain(float dt, float* particles, int stride, int count) {
     int live = 0;
-    if (particles && count > 0) {
+    if (particles != 0) {
         float zero = 0.0f;
-        do {
+        for (int i = 0; i < count; i++) {
             if (particles[1] > zero) {
                 particles[0] = particles[0] + dt;
                 float x = particles[0];
                 if (x > zero) {
                     float step = dt;
-                    if (x < dt)
+                    if (x >= dt) {
+                    } else {
                         step = x;
+                    }
                     particles[1] = particles[1] - step;
-                    particles[2] = particles[2] + particles[5] * step;
-                    particles[3] = particles[3] + particles[6] * step;
-                    particles[4] = particles[4] + particles[7] * step;
+                    particles[2] += particles[5] * step;
+                    particles[3] += particles[6] * step;
+                    particles[4] += particles[7] * step;
                 }
                 live++;
             }
             particles = (float*)((char*)particles + stride);
-            count--;
-        } while (count != 0);
+        }
     }
     return live;
 }
