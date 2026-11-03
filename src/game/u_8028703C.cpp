@@ -46,7 +46,7 @@ extern "C" void OSSetArenaLo(u32 lo);
 // Audio driver registration helper (placeholder name) and its callback.
 extern "C" void fn_80340418(void (*callback)(void));
 extern "C" void fn_802870F0(void);
-extern "C" void fn_80287E84(void* arg);
+extern "C" void fn_80287E84(int msg, int* data);
 extern "C" int fn_80287EB8(u32 handle, int* data);
 
 // Helpers of this unit, defined below.
@@ -436,7 +436,7 @@ struct AramPageHeader {
 
 struct AramPageNode {
     AramPageHeader header;   // 0x00
-    void (*callback)(void*); // 0x30
+    void (*callback)(int msg, int* data); // 0x30: message handler
     u32 pad34;               // 0x34
     u32 id;                  // 0x38
     void* state;             // 0x3c
@@ -640,7 +640,7 @@ int OwnerGetInfo(u32 ownerId);
 void ActorGetMatrix(Mtx34* out, Actor* actor);
 
 extern "C" Mtx34* fn_800C6448(void);
-extern "C" void fn_8028787C(u32 id, u32 handle, int* data, int flag);
+extern "C" void fn_8028787C(u32 handle, int msg, int* data, int flag);
 extern "C" void fn_800A025C(float* out, Mtx34* mtx, int axis);
 extern "C" void fn_800E1098(float angle, float* out, float* in);
 extern "C" float fn_800E1020(float* v);
@@ -744,10 +744,14 @@ int AramPageUpdateNodeState(u32 handle, int* data)
 }
 
 // TODO fn_8028787C (0x608 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
-extern "C" void fn_8028787C(u32 id, u32 handle, int* data, int flag);
+extern "C" void fn_8028787C(u32 handle, int msg, int* data, int flag);
 
-// TODO fn_80287E84 (0x34 bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
-extern "C" void fn_80287E84(void* arg);
+// Message handler of a page node: forwards the message to fn_8028787C together with
+// the handle of the object that sent it (first word of the message data).
+extern "C" void fn_80287E84(int msg, int* data)
+{
+    fn_8028787C(*(u32*)(data[0] + 0x38), msg, data, 0);
+}
 
 // TODO fn_80287EB8 (0x32C bytes): not drafted yet; declared only (an empty body would be inlined into callers) (unit is NonMatching).
 extern "C" int fn_80287EB8(u32 handle, int* data);
