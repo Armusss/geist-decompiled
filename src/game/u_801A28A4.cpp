@@ -5,12 +5,29 @@ typedef unsigned char u8;
 typedef unsigned long u32;
 typedef signed int s32;
 
-extern float lbl_804D8710;
-extern float lbl_804D8714;
-extern float lbl_804D8718;
-extern u8 lbl_803C6B08[];
-extern u8 lbl_80348390[];
-extern char lbl_803483DA[];
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
+extern u8 __upper_map[];
+
+inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
+
+inline u32 StrHash(const char* s, u32 h) {
+    int i;
+
+    if (s == 0) {
+        return 0;
+    }
+    for (i = 0; s[i] != 0; i++) {
+        h *= 31;
+        h += (unsigned char)toupper(s[i]);
+    }
+    h %= 0xFFFFFFFF;
+    return h;
+}
+
 
 // Runtime state-machine table: 16-byte records.
 struct GeistStateEntry {
@@ -93,7 +110,7 @@ int u801A28A4MsgHandler(int msg, int* p)
                     return 0;
                 state = (u8*)*(int*)(p[0] + 0x130);
                 String first(lbl_803AAA08[state[0x14]].name);
-                String second((const char*)(lbl_80348390 + 0x48));
+                String second("\n");
                 String joined(first, second);
                 fn_8028C188(&p[3], joined.mData, joined.mSize);
                 return 0;
@@ -126,30 +143,17 @@ int u801A28A4MsgHandler(int msg, int* p)
             int arg[2];
             int flags;
             u32 hash;
-            char* name;
-            char* end;
-            u32 c;
             arg[0] = actor;
             arg[1] = fn_800A3A40(actor);
             (*(void (**)(int, void*))(*(int*)actor + 0x30))(0x400, arg);
-            hash = p[2];
-            name = lbl_803483DA;
-            for (end = name; *end != 0; end++) {
-                if (*name == (char)0xFF)
-                    c = 0xFFFFFFFF;
-                else
-                    c = lbl_803C6B08[(u8)*name];
-                hash *= 31;
-                hash += c & 0xFF;
-                name++;
-            }
+            hash = StrHash("QUERY", p[2]);
             if (fn_800C5654(fn_800A3A40(actor), hash, p[1]) != 0) {
                 p[3] = 0;
                 return 1;
             }
             if (fn_800A7B78(actor + 0x270, 0xB) != 0)
                 return 1;
-            if (lbl_804D8710 < *(float*)(actor + 0x904)) {
+            if (0.0f < *(float*)(actor + 0x904)) {
                 flags = 0;
                 if (p[2] == 0x3CA34BD6 && (flags & 1) == 0) {
                     p[3] = 0x1379C466;
@@ -165,13 +169,13 @@ int u801A28A4MsgHandler(int msg, int* p)
         if (msg < 0x40A) {
             int actor = p[0];
             u8* state = (u8*)*(int*)(actor + 0x130);
-            if (lbl_804D8710 <= *(float*)(state + 0xC)) {
+            if (0.0f <= *(float*)(state + 0xC)) {
                 fn_800A7B08(actor + 0x270, 4, 0);
             } else {
                 fn_800A7A54(actor + 0x270, 0x12, 1);
                 fn_800A78A0(actor + 0x270, p[1]);
                 fn_800A7B08(actor + 0x270, 4, 1);
-                *(float*)(state + 0xC) = lbl_804D8718;
+                *(float*)(state + 0xC) = 60000.0f;
             }
             return 0;
         }
@@ -182,8 +186,8 @@ int u801A28A4MsgHandler(int msg, int* p)
         int actor = p[0];
         float v;
         p[1] = *(int*)(actor + 0x38);
-        p[3] = (lbl_804D8710 < *(float*)(actor + 0x904));
-        v = lbl_804D8714;
+        p[3] = (0.0f < *(float*)(actor + 0x904));
+        v = 1.0f;
         ((float*)p)[4] = v;
         ((float*)p)[5] = v;
         p[6] = 2;
@@ -203,7 +207,7 @@ int u801A2D90Update(int actor)
 {
     u8* state = (u8*)*(int*)(actor + 0x130);
 
-    if (lbl_804D8710 < *(float*)(actor + 0x904) &&
+    if (0.0f < *(float*)(actor + 0x904) &&
         HasCondition((void*)(actor + 0x270), 10) == 0 &&
         HasCondition((void*)(actor + 0x270), 11) == 0) {
         u32 next;
@@ -215,7 +219,7 @@ int u801A2D90Update(int actor)
             state[0x15] &= ~1;
             next = GeistA28A4DogFetchPickState(actor);
             if (state[0x14] != next && lbl_803AAA08[state[0x14]].leave(actor) != 0) {
-                *(float*)state = lbl_804D8710;
+                *(float*)state = 0.0f;
                 lbl_803AAA08[next].enter(actor);
                 ConditionSetBit((void*)(actor + 0x270), 0x40, 0);
                 ConditionSetBit((void*)(actor + 0x270), 0x41, 0);
@@ -271,7 +275,7 @@ void GeistA28A4StateAttach(int self)
         *(int*)(self + 0x600) = filler;
         memset(mem, 0, 0x24);
         mem[0x16] = 1;
-        *(float*)mem = lbl_804D8710;
+        *(float*)mem = 0.0f;
 
         u8 idx = (u8)GeistA28A4DogFetchPickState(self);
         mem[0x14] = idx;
@@ -299,9 +303,9 @@ void GeistA28A4DogFetchInit(int self)
     *(int*)(self + 0x5fc) = (int)&fn_800CC984;
     *(int*)(self + 0x600) = (int)&fn_800CC984;
 
-    *(float*)(mem + 0x0) = lbl_804D8710;
-    *(float*)(mem + 0x8) = lbl_804D8710;
-    *(float*)(mem + 0xc) = lbl_804D8710;
+    *(float*)(mem + 0x0) = 0.0f;
+    *(float*)(mem + 0x8) = 0.0f;
+    *(float*)(mem + 0xc) = 0.0f;
     *(int*)(mem + 0x10) = -1;
 
     mem[0x14] = (u8)GeistA28A4DogFetchPickState(self);
@@ -313,7 +317,7 @@ void GeistA28A4DogFetchInit(int self)
 
     lbl_804D3090 = AssetFind(0xF1754BF2, 0x46B8BB2);
     lbl_804D3094 = AssetFind(0xF1754BF2, 0x68539EA1);
-    lbl_804D3098 = FxFind((const char*)(lbl_80348390 + 0x50));
+    lbl_804D3098 = FxFind("dog_fetch");
 }
 
 // Dog-fetch state check: while the actor's condition flag is clear it
@@ -389,21 +393,6 @@ bool GeistA28A4DogFetchMsgCheck(int self, u32 msg)
 
 // ---------------------------------------------------------------------------
 // Dog-fetch state update (0x801A33B4).
-extern float lbl_804D8730;
-extern float lbl_804D8734;
-extern float lbl_804D8738;
-extern float lbl_804D873C;
-extern float lbl_804D8740;
-extern float lbl_804D8744;
-extern float lbl_804D8748;
-extern float lbl_804D874C;
-extern float lbl_804D8750;
-extern float lbl_804D8754;
-extern float lbl_804D8758;
-extern float lbl_804D875C;
-extern float lbl_804D8760;
-extern float lbl_804D8764;
-extern float lbl_804D8768;
 extern int lbl_804D5168;
 
 float __fabsf(float f);
@@ -461,13 +450,13 @@ u32 GeistA28A4DogFetchUpdate(int actor)
     } else if (FollowGetTargetPos((void*)(actor + 0x270), pos) != 0) {
         ActorAimOffset2D((void*)actor, pos, &aimYaw, &aimPitch);
     } else {
-        aimPitch = lbl_804D8730;
-        aimYaw = lbl_804D8710;
+        aimPitch = 3.4028235e+38f;
+        aimYaw = 0.0f;
     }
-    while (aimYaw < lbl_804D8738)
-        aimYaw += lbl_804D8734;
-    while (aimYaw > lbl_804D873C)
-        aimYaw -= lbl_804D8734;
+    while (aimYaw < -180.0f)
+        aimYaw += 360.0f;
+    while (aimYaw > 180.0f)
+        aimYaw -= 360.0f;
 
     int buf[8];
     if (SendMsg(*(int*)(obj + 0x10), 0x400, buf) == 0 || buf[0] == 0)
@@ -478,10 +467,10 @@ u32 GeistA28A4DogFetchUpdate(int actor)
     pos2[1] = (float)*(int*)(tgt2 + 0x28);
     pos2[2] = (float)*(int*)(tgt2 + 0x2c);
     ActorAimOffset2D((void*)actor, pos2, &aimYaw2, &aimPitch2);
-    while (aimYaw2 < lbl_804D8738)
-        aimYaw2 += lbl_804D8734;
-    while (aimYaw2 > lbl_804D873C)
-        aimYaw2 -= lbl_804D8734;
+    while (aimYaw2 < -180.0f)
+        aimYaw2 += 360.0f;
+    while (aimYaw2 > 180.0f)
+        aimYaw2 -= 360.0f;
 
     type = *(u32*)(tgt2 + 0x38);
 
@@ -492,7 +481,7 @@ u32 GeistA28A4DogFetchUpdate(int actor)
 
     fl = *(u8*)(obj + 0x15);
     if (fl & 0x10) {
-        if (aimPitch2 < lbl_804D8740) {
+        if (aimPitch2 < 650.0f) {
             *(u8*)(obj + 0x15) = fl & ~0x10;
             *(u8*)(obj + 0x15) = *(u8*)(obj + 0x15) | 0x40;
             fn_800BBCA8(actor);
@@ -501,14 +490,14 @@ u32 GeistA28A4DogFetchUpdate(int actor)
             float v[3];
             ActorGetMatrix(mtx, tgt2);
             fn_800A025C(v, mtx, 1);
-            v[1] = lbl_804D8710;
-            fn_800E1098(v, v, lbl_804D8744);
+            v[1] = 0.0f;
+            fn_800E1098(v, v, 100.0f);
             v[0] += *(float*)(actor + 0x84);
             v[1] += *(float*)(actor + 0x88);
             v[2] += *(float*)(actor + 0x8c);
             FollowSetTargetVec((void*)(actor + 0x270), v);
             fn_800A7B08(actor + 0x270, 4, 1);
-        } else if (fabsf(aimYaw2) > lbl_804D8748) {
+        } else if (fabsf(aimYaw2) > 5.0f) {
             fn_800A7B08(actor + 0x270, 4, 1);
             fn_800A78A0(actor + 0x270, (int)tgt2);
         } else {
@@ -520,7 +509,7 @@ u32 GeistA28A4DogFetchUpdate(int actor)
     } else if (fl & 0x20) {
         float f = *(float*)(obj + 8) + *(float*)(actor + 0x138);
         *(float*)(obj + 8) = f;
-        if (aimPitch2 < lbl_804D8740 || fn_800BAF40(actor) == -1 || f <= lbl_804D874C) {
+        if (aimPitch2 < 650.0f || fn_800BAF40(actor) == -1 || f <= 5000.0f) {
             *(u8*)(obj + 0x15) = fl & ~0x20;
             *(u8*)(obj + 0x15) = *(u8*)(obj + 0x15) | 0x40;
             fn_800BBCA8(actor);
@@ -529,8 +518,8 @@ u32 GeistA28A4DogFetchUpdate(int actor)
             float v[3];
             ActorGetMatrix(mtx, tgt2);
             fn_800A025C(v, mtx, 1);
-            v[1] = lbl_804D8710;
-            fn_800E1098(v, v, lbl_804D8744);
+            v[1] = 0.0f;
+            fn_800E1098(v, v, 100.0f);
             v[0] += *(float*)(actor + 0x84);
             v[1] += *(float*)(actor + 0x88);
             v[2] += *(float*)(actor + 0x8c);
@@ -538,7 +527,7 @@ u32 GeistA28A4DogFetchUpdate(int actor)
             fn_800A7B08(actor + 0x270, 4, 1);
         }
     } else if (fl & 0x40) {
-        if (fabsf(aimYaw) < lbl_804D8748) {
+        if (fabsf(aimYaw) < 5.0f) {
             *(u8*)(obj + 0x15) = fl & ~0x40;
             fn_800A7B08(actor + 0x270, 4, 0);
             if (*(int*)(obj + 0x10) != -1) {
@@ -554,7 +543,7 @@ u32 GeistA28A4DogFetchUpdate(int actor)
         if (HasCondition((void*)(actor + 0x270), 0x29) == 0)
             *(u8*)(obj + 0x15) = fl & ~4;
     } else if (fl & 8) {
-        if (fabsf(aimYaw) <= lbl_804D8748 || aimPitch < lbl_804D8750) {
+        if (fabsf(aimYaw) <= 5.0f || aimPitch < 0.0f) {
             fn_800A7B08(actor + 0x270, 4, 0);
             fn_800A7A54(actor + 0x270, 0x29, 1);
             *(u8*)(obj + 0x15) = fl & ~8;
@@ -566,9 +555,9 @@ u32 GeistA28A4DogFetchUpdate(int actor)
         if (mode < 4 && (flags & 0x40) && (flags & 0x100) && fn_800B1EF4(actor, mode) == 0) {
             int picked;
             fn_800B1F20(actor, mode);
-            fn_800B2418(actor, mode, lbl_804D8754);
+            fn_800B2418(actor, mode, 2000.0f);
             if (fn_800B261C(actor, mode, &picked) != 0) {
-                *(float*)(obj + 4) = lbl_804D8758;
+                *(float*)(obj + 4) = 10000.0f;
                 fn_800A78A0(actor + 0x270, picked);
                 fn_800BC56C(actor, picked);
                 *(int*)(actor + 0x288) = 3;
@@ -586,13 +575,13 @@ u32 GeistA28A4DogFetchUpdate(int actor)
                     *(int*)(actor + 0x288) = 0;
                 }
                 *(float*)(obj + 4) = *(float*)(obj + 4) - *(float*)(actor + 0x138);
-                if (*(float*)(obj + 4) <= lbl_804D8710) {
+                if (*(float*)(obj + 4) <= 0.0f) {
                     fn_800BBCA8(actor);
                     RangeResetPending((void*)(actor + 0x270));
                     *(int*)(actor + 0x288) = 0;
                 }
-                if (aimPitch < lbl_804D875C) {
-                    if (fabsf((lbl_804D8760 + (float)*(int*)(tgt + 0x2c)) - *(float*)(actor + 0x8c)) < lbl_804D8764) {
+                if (aimPitch < 350.0f) {
+                    if (fabsf((210.0f + (float)*(int*)(tgt + 0x2c)) - *(float*)(actor + 0x8c)) < 30.0f) {
                         fn_800BBCA8(actor);
                         *(u8*)(obj + 0x15) = *(u8*)(obj + 0x15) | 8;
                         *(int*)(actor + 0x288) = 0;
@@ -600,7 +589,7 @@ u32 GeistA28A4DogFetchUpdate(int actor)
                 }
             } else {
                 *(int*)(actor + 0x288) = 0;
-                if (aimPitch < lbl_804D875C)
+                if (aimPitch < 350.0f)
                     *(u8*)(obj + 0x15) = *(u8*)(obj + 0x15) | 8;
                 else
                     RangeResetPending((void*)(actor + 0x270));
@@ -610,7 +599,7 @@ u32 GeistA28A4DogFetchUpdate(int actor)
                 *(int*)(actor + 0x288) = 3;
             } else {
                 *(int*)(actor + 0x288) = 0;
-                if (aimPitch >= lbl_804D8744)
+                if (aimPitch >= 100.0f)
                     RangeResetPending((void*)(actor + 0x270));
             }
         }
@@ -629,7 +618,7 @@ u32 GeistA28A4DogFetchUpdate(int actor)
             }
         }
         if (fn_800BAF40(actor) == -1) {
-            if (aimPitch2 > lbl_804D8768)
+            if (aimPitch2 > 1000.0f)
                 fn_800A7A54(actor + 0x270, 0x3c, 1);
             else
                 fn_800A7A54(actor + 0x270, 0x3c, 0);
@@ -695,14 +684,15 @@ int GeistA28A4FetchStateCheck(int actor)
         ConditionUpdateBit((void*)(actor + 0x270), 0, 0);
         return 1;
     }
-    if (HasCondition((void*)(actor + 0x270), 0x10) == 0)
-        return 0;
-    if (HasCondition((void*)(actor + 0x270), 4) == 0 &&
-        lbl_804D8768 <= *(float*)(actor + 0x904))
-        return 0;
-    ConditionSetBit((void*)(actor + 0x270), 0x10, 0);
-    ConditionUpdateBit((void*)(actor + 0x270), 0, 0);
-    return 1;
+    if (HasCondition((void*)(actor + 0x270), 0x10) != 0) {
+        if (HasCondition((void*)(actor + 0x270), 4) != 0 ||
+            *(float*)(actor + 0x904) < 1000.0f) {
+            ConditionSetBit((void*)(actor + 0x270), 0x10, 0);
+            ConditionUpdateBit((void*)(actor + 0x270), 0, 0);
+            return 1;
+        }
+    }
+    return 0;
 }
 
 // Fetch state enter (0x801A3E64): switches to the fetch sub-state, resets the
@@ -712,7 +702,7 @@ int GeistA28A4FetchStateEnter(int actor)
     u8* obj = *(u8**)(actor + 0x130);
 
     obj[0x14] = 9;
-    *(float*)(obj + 0xc) = lbl_804D8718;
+    *(float*)(obj + 0xc) = 60000.0f;
     fn_800BBCA8(actor);
     *(int*)(actor + 0x288) = 0;
     fn_80162610(actor, actor + 0x894, 1);
@@ -734,7 +724,6 @@ extern "C" int ConditionGetOwner(void* cond);
 extern "C" void OwnerSlotGetPosition(int actor, int slot, float* pos);
 class Owner;
 float OwnerValue(Owner* owner, void* p);
-extern float lbl_804D876C;
 
 int GeistA28A4FetchTrackUpdate(int actor)
 {
@@ -776,7 +765,7 @@ int GeistA28A4FetchTrackUpdate(int actor)
         if (value < (float)*(u32*)(*(int*)(actor + 0xc4) + 0xc8))
             return 1;
         if (fn_800BAF40(actor) == -3) {
-            if (value < lbl_804D876C)
+            if (value < 1200.0f)
                 *(int*)(actor + 0x288) = 2;
             else
                 *(int*)(actor + 0x288) = 3;
@@ -795,7 +784,7 @@ int GeistA28A4FetchStateStart(int actor)
     u8* state = *(u8**)(actor + 0x130);
 
     state[0x14] = 8;
-    *(float*)(state + 0xc) = lbl_804D8718;
+    *(float*)(state + 0xc) = 60000.0f;
     fn_800A7B08(actor + 0x270, 4, 0);
     fn_800BC56C(actor, FollowGetTargetObj((void*)(actor + 0x270)));
     *(int*)(actor + 0x288) = 3;
@@ -863,7 +852,7 @@ int GeistA28A4State7Enter(int actor)
 {
     u8* state = *(u8**)(actor + 0x130);
     state[0x14] = 7;
-    *(float*)(state + 0xC) = lbl_804D8718;
+    *(float*)(state + 0xC) = 60000.0f;
     ConditionUpdateBit((void*)(actor + 0x270), 4, 1);
     ConditionUpdateBit((void*)(actor + 0x270), 9, 1);
     fn_800BBCA8(actor);
@@ -880,8 +869,6 @@ int GeistA28A4State7Leave(int actor)
     return 1;
 }
 
-extern float lbl_804D8770;
-extern float lbl_804D8774;
 
 // Fetch range update (0x801A43D4): once the state timer has passed the
 // configured start threshold, refreshes the follow target from the actor's
@@ -890,7 +877,7 @@ int GeistA28A4FetchRangeUpdate(int actor)
 {
     u8* state = *(u8**)(actor + 0x130);
 
-    if (lbl_804D8770 <= *(float*)state) {
+    if (400.0f <= *(float*)state) {
         int mode = fn_800B26B8(actor);
 
         if (mode < 4 && (fn_800B1ED4(actor, mode) & 0x40) == 0) {
@@ -913,7 +900,7 @@ int GeistA28A4FetchRangeUpdate(int actor)
             float pos[3];
 
             FollowGetTargetPos((void*)(actor + 0x270), pos);
-            if (lbl_804D8774 < OwnerValue((Owner*)actor, pos))
+            if (750.0f < OwnerValue((Owner*)actor, pos))
                 return 1;
         }
     }
@@ -927,7 +914,7 @@ int GeistA28A4State6Enter(int actor)
     u8* state = *(u8**)(actor + 0x130);
 
     state[0x14] = 6;
-    *(float*)(state + 0xc) = lbl_804D8718;
+    *(float*)(state + 0xc) = 60000.0f;
     ConditionUpdateBit((void*)(actor + 0x270), 4, 1);
     ConditionUpdateBit((void*)(actor + 0x270), 9, 1);
     fn_800BBCA8(actor);
@@ -944,8 +931,6 @@ int GeistA28A4FetchResetBits(int actor)
     return 1;
 }
 
-extern float lbl_804D8778;
-extern float lbl_804D8720;
 extern "C" void fn_800B4C50(float, float, int, int, int, int);
 
 // Fetch-slot check (0x801A45C0): while the state timer is past the start
@@ -955,7 +940,7 @@ int GeistA28A4FetchSlotCheck(int actor)
 {
     float* state = *(float**)(actor + 0x130);
 
-    if (*state < lbl_804D8770)
+    if (*state < 400.0f)
         return 0;
 
     int mode = fn_800B26B8(actor);
@@ -981,7 +966,7 @@ int GeistA28A4FetchSlotCheck(int actor)
     }
 
     if (updated > 0)
-        fn_800B4C50(lbl_804D8778, lbl_804D874C, actor + 0x84, *(int*)(actor + 0x38), 2, 0x12);
+        fn_800B4C50(201.0f, 5000.0f, actor + 0x84, *(int*)(actor + 0x38), 2, 0x12);
 
     if (ConditionGetOwner((void*)(actor + 0x270)) == 0)
         return 1;
@@ -992,7 +977,7 @@ int GeistA28A4FetchSlotCheck(int actor)
 
         FollowGetTargetPos((void*)(actor + 0x270), pos);
         value = OwnerValue((Owner*)actor, pos);
-        if (value < lbl_804D8774 || value > lbl_804D8720)
+        if (value < 750.0f || value > 1350.0f)
             return 1;
     }
     return 0;
@@ -1003,7 +988,7 @@ int GeistA28A4FetchSlotCheck(int actor)
 // fetch condition bits and clears the pending step.
 int GeistA28A4DogFetchRetreat(int actor)
 {
-    char* state = *(char**)(actor + 0x130);
+    u8* state = *(u8**)(actor + 0x130);
 
     if (state[0x14] != 5) {
         int target = FollowGetTargetObj((void*)(actor + 0x270));
@@ -1012,7 +997,7 @@ int GeistA28A4DogFetchRetreat(int actor)
             ActorPlayAnim(*(int*)(actor + 0x38), 0x5B99AFD1, *(int*)(target + 0x38));
     }
     state[0x14] = 5;
-    *(float*)(state + 0xC) = lbl_804D8718;
+    *(float*)(state + 0xC) = 60000.0f;
     ConditionUpdateBit((void*)(actor + 0x270), 4, 1);
     ConditionUpdateBit((void*)(actor + 0x270), 8, 1);
     fn_800BBCA8(actor);
@@ -1026,8 +1011,6 @@ int GeistA28A4DogFetchRetreatCheck(void)
     return 1;
 }
 
-extern float lbl_804D877C;
-extern float lbl_804D8780;
 extern "C" void fn_800BC5A8(int actor, void* pos);
 extern "C" int fn_800BB218(float f, void* actor, int arg, float* origin,
                            float* target, void* owner, float* factor,
@@ -1075,7 +1058,7 @@ int GeistA28A4DogFetchRetreatUpdate(int actor)
 
         FollowGetTargetPos((void*)(actor + 0x270), pos);
         value = OwnerValue((Owner*)actor, pos);
-        if (lbl_804D874C < *state || lbl_804D877C < value) {
+        if (5000.0f < *state || 2300.0f < value) {
             RangeResetPending((void*)(actor + 0x270));
             return 1;
         }
@@ -1109,17 +1092,20 @@ int GeistA28A4DogFetchApproachUpdate(int actor)
 
     FollowGetTargetPos((void*)(actor + 0x270), tgtPos);
     state[0x14] = 4;
-    *(float*)(state + 0xc) = lbl_804D8718;
+    *(float*)(state + 0xc) = 60000.0f;
     actorPos[0] = (float)*(int*)(actor + 0x24);
     actorPos[1] = (float)*(int*)(actor + 0x28);
     actorPos[2] = (float)*(int*)(actor + 0x2c);
     if (fn_800BB218(*(float*)(actor + 0x900), (void*)actor,
                     *(int*)(actor + 0x2c4), actorPos, tgtPos, (void*)actor,
                     &factor, &out1, &out2) != 0) {
-        factor *= lbl_804D8780;
-        tgtPos[0] = actorPos[0] + (tgtPos[0] - actorPos[0]) * factor;
-        tgtPos[1] = actorPos[1] + (tgtPos[1] - actorPos[1]) * factor;
-        tgtPos[2] = actorPos[2] + (tgtPos[2] - actorPos[2]) * factor;
+        factor *= 0.95f;
+        float dx = (tgtPos[0] - actorPos[0]) * factor;
+        float dy = (tgtPos[1] - actorPos[1]) * factor;
+        float dz = (tgtPos[2] - actorPos[2]) * factor;
+        tgtPos[0] = actorPos[0] + dx;
+        tgtPos[1] = actorPos[1] + dy;
+        tgtPos[2] = actorPos[2] + dz;
     }
     fn_800BC5A8(actor, tgtPos);
     *(int*)(actor + 0x288) = 2;
@@ -1135,7 +1121,6 @@ int GeistA28A4FetchSlotClearBits(int actor)
     return 1;
 }
 
-extern float lbl_804D8784;
 
 // Fetch-range slot check (0x801A4B58): while the state timer is past the start
 // threshold it refreshes the follow target from the actor's mode slot, then
@@ -1146,7 +1131,7 @@ int GeistA28A4FetchSlotRangeCheck(int actor)
     int updated = 0;
     int mode;
 
-    if (*state < lbl_804D8770)
+    if (*state < 400.0f)
         return 0;
 
     mode = fn_800B26B8(actor);
@@ -1169,7 +1154,7 @@ int GeistA28A4FetchSlotRangeCheck(int actor)
         }
     }
 
-    if (!updated && *state > lbl_804D8784)
+    if (!updated && *state > 7000.0f)
         return 1;
 
     if (ConditionGetOwner((void*)(actor + 0x270)) != 0) {
@@ -1178,7 +1163,7 @@ int GeistA28A4FetchSlotRangeCheck(int actor)
 
         FollowGetTargetPos((void*)(actor + 0x270), pos);
         value = OwnerValue((Owner*)actor, pos);
-        if (value < lbl_804D8720 || value > lbl_804D877C)
+        if (value < 1350.0f || value > 2300.0f)
             return 1;
     }
     return 0;
@@ -1190,7 +1175,7 @@ int GeistA28A4EnableStateBits(int actor)
 {
     u8* state = *(u8**)(actor + 0x130);
     state[0x14] = 3;
-    *(float*)(state + 0xc) = lbl_804D8718;
+    *(float*)(state + 0xc) = 60000.0f;
     ConditionUpdateBit((void*)(actor + 0x270), 4, 1);
     ConditionUpdateBit((void*)(actor + 0x270), 0x10, 1);
     fn_800BBCA8(actor);
@@ -1206,8 +1191,6 @@ int GeistA28A4DisableStateBits(int actor)
     return 1;
 }
 
-extern float lbl_804D871C;
-extern float lbl_804D8788;
 
 // Follow-slot range check (0x801A4D84): while the state timer is past the start
 // threshold it refreshes the follow target from the actor's active mode slot,
@@ -1217,7 +1200,7 @@ int GeistA28A4FollowSlotRangeCheck(int actor)
     float* state = *(float**)(actor + 0x130);
     int updated = 0;
 
-    if (*state < lbl_804D8770)
+    if (*state < 400.0f)
         return 0;
 
     {
@@ -1243,7 +1226,7 @@ int GeistA28A4FollowSlotRangeCheck(int actor)
         }
     }
 
-    if (!updated && *state > lbl_804D8784)
+    if (!updated && *state > 7000.0f)
         return 1;
 
     if (ConditionGetOwner((void*)(actor + 0x270)) != 0) {
@@ -1252,9 +1235,9 @@ int GeistA28A4FollowSlotRangeCheck(int actor)
 
         FollowGetTargetPos((void*)(actor + 0x270), pos);
         value = OwnerValue((Owner*)actor, pos);
-        if (value > lbl_804D871C || value < lbl_804D877C)
+        if (value > 4000.0f || value < 2300.0f)
             return 1;
-        if (value <= lbl_804D871C && value > lbl_804D8788) {
+        if (value <= 4000.0f && value > 3300.0f) {
             ConditionUpdateBit((void*)(actor + 0x270), 0xe, 1);
             ConditionUpdateBit((void*)(actor + 0x270), 0xf, 0);
         } else {
@@ -1272,7 +1255,7 @@ int GeistA28A4FollowSlotEnter(int actor)
     u8* state = *(u8**)(actor + 0x130);
 
     state[0x14] = 2;
-    *(float*)(state + 0xc) = lbl_804D8718;
+    *(float*)(state + 0xc) = 60000.0f;
     ConditionUpdateBit((void*)(actor + 0x270), 0xe, 1);
     fn_800BBCA8(actor);
     *(u32*)(actor + 0x288) = 0;
@@ -1375,7 +1358,7 @@ int GeistA28A4SlotTargetCheck(int actor)
 {
     float* state = *(float**)(actor + 0x130);
 
-    if (!(lbl_804D8770 <= state[0]))
+    if (!(400.0f <= state[0]))
         return 0;
 
     state[3] = state[3] - *(float*)(actor + 0x138);
@@ -1427,11 +1410,6 @@ void ActorAim(int* out, Actor* actor, int mode);
 extern "C" float fn_800E1020(float* v);
 extern "C" void fn_800E1BD8(int a, int b, int c, int d, int e);
 
-extern float lbl_804D878C;
-extern float lbl_804D8790;
-extern float lbl_804D8794;
-extern float lbl_804D8798;
-extern float lbl_804D879C;
 
 // Reply block of the 0x411 "aim at target" query. The message system keeps
 // the query token at +0x4 and writes the target direction at +0x34.
@@ -1448,7 +1426,7 @@ struct GeistA28A4AimReply {
 // "is this vector usable" test before normalising.
 static inline int GeistA28A4VecNonZero(float x, float y, float z)
 {
-    return (fabsf(x) > lbl_804D8750) + (fabsf(y) > lbl_804D8750) + (fabsf(z) > lbl_804D8750);
+    return (fabsf(x) > 0.0f) + (fabsf(y) > 0.0f) + (fabsf(z) > 0.0f);
 }
 
 // Normalise in place, or collapse to the zero vector when every component
@@ -1464,9 +1442,9 @@ static inline void GeistA28A4VecNormalize(float* v)
         v[1] *= inv;
         v[2] *= inv;
     } else {
-        v[0] = lbl_804D8710;
-        v[1] = lbl_804D8710;
-        v[2] = lbl_804D8710;
+        v[0] = 0.0f;
+        v[1] = 0.0f;
+        v[2] = 0.0f;
     }
 }
 
@@ -1478,7 +1456,7 @@ float GeistA28A4FetchAimProgress(int actor, float* dir)
     int* state = (int*)*(int*)(actor + 0x130);
     int probe[8];
     if (SendMsg(state[4], 0x400, probe) == 0 || probe[0] == 0)
-        return lbl_804D8710;
+        return 0.0f;
 
     GeistA28A4AimReply reply;
     reply.token = lbl_804D3090;
@@ -1495,18 +1473,18 @@ float GeistA28A4FetchAimProgress(int actor, float* dir)
     delta[2] = (float)reply.z - pz;
 
     float len = fn_800E1020(delta);
-    if (len <= lbl_804D876C)
-        return lbl_804D8710;
+    if (len <= 1200.0f)
+        return 0.0f;
 
-    float t = (len - lbl_804D876C) / lbl_804D878C;
-    if (t < lbl_804D8710)
-        t = lbl_804D8710;
-    else if (t > lbl_804D8714)
-        t = lbl_804D8714;
+    float t = (len - 1200.0f) / 1300.0f;
+    if (t < 0.0f)
+        t = 0.0f;
+    else if (t > 1.0f)
+        t = 1.0f;
 
     int target = probe[0];
-    if (*(int*)(actor + 0x288) != 0 && *(float*)(actor + 0x2a8) > lbl_804D8710) {
-        float scale = lbl_804D8790 * t + lbl_804D8714;
+    if (*(int*)(actor + 0x288) != 0 && *(float*)(actor + 0x2a8) > 0.0f) {
+        float scale = 59.0f * t + 1.0f;
         float dist = fn_800E1020((float*)(actor + 0x240));
         int amount = (int)(scale * (dist / *(float*)(actor + 0x2a8)));
         fn_800E1BD8(*(int*)(target + 0x58c), 3, 200, amount, 0x28);
@@ -1515,9 +1493,9 @@ float GeistA28A4FetchAimProgress(int actor, float* dir)
     dir[0] = delta[0];
     dir[1] = delta[1];
     dir[2] = delta[2];
-    dir[2] = lbl_804D8710;
-    fn_800E1098(dir, dir, lbl_804D8794 * (*(float*)(actor + 0x2ac) * *(float*)(actor + 0x138)));
-    return lbl_804D879C * t + lbl_804D8798;
+    dir[2] = 0.0f;
+    fn_800E1098(dir, dir, 0.001f * (*(float*)(actor + 0x2ac) * *(float*)(actor + 0x138)));
+    return 0.39999998f * t + 0.05f;
 }
 
 // Fetch "aim check" callback (0x801A5610): true when the actor's aim vector
@@ -1545,21 +1523,10 @@ int GeistA28A4FetchAimCheck(int targetId, int actor)
     GeistA28A4VecNormalize(toTarget);
 
     return aimDir[0] * toTarget[0] + aimDir[1] * toTarget[1] + aimDir[2] * toTarget[2]
-           >= lbl_804D8710;
+           >= 0.0f;
 }
 
 // ---- Debug spline message handler -----------------------------------------
-extern float lbl_804D87A0;
-extern float lbl_804D87A4;
-extern float lbl_804D87A8;
-extern float lbl_804D87AC;
-extern float lbl_804D87B0;
-extern float lbl_804D87B4;
-extern float lbl_804D87B8;
-extern float lbl_804D87BC;
-extern float lbl_804D87C0;
-extern float lbl_804D87C4;
-extern float lbl_804D87C8;
 
 struct Vec3 {
     float x;                         // 0x0
@@ -1588,7 +1555,7 @@ int GeistA28A4SplineDebugMsg(int* p)
 
         memset(buf, 0, 0x20);
         if (SendMsg(p[2], 0x400, buf) != 0 && buf[0] != 0) {
-            *(float*)(state + 2) = lbl_804D8710;
+            *(float*)(state + 2) = 0.0f;
             *(u8*)((char*)state + 0x15) |= 0x10;
             *(u8*)((char*)state + 0x15) &= 0x9F;
         }
@@ -1633,30 +1600,30 @@ int GeistA28A4SplineDebugMsg(int* p)
         back.z = -delta.z;
 
         len = fn_800E1020(&delta.x);
-        t = (len - lbl_804D8770) / lbl_804D87A0;
-        if (t < lbl_804D8710)
-            t = lbl_804D8710;
-        else if (t > lbl_804D8714)
-            t = lbl_804D8714;
+        t = (len - 400.0f) / 800.0f;
+        if (t < 0.0f)
+            t = 0.0f;
+        else if (t > 1.0f)
+            t = 1.0f;
 
         fn_8016D440(&scale, &dir);
-        scale = scale + (lbl_804D87A8 * t + lbl_804D87A4);
-        if (scale < lbl_804D87A4)
-            scale = lbl_804D87A4;
-        else if (scale > lbl_804D87AC)
-            scale = lbl_804D87AC;
+        scale = scale + (70.0f * t + -80.0f);
+        if (scale < -80.0f)
+            scale = -80.0f;
+        else if (scale > 80.0f)
+            scale = 80.0f;
         fn_8016D4EC(&dir, &scale);
 
         fn_8016D440(&scale, &back);
-        scale = scale - (lbl_804D87B4 * t + lbl_804D87B0);
-        if (scale < lbl_804D87A4)
-            scale = lbl_804D87A4;
-        else if (scale > lbl_804D87AC)
-            scale = lbl_804D87AC;
+        scale = scale - (8.0f * t + -10.0f);
+        if (scale < -80.0f)
+            scale = -80.0f;
+        else if (scale > 80.0f)
+            scale = 80.0f;
         fn_8016D4EC(&back, &scale);
 
-        fn_800E1098(&dir.x, &dir.x, lbl_804D87B8 * t + lbl_804D876C);
-        fn_800E1098(&back.x, &back.x, lbl_804D87BC * t + lbl_804D8770);
+        fn_800E1098(&dir.x, &dir.x, -1000.0f * t + 1200.0f);
+        fn_800E1098(&back.x, &back.x, -300.0f * t + 400.0f);
 
         {
             int i;
@@ -1666,15 +1633,15 @@ int GeistA28A4SplineDebugMsg(int* p)
                 Vec3 p1;
                 float v;
 
-                SplineHermiteEval(((float)i - lbl_804D8794) * lbl_804D87C4,
+                SplineHermiteEval(((float)i - 0.001f) * 0.03125f,
                                   &pb, &dir, &pa, &back, &p0);
-                SplineHermiteEval((float)(i + 1) * lbl_804D87C4,
+                SplineHermiteEval((float)(i + 1) * 0.03125f,
                                   &pb, &dir, &pa, &back, &p1);
-                v = lbl_804D87C0 * ((float)i * lbl_804D87C4) + lbl_804D87B4;
+                v = -5.0f * ((float)i * 0.03125f) + 8.0f;
                 Draw3DBeginLine(-3, 0, v);
                 DrawLine(&p0.x, &p1.x, 0x64, 0x14, 0x14, 0xFF, 0x64, 0x14, 0x14, 0xFF);
                 DrawDisableTexOffsets();
-                Draw3DBeginLine(-3, 0, lbl_804D87C8 * v);
+                Draw3DBeginLine(-3, 0, 0.7f * v);
                 DrawLine(&p0.x, &p1.x, 0x14, 0x14, 0x14, 0xFF, 0x14, 0x14, 0x14, 0xFF);
                 DrawDisableTexOffsets();
             }
@@ -1723,13 +1690,13 @@ u32 GeistA28A4DogFetchPickState(int actor)
 
         FollowGetTargetPos((void*)(actor + 0x270), pos);
         value = OwnerValue((Owner*)actor, (Vec3*)pos);
-        if (value < lbl_804D8774)
+        if (value < 750.0f)
             return 6;
-        if (value < lbl_804D8720)
+        if (value < 1350.0f)
             return 5;
-        if (value < lbl_804D877C)
+        if (value < 2300.0f)
             return 4 - (state[0x16] == 0);
-        if (value < lbl_804D871C)
+        if (value < 4000.0f)
             return 2;
         return 0;
     }
@@ -1749,13 +1716,13 @@ u32 GeistA28A4DogFetchPickState(int actor)
                 return 9;
             return 8;
         }
-        if (value < lbl_804D8774)
+        if (value < 750.0f)
             return 6;
-        if (value < lbl_804D8720)
+        if (value < 1350.0f)
             return 5;
-        if (value < lbl_804D877C)
+        if (value < 2300.0f)
             return 3;
-        if (value < lbl_804D871C)
+        if (value < 4000.0f)
             return 2;
         return 0;
     }
