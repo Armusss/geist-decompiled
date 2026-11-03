@@ -51,9 +51,9 @@ struct EffTarget;
 // Object returned by fn_800C7E80.
 struct SpawnOwner {
     u8  unk00[0x24];         // 0x00
-    u32 a24;                 // 0x24
-    u32 a28;                 // 0x28
-    u32 a2c;                 // 0x2c
+    s32 a24;                 // 0x24
+    s32 a28;                 // 0x28
+    s32 a2c;                 // 0x2c
     u8  unk30[0x08];         // 0x30
     u32 a38;                 // 0x38
     u8  unk3c[0x68];         // 0x3c
@@ -120,7 +120,7 @@ struct EffectParams {
 u32 ActorCreateEffects(u32 param_1, u32 param_2, f32* param_3, u32 param_4, int param_5) {
     SpawnDesc desc;
     EffectParams fx;
-    EffObject* out;
+    EffObject* outs[8];
     SpawnOwner* owner;
     EffTarget* ent;
 
@@ -165,13 +165,13 @@ u32 ActorCreateEffects(u32 param_1, u32 param_2, f32* param_3, u32 param_4, int 
     ent->a48 = fn_801DE990(&fx);
     fx.f20 = lbl_804DA3D0;
     ent->a4c = fn_801DE990(&fx);
-    fn_800265D4(ent->a48, 0x400, (void**)&out);
-    if (out != 0) {
-        out->flags &= 0xfffdffff;
+    fn_800265D4(ent->a48, 0x400, (void**)&outs[0]);
+    if (outs[0] != 0) {
+        outs[0]->flags &= 0xfffdffff;
     }
-    fn_800265D4(ent->a4c, 0x400, (void**)&out);
-    if (out != 0) {
-        out->flags &= 0xfffdffff;
+    fn_800265D4(ent->a4c, 0x400, (void**)&outs[0]);
+    if (outs[0] != 0) {
+        outs[0]->flags &= 0xfffdffff;
     }
 
     fx.owner = 0xffffffff;
@@ -192,9 +192,9 @@ u32 ActorCreateEffects(u32 param_1, u32 param_2, f32* param_3, u32 param_4, int 
     fx.f10 = lbl_804DA3D4;
     fx.mode = 0xffffffff;
     ent->a3c = fn_801DE990(&fx);
-    fn_800265D4(ent->a3c, 0x400, (void**)&out);
-    if (out != 0) {
-        out->flags &= 0xfffdffff;
+    fn_800265D4(ent->a3c, 0x400, (void**)&outs[0]);
+    if (outs[0] != 0) {
+        outs[0]->flags &= 0xfffdffff;
     }
 
     fx.f24 = lbl_804DA3DC;
@@ -202,9 +202,9 @@ u32 ActorCreateEffects(u32 param_1, u32 param_2, f32* param_3, u32 param_4, int 
     fx.f18 = lbl_804DA3D4;
     fx.f20 = lbl_804DA3E4;
     ent->a40 = fn_801DE990(&fx);
-    fn_800265D4(ent->a40, 0x400, (void**)&out);
-    if (out != 0) {
-        out->flags &= 0xfffdffff;
+    fn_800265D4(ent->a40, 0x400, (void**)&outs[0]);
+    if (outs[0] != 0) {
+        outs[0]->flags &= 0xfffdffff;
     }
 
     fx.f24 = lbl_804DA3E8;
@@ -212,9 +212,9 @@ u32 ActorCreateEffects(u32 param_1, u32 param_2, f32* param_3, u32 param_4, int 
     fx.f18 = lbl_804DA3D4;
     fx.f20 = lbl_804DA3F0;
     ent->a44 = fn_801DE990(&fx);
-    fn_800265D4(ent->a44, 0x400, (void**)&out);
-    if (out != 0) {
-        out->flags &= 0xfffdffff;
+    fn_800265D4(ent->a44, 0x400, (void**)&outs[0]);
+    if (outs[0] != 0) {
+        outs[0]->flags &= 0xfffdffff;
     }
 
     if (param_5 != 0) {
@@ -348,9 +348,8 @@ typedef void (*QueryFn)(s32, QueryOut*);
 extern f32 lbl_804D3784;
 extern f32 lbl_804DA400;
 extern f32 lbl_804DA404;
-extern s32 lbl_804A3208;
-extern s32 lbl_804A320C;
-extern s32 lbl_804A3210;
+struct S32Vec { s32 x, y, z; };
+extern S32Vec lbl_804A3208;
 extern s32 lbl_804D5548;
 extern s32 lbl_804D554C;
 
@@ -497,9 +496,9 @@ void PossessedEffectUpdate(Actor* actor, f32 dt) {
             }
         } else if (lbl_804D554C != 0 || lbl_804D3784 < self->f30 ||
                    fn_80049940() != 0) {
-            actor->x24 = lbl_804A3208;
-            actor->x28 = lbl_804A320C;
-            actor->x2c = lbl_804A3210;
+            actor->x24 = lbl_804A3208.x;
+            actor->x28 = lbl_804A3208.y;
+            actor->x2c = lbl_804A3208.z;
             PossessionEffectWhiteOut(actor, self->a34);
         }
     }
@@ -518,8 +517,9 @@ int PossessedEffectQuery(void* ctx, void* target) {
     QueryOut out;
 
     if (q->object != 0) {
-        QueryFn fn = *(QueryFn*)((u8*)q->object + 0x30);
+        QueryFn fn;
         out.object = q->object;
+        fn = *(QueryFn*)((u8*)q->object + 0x30);
         fn(0x400, &out);
         if (out.found == *handle || (out.flags & 2) == 0) {
             if (out.found == *handle) {
@@ -529,9 +529,9 @@ int PossessedEffectQuery(void* ctx, void* target) {
         }
         lbl_804D554C = 1;
     }
-    lbl_804A3208 = q->a30;
-    lbl_804A320C = q->a34;
-    lbl_804A3210 = q->a38;
+    lbl_804A3208.x = q->a30;
+    lbl_804A3208.y = q->a34;
+    lbl_804A3208.z = q->a38;
     return 1;
 }
 
@@ -543,10 +543,11 @@ int PossessedEffectCreate(Actor* actor) {
     s32 id;
     short ids[4];
 
-    self = actor->target;
-    if (self == 0) {
+    if (actor->target == 0) {
         self = (EffTarget*)VAlloc(0x78);
         actor->target = self;
+    } else {
+        self = actor->target;
     }
     memset(self, 0, 0x78);
     if (PossessableInit(actor) == 0) {
