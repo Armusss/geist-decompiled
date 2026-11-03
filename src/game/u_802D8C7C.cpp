@@ -235,7 +235,7 @@ int OwnerGetInfo(u32 id);
 Owner* GetPlayer(void);
 f32 OwnerValue(Owner*, void* target);
 int ActorScanTargetCallback(Owner* self, Owner* other, f32 dist);
-void ConditionUpdateBit(void* mem, int bit, int value);
+int ConditionUpdateBit(void* mem, int bit, int value);
 int  FollowLineCheckActorDist(void* self, void* target, f32 dist);
 int  fn_80162940(void* mem, int value);
 void VFree(void* ptr);
