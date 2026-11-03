@@ -1549,7 +1549,7 @@ int SkinnedActorOnHitEvent(int* event)
 
 // Fixed-size block pool (descriptive name; layout inferred from the code).
 struct BlockPool {
-    int mBlockSize;   // 0x00 size of one block
+    u32 mBlockSize;   // 0x00 size of one block
     int mBlockCount;  // 0x04 blocks per chunk
     int* mChunks;     // 0x08 list of allocated chunks (first word links to the previous)
     int* mFreeList;   // 0x0C list of free blocks (first word links to the next free block)
@@ -1563,12 +1563,12 @@ void* VAlloc(int size);
 void BlockPoolFree(BlockPool* pool, int* block, int size)
 {
     if (block != 0) {
-        if (size == pool->mBlockSize) {
+        if (size != pool->mBlockSize) {
+            VFree(block);
+        } else {
             *block = (int)pool->mFreeList;
             pool->mFreeList = block;
             pool->mUsedCount = pool->mUsedCount - 1;
-        } else {
-            VFree(block);
         }
     }
 }
@@ -1598,13 +1598,13 @@ int* BlockPoolAlloc(BlockPool* pool, int size)
         }
     }
     block = pool->mFreeList;
-    if (block == 0) {
-        return 0;
+    if (block != 0) {
+        pool->mFreeList = (int*)*block;
+        memset(block, 0, size);
+        pool->mUsedCount = pool->mUsedCount + 1;
+        return block;
     }
-    pool->mFreeList = (int*)*block;
-    memset(block, 0, size);
-    pool->mUsedCount = pool->mUsedCount + 1;
-    return block;
+    return 0;
 }
 
 // Initialises a block descriptor: rounded-up size, flags, and three zeroed words.
