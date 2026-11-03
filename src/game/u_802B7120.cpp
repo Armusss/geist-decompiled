@@ -92,16 +92,9 @@ struct DamageReply {
     int hash;                   // 0x14
 };
 
-extern unsigned char lbl_8034BC18[];
 extern SendTarget lbl_803C44F0[];
 extern unsigned char __upper_map[];
 
-extern float lbl_804DABE8;
-extern float lbl_804DABEC;
-extern float lbl_804DABF0;
-extern float lbl_804DABF4;
-extern float lbl_804DABF8;
-extern double lbl_804DAC00;
 extern float lbl_804D394C;
 extern float lbl_804D3950;
 extern float lbl_804D3954;
@@ -154,10 +147,6 @@ extern float lbl_804D3920;
 extern float lbl_804D3924;
 extern float lbl_804D3928;
 extern int lbl_804D3958;
-extern float lbl_804DAC28;
-extern float lbl_804DAC2C;
-extern float lbl_804DAC30;
-extern float lbl_804DAC34;
 
 int ActorDamageHandler802B7710(Actor* a, int* data);
 
@@ -194,17 +183,17 @@ int ActorMessageHandler802B7120(int msg, int* data)
         int id;
         int anim;
         int arg;
-        a->f13c = lbl_804DABE8;
+        a->f13c = 0.0f;
         id = fn_800AFD20((void*)a);
         anim = ModelAnimate(a->model, 0, 0);
         arg = fn_8003A1F0(id, a->f0, anim);
-        fn_8003F15C(lbl_804DABEC, id, arg, a->d0, data + 4, 0);
+        fn_8003F15C(1.0f, id, arg, a->d0, data + 4, 0);
         return 0;
     }
     case 0x400:
         data[1] = OwnerId((Owner*)a);
-        *(float*)(data + 4) = lbl_804DABEC;
-        *(float*)(data + 5) = lbl_804DABEC;
+        *(float*)(data + 4) = 1.0f;
+        *(float*)(data + 5) = 1.0f;
         data[6] = 2;
         data[7] = 0;
         if (!HasCondition(a->mem270, 9) && !HasCondition(a->mem270, 10))
@@ -276,7 +265,7 @@ int ActorMessageHandler802B7120(int msg, int* data)
             data[4] = 0;
             return 1;
         }
-        name = (const char*)lbl_8034BC18 + 0x48;
+        name = "[HRMSAVE]";
         hash = TypeNameHash(name);
         memcpy((void*)data[2], &hash, 4);
         data[3] += 4;
@@ -307,7 +296,7 @@ int ActorMessageHandler802B7120(int msg, int* data)
             data[3] += 4;
             data[1] -= 4;
             data[2] += 4;
-            name = (const char*)lbl_8034BC18 + 0x48;
+            name = "[HRMSAVE]";
             ok = (*p == TypeNameHash(name));
         }
         if (!ok)
@@ -344,19 +333,19 @@ int ActorDamageHandler802B7710(Actor* a, int* data)
                 *(float*)(data + 3) *= lbl_804D3950;
             }
             if (data[5] == -0x4603BD0B)
-                *(float*)(data + 3) = (*(float*)(data + 3) < lbl_804DABF0)
+                *(float*)(data + 3) = (*(float*)(data + 3) < 3000.0f)
                                           ? *(float*)(data + 3)
-                                          : lbl_804DABF0;
+                                          : 3000.0f;
             rnd = fn_800BA84C(6);
             *(float*)(data + 3) =
-                *(float*)(data + 3) * (lbl_804DABF4 * (float)rnd);
+                *(float*)(data + 3) * (0.01f * (float)rnd);
             a->i214 = data[0x11];
             a->health -= *(float*)(data + 3);
             max = (float)(unsigned int)a->vitals->max;
             {
                 float h = a->health;
-                float out = lbl_804DABE8;
-                if (h >= lbl_804DABE8) {
+                float out = 0.0f;
+                if (h >= 0.0f) {
                     out = (h <= max) ? h : max;
                 }
                 a->health = out;
@@ -372,7 +361,7 @@ int ActorDamageHandler802B7710(Actor* a, int* data)
                 DamageReply reply;
                 reply.owner = a;
                 reply.id = a->id;
-                reply.factor = lbl_804DABF8;
+                reply.factor = 10000.0f;
                 reply.hash = 0x6CA5F172;
                 if (extra->selected == -1) {
                     unsigned int r = Rand();
@@ -444,12 +433,6 @@ extern float lbl_804D5788;
 extern float lbl_804D578C;
 extern float lbl_804D5790;
 
-extern float lbl_804DAC08;
-extern float lbl_804DAC0C;
-extern float lbl_804DAC10;
-extern float lbl_804DAC14;
-extern float lbl_804DAC18;
-extern float lbl_804DAC1C;
 extern int lbl_804D395C;
 
 extern "C" void fn_80162658(void* owner, void* mem);
@@ -469,9 +452,9 @@ void* FollowGetTargetObj(void* p);
 // Damage-level reply for the current health ratio.
 static inline void SetDamageReply(Actor* a, int* data, float high, float mid, float low)
 {
-    if (a->health < (float)(unsigned int)a->vitals->max * lbl_804D393C * lbl_804DABF4)
+    if (a->health < (float)(unsigned int)a->vitals->max * lbl_804D393C * 0.01f)
         data[3] = (int)high;
-    else if (a->health < (float)(unsigned int)a->vitals->max * lbl_804D392C * lbl_804DABF4)
+    else if (a->health < (float)(unsigned int)a->vitals->max * lbl_804D392C * 0.01f)
         data[3] = (int)mid;
     else
         data[3] = (int)low;
@@ -531,7 +514,7 @@ int ActorQueryHandler802B79DC(Actor* a, int* data)
         return 0;
     case (int)0xAD8576FA: {
         String name(lbl_803C49D0[extra->unk00].name);
-        String suffix((const char*)lbl_8034BC18 + 0x52);
+        String suffix("\n");
         String out = fn_800225C8(&name, &suffix);
         fn_8028C188(data + 3, out.data, out.size);
         return 0;
@@ -565,22 +548,9 @@ int ActorFindSendSlot802B7EFC(int want0, int want1, void* owner)
     ExtraState* extra = actor->extra;
     int i;
 
-    for (i = 0; i < 0xd; i++) {
-        int base = i * 4;
-        if (want0 == lbl_803C44F0[base].unk10 && want1 == lbl_803C44F0[base].id) {
-            extra->slot = base;
-            return 1;
-        }
-        if (want0 == lbl_803C44F0[base + 1].unk10 && want1 == lbl_803C44F0[base + 1].id) {
-            extra->slot = base + 1;
-            return 1;
-        }
-        if (want0 == lbl_803C44F0[base + 2].unk10 && want1 == lbl_803C44F0[base + 2].id) {
-            extra->slot = base + 2;
-            return 1;
-        }
-        if (want0 == lbl_803C44F0[base + 3].unk10 && want1 == lbl_803C44F0[base + 3].id) {
-            extra->slot = base + 3;
+    for (i = 0; i < 0x34; i++) {
+        if (want0 == lbl_803C44F0[i].unk10 && want1 == lbl_803C44F0[i].id) {
+            extra->slot = i;
             return 1;
         }
     }
@@ -606,7 +576,7 @@ int ActorStateTick802B7FD0(Actor* a)
 
     extra = a->extra;
     extra->f0c += a->f138;
-    if (extra->f10 > lbl_804DABE8)
+    if (extra->f10 > 0.0f)
         extra->f10 -= a->f138;
 
     if (HasCondition(a->mem270, 9) || HasCondition(a->mem270, 10) ||
@@ -631,24 +601,24 @@ int ActorStateTick802B7FD0(Actor* a)
     if (extra->remaining < extra->total) {
         gain = fn_80017084(extra->f14);
         ratio = (float)extra->remaining / (float)extra->total;
-        if (ratio < lbl_804DAC08)
-            blend = lbl_804DAC08 + ratio;
+        if (ratio < 0.5f)
+            blend = 0.5f + ratio;
         else
-            blend = lbl_804DAC0C * (ratio - lbl_804DAC08) + lbl_804DABEC;
-        lo = lbl_804DAC10 * (lbl_804DABEC - ratio) + ratio;
-        hi = ratio + (lbl_804DABEC - ratio);
-        glow = lbl_804DABEC - (float)pow(lbl_804DAC08 * (lbl_804DABEC + gain), blend);
-        if (glow < lbl_804DABE8)
-            glow = lbl_804DABE8;
-        else if (glow > lbl_804DABEC)
-            glow = lbl_804DABEC;
-        value = (int)(lbl_804DAC14 * (glow * (hi - lo) + lo));
+            blend = 8.0f * (ratio - 0.5f) + 1.0f;
+        lo = 0.2f * (1.0f - ratio) + ratio;
+        hi = ratio + (1.0f - ratio);
+        glow = 1.0f - (float)pow(0.5f * (1.0f + gain), blend);
+        if (glow < 0.0f)
+            glow = 0.0f;
+        else if (glow > 1.0f)
+            glow = 1.0f;
+        value = (int)(255.0f * (glow * (hi - lo) + lo));
         if (value < 0)
             value = 0;
         else if (value > 0xff)
             value = 0xff;
         fn_80037EC0(a->model, lbl_804D395C, 1, 0xff, value, value, 0xff);
-        extra->f14 = lbl_804DAC18 * (lbl_804DAC1C * a->f138) + extra->f14;
+        extra->f14 = 0.001f * (128.0f * a->f138) + extra->f14;
     }
     return 1;
 }
@@ -718,8 +688,6 @@ extern "C" void fn_8021284C(int id);
 extern "C" void fn_80212814(int id, int other, unsigned long asset,
                             int a, int b, int c);
 
-extern float lbl_804DAC20;
-extern float lbl_804DAC24;
 
 int ActorShouldCollect802B84C8(void* playerArg, void* ownerArg);
 
@@ -746,15 +714,15 @@ void ActorInitCollection802B8308(Actor* a)
 
     state->state = 1;
     state->list.unk14 = 0;
-    state->f04 = lbl_804DABE8;
-    state->f08 = lbl_804DABE8;
-    state->f0c = lbl_804DAC20;
+    state->f04 = 0.0f;
+    state->f08 = 0.0f;
+    state->f0c = 3.4028235e+38f;
     state->count = 0;
     state->added = 0;
     state->list.unk18 = 0;
 
     lbl_804D395C = (int)AssetFind(0xD9044CBB, 0x619DEF54);
-    fn_8001ED98(a->timer, (int)(lbl_804DAC24 * a->f900),
+    fn_8001ED98(a->timer, (int)(4.0f * a->f900),
                 ActorShouldCollect802B84C8, a, 0);
     fn_800BAEE4(a, 1);
     ConditionSetBit(a->mem270, 0x2d, 1);
@@ -858,10 +826,10 @@ int ActorFollowUpdate802B860C(Actor* a)
                 playerPos.z = (float)who->z;
                 diff = ActorAngleToPos(a, &targetPos) -
                        ActorAngleToPos(a, &playerPos);
-                while (diff < lbl_804DAC2C)
-                    diff += lbl_804DAC28;
-                while (lbl_804DAC30 < diff)
-                    diff -= lbl_804DAC28;
+                while (diff < -180.0f)
+                    diff += 360.0f;
+                while (180.0f < diff)
+                    diff -= 360.0f;
                 if ((diff < 0.0f ? -diff : diff) < lbl_804D3924 &&
                     (lbl_804D3958 == 0 || FollowLineCheck(a, player) != 0) &&
                     OwnerValue((Owner*)a, player) < lbl_804D3920) {
@@ -873,9 +841,9 @@ int ActorFollowUpdate802B860C(Actor* a)
         } else {
             Actor* player = (Actor*)GetPlayer();
             if (player != 0 &&
-                OwnerValue((Owner*)a, player) > lbl_804DAC34 * lbl_804D3920)
+                OwnerValue((Owner*)a, player) > 1.1f * lbl_804D3920)
                 extra->f3c = 0;
-            if (extra->f10 <= lbl_804DABE8)
+            if (extra->f10 <= 0.0f)
                 extra->f3c = 0;
         }
     }
@@ -917,7 +885,8 @@ void ImpThrowFireball802B8A24(int id, int phase, int* payload, void* owner, floa
 bool OwnerStateMessage802B898C(int* owner, int msg, unsigned long value, int arg, float scale)
 {
     unsigned long resolved = Fn80175D60(value);
-    if (msg == 0x14967) {
+    switch (msg) {
+    case 0x14967:
         ImpThrowFireball802B8A24((int)value, (int)resolved, (int*)arg,
                                  (void*)*owner, scale);
         return true;
@@ -979,18 +948,6 @@ struct GunModel {
 extern const char* lbl_803C49F0;
 extern unsigned long lbl_803C49F4;
 
-extern float lbl_804DAC38;
-extern float lbl_804DAC3C;
-extern float lbl_804DAC40;
-extern float lbl_804DAC44;
-extern float lbl_804DAC48;
-extern float lbl_804DAC4C;
-extern float lbl_804DAC50;
-extern float lbl_804DAC54;
-extern float lbl_804DAC58;
-extern float lbl_804DAC5C;
-extern float lbl_804DAC60;
-extern float lbl_804DAC64;
 
 extern float lbl_804D3960;
 extern float lbl_804D3964;
@@ -1043,30 +1000,30 @@ void ImpThrowFireball802B8A24(int id, int phase, int* payload, void* owner, floa
 
         memset(&shot, 0, sizeof(shot));
         shot.f38 = -data->droop;
-        shot.f30 = lbl_804DAC38;
-        shot.f34 = lbl_804DAC38;
+        shot.f30 = 0.0f;
+        shot.f34 = 0.0f;
         fn_800E1098(data->angle, &shot.dir, &aim->aim);
         shot.pos = aim->pos;
         fn_8016D440(&aimDir, &aim->aim);
         shot.vec = aimDir;
 
         power = fn_800F7920(owner, 0x53BF9B3F);
-        if (power != lbl_804DAC38) {
-            shot.f24 = lbl_804DAC40 * (power * ((float)rand() / lbl_804DAC3C)) - power;
-            shot.f28 = lbl_804DAC40 * (power * ((float)rand() / lbl_804DAC3C)) - power;
-            shot.f2c = lbl_804DAC40 * (power * ((float)rand() / lbl_804DAC3C)) - power;
+        if (power != 0.0f) {
+            shot.f24 = 2.0f * (power * ((float)rand() / 32767.0f)) - power;
+            shot.f28 = 2.0f * (power * ((float)rand() / 32767.0f)) - power;
+            shot.f2c = 2.0f * (power * ((float)rand() / 32767.0f)) - power;
         }
 
         SendMsg(id, 0x400, reply);
         gun = (GunModel*)reply[0];
         gunVec = PlayerGetGunVec(gun);
-        spread = lbl_804DAC48 * scale;
-        shot.dir.x += gunVec->x * lbl_804DAC44;
-        shot.dir.y += gunVec->y * lbl_804DAC44;
-        shot.dir.z += gunVec->z * lbl_804DAC44;
-        shot.pos.x += gunVec->x * lbl_804DAC44 * spread;
-        shot.pos.y += gunVec->y * lbl_804DAC44 * spread;
-        shot.pos.z += gunVec->z * lbl_804DAC44 * spread;
+        spread = 0.001f * scale;
+        shot.dir.x += gunVec->x * 1000.0f;
+        shot.dir.y += gunVec->y * 1000.0f;
+        shot.dir.z += gunVec->z * 1000.0f;
+        shot.pos.x += gunVec->x * 1000.0f * spread;
+        shot.pos.y += gunVec->y * 1000.0f * spread;
+        shot.pos.z += gunVec->z * 1000.0f * spread;
 
         if (gun->f1c6c == 0)
             fn_800C5E00(gun->gun, 1, data->unk0c, data->unk10, 0);
@@ -1074,7 +1031,7 @@ void ImpThrowFireball802B8A24(int id, int phase, int* payload, void* owner, floa
             fn_800C5E00(gun->gun, 1, gun->f1c70, gun->f1c74, 0);
 
         if (reply[6] & 2)
-            fn_800B4C50(lbl_804DAC44, lbl_804DAC4C, &aim->pos, id, 1, 0);
+            fn_800B4C50(1000.0f, 32000.0f, &aim->pos, id, 1, 0);
     }
     else if (phase == 1) {
         ImpFireTarget* target;
@@ -1095,42 +1052,42 @@ void ImpThrowFireball802B8A24(int id, int phase, int* payload, void* owner, floa
         memset(&shot, 0, sizeof(shot));
         shot.pos = aim->pos;
         shot.f38 = -data->droop;
-        shot.f30 = lbl_804DAC38;
-        shot.f34 = lbl_804DAC38;
+        shot.f30 = 0.0f;
+        shot.f34 = 0.0f;
 
-        rnd1 = (float)rand() / lbl_804DAC3C;
-        rnd2 = (float)rand() / lbl_804DAC3C;
-        rnd3 = (float)rand() / lbl_804DAC3C;
-        shot.dir.x = lbl_804DAC38;
-        shot.dir.y = lbl_804DAC38;
-        shot.f24 = lbl_804DAC50 * rnd3 - lbl_804DAC54;
-        shot.dir.z = lbl_804DAC58;
-        shot.f28 = lbl_804DAC50 * rnd2 - lbl_804DAC54;
-        shot.f2c = lbl_804DAC50 * rnd1 - lbl_804DAC54;
+        rnd1 = (float)rand() / 32767.0f;
+        rnd2 = (float)rand() / 32767.0f;
+        rnd3 = (float)rand() / 32767.0f;
+        shot.dir.x = 0.0f;
+        shot.dir.y = 0.0f;
+        shot.f24 = 800.0f * rnd3 - 400.0f;
+        shot.dir.z = 1800.0f;
+        shot.f28 = 800.0f * rnd2 - 400.0f;
+        shot.f2c = 800.0f * rnd1 - 400.0f;
 
         delta.x = (float)target->x - shot.pos.x;
         delta.y = (float)target->y - shot.pos.y;
         delta.z = (float)target->z - shot.pos.z;
 
-        drop = -(lbl_804DAC58 / shot.f38);
-        ratio = (delta.z - lbl_804DAC5C * lbl_804DAC58 * drop) / (lbl_804DAC5C * shot.f38);
-        root = lbl_804DAC38;
-        if (ratio > lbl_804DAC38)
+        drop = -(1800.0f / shot.f38);
+        ratio = (delta.z - 0.5f * 1800.0f * drop) / (0.5f * shot.f38);
+        root = 0.0f;
+        if (ratio > 0.0f)
             root = sqrtf(ratio);
 
         length = fn_800E1020(&delta);
-        delta.z = lbl_804DAC38;
-        speed = (length / (drop + root)) * lbl_804DAC60;
+        delta.z = 0.0f;
+        speed = (length / (drop + root)) * 0.9f;
         fn_800E1098(speed, &delta, &delta);
 
         if (fabsf(ActorAimAngleToPos(target, (Vec3*)((char*)reply[0] + 0x84))) >
-            lbl_804DAC64) {
+            60.0f) {
             int sign;
 
             fn_8016D440(&angles, &delta);
-            sign = ((float)rand() / lbl_804DAC3C > lbl_804DAC5C) ? 1 : -1;
+            sign = ((float)rand() / 32767.0f > 0.5f) ? 1 : -1;
             angles.z = ((lbl_804D3964 - lbl_804D3960) *
-                            ((float)rand() / lbl_804DAC3C) +
+                            ((float)rand() / 32767.0f) +
                         lbl_804D3960) *
                            (float)sign +
                        angles.z;
