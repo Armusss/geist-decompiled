@@ -935,7 +935,7 @@ int NpcSveBeginPathFollow(Owner* o) {
     if (mode == 4) {
         return 0;
     }
-    u32 target[5];
+    u32 target[3];
     fn_800B261C(o, mode, target);
     return target[0] != 0;
 }
@@ -1070,10 +1070,11 @@ int NpcSveUpdateFollowAim(void* p) {
 // Clears the target-follow condition bit; returns whether the owner is valid.
 int NpcSveClearTargetFollow(void* p) {
     Owner* o = (Owner*)p;
-    if (o != 0) {
-        ConditionUpdateBit(o->cond270, 0x16, 0);
+    if (o == 0) {
+        return 0;
     }
-    return o != 0;
+    ConditionUpdateBit(o->cond270, 0x16, 0);
+    return 1;
 }
 
 void ConditionUpdateBit(void* cond, int id, int value);
