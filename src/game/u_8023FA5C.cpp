@@ -178,7 +178,7 @@ void VFree(void* ptr);
 unsigned long AssetFind(unsigned long group, unsigned long id);
 int FxFind(const char* name);
 extern "C" void fn_800CDD10(void*);
-extern "C" unsigned int fn_800BA84C(int);
+extern "C" int fn_800BA84C(int);
 extern "C" void fn_8008DE4C(int, int, int, int);
 extern "C" void fn_8016D6A8(void*);
 void SkinnedActorPlayAnimSet(Actor* actor, int flags, int anim);
@@ -1384,9 +1384,9 @@ extern "C" void fn_8008F4EC(int handle, int);
 void SkinnedActorPlayAnimSet(Actor* actor, int flags, int anim)
 {
     Behaviour* beh = actor->mBehaviour;
-    int unchanged = 0;
     int count;
     int oldAnim;
+    int unchanged = 0;
 
     if (HasCondition(actor->mCondition, 0xc) != 0) {
         ConditionSetBit(actor->mCondition, 0xc, 0);
