@@ -390,7 +390,7 @@
 <rect x="648" y="442" width="18" height="18" rx="2" fill="#2ea043"><title>game/Mirror.cpp - matching</title></rect>
 <rect x="668" y="442" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_80285ACC.cpp - matching</title></rect>
 <rect x="688" y="442" width="18" height="18" rx="2" fill="#d29922"><title>game/VM.c - partial: 2/5 functions match</title></rect>
-<rect x="708" y="442" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8028703C.cpp - partial: 11/22 functions match</title></rect>
+<rect x="708" y="442" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8028703C.cpp - partial: 13/22 functions match</title></rect>
 <rect x="728" y="442" width="18" height="18" rx="2" fill="#2ea043"><title>game/Clock.cpp - matching</title></rect>
 <rect x="748" y="442" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8028865C.cpp - partial: 5/19 functions match</title></rect>
 <rect x="768" y="442" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8028A77C.cpp - partial: 29/47 functions match</title></rect>
