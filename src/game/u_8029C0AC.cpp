@@ -466,9 +466,9 @@ int NpcSveCheckFollowReady(Owner* o) {
     if (mode == 4) {
         return 1;
     }
-    u32 target[3];
-    fn_800B261C(o, mode, target);
-    if (target[0] != (u32)FollowGetTargetObj(o->cond270)) {
+    void* target;
+    fn_800B261C(o, mode, &target);
+    if (target != FollowGetTargetObj(o->cond270)) {
         return 1;
     }
     mode = fn_800B22F8(o, mode);
@@ -893,9 +893,9 @@ int NpcSveRefreshFollowTarget(Owner* o) {
     PathEvent* ev = (PathEvent*)o->evt;
     int mode = fn_800B26B8(o);
     if (mode != 4) {
-        u32 target[3];
+        void* target;
         if (fn_800B1EF4(o, mode) == 0) {
-            fn_800B261C(o, mode, target);
+            fn_800B261C(o, mode, &target);
             fn_800B22F8(o, mode);
             fn_800B1F20(o, mode);
         }
@@ -952,8 +952,8 @@ int NpcSveUpdatePathFollow(Owner* o) {
     int mode = fn_800B26B8(o);
     if (mode != 4) {
         int lowest = fn_800B22F8(o, mode);
-        u8 target[12];
-        fn_800B261C(o, mode, target);
+        void* target;
+        fn_800B261C(o, mode, &target);
         if (lowest != 4) {
             o->unk268 = lowest;
             if (MemFlagIsSet(o->cond270, 5) == 0) {
