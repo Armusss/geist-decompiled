@@ -921,13 +921,12 @@ int CollisionSplashFx(void* owner)
 // state argument on to the hit reaction.  Returns 0 without an owner.
 int EnterHitState(void* owner)
 {
-    Actor* self;
     StateControl* ctrl;
+    Actor* self = (Actor*)owner;
 
-    if (owner == 0)
+    if (self == 0)
         return 0;
 
-    self = (Actor*)owner;
     ctrl = self->control;
     ctrl->state = 7;
     ctrl->pending = 0;
@@ -941,13 +940,12 @@ int EnterHitState(void* owner)
 // on.  Returns 0 without an owner.
 int EnterStunState(void* owner)
 {
-    Actor* self;
     StateControl* ctrl;
+    Actor* self = (Actor*)owner;
 
-    if (owner == 0)
+    if (self == 0)
         return 0;
 
-    self = (Actor*)owner;
     ctrl = self->control;
     ctrl->state = 6;
     ctrl->pending = 6;
@@ -961,13 +959,12 @@ int EnterStunState(void* owner)
 // the stun fx with the actor's position.  Returns 0 without an owner.
 int EnterStunFxState(void* owner)
 {
-    Actor* self;
     StateControl* ctrl;
+    Actor* self = (Actor*)owner;
 
-    if (owner == 0)
+    if (self == 0)
         return 0;
 
-    self = (Actor*)owner;
     ctrl = self->control;
     ctrl->state = 5;
     ctrl->pending = 6;
@@ -1201,8 +1198,8 @@ int StoneMenBeginWalkState(void* owner)
 // restarts the behaviour machine.  Returns 1 when an actor was given.
 int StoneMenClearState(void* owner)
 {
-    Actor* self = (Actor*)owner;
     StateControl* ctrl;
+    Actor* self = (Actor*)owner;
 
     if (self == 0) {
         return 0;
