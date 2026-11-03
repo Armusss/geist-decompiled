@@ -5,7 +5,7 @@
 
 typedef unsigned char u8;
 typedef signed int s32;
-typedef unsigned int u32;
+typedef unsigned long u32;
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
@@ -108,14 +108,6 @@ struct OwnerObject {
     void* target;                       // 0x38
 };
 
-// FOV applied while the zoom state is active (retail: lbl_804D8F70@sda21;
-// the exact literal still has to be read out of the sdata2 pool).
-static const float kZoomInFov = 1.0f;
-
-// Share of the zoom factor below which the aim update is skipped (retail:
-// lbl_804D8F80@sda21; read as 0.0f for now, the literal has to be confirmed).
-static const float kZeroF = 0.0f;
-
 // Small message payload: retail writes only the trailing hash.
 struct PlayerMsgArg {
     int unk0;                           // 0x0 (left untouched by retail)
@@ -167,13 +159,6 @@ int PlayerHeldItemSlotCheck(void*, float);
 extern "C" int rand(void);
 extern "C" float fn_800699B8(void*);
 extern "C" void fn_800699A8(void*);
-extern "C" double lbl_804D8F78;
-extern "C" float lbl_804D8F80;
-extern "C" float lbl_804D8F84;
-extern "C" float lbl_804D8F88;
-extern "C" float lbl_804D8F8C;
-extern "C" float lbl_804D8F90;
-extern "C" float lbl_804D8F94;
 extern "C" float lbl_804D52A8;
 extern "C" int fn_802A1D04(void);
 extern "C" int fn_800C5210(int, int, void*);
@@ -232,7 +217,7 @@ void PlayerGunZoomUpdate(void* pv, float f)
         CameraSetFov(((PlayerObj*)pv)->field184, (float)((ZoomSource*)((PlayerObj*)pv)->field26c8)->field104);
         break;
     case 3:
-        CameraSetFov(((PlayerObj*)pv)->field184, kZoomInFov);
+        CameraSetFov(((PlayerObj*)pv)->field184, 26.0f);
         break;
     }
     if (((PlayerObj*)pv)->field7e0 != prevMode) {
@@ -504,7 +489,7 @@ void PlayerGunZoomModeUpdate(void* pv, float f)
         CameraSetFov(((PlayerObj*)pv)->field184, (float)((ZoomSource*)((PlayerObj*)pv)->field26c8)->field104);
         break;
     case 3:
-        CameraSetFov(((PlayerObj*)pv)->field184, kZoomInFov);
+        CameraSetFov(((PlayerObj*)pv)->field184, 26.0f);
         break;
     }
     if (((PlayerObj*)pv)->field7e0 != prevMode) {
@@ -604,7 +589,7 @@ void PlayerGunZoomSwitchUpdate(void* pv, float f)
         CameraSetFov(((PlayerObj*)pv)->field184, (float)((ZoomSource*)((PlayerObj*)pv)->field26c8)->field104);
         break;
     case 3:
-        CameraSetFov(((PlayerObj*)pv)->field184, kZoomInFov);
+        CameraSetFov(((PlayerObj*)pv)->field184, 26.0f);
         break;
     }
     if (((PlayerObj*)pv)->field7e0 != prevMode) {
@@ -708,7 +693,7 @@ void PlayerGunZoomAnimUpdate(void* pv, float f)
     }
 
     if (p->field7e0 == 3) {
-        CameraSetFov(p->field184, kZoomInFov);
+        CameraSetFov(p->field184, 26.0f);
     } else if (p->field7e0 == 0) {
         ZoomSource* z = (ZoomSource*)p->field26c8;
         CameraSetFov(p->field184, (float)z->field104);
@@ -809,7 +794,7 @@ void PlayerGunZoomUpdateAlt(void* pv, float f)
         CameraSetFov(p->field184, (float)((ZoomSource*)p->field26c8)->field104);
         break;
     case 3:
-        CameraSetFov(p->field184, kZoomInFov);
+        CameraSetFov(p->field184, 26.0f);
         break;
     }
     if (p->field7e0 != prevMode) {
@@ -881,7 +866,7 @@ void PlayerGunZoomSetupUpdate(void* pv, float f)
         CameraSetFov(p->field184, (float)((ZoomSource*)p->field26c8)->field104);
         break;
     case 3:
-        CameraSetFov(p->field184, kZoomInFov);
+        CameraSetFov(p->field184, 26.0f);
         break;
     }
     if (p->field7e0 != prevMode) {
@@ -953,10 +938,10 @@ void PlayerGunZoomItemQueryUpdate(void* pv, float f)
     maxAbs = fabsf(p->field394);
     if (maxAbs < fabsf(p->field38c))
         maxAbs = fabsf(p->field38c);
-    if (kZeroF != maxAbs)
+    if (0.0f != maxAbs)
         fn_8008E824(p->field7c, 0);
 
-    if (kZeroF == p->field7d8) {
+    if (0.0f == p->field7d8) {
         PlayerSetHeldSlotMode(p, 0);
         goto done;
     }
@@ -986,7 +971,7 @@ void PlayerGunZoomItemQueryUpdate(void* pv, float f)
     }
     if (!handled) {
         if (p->field7e0 == 3) {
-            CameraSetFov(p->field184, kZoomInFov);
+            CameraSetFov(p->field184, 26.0f);
         } else if (p->field7e0 == 0) {
             ZoomSource* z = (ZoomSource*)p->field26c8;
             CameraSetFov(p->field184, (float)z->field104);
@@ -1103,7 +1088,7 @@ void PlayerGunZoomStateUpdate(void* pv, float f)
         CameraSetFov(((PlayerObj*)pv)->field184, (float)((ZoomSource*)((PlayerObj*)pv)->field26c8)->field104);
         break;
     case 3:
-        CameraSetFov(((PlayerObj*)pv)->field184, kZoomInFov);
+        CameraSetFov(((PlayerObj*)pv)->field184, 26.0f);
         break;
     }
     if (((PlayerObj*)pv)->field7e0 != prevMode) {
@@ -1202,7 +1187,7 @@ void PlayerZoomStateTick(void* pv, float f)
     if (!skip) {
         mode = p->field7e0;
         if (mode == 3) {
-            CameraSetFov(p->field184, kZoomInFov);
+            CameraSetFov(p->field184, 26.0f);
         } else if (mode == 0) {
             ZoomSource* z = (ZoomSource*)p->field26c8;
             CameraSetFov(p->field184, (float)z->field104);
@@ -1281,7 +1266,7 @@ void PlayerGunZoomActionUpdate(void* pv, float f)
     }
 
     if (p->field7e0 == 3) {
-        CameraSetFov(p->field184, kZoomInFov);
+        CameraSetFov(p->field184, 26.0f);
     } else if (p->field7e0 == 0) {
         ZoomSource* z = (ZoomSource*)p->field26c8;
         CameraSetFov(p->field184, (float)z->field104);
@@ -1296,8 +1281,8 @@ void PlayerGunZoomActionUpdate(void* pv, float f)
 done:
     if (fn_801F0994(p, f) == 0)
         PlayerHeldItemSlotCheck(p, f);
-    if (kZeroF != p->field394 || kZeroF != p->field38c ||
-        kZeroF != p->field390 || kZeroF != p->field398 ||
+    if (0.0f != p->field394 || 0.0f != p->field38c ||
+        0.0f != p->field390 || 0.0f != p->field398 ||
         p->field328 != 0)
         PlayerSetActionMode(p, 3);
 }
@@ -1335,7 +1320,7 @@ void PlayerSetupHeldItemRandomState(void* pv)
                           fn_800498D0(p), 0);
     if (ret == 0xC0BECF7Eu || ret == 0x11D2C025u)
         p->field7d4 = 2;
-    else if ((float)rand() / lbl_804D8F84 < lbl_804D8F88)
+    else if ((float)rand() / 32767.0f < 0.5f)
         p->field7d4 = 1;
     else
         p->field7d4 = 0;
@@ -1412,7 +1397,7 @@ int PlayerHeldItemSlotCheck(void* pv, float f)
         }
     } else if (p->field320 == 0) {
         v = fn_800699B8(p);
-        if (v > lbl_804D8F90 && v < lbl_804D8F80) {
+        if (v > -1.0f && v < 0.0f) {
             if ((u32)Fn800F7DEC((int)nameA, (int)nameB, 0xe6b71bcc,
                                 fn_800498D0(p), 0) == 0x4A3E183u) {
                 PlayerSetHeldSlotMode(p, 10);
@@ -1430,7 +1415,7 @@ int PlayerHeldItemSlotCheck(void* pv, float f)
     } else {
         PlayerResetGunTimer(p);
         p->field5e8 += f;
-        if (fn_800699B8(p) == lbl_804D8F8C) {
+        if (fn_800699B8(p) == 1.0f) {
             if (p->field7d0 == 0)
                 PlayerSetHeldSlotMode(p, 2);
             else
@@ -1486,7 +1471,7 @@ int PlayerGunAimStateUpdate(void* pv, float f)
                 PlayerSetHeldSlotMode(p, 2);
                 return 1;
             }
-            lbl_804D52A8 = lbl_804D8F80;
+            lbl_804D52A8 = 0.0f;
             PlayerResetGunTimer(p);
             ret = Fn800F7DEC((int)nameA, (int)nameB, 0x20ee36,
                              fn_800498D0(p), 0);
@@ -1517,15 +1502,15 @@ int PlayerGunAimStateUpdate(void* pv, float f)
                 PlayerSetHeldSlotMode(p, 3);
             }
         } else if (p->field7a4 == 5) {
-            lbl_804D52A8 = lbl_804D8F80;
+            lbl_804D52A8 = 0.0f;
             PlayerSetHeldSlotMode(p, 3);
         }
-    } else if ((p->field314 & 1) != 0 || lbl_804D8F94 < lbl_804D52A8) {
+    } else if ((p->field314 & 1) != 0 || 1000.0f < lbl_804D52A8) {
         if (p->field7a4 == 1) {
             PlayerSetHeldSlotMode(p, 2);
             return 1;
         }
-        lbl_804D52A8 = lbl_804D8F80;
+        lbl_804D52A8 = 0.0f;
         PlayerResetGunTimer(p);
         ret = Fn800F7DEC((int)nameA, (int)nameB, 0xf829db93,
                          fn_800498D0(p), 0);
@@ -1557,7 +1542,7 @@ int PlayerGunAimStateUpdate(void* pv, float f)
             PlayerSetHeldSlotMode(p, 3);
         }
     } else if (p->field7a4 == 8) {
-        lbl_804D52A8 = lbl_804D8F80;
+        lbl_804D52A8 = 0.0f;
         PlayerSetHeldSlotMode(p, 3);
     }
 
@@ -1724,8 +1709,6 @@ void PlayerHeldSlotDispatchCallback(PlayerObj* p)
 // 0x801F1478: advances the held-item effect value at 0x800 by the frame delta,
 // clamping it between the two state thresholds, then runs the state's update
 // callback. Names and constants are descriptive guesses.
-extern "C" float lbl_804D8F98;
-extern "C" float lbl_804D8F9C;
 
 struct PlayerSlotFxEntry {
     void (*callback0)(void);            // 0x0
@@ -1741,15 +1724,15 @@ void PlayerUpdateHeldEffectDelta(PlayerObj* p, float dt)
     float v;
 
     if (p->field7a4 == 5) {
-        if (*value < lbl_804D8F8C)
-            *value = lbl_804D8F98 * dt + *value;
+        if (*value < 1.0f)
+            *value = 0.0005f * dt + *value;
         v = *value;
-        *value = (v < lbl_804D8F8C) ? v : lbl_804D8F8C;
+        *value = (v < 1.0f) ? v : 1.0f;
     } else {
-        if (*value > lbl_804D8F80)
-            *value = *value - lbl_804D8F9C * dt;
+        if (*value > 0.0f)
+            *value = *value - 0.001f * dt;
         v = *value;
-        *value = (v <= lbl_804D8F80) ? lbl_804D8F80 : v;
+        *value = (v <= 0.0f) ? 0.0f : v;
     }
 
     entry = &((PlayerSlotFxEntry*)lbl_803B9378)[p->field7a4];
