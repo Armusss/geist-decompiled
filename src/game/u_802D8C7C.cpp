@@ -548,26 +548,26 @@ void ActorReleaseState(Owner* self)
 void ActorStateInit(Owner* self)
 {
     StateData* st;
-    int local;
+    u32 local;
     int cur;
 
     self->unk104 = UpdateActorState;
-    st = (StateData*)VAlloc(0x20);
-    if (st == 0) {
+    void* block = VAlloc(0x20);
+    if (block == 0) {
         self->unk130 = 0;
         return;
     }
 
-    self->unk130 = st;
+    self->unk130 = (StateData*)block;
     self->unk0fc = fn_800CE96C;
     self->unk604 = fn_800CF064;
     self->unk5fc = fn_800CC984;
     self->unk600 = fn_800CC984;
 
+    st = (StateData*)self->unk130;
     st->unk00 = FollowStateDecide(self);
     st->unk04 = 0;
-    st->unk10 = lbl_804DB198;
-    st->unk14 = lbl_804DB198;
+    st->unk14 = st->unk10 = lbl_804DB198;
     if (st->unk00 == 7)
         st->unk00 = 0;
 
@@ -576,10 +576,10 @@ void ActorStateInit(Owner* self)
 
     cur = fn_800B26B8(self);
     if (cur != 4) {
-        if (fn_800B261C(self, cur, &local) == 0 || local == 0)
-            RangeResetPending(self->unk270);
-        else
+        if (fn_800B261C(self, cur, (int*)&local) != 0 && local != 0)
             FollowSetTargetObj(self->unk270, (void*)local);
+        else
+            RangeResetPending(self->unk270);
     }
 
     lbl_803C5730[st->unk00].fn0(self);
@@ -702,11 +702,12 @@ u32 ActorStateCheckTarget(Owner* self)
 // follow state.
 int ActorStateEnterFollow(Owner* self)
 {
-    if (self != 0) {
-        ConditionSetBit(self->unk270, 0x2a, 0);
-        fn_800BBCA8(self);
-    }
-    return self != 0;
+    if (self == 0)
+        return 0;
+
+    ConditionSetBit(self->unk270, 0x2a, 0);
+    fn_800BBCA8(self);
+    return 1;
 }
 
 // Puts the follow state machine back to its idle state (3): clears the
