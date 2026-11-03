@@ -10,6 +10,7 @@ typedef unsigned int u32;
 // String/Buffer: layout guessed from the call sites (sizeof(String) == 0x14).
 class Buffer {
 public:
+    Buffer();                       // 0x8028BA9C
     virtual ~Buffer();              // 0x00 vptr
     /*0x04*/ void* mData;
     /*0x08*/ unsigned long mSize;
@@ -1581,12 +1582,10 @@ void StoneMenApplyStateAnim(void* owner, int variant)
 // storage.
 extern "C" void fn_8028B960(void);
 
-class ActorRegistry {
+class ActorRegistry : public Buffer {
 public:
     virtual ~ActorRegistry() { fn_8028B960(); }     // 0x00 vptr
-    /*0x04*/ int field04;
-    /*0x08*/ unsigned long byteSize;
-    /*0x0C*/ Actor** items;
+    Actor** Items() { return (Actor**)mCapacity; }  // 0x0C: pointer array
 };
 
 // Concrete 0x14-byte container the global handle points at (the trailing word
@@ -1595,7 +1594,6 @@ class RegistryBuffer : public ActorRegistry {
 public:
     void* operator new(unsigned long size) { return VAlloc((int)size); }
     virtual ~RegistryBuffer();                      // 0x00 vptr
-    /*0x10*/ int field10;
 };
 
 extern RegistryBuffer* lbl_804D57E0;
@@ -1611,10 +1609,10 @@ void ActorUnlinkOwnerObjects(Actor* actor);
 // fn_802CEAAC
 extern "C" void fn_802CEAAC(float value)
 {
-    Actor** it = lbl_804D57E0->items;
+    Actor** it = lbl_804D57E0->Items();
 
     while (it !=
-           (Actor**)((u8*)lbl_804D57E0->items + lbl_804D57E0->byteSize)) {
+           (Actor**)((u8*)lbl_804D57E0->Items() + lbl_804D57E0->mSize)) {
         float scaled = value;
 
         if (((*it)->field04C & 0x20000) == 0)
@@ -1624,9 +1622,9 @@ extern "C" void fn_802CEAAC(float value)
             continue;
         } else {
             Actor* actor = *it;
-            Actor** found = lbl_804D57E0->items;
-            Actor** end = (Actor**)((u8*)lbl_804D57E0->items +
-                                    lbl_804D57E0->byteSize);
+            Actor** found = lbl_804D57E0->Items();
+            Actor** end = (Actor**)((u8*)lbl_804D57E0->Items() +
+                                    lbl_804D57E0->mSize);
 
             for (; found != end; found++) {
                 if (*found == actor) {
@@ -1651,11 +1649,11 @@ extern "C" void fn_802CEAAC(float value)
 extern "C" void fn_802CEBAC(void)
 {
     if (lbl_804D57E0 != 0) {
-        while ((lbl_804D57E0->byteSize >> 2) != 0) {
-            Actor* actor = lbl_804D57E0->items[0];
-            Actor** it = lbl_804D57E0->items;
-            Actor** end = (Actor**)((u8*)lbl_804D57E0->items +
-                                    lbl_804D57E0->byteSize);
+        while ((lbl_804D57E0->mSize >> 2) != 0) {
+            Actor* actor = lbl_804D57E0->Items()[0];
+            Actor** it = lbl_804D57E0->Items();
+            Actor** end = (Actor**)((u8*)lbl_804D57E0->Items() +
+                                    lbl_804D57E0->mSize);
 
             for (; it != end; it++) {
                 if (*it == actor) {
