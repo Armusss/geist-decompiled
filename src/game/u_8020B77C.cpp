@@ -1,10 +1,14 @@
 // u_8020B77C.cpp: FX actor emitter helpers (text-out, spawn and update) (0x8020B77C-0x8020D47C).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
 extern "C" void* memset(void* dst, int val, unsigned long size);
 extern "C" int SendMsg(int to, int msg, void* data);
 int FxEmitterAimUpdate(float value, struct FxActor* actor);
-extern "C" float lbl_804D93A8;
 
 void* AssetFind(unsigned long, unsigned long);
 int ActorPlayAnim(int, unsigned long, int);
@@ -102,7 +106,7 @@ struct FxActor {
     char unk1DA0[0x944];
     FxPlayer* unk26E4;      // 0x26E4
     char unk26E8[0x0C];
-    char unk2F4[0x100];     // 0x2F4
+    char unk26F4[0x100];   // 0x26F4
 };
 
 struct FxMsg {
@@ -118,11 +122,12 @@ struct FxMsg {
 void FxEmitterStart(FxActor* actor, int owner)
 {
     FxMsg msg;
+    FxCfg* cfg = &actor->cfg;
 
-    memset(&actor->cfg, 0, sizeof(actor->cfg));
-    actor->cfg.flags |= 0x400;
-    actor->cfg.unk08 = owner;
-    actor->cfg.unk2A = 0;
+    memset(cfg, 0, sizeof(*cfg));
+    cfg->flags |= 0x400;
+    cfg->unk08 = owner;
+    cfg->unk2A = 0;
     actor->flags |= 2;
     msg.asset = AssetFind(0xF1754BF2, 0x21C5E0);
     SendMsg(owner, 0x411, &msg);
@@ -131,7 +136,7 @@ void FxEmitterStart(FxActor* actor, int owner)
     actor->cfg.z = (float)msg.z;
     actor->cfg.flags |= 0x800;
     actor->flags |= 2;
-    actor->unk260 = lbl_804D93A8;
+    actor->unk260 = 0.0f;
 }
 
 // Per-frame emitter update: fires the end-of-life animation once the timer expires.
@@ -181,26 +186,34 @@ extern "C" int fn_8020B97C(FxActor* actor)
 // Engine string object (constructor/destructor live in another unit).
 class Buffer {
 public:
-    ~Buffer();
-    void* data;             // 0x00
-    int unk04;
-    int unk08;
+    Buffer();                                        // 0x8028BA9C
+    virtual ~Buffer();                               // 0x8028B9C0
+    virtual void Release(char* p);
+
+    char* data;
+    int length;
     int unk0C;
+    int owned;
 };
 
 class String : public Buffer {
 public:
-    String();
-    int unk10;
+    String();                                        // 0x8028C500
+    ~String() {}
+    virtual void Release(char* p);
 };
 
 // Message sent to the owner to ask for the asset name; the name is filled in
 // by the handler through the trailing String.
+struct FxNameResult {
+    String str;
+};
+
 struct FxNameMsg {
     int result;             // 0x08
     unsigned long hash;     // 0x0C
     int unused;             // 0x10
-    String name;            // 0x14
+    FxNameResult name;      // 0x14
 };
 
 int StrGetIndex(int asset, unsigned long* out);
@@ -230,7 +243,7 @@ void FxEmitterSetAsset(FxActor* actor, unsigned long id)
     msg.hash = 0x17F428F8;
     msg.unused = 0;
     started = SendMsg(actor->cfg.unk08, 0x41E, &msg);
-    name = msg.name.data;
+    name = *(void**)&msg.name;
     if (started != 0 && name != (void*)-1) {
         if (SendMsg(actor->cfg.unk08, 0x400, &out) == 0 || out == 0) {
             FxStart(name, 0, 0);
@@ -243,22 +256,30 @@ void FxEmitterSetAsset(FxActor* actor, unsigned long id)
 
 // Sends the "text_out" request to the host actor, switches the emitter to
 // state 0x41 and starts the text effect. (fn_8020BAF4)
-void FxEmitterStartTextOut(FxActor* actor)
+// Asks the owner for a named value; the String filled in by the handler is
+// released before the result is used.
+static inline int FxQueryName(int target, unsigned long hash)
 {
     FxNameMsg msg;
-    void* name;
+
+    msg.hash = hash;
+    *(int*)&msg.name = 0;
+    msg.unused = 0;
+    SendMsg(target, 0x41E, &msg);
+    return *(int*)&msg.name;
+}
+
+void FxEmitterStartTextOut(FxActor* actor)
+{
+    int name;
 
     actor->cfg.flags &= ~0x2;
     actor->cfg.flags |= 0x40;
-    msg.name.data = 0;
-    msg.hash = 0x18E1630C;
-    msg.unused = 0;
-    SendMsg(actor->cfg.unk08, 0x41E, &msg);
-    name = msg.name.data;
+    name = FxQueryName(actor->cfg.unk08, 0x18E1630C);
     if (name != 0) {
         actor->cfg.flags |= 0x1000;
     }
-    if (PlayerInHost((Actor*)actor) == 0) {
+    if (PlayerInHost((Actor*)actor) != 0) {
         actor->cfg.state = 0x41;
     } else {
         actor->cfg.state = 0x41;
@@ -297,10 +318,6 @@ const char* StrFindKey(unsigned long key, unsigned long* out);
 void FxTextRectUpdate(short start, int line, int lines, int unused6, int page, int unused8,
                       int unused9, FxActor* actor);
 
-extern "C" float lbl_804D93B8;
-extern "C" float lbl_804D93BC;
-extern "C" float lbl_804D93C0;
-extern "C" float lbl_804D93C4;
 extern "C" float lbl_804D33C0;
 extern "C" float lbl_804D33F4;
 extern "C" int lbl_804D3400;
@@ -378,7 +395,7 @@ void FxEmitterSetup(FxActor* actor, int owner)
     actor->cfg.unk958 = 0;
     actor->cfg.unk95A = 0;
     actor->cfg.unk95C = 0;
-    actor->cfg.unk938 = lbl_804D93A8;
+    actor->cfg.unk938 = 0.0f;
     actor->cfg.state = fn_800F9614(actor->unk184);
 
     if (((unsigned int)owner >> 24) == 2 || ((unsigned int)owner >> 24) == 4 ||
@@ -425,18 +442,18 @@ void FxEmitterSetup(FxActor* actor, int owner)
             float dot = from.x * to.x + from.y * to.y + from.z * to.z;
             float angle = fn_800A109C(dot / (lenTo * lenFrom));
 
-            if (angle <= lbl_804D93B8) {
-                angle = lbl_804D93B8;
+            if (angle <= 1.0f) {
+                angle = 1.0f;
             }
             actor->cfg.state2 = (short)angle;
         }
     } else {
         actor->cfg.state2 = fn_800F9614(actor->unk184);
     }
-    actor->cfg.unk94C = lbl_804D93BC;
+    actor->cfg.unk94C = 9999.99f;
 
     if ((actor->cfg.flags & 1) == 0) {
-        actor->cfg.unk93C = lbl_804D93A8;
+        actor->cfg.unk93C = 0.0f;
         actor->cfg.flags &= 0x180;
         actor->cfg.flags |= 1;
     }
@@ -446,7 +463,7 @@ void FxEmitterSetup(FxActor* actor, int owner)
     actor->flags |= 2;
     actor->flags |= 0x1000000;
     actor->flags |= 0x800000;
-    fn_8006B360(actor->unk2F4);
+    fn_8006B360(actor->unk26F4);
 
     msg409.host = actor->unk1D68;
     msg409.actor = actor;
@@ -484,7 +501,7 @@ void FxEmitterSetup(FxActor* actor, int owner)
         actor->flags |= 2;
         actor->flags |= 0x1000000;
         actor->flags |= 0x800000;
-        actor->unk260 = lbl_804D93A8;
+        actor->unk260 = 0.0f;
         PlayerResetGunMotion(actor);
     }
 }
@@ -496,13 +513,13 @@ void FxEmitterDrawText(FxActor* actor)
     if (actor->cfg.flags & 1) {
         float progress = actor->cfg.unk93C / lbl_804D33F4;
 
-        if (progress > lbl_804D93A8) {
-            float bar = lbl_804D93C0 - (float)lbl_804D33EC * progress;
+        if (progress > 0.0f) {
+            float bar = 480.0f - (float)lbl_804D33EC * progress;
             float fill = (float)lbl_804D33F0 * progress;
 
             Draw2DBegin();
-            DrawTexQuad(-3, lbl_804D93A8, lbl_804D93C0, lbl_804D93C4, bar, 0, 0, 0, 0xff);
-            DrawTexQuad(-3, lbl_804D93A8, fill, lbl_804D93C4, lbl_804D93A8, 0, 0, 0, 0xff);
+            DrawTexQuad(-3, 0.0f, 480.0f, 640.0f, bar, 0, 0, 0, 0xff);
+            DrawTexQuad(-3, 0.0f, fill, 640.0f, 0.0f, 0, 0, 0, 0xff);
             Draw2DEnd();
         }
     }
@@ -547,11 +564,6 @@ void FxEmitterDrawText(FxActor* actor)
 extern "C" void fn_800F95A0(float value, int handle);
 extern "C" float fn_800A1418(float value);
 void FxEmitterRollText(float dt, FxActor* actor);
-extern "C" float lbl_804D93C8;
-extern "C" float lbl_804D93CC;
-extern "C" float lbl_804D93D0;
-extern "C" float lbl_804D93D4;
-extern "C" float lbl_804D93D8;
 extern "C" int lbl_804D33C4;
 extern "C" int lbl_804D33C8;
 
@@ -597,7 +609,7 @@ int FxEmitterStateUpdate(FxActor* actor)
         actor->flags |= 2;
         actor->flags |= 0x1000000;
         actor->flags |= 0x800000;
-        actor->unk260 = lbl_804D93A8;
+        actor->unk260 = 0.0f;
         PlayerResetGunMotion(actor);
     }
 
@@ -608,24 +620,24 @@ int FxEmitterStateUpdate(FxActor* actor)
             int done2;
 
             actor->cfg.unk93C -= actor->unk14FC;
-            if (actor->cfg.unk93C < lbl_804D93A8) {
-                actor->cfg.unk93C = lbl_804D93A8;
+            if (actor->cfg.unk93C < 0.0f) {
+                actor->cfg.unk93C = 0.0f;
             }
-            done1 = actor->cfg.unk93C == lbl_804D93A8;
+            done1 = actor->cfg.unk93C == 0.0f;
             if (!(actor->cfg.flags & 0x2000)) {
                 actor->cfg.unk938 -= actor->unk14FC;
-                if (actor->cfg.unk938 < lbl_804D93A8) {
-                    actor->cfg.unk938 = lbl_804D93A8;
+                if (actor->cfg.unk938 < 0.0f) {
+                    actor->cfg.unk938 = 0.0f;
                 }
-                if (actor->cfg.unk938 == lbl_804D93A8) {
+                if (actor->cfg.unk938 == 0.0f) {
                     fn_800F95A0((float)actor->cfg.state, actor->unk184);
                     done2 = 1;
                 } else {
-                    float t = -(lbl_804D93CC *
-                                fn_800A1418(lbl_804D93D0 *
+                    float t = -(0.5f *
+                                fn_800A1418(180.0f *
                                             (actor->cfg.unk938 / lbl_804D33F4)) -
-                                lbl_804D93CC);
-                    int v = (int)((float)actor->cfg.state * (lbl_804D93B8 - t) +
+                                0.5f);
+                    int v = (int)((float)actor->cfg.state * (1.0f - t) +
                                   (float)actor->cfg.state2 * t);
 
                     fn_800F95A0((float)v, actor->unk184);
@@ -633,7 +645,7 @@ int FxEmitterStateUpdate(FxActor* actor)
                 }
             } else {
                 done2 = 1;
-                actor->cfg.unk938 = lbl_804D93A8;
+                actor->cfg.unk938 = 0.0f;
             }
             if (!(done1 && done2)) {
                 return 1;
@@ -650,7 +662,7 @@ int FxEmitterStateUpdate(FxActor* actor)
             int inc;
 
             fn_800F95A0((float)actor->cfg.state2, actor->unk184);
-            inc = (int)(lbl_804D93D4 * lbl_804D93D8 * actor->unk14FC *
+            inc = (int)(255.0f * 0.001f * actor->unk14FC *
                         (float)lbl_804D33C8);
             if (inc == 0) {
                 inc = lbl_804D33C8;
@@ -690,7 +702,7 @@ int FxEmitterStateUpdate(FxActor* actor)
             nmsg.hash = 0x17F428F8;
             nmsg.unused = 0;
             started = SendMsg(actor->cfg.unk08, 0x41E, &nmsg);
-            name = nmsg.name.data;
+            name = *(void**)&nmsg.name;
             if (started != 0 && name != (void*)-1) {
                 int out;
 
@@ -715,7 +727,7 @@ int FxEmitterStateUpdate(FxActor* actor)
             actor->cfg.unk93C = lbl_804D33F4;
         }
         full = lbl_804D33F4 <= actor->cfg.unk93C;
-        if (lbl_804D93C8 <= actor->cfg.unk94C) {
+        if (10.0f <= actor->cfg.unk94C) {
             done = 0;
         } else {
             if (!(actor->cfg.flags & 0x80)) {
@@ -727,11 +739,11 @@ int FxEmitterStateUpdate(FxActor* actor)
                     fn_800F95A0((float)actor->cfg.state2, actor->unk184);
                     done = 1;
                 } else {
-                    float t = -(lbl_804D93CC *
-                                fn_800A1418(lbl_804D93D0 *
+                    float t = -(0.5f *
+                                fn_800A1418(180.0f *
                                             (actor->cfg.unk938 / lbl_804D33F4)) -
-                                lbl_804D93CC);
-                    int v = (int)((float)actor->cfg.state * (lbl_804D93B8 - t) +
+                                0.5f);
+                    int v = (int)((float)actor->cfg.state * (1.0f - t) +
                                   (float)actor->cfg.state2 * t);
 
                     fn_800F95A0((float)v, actor->unk184);
@@ -828,7 +840,7 @@ void FxEmitterRollText(float dt, FxActor* actor)
                     FxNameMsg msg;
 
                     SendMsg(actor->cfg.unk08, 0x41E, &msg);
-                    if (msg.name.data != 0) {
+                    if (*(void**)&msg.name != 0) {
                         actor->cfg.flags |= 0x1000;
                     }
                 }
@@ -879,9 +891,6 @@ extern "C" void fn_8009F7A8(Mtx34* out, Vec3* dir);
 extern "C" void fn_800A025C(Vec3* out, Mtx34* mtx, int arg);
 extern "C" float fn_800A1394(float value);
 extern "C" void C_QUATSlerp(Quat* a, Quat* b, Quat* out, float t);
-extern "C" float lbl_804D93DC;
-extern "C" float lbl_804D93D8;
-extern "C" float lbl_804D93E0;
 extern "C" float lbl_804D33F8;
 extern "C" float lbl_804D33FC;
 
@@ -895,17 +904,17 @@ void WhiteOutEffectQuery(int arg);
 // Normalises the vector, or clears it when it has no usable direction.
 static inline void NormalizeFxVector(Vec3* v)
 {
-    if (fabsf(v->x) > lbl_804D93DC || fabsf(v->y) > lbl_804D93DC ||
-        fabsf(v->z) > lbl_804D93DC) {
+    if (fabsf(v->x) > 0.0f || fabsf(v->y) > 0.0f ||
+        fabsf(v->z) > 0.0f) {
         float inv = 1.0f / sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
 
         v->x *= inv;
         v->y *= inv;
         v->z *= inv;
     } else {
-        v->x = lbl_804D93A8;
-        v->y = lbl_804D93A8;
-        v->z = lbl_804D93A8;
+        v->x = 0.0f;
+        v->y = 0.0f;
+        v->z = 0.0f;
     }
 }
 
@@ -927,13 +936,13 @@ int FxEmitterAimUpdate(float dt, FxActor* actor)
     float dot;
 
     if ((actor->cfg.flags & 0x80) || (actor->cfg.flags & 0x2000)) {
-        actor->cfg.unk94C = lbl_804D93A8;
+        actor->cfg.unk94C = 0.0f;
         return 1;
     }
 
     if (actor->unk26E4 != 0 && (actor->unk26E4->unk38 >> 24) == 1) {
         threshold = (float)(int)*(float*)((char*)actor->unk26E4->unk84 + 0x34);
-        if (threshold < lbl_804D93A8) {
+        if (threshold < 0.0f) {
             threshold = (float)(int)*(float*)((char*)actor->unk738 + 0x3C);
         }
     } else {
@@ -950,20 +959,20 @@ int FxEmitterAimUpdate(float dt, FxActor* actor)
     BoneSetMatrix(&dirQuat, &mtx);
 
     if (fabsf(euler.x) > threshold) {
-        actor->cfg.unk94C = lbl_804D93A8;
+        actor->cfg.unk94C = 0.0f;
         return 1;
     }
 
-    Vec3Set(&source, actor->unk688.z, actor->unk1F0, lbl_804D93A8);
+    Vec3Set(&source, actor->unk688.z, actor->unk1F0, 0.0f);
     MtxSetEuler(&mtx, &source);
     fn_800A025C(&axis, &mtx, 1);
     BoneSetMatrix(&baseQuat, &mtx);
 
     dot = dir.x * axis.x + dir.y * axis.y + dir.z * axis.z;
-    if (dot < lbl_804D93E0) {
-        dot = lbl_804D93E0;
-    } else if (dot > lbl_804D93B8) {
-        dot = lbl_804D93B8;
+    if (dot < -1.0f) {
+        dot = -1.0f;
+    } else if (dot > 1.0f) {
+        dot = 1.0f;
     }
     angle = fn_800A109C(dot);
     actor->cfg.unk94C = angle;
@@ -973,17 +982,17 @@ int FxEmitterAimUpdate(float dt, FxActor* actor)
     cross.z = dir.x * axis.y - dir.y * axis.x;
     NormalizeFxVector(&cross);
 
-    progress = lbl_804D33F8 * fn_800A1394(angle * lbl_804D93CC) + lbl_804D33FC;
+    progress = lbl_804D33F8 * fn_800A1394(angle * 0.5f) + lbl_804D33FC;
     progress *= dt;
     if (progress >= angle) {
-        t = lbl_804D93B8;
+        t = 1.0f;
     } else {
-        t = lbl_804D93B8 - (angle - progress) / angle;
+        t = 1.0f - (angle - progress) / angle;
     }
-    if (t < lbl_804D93A8) {
-        t = lbl_804D93A8;
-    } else if (t > lbl_804D93B8) {
-        t = lbl_804D93B8;
+    if (t < 0.0f) {
+        t = 0.0f;
+    } else if (t > 1.0f) {
+        t = 1.0f;
     }
 
     C_QUATSlerp(&baseQuat, &dirQuat, &blended, t);
@@ -1000,7 +1009,7 @@ int FxEmitterAimUpdate(float dt, FxActor* actor)
     PlacementToMatrix((PlaceF*)actor, &mtx);
 
     if (fabsf(dirQuat.x - blended.x + dirQuat.y - blended.y +
-              dirQuat.z - blended.z + dirQuat.w - blended.w) > lbl_804D93D8) {
+              dirQuat.z - blended.z + dirQuat.w - blended.w) > 0.001f) {
         WhiteOutEffectQuery(actor->unk38);
         return 0;
     }
