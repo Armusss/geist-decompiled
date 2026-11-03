@@ -537,8 +537,7 @@ int HostAppearUpdate(void* owner)
 
     HostBehaviour* behaviour = host->behaviour;
 
-    float random = (float)rand();
-    behaviour->field34 = lbl_804DA618 * (random / lbl_804DA610) + lbl_804DA614;
+    behaviour->field34 = lbl_804DA618 * ((float)rand() / lbl_804DA610) + lbl_804DA614;
 
     fn_8029B070(host, 0x766a16b4);
     fn_800BBCA8(host);
