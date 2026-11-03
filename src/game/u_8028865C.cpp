@@ -1262,49 +1262,51 @@ extern "C" void fn_8028A388(void)
     }
 }
 
-// Vtable data of the clock page-buffer class (0x803C29D0) and of its
-// intermediate base class (0x803C29B0).
-extern u8 lbl_803C29D0[];
-extern u8 lbl_803C29B0[];
-
 // Releases the payload block owned by the page buffer's base class.
 extern "C" void fn_8028B960(void* self);
 
-// Engine pooled byte buffer; only its destructor (0x8028B9C0) is needed here.
-// It is invoked non-virtually, the way a derived destructor calls its base.
-struct Buffer
-{
-    Buffer();
-    ~Buffer();
+// Engine pooled byte buffer (same hierarchy as in u_8028A77C): only the
+// destructor chain and constructor of the classes below are used here.
+class BufferBase2 {
+public:
+    virtual ~BufferBase2() {}
 };
 
-// Placement form of new: construction happens in memory from VAlloc.
-inline void* operator new(unsigned long, void* ptr)
-{
-    return ptr;
-}
+class BufferBase : public BufferBase2 {
+public:
+    virtual ~BufferBase() {}
+};
 
-// Destructor of the clock page buffer: restores the class and base-class
-// vtables, releases the payload, then returns the storage to the VM heap when
-// the compiler-generated delete flag is set.
-void* ClockPageBufferDestroy(void* self_, short flags)
-{
-    u8** self = (u8**)self_;
+class Buffer : public BufferBase {
+public:
+    virtual void Prepare();
+    virtual int Query();
+    virtual void Fill(int offset, int size);
+    virtual void Unk18(int data, u32 state);
+    virtual int GetSpan();
+    virtual ~Buffer();
+    Buffer();
 
-    if (self != 0)
-    {
-        *self = lbl_803C29D0;
-        if (self != 0)
-        {
-            *self = lbl_803C29B0;
-            fn_8028B960(self);
-            ((Buffer*)self)->~Buffer();
-        }
-        if (flags > 0)
-            VFree(self);
-    }
-    return self;
-}
+    char* mStart;
+    int mSize;
+    int unk0C;
+    u32 mState;
+};
+
+// Buffer that releases its payload block when destroyed (vtable 0x803C29B0).
+class PageBufferBase : public Buffer {
+public:
+    virtual ~PageBufferBase() { fn_8028B960(this); }
+};
+
+// The clock page buffer (vtable 0x803C29D0): no members of its own; storage
+// comes from and returns to the VM heap.
+class ClockPageBuffer : public PageBufferBase {
+public:
+    virtual ~ClockPageBuffer() {}
+    static void* operator new(unsigned long size) { return VAlloc(size); }
+    static void operator delete(void* p) { VFree(p); }
+};
 
 extern float lbl_804DA538;
 
@@ -1374,29 +1376,17 @@ void TextureLoad(short* dst, int mode);
 // Other units call this by its placeholder name, so the symbol stays fn_8028A6B8.
 extern "C" void fn_8028A6B8()
 {
-    ClockSideSample* side = lbl_803C0D78;
-    int              i;
+    u32 i;
 
-    for (i = 0; i != 3; i++, side++)
-    {
-        side->sample = (short)AssetFind(0xF2E2BEB8, side->asset);
-        TextureLoad(&side->sample, 1);
+    for (i = 0; i != 3; i++) {
+        lbl_803C0D78[i].sample = (short)AssetFind(0xF2E2BEB8, lbl_803C0D78[i].asset);
+        TextureLoad(&lbl_803C0D78[i].sample, 1);
     }
 }
 
 // Creates the clock page buffer singleton (placeholder name fn_8028A728, still
-// called by other units): allocates its storage, runs the Buffer base
-// constructor, installs the class and base-class vtables and publishes the
-// pointer.
+// called by other units) and publishes the pointer.
 extern "C" void fn_8028A728(void)
 {
-    u8** buf = (u8**)VAlloc(0x14);
-
-    if (buf != 0)
-    {
-        new ((Buffer*)buf) Buffer();
-        buf[0] = lbl_803C29B0;
-        buf[0] = lbl_803C29D0;
-    }
-    lbl_804D56E0 = (ClockPageList*)buf;
+    lbl_804D56E0 = (ClockPageList*)new ClockPageBuffer;
 }
