@@ -521,7 +521,9 @@ int DogActorCancelFollow(Actor* actor, int value) {
     ConditionSetBit(&actor->conditions, 4, 0);
     if (ai->state == 0x12)
         ConditionUpdateBit(&actor->conditions, 0xb, 0);
-    return value == 0x18;
+    if (value == 0x18)
+        return 1;
+    return 0;
 }
 
 // State-change callback: clears the entry flag for the old state and records the
