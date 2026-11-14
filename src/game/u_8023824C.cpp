@@ -145,8 +145,8 @@ int FollowStateTimerUpdate(void* p) {
         fn_80237F68(owner, obj->ownerId) != 0) {
         fn_800B1F20(owner, index);
         fn_800B1AB8(lbl_804D99A0, owner, index, 1);
-        if (PlayerTeam(HandleToPlayer(OwnerId(owner))) !=
-            PlayerTeam(HandleToPlayer(obj->ownerId))) {
+        if (PlayerTeam(HandleToPlayer(obj->ownerId)) !=
+            PlayerTeam(HandleToPlayer(OwnerId(owner)))) {
             Vector3f pos;
             pos.x = (float)obj->x;
             pos.y = (float)obj->y;
@@ -193,10 +193,11 @@ int FollowStateTimerUpdate(void* p) {
                 SetStateMachineState(owner, 0xDF1271D9);
                 fn_80118084(owner->unk5EC, 0x315C41D, &id);
             }
-            state->stateId = 0;
-            return 0;
+        } else {
+            return 1;
         }
-        return 1;
+        state->stateId = 0;
+        return 0;
     }
     default:
         return 0;
@@ -1704,9 +1705,9 @@ void FollowBehaviourRelease(void* p) {
     }
     Owner* owner = (Owner*)p;
     ExtraEventData data;
-    data.handle = 0;
     data.ownerId = owner->unk38;
     data.hash = 0xEB4A0875;
+    data.handle = 0;
     SendMsg(0x53000000, 0xC14, &data);
     ClearStateMachine(owner);
     VFree(owner->state);
@@ -1753,9 +1754,8 @@ void FollowBehaviourInit(void* p) {
         owner->state = 0;
         return;
     }
-    FollowSink* sink = (FollowSink*)owner->unk5EC;
-    sink->setStateId = FollowMarkerSetStateId;
-    sink->owner = owner;
+    ((FollowSink*)owner->unk5EC)->setStateId = FollowMarkerSetStateId;
+    ((FollowSink*)owner->unk5EC)->owner = owner;
     state->stateKind = -1;
     ConditionSetBit(&owner->followTarget, 1, 0);
     ConditionUpdateBit(&owner->followTarget, 6, 0);
@@ -1765,9 +1765,9 @@ void FollowBehaviourInit(void* p) {
     state->targetId = -1;
     state->timer = lbl_804D99BC;
     ExtraEventData data;
-    data.handle = 3;
     data.ownerId = owner->unk38;
     data.hash = 0x2840341C;
+    data.handle = 3;
     SendMsg(0x53000000, 0xC14, &data);
     ZoneFlagSet((ZoneList*)&owner->unk658, 1, 0);
 }
