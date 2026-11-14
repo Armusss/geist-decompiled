@@ -279,11 +279,12 @@ void TextDrawChar(int ch)
     if ((int)(lbl_804D3318 - lbl_803B4284 + 5) < 0x4000) {
         u8* p = lbl_804D3318;
 
-        *p = 8;                     // 0x0: command id
-        lbl_804D3318 = p + 1;
-        *(u32*)lbl_804D3318 = ch;   // 0x1: glyph id
-        lbl_804D3318 += 4;
-        *lbl_804D3318 = 0;          // 0x5: terminator
+        *p++ = 8;
+        lbl_804D3318 = p;
+        *(u32*)p = ch;
+        p += 4;
+        lbl_804D3318 = p;
+        *p = 0;
     }
 }
 
@@ -1150,7 +1151,7 @@ void TextDrawGlyphQuad(short x, short advance, short y, short height,
 // buffer to empty (guessed: TextBegin).
 void TextBegin(void)
 {
-    if (lbl_804D3318 + 1 - lbl_803B4284 < 0x4000) {
+    if (lbl_804D3318 - lbl_803B4284 + 1 < 0x4000) {
         u8* p = lbl_804D3318;
 
         p[0] = 0xF;                 // 0x0: command id
@@ -1163,7 +1164,7 @@ void TextBegin(void)
 // values (guessed: TextSetOrigin).
 void TextSetOrigin(u8 mode, u16 x, u16 y)
 {
-    if (lbl_804D3318 + 6 - lbl_803B4284 < 0x4000) {
+    if (lbl_804D3318 - lbl_803B4284 + 6 < 0x4000) {
         u8* p = lbl_804D3318;
 
         p[0] = 7;                   // 0x0: command id
@@ -1182,14 +1183,14 @@ void TextSetOrigin(u8 mode, u16 x, u16 y)
 // (guessed: TextSetAlign).
 void TextSetAlign(int align)
 {
-    if (lbl_804D3318 + 2 - lbl_803B4284 < 0x4000) {
+    if (lbl_804D3318 - lbl_803B4284 + 2 < 0x4000) {
         u8* p = lbl_804D3318;
 
-        p[0] = 5;                   // 0x0: command id
-        lbl_804D3318 = p + 1;
-        *(u8*)(p + 1) = align;      // 0x1: alignment
-        lbl_804D3318 = p + 2;
-        p[2] = 0;                   // 0x2: terminator
+        *p++ = 5;
+        lbl_804D3318 = p;
+        *p++ = align;
+        lbl_804D3318 = p;
+        *p = 0;
     }
 }
 
@@ -1197,14 +1198,14 @@ void TextSetAlign(int align)
 // (guessed: TextSetMode).
 void TextSetMode(int mode)
 {
-    if (lbl_804D3318 + 2 - lbl_803B4284 < 0x4000) {
+    if (lbl_804D3318 - lbl_803B4284 + 2 < 0x4000) {
         u8* p = lbl_804D3318;
 
-        p[0] = 6;                   // 0x0: command id
-        lbl_804D3318 = p + 1;
-        *(u8*)(p + 1) = mode;       // 0x1: mode
-        lbl_804D3318 = p + 2;
-        p[2] = 0;                   // 0x2: terminator
+        *p++ = 6;
+        lbl_804D3318 = p;
+        *p++ = mode;
+        lbl_804D3318 = p;
+        *p = 0;
     }
 }
 
@@ -1212,7 +1213,7 @@ void TextSetMode(int mode)
 // red, green, blue, alpha (guessed: TextSetColor).
 void TextSetColor(int r, int g, int b, int a)
 {
-    if (lbl_804D3318 + 5 - lbl_803B4284 < 0x4000) {
+    if (lbl_804D3318 - lbl_803B4284 + 5 < 0x4000) {
         u8* p = lbl_804D3318;
 
         p[0] = 2;                   // 0x0: command id
@@ -1233,7 +1234,7 @@ void TextSetColor(int r, int g, int b, int a)
 // TextSetPosition).
 void TextSetPosition(u16 x, u16 y)
 {
-    if (lbl_804D3318 + 5 - lbl_803B4284 < 0x4000) {
+    if (lbl_804D3318 - lbl_803B4284 + 5 < 0x4000) {
         u8* p = lbl_804D3318;
 
         p[0] = 4;                   // 0x0: command id
@@ -1258,7 +1259,7 @@ void TextSetFlags(int flags, int value)
 // TextSetSize).
 void TextSetSize(int size)
 {
-    if (lbl_804D3318 + 3 - lbl_803B4284 < 0x4000) {
+    if (lbl_804D3318 - lbl_803B4284 + 3 < 0x4000) {
         u8* p = lbl_804D3318;
 
         p[0] = 3;                   // 0x0: command id
@@ -1284,7 +1285,7 @@ static inline s16 TextClampCoord(int value, int max)
 void TextSetRect(int x, int y, int width, int height, int u, int v, int a,
                  int b)
 {
-    if (lbl_804D3318 + 0x13 - lbl_803B4284 < 0x4000) {
+    if (lbl_804D3318 - lbl_803B4284 + 0x13 < 0x4000) {
         u8* p = lbl_804D3318;
 
         p[0] = 10;                              // 0x0: command id
@@ -1313,7 +1314,7 @@ void TextSetRect(int x, int y, int width, int height, int u, int v, int a,
 // (guessed: TextSetBox).
 void TextSetBox(int x, int y, int width, int height)
 {
-    if (lbl_804D3318 + 9 - lbl_803B4284 < 0x4000) {
+    if (lbl_804D3318 - lbl_803B4284 + 9 < 0x4000) {
         u8* p = lbl_804D3318;
 
         p[0] = 9;                               // 0x0: command id
@@ -1336,7 +1337,7 @@ void TextSetStyle(int red, int green, int blue, int alpha, int size, int align,
                   int x, int y, int textMode, int originMode, int originX,
                   int originY)
 {
-    if (lbl_804D3318 + 2 - lbl_803B4284 < 0x4000) {
+    if (lbl_804D3318 - lbl_803B4284 + 2 < 0x4000) {
         u8* p = lbl_804D3318;
 
         p[0] = 6;                   // 0x0: command id
@@ -1346,7 +1347,7 @@ void TextSetStyle(int red, int green, int blue, int alpha, int size, int align,
         p[2] = 0;                   // 0x2: terminator
     }
 
-    if (lbl_804D3318 + 5 - lbl_803B4284 < 0x4000) {
+    if (lbl_804D3318 - lbl_803B4284 + 5 < 0x4000) {
         u8* p = lbl_804D3318;
 
         p[0] = 2;                   // 0x0: command id
@@ -1362,7 +1363,7 @@ void TextSetStyle(int red, int green, int blue, int alpha, int size, int align,
         p[5] = 0;                   // 0x5: terminator
     }
 
-    if (lbl_804D3318 + 3 - lbl_803B4284 < 0x4000) {
+    if (lbl_804D3318 - lbl_803B4284 + 3 < 0x4000) {
         u8* p = lbl_804D3318;
 
         p[0] = 3;                   // 0x0: command id
@@ -1372,7 +1373,7 @@ void TextSetStyle(int red, int green, int blue, int alpha, int size, int align,
         p[3] = 0;                   // 0x3: terminator
     }
 
-    if (lbl_804D3318 + 5 - lbl_803B4284 < 0x4000) {
+    if (lbl_804D3318 - lbl_803B4284 + 5 < 0x4000) {
         u8* p = lbl_804D3318;
 
         p[0] = 4;                   // 0x0: command id
@@ -1384,7 +1385,7 @@ void TextSetStyle(int red, int green, int blue, int alpha, int size, int align,
         p[5] = 0;                   // 0x5: terminator
     }
 
-    if (lbl_804D3318 + 2 - lbl_803B4284 < 0x4000) {
+    if (lbl_804D3318 - lbl_803B4284 + 2 < 0x4000) {
         u8* p = lbl_804D3318;
 
         p[0] = 5;                   // 0x0: command id
@@ -1394,7 +1395,7 @@ void TextSetStyle(int red, int green, int blue, int alpha, int size, int align,
         p[2] = 0;                   // 0x2: terminator
     }
 
-    if (lbl_804D3318 + 6 - lbl_803B4284 < 0x4000) {
+    if (lbl_804D3318 - lbl_803B4284 + 6 < 0x4000) {
         u8* p = lbl_804D3318;
 
         p[0] = 7;                   // 0x0: command id
