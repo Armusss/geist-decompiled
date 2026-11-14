@@ -138,8 +138,8 @@ struct QueryMsg {
 
 static inline void Query(int* out, int target, int msg, unsigned long hash) {
     QueryMsg m;
-    *(int*)&m.result = 0;
     m.hash = hash;
+    *(int*)&m.result = 0;
     m.unk8 = 0;
     SendMsg(target, msg, &m);
     *out = *(int*)&m.result;
@@ -1467,8 +1467,8 @@ void GhostRecordReset(GhostSlot* self) {
     }
     self->unk04 = 0;
     self->unk08 = 0;
-    float flash = lbl_804D7CC8;
     float reset = lbl_804D7CA0;
+    float flash = lbl_804D7CC8;
     self->unk50 = reset;
     self->unk48 = -1;
     self->unk4C = reset;
