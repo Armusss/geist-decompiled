@@ -506,8 +506,8 @@ extern "C" int rand(void);
 // target and arms a randomised delay before the next state change.
 int DogActorSetTargetDelay(Actor* actor, int value) {
     AiStateMachine* ai = actor->ai;
-    u32 roll = rand();
     ai->unk14 = value;
+    int roll = rand();
     ai->unk20 = 6000.0f * ((float)roll / 32767.0f) + 2000.0f;
     return 1;
 }
