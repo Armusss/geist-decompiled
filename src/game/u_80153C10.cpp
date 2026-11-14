@@ -1589,7 +1589,7 @@ extern "C" int fn_8001F0DC(Actor* actor, IVec3* pos, int a, int b, int c, int d,
 extern "C" void fn_8016D68C(Vec3* out, Vec3* euler);
 extern "C" void fn_8016D4EC(Vec3* out, Vec3* euler);
 extern "C" void fn_800A025C(Vec3* out, Mtx34* mtx, int index);
-extern "C" void fn_800E1098(float scale, Vec3* dst, Vec3* src);
+extern "C" void fn_800E1098(Vec3* out, Vec3* in, float length);
 struct FlashSpotActor;
 unsigned long GhostFlashSpotFilter(int* candidate, int target);
 int GhostFlashSpotPlace(FlashSpotActor* other, FlashSpotActor* owner);
@@ -1763,11 +1763,11 @@ int GhostFlashFindSpot(Mtx34* out, GhostSlot* self, float angle) {
             }
             float rowScale = lbl_804D7CD4 * minHW;
             fn_800A025C(&ax, &base, 0);
-            fn_800E1098(rowScale, &ax, &ax);
+            fn_800E1098(&ax, &ax, rowScale);
             fn_800A025C(&ay, &base, 1);
-            fn_800E1098(rowScale, &ay, &ay);
+            fn_800E1098(&ay, &ay, rowScale);
             fn_800A025C(&az, &base, 2);
-            fn_800E1098(lbl_804D7CDC * (float)(bounds[5] - bounds[2]), &az, &az);
+            fn_800E1098(&az, &az, lbl_804D7CDC * (float)(bounds[5] - bounds[2]));
 
             offset.x = pos.x - base.m[9];
             offset.y = pos.y - base.m[10];
@@ -1873,7 +1873,7 @@ int GhostFlashSpotPlace(FlashSpotActor* other, FlashSpotActor* owner) {
         float px = owner->flashX - vec.x;
         float py = owner->flashY - vec.y;
         float pz = owner->flashZ - vec.z;
-        fn_800E1098(radius, &vec, &vec);
+        fn_800E1098(&vec, &vec, radius);
         vec.x = vec.x + px;
         vec.y = vec.y + py;
         vec.z = vec.z + pz;
