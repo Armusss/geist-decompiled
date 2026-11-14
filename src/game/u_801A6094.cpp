@@ -564,6 +564,7 @@ int DogActorTickAiAndGetState(Actor* actor) {
 // Picks the AI sub-state for this frame: handles the queued hit/death reactions
 // first, then follows the zone direction and the behaviour condition flags.
 int DogActorChooseAiSubState(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
     DogActorUpdateMove(actor);
 
@@ -594,7 +595,7 @@ int DogActorChooseAiSubState(Actor* actor) {
             state->unk30 = 0;
 
         u8 subState = state->unk30;
-        AiStateMachine* anim = actor->ai;
+        anim = actor->ai;
         if (HasCondition(&actor->conditions, 0x0c) != 0) {
             ConditionSetBit(&actor->conditions, 0x0c, 0);
             ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1085,6 +1086,7 @@ int GeistA81D0EnterState19(Actor* actor) {
     if (actor == 0)
         return 0;
 
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
     ai->state = 0x13;
     ai->unk14 = 0x13;
@@ -1092,7 +1094,7 @@ int GeistA81D0EnterState19(Actor* actor) {
     ai->unk10 = ai->unk0C;
     ai->unk0C = 0;
 
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1128,6 +1130,7 @@ int GeistA8370EnterState18(Actor* actor) {
     if (actor == 0)
         return 0;
 
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
     Vec3 zero;
     zero.x = 0.0f;
@@ -1148,7 +1151,7 @@ int GeistA8370EnterState18(Actor* actor) {
     ai->unk0C = 0;
 
     if (actor->unk5F0 == 0) {
-        AiStateMachine* anim = actor->ai;
+        anim = actor->ai;
         if (HasCondition(&actor->conditions, 0x0c) != 0) {
             ConditionSetBit(&actor->conditions, 0x0c, 0);
             ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1191,13 +1194,14 @@ int GeistA8370EnterState18(Actor* actor) {
 // timer as running and restarts the animation set with a random clip.
 // Returns 1. Name is a guess.
 int GeistA85BCEnterState17(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
     ai->state = 0x11;
     ai->unk14 = 0x11;
     ai->unk10 = ai->unk0C;
     ai->unk0C = 1;
 
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1230,6 +1234,7 @@ int GeistA85BCEnterState17(Actor* actor) {
 // facing direction and restarts the animation set, picking the clip from that
 // direction or at random. Returns 1. Name is a guess.
 int GeistA875CEnterState16(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
     ai->state = 0x10;
     ai->unk14 = 0x10;
@@ -1240,7 +1245,7 @@ int GeistA875CEnterState16(Actor* actor) {
         ai->unk30 = 0;
 
     int dir = ai->unk30;
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1276,6 +1281,7 @@ int GeistA875CEnterState16(Actor* actor) {
 // timer as running and restarts the animation set with a random clip.
 // Returns 1. Name is a guess.
 int GeistA8940EnterState15(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
 
     ai->state = 0x0f;
@@ -1283,7 +1289,7 @@ int GeistA8940EnterState15(Actor* actor) {
     ai->unk10 = ai->unk0C;
     ai->unk0C = 2;
 
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1316,6 +1322,7 @@ int GeistA8940EnterState15(Actor* actor) {
 // which is recorded as 3), resets the direction timer and restarts the
 // animation set with a random clip. Returns 1. Name is a guess.
 int GeistA8AE0EnterState14(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
 
     if (ai->state == 0x16)
@@ -1326,7 +1333,7 @@ int GeistA8AE0EnterState14(Actor* actor) {
     ai->unk10 = ai->unk0C;
     ai->unk0C = 0;
 
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1359,6 +1366,7 @@ int GeistA8AE0EnterState14(Actor* actor) {
 // and starts a fixed animation slot (index 0) in the current animation set.
 // Returns 1. Name is a guess.
 int GeistA8C98EnterState13(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
 
     ai->state = 0x0d;
@@ -1366,7 +1374,7 @@ int GeistA8C98EnterState13(Actor* actor) {
     ai->unk10 = ai->unk0C;
     ai->unk0C = 0;
 
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1398,6 +1406,7 @@ int GeistA8C98EnterState13(Actor* actor) {
 // Enters state 0x0c: records the state it came from and starts animation slot 2
 // of the current animation set. Returns 1. Name is a guess.
 int GeistA8E2CEnterState12(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
 
     ai->state = 0x0c;
@@ -1405,7 +1414,7 @@ int GeistA8E2CEnterState12(Actor* actor) {
     ai->unk10 = ai->unk0C;
     ai->unk0C = 0;
 
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1438,6 +1447,7 @@ int GeistA8E2CEnterState12(Actor* actor) {
 // direction timer and starts animation slot 1 of the current animation set.
 // Returns 1. Name is a guess.
 int GeistA8FC4EnterState11(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
 
     ai->state = 0x0b;
@@ -1445,7 +1455,7 @@ int GeistA8FC4EnterState11(Actor* actor) {
     ai->unk10 = ai->unk0C;
     ai->unk0C = 0;
 
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1478,6 +1488,7 @@ int GeistA8FC4EnterState11(Actor* actor) {
 // direction timer and starts animation slot 0 of the current animation set.
 // Returns 1. Name is a guess.
 int GeistA9158EnterState10(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
 
     ai->state = 0x0a;
@@ -1485,7 +1496,7 @@ int GeistA9158EnterState10(Actor* actor) {
     ai->unk10 = ai->unk0C;
     ai->unk0C = 0;
 
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1521,6 +1532,7 @@ extern "C" int fn_800A1AC4(int a, int b, int c);
 int SplineAssetResolve(SplineNameEntry* entries, int a, int b);
 
 int GeistA92ECEnterState9(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
 
     ai->state = 9;
@@ -1528,7 +1540,7 @@ int GeistA92ECEnterState9(Actor* actor) {
     ai->unk10 = ai->unk0C;
     ai->unk0C = 0;
 
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1560,6 +1572,7 @@ int GeistA92ECEnterState9(Actor* actor) {
 // the direction timer and, when the cowering spline entry is active, restarts
 // the animation set with animation slot 1 or 0. Returns 1. Name is a guess.
 int GeistA9484EnterState8(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
 
     ai->state = 8;
@@ -1570,7 +1583,7 @@ int GeistA9484EnterState8(Actor* actor) {
     int resolved = SplineAssetResolve(lbl_803AAAB8, 2, 0);
     if (ai->unk04 == resolved ||
         ai->unk04 == SplineAssetResolve(lbl_803AAAB8, 2, 1)) {
-        AiStateMachine* anim = actor->ai;
+        anim = actor->ai;
         if (HasCondition(&actor->conditions, 0x0c) != 0) {
             ConditionSetBit(&actor->conditions, 0x0c, 0);
             ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1628,6 +1641,7 @@ int GeistA9484EnterState8(Actor* actor) {
 // is selected by whether the random clip index came out as the first one.
 // Returns 1. Name is a guess.
 int GeistA9798EnterState7(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
 
     ai->state = 7;
@@ -1635,7 +1649,7 @@ int GeistA9798EnterState7(Actor* actor) {
     ai->unk10 = ai->unk0C;
     ai->unk0C = 0;
 
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1676,6 +1690,7 @@ int GeistA9798EnterState7(Actor* actor) {
 // timer and starts a random animation from the current set. Returns 1. Name is
 // a guess.
 int GeistA9968EnterState6(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
 
     ai->unk14 = 0x0f;
@@ -1683,7 +1698,7 @@ int GeistA9968EnterState6(Actor* actor) {
     ai->unk10 = ai->unk0C;
     ai->unk0C = 0;
 
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1716,6 +1731,7 @@ int GeistA9968EnterState6(Actor* actor) {
 // starts a random animation from the current set with event flag 9. Returns 1.
 // Name is a guess.
 int GeistA9B0CEnterState5(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
 
     ai->unk14 = ai->state;
@@ -1723,7 +1739,7 @@ int GeistA9B0CEnterState5(Actor* actor) {
     ai->unk10 = ai->unk0C;
     ai->unk0C = 0;
 
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1756,6 +1772,7 @@ int GeistA9B0CEnterState5(Actor* actor) {
 // the direction timer and starts a random animation from the current set with
 // event flag 9. Returns 1. Name is a guess.
 int GeistA9CB0EnterState4(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
 
     ai->state = 4;
@@ -1763,7 +1780,7 @@ int GeistA9CB0EnterState4(Actor* actor) {
     ai->unk10 = ai->unk0C;
     ai->unk0C = 0;
 
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1796,6 +1813,7 @@ int GeistA9CB0EnterState4(Actor* actor) {
 // the direction timer and starts a random animation from the current set with
 // event flag 9. Returns 1. Name is a guess.
 int GeistA9E50EnterState3(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
 
     ai->state = 3;
@@ -1803,7 +1821,7 @@ int GeistA9E50EnterState3(Actor* actor) {
     ai->unk10 = ai->unk0C;
     ai->unk0C = 0;
 
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1836,6 +1854,7 @@ int GeistA9E50EnterState3(Actor* actor) {
 // the direction timer and starts a random animation from the current set with
 // event flag 9. Returns 1. Name is a guess.
 int GeistA9FF0EnterState2(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
 
     ai->unk14 = 2;
@@ -1843,7 +1862,7 @@ int GeistA9FF0EnterState2(Actor* actor) {
     ai->unk10 = ai->unk0C;
     ai->unk0C = 0;
 
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
@@ -1876,6 +1895,7 @@ int GeistA9FF0EnterState2(Actor* actor) {
 // clears the transition slot, refreshes the animation set and restarts the
 // "idle" sound effect with a random variant.
 int DogActorEnterIdleState(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
 
     if (ai->unk28 != -1 && ai->state != 0 && ai->state != 1) {
@@ -1887,7 +1907,7 @@ int DogActorEnterIdleState(Actor* actor) {
     ai->unk10 = ai->unk0C;
     ai->unk0C = 0;
 
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
