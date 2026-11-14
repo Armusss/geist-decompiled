@@ -32,7 +32,7 @@ extern int lbl_804D4668;
 extern float lbl_804D6818;
 extern float lbl_804D681C;
 extern int gWideScreen;
-extern char lbl_8042DA90;
+extern char lbl_8042DA90[0xF000];
 
 // Renderer/loading-screen configuration block (this unit's .bss).  Only the
 // fade field at +0x34 is touched by this file.
@@ -337,15 +337,17 @@ void AnimTrackSelect(int id, int offset) {
     }
     if (lbl_804D4644 != 0) {
         AnimTrackGroup* group = lbl_804D4644;
+        char* walk = (char*)group;
         int count = lbl_804D4640->count;
-        int i = 0;
+        int i;
 
-        while (i < count) {
+        for (i = 0; i < count; i++) {
             if (group->id == id) {
                 break;
             }
-            i++;
-            group = (AnimTrackGroup*)&group->entries[group->count];
+            walk += 8;
+            walk += group->count * 16;
+            group = (AnimTrackGroup*)walk;
         }
         if (i == count) {
             lbl_804D4648 = 0;
@@ -517,7 +519,7 @@ void AnimTrackTimerStart(void) {
 // Set up the animation-track pool, clear the shared state and register the
 // two file message handlers.
 void AnimTrackInit(void) {
-    lbl_804D29C4 = fn_80080E24(&lbl_8042DA90, 0x800, 0x1E, 1);
+    lbl_804D29C4 = fn_80080E24(lbl_8042DA90, 0x800, 0x1E, 1);
     lbl_804D4618 = lbl_804D681C;
     lbl_804D4624 = 0;
     lbl_804D461C = 0;
@@ -1403,3 +1405,12 @@ void* AnimTrackBindResourceSub(void* reader) {
     *(ResNameEntry**)((char*)reader + 0xC) = entry;
     return entry;
 }
+
+// Not drafted yet (signatures unknown).
+// TODO (not drafted yet, 0x530 bytes at 0x80082118): fn_80082118
+// TODO (not drafted yet, 0X22C bytes at 0x80082648): fn_80082648
+// TODO (not drafted yet, 0XE8 bytes at 0x80082C00): fn_80082C00
+// TODO (not drafted yet, 0X1C8 bytes at 0x80082CE8): fn_80082CE8
+// TODO (not drafted yet, 0X244 bytes at 0x80082EB0): fn_80082EB0
+// TODO (not drafted yet, 0X148 bytes at 0x800830F4): fn_800830F4
+// TODO (not drafted yet, 0X124 bytes at 0x8008323C): fn_8008323C
