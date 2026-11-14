@@ -229,12 +229,16 @@ check_done:
             GhostPossessEnd(self);
             self->unk88 = 1;
         }
-        if ((int)target->id != -1) {
-            MsgC14 msg;
-            msg.value = self->unk00->id;
-            msg.hash = 0x672F35C2;
-            msg.arg = 0;
-            SendMsg(target->id, 0xC14, &msg);
+        {
+            int owner = self->unk00->id;
+
+            if ((int)target->id != -1) {
+                MsgC14 msg;
+                msg.value = owner;
+                msg.hash = 0x672F35C2;
+                msg.arg = 0;
+                SendMsg(target->id, 0xC14, &msg);
+            }
         }
         return fn_801554E0(self, target, mode);
     }
