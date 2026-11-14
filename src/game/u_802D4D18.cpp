@@ -692,11 +692,16 @@ int RideHandleBehaviourMsg(int msg, void* argp)
     RideActor* a = (RideActor*)argp;
     RideBehaviour* beh = a->behaviour;
 
-    if (msg == 0x1B83833F) {
+    switch (msg) {
+    case 0x1B83833F:
         lbl_803C5664[beh->type].unk08(a, beh->unk04);
         lbl_803C5664[beh->unk04].unk04(a);
-    } else if (msg == 0x04A5C9FC || msg == 0x00239807 || msg == 0x46341C3A) {
+        break;
+    case 0x04A5C9FC:
+    case 0x00239807:
+    case 0x46341C3A:
         fn_800CB8BC(a, a->state, beh->unk0C, a->unk26C);
+        break;
     }
     return 1;
 }
