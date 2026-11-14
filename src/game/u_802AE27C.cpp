@@ -863,8 +863,8 @@ extern "C" void fn_8008F4E8(void* handle, int arg);
 extern "C" void fn_8008F378(void* handle);
 extern "C" void fn_8008F4EC(void* handle, int arg);
 extern "C" int fn_800A1BC8(void* a, void* b, int c, int d, int e);
-extern "C" void fn_80090974(float f, void* handle, int a, int b, int c, void* cb, void* actor);
-extern "C" void fn_8008F230(float f, void* handle, int a, int b);
+extern "C" void fn_80090974(void* handle, int a, float f, int b, int c, void* cb, void* actor);
+extern "C" void fn_8008F230(void* handle, int a, float f, int b);
 extern "C" void fn_8008DE4C(void* handle, int a, int b, int c);
 extern "C" int fn_802A1D04(void);
 extern "C" void fn_800FC764(int id, int arg);
@@ -900,15 +900,15 @@ int BehParamsGhostCueState(void* actorPtr)
         buf = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                   lbl_803C4138[beh->state].unk00, 0, 0);
-        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(a->unk0d4, 0, 1.0f, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
         } else {
-            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
+            fn_8008F230(a->unk0d4, 0, 1.5e+02f, 1);
         }
     }
     return 1;
@@ -1177,10 +1177,10 @@ int BehParamsGhostEmitState(void* actorPtr)
         beh->unk0c = fn_800A1BC8(ctx->unk14, ctx->unk1c,
                                   lbl_803C4138[0xb].unk00, 0, 0);
         ConditionSetBit(a->cond, 0xe, 1);
-        fn_8008F230(0.0f, a->unk0d4, 0, 1);
+        fn_8008F230(a->unk0d4, 0, 0.0f, 1);
         a->mode = 4;
         ConditionSetBit(a->cond, 0xd, 1);
-        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 0x58,
+        fn_80090974(a->unk0d4, 0, 1.0f, beh->unk0c, 0x58,
                     lbl_803C4138[0xb].unk10, a);
         RangeResetPending(a->cond);
         ConditionSetBit(a->cond, 0xc, 1);
@@ -1202,15 +1202,15 @@ int BehParamsGhostEmitState(void* actorPtr)
             }
             beh->unk0c = fn_800A1BC8(ctx->unk14, ctx->unk1c,
                                       lbl_803C4138[beh->state].unk00, 0, 0);
-            fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
+            fn_80090974(a->unk0d4, 0, 1.0f, beh->unk0c, 9,
                         lbl_803C4138[beh->state].unk10, a);
             if (HasCondition(a->cond, 0xe)) {
-                fn_8008F230(0.0f, a->unk0d4, 0, 0);
+                fn_8008F230(a->unk0d4, 0, 0.0f, 0);
                 ConditionSetBit(a->cond, 0xe, 0);
             } else if (beh->unk10 == beh->unk0c) {
-                fn_8008F230(0.0f, a->unk0d4, 0, 0);
+                fn_8008F230(a->unk0d4, 0, 0.0f, 0);
             } else {
-                fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
+                fn_8008F230(a->unk0d4, 0, 1.5e+02f, 1);
             }
         }
     }
@@ -1245,15 +1245,15 @@ int BehParamsGhostApproachState(void* actorPtr)
         ctx = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(ctx->unk14, ctx->unk1c,
                                   lbl_803C4138[beh->state].unk00, 0, 0);
-        fn_80090974(2.0f, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(a->unk0d4, 0, 2.0f, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
         } else {
-            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
+            fn_8008F230(a->unk0d4, 0, 1.5e+02f, 1);
         }
     }
     return 1;
@@ -1289,15 +1289,15 @@ int BehParamsGhostSearchState(void* actorPtr)
         buf = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                   lbl_803C4138[beh->state].unk00, 0, 0);
-        fn_80090974(1.5f, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(a->unk0d4, 0, 1.5f, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
         } else {
-            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
+            fn_8008F230(a->unk0d4, 0, 1.5e+02f, 1);
         }
     }
     return 1;
@@ -1344,15 +1344,15 @@ int BehParamsGhostRoamState(void* actorPtr)
                 ctx = (MsgBuf*)a->msgCtx;
                 beh->unk0c = fn_800A1BC8(ctx->unk14, ctx->unk1c,
                                           lbl_803C4138[beh->state].unk00, 0, 0);
-                fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
+                fn_80090974(a->unk0d4, 0, 1.0f, beh->unk0c, 9,
                             lbl_803C4138[beh->state].unk10, a);
                 if (HasCondition(a->cond, 0xe)) {
-                    fn_8008F230(0.0f, a->unk0d4, 0, 0);
+                    fn_8008F230(a->unk0d4, 0, 0.0f, 0);
                     ConditionSetBit(a->cond, 0xe, 0);
                 } else if (beh->unk10 == beh->unk0c) {
-                    fn_8008F230(0.0f, a->unk0d4, 0, 0);
+                    fn_8008F230(a->unk0d4, 0, 0.0f, 0);
                 } else {
-                    fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
+                    fn_8008F230(a->unk0d4, 0, 1.5e+02f, 1);
                 }
             }
         }
@@ -1371,15 +1371,15 @@ int BehParamsGhostRoamState(void* actorPtr)
         ctx = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(ctx->unk14, ctx->unk1c,
                                   lbl_803C4138[beh->state].unk00, set, 0);
-        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(a->unk0d4, 0, 1.0f, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
         } else {
-            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
+            fn_8008F230(a->unk0d4, 0, 1.5e+02f, 1);
         }
     }
     return 1;
@@ -1415,15 +1415,15 @@ int BehParamsGhostTurnState(void* actorPtr)
             buf = (MsgBuf*)a->msgCtx;
             beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                       lbl_803C4138[beh->state].unk00, 1, 0);
-            fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
+            fn_80090974(a->unk0d4, 0, 1.0f, beh->unk0c, 9,
                         lbl_803C4138[beh->state].unk10, a);
             if (HasCondition(a->cond, 0xe)) {
-                fn_8008F230(0.0f, a->unk0d4, 0, 0);
+                fn_8008F230(a->unk0d4, 0, 0.0f, 0);
                 ConditionSetBit(a->cond, 0xe, 0);
             } else if (beh->unk10 == beh->unk0c) {
-                fn_8008F230(0.0f, a->unk0d4, 0, 0);
+                fn_8008F230(a->unk0d4, 0, 0.0f, 0);
             } else {
-                fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
+                fn_8008F230(a->unk0d4, 0, 1.5e+02f, 1);
             }
         }
     } else {
@@ -1439,15 +1439,15 @@ int BehParamsGhostTurnState(void* actorPtr)
             buf = (MsgBuf*)a->msgCtx;
             beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                       lbl_803C4138[beh->state].unk00, 0, 0);
-            fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
+            fn_80090974(a->unk0d4, 0, 1.0f, beh->unk0c, 9,
                         lbl_803C4138[beh->state].unk10, a);
             if (HasCondition(a->cond, 0xe)) {
-                fn_8008F230(0.0f, a->unk0d4, 0, 0);
+                fn_8008F230(a->unk0d4, 0, 0.0f, 0);
                 ConditionSetBit(a->cond, 0xe, 0);
             } else if (beh->unk10 == beh->unk0c) {
-                fn_8008F230(0.0f, a->unk0d4, 0, 0);
+                fn_8008F230(a->unk0d4, 0, 0.0f, 0);
             } else {
-                fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
+                fn_8008F230(a->unk0d4, 0, 1.5e+02f, 1);
             }
         }
     }
@@ -1487,15 +1487,15 @@ int BehParamsGhostPauseState(void* actorPtr)
         buf = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                   lbl_803C4138[beh->state].unk00, arg, 0);
-        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(a->unk0d4, 0, 1.0f, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
         } else {
-            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
+            fn_8008F230(a->unk0d4, 0, 1.5e+02f, 1);
         }
     }
     return 1;
@@ -1530,15 +1530,15 @@ int BehParamsGhostState5(void* actorPtr)
         buf = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                   lbl_803C4138[beh->state].unk00, arg, 0);
-        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(a->unk0d4, 0, 1.0f, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
         } else {
-            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
+            fn_8008F230(a->unk0d4, 0, 1.5e+02f, 1);
         }
     }
     return 1;
@@ -1573,15 +1573,15 @@ int BehParamsGhostState4(void* actorPtr)
         buf = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                   lbl_803C4138[beh->state].unk00, arg, 0);
-        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(a->unk0d4, 0, 1.0f, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
         } else {
-            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
+            fn_8008F230(a->unk0d4, 0, 1.5e+02f, 1);
         }
     }
     return 1;
@@ -1608,15 +1608,15 @@ static inline void GhostCueStart(void* actorPtr, int loop)
         buf = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                   lbl_803C4138[beh->state].unk00, loop, 0);
-        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(a->unk0d4, 0, 1.0f, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
         } else {
-            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
+            fn_8008F230(a->unk0d4, 0, 1.5e+02f, 1);
         }
     }
 }
@@ -1694,15 +1694,15 @@ int BehParamsGhostActivateState(void* actorPtr)
         buf = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                   lbl_803C4138[beh->state].unk00, 0, 0);
-        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(a->unk0d4, 0, 1.0f, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
         } else {
-            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
+            fn_8008F230(a->unk0d4, 0, 1.5e+02f, 1);
         }
     }
     return 1;
@@ -1736,15 +1736,15 @@ int BehParamsGhostDeactivateState(void* actorPtr)
         buf = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                   lbl_803C4138[beh->state].unk00, 0, 0);
-        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(a->unk0d4, 0, 1.0f, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(0.0f, a->unk0d4, 0, 0);
+            fn_8008F230(a->unk0d4, 0, 0.0f, 0);
         } else {
-            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
+            fn_8008F230(a->unk0d4, 0, 1.5e+02f, 1);
         }
     }
     return 1;
