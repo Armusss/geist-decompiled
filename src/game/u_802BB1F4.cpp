@@ -511,8 +511,8 @@ void FshSveCreateBehaviour(Actor* self)
         b->unk30 = 0;
         b->unk34 = 0.0f;
         b->unk38 = -1;
-        ConditionUpdateBit((u8*)self + 0x270, 6, 1);
-        ConditionUpdateBit((u8*)self + 0x270, 0x22, 1);
+        ConditionUpdateBit(self->unk270, 6, 1);
+        ConditionUpdateBit(self->unk270, 0x22, 1);
         lbl_804D3970 = AssetFind(0xF1754BF2, 0x21C5E0);
         lbl_804D3974 = FxFind("dashin");
         lbl_804D3978 = FxFind("dashout");
@@ -540,7 +540,7 @@ int FshSveFollowStateUpdate(Actor* self)
     if (bd->unk34 <= 0.0f)
         return 1;
 
-    target = (Actor*)FollowGetTargetObj((u8*)self + 0x270);
+    target = (Actor*)FollowGetTargetObj(self->unk270);
     if (target == 0)
         return 1;
     if (self->unk604 != 0 &&
@@ -548,8 +548,8 @@ int FshSveFollowStateUpdate(Actor* self)
         return 1;
 
     if ((self->beh->flags3C & 2) == 0 &&
-        HasCondition((u8*)self + 0x270, 9) == 0 &&
-        HasCondition((u8*)self + 0x270, 10) == 0) {
+        HasCondition(self->unk270, 9) == 0 &&
+        HasCondition(self->unk270, 10) == 0) {
         bd->unk48 = 1;
         b = self->beh;
         if ((b->flags3C & 2) == 0) {
@@ -560,25 +560,25 @@ int FshSveFollowStateUpdate(Actor* self)
         }
     }
 
-    target = (Actor*)FollowGetTargetObj((u8*)self + 0x270);
+    target = (Actor*)FollowGetTargetObj(self->unk270);
     r = FollowLineCheckActorDist(self, target, 0.8f);
     if (r == 0 || fn_8029B3B0(self, 0x73B1E248) == 0) {
-        fn_80162610(self, (u8*)self + 0x894, 0);
-        ConditionUpdateBit((u8*)self + 0x270, 0, 0);
+        fn_80162610(self, self->unk894, 0);
+        ConditionUpdateBit(self->unk270, 0, 0);
     } else {
-        ConditionUpdateBit((u8*)self + 0x270, 0, 1);
-        ConditionUpdateBit((u8*)self + 0x270, 3, 1);
-        ConditionUpdateBit((u8*)self + 0x270, 4, 1);
-        if (fn_80162940((u8*)self + 0x894, 2) != 0 &&
-            fn_80162940((u8*)self + 0x894, 8) != 0) {
+        ConditionUpdateBit(self->unk270, 0, 1);
+        ConditionUpdateBit(self->unk270, 3, 1);
+        ConditionUpdateBit(self->unk270, 4, 1);
+        if (fn_80162940(self->unk894, 2) != 0 &&
+            fn_80162940(self->unk894, 8) != 0) {
             if (self->unk5B8 > (f32)rand() / 32767.0f) {
-                fn_80162610(self, (u8*)self + 0x894, 2);
+                fn_80162610(self, self->unk894, 2);
                 goto done;
             }
         }
-        if (fn_80162940((u8*)self + 0x894, 1) != 0 &&
-            fn_80162940((u8*)self + 0x894, 4) != 0)
-            fn_80162610(self, (u8*)self + 0x894, 1);
+        if (fn_80162940(self->unk894, 1) != 0 &&
+            fn_80162940(self->unk894, 4) != 0)
+            fn_80162610(self, self->unk894, 1);
     }
 
 done:
@@ -624,7 +624,7 @@ int FshSveFollowBegin(Actor* self)
     self->unk220 = 0;
     fn_800BBCA8();
     bd->unk38 = -1;
-    ConditionUpdateBit((u8*)self + 0x270, 0x16, 0);
+    ConditionUpdateBit(self->unk270, 0x16, 0);
     fn_8029B070(self, 0x73B1E248);
     return 1;
 }
@@ -703,11 +703,11 @@ int FshSvePossessionBegin(Actor* self)
     bd->unk34 = (lbl_804D39CC - lbl_804D39C8) *
                     (1.0f - self->unk904 / (f32)self->unkC4->unk30) +
                 lbl_804D39C8;
-    ConditionUpdateBit((u8*)self + 0x270, 4, 1);
-    ConditionUpdateBit((u8*)self + 0x270, 0x16, 1);
-    ConditionUpdateBit((u8*)self + 0x270, 0x17, 1);
+    ConditionUpdateBit(self->unk270, 4, 1);
+    ConditionUpdateBit(self->unk270, 0x16, 1);
+    ConditionUpdateBit(self->unk270, 0x17, 1);
 
-    target = FollowGetTargetObj((u8*)self + 0x270);
+    target = FollowGetTargetObj(self->unk270);
     if (target != 0) {
         if (self == 0 || target == 0)
             id = -1;
@@ -752,7 +752,7 @@ int FshSveFollowAimUpdate(Actor* self)
     if (self->unk220 != 0)
         return 1;
 
-    target = FollowGetTargetObj((u8*)self + 0x270);
+    target = FollowGetTargetObj(self->unk270);
     mode = fn_800B26B8(self);
     if (mode != 4) {
         if (fn_800B1EF4(self, mode) == 0) {
@@ -774,7 +774,7 @@ int FshSveFollowAimUpdate(Actor* self)
             fn_800B2418(1500000.0f, self, mode);
             fn_800B1F20(self, mode);
             fn_800B1AB8(-1.0f, self, mode, 1);
-            FollowSetTargetObj((u8*)self + 0x270, target);
+            FollowSetTargetObj(self->unk270, target);
         } else {
             if (fn_800B2454(self, mode) != 0)
                 return 1;
@@ -892,15 +892,15 @@ int FshSvePrepareFollow(Actor* self)
     self->unk288 = 0;
     bd->unk4C = 0;
     fn_800BBCA8();
-    ConditionUpdateBit((u8*)self + 0x270, 4, 1);
-    ConditionUpdateBit((u8*)self + 0x270, 3, 0);
+    ConditionUpdateBit(self->unk270, 4, 1);
+    ConditionUpdateBit(self->unk270, 3, 0);
     mode = fn_800B26B8(self);
     if (mode == 4)
         return 0;
     fn_800B261C(self, mode, &target);
     if (target == 0)
         return 0;
-    FollowSetTargetObj((u8*)self + 0x270, target);
+    FollowSetTargetObj(self->unk270, target);
     bd->unk20 = 0.0f;
     return 1;
 }
@@ -921,10 +921,10 @@ int FshSveFollowTargetUpdate(Actor* self)
         return 0;
 
     bd = self->beh;
-    target = FollowGetTargetObj((u8*)self + 0x270);
+    target = FollowGetTargetObj(self->unk270);
     mode = fn_800B26B8(self);
     if (target == 0) {
-        ConditionUpdateBit((u8*)self + 0x270, 4, 0);
+        ConditionUpdateBit(self->unk270, 4, 0);
         return 1;
     }
 
@@ -955,8 +955,8 @@ int FshSveFollowTargetUpdate(Actor* self)
     }
 
     if ((self->beh->flags3C & 2) == 0 &&
-        HasCondition((u8*)self + 0x270, 9) == 0 &&
-        HasCondition((u8*)self + 0x270, 10) == 0)
+        HasCondition(self->unk270, 9) == 0 &&
+        HasCondition(self->unk270, 10) == 0)
         ok = 1;
     else
         ok = 0;
@@ -1004,14 +1004,14 @@ int FshSveRetargetState(Actor* self)
 
     bd = self->beh;
     bd->state = 6;
-    ConditionUpdateBit((u8*)self + 0x270, 3, 1);
+    ConditionUpdateBit(self->unk270, 3, 1);
     mode = fn_800B26B8(self);
     if (mode == 4)
         return 0;
     fn_800B261C(self, mode, &target);
     if (target == 0)
         return 0;
-    FollowSetTargetObj((u8*)self + 0x270, target);
+    FollowSetTargetObj(self->unk270, target);
     fn_800BC56C(self, target);
     self->unk288 = 3;
     return 1;
@@ -1043,9 +1043,9 @@ static inline int FshSveCanPossess(Actor* self)
 
     if ((b->flags3C & 2) != 0)
         return 0;
-    if (HasCondition((u8*)self + 0x270, 9) != 0)
+    if (HasCondition(self->unk270, 9) != 0)
         return 0;
-    if (HasCondition((u8*)self + 0x270, 10) != 0)
+    if (HasCondition(self->unk270, 10) != 0)
         return 0;
     return 1;
 }
@@ -1118,22 +1118,22 @@ int FshSveMainUpdate(Actor* self)
                 fn_800B2418(1500000.0f, self, mode);
                 fn_800B1F20(self, mode);
                 fn_800B1AB8(-1.0f, self, mode, 1);
-                FollowSetTargetObj((u8*)self + 0x270, target);
+                FollowSetTargetObj(self->unk270, target);
             }
         } else {
             if (fn_800B2454(self, mode) != 0)
                 return 1;
             fn_800B2418(1500000.0f, self, mode);
         }
-        if (FollowGetTargetObj((u8*)self + 0x270) != target)
-            FollowSetTargetObj((u8*)self + 0x270, target);
+        if (FollowGetTargetObj(self->unk270) != target)
+            FollowSetTargetObj(self->unk270, target);
     }
 
-    target = FollowGetTargetObj((u8*)self + 0x270);
+    target = FollowGetTargetObj(self->unk270);
     if (target == 0 ||
         (self->unk604 != 0 &&
          ((ActorCheckFn)self->unk604)(self, ((Actor*)target)->unk38) == 0)) {
-        RangeResetPending((u8*)self + 0x270);
+        RangeResetPending(self->unk270);
         return 1;
     }
 
@@ -1242,7 +1242,7 @@ int FshSveMainUpdate(Actor* self)
     }
 
     if (fn_80162940(self->unk894, 0x800) != 0) {
-        ConditionUpdateBit((u8*)self + 0x270, 0x1D, 1);
+        ConditionUpdateBit(self->unk270, 0x1D, 1);
         fn_800BC56C(self, target);
         self->unk288 = 3;
     } else if (fn_80162940(self->unk894, 0x400) != 0) {
@@ -1266,16 +1266,16 @@ int FshSveMainUpdate(Actor* self)
                         out2, &pos);
         }
         if (fn_800BF2D0((u8*)self + 0x84) == fn_800BF2D0(&pos)) {
-            ConditionUpdateBit((u8*)self + 0x270, 0x1D, 1);
+            ConditionUpdateBit(self->unk270, 0x1D, 1);
             fn_800BC5A8(self, &pos);
             self->unk288 = 3;
         }
     } else if (fn_800BAF40(self) != -1) {
         dist = OwnerValue((Owner*)self, target);
-        if (MemFlagIsSet((u8*)self + 0x270, 0x1D) != 0 &&
+        if (MemFlagIsSet(self->unk270, 0x1D) != 0 &&
             dist > (f32)*(u16*)((u8*)self + 0x8B2) &&
             dist < (f32)*(u16*)((u8*)self + 0x8B4)) {
-            ConditionUpdateBit((u8*)self + 0x270, 0x1D, 0);
+            ConditionUpdateBit(self->unk270, 0x1D, 0);
             fn_800BBCA8();
         }
     } else {
@@ -1324,8 +1324,8 @@ int FshSveThrowBegin(Actor* self)
     bd->unk04 = 0.0f;
     bd->unk10 = 500.0f * ((f32)rand() / 32767.0f) + 300.0f;
     bd->unk1C = 6000.0f;
-    ConditionUpdateBit((u8*)self + 0x270, 4, 1);
-    ConditionUpdateBit((u8*)self + 0x270, 3, 1);
+    ConditionUpdateBit(self->unk270, 4, 1);
+    ConditionUpdateBit(self->unk270, 3, 1);
     self->unk288 = 0;
 
     mode = fn_800B26B8(self);
@@ -1346,7 +1346,7 @@ int FshSveThrowBegin(Actor* self)
         fn_800B261C(self, mode, &target);
         if (target == 0)
             return 0;
-        FollowSetTargetObj((u8*)self + 0x270, target);
+        FollowSetTargetObj(self->unk270, target);
     }
     return 1;
 }
@@ -1437,14 +1437,14 @@ int FshSveFollowUpdate(Actor* self)
             FshSvePossessOn(self);
         }
 
-        if (RangeIsIdle((u8*)self + 0x270) != 0) {
+        if (RangeIsIdle(self->unk270) != 0) {
             fn_800B1F20(self, mode);
             OwnerSlotGetPosition((s32)self, mode, &pos.x);
-            FollowSetTargetVec((u8*)self + 0x270, &pos);
+            FollowSetTargetVec(self->unk270, &pos);
             fn_800BC5A8(self, &pos);
         } else {
             if (fn_800B1EF4(self, mode) == 0) {
-                RangeResetPending((u8*)self + 0x270);
+                RangeResetPending(self->unk270);
                 self->unk268 = fn_800B22F8(self, mode);
                 return 1;
             }
@@ -1530,24 +1530,24 @@ int FshSveFollowStateProcess(Actor* self)
                 bd->unk44 = fn_8016F120(lbl_804D3974, (u8*)self + 0x24);
             }
         }
-        if (MemFlagIsSet((u8*)self + 0x270, 5) == 0)
+        if (MemFlagIsSet(self->unk270, 5) == 0)
             return 1;
     }
 
-    if (self->unk220 == 0 && MemFlagIsSet((u8*)self + 0x270, 5) == 0)
+    if (self->unk220 == 0 && MemFlagIsSet(self->unk270, 5) == 0)
         return 1;
 
     if (self->unk220 == 2) {
         self->unk10C = (void*)fn_800C748C;
-        if (FollowGetTargetObj((u8*)self + 0x270) != (void*)self->unk22C) {
-            FollowSetTargetObj((u8*)self + 0x270, (void*)self->unk22C);
+        if (FollowGetTargetObj(self->unk270) != (void*)self->unk22C) {
+            FollowSetTargetObj(self->unk270, (void*)self->unk22C);
             if (self->unk21C != 0) {
                 self->unk288 = self->unk21C;
                 fn_800BC56C(self, (void*)self->unk22C);
             }
         }
         if (fn_800BAF40(self) == -1 && self->unk21C != 0) {
-            FollowSetTargetObj((u8*)self + 0x270, 0);
+            FollowSetTargetObj(self->unk270, 0);
             self->unk288 = 0;
         }
     } else {
@@ -1568,8 +1568,8 @@ int FshSveFollowOffsetResume(Actor* self)
     self->unk10C = (void*)FollowOffsetUpdate;
     if (self->unk220 == 4)
         self->unk220 = 0;
-    if (HasCondition((u8*)self + 0x270, 0xd) != 0)
-        ConditionSetBit((u8*)self + 0x270, 0xd, 0);
+    if (HasCondition(self->unk270, 0xd) != 0)
+        ConditionSetBit(self->unk270, 0xd, 0);
     return 1;
 }
 
@@ -1665,7 +1665,7 @@ u32 FshSveNextState(Actor* self)
     bd = self->beh;
     count = self->unk268;
     mode = fn_800B26B8(self);
-    target = FollowGetTargetObj((u8*)self + 0x270);
+    target = FollowGetTargetObj(self->unk270);
 
     if ((bd->flags3C & 1) != 0 && target != 0) {
         if (FollowLineCheckActorDist(self, target, 1.0f) != 0) {
@@ -1677,7 +1677,7 @@ u32 FshSveNextState(Actor* self)
         } else {
             state = 3;
         }
-    } else if (MemFlagIsSet((u8*)self + 0x270, 5) != 0) {
+    } else if (MemFlagIsSet(self->unk270, 5) != 0) {
         state = 4;
     } else if (count > 1 && (bd->flags3C & 1) == 0) {
         state = (count <= 3) ? 1 : 0;
@@ -1770,7 +1770,7 @@ u32 FshSveUpdatePossession(Actor* self)
     s32 i;
     u8* slot;
 
-    if (MemFlagIsSet((u8*)self + 0x270, 5) == 0) {
+    if (MemFlagIsSet(self->unk270, 5) == 0) {
         fn_800B2E34(self, 0, 1);
         fn_800B3164(self, 0, 1);
         fn_800CECCC(self);
@@ -1926,21 +1926,21 @@ u32 FshSveQueryResponse(MsgArg* args)
         }
         return 0;
     }
-    if (MemFlagIsSet((u8*)actor + 0x270, 0xb) != 0)
+    if (MemFlagIsSet(actor->unk270, 0xb) != 0)
         return 1;
     if (beh->unk14 < lbl_804D3984)
         return 1;
-    if (HasCondition((u8*)actor + 0x270, 10) != 0 ||
-        HasCondition((u8*)actor + 0x270, 9) != 0)
+    if (HasCondition(actor->unk270, 10) != 0 ||
+        HasCondition(actor->unk270, 9) != 0)
         return 0;
     if (args[2].u == 0x3CA34BD6 &&
-        MemFlagIsSet((u8*)actor + 0x270, 0x20) == 0) {
+        MemFlagIsSet(actor->unk270, 0x20) == 0) {
         args[3].u = 0x1379C466;
         return 1;
     }
     if (ActorAnimState((int)actor->unk38, 0xDC35206A) == 0)
         return 0;
-    if (HasCondition((u8*)actor + 0x270, 0xb) != 0)
+    if (HasCondition(actor->unk270, 0xb) != 0)
         return 0;
     player = GetPlayer();
     if (player == 0)
@@ -1953,7 +1953,7 @@ u32 FshSveQueryResponse(MsgArg* args)
         FshSveHostId(player) == 0xE0AB9B4F ||
         FshSveHostId(player) == 0x0000FFF5)
         return 0;
-    if (MemFlagIsSet((u8*)actor + 0x270, 0x1e) != 0)
+    if (MemFlagIsSet(actor->unk270, 0x1e) != 0)
         return 0;
     if (args[2].u == 0x7C44EC3D) {
         mode = fn_800B26B8(actor);
@@ -2021,7 +2021,7 @@ u32 FshSveFrameUpdate(MsgArg* args)
     MsgArg* pos = args + 4;
     FshTintSet* tints = &lbl_803C4A70;
     void* reply = 0;
-    void* target = FollowGetTargetObj((u8*)actor + 0x270);
+    void* target = FollowGetTargetObj(actor->unk270);
 
     if (target != 0) {
         // message 0x41E: ask the follow target for its link state
@@ -2130,16 +2130,16 @@ u32 FshSveFrameUpdate(MsgArg* args)
         }
     }
 
-    if (HasCondition((u8*)actor + 0x270, 0x22) != 0)
+    if (HasCondition(actor->unk270, 0x22) != 0)
         return 1;
-    if (HasCondition((u8*)actor + 0x270, 0x21) == 0) {
+    if (HasCondition(actor->unk270, 0x21) == 0) {
         if (animState >= 6)
             return 1;
         if (Fn80080FA8() != 0)
             return 1;
-        if (HasCondition((u8*)actor + 0x270, 9) != 0)
+        if (HasCondition(actor->unk270, 9) != 0)
             return 1;
-        if (HasCondition((u8*)actor + 0x270, 10) != 0)
+        if (HasCondition(actor->unk270, 10) != 0)
             return 1;
         if (fn_80049660(GetPlayer()) != 0 && fn_800BA7FC(0x35) == 0)
             return 1;
