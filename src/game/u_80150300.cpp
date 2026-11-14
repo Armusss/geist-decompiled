@@ -189,7 +189,7 @@ int fn_80116E08(Actor* actor);                          // 0x80116E08
 int fn_80116DC4(Actor* actor);                          // 0x80116DC4
 void fn_800CB8BC(Actor* actor, int a, int b, int c);    // 0x800CB8BC
 int fn_8008EA9C(int a, int b);                          // 0x8008EA9C
-void fn_80152990(Actor* actor);                         // 0x80152990
+extern "C" void fn_80152990(Actor* actor);  // TODO (not drafted yet, 0xE58 bytes at 0x80152990)
 void fn_801537E8(Actor* actor, int arg);                // 0x801537E8
 void fn_80162610(Actor* actor, void* obj, u32 hash);    // 0x80162610
 int fn_8016325C(void* obj);                             // 0x8016325C
@@ -637,22 +637,19 @@ static inline int SeqIndex(int row, int base, int off) {
 }
 
 int HostTypeUpdateF(Actor* a) {
-    HostState* s;
     int slotIdx;
-    int state;
+    HostState* s;
 
     if (a == 0) {
         return 0;
     }
     s = a->state;
     fn_80152990(a);
-    slotIdx = HasCondition(&a->i270, 9);
-    if (slotIdx != 0 && HasCondition(&a->i270, 10) == 0 &&
+    if (HasCondition(&a->i270, 9) != 0 && HasCondition(&a->i270, 10) == 0 &&
         HasCondition(&a->i270, 11) == 0) {
         return 0xB;
     }
-    slotIdx = HasCondition(&a->i270, 4);
-    if ((slotIdx != 0) && HasCondition(&a->i270, 9) == 0 &&
+    if ((HasCondition(&a->i270, 4) != 0) && HasCondition(&a->i270, 9) == 0 &&
         (HasCondition(&a->i270, 10) == 0 && s->f20 <= 0.0f)) {
         ConditionSetBit(&a->i270, 4, 0);
         return 10;
@@ -661,27 +658,19 @@ int HostTypeUpdateF(Actor* a) {
     if (slotIdx == 3) {
         slotIdx = 0;
     }
-    state = fn_8016325C(a->obj894);
-    if (state == 4 || fn_8016325C(a->obj894) == 5) {
-        slotIdx = a->i288 * 13 + slotIdx + 3;
-    } else {
-        state = fn_8016325C(a->obj894);
-        if (state == 6 || fn_8016325C(a->obj894) == 7) {
-            slotIdx = a->i288 * 13 + slotIdx + 6;
-        } else {
-            state = a->i26C;
-            if (s->unk38 == state) {
-                if (s->unk34 == slotIdx) {
-                    slotIdx = s->index;
-                } else {
-                    slotIdx = slotIdx + state * 13;
-                }
-            } else {
-                slotIdx = slotIdx + state * 13;
-            }
-        }
+    if (fn_8016325C(a->obj894) == 4 || fn_8016325C(a->obj894) == 5) {
+        return 3 + a->i288 * 13 + slotIdx;
     }
-    return slotIdx;
+    if (fn_8016325C(a->obj894) == 6 || fn_8016325C(a->obj894) == 7) {
+        return 6 + a->i288 * 13 + slotIdx;
+    }
+    if (s->unk38 != a->i26C) {
+        return slotIdx + a->i26C * 13;
+    }
+    if (s->unk34 != slotIdx) {
+        return slotIdx + a->i26C * 13;
+    }
+    return s->index;
 }
 
 int HostTypeUpdateG(Actor* a) {
