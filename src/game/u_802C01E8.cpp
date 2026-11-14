@@ -812,12 +812,12 @@ int PossessedApplyRangeProperty(void* data)
 struct StatusObject {
     void* owner;                               // 0x00
     u8 unk04[0x24 - 0x04];                     // 0x04
-    float x;                                   // 0x24
-    float y;                                   // 0x28
-    float z;                                   // 0x2C
+    int x;                                     // 0x24
+    int y;                                     // 0x28
+    int z;                                     // 0x2C
 };
 
-extern "C" int fn_8001F928(void* obj, float* pos, int msg, void (*cb)(void), int a);
+extern "C" int fn_8001F928(void* obj, int* pos, int msg, void (*cb)(void), int a);
 extern "C" void fn_802C24DC(void);
 
 // 0x800B8B64 candidate callback: asks the candidate for its 0x400 status
@@ -826,19 +826,21 @@ extern "C" void fn_802C24DC(void);
 int PossessedStatusCompareTarget(int target, void* candidate, int unused0, int unused1)
 {
     StatusObject* obj = (StatusObject*)candidate;
-    StatusObject answer;
-    float pos[6];
+    StatusObject* other;
+    int answer[8];
+    int pos[6];
 
-    SendMsg(target, 0x400, &answer);
-    if (answer.owner == 0)
+    SendMsg(target, 0x400, answer);
+    other = (StatusObject*)answer[0];
+    if (other == 0)
         return 0;
     pos[0] = obj->x;
     pos[1] = obj->y;
     pos[2] = obj->z;
-    pos[3] = ((StatusObject*)answer.owner)->x;
-    pos[4] = ((StatusObject*)answer.owner)->y;
-    pos[5] = ((StatusObject*)answer.owner)->z;
-    return fn_8001F928(candidate, pos, 0x9000A200, fn_802C24DC, 0) == 0;
+    pos[3] = other->x;
+    pos[4] = other->y;
+    pos[5] = other->z;
+    return fn_8001F928(candidate, pos, 0x9000A200, fn_802C24DC, 0) ? 0 : 1;
 }
 
 // Candidate target position (three ints at +0x24).
