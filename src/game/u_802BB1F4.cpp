@@ -1371,8 +1371,8 @@ int FshSveEnterRangedState(Actor* self)
     bd = self->beh;
     self->unk288 = 3;
     bd->state = 4;
-    ConditionUpdateBit((u8*)self + 0x270, 3, 1);
-    RangeResetPending((u8*)self + 0x270);
+    ConditionUpdateBit(self->unk270, 3, 1);
+    RangeResetPending(self->unk270);
     return 1;
 }
 
@@ -1495,10 +1495,10 @@ bool FshSveEnterGrabState(void* p)
     if (self == 0)
         return false;
     bd = self->beh;
-    *(s32*)((u8*)self + 0x288) = 2;
+    self->unk288 = 2;
     bd->state = 2;
-    ConditionUpdateBit((u8*)self + 0x270, 3, 1);
-    RangeResetPending((u8*)self + 0x270);
+    ConditionUpdateBit(self->unk270, 3, 1);
+    RangeResetPending(self->unk270);
     return true;
 }
 
