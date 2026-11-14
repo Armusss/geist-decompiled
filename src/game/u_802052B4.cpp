@@ -86,7 +86,7 @@ struct TurretBeh {
     float beaconG;      // 0xe4
     float beaconH;      // 0xe8
     u8    unkec[0x04];  // 0xec
-    void* fxHandle;     // 0xf0
+    int fxHandle;       // 0xf0
     float fxTimer;      // 0xf4
     s32   fxEmitter0;   // 0xf8
     s32   fxEmitter1;   // 0xfc
@@ -173,22 +173,6 @@ struct FxLightDef {
     u8  unk18[0x48];    // 0x18
 };
 
-extern "C" float lbl_804D9258;
-extern "C" float lbl_804D925C;
-extern "C" float lbl_804D9260;
-extern "C" float lbl_804D9264;
-extern "C" float lbl_804D9268;
-extern "C" float lbl_804D9278;
-extern "C" float lbl_804D927C;
-extern "C" float lbl_804D9280;
-extern "C" float lbl_804D9284;
-extern "C" float lbl_804D9288;
-extern "C" float lbl_804D928C;
-extern "C" float lbl_804D9290;
-extern "C" float lbl_804D9294;
-extern "C" float lbl_804D9298;
-extern "C" float lbl_804D929C;
-extern "C" float lbl_804D9318;
 extern "C" void* lbl_804D33A4;
 extern "C" void* lbl_804D33A8;
 extern "C" void* lbl_804D33AC;
@@ -197,10 +181,10 @@ extern "C" void* lbl_804D33B4;
 extern "C" FxLightDef lbl_803BA220;
 
 void* FxFind(const char* name);
-extern "C" void* FxStart(void* fx, int a, int b);
+extern "C" int FxStart(void* fx, int a, int b);
 extern "C" void fn_80027690(int id);
-extern "C" void fn_8016EEF4(void* fx);
-extern "C" void fn_8016F018(void* fx, int value);
+extern "C" void fn_8016EEF4(int fx);
+extern "C" void fn_8016F018(int fx, int value);
 extern "C" void fn_800C7B78(Actor* a);
 void EmitterSetEnabled(u32 id, int enable);
 void EmitterDestroy(int id);
@@ -315,35 +299,6 @@ struct EmitterDesc {
     s32   fe4;        // 0xe4
 };
 
-extern "C" double lbl_804D9270;
-extern "C" float lbl_804D92A0;
-extern "C" float lbl_804D92A4;
-extern "C" float lbl_804D92A8;
-extern "C" float lbl_804D92AC;
-extern "C" float lbl_804D92B0;
-extern "C" float lbl_804D92B4;
-extern "C" float lbl_804D92B8;
-extern "C" float lbl_804D92BC;
-extern "C" float lbl_804D92C0;
-extern "C" float lbl_804D92C4;
-extern "C" float lbl_804D92C8;
-extern "C" float lbl_804D92CC;
-extern "C" float lbl_804D92D0;
-extern "C" float lbl_804D92D4;
-extern "C" float lbl_804D92D8;
-extern "C" float lbl_804D92DC;
-extern "C" float lbl_804D92E0;
-extern "C" float lbl_804D92E4;
-extern "C" float lbl_804D92E8;
-extern "C" float lbl_804D92EC;
-extern "C" float lbl_804D92F0;
-extern "C" float lbl_804D92F4;
-extern "C" float lbl_804D92F8;
-extern "C" float lbl_804D92FC;
-extern "C" float lbl_804D9300;
-extern "C" float lbl_804D9304;
-extern "C" float lbl_804D9308;
-extern "C" float lbl_804D930C;
 
 void* EmitterCreate(EmitterDesc* desc);
 int ActorDefaultMsg(Actor* a, int msg, void* data, int arg);
@@ -404,7 +359,6 @@ extern "C" int fn_80019F88(void* msg, Actor* a);
 extern "C" int fn_8020DF98(void* msg);
 extern "C" void fn_8028BF80(String* s, const char* fmt, ...);
 extern "C" void fn_8028C188(s32* out, char* text, s32 len);
-extern "C" float lbl_804D9310;
 
 // Track/aim the turret at the actor that owns it.
 void TurretAimUpdate(void* owner, float dt)
@@ -472,19 +426,19 @@ void TurretAimUpdate(void* owner, float dt)
     fn_8016D614(&euler, &euler, &beh->rot);
     EulerNormalize(&euler, &euler);
 
-    float sz = lbl_804D925C;
-    if (fabsf(euler.z) >= lbl_804D9258) {
+    float sz = 0.0f;
+    if (fabsf(euler.z) >= 1.1920929e-07f) {
         sz = euler.z / fabsf(euler.z);
     }
-    float sx = lbl_804D925C;
-    if (fabsf(euler.x) >= lbl_804D9258) {
+    float sx = 0.0f;
+    if (fabsf(euler.x) >= 1.1920929e-07f) {
         sx = euler.x / fabsf(euler.x);
     }
 
     float limZ = fabsf(euler.z);
     float limX = fabsf(euler.x);
-    float dz = sz * (lbl_804D9260 * self->cls->f40 * dt);
-    float dx = sx * (lbl_804D9260 * self->cls->f38 * dt);
+    float dz = sz * (0.2f * self->cls->f40 * dt);
+    float dx = sx * (0.2f * self->cls->f38 * dt);
     if (dz < -limZ) {
         dz = -limZ;
     } else if (dz > limZ) {
@@ -496,13 +450,13 @@ void TurretAimUpdate(void* owner, float dt)
         dx = limX;
     }
 
-    float maxZ = self->cls->f3c * lbl_804D9264;
-    if (maxZ >= lbl_804D9268) {
-        maxZ = lbl_804D9268;
+    float maxZ = self->cls->f3c * 0.5f;
+    if (maxZ >= 1.8e+02f) {
+        maxZ = 1.8e+02f;
     }
-    float maxX = self->cls->f34 * lbl_804D9264;
-    if (maxX >= lbl_804D9268) {
-        maxX = lbl_804D9268;
+    float maxX = self->cls->f34 * 0.5f;
+    if (maxX >= 1.8e+02f) {
+        maxX = 1.8e+02f;
     }
 
     beh->rot.z += dz;
@@ -554,7 +508,7 @@ void TurretFireUpdate(void* owner, float dt)
     } else {
         beh->timer -= dt;
         if (beh->timer <= 0.0f) {
-            beh->timer += lbl_804D927C;
+            beh->timer += 1e+02f;
 
             Msg402 msg;
             msg.id = (u16)beh->fieldB4;
@@ -569,24 +523,24 @@ void TurretFireUpdate(void* owner, float dt)
                 ActorAim(aimv, (Actor*)msg.mtx, 1);
 
                 Vec3 v;
-                v.x = lbl_804D9280 * (float)aimv[0];
-                v.y = lbl_804D9280 * (float)aimv[1];
-                v.z = lbl_804D9280 * (float)aimv[2];
+                v.x = 0.00024414062f * (float)aimv[0];
+                v.y = 0.00024414062f * (float)aimv[1];
+                v.z = 0.00024414062f * (float)aimv[2];
 
                 int n = 0;
-                if (fabsf(v.x) > lbl_804D9258) {
+                if (fabsf(v.x) > 1.1920929e-07f) {
                     n++;
                 }
-                if (fabsf(v.y) > lbl_804D9258) {
+                if (fabsf(v.y) > 1.1920929e-07f) {
                     n++;
                 }
-                if (fabsf(v.z) > lbl_804D9258) {
+                if (fabsf(v.z) > 1.1920929e-07f) {
                     n++;
                 }
                 if (n == 0) {
-                    v.x = lbl_804D925C;
-                    v.y = lbl_804D925C;
-                    v.z = lbl_804D925C;
+                    v.x = 0.0f;
+                    v.y = 0.0f;
+                    v.z = 0.0f;
                 } else {
                     float inv = 1.0f / sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
                     v.x *= inv;
@@ -600,19 +554,19 @@ void TurretFireUpdate(void* owner, float dt)
                 dir.z = (float)(target->mat[11] - msg.mtx[11]);
 
                 int m = 0;
-                if (fabsf(dir.x) > lbl_804D9258) {
+                if (fabsf(dir.x) > 1.1920929e-07f) {
                     m++;
                 }
-                if (fabsf(dir.y) > lbl_804D9258) {
+                if (fabsf(dir.y) > 1.1920929e-07f) {
                     m++;
                 }
-                if (fabsf(dir.z) > lbl_804D9258) {
+                if (fabsf(dir.z) > 1.1920929e-07f) {
                     m++;
                 }
                 if (m == 0) {
-                    dir.x = lbl_804D925C;
-                    dir.y = lbl_804D925C;
-                    dir.z = lbl_804D925C;
+                    dir.x = 0.0f;
+                    dir.y = 0.0f;
+                    dir.z = 0.0f;
                 } else {
                     float inv = 1.0f / sqrtf(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
                     dir.x *= inv;
@@ -620,7 +574,7 @@ void TurretFireUpdate(void* owner, float dt)
                     dir.z *= inv;
                 }
 
-                if (v.z * dir.z + v.x * dir.x + v.y * dir.y < lbl_804D9284) {
+                if (v.z * dir.z + v.x * dir.x + v.y * dir.y < 0.978f) {
                     dead = 1;
                 }
             }
@@ -697,9 +651,9 @@ void TurretUpdate(Actor* self, float dt)
 
     switch (beh->state) {
     case 4:
-        if (beh->f38 >= lbl_804D9288) {
+        if (beh->f38 >= 3e+03f) {
             beh->f38 -= dt;
-            if (beh->f38 < lbl_804D9288) {
+            if (beh->f38 < 3e+03f) {
                 if (self->cls->data[0x12] != fn_8008EBE0(self->stream, 0) ||
                     fn_8008EA9C(self->stream, 0) != 1) {
                     FxStart(FxFind("gunopen"), 0, 0);
@@ -725,9 +679,9 @@ void TurretUpdate(Actor* self, float dt)
         break;
 
     case 3:
-        if (beh->f38 >= lbl_804D9288) {
+        if (beh->f38 >= 3e+03f) {
             beh->f38 -= dt;
-            if (beh->f38 < lbl_804D9288) {
+            if (beh->f38 < 3e+03f) {
                 if (self->cls->data[0x13] != fn_8008EBE0(self->stream, 0) ||
                     fn_8008EA9C(self->stream, 0) != 1) {
                     FxStart(FxFind("gunopen"), 0, 0);
@@ -772,13 +726,13 @@ void TurretUpdate(Actor* self, float dt)
     }
 
     case 3:
-        if (beh->f3c > lbl_804D925C) {
+        if (beh->f3c > 0.0f) {
             beh->f40 += dt;
             if (beh->f40 > beh->f3c) {
                 float save = self->beh->f3c;
                 fn_800C7B78(self);
                 self->beh->f3c = save;
-                TurretUpdate(self, lbl_804D928C);
+                TurretUpdate(self, 3e+01f);
                 return;
             }
         }
@@ -786,14 +740,14 @@ void TurretUpdate(Actor* self, float dt)
     }
 
     float v = beh->f104;
-    if (v < lbl_804D925C) {
-        v = lbl_804D925C;
+    if (v < 0.0f) {
+        v = 0.0f;
     }
     beh->f104 = v;
 
     if (beh->disabled != 0) {
         float level = beh->f104;
-        if (level >= lbl_804D9290) {
+        if (level >= 1.0f) {
             MsgC02 m;
             m.fx = lbl_803BA220.fxId;
             m.unk08 = 0;
@@ -810,7 +764,7 @@ void TurretUpdate(Actor* self, float dt)
             SendMsg(beh->lightId, 0xC15, &c);
 
             fn_8016EEF4(beh->fxHandle);
-            beh->fxHandle = (void*)-1;
+            beh->fxHandle = -1;
         } else {
             MsgC02 m;
             m.fx = lbl_803BA220.fxId;
@@ -818,13 +772,13 @@ void TurretUpdate(Actor* self, float dt)
             m.unk0c = 1;
             SendMsg(beh->lightId, 0xC02, &m);
 
-            if (level < lbl_804D925C) {
-                level = lbl_804D925C;
-            } else if (level > lbl_804D9290) {
-                level = lbl_804D9290;
+            if (level < 0.0f) {
+                level = 0.0f;
+            } else if (level > 1.0f) {
+                level = 1.0f;
             }
 
-            int lit = (int)floor((double)(lbl_804D9294 * (lbl_804D9290 - level)));
+            int lit = (int)floor((double)(4096.0f * (1.0f - level)));
             if (Fn800816B0() > -1) {
                 lit = 0;
             } else {
@@ -834,7 +788,7 @@ void TurretUpdate(Actor* self, float dt)
                 }
             }
 
-            if (beh->fxHandle == (void*)-1) {
+            if (beh->fxHandle == -1) {
                 beh->fxHandle = FxStart(lbl_804D33A4, 0, 0);
                 fn_8016F018(beh->fxHandle, lit);
             } else {
@@ -847,7 +801,7 @@ void TurretUpdate(Actor* self, float dt)
             c.r = 0xFF;
             c.g = 0xFF;
             c.b = 0xFF;
-            c.a = (u8)(0xE0 - (int)(lbl_804D9298 * level));
+            c.a = (u8)(0xE0 - (int)(192.0f * level));
             SendMsg(beh->lightId, 0xC15, &c);
         }
     }
@@ -856,13 +810,13 @@ void TurretUpdate(Actor* self, float dt)
     if (b->fxEmitter0 != -1) {
         float t = b->fxTimer;
         b->fxTimer += dt;
-        if (b->fxTimer >= lbl_804D929C && t < lbl_804D929C) {
+        if (b->fxTimer >= 3.5e+02f && t < 3.5e+02f) {
             EmitterSetEnabled(b->fxEmitter0, 0);
         }
-        if (b->fxTimer >= lbl_804D929C && t < lbl_804D929C) {
+        if (b->fxTimer >= 3.5e+02f && t < 3.5e+02f) {
             EmitterSetEnabled(b->fxEmitter1, 0);
         }
-        if (b->fxTimer >= lbl_804D9288) {
+        if (b->fxTimer >= 3e+03f) {
             EmitterDestroy(b->emitter1);
             EmitterDestroy(b->emitter2);
             b->fxEmitter0 = -1;
@@ -980,18 +934,18 @@ int TurretWeaponUpdate(TurretWeaponMsg* m)
 
     if (m->id == 0x403548d0) {
         beh->flags |= 2;
-        m->timer = lbl_804D925C;
+        m->timer = 0.0f;
     } else if (m->id == -0x4603bd0b) {
-        m->timer = lbl_804D92A0;
+        m->timer = 1e+06f;
     }
 
-    if (beh->f10 > lbl_804D925C && (beh->flags & 8) == 0) {
+    if (beh->f10 > 0.0f && (beh->flags & 8) == 0) {
         beh->f10 -= m->timer;
-        if (beh->f10 <= lbl_804D925C) {
+        if (beh->f10 <= 0.0f) {
             u8 msgbuf[0x10];
             SendMsg(self->id, 0xc05, msgbuf);
             beh->mode = 3;
-            beh->f40 = lbl_804D925C;
+            beh->f40 = 0.0f;
             if (self != 0 && self->beh != 0) {
                 self->beh->unk44 = 1;
             }
@@ -1004,38 +958,38 @@ int TurretWeaponUpdate(TurretWeaponMsg* m)
                 desc.pos.x = (float)self->mat[9];
                 desc.pos.y = (float)self->mat[10];
                 desc.pos.z = (float)self->mat[11];
-                desc.f0c = lbl_804D92A4;
-                desc.f10 = lbl_804D92A8;
-                desc.f14 = lbl_804D92AC;
-                desc.f18 = lbl_804D92B0;
+                desc.f0c = 0.0208975f;
+                desc.f10 = 0.00731893f;
+                desc.f14 = -0.190315f;
+                desc.f18 = 0.981473f;
                 desc.f1c = 0;
                 desc.f20 = 2;
-                desc.f24 = lbl_804D92B4;
+                desc.f24 = 3.0f;
                 desc.f28 = 1;
                 desc.f2c = self->cls->data[0];
                 desc.f30 = 0xff;
-                desc.f6c = lbl_804D92B8;
-                desc.f70 = lbl_804D92BC;
-                desc.f74 = lbl_804D92C0;
-                desc.f78 = lbl_804D92C4;
+                desc.f6c = 6.4929f;
+                desc.f70 = 5.7401f;
+                desc.f74 = 0.45f;
+                desc.f78 = 9.315f;
                 desc.f7c = 0xf;
-                desc.f80 = lbl_804D92C8;
-                desc.f84 = lbl_804D9290;
+                desc.f80 = 5.0f;
+                desc.f84 = 1.0f;
                 desc.f88 = 2;
-                desc.f8c = lbl_804D925C;
-                desc.f90 = lbl_804D92B4;
-                desc.f94 = lbl_804D92CC;
+                desc.f8c = 0.0f;
+                desc.f90 = 3.0f;
+                desc.f94 = 8.99999f;
                 desc.f98 = 0;
                 desc.f9c = 0;
                 desc.fa4 = 0;
-                desc.fac = lbl_804D925C;
-                desc.fb0 = lbl_804D925C;
-                desc.fb4 = lbl_804D925C;
-                desc.fb8 = lbl_804D92D0;
-                desc.fbc = lbl_804D925C;
-                desc.fc0 = lbl_804D925C;
-                desc.fc4 = lbl_804D925C;
-                desc.fc8 = lbl_804D92D4;
+                desc.fac = 0.0f;
+                desc.fb0 = 0.0f;
+                desc.fb4 = 0.0f;
+                desc.fb8 = 0.333333f;
+                desc.fbc = 0.0f;
+                desc.fc0 = 0.0f;
+                desc.fc4 = 0.0f;
+                desc.fc8 = 1.33333f;
                 desc.fcc[0] = 0xff;
                 desc.fcc[1] = 0xff;
                 desc.fcc[2] = 0xff;
@@ -1055,49 +1009,49 @@ int TurretWeaponUpdate(TurretWeaponMsg* m)
                 beh->beaconPos.x = (float)self->mat[9];
                 beh->beaconPos.y = (float)self->mat[10];
                 beh->beaconPos.z = (float)self->mat[11];
-                beh->beaconRot.x = lbl_804D925C;
-                beh->beaconRot.y = lbl_804D925C;
-                beh->beaconRot.z = lbl_804D925C;
-                beh->beaconF = lbl_804D9290;
+                beh->beaconRot.x = 0.0f;
+                beh->beaconRot.y = 0.0f;
+                beh->beaconRot.z = 0.0f;
+                beh->beaconF = 1.0f;
                 beh->beaconI = 0;
-                beh->beaconG = lbl_804D9300;
-                beh->beaconH = lbl_804D925C;
+                beh->beaconG = 0.9f;
+                beh->beaconH = 0.0f;
 
                 desc.pos.x = (float)self->mat[9];
                 desc.pos.y = (float)self->mat[10];
                 desc.pos.z = (float)self->mat[11];
-                desc.f0c = lbl_804D925C;
-                desc.f10 = lbl_804D92D8;
-                desc.f14 = lbl_804D92DC;
-                desc.f18 = lbl_804D92E0;
+                desc.f0c = 0.0f;
+                desc.f10 = -0.965926f;
+                desc.f14 = -0.258819f;
+                desc.f18 = 1.5e-07f;
                 desc.f1c = 0;
                 desc.f20 = 2;
-                desc.f24 = lbl_804D92E4;
+                desc.f24 = -1.0f;
                 desc.f28 = 1;
                 desc.f2c = self->cls->data[1];
                 desc.f30 = 0xff;
-                desc.f6c = lbl_804D92E8;
-                desc.f70 = lbl_804D92EC;
-                desc.f74 = lbl_804D92F0;
-                desc.f78 = lbl_804D92F4;
+                desc.f6c = 4.0607f;
+                desc.f70 = 3.96957f;
+                desc.f74 = 0.23f;
+                desc.f78 = 2.235f;
                 desc.f7c = 100;
-                desc.f80 = lbl_804D92C8;
-                desc.f84 = lbl_804D9290;
+                desc.f80 = 5.0f;
+                desc.f84 = 1.0f;
                 desc.f88 = 0x10;
-                desc.f8c = lbl_804D925C;
-                desc.f90 = lbl_804D92F8;
-                desc.f94 = lbl_804D92FC;
+                desc.f8c = 0.0f;
+                desc.f90 = 2.66667f;
+                desc.f94 = 51.0f;
                 desc.f98 = 1;
                 desc.f9c = 1;
                 desc.fa0 = (s32)&beh->beaconPos;
                 desc.fa4 = 0;
-                desc.fb0 = lbl_804D9304;
-                desc.fb4 = lbl_804D925C;
-                desc.fb8 = lbl_804D9308;
-                desc.fbc = lbl_804D925C;
-                desc.fc0 = lbl_804D925C;
-                desc.fc4 = lbl_804D9264;
-                desc.fc8 = lbl_804D930C;
+                desc.fb0 = 1e+01f;
+                desc.fb4 = 0.0f;
+                desc.fb8 = 2.333333f;
+                desc.fbc = 0.0f;
+                desc.fc0 = 0.0f;
+                desc.fc4 = 0.5f;
+                desc.fc8 = 2.0f;
                 desc.fcc[0] = 0x19;
                 desc.fcc[1] = 0x19;
                 desc.fcc[2] = 0x19;
@@ -1118,15 +1072,15 @@ int TurretWeaponUpdate(TurretWeaponMsg* m)
         float t = beh->f10;
         float maxv = self->cls->f30;
         float r;
-        if (t < lbl_804D925C) {
-            r = lbl_804D925C;
+        if (t < 0.0f) {
+            r = 0.0f;
         } else if (t > maxv) {
             r = maxv;
         } else {
             r = t;
         }
         beh->f10 = r;
-        beh->f14 = lbl_804D925C;
+        beh->f14 = 0.0f;
     }
     return 1;
 }
@@ -1142,9 +1096,9 @@ int TurretWeaponMessage(void* data)
 
     switch (msg->value) {
     case 0x39CB0CB0:
-        if (beh->fxHandle != (void*)-1) {
+        if (beh->fxHandle != -1) {
             fn_8016EEF4(beh->fxHandle);
-            beh->fxHandle = (void*)-1;
+            beh->fxHandle = -1;
         }
         if (beh->state == 1 || beh->state == 2 || beh->state == 3) {
             idx = 0x11;
@@ -1235,12 +1189,12 @@ int TurretWeaponMessage(void* data)
             SendMsg(msg->target, 0x401, &t);
             beh->f104 = (t.start - (float)msg->time) / t.length;
         }
-        if (beh->f104 < lbl_804D925C || lbl_804D9290 < beh->f104) {
-            beh->f104 = lbl_804D9290;
+        if (beh->f104 < 0.0f || 1.0f < beh->f104) {
+            beh->f104 = 1.0f;
         }
         if (beh->state != 5 && self->cls->data[0x12] != -1) {
             beh->state = 4;
-            beh->f38 = lbl_804D9310;
+            beh->f38 = 5e+03f;
         }
     } break;
 
@@ -1343,7 +1297,6 @@ struct MsgC14Cmd {
     u32 hash;       // 0x0c
 };
 
-extern "C" float lbl_804D9314;
 extern "C" int fn_800398A8(const char* name);
 extern "C" int fn_8020DD08(void* data);
 void ModelNodeSetup(int model, int node, int a, int b);
@@ -1373,7 +1326,7 @@ int TurretGunCommand(void* data)
         }
         if (msg->value == 1 && state != 2) {
             beh->state = 3;
-            beh->f38 = lbl_804D9314;
+            beh->f38 = 3001.0f;
             if (beh->field0c != -1 && (beh->field0c >> 24) == 2) {
                 MsgC14Cmd m;
                 m.unk04 = 0;
@@ -1386,9 +1339,9 @@ int TurretGunCommand(void* data)
         if (msg->value == 0 && state != 5) {
             beh->state = 4;
             if (beh->field0c == -1) {
-                beh->f38 = lbl_804D9314;
+                beh->f38 = 3001.0f;
             } else {
-                beh->f38 = lbl_804D9310;
+                beh->f38 = 5e+03f;
             }
             beh->flags &= ~8;
             return 1;
@@ -1480,9 +1433,9 @@ void TurretDestroy(Actor* a)
         fn_80027690(beh->fieldB0);
         beh->fieldB0 = -1;
     }
-    if (beh->fxHandle != (void*)-1) {
+    if (beh->fxHandle != -1) {
         fn_8016EEF4(beh->fxHandle);
-        beh->fxHandle = (void*)-1;
+        beh->fxHandle = -1;
     }
     PossessableDestroy(a);
 }
@@ -1495,22 +1448,24 @@ int ModelFindBone(int model, int bone);
 // owner, fills in the per-class tuning and creates the effects it needs.
 int TurretInit(Actor* self)
 {
-    TurretBeh* beh = self->beh;
+    TurretBeh* beh;
     int state;
     int idx;
     int v;
 
-    if (beh == 0) {
+    if (self->beh == 0) {
         beh = (TurretBeh*)VAlloc(0x10c);
         self->beh = beh;
+    } else {
+        beh = self->beh;
     }
     if (PossessableInit(self) == 0) {
         self->fieldac |= 0x1000000;
         return 0;
     }
 
-    beh->f3c = lbl_804D925C;
-    beh->f40 = lbl_804D925C;
+    beh->f3c = 0.0f;
+    beh->f40 = 0.0f;
     if (self != 0 && self->beh != 0 && self->beh->ownerId != 0) {
         TurretBeh* b = self->beh;
         b->ownerId = 0;
@@ -1535,15 +1490,15 @@ int TurretInit(Actor* self)
         beh->flags &= ~8;
     }
     beh->f48 = self->cls->f3c;
-    beh->f4c = (lbl_804D930C * self->cls->f3c) / self->cls->f40;
+    beh->f4c = (2.0f * self->cls->f3c) / self->cls->f40;
     beh->f9c = self->cls->f44;
-    beh->fA0 = lbl_804D9318;
+    beh->fA0 = 1e+04f;
     beh->ownerId = 0;
-    beh->fA8 = lbl_804D9278;
+    beh->fA8 = 7.5e+02f;
     beh->fieldB8 = 1;
     fn_8016D6A8(&beh->rot2);
     ActorGetMatrix((Mtx34*)&beh->place, self);
-    beh->timer = lbl_804D925C;
+    beh->timer = 0.0f;
     beh->fieldB0 = -1;
     beh->fieldB4 = ModelFindBone(self->model, AssetFind(0xF1754BF2, 0x7B91FFD5));
     beh->mode = 0;
@@ -1552,7 +1507,7 @@ int TurretInit(Actor* self)
     } else {
         beh->state = 2;
     }
-    beh->f38 = lbl_804D925C;
+    beh->f38 = 0.0f;
 
     state = self->beh->state;
     if (state == 1 || state == 2 || state == 3) {
@@ -1575,15 +1530,15 @@ int TurretInit(Actor* self)
     }
 
     lbl_804D33A4 = FxFind("StaticWhite");
-    beh->fxHandle = (void*)-1;
+    beh->fxHandle = -1;
     lbl_804D33A8 = (void*)AssetFind(0xF2E2BEB8, 0xDE1813E0);
     lbl_804D33AC = (void*)AssetFind(0xF2E2BEB8, 0x513EB38C);
     lbl_804D33B0 = (void*)AssetFind(0xF2E2BEB8, 0x514CCB0D);
     lbl_804D33B4 = (void*)AssetFind(0xF2E2BEB8, 0x515AE28E);
-    beh->fxTimer = lbl_804D925C;
+    beh->fxTimer = 0.0f;
     beh->fxEmitter0 = -1;
     beh->fxEmitter1 = -1;
-    beh->f104 = lbl_804D9290;
+    beh->f104 = 1.0f;
     beh->lightId = 0;
     beh->disabled = 0;
     return 1;
@@ -1634,22 +1589,6 @@ int TurretGunStateMsg(int msg, void* data)
 // ---------------------------------------------------------------------------
 
 extern "C" float lbl_804D33A0;
-extern "C" float lbl_804D931C;
-extern "C" float lbl_804D9320;
-extern "C" float lbl_804D9324;
-extern "C" float lbl_804D9328;
-extern "C" float lbl_804D932C;
-extern "C" float lbl_804D9330;
-extern "C" float lbl_804D9334;
-extern "C" float lbl_804D9338;
-extern "C" float lbl_804D933C;
-extern "C" float lbl_804D9340;
-extern "C" float lbl_804D9344;
-extern "C" float lbl_804D9348;
-extern "C" float lbl_804D934C;
-extern "C" float lbl_804D9350;
-extern "C" float lbl_804D9354;
-extern "C" float lbl_804D9358;
 
 extern "C" void LinkInfoClear(void* info);
 extern "C" int fn_800F8A98(int type);
@@ -1778,8 +1717,8 @@ int TurretGunOpenMsg(int msg, void* data)
 
     TurretLinkInfo info;
     info.owner = owner;
-    info.f4c = lbl_804D9290;
-    info.f50 = lbl_804D9290;
+    info.f4c = 1.0f;
+    info.f50 = 1.0f;
     info.f54 = lbl_804D33A0;
     info.id = self->id;
     LinkInfoClear(&info);
@@ -1790,21 +1729,21 @@ int TurretGunOpenMsg(int msg, void* data)
 
     int fx = fn_800F8A98(self->cls->f18);
     if (fx != -1) {
-        fn_800F7F5C(lbl_804D931C, beh->f04, fx, 0x20EE36, self->id, &info);
-        fn_800F7F5C(lbl_804D931C, beh->f04, fx, 0xE6B71BCC, self->id, &info);
+        fn_800F7F5C(32.0f, beh->f04, fx, 0x20EE36, self->id, &info);
+        fn_800F7F5C(32.0f, beh->f04, fx, 0xE6B71BCC, self->id, &info);
         int handle = fn_800EB1B8(fx, 0);
         if (handle != -1) {
             fn_800F840C(beh->f04, handle, 9999);
         }
     }
 
-    int seed = (int)(lbl_804D9328 * ((float)fn_802F2CFC() / lbl_804D9320) +
-                     lbl_804D9324);
+    int seed = (int)(8e+02f * ((float)fn_802F2CFC() / 32767.0f) +
+                     1.8e+03f);
     Vec4 rot;
-    rot.x = lbl_804D9290;
-    rot.y = lbl_804D9330 * ((float)fn_802F2CFC() / lbl_804D9320) + lbl_804D932C;
-    rot.z = lbl_804D925C;
-    rot.w = lbl_804D9290;
+    rot.x = 1.0f;
+    rot.y = 0.3f * ((float)fn_802F2CFC() / 32767.0f) + 0.4f;
+    rot.z = 0.0f;
+    rot.w = 1.0f;
 
     if (beh->fieldB0 == -1) {
         beh->fieldB0 = fn_80027A58(1, &pos, &rot, seed, 9);
@@ -1817,7 +1756,7 @@ void TurretMuzzleFx(Actor* self)
 {
     TurretBeh* beh = self->beh;
 
-    beh->fxTimer = lbl_804D925C;
+    beh->fxTimer = 0.0f;
 
     Mtx34 m;
     Vec3 trans;
@@ -1833,32 +1772,32 @@ void TurretMuzzleFx(Actor* self)
 
     desc.f1c = 0;
     desc.f20 = 2;
-    desc.f24 = lbl_804D9290;
+    desc.f24 = 1.0f;
     desc.f28 = 1;
     desc.f2c = lbl_804D33A8;
     desc.f30 = 0xff;
-    desc.f6c = lbl_804D9334;
-    desc.f70 = lbl_804D9334;
-    desc.f74 = lbl_804D9338;
-    desc.f78 = lbl_804D933C;
+    desc.f6c = 2e+01f;
+    desc.f70 = 2e+01f;
+    desc.f74 = 14.615f;
+    desc.f78 = 4.395f;
     desc.f7c = 0x1e;
-    desc.f80 = lbl_804D927C;
-    desc.f84 = lbl_804D9290;
+    desc.f80 = 1e+02f;
+    desc.f84 = 1.0f;
     desc.f88 = 0x10;
-    desc.f8c = lbl_804D925C;
-    desc.f90 = lbl_804D9290;
-    desc.f94 = lbl_804D9340;
+    desc.f8c = 0.0f;
+    desc.f90 = 1.0f;
+    desc.f94 = 1428.0f;
     desc.f98 = 0;
     desc.f9c = 0;
     desc.fa4 = 0;
-    desc.fac = lbl_804D9304;
-    desc.fb0 = lbl_804D925C;
-    desc.fb4 = lbl_804D9344;
-    desc.fb8 = lbl_804D925C;
-    desc.fbc = lbl_804D925C;
-    desc.fc0 = lbl_804D925C;
-    desc.fc4 = lbl_804D9348;
-    desc.fc8 = lbl_804D9344;
+    desc.fac = 1e+01f;
+    desc.fb0 = 0.0f;
+    desc.fb4 = 0.833f;
+    desc.fb8 = 0.0f;
+    desc.fbc = 0.0f;
+    desc.fc0 = 0.0f;
+    desc.fc4 = 0.167f;
+    desc.fc8 = 0.833f;
     desc.fcc[0] = 0x73;
     desc.fcc[1] = 0x73;
     desc.fcc[2] = 0x73;
@@ -1884,7 +1823,7 @@ void TurretMuzzleFx(Actor* self)
 
     desc2.f1c = 0;
     desc2.f20 = 2;
-    desc2.f24 = lbl_804D9290;
+    desc2.f24 = 1.0f;
     desc2.f28 = 3;
     desc2.f2c = lbl_804D33AC;
     desc2.f30 = 0xff;
@@ -1892,17 +1831,17 @@ void TurretMuzzleFx(Actor* self)
     desc2.f38 = 0xff;
     desc2.f3c = lbl_804D33B4;
     desc2.f40 = 0xff;
-    desc2.f6c = lbl_804D9334;
-    desc2.f70 = lbl_804D9334;
-    desc2.f74 = lbl_804D934C;
-    desc2.f78 = lbl_804D9350;
+    desc2.f6c = 2e+01f;
+    desc2.f70 = 2e+01f;
+    desc2.f74 = 25.175f;
+    desc2.f78 = 12.755f;
     desc2.f7c = 0x28;
-    desc2.f80 = lbl_804D92C8;
-    desc2.f84 = lbl_804D9290;
+    desc2.f80 = 5.0f;
+    desc2.f84 = 1.0f;
     desc2.f88 = 0x10;
-    desc2.f8c = lbl_804D925C;
-    desc2.f90 = lbl_804D9290;
-    desc2.f94 = lbl_804D9354;
+    desc2.f8c = 0.0f;
+    desc2.f90 = 1.0f;
+    desc2.f94 = 4.5e+02f;
     desc2.f98 = 0;
     desc2.f9c = 1;
     desc2.fa0 = (s32)&lbl_8049E0C0;
@@ -1910,23 +1849,23 @@ void TurretMuzzleFx(Actor* self)
     lbl_8049E0C0.pos.x = m.m[9];
     lbl_8049E0C0.pos.y = m.m[10];
     lbl_8049E0C0.pos.z = m.m[11];
-    lbl_8049E0C0.a = lbl_804D92E4;
-    lbl_8049E0C0.b = lbl_804D925C;
-    lbl_8049E0C0.c = lbl_804D925C;
-    lbl_8049E0C0.d = lbl_804D925C;
+    lbl_8049E0C0.a = -1.0f;
+    lbl_8049E0C0.b = 0.0f;
+    lbl_8049E0C0.c = 0.0f;
+    lbl_8049E0C0.d = 0.0f;
     lbl_8049E0C0.e = 0;
-    lbl_8049E0C0.f = lbl_804D9358;
-    lbl_8049E0C0.g = lbl_804D925C;
+    lbl_8049E0C0.f = 8.009f;
+    lbl_8049E0C0.g = 0.0f;
 
     desc2.fa4 = 0;
-    desc2.fac = lbl_804D925C;
-    desc2.fb0 = lbl_804D925C;
-    desc2.fb4 = lbl_804D925C;
-    desc2.fb8 = lbl_804D925C;
-    desc2.fbc = lbl_804D925C;
-    desc2.fc0 = lbl_804D925C;
-    desc2.fc4 = lbl_804D925C;
-    desc2.fc8 = lbl_804D925C;
+    desc2.fac = 0.0f;
+    desc2.fb0 = 0.0f;
+    desc2.fb4 = 0.0f;
+    desc2.fb8 = 0.0f;
+    desc2.fbc = 0.0f;
+    desc2.fc0 = 0.0f;
+    desc2.fc4 = 0.0f;
+    desc2.fc8 = 0.0f;
     desc2.fcc[0] = 200;
     desc2.fcc[1] = 200;
     desc2.fcc[2] = 0xff;
