@@ -1,5 +1,10 @@
 // u_80153C10.cpp: ghost possession, quick flash and ghost-record bookkeeping.
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
 // Loose (unattached) ghosts: tick every active one that has an update callback.
 struct GhostSlot {
     GhostSlot* unk00;            // 0x00
