@@ -66,8 +66,6 @@ struct MuzzleFlash {
 extern "C" unsigned long Fn800397F8(const char* name);
 extern "C" int Fn801DE7DC(int actor, unsigned long effect);
 extern char lbl_80346EE0[];
-extern float lbl_804D80E0;
-extern float lbl_804D80E4;
 
 // Placeholder name kept: called from GunWithGrenade.cpp. Counts the flash's
 // remaining lifetime down by dt and releases the trail once it runs out.
@@ -91,7 +89,7 @@ extern "C" void fn_80175E40(void* p, float* pos, void* hit, int actor) {
     if (flash->trail == -1) {
         flash->trail = Fn801DE7DC(actor, Fn800397F8(lbl_80346EE0));
     }
-    flash->time = lbl_804D80E0;
+    flash->time = 1000.0f;
 }
 
 // Name is a guess (fn_80175EA4 keeps its placeholder name): releases a trail handle
@@ -229,21 +227,6 @@ extern "C" void fn_800A02C0(void* record, float* row, int index);
 
 void ActorGetMatrix(Mtx34* out, Actor* actor);
 
-extern float lbl_804D80E8;
-extern float lbl_804D80EC;
-extern float lbl_804D80F0;
-extern float lbl_804D80F4;
-extern float lbl_804D80F8;
-extern float lbl_804D80FC;
-extern float lbl_804D8100;
-extern float lbl_804D8104;
-extern float lbl_804D8108;
-extern float lbl_804D810C;
-extern float lbl_804D8110;
-extern float lbl_804D8114;
-extern float lbl_804D8118;
-extern float lbl_804D811C;
-extern float lbl_804D8120;
 
 // Placeholder name kept: called from other units. Allocates one of the first eight
 // gun slots, fills its record from the actor, position and angle arguments, works
@@ -273,7 +256,7 @@ extern "C" unsigned long fn_80176044(float radius, float height, float angle,
     rec->to = to;
     rec->handle = handle;
     rec->value = 0;
-    rec->fieldCC = lbl_804D80E8;
+    rec->fieldCC = 0.0f;
     rec->fieldE4 = radius;
     rec->fieldD0 = arg7;
     rec->fieldD4 = arg8;
@@ -285,12 +268,12 @@ extern "C" unsigned long fn_80176044(float radius, float height, float angle,
     float dx = dir[0] - rec->matrix.trans[0];
     float dy = dir[1] - rec->matrix.trans[1];
     float dz = dir[2] - rec->matrix.trans[2];
-    if (((fabsf(dx) > lbl_804D80E8) + (fabsf(dy) > lbl_804D80E8) +
-         (fabsf(dz) > lbl_804D80E8)) == 0) {
-        nx = lbl_804D80E8;
-        ny = lbl_804D80E8;
-        nz = lbl_804D80E8;
-        dist = lbl_804D80E8;
+    if (((fabsf(dx) > 0.0f) + (fabsf(dy) > 0.0f) +
+         (fabsf(dz) > 0.0f)) == 0) {
+        nx = 0.0f;
+        ny = 0.0f;
+        nz = 0.0f;
+        dist = 0.0f;
     } else {
         dist = sqrtf(dx * dx + dy * dy + dz * dz);
         nx = dx / dist;
@@ -299,56 +282,56 @@ extern "C" unsigned long fn_80176044(float radius, float height, float angle,
     }
     rec->dist = dist;
     rec->yaw = fn_800A1128(ny, nx);
-    rec->pitch = lbl_804D80F0 - fn_800A109C(nz);
+    rec->pitch = 90.0f - fn_800A109C(nz);
 
-    float aimYaw = rec->yaw + lbl_804D80F4;
-    float aimPitch = rec->pitch + lbl_804D80E8;
-    while (aimYaw > lbl_804D80F4) {
-        aimYaw -= lbl_804D80F8;
+    float aimYaw = rec->yaw + 180.0f;
+    float aimPitch = rec->pitch + 0.0f;
+    while (aimYaw > 180.0f) {
+        aimYaw -= 360.0f;
     }
-    while (aimPitch > lbl_804D80F4) {
-        aimPitch -= lbl_804D80F8;
+    while (aimPitch > 180.0f) {
+        aimPitch -= 360.0f;
     }
-    while (aimYaw < lbl_804D80FC) {
-        aimYaw += lbl_804D80F8;
+    while (aimYaw < -180.0f) {
+        aimYaw += 360.0f;
     }
-    while (aimPitch < lbl_804D80FC) {
-        aimPitch += lbl_804D80F8;
+    while (aimPitch < -180.0f) {
+        aimPitch += 360.0f;
     }
     rec->aimYaw = aimYaw;
-    rec->aimPitch = lbl_804D8100;
+    rec->aimPitch = 20.0f;
     rec->aimElev = angle;
 
     float diff = aimYaw - rec->yaw;
     float mag = fabsf(diff);
-    float scale = (diff < lbl_804D80E8) ? lbl_804D8104 : lbl_804D8108;
-    if (mag < lbl_804D80F4) {
-        scale = scale * lbl_804D8104 * lbl_804D810C *
-                ((lbl_804D80F8 - mag) / rec->fieldE4);
+    float scale = (diff < 0.0f) ? -1.0f : 1.0f;
+    if (mag < 180.0f) {
+        scale = scale * -1.0f * 1000.0f *
+                ((360.0f - mag) / rec->fieldE4);
     } else {
-        scale = scale * lbl_804D810C * (mag / rec->fieldE4);
+        scale = scale * 1000.0f * (mag / rec->fieldE4);
     }
     rec->rateYaw = scale;
 
     diff = rec->aimPitch - rec->pitch;
     mag = fabsf(diff);
-    scale = (diff < lbl_804D80E8) ? lbl_804D8104 : lbl_804D8108;
-    if (mag > lbl_804D80F4) {
-        scale = scale * lbl_804D8104 * lbl_804D810C *
-                ((lbl_804D80F8 - mag) / rec->fieldE4);
+    scale = (diff < 0.0f) ? -1.0f : 1.0f;
+    if (mag > 180.0f) {
+        scale = scale * -1.0f * 1000.0f *
+                ((360.0f - mag) / rec->fieldE4);
     } else {
-        scale = scale * lbl_804D810C * (mag / rec->fieldE4);
+        scale = scale * 1000.0f * (mag / rec->fieldE4);
     }
-    rec->ratePitch = lbl_804D8110 * scale;
+    rec->ratePitch = 3.0f * scale;
 
     diff = rec->aimElev - rec->dist;
     mag = fabsf(diff);
-    scale = (diff < lbl_804D80E8) ? lbl_804D8104 : lbl_804D8108;
-    rec->rateElev = scale * lbl_804D810C * lbl_804D8110 * (mag / rec->fieldE4);
+    scale = (diff < 0.0f) ? -1.0f : 1.0f;
+    rec->rateElev = scale * 1000.0f * 3.0f * (mag / rec->fieldE4);
 
     float pitchAngle =
-        lbl_804D8114 * rec->ratePitch / lbl_804D810C + rec->pitch;
-    float yawAngle = lbl_804D8114 * rec->rateYaw / lbl_804D810C + rec->yaw;
+        16.0f * rec->ratePitch / 1000.0f + rec->pitch;
+    float yawAngle = 16.0f * rec->rateYaw / 1000.0f + rec->yaw;
     fn_800A1418(pitchAngle);
     fn_800A1418(yawAngle);
     fn_800A1418(pitchAngle);
@@ -385,64 +368,64 @@ void GunSlotUpdate(void* p, float dt) {
 
     float diff = rec->aimPitch - rec->pitch;
     float mag = fabsf(diff);
-    float scale = (diff < lbl_804D80E8) ? lbl_804D8104 : lbl_804D8108;
+    float scale = (diff < 0.0f) ? -1.0f : 1.0f;
     float range = rec->fieldE4 - rec->fieldCC;
-    if (mag <= lbl_804D80F4) {
-        scale = scale * (lbl_804D810C * (mag / range));
+    if (mag <= 180.0f) {
+        scale = scale * (1000.0f * (mag / range));
     } else {
-        scale = scale * lbl_804D8104 *
-                (lbl_804D810C * ((lbl_804D80F8 - mag) / range));
+        scale = scale * -1.0f *
+                (1000.0f * ((360.0f - mag) / range));
     }
-    rec->ratePitch = lbl_804D8110 * scale;
+    rec->ratePitch = 3.0f * scale;
 
     if (rec->fieldDC != rec->dist) {
         float d = rec->fieldDC - rec->dist;
         float m = fabsf(d);
-        float s = (d < lbl_804D80E8) ? lbl_804D8104 : lbl_804D8108;
-        rec->rateElev = lbl_804D810C * (s * (m / (lbl_804D8118 * dt)));
+        float s = (d < 0.0f) ? -1.0f : 1.0f;
+        rec->rateElev = 1000.0f * (s * (m / (10.0f * dt)));
     } else {
         float d = rec->aimElev - rec->dist;
         float m = fabsf(d);
-        float s = (d < lbl_804D80E8) ? lbl_804D8104 : lbl_804D8108;
+        float s = (d < 0.0f) ? -1.0f : 1.0f;
         float r = rec->fieldE4 - rec->fieldCC;
-        rec->rateElev = lbl_804D8110 * (lbl_804D810C * (s * (m / r)));
+        rec->rateElev = 3.0f * (1000.0f * (s * (m / r)));
     }
 
     rec->fieldCC += dt;
 
-    float deltaElev = rec->rateElev * dt / lbl_804D810C;
-    float deltaPitch = rec->ratePitch * dt / lbl_804D810C;
-    float deltaYaw = rec->rateYaw * dt / lbl_804D810C;
+    float deltaElev = rec->rateElev * dt / 1000.0f;
+    float deltaPitch = rec->ratePitch * dt / 1000.0f;
+    float deltaYaw = rec->rateYaw * dt / 1000.0f;
     float newYaw = rec->yaw + deltaYaw;
     float newPitch = rec->pitch + deltaPitch;
     float newDist = rec->dist + deltaElev;
 
-    while (newYaw > lbl_804D80F4) {
-        newYaw -= lbl_804D80F8;
+    while (newYaw > 180.0f) {
+        newYaw -= 360.0f;
     }
-    while (newPitch > lbl_804D80F4) {
-        newPitch -= lbl_804D80F8;
+    while (newPitch > 180.0f) {
+        newPitch -= 360.0f;
     }
-    while (newYaw < lbl_804D80FC) {
-        newYaw += lbl_804D80F8;
+    while (newYaw < -180.0f) {
+        newYaw += 360.0f;
     }
-    while (newPitch < lbl_804D80FC) {
-        newPitch += lbl_804D80F8;
+    while (newPitch < -180.0f) {
+        newPitch += 360.0f;
     }
 
     if (fabsf(rec->aimYaw - newYaw) <= fabsf(deltaYaw)) {
-        rec->rateYaw = lbl_804D80E8;
+        rec->rateYaw = 0.0f;
         rec->value = 1;
         fn_8001BAA8(1);
         newYaw = rec->aimYaw;
     }
-    if (rec->fieldCC > lbl_804D811C) {
-        rec->rateYaw = lbl_804D80E8;
+    if (rec->fieldCC > 4000.0f) {
+        rec->rateYaw = 0.0f;
         rec->value = 1;
         fn_8001BAA8(1);
     }
     if (fabsf(rec->aimPitch - newPitch) < fabsf(deltaPitch)) {
-        rec->ratePitch = lbl_804D80E8;
+        rec->ratePitch = 0.0f;
         newPitch = rec->aimPitch;
     }
     if (fabsf(rec->aimElev - newDist) < fabsf(deltaElev)) {
@@ -453,8 +436,8 @@ void GunSlotUpdate(void* p, float dt) {
     rec->pitch = newPitch;
     rec->dist = newDist;
 
-    float pitchAngle = rec->ratePitch * dt / lbl_804D810C + rec->pitch;
-    float yawAngle = rec->rateYaw * dt / lbl_804D810C + rec->yaw;
+    float pitchAngle = rec->ratePitch * dt / 1000.0f + rec->pitch;
+    float yawAngle = rec->rateYaw * dt / 1000.0f + rec->yaw;
     fn_800A1418(pitchAngle);
     fn_800A1418(yawAngle);
     fn_800A1418(pitchAngle);
@@ -463,7 +446,7 @@ void GunSlotUpdate(void* p, float dt) {
     rec->fieldD8 = pathBuffer;
     rec->fieldDC = rec->dist;
     GunRefreshAimBasis(rec);
-    rec->field34 = lbl_804D8120;
+    rec->field34 = 117278375936.0;
 }
 
 // Reply buffer of the "slot info" message (0x1c01): the caller sets `flags` to
@@ -527,16 +510,16 @@ struct Vec3 {
 // Scales a 3-vector to unit length; a vector shorter than the epsilon is left at
 // zero, which the callers read as a degenerate direction.
 static inline void GunNormalizeVec(Vec3* v) {
-    if (((fabsf(v->x) > lbl_804D80EC) + (fabsf(v->y) > lbl_804D80EC) +
-         (fabsf(v->z) > lbl_804D80EC)) != 0) {
+    if (((fabsf(v->x) > 1.1920929e-07f) + (fabsf(v->y) > 1.1920929e-07f) +
+         (fabsf(v->z) > 1.1920929e-07f)) != 0) {
         float inv = 1.0f / sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
         v->x *= inv;
         v->y *= inv;
         v->z *= inv;
     } else {
-        v->x = lbl_804D80E8;
-        v->y = lbl_804D80E8;
-        v->z = lbl_804D80E8;
+        v->x = 0.0f;
+        v->y = 0.0f;
+        v->z = 0.0f;
     }
 }
 
@@ -561,11 +544,11 @@ void GunRefreshAimBasis(void* p) {
     rec->field28 = rec->matrix.trans[1] + offset.y;
     rec->field2C = rec->matrix.trans[2] + offset.z;
 
-    fn_800E1098(&dir.x, &offset.x, lbl_804D8104);
+    fn_800E1098(&dir.x, &offset.x, -1.0f);
 
-    worldAxis[0] = lbl_804D80E8;
-    worldAxis[1] = lbl_804D80E8;
-    worldAxis[2] = lbl_804D8108;
+    worldAxis[0] = 0.0f;
+    worldAxis[1] = 0.0f;
+    worldAxis[2] = 1.0f;
 
     side.x = dir.y * worldAxis[2] - dir.z * worldAxis[1];
     side.y = dir.z * worldAxis[0] - dir.x * worldAxis[2];
@@ -754,25 +737,20 @@ void fn_800A0168(Mtx34* out, const Mtx34* in);
 void fn_800A0030(Vec3* out, const Mtx34* m, const Vec3* v);
 float Fn800AA050(void* actor, void* target);
 
-extern float lbl_804D8128;
-extern float lbl_804D812C;
-extern float lbl_804D8130;
-extern float lbl_804D8134;
-extern float lbl_804D8140;
 
 // Scales a 3-vector to unit length; a vector shorter than the epsilon is set to
 // zero, which the caller reads as a degenerate direction.
 static void GunNormalizeAimVec80176F14(Vec3* v) {
-    if (((fabsf(v->x) > lbl_804D8130) + (fabsf(v->y) > lbl_804D8130) +
-         (fabsf(v->z) > lbl_804D8130)) != 0) {
+    if (((fabsf(v->x) > 1.1920929e-07f) + (fabsf(v->y) > 1.1920929e-07f) +
+         (fabsf(v->z) > 1.1920929e-07f)) != 0) {
         float inv = 1.0f / sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
         v->x *= inv;
         v->y *= inv;
         v->z *= inv;
     } else {
-        v->x = lbl_804D8128;
-        v->y = lbl_804D8128;
-        v->z = lbl_804D8128;
+        v->x = 0.0f;
+        v->y = 0.0f;
+        v->z = 0.0f;
     }
 }
 
@@ -806,9 +784,9 @@ void GunAimTargetUpdate80176F14(void* ownerArg, void* behArg) {
     delta.y = (float)target->posY - (float)owner->posY;
     delta.z = (float)owner->posZ - (float)owner->posZ;
 
-    axis.x = lbl_804D8128;
-    axis.y = lbl_804D812C;
-    axis.z = lbl_804D8128;
+    axis.x = 0.0f;
+    axis.y = 1.0f;
+    axis.z = 0.0f;
     ActorGetMatrix(&mtx, (Actor*)owner);
     fn_800A0168(&mtx, &mtx);
     fn_800A0030(&axis, &mtx, &axis);
@@ -817,12 +795,12 @@ void GunAimTargetUpdate80176F14(void* ownerArg, void* behArg) {
     GunNormalizeAimVec80176F14(&delta);
 
     if (axis.z * delta.z + axis.x * delta.x + axis.y * delta.y <=
-        lbl_804D8134) {
+        0.5f) {
         beh->flags |= 0x100;
     } else {
         angle = Fn800AA050(owner, target);
-        if (angle <= (float)beh->field16 - lbl_804D8140 &&
-            (float)beh->field14 - lbl_804D8140 <= angle) {
+        if (angle <= (float)beh->field16 - 4503599627370496.0 &&
+            (float)beh->field14 - 4503599627370496.0 <= angle) {
             beh->flags |= 1;
             beh->flags |= 4;
         }
@@ -975,8 +953,6 @@ struct GunMsgPayload8017744C {
 
 int Fn800F7F5C(int a, int b, int c, int d, void* data, float f);
 int Fn80161FF4(Owner* owner, void* data, float f);
-extern float lbl_804D8148;
-extern float lbl_804D814C;
 
 // Placeholder name kept: u_80161F40.cpp references it (behaviour table entry).
 // Weapon behaviour message handler (GunMsgHandler801744C is the descriptive
@@ -995,12 +971,12 @@ extern "C" int fn_8017744C(void* ownerArg, void* behArg, int msg) {
     block = ((GunMsgBeh8017744C*)behArg)->block;
     switch (msg) {
     case 1:
-        if (block->state == 0 && block->time <= lbl_804D8128) {
+        if (block->state == 0 && block->time <= 0.0f) {
             block->next = 4;
         }
         break;
     case 2:
-        if (block->state == 0 && block->time <= lbl_804D8128) {
+        if (block->state == 0 && block->time <= 0.0f) {
             block->next = 5;
         }
         break;
@@ -1020,12 +996,12 @@ extern "C" int fn_8017744C(void* ownerArg, void* behArg, int msg) {
                                OwnerId((Owner*)ownerArg), 0);
             if (reply == 0x04a3e183) {
                 block->flags |= 1;
-                if (Fn80161FF4((Owner*)ownerArg, &payload, lbl_804D8148) == 0) {
+                if (Fn80161FF4((Owner*)ownerArg, &payload, 1200.0f) == 0) {
                     return 0;
                 }
                 Fn800F7F5C(owner->field8EC, owner->field8F0, 0x20ee36,
                            OwnerId((Owner*)ownerArg), &payload, owner->field138);
-                block->time = lbl_804D814C;
+                block->time = 4000.0f;
             }
         }
         break;
@@ -1071,7 +1047,7 @@ extern "C" int fn_80177694(void* ownerArg, void* behArg) {
     owner = (GunMsgOwner8017744C*)ownerArg;
     beh = (GunMsgBeh8017744C*)behArg;
     block = beh->block;
-    if (block->time >= lbl_804D8128) {
+    if (block->time >= 0.0f) {
         block->time -= owner->field138;
     }
     if (lbl_803A8140[block->state].update != 0) {
@@ -1131,7 +1107,7 @@ extern "C" bool fn_801777E8(void* ownerArg, void* behArg) {
     block->state = 0;
     block->next = 0;
     block->flags = 0;
-    block->time = lbl_804D8128;
+    block->time = 0.0f;
     if (lbl_803A8140[block->state].enter != 0) {
         lbl_803A8140[block->state].enter(ownerArg, beh);
     }
@@ -1269,12 +1245,6 @@ extern "C" int fn_80027A58(int type, Vec3* pos, float* params, int delay, int id
 extern "C" void fn_800277B0(int effect, Vec3* pos, float* params, int* delay);
 extern "C" void fn_80027690(int effect);
 
-extern float lbl_804D8150;
-extern float lbl_804D8154;
-extern float lbl_804D8158;
-extern float lbl_804D815C;
-extern float lbl_804D8160;
-extern float lbl_804D8164;
 
 // Name is a guess: effect-spawn behaviour update. Advances the behaviour, and -
 // when it reports itself active, no menu is open and its effect has not run yet -
@@ -1319,15 +1289,15 @@ void GunFxSpawnUpdate80177A2C(Owner* ownerArg, Beh* behArg) {
             pos.y = owner->pos.y;
             pos.z = owner->pos.z;
         }
-        delay = (int)(lbl_804D8158 *
-                          ((float)(unsigned)rand() / lbl_804D8150) +
-                      lbl_804D8154);
-        params[0] = lbl_804D815C;
-        params[1] = lbl_804D8160 *
-                        ((float)(unsigned)rand() / lbl_804D8150) +
-                    lbl_804D8160;
-        params[2] = lbl_804D8164;
-        params[3] = lbl_804D815C;
+        delay = (int)(250.0f *
+                          ((float)(unsigned)rand() / 32767.0f) +
+                      800.0f);
+        params[0] = 1.0f;
+        params[1] = 0.3f *
+                        ((float)(unsigned)rand() / 32767.0f) +
+                    0.3f;
+        params[2] = 0.0f;
+        params[3] = 1.0f;
         if (block->effect == -1) {
             block->effect = fn_80027A58(1, &pos, params, delay, 9);
             beh->flags |= 0x100000;
@@ -1536,8 +1506,6 @@ struct GunTrailOwner80177F80 {
 
 int HasCondition(void* set, int id);
 void ModelNodeSetup(int a, int b, int c, int d);
-extern float lbl_804D8170;
-extern float lbl_804D8174;
 
 // Placeholder name kept: u_80161F40.cpp references it (behaviour table entry).
 // Message handler of the gun trail behaviour (GunTrailMsg80177F80 is the descriptive
@@ -1563,7 +1531,7 @@ extern "C" int fn_80177F80(void* ownerArg, void* behArg, int msg) {
         block->next = 4;
         break;
     case 2:
-        if (block->state != 0 || block->time > lbl_804D8164) {
+        if (block->state != 0 || block->time > 0.0f) {
             return 0;
         }
         block->next = 5;
@@ -1588,7 +1556,7 @@ extern "C" int fn_80177F80(void* ownerArg, void* behArg, int msg) {
                            OwnerId((Owner*)ownerArg), 0);
         if (reply == 0x04a3e183) {
             block->flags |= 1;
-            if (Fn80161FF4((Owner*)ownerArg, payload20EE36, lbl_804D8164) == 0) {
+            if (Fn80161FF4((Owner*)ownerArg, payload20EE36, 0.0f) == 0) {
                 return 0;
             }
             Fn800F7F5C(owner->field8EC, owner->field8F0, 0x20ee36,
@@ -1615,12 +1583,12 @@ extern "C" int fn_80177F80(void* ownerArg, void* behArg, int msg) {
             return 1;
         }
         block->flags |= 0x40;
-        if (Fn80161FF4((Owner*)ownerArg, payloadF829DB93, lbl_804D8170) == 0) {
+        if (Fn80161FF4((Owner*)ownerArg, payloadF829DB93, 300.0f) == 0) {
             return 0;
         }
         Fn800F7F5C(owner->field8EC, owner->field8F0, 0xf829db93,
                    OwnerId((Owner*)ownerArg), payloadF829DB93, owner->field138);
-        block->time = lbl_804D8174;
+        block->time = 4000.0f;
         break;
     }
     return 1;
@@ -1658,12 +1626,12 @@ extern "C" int fn_80178270(void* ownerArg, void* behArg) {
         }
         ModelNodeSetup(owner->fieldCC, owner->fieldE4, 0, 1);
         block->flags = 0;
-        block->time = lbl_804D8164;
+        block->time = 0.0f;
         BehReset(behArg);
         BehDone(behArg);
         return 1;
     }
-    if (block->time >= lbl_804D8164) {
+    if (block->time >= 0.0f) {
         block->time -= owner->field138;
     }
     entry = &lbl_803A81A0[block->state];
@@ -1773,12 +1741,6 @@ void GunFlagStateClear80178554(void* owner, void* beh) {
     b->field04 = 0;
 }
 
-extern float lbl_804D8178;
-extern float lbl_804D817C;
-extern float lbl_804D8180;
-extern float lbl_804D8184;
-extern float lbl_804D8188;
-extern float lbl_804D818C;
 
 // Name is a guess: effect-spawn behaviour update variant (behaviour-table entry,
 // address 0x80178580). Starts or, on the second pass, refreshes and then releases
@@ -1823,15 +1785,15 @@ void GunFxSpawnState80178580(Owner* ownerArg, Beh* behArg) {
             pos.y = owner->pos.y;
             pos.z = owner->pos.z;
         }
-        delay = (int)(lbl_804D8180 *
-                          ((float)(unsigned)rand() / lbl_804D8178) +
-                      lbl_804D817C);
-        params[0] = lbl_804D8184;
-        params[1] = lbl_804D8188 *
-                        ((float)(unsigned)rand() / lbl_804D8178) +
-                    lbl_804D8188;
-        params[2] = lbl_804D818C;
-        params[3] = lbl_804D8184;
+        delay = (int)(250.0f *
+                          ((float)(unsigned)rand() / 32767.0f) +
+                      800.0f);
+        params[0] = 1.0f;
+        params[1] = 0.3f *
+                        ((float)(unsigned)rand() / 32767.0f) +
+                    0.3f;
+        params[2] = 0.0f;
+        params[3] = 1.0f;
         if (block->effect == -1) {
             block->effect = fn_80027A58(1, &pos, params, delay, 9);
             beh->flags |= 0x100000;
@@ -1902,15 +1864,15 @@ void GunFxSpawnState8017883C(Owner* ownerArg, Beh* behArg) {
             pos.y = owner->pos.y;
             pos.z = owner->pos.z;
         }
-        delay = (int)(lbl_804D8180 *
-                          ((float)(unsigned)rand() / lbl_804D8178) +
-                      lbl_804D817C);
-        params[0] = lbl_804D8184;
-        params[1] = lbl_804D8188 *
-                        ((float)(unsigned)rand() / lbl_804D8178) +
-                    lbl_804D8188;
-        params[2] = lbl_804D818C;
-        params[3] = lbl_804D8184;
+        delay = (int)(250.0f *
+                          ((float)(unsigned)rand() / 32767.0f) +
+                      800.0f);
+        params[0] = 1.0f;
+        params[1] = 0.3f *
+                        ((float)(unsigned)rand() / 32767.0f) +
+                    0.3f;
+        params[2] = 0.0f;
+        params[3] = 1.0f;
         if (block->effect == -1) {
             block->effect = fn_80027A58(1, &pos, params, delay, 9);
             beh->flags |= 0x100000;
@@ -2128,7 +2090,6 @@ struct GunAimStateEntry80178D54 {
 };
 
 extern GunAimStateEntry80178D54 lbl_803A8200[];
-extern float lbl_804D8198;
 
 // Placeholder name kept: u_80161F40.cpp references it (behaviour table entry).
 // Message handler of the gun-aim behaviour (GunAimMsg80178D54 is the descriptive
@@ -2189,13 +2150,13 @@ extern "C" int fn_80178D54(void* ownerArg, void* behArg, int msg) {
                            OwnerId((Owner*)ownerArg), 0);
         if (reply == 0x04a3e183) {
             block->flags |= 1;
-            if (Fn80161FF4((Owner*)ownerArg, &payload, lbl_804D818C) == 0) {
+            if (Fn80161FF4((Owner*)ownerArg, &payload, 0.0f) == 0) {
                 return 0;
             }
             Fn800F7F5C(owner->field8EC, owner->field8F0, msg,
                        OwnerId((Owner*)ownerArg), &payload, owner->field138);
             block->flags &= ~0x100;
-            block->time = lbl_804D8198;
+            block->time = 7673845534663173472256.0;
         }
         break;
     }
@@ -2230,7 +2191,7 @@ extern "C" int fn_80178FA0(void* ownerArg, void* behArg) {
         }
         ModelNodeSetup(owner->fieldCC, owner->fieldE4, 0, 1);
         block->flags = 0;
-        block->time = lbl_804D818C;
+        block->time = 0.0f;
         BehReset(behArg);
         BehDone(behArg);
     } else {
@@ -2238,7 +2199,7 @@ extern "C" int fn_80178FA0(void* ownerArg, void* behArg) {
         if (entry->update != 0) {
             entry->update(ownerArg, behArg);
         }
-        if (block->time >= lbl_804D818C) {
+        if (block->time >= 0.0f) {
             beh->flags &= ~4;
             block->time = block->time - owner->field138;
         }
@@ -2381,32 +2342,24 @@ extern "C" void fn_800A025C(Vec3* out, Mtx34* m, int index);
 void Mtx34StoreColumn(Mtx34* m, Vec3* v, int index);
 extern "C" int fn_80049940(void);
 
-extern float lbl_804D81A0;
-extern float lbl_804D81A4;
-extern float lbl_804D81A8;
-extern float lbl_804D81AC;
-extern float lbl_804D81B0;
-extern float lbl_804D81B4;
-extern float lbl_804D81B8;
-extern float lbl_804D81BC;
 extern int lbl_804D4EC0;
 
 // Scales a 3-vector to unit length and returns the inverse of its old length; a
 // vector shorter than the epsilon is set to zero and reports zero.
 static inline float GunNormalizeAimVec80179268(Vec3* v) {
     float inv;
-    if (((fabsf(v->x) > lbl_804D81A8) + (fabsf(v->y) > lbl_804D81A8) +
-         (fabsf(v->z) > lbl_804D81A8)) != 0) {
+    if (((fabsf(v->x) > 1.1920929e-07f) + (fabsf(v->y) > 1.1920929e-07f) +
+         (fabsf(v->z) > 1.1920929e-07f)) != 0) {
         inv = 1.0f / sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
         v->x *= inv;
         v->y *= inv;
         v->z *= inv;
         return inv;
     }
-    v->x = lbl_804D81A4;
-    v->y = lbl_804D81A4;
-    v->z = lbl_804D81A4;
-    return lbl_804D81A4;
+    v->x = 0.0f;
+    v->y = 0.0f;
+    v->z = 0.0f;
+    return 0.0f;
 }
 
 // Name is a guess: aim-matrix update of the gun behaviour. Asks the behaviour's
@@ -2454,7 +2407,7 @@ int GunAimMatrixUpdate80179268(float time, Owner* ownerArg, Beh* behArg) {
     beh->target = target;
     beh->field4C = owner->range;
     if (fn_800F7C64(owner->field8EC, 0x20a5aa68) > 0 || fn_800FC3B8(0x12) != 0) {
-        beh->field4C = beh->field4C * lbl_804D81A0;
+        beh->field4C = beh->field4C * 1.5f;
     }
     query.obj = target;
     query.id = lbl_804D4EC0;
@@ -2478,7 +2431,7 @@ int GunAimMatrixUpdate80179268(float time, Owner* ownerArg, Beh* behArg) {
     beh->matrix.trans[1] = mtx.trans[1];
     beh->matrix.trans[2] = mtx.trans[2];
     fn_800A025C(&dir, &mtx, 0);
-    dir.z = lbl_804D81A4;
+    dir.z = 0.0f;
     GunNormalizeAimVec80179268(&dir);
     {
         int* bonePos = (int*)&mats[beh->bone].trans[0];
@@ -2488,13 +2441,13 @@ int GunAimMatrixUpdate80179268(float time, Owner* ownerArg, Beh* behArg) {
     }
     {
         float sq = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
-        invDist = lbl_804D81A4;
-        if (sq > lbl_804D81A4) {
+        invDist = 0.0f;
+        if (sq > 0.0f) {
             invDist = 1.0f / sqrtf(sq);
         }
     }
     GunNormalizeAimVec80179268(&delta);
-    if (delta.z * dir.z + delta.x * dir.x + delta.y * dir.y < lbl_804D81AC) {
+    if (delta.z * dir.z + delta.x * dir.x + delta.y * dir.y < 0.9f) {
         delta.x = dir.x;
         delta.y = dir.y;
         delta.z = dir.z;
@@ -2511,34 +2464,34 @@ int GunAimMatrixUpdate80179268(float time, Owner* ownerArg, Beh* behArg) {
     Mtx34StoreColumn(&mtx, &side, 0);
     Mtx34StoreColumn(&mtx, &delta, 1);
     Mtx34StoreColumn(&mtx, &up, 2);
-    beh->field54 = lbl_804D81B0;
+    beh->field54 = 1.0f;
     switch (owner->mode) {
     case 0:
-        beh->field50 = lbl_804D81A4;
+        beh->field50 = 0.0f;
         break;
     case 1:
-        beh->field50 = lbl_804D81B4;
+        beh->field50 = 0.33f;
         break;
     case 2:
-        beh->field50 = lbl_804D81B8;
+        beh->field50 = 0.67f;
         break;
     case 3:
-        beh->field50 = lbl_804D81B0;
+        beh->field50 = 1.0f;
         break;
     }
-    blend = lbl_804D81A4;
+    blend = 0.0f;
     if (owner->fadeEnd != 0) {
         blend = (invDist - (float)owner->fadeStart) /
                 (float)(owner->fadeEnd - owner->fadeStart);
-        if (blend < lbl_804D81A4) {
-            blend = lbl_804D81A4;
-        } else if (blend > lbl_804D81B0) {
-            blend = lbl_804D81B0;
+        if (blend < 0.0f) {
+            blend = 0.0f;
+        } else if (blend > 1.0f) {
+            blend = 1.0f;
         }
     }
-    beh->field50 = (lbl_804D81B0 - beh->field50) * blend + beh->field50;
+    beh->field50 = (1.0f - beh->field50) * blend + beh->field50;
     if (fn_80049940() != 0) {
-        beh->field50 = beh->field50 * lbl_804D81BC;
+        beh->field50 = beh->field50 * 10.0f;
     }
     beh->field3C.x = delta.x;
     beh->field3C.y = delta.y;
@@ -2582,10 +2535,6 @@ void GunAimResetNext801798A4(void* owner, void* behArg) {
     block->field04 = 0;
 }
 
-extern float lbl_804D81D0;
-extern float lbl_804D81D4;
-extern float lbl_804D81D8;
-extern float lbl_804D81DC;
 
 // Name is a guess: state callback with the same shape as GunAimResetNext801798A4
 // above - it drops the behaviour's requested state once the block has both the
@@ -2680,15 +2629,15 @@ void GunAimFxUpdate801798FC(Owner* ownerArg, void* behArg) {
             pos.y = owner->pos.y;
             pos.z = owner->pos.z;
         }
-        delay = (int)(lbl_804D81D8 *
-                          ((float)(unsigned)rand() / lbl_804D81D0) +
-                      lbl_804D81D4);
-        params[0] = lbl_804D81B0;
-        params[1] = lbl_804D81DC *
-                        ((float)(unsigned)rand() / lbl_804D81D0) +
-                    lbl_804D81DC;
-        params[2] = lbl_804D81A4;
-        params[3] = lbl_804D81B0;
+        delay = (int)(250.0f *
+                          ((float)(unsigned)rand() / 32767.0f) +
+                      800.0f);
+        params[0] = 1.0f;
+        params[1] = 0.3f *
+                        ((float)(unsigned)rand() / 32767.0f) +
+                    0.3f;
+        params[2] = 0.0f;
+        params[3] = 1.0f;
         fn_800277B0(block->effect, &pos, params, &delay);
     }
     if ((block->flags & 0x40) != 0) {
@@ -2749,15 +2698,15 @@ void GunAimFxUpdate80179B40(Owner* ownerArg, void* behArg) {
             pos.y = owner->pos.y;
             pos.z = owner->pos.z;
         }
-        delay = (int)(lbl_804D81D8 *
-                          ((float)(unsigned)rand() / lbl_804D81D0) +
-                      lbl_804D81D4);
-        params[0] = lbl_804D81B0;
-        params[1] = lbl_804D81DC *
-                        ((float)(unsigned)rand() / lbl_804D81D0) +
-                    lbl_804D81DC;
-        params[2] = lbl_804D81A4;
-        params[3] = lbl_804D81B0;
+        delay = (int)(250.0f *
+                          ((float)(unsigned)rand() / 32767.0f) +
+                      800.0f);
+        params[0] = 1.0f;
+        params[1] = 0.3f *
+                        ((float)(unsigned)rand() / 32767.0f) +
+                    0.3f;
+        params[2] = 0.0f;
+        params[3] = 1.0f;
         fn_800277B0(block->effect, &pos, params, &delay);
     }
     if ((block->flags & 2) != 0) {
@@ -2810,7 +2759,7 @@ void GunAimFxTimerUpdate80179D5C(Owner* ownerArg, void* behArg) {
     }
     beh = (GunAimFxTimerBeh80179D5C*)behArg;
     block = beh->block;
-    if (Fn80161FF4(ownerArg, payload315A1A7F, lbl_804D81A4) != 0) {
+    if (Fn80161FF4(ownerArg, payload315A1A7F, 0.0f) != 0) {
         Fn800F7F5C(owner->field8EC, owner->field8F0, 0x315a1a7f,
                    OwnerId(ownerArg), payload315A1A7F, owner->field138);
     }
@@ -2819,7 +2768,7 @@ void GunAimFxTimerUpdate80179D5C(Owner* ownerArg, void* behArg) {
     switch (result) {
     case 0x7183f329:
     case 0x7183f5a1:
-        if (lbl_804D81A4 <= block->time) {
+        if (0.0f <= block->time) {
             block->time -= owner->field138;
         } else {
             expired = 1;
@@ -2838,7 +2787,7 @@ void GunAimFxTimerUpdate80179D5C(Owner* ownerArg, void* behArg) {
                             OwnerId(ownerArg), 0);
         if (result == 0x04a3e183) {
             block->state = 4;
-            if (Fn80161FF4(ownerArg, payloadD19E338, lbl_804D81A4) != 0) {
+            if (Fn80161FF4(ownerArg, payloadD19E338, 0.0f) != 0) {
                 Fn800F7F5C(owner->field8EC, owner->field8F0, 0xd19e338,
                            OwnerId(ownerArg), payloadD19E338,
                            owner->field138);
@@ -2892,7 +2841,6 @@ struct GunAimBeh80179F08 {
     GunAimBlock80179F08* block;         // 0x54
 };
 
-extern float lbl_804D81E0;
 
 float OwnerValue(Owner* owner, void* target);
 
@@ -2930,9 +2878,9 @@ void GunAimTargetUpdate80179F08(void* ownerArg, void* behArg) {
     delta.y = (float)target->posY - (float)owner->posY;
     delta.z = (float)owner->posZ - (float)owner->posZ;
 
-    axis.x = lbl_804D81A4;
-    axis.y = lbl_804D81B0;
-    axis.z = lbl_804D81A4;
+    axis.x = 0.0f;
+    axis.y = 1.0f;
+    axis.z = 0.0f;
     ActorGetMatrix(&mtx, (Actor*)owner);
     fn_800A0168(&mtx, &mtx);
     fn_800A0030(&axis, &mtx, &axis);
@@ -2940,12 +2888,12 @@ void GunAimTargetUpdate80179F08(void* ownerArg, void* behArg) {
     GunNormalizeAimVec80179268(&delta);
 
     if (axis.z * delta.z + axis.x * delta.x + axis.y * delta.y >
-        lbl_804D81E0) {
+        0.5f) {
         angle = OwnerValue((Owner*)owner, target);
         if (angle <= (float)beh->field16 && (float)beh->field14 <= angle) {
             beh->flags |= 4;
         }
-        if (block->field1C <= lbl_804D81A4 &&
+        if (block->field1C <= 0.0f &&
             angle <= (float)beh->field1A &&
             (float)beh->field18 <= angle) {
             beh->flags |= 8;
@@ -3134,15 +3082,15 @@ void GunSpawnStart8017A494(void* ownerArg, void* behArg) {
                     pos.y = owner->pos.y;
                     pos.z = owner->pos.z;
                 }
-                params[0] = lbl_804D81B0;
-                params[1] = lbl_804D81DC *
-                                ((float)(unsigned)rand() / lbl_804D81D0) +
-                            lbl_804D81DC;
-                params[2] = lbl_804D81A4;
-                params[3] = lbl_804D81B0;
-                delay = (int)(lbl_804D81D8 *
-                                  ((float)(unsigned)rand() / lbl_804D81D0) +
-                              lbl_804D81D4);
+                params[0] = 1.0f;
+                params[1] = 0.3f *
+                                ((float)(unsigned)rand() / 32767.0f) +
+                            0.3f;
+                params[2] = 0.0f;
+                params[3] = 1.0f;
+                delay = (int)(250.0f *
+                                  ((float)(unsigned)rand() / 32767.0f) +
+                              800.0f);
                 block->effect = fn_80027A58(1, &pos, params, delay, 9);
             }
         }
@@ -3221,21 +3169,21 @@ void GunSpawnStart8017A698(Owner* ownerArg, void* behArg) {
                 pos.y = owner->pos.y;
                 pos.z = owner->pos.z;
             }
-            ratio = (float)(unsigned)rand() / lbl_804D81D0;
-            params[0] = lbl_804D81B0;
-            params[1] = lbl_804D81DC * ratio + lbl_804D81DC;
-            params[2] = lbl_804D81A4;
-            params[3] = lbl_804D81B0;
-            delay = (int)(lbl_804D81D8 *
-                              ((float)(unsigned)rand() / lbl_804D81D0) +
-                          lbl_804D81D4);
+            ratio = (float)(unsigned)rand() / 32767.0f;
+            params[0] = 1.0f;
+            params[1] = 0.3f * ratio + 0.3f;
+            params[2] = 0.0f;
+            params[3] = 1.0f;
+            delay = (int)(250.0f *
+                              ((float)(unsigned)rand() / 32767.0f) +
+                          800.0f);
             block->effect = fn_80027A58(1, &pos, params, delay, 9);
         }
     }
     if (Fn800F7DEC(owner->field8EC, owner->field8F0, 0x20ee36, OwnerId(ownerArg),
                    0) == 0x04a3e183) {
         block->flags |= 2;
-        if (GunAimMatrixUpdate80179268(lbl_804D81A4, ownerArg, (Beh*)payload) !=
+        if (GunAimMatrixUpdate80179268(0.0f, ownerArg, (Beh*)payload) !=
             0) {
             Fn800F7F5C(owner->field8EC, owner->field8F0, 0x20ee36,
                        OwnerId(ownerArg), payload, owner->field138);
@@ -3278,12 +3226,12 @@ void GunSpawnTimer8017A918(Owner* ownerArg, void* behArg) {
     block = beh->block;
     block->flags = 0;
     BehDone(beh);
-    ratio = (float)(unsigned)rand() / lbl_804D81D0;
+    ratio = (float)(unsigned)rand() / 32767.0f;
     block->time = (float)(block->max - block->min) * ratio;
     block->time += (float)block->min;
     if (Fn800F7DEC(owner->field8EC, owner->field8F0, 0x96224fcc, OwnerId(ownerArg),
                    0) == 0x04a3e183 &&
-        Fn80161FF4(ownerArg, payload, lbl_804D81A4) != 0) {
+        Fn80161FF4(ownerArg, payload, 0.0f) != 0) {
         Fn800F7F5C(owner->field8EC, owner->field8F0, 0x96224fcc,
                    OwnerId(ownerArg), payload, owner->field138);
     }
@@ -3324,8 +3272,6 @@ extern "C" int fn_8017AB10(void) {
     return 0;
 }
 
-extern float lbl_804D81E4;
-extern float lbl_804D81E8;
 
 // Placeholder name kept until other units are checked: weapon behaviour message
 // handler of the second gun behaviour table (GunAimMsg8017AB18 is the
@@ -3383,13 +3329,13 @@ extern "C" int fn_8017AB18(void* ownerArg, void* behArg, int msg) {
                                OwnerId((Owner*)ownerArg), 0);
             if (reply == 0x04a3e183) {
                 block->flags |= 0x40;
-                if (Fn80161FF4((Owner*)ownerArg, &payload, lbl_804D81E4) == 0) {
+                if (Fn80161FF4((Owner*)ownerArg, &payload, 300.0f) == 0) {
                     return 0;
                 }
                 Fn800F7F5C(owner->field8EC, owner->field8F0, 0xf829db93,
                            OwnerId((Owner*)ownerArg), &payload,
                            owner->field138);
-                block->time = lbl_804D81E8;
+                block->time = 129355062698765321693560832.0;
             }
         }
         break;
@@ -3418,7 +3364,6 @@ struct GunStateBeh8017AD38 {
 };
 
 extern GunStateEntry80177694 lbl_803A8260[];
-extern float lbl_804D81A4;
 
 // Placeholder name kept until other units are checked: per-frame behaviour
 // update of the second gun behaviour table (GunAimStateUpdate8017AD38 is the
@@ -3436,7 +3381,7 @@ extern "C" int fn_8017AD38(void* ownerArg, void* behArg) {
     owner = (GunMsgOwner8017744C*)ownerArg;
     beh = (GunStateBeh8017AD38*)behArg;
     block = beh->block;
-    if (block->time >= lbl_804D81A4) {
+    if (block->time >= 0.0f) {
         block->time -= owner->field138;
     }
     if (lbl_803A8260[block->state].update != 0) {
@@ -3500,8 +3445,8 @@ extern "C" int fn_8017AEAC(void* ownerArg, void* behArg) {
     block->flags = 0;
     block->field10 = 400;
     block->field14 = 600;
-    block->field18 = lbl_804D81A4;
-    block->time = lbl_804D81A4;
+    block->field18 = 0.0f;
+    block->time = 0.0f;
     if (lbl_803A8260[block->state].enter != 0) {
         lbl_803A8260[block->state].enter(ownerArg, behArg);
     }
@@ -3531,7 +3476,6 @@ struct GunTrailEntry8017AFA4 {
     TrailBuffer* trail;                 // 0x3c
 };
 
-extern float lbl_804D81F0;
 
 // Advances the entry from state 1 to state 2 (address 0x8017AF78).
 void GunTrailStateStart8017AF78(void* block) {
@@ -3570,7 +3514,7 @@ void GunTrailEntryInit8017AFA4(void* block, void* sample) {
     }
     data = (GunTrailData8017AFA4*)sample;
     entry->data = *data;
-    entry->data.vec3.z -= lbl_804D81F0;
+    entry->data.vec3.z -= 100.0f;
     TrailBufferPush(entry->trail, &entry->data.vec3.x);
 }
 
@@ -3628,10 +3572,6 @@ struct GunTrailGeometry8017B488 {
 };
 
 extern GunTrailGeometry8017B488 lbl_80491760;
-extern float lbl_804D81F4;
-extern float lbl_804D81F8;
-extern float lbl_804D81FC;
-extern float lbl_804D8200;
 
 void LinkInfoInit(void* info);
 void TrailBufferInit(TrailBuffer* buffer, float* points, unsigned long max,
@@ -3691,7 +3631,7 @@ extern "C" void fn_8017B164(void) {
     int i;
     unsigned char alpha;
 
-    value = lbl_804D81F4;
+    value = 0.0f;
     slot = (void**)lbl_804D5048->data;
     while (slot != (void**)((unsigned char*)lbl_804D5048->data +
                             lbl_804D5048->size)) {
@@ -3702,8 +3642,8 @@ extern "C" void fn_8017B164(void) {
         base[2] = value;
         if (block->state == 2) {
             if (block->counter < 300) {
-                alpha = (unsigned char)(int)(lbl_804D81F8 *
-                        (lbl_804D81FC - (float)block->counter / lbl_804D8200));
+                alpha = (unsigned char)(int)(255.0f *
+                        (1.0f - (float)block->counter / 300.0f));
                 fx = &lbl_803A82C0[block->effect];
                 Draw3DBeginLine(fx->ring.mode, 0, fx->ring.width);
                 DrawTrailRing((TrailBuffer*)block->trail, alpha, alpha, alpha,
@@ -3757,12 +3697,6 @@ extern "C" void fn_8017B164(void) {
 
 extern int lbl_804D504C;
 extern signed char lbl_804D5050;
-extern float lbl_804D8210;
-extern float lbl_804D8214;
-extern float lbl_804D8218;
-extern float lbl_804D821C;
-extern float lbl_804D8220;
-extern float lbl_804D8224;
 
 // Per-frame update of the live trail effects: advances the shared angle table
 // and the effect lifetimes (address 0x8017B488). Name is a guess.
@@ -3782,19 +3716,19 @@ extern "C" void fn_8017B488(float dt) {
         lbl_804D504C = 0;
         lbl_804D5050 = 1;
     }
-    lbl_804D504C += (int)(lbl_804D8210 * dt);
+    lbl_804D504C += (int)(2.0f * dt);
     for (i = 0; i < 12; i++) {
         counter = lbl_804D504C + lbl_80491760.angleOffsets[i];
         angle = counter % 360 - 180;
-        value = lbl_804D8214 * (float)angle / lbl_804D8218;
-        if (value < lbl_804D81F4) {
-            value = value * lbl_804D821C;
+        value = -4.0f * (float)angle / 360.0f;
+        if (value < 0.0f) {
+            value = value * 4.0f;
         } else {
-            value = value * lbl_804D8220;
+            value = value * 0.25f;
         }
         lbl_80491760.scaleY[i] = value;
-        sinValue = fn_800A1394(lbl_804D8220 * (float)counter);
-        cosValue = fn_800A1394(lbl_804D8224 * (float)counter);
+        sinValue = fn_800A1394(0.25f * (float)counter);
+        cosValue = fn_800A1394(0.5f * (float)counter);
         lbl_80491760.scaleXZ[i] = cosValue * sinValue;
     }
     frames = (int)dt;
@@ -3896,7 +3830,7 @@ extern "C" void fn_8017B7A4(void) {
     angle = 0;
     for (i = 0; i < 12; i++) {
         lbl_80491760.points[i * 3 + 0] = fn_800A1418((float)angle);
-        lbl_80491760.points[i * 3 + 1] = lbl_804D81FC;
+        lbl_80491760.points[i * 3 + 1] = 1.0f;
         lbl_80491760.points[i * 3 + 2] = fn_800A1394((float)angle);
         lbl_80491760.angleOffsets[i] = (i % 3) * 120 + angle;
         angle += 30;
