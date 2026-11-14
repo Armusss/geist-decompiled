@@ -95,13 +95,54 @@ union MsgArg {
     void* p;
 };
 
-struct GeistString {
-    void* data;  // 0x00
-    u32   unk04; // 0x04
-    u32   unk08; // 0x08
-    u32   unk0C; // 0x0c
-    u32   unk10; // 0x10
+// Engine string object (constructor/destructor live in another unit).
+class Buffer {
+public:
+    Buffer();                                        // 0x8028BA9C
+    virtual ~Buffer();                               // 0x8028B9C0
+    virtual void Release(char* p);
+
+    char* data;
+    int length;
+    int unk0C;
+    int owned;
 };
+
+class String : public Buffer {
+public:
+    String();                                        // 0x8028C500
+    String(const char* text);                        // 0x8028C400
+    ~String() {}
+    virtual void Release(char* p);
+};
+
+// The receiver of message 0x41E overwrites the first word of the string with
+// its answer.
+struct FshStrResult {
+    String str;
+};
+
+struct Msg41E {
+    u32 unk00;         // 0x00
+    u32 hash;          // 0x04
+    u32 unk08;         // 0x08
+    FshStrResult str;  // 0x0c
+};
+
+// Asks target whether the follow link is accepted; the String is released
+// before the answer word is used.
+extern "C" int SendMsg(int to, int msg, void* data);
+
+static inline u32 FshQueryLink(int target)
+{
+    Msg41E msg;
+
+    *(u32*)&msg.str = 0;
+    msg.hash = 0x2EAA5F62;
+    msg.unk08 = 0;
+    SendMsg(target, 0x41E, &msg);
+    return *(u32*)&msg.str;
+}
 
 extern "C" {
 extern s32 lbl_804D3970;
@@ -121,23 +162,22 @@ extern s32 lbl_804D39BC;
 extern f32 lbl_804D39C0;
 extern f32 lbl_804D39C4;
 
-extern void* PTR_DAT_803C4B54[];
-extern void* PTR_FUN_803C4B48[];
-extern void* PTR_FUN_803C4B4C[];
-extern void* PTR_FUN_803C4B50[];
-extern char  lbl_8034BDDD[];
-extern char  lbl_8034BDD4[];
-extern char  lbl_80393D7C[];
+// One 16-byte row of the behaviour-state table at 0x803C4B48.
+struct FshSveState {
+    void (*enter)(Actor*);    // 0x0
+    s32 (*leave)(Actor*);     // 0x4
+    s32 (*update)(Actor*);    // 0x8
+    const char* name;         // 0xC
+};
+extern FshSveState gFshSveStates[];
 extern u8    __upper_map[];
 
 extern u32 fn_80049940(void);
 extern s32 fn_800C5654(u32 a, s32 b, s32 c);
 extern void fn_800265D4(s32 a, s32 b, void* c);
 extern u32 fn_80019F88(MsgArg* args, Actor* self);
-extern void fn_8028C400(void* out, void* src);
 extern void fn_8028C188(void* out, u32 a, u32 b);
-extern void fn_8028B9C0(void* str, s32 flag);
-extern void fn_800225C8(void* out, void* a, void* b);
+extern String fn_800225C8(String* a, String* b);
 extern void fn_800C99E8(Actor* self, u32 a, u32 b, s32 c, s32 d);
 extern f32 fn_802A2080(void);
 extern u32 fn_8016F120(u32 a, void* b);
@@ -205,12 +245,9 @@ u32 fn_802BB1F4(int msg, MsgArg* args)
     Actor* self = (Actor*)args[0].p;
     BehData* bd;
     MsgArg send[3];
-    GeistString s1;
-    GeistString s2;
-    GeistString s3;
     f32 limit;
     u32 hash;
-    u8* p;
+    const u8* p;
     s32 r;
     s32 state;
 
@@ -290,16 +327,10 @@ u32 fn_802BB1F4(int msg, MsgArg* args)
     if (msg < 0xC14) {
         if (msg == 0x41E) {
             if (args[1].u == 0xAD8576FA) {
-                fn_8028C400(&s1, PTR_DAT_803C4B54[self->beh->state]);
-                fn_8028C400(&s2, lbl_8034BDDD);
-                fn_800225C8(&s3, &s1, &s2);
-                fn_8028C188(&args[3], s3.unk04, s3.unk08);
-                s3.data = lbl_80393D7C;
-                fn_8028B9C0(&s3, 0);
-                s2.data = lbl_80393D7C;
-                fn_8028B9C0(&s2, 0);
-                s1.data = lbl_80393D7C;
-                fn_8028B9C0(&s1, 0);
+                String s1(gFshSveStates[self->beh->state].name);
+                String s2("\n");
+                String s3 = fn_800225C8(&s1, &s2);
+                fn_8028C188(&args[3], (u32)s3.data, s3.length);
                 return 0;
             }
             if (args[1].u < 0xAD8576FA) {
@@ -335,7 +366,7 @@ u32 fn_802BB1F4(int msg, MsgArg* args)
                 args[1].i -= 4;
                 args[2].p = (u8*)args[2].p + 4;
                 hash = 0;
-                for (p = (u8*)lbl_8034BDD4; *p != 0; p++) {
+                for (p = (const u8*)"[FSHSVE]"; *p != 0; p++) {
                     u32 c = (*p == 0xFF) ? 0xFFFFFFFF : (u8)__upper_map[*p];
                     hash = hash * 0x1F + (c & 0xFF);
                 }
@@ -445,13 +476,13 @@ u32 fn_802BB8E0(Actor* self)
                     self->unk288 = 0;
                     self->unk26C = 0;
                 }
-                r = ((s32 (*)(Actor*))PTR_FUN_803C4B50[bd->state])(self);
+                r = gFshSveStates[bd->state].update(self);
                 fn_80162658(self, self->unk894);
                 if (r != 0) {
                     next = FshSveNextState(self);
                     if (next != bd->state) {
-                        if (((s32 (*)(Actor*))PTR_FUN_803C4B4C[bd->state])(self) != 0) {
-                            ((void (*)(Actor*))PTR_FUN_803C4B48[next])(self);
+                        if (gFshSveStates[bd->state].leave(self) != 0) {
+                            gFshSveStates[next].enter(self);
                             fn_800A7A54(self->unk270, 0x40, 0);
                             fn_800A7A54(self->unk270, 0x41, 0);
                             fn_800A7A54(self->unk270, 0x43, 0);
@@ -1170,20 +1201,7 @@ int FshSveMainUpdate(Actor* self)
         }
     } else {
         // message 0x41E: ask the possession target whether it accepts the link
-        struct Msg41E {
-            u32 unk00;       // 0x00
-            u32 hash;        // 0x04
-            u32 unk08;       // 0x08
-            GeistString str; // 0x0c
-        } msg;
-
-        msg.str.data = 0;
-        msg.hash = 0x2EAA5F62;
-        msg.unk08 = 0;
-        SendMsg((int)((Actor*)target)->unk38, 0x41E, &msg);
-        reply = msg.str.data;
-        msg.str.data = lbl_80393D7C;
-        fn_8028B9C0(&msg.str, 0);
+        reply = (void*)FshQueryLink((int)((Actor*)target)->unk38);
 
         if (reply == 0) {
             u32 possessed = bd->flags3C & 2;
@@ -1643,12 +1661,6 @@ bool FshSveFollowTargetReset(Actor* self)
 // state.
 u32 FshSveNextState(Actor* self)
 {
-    struct Msg41E {
-        u32 unk00;       // 0x00
-        u32 hash;        // 0x04
-        u32 unk08;       // 0x08
-        GeistString str; // 0x0c
-    } msg;
     BehData* bd;
     void* target;
     u32 id;
@@ -1700,13 +1712,7 @@ u32 FshSveNextState(Actor* self)
 
     if (state == 2) {
         id = *(u32*)((u8*)target + 0x38);
-        msg.str.data = 0;
-        msg.hash = 0x2EAA5F62;
-        msg.unk08 = 0;
-        SendMsg((int)id, 0x41E, &msg);
-        reply = (u32)msg.str.data;
-        msg.str.data = lbl_80393D7C;
-        fn_8028B9C0(&msg.str, 0);
+        reply = FshQueryLink((int)id);
         if (bd->unk30 == 0) {
             if (reply != 0)
                 state = 5;
@@ -1845,7 +1851,6 @@ u32 FshSveCheckTargetId(void*, u32 targetId)
 }
 
 extern "C" {
-extern char lbl_8034BD8C[];
 }
 
 // Prefix of the player object used by the 0x40A query: the host table at
@@ -1902,7 +1907,7 @@ u32 FshSveQueryResponse(MsgArg* args)
     ((FshOwnerObj*)actor)->msg(0x400, &q);
 
     hash = args[2].u;
-    name = lbl_8034BD8C + 0x62; // "QUERY"
+    name = "QUERY";
     if (name != 0) {
         for (cp = name; *cp != 0; cp++) {
             char c = *name;
@@ -2025,20 +2030,7 @@ u32 FshSveFrameUpdate(MsgArg* args)
 
     if (target != 0) {
         // message 0x41E: ask the follow target for its link state
-        struct Msg41E {
-            u32 unk00;       // 0x00
-            u32 hash;        // 0x04
-            u32 unk08;       // 0x08
-            GeistString str; // 0x0c
-        } msg;
-
-        msg.str.data = 0;
-        msg.hash = 0x2EAA5F62;
-        msg.unk08 = 0;
-        SendMsg((int)*(u32*)((u8*)target + 0x38), 0x41E, &msg);
-        reply = msg.str.data;
-        msg.str.data = lbl_80393D7C;
-        fn_8028B9C0(&msg.str, 0);
+        reply = (void*)FshQueryLink((int)*(u32*)((u8*)target + 0x38));
     }
 
     if (*(f32*)((u8*)actor + 0x13C) > 20000.0f)
