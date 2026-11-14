@@ -308,12 +308,15 @@ float fn_8001715C(float angle);
 
 // Applies the power-of-two gain pair to the angle noise (both exponents are zero here).
 float fn_80017084(float angle) {
-    double e = (double)(u32)0;
-    double a = pow(2.0, e);
-    double b = pow(0.5, e);
     float r = 0.0f;
+    int i;
 
-    r += (float)b * fn_8001715C(angle * (float)a);
+    for (i = 0; i < 1; i++) {
+        double a = pow(2.0, (double)i);
+        double b = pow(0.5, (double)i);
+
+        r += (float)b * fn_8001715C(angle * (float)a);
+    }
     return r;
 }
 
