@@ -1505,10 +1505,10 @@ int BehParamsGhostPauseState(void* actorPtr)
 // state, keeps the previous effect id and re-arms the state's effect.
 int BehParamsGhostState5(void* actorPtr)
 {
+    int arg;
     BehActor* a = (BehActor*)actorPtr;
     BehParams* beh;
     MsgBuf* buf;
-    int arg;
 
     if (a == 0) {
         return 0;
@@ -1548,10 +1548,10 @@ int BehParamsGhostState5(void* actorPtr)
 // the current and the previous state slot.
 int BehParamsGhostState4(void* actorPtr)
 {
+    int arg;
     BehActor* a = (BehActor*)actorPtr;
     BehParams* beh;
     MsgBuf* buf;
-    int arg;
 
     if (a == 0) {
         return 0;
