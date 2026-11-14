@@ -1661,42 +1661,42 @@ static inline ChildNode* UnlinkChildNode(ChildNode** root, ChildNode* node)
 {
     ChildNode* parent;
 
-    if (*root == 0 || node == 0) {
-        return 0;
-    }
-    if (*root == node) {
-        *root = 0;
-    } else {
-        parent = node->mParent;
-        if (parent != 0) {
-            if (parent->mFirst == node) {
-                parent->mFirst = node->mNext;
-                if (parent->mFirst == 0) {
-                    parent->mLast = 0;
+    if (*root != 0 && node != 0) {
+        if (*root == node) {
+            *root = 0;
+        } else {
+            parent = node->mParent;
+            if (parent != 0) {
+                if (parent->mFirst == node) {
+                    parent->mFirst = node->mNext;
+                    if (parent->mFirst != 0) {
+                        parent->mFirst->mPrev = 0;
+                    } else {
+                        parent->mLast = 0;
+                    }
+                } else if (parent->mLast == node) {
+                    parent->mLast = node->mPrev;
+                    if (parent->mLast != 0) {
+                        parent->mLast->mNext = 0;
+                    } else {
+                        parent->mFirst = 0;
+                    }
                 } else {
-                    parent->mFirst->mPrev = 0;
-                }
-            } else if (parent->mLast == node) {
-                parent->mLast = node->mPrev;
-                if (parent->mLast == 0) {
-                    parent->mFirst = 0;
-                } else {
-                    parent->mLast->mNext = 0;
-                }
-            } else {
-                if (node->mPrev != 0) {
-                    node->mPrev->mNext = node->mNext;
-                }
-                if (node->mNext != 0) {
-                    node->mNext->mPrev = node->mPrev;
+                    if (node->mPrev != 0) {
+                        node->mPrev->mNext = node->mNext;
+                    }
+                    if (node->mNext != 0) {
+                        node->mNext->mPrev = node->mPrev;
+                    }
                 }
             }
         }
+        node->mParent = 0;
+        node->mPrev = 0;
+        node->mNext = 0;
+        return node;
     }
-    node->mParent = 0;
-    node->mPrev = 0;
-    node->mNext = 0;
-    return node;
+    return 0;
 }
 
 // Moves every child of src to the end of dst's child list, in order.
