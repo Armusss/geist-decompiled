@@ -117,12 +117,6 @@ struct HostMsg400 {
 };
 
 // request/reply buffer of the 0x41e "current type-name actor" message
-struct TypeNameMsg {
-    s32 id;                         // 0x00
-    u32 hash;                       // 0x04
-    s32 unk08;                      // 0x08
-};
-
 // payload of the 0x40b "play this grabbed-animation" message
 struct HostQueryAnimMsg {
     s32 unk00;                      // 0x00
@@ -131,23 +125,49 @@ struct HostQueryAnimMsg {
     s32 asset;                      // 0x0c
 };
 
+// Runtime string buffer (shared runtime layout, 20 bytes).
 class Buffer {
 public:
-    ~Buffer();
+    Buffer();
+    virtual ~Buffer();
+    virtual void Release(char* p);
+
+    char* mData;
+    s32 mLength;
+    s32 mUnk0C;
+    s32 mOwned;
 };
 
 class String : public Buffer {
 public:
     String();
-    String(const char* text);
-    virtual ~String();
+    ~String() {}
+    virtual void Release(char* p);
+};
 
-    const char* text;               // 0x04
-    s32 length;                     // 0x08
-    u8 unk0c[0x14 - 0x0c];          // 0x0c
+// Request/reply of the 0x41e query: the answer String follows the header.
+struct TypeNameMsg {
+    s32 id;                         // 0x00
+    u32 hash;                       // 0x04
+    s32 unk08;                      // 0x08
+    String name;                    // 0x0C
 };
 
 extern "C" int SendMsg(int to, int msg, void* data);
+
+// Sends the 0x41e type-name query; the receiver writes its answer over the first
+// word of the trailing String. Returns the SendMsg result.
+static inline int HostNameQuery(int to, u32 hash, int init, int* answer)
+{
+    TypeNameMsg q;
+
+    *(int*)&q.name = init;
+    q.hash = hash;
+    q.unk08 = 0;
+    int sent = SendMsg(to, 0x41e, &q);
+    *answer = *(int*)&q.name;
+    return sent;
+}
 extern "C" int fn_8001ED98(void* seq, int frames, int (*cb)(Actor*, Actor*), Actor* owner,
                            int mode);
 extern "C" int fn_8001EAF8(void* seq, int frames, int (*cb)(Actor*, Actor*, float), Actor* owner,
@@ -173,7 +193,6 @@ extern "C" u32 fn_8028C400(String* out, const char* text);
 extern "C" void fn_800225C8(String* out, String* a, String* b);
 extern "C" void fn_8028C188(int* out, const char* text, s32 length);
 extern "C" const char* lbl_803BA130[];
-extern "C" char lbl_80349501[];
 extern "C" int fn_80019F88(int* data, Actor* actor);
 extern "C" void fn_800E48A0(f32 value, Actor* actor);
 
@@ -200,12 +219,6 @@ extern s32 lbl_804D3398;
 extern s32 lbl_804D5390;
 extern s32 lbl_804D5394;
 extern s32 lbl_804D5398;
-extern f64 lbl_804D9238;
-extern f32 lbl_804D9240;
-extern f32 lbl_804D9244;
-extern f32 lbl_804D9248;
-extern f32 lbl_804D924C;
-extern f32 lbl_804D9250;
 
 extern "C" float fabsf(float x);
 extern "C" float sqrtf(float x);
@@ -240,16 +253,16 @@ static inline void StartHostAimTimer(Actor* actor, HostBehaviour* beh)
 // horizontal (x/y) plane only, so z is pinned to zero first.
 static inline void NormalizePlaneDir(Vec3* v)
 {
-    if (fabsf(v->x) > lbl_804D9248 || fabsf(v->y) > lbl_804D9248 ||
-        fabsf(v->z) > lbl_804D9248) {
+    if (fabsf(v->x) > 1.1920929e-7f || fabsf(v->y) > 1.1920929e-7f ||
+        fabsf(v->z) > 1.1920929e-7f) {
         f32 inv = 1.0f / sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
         v->x *= inv;
         v->y *= inv;
         v->z *= inv;
     } else {
-        v->x = lbl_804D9244;
-        v->y = lbl_804D9244;
-        v->z = lbl_804D9244;
+        v->x = 0.0f;
+        v->y = 0.0f;
+        v->z = 0.0f;
     }
 }
 
@@ -367,10 +380,10 @@ void HostActorBehaviourUpdate(Actor* actor, float dt)
         beh->state = 0;
         anim = actor->model->unkC8;
         if (anim != -1)
-            fn_80090974(actor->unk110, 0, lbl_804D9240, anim, 0x50, 0, 0);
+            fn_80090974(actor->unk110, 0, 1.0f, anim, 0x50, 0, 0);
         else
-            fn_80090974(actor->unk110, 0, lbl_804D9240, actor->model->unk98, 0x50, 0, 0);
-        Fn8008E33C(actor->unk110, 0, lbl_804D9240);
+            fn_80090974(actor->unk110, 0, 1.0f, actor->model->unk98, 0x50, 0, 0);
+        Fn8008E33C(actor->unk110, 0, 1.0f);
         ActorUpdate(actor, dt);
         fn_80090390(actor->unk110, 0);
         actor->unkAC |= 0x80000000;
@@ -421,18 +434,16 @@ int HostActorAimTimerCheck(Actor* host, Actor* actor, float dist)
         dir.x = (f32)aim[0];
         dir.y = (f32)aim[1];
         dir.z = (f32)aim[2];
-        dir.z = lbl_804D9244;
+        dir.z = 0.0f;
         NormalizePlaneDir(&dir);
 
         v1.x = (f32)(pos1.obj->unk24.x - actor->unk24.x);
         v1.y = (f32)(pos1.obj->unk24.y - actor->unk24.y);
         v1.z = (f32)(pos1.obj->unk24.z - actor->unk24.z);
-        v1.z = lbl_804D9244;
+        v1.z = 0.0f;
         NormalizePlaneDir(&v1);
 
         {
-            String name;  // name buffer owned by the 0x41e message
-
             query.id = -1;
             query.hash = 0x497F770D;
             query.unk08 = 0;
@@ -441,15 +452,15 @@ int HostActorAimTimerCheck(Actor* host, Actor* actor, float dist)
                     v2.x = (f32)(pos2.obj->unk24.x - actor->unk24.x);
                     v2.y = (f32)(pos2.obj->unk24.y - actor->unk24.y);
                     v2.z = (f32)(pos2.obj->unk24.z - actor->unk24.z);
-                    v2.z = lbl_804D9244;
+                    v2.z = 0.0f;
                     NormalizePlaneDir(&v2);
-                    if (PlaneDot(&dir, &v1) * PlaneDot(&dir, &v2) < lbl_804D9244)
+                    if (PlaneDot(&dir, &v1) * PlaneDot(&dir, &v2) < 0.0f)
                         visible = false;
                 }
             }
         }
 
-        if (PlaneDot(&dir, &v1) < lbl_804D9244) {
+        if (PlaneDot(&dir, &v1) < 0.0f) {
             if (beh->flags & 1)
                 maxd = actor->model->unk34;
             else
@@ -487,17 +498,15 @@ int HostActorTimerDone(Actor* host, Actor* actor)
 {
     HostBehaviour* beh = actor->behaviour;
 
-    if (host != 0 && (host->unk38 >> 24) == 0x13) {
+    if (host != 0 && ((int)(host->unk38 >> 24)) == 0x13) {
         HostMsg400 pos;
 
         if (SendMsg((int)host->unk38, 0x400, &pos) != 0 && pos.flag == 1 && pos.obj != 0) {
             if ((beh->flags & 0x80) == 0) {
-                String name;
-                TypeNameMsg query;
+                int answer;
 
-                query.hash = 0x88B4A252;
-                query.unk08 = 0;
-                if (SendMsg((int)host->unk38, 0x41e, &query) != 0 && query.id == 0xD028AC2)
+                if (HostNameQuery((int)host->unk38, 0x88B4A252, 0, &answer) != 0 &&
+                    answer == 0xD028AC2)
                     return 1;
             }
             fn_80204A6C(actor, host->unk38);
@@ -580,18 +589,15 @@ u32 HostActorMessage(int from, int msg, int* data, int arg)
                 Actor* actor = (Actor*)data[0];
                 int target = data[1];
                 HostBehaviour* beh = actor->behaviour;
-                String name;
-                TypeNameMsg query;
+                int answer;
 
-                query.hash = 0x947E97;
-                query.unk08 = 0;
-                SendMsg(target, 0x41e, &query);
+                HostNameQuery(target, 0x947E97, 0, &answer);
 
                 if (ActorPlayAnim((int)actor->unk38, HostNameHash("QUERY", (u32)data[2]),
                                   target) != 0) {
                     result = 1;
                 } else if (beh->state == 0 && (beh->flags & 0x20) == 0 &&
-                           data[2] == 0x7C44EC3D && query.id == 1) {
+                           data[2] == 0x7C44EC3D && answer == 1) {
                     HostQueryAnimMsg animMsg;
                     s32 asset;
 
@@ -676,9 +682,9 @@ u32 HostActorStateQueryMsg(int* data)
         String joined;
 
         fn_8028C400(&stateName, lbl_803BA130[beh->state]);
-        fn_8028C400(&separator, lbl_80349501);
+        fn_8028C400(&separator, "\n");
         fn_800225C8(&joined, &stateName, &separator);
-        fn_8028C188(&data[3], joined.text, joined.length);
+        fn_8028C188(&data[3], joined.mData, joined.mLength);
         return 1;
     }
     case 0x8AB5B526:
@@ -759,11 +765,11 @@ u32 HostActorStateSetMsg(int* data)
         beh->state = 0;
         anim = actor->model->unkC8;
         if (anim != -1)
-            fn_80090974(actor->unk110, 0, lbl_804D9240, anim, 0x50, 0, 0);
+            fn_80090974(actor->unk110, 0, 1.0f, anim, 0x50, 0, 0);
         else
-            fn_80090974(actor->unk110, 0, lbl_804D9240, actor->model->unk98, 0x50, 0, 0);
-        Fn8008E33C(actor->unk110, 0, lbl_804D9240);
-        fn_800E48A0(lbl_804D924C, actor);
+            fn_80090974(actor->unk110, 0, 1.0f, actor->model->unk98, 0x50, 0, 0);
+        Fn8008E33C(actor->unk110, 0, 1.0f);
+        fn_800E48A0(100.0f, actor);
         fn_80090390(actor->unk110, 0);
         actor->unkAC |= 0x800000;
         ActorPlayAnim((int)actor->unk38, 0xC62BD5D6, beh->unk0c);
@@ -807,7 +813,7 @@ u32 HostActorHitTest(int* data)
     if ((actor->unkAC & 0x20000000) != 0)
         return 0xFFF0BDC1;
 
-    if (actor->model->unk3c != lbl_804D9244 && (beh->flags & 4) == 0) {
+    if (actor->model->unk3c != 0.0f && (beh->flags & 4) == 0) {
         Actor* target = (Actor*)data[8];
 
         if (target != 0 && (data[2] & 0x4000000) != 0) {
@@ -866,9 +872,9 @@ u32 HostActorHitTest(int* data)
         data[0xc] = (int)point.x;
         data[0xd] = (int)point.y;
         data[0xe] = (int)point.z;
-        data[0xf] = (int)(lbl_804D9250 * range.x);
-        data[0x10] = (int)(lbl_804D9250 * range.y);
-        data[0x11] = (int)(lbl_804D9250 * range.z);
+        data[0xf] = (int)(4096.0f * range.x);
+        data[0x10] = (int)(4096.0f * range.y);
+        data[0x11] = (int)(4096.0f * range.z);
     }
     return 1;
 }
@@ -892,7 +898,7 @@ int HostActorInit(Actor* actor)
     memset(beh, 0, 0x30);
     beh->state = 0;
     beh->flags = 0;
-    beh->unk08 = lbl_804D9244;
+    beh->unk08 = 0.0f;
     beh->unk0c = -1;
     beh->unk10 = 0;
     actor->behaviour = beh;
