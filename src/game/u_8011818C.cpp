@@ -288,13 +288,6 @@ struct HudOwner {
 };
 
 extern "C" {
-extern float lbl_804D7760;
-extern float lbl_804D7770;
-extern float lbl_804D7774;
-extern float lbl_804D7778;
-extern float lbl_804D777C;
-extern float lbl_804D7780;
-extern float lbl_804D7784;
 
 int fn_80116E08(void* owner);
 int fn_801409EC(int index);
@@ -335,7 +328,7 @@ void DrawItemStatusIcons(void* arg)
 
     pos[0] = (float)owner->posX;
     pos[1] = (float)owner->posY;
-    pos[2] = (float)owner->posZ + lbl_804D7770;
+    pos[2] = (float)owner->posZ + 450.0f;
 
     if (QueryName(0x4B000000, 0x896F8C7F) == 0) {
         ItemColorDrawQuad(fn_801409EC(5), pos, 0x60, 0x60, color);
@@ -461,7 +454,6 @@ void fn_80117FF8(void* state, unsigned long hash, int* out);
 void fn_80118084(void* state, unsigned long hash, int* out);
 TrackedActor* fn_8002394C();
 int fn_800BC01C(void* owner, float* pos);
-extern float lbl_804D77A0;
 int fn_800A1F94(int id);
 int fn_800B949C(int hash, int* out, int count, int arg);
 int fn_800B6FE4(int handle);
@@ -502,14 +494,14 @@ int HandleItemStatusEvent(void* arg)
     case 0x5A19E256:
     case 0x64F367A2:
         value = -1;
-        limit = lbl_804D7778 +
-                (lbl_804D777C * ((float)rand() / lbl_804D7774)) / lbl_804D7760;
+        limit = 0.4f +
+                (20.0f * ((float)rand() / 32767.0f)) / 100.0f;
         if (owner->f5BC < limit) {
             limit = (owner->state->fBC == -1) ? owner->state->f0C
                                               : owner->state->f64;
-            if (lbl_804D7780 * limit < owner->f904) {
-                limit = (lbl_804D7784 * ((float)rand() / lbl_804D7774)) /
-                        lbl_804D7760;
+            if (0.33f * limit < owner->f904) {
+                limit = (30.0f * ((float)rand() / 32767.0f)) /
+                        100.0f;
                 if (limit < owner->f5B4) {
                     fn_80117FF8(owner->state, 0x4D4915E6, &value);
                     if (value == -1) {
@@ -562,12 +554,6 @@ struct AssetQuery {
 };
 
 extern "C" {
-extern float lbl_804D7788;
-extern float lbl_804D778C;
-extern float lbl_804D7790;
-extern float lbl_804D7794;
-extern float lbl_804D7798;
-extern float lbl_804D779C;
 
 void fn_80116E30(void* owner);
 int fn_80162940(void* p, int arg);
@@ -606,7 +592,6 @@ struct ItemStateEntry {
 };
 
 extern ItemStateEntry lbl_8039EDD8[];
-extern float lbl_804D77E8;
 
 int Rand();
 void* AssetFind(unsigned long type, unsigned long id);
@@ -658,26 +643,26 @@ int HandleItemActionEvent(void* arg)
     }
     SendMsg(info->target, 0x400, &reply);
 
-    if (info->f0C < lbl_804D7788) {
+    if (info->f0C < 750.0f) {
         float f = info->f0C;
-        if (lbl_804D778C < f) {
+        if (0.0f < f) {
             info->f0C = f - owner->f138;
         }
-        if (lbl_804D778C < info->f0C) {
+        if (0.0f < info->f0C) {
             return 0;
         }
-        info->f0C = lbl_804D7788;
+        info->f0C = 750.0f;
         fn_80116E30(arg);
         return 1;
     }
 
     switch (info->type) {
     case 0x3147A953:
-        if (OwnerValue((Owner*)owner, reply.actor) <= lbl_804D7790) {
+        if (OwnerValue((Owner*)owner, reply.actor) <= 500.0f) {
             info->f0C -= owner->f138;
             return 0;
         }
-        if (OwnerValue((Owner*)owner, reply.actor) <= lbl_804D7794) {
+        if (OwnerValue((Owner*)owner, reply.actor) <= 2000.0f) {
             EventOwner* target = (EventOwner*)reply.actor;
             filter = owner->filter;
             if (filter == 0) {
@@ -707,7 +692,7 @@ int HandleItemActionEvent(void* arg)
                 skip = 1;
             } else {
                 info->type = 0;
-                zero = lbl_804D7794;
+                zero = 2000.0f;
                 ClearStateMachine(arg);
                 SetStateMachineState(arg, 0x362FC3C7);
                 fn_80118084(owner->state, 0x0315C41D, &info->target);
@@ -744,14 +729,14 @@ int HandleItemActionEvent(void* arg)
                 ok = 1;
                 for (i = 0; i <= percent; i++) {
                     if (owner->f5B4 <
-                        (float)(Rand() % 100 + 1) / lbl_804D7760) {
+                        (float)(Rand() % 100 + 1) / 100.0f) {
                         ok = 0;
                         break;
                     }
                 }
             }
         }
-        if (ok && lbl_804D7798 * owner->state->f64 < owner->f904) {
+        if (ok && 0.75f * owner->state->f64 < owner->f904) {
             return 1;
         }
         break;
@@ -760,7 +745,7 @@ int HandleItemActionEvent(void* arg)
         break;
     }
 
-    if (OwnerValue((Owner*)owner, reply.actor) <= lbl_804D7790) {
+    if (OwnerValue((Owner*)owner, reply.actor) <= 500.0f) {
         info->f0C -= owner->f138;
         return 0;
     }
@@ -796,7 +781,7 @@ int HandleItemActionEvent(void* arg)
     }
     if (skip) {
         info->type = 0;
-        zero = lbl_804D7790;
+        zero = 500.0f;
         ClearStateMachine(arg);
         SetStateMachineState(arg, 0xF1C37C5C);
         fn_80118084(owner->state, 0x0315C41D, &info->target);
@@ -834,9 +819,9 @@ int HandleItemDropEvent(void* arg)
         return 1;
     case 0x64F367A2:
         value = -1;
-        if (owner->f5BC < lbl_804D779C +
-                (lbl_804D777C * ((float)rand() / lbl_804D7774)) /
-                    lbl_804D7760) {
+        if (owner->f5BC < 0.3f +
+                (20.0f * ((float)rand() / 32767.0f)) /
+                    100.0f) {
             fn_80117FF8(owner->state, 0x4D4915E6, &value);
             if (value == -1) {
                 fn_80117FF8(owner->state, 0xFBA23962, &value);
@@ -982,7 +967,7 @@ int HandleItemTargetEvent(void* arg)
         if (info->target == -1) {
             return 1;
         }
-        value = lbl_804D77A0;
+        value = 300.0f;
         ClearStateMachine(arg);
         SetStateMachineState(arg, 0xF1C37C5C);
         fn_80118084(owner->state, 0x0315C41D, &info->target);
@@ -1145,8 +1130,6 @@ struct ItemIdTable {
 extern "C" {
 extern const ItemIdTable lbl_80345828;
 extern const ItemIdTable lbl_80345848;
-extern float lbl_804D77A4;
-extern float lbl_804D77A8;
 int fn_800B93DC(void* table, int count, int* out, int maxOut, int arg);
 }
 
@@ -1193,32 +1176,32 @@ int ItemSetupDrop(int arg)
     switch (kind) {
     case 0: {
         int out[8];
-        value = lbl_804D7794;
+        value = 2000.0f;
         result = PickItemId(lbl_80345828, out, 8);
         break;
     }
     case 2:
     case 3: {
         int out[16];
-        value = lbl_804D7794;
+        value = 2000.0f;
         result = PickItemId(lbl_80345848, out, 16);
         break;
     }
     default:
-        if (owner->f5B4 <= lbl_804D7798) {
-            if (owner->f904 <= lbl_804D77A4 * factor ||
-                owner->f5B8 <= lbl_804D77A8) {
+        if (owner->f5B4 <= 0.75f) {
+            if (owner->f904 <= 0.9f * factor ||
+                owner->f5B8 <= 0.5f) {
                 int out[8];
-                value = lbl_804D7794;
+                value = 2000.0f;
                 result = PickItemId(lbl_80345828, out, 8);
             } else {
                 int out[16];
-                value = lbl_804D7794;
+                value = 2000.0f;
                 result = PickItemId(lbl_80345848, out, 16);
             }
         } else {
             int out[16];
-            value = lbl_804D7794;
+            value = 2000.0f;
             result = PickItemId(lbl_80345848, out, 16);
         }
         break;
@@ -1266,32 +1249,32 @@ static inline int SetupItemDrop(void* arg)
     switch (kind) {
     case 0: {
         int out[8];
-        value = lbl_804D7794;
+        value = 2000.0f;
         result = PickItemId(lbl_80345828, out, 8);
         break;
     }
     case 2:
     case 3: {
         int out[16];
-        value = lbl_804D7794;
+        value = 2000.0f;
         result = PickItemId(lbl_80345848, out, 16);
         break;
     }
     default:
-        if (owner->f5B4 <= lbl_804D7798) {
-            if (owner->f904 <= lbl_804D77A4 * factor ||
-                owner->f5B8 <= lbl_804D77A8) {
+        if (owner->f5B4 <= 0.75f) {
+            if (owner->f904 <= 0.9f * factor ||
+                owner->f5B8 <= 0.5f) {
                 int out[8];
-                value = lbl_804D7794;
+                value = 2000.0f;
                 result = PickItemId(lbl_80345828, out, 8);
             } else {
                 int out[16];
-                value = lbl_804D7794;
+                value = 2000.0f;
                 result = PickItemId(lbl_80345848, out, 16);
             }
         } else {
             int out[16];
-            value = lbl_804D7794;
+            value = 2000.0f;
             result = PickItemId(lbl_80345848, out, 16);
         }
         break;
@@ -1310,7 +1293,6 @@ static inline int SetupItemDrop(void* arg)
 }
 
 extern "C" {
-extern float lbl_804D77AC;
 extern const ItemIdTable lbl_80345838;
 }
 
@@ -1336,7 +1318,7 @@ int ItemSetupNearest(void* arg)
     info = owner->info;
     info->unk0 = 0xC;
     info->type = 0;
-    best = lbl_804D77AC;
+    best = 3.4028235e+38f;
     result = -1;
     {
         ItemIdTable table = lbl_80345838;
@@ -1357,7 +1339,7 @@ int ItemSetupNearest(void* arg)
     }
     info->target = result;
     if (info->target != -1) {
-        value = lbl_804D7794;
+        value = 2000.0f;
         ClearStateMachine(arg);
         SetStateMachineState(arg, 0xF1C37C5C);
         fn_80118084(owner->state, 0x0315C41D, &info->target);
@@ -1507,32 +1489,32 @@ static inline int SetupItemDropForUse(void* arg)
     switch (kind) {
     case 0: {
         int out[8];
-        value = lbl_804D7794;
+        value = 2000.0f;
         result = PickItemId(lbl_80345828, out, 8);
         break;
     }
     case 2:
     case 3: {
         int out[16];
-        value = lbl_804D7794;
+        value = 2000.0f;
         result = PickItemId(lbl_80345848, out, 16);
         break;
     }
     default:
-        if (owner->f5B4 <= lbl_804D7798) {
-            if (owner->f904 <= lbl_804D77A4 * factor ||
-                owner->f5B8 <= lbl_804D77A8) {
+        if (owner->f5B4 <= 0.75f) {
+            if (owner->f904 <= 0.9f * factor ||
+                owner->f5B8 <= 0.5f) {
                 int out[8];
-                value = lbl_804D7794;
+                value = 2000.0f;
                 result = PickItemId(lbl_80345828, out, 8);
             } else {
                 int out[16];
-                value = lbl_804D7794;
+                value = 2000.0f;
                 result = PickItemId(lbl_80345848, out, 16);
             }
         } else {
             int out[16];
-            value = lbl_804D7794;
+            value = 2000.0f;
             result = PickItemId(lbl_80345848, out, 16);
         }
         break;
@@ -1576,7 +1558,7 @@ int ItemUseBeginDrop(void* arg)
         }
     }
     if (info->target != -1) {
-        value = lbl_804D77A0;
+        value = 300.0f;
         ClearStateMachine(arg);
         SetStateMachineState(arg, 0xF1C37C5C);
         fn_80118084(owner->state, 0x0315C41D, &info->target);
@@ -1602,7 +1584,7 @@ int ItemUseBeginDropFromStore(void* arg)
     info->type = 0;
     info->target = QueryName(0x4B000000, 0xCC991E05);
     if (info->target != -1) {
-        value = lbl_804D77A0;
+        value = 300.0f;
         ClearStateMachine(arg);
         SetStateMachineState(arg, 0xF1C37C5C);
         fn_80118084(owner->state, 0x0315C41D, &info->target);
@@ -1645,7 +1627,7 @@ int ItemSetupDropScanTargets(void* arg)
     }
     info->target = result;
     if (info->target != -1) {
-        value = lbl_804D77A0;
+        value = 300.0f;
         ClearStateMachine(arg);
         SetStateMachineState(arg, 0xF1C37C5C);
         fn_80118084(owner->state, 0x0315C41D, &info->target);
@@ -1667,32 +1649,32 @@ int ItemSetupDropScanTargets(void* arg)
     switch (kind) {
     case 0: {
         int out[8];
-        value = lbl_804D7794;
+        value = 2000.0f;
         result = PickItemId(lbl_80345828, out, 8);
         break;
     }
     case 2:
     case 3: {
         int out[16];
-        value = lbl_804D7794;
+        value = 2000.0f;
         result = PickItemId(lbl_80345848, out, 16);
         break;
     }
     default:
-        if (owner->f5B4 <= lbl_804D7798) {
-            if (owner->f904 <= lbl_804D77A4 * factor ||
-                owner->f5B8 <= lbl_804D77A8) {
+        if (owner->f5B4 <= 0.75f) {
+            if (owner->f904 <= 0.9f * factor ||
+                owner->f5B8 <= 0.5f) {
                 int out[8];
-                value = lbl_804D7794;
+                value = 2000.0f;
                 result = PickItemId(lbl_80345828, out, 8);
             } else {
                 int out[16];
-                value = lbl_804D7794;
+                value = 2000.0f;
                 result = PickItemId(lbl_80345848, out, 16);
             }
         } else {
             int out[16];
-            value = lbl_804D7794;
+            value = 2000.0f;
             result = PickItemId(lbl_80345848, out, 16);
         }
         break;
@@ -1711,7 +1693,6 @@ int ItemSetupDropScanTargets(void* arg)
 }
 
 extern "C" {
-extern float lbl_804D77B0;
 }
 
 int ItemStorePickRandomHandle(void* owner);
@@ -1738,7 +1719,7 @@ int ItemSetupDropStoredTarget(void* arg)
     info->type = 0;
     info->target = ItemStorePickRandomHandle(arg);
     if (info->target != -1) {
-        value = lbl_804D77B0;
+        value = 800.0f;
         ClearStateMachine(arg);
         SetStateMachineState(arg, 0x469ABA3B);
         fn_80118084(owner->state, 0x0315C41D, &info->target);
@@ -1760,32 +1741,32 @@ int ItemSetupDropStoredTarget(void* arg)
     switch (kind) {
     case 0: {
         int out[8];
-        value = lbl_804D7794;
+        value = 2000.0f;
         result = PickItemId(lbl_80345828, out, 8);
         break;
     }
     case 2:
     case 3: {
         int out[16];
-        value = lbl_804D7794;
+        value = 2000.0f;
         result = PickItemId(lbl_80345848, out, 16);
         break;
     }
     default:
-        if (owner->f5B4 <= lbl_804D7798) {
-            if (owner->f904 <= lbl_804D77A4 * factor ||
-                owner->f5B8 <= lbl_804D77A8) {
+        if (owner->f5B4 <= 0.75f) {
+            if (owner->f904 <= 0.9f * factor ||
+                owner->f5B8 <= 0.5f) {
                 int out[8];
-                value = lbl_804D7794;
+                value = 2000.0f;
                 result = PickItemId(lbl_80345828, out, 8);
             } else {
                 int out[16];
-                value = lbl_804D7794;
+                value = 2000.0f;
                 result = PickItemId(lbl_80345848, out, 16);
             }
         } else {
             int out[16];
-            value = lbl_804D7794;
+            value = 2000.0f;
             result = PickItemId(lbl_80345848, out, 16);
         }
         break;
@@ -1825,7 +1806,7 @@ int ItemSetupDropPending3(void* arg)
     info->type = 0;
     info->target = ItemStorePickPreferredHandle(arg);
     if (info->target != -1) {
-        value = lbl_804D77B0;
+        value = 800.0f;
         ClearStateMachine(arg);
         SetStateMachineState(arg, 0x469ABA3B);
         fn_80118084(owner->state, 0x0315C41D, &info->target);
@@ -1853,7 +1834,7 @@ int ItemSetupDropPending2(void* arg)
     info->type = 0;
     info->target = ItemStorePickClosestHandle(arg);
     if (info->target != -1) {
-        value = lbl_804D77B0;
+        value = 800.0f;
         ClearStateMachine(arg);
         SetStateMachineState(arg, 0x469ABA3B);
         fn_80118084(owner->state, 0x0315C41D, &info->target);
@@ -1876,10 +1857,6 @@ int ItemPredicateAlwaysTrue7()
 }
 
 extern "C" {
-extern float lbl_804D77C4;
-extern float lbl_804D77C8;
-extern float lbl_804D77D0;
-extern float lbl_804D77D4;
 int fn_800FD3EC();
 int fn_800FD6EC(int index);
 int IsValidAttackTarget(Owner* owner, int handle);
@@ -1914,7 +1891,7 @@ int ItemRankCode(void* arg, void* other)
         return 0;
     }
     max = 0;
-    value = QueryNameFloat(0x4B000000, 0xD1DA12E7, lbl_804D778C);
+    value = QueryNameFloat(0x4B000000, 0xD1DA12E7, 0.0f);
     player = HandleToPlayer(OwnerId((Owner*)arg));
     mine = (int)StatGet(0xE2D6A9C0, 0, player);
     for (i = 0; i < fn_800FD3EC(); i++) {
@@ -1923,17 +1900,17 @@ int ItemRankCode(void* arg, void* other)
             max = (int)StatGet(0xE2D6A9C0, 0, i) - mine;
         }
     }
-    if (owner->f5B4 < lbl_804D77C4) {
+    if (owner->f5B4 < 0.1f) {
         return 0xB;
     }
-    if (owner->f5B4 > lbl_804D77A4) {
-        if (value < lbl_804D77C8 || max > 3) {
+    if (owner->f5B4 > 0.9f) {
+        if (value < 60000.0f || max > 3) {
             return 9;
         }
         return 10;
     }
     if (owner->state->fBC != -1) {
-        if (owner->f904 < lbl_804D77A8 * owner->state->f64) {
+        if (owner->f904 < 0.5f * owner->state->f64) {
             return 0xB;
         }
         return 10;
@@ -1970,10 +1947,10 @@ int FindItemTarget(void* arg, int mode)
     PosReply posReply;
     TrackedActor* actor;
     float pos[3];
-    float bestPos = lbl_804D77D0;
+    float bestPos = 9999999.0f;
     int bestStat = -99999;
     int count = 0;
-    float bestValue = lbl_804D77D4;
+    float bestValue = 1000000.0f;
     int result = -1;
     int found[9];
     int handle;
@@ -2031,7 +2008,7 @@ int FindItemTarget(void* arg, int mode)
             break;
         case 4:
             SendMsg(handle, 0x401, &posReply);
-            if (posReply.f14 > lbl_804D778C && posReply.f10 < bestPos) {
+            if (posReply.f14 > 0.0f && posReply.f10 < bestPos) {
                 bestPos = posReply.f10;
                 result = handle;
             }
@@ -2072,7 +2049,6 @@ extern "C" {
 extern const ItemIdTable lbl_803457F8;
 extern const ItemIdTable lbl_80345808;
 extern const ItemIdTable lbl_80345818;
-extern float lbl_804D77CC;
 int fn_800F8AF4(int item);
 int fn_800BBF9C(void* owner, void* actor);
 }
@@ -2087,9 +2063,9 @@ int ItemStorePickPreferredHandle(void* owner)
     ItemIdTable table = lbl_80345818;
     Msg400 reply;
     int handles[32];
-    float bestPlain = lbl_804D77CC;
-    float bestSpecial = lbl_804D77CC;
-    float bestCarried = lbl_804D77CC;
+    float bestPlain = 100000.0f;
+    float bestSpecial = 100000.0f;
+    float bestCarried = 100000.0f;
     int foundPlain = -1;
     int foundSpecial = -1;
     int foundCarried = -1;
@@ -2224,7 +2200,7 @@ int ItemStorePickClosestHandle(void* arg)
     ItemIdTable table = lbl_803457F8;
     Msg400 reply;
     int handles[32];
-    float best = lbl_804D77CC;
+    float best = 100000.0f;
     int result = -1;
     int count;
     int i;
@@ -2273,11 +2249,6 @@ int ItemStorePickClosestHandle(void* arg)
 }
 
 extern "C" {
-extern float lbl_804D7768;
-extern float lbl_804D77B4;
-extern float lbl_804D77B8;
-extern float lbl_804D77BC;
-extern float lbl_804D77C0;
 void fn_800A3A40(void* owner);
 int fn_800FD720();
 int fn_8011D610(void* owner, int handle);
@@ -2305,8 +2276,8 @@ static inline int ItemStateFromKind(EventOwner* owner)
     int kind = owner->f5D0;
 
     if (kind == 2) {
-        if (owner->f5B8 <= lbl_804D77C0 || owner->f5B4 <= lbl_804D77BC ||
-            owner->f904 <= lbl_804D77A8 * owner->state->f0C) {
+        if (owner->f5B8 <= 0.7f || owner->f5B4 <= 0.6f ||
+            owner->f904 <= 0.5f * owner->state->f0C) {
             return 2;
         }
         return 3;
@@ -2315,14 +2286,14 @@ static inline int ItemStateFromKind(EventOwner* owner)
         return 4;
     }
     if (kind >= 2 && kind < 4) {
-        if (lbl_804D7798 * owner->state->f0C <= owner->f904) {
+        if (0.75f * owner->state->f0C <= owner->f904) {
             return 3;
         }
         return 2;
     }
-    if (lbl_804D77B4 <= owner->f5B8) {
-        if (owner->f5B8 <= lbl_804D77B8 || owner->f5B4 <= lbl_804D77BC ||
-            owner->f904 <= lbl_804D7798 * owner->state->f0C) {
+    if (0.2f <= owner->f5B8) {
+        if (owner->f5B8 <= 0.8f || owner->f5B4 <= 0.6f ||
+            owner->f904 <= 0.75f * owner->state->f0C) {
             return 2;
         }
         return 3;
@@ -2361,7 +2332,7 @@ static inline int ItemCanUse(void* arg)
         return 1;
     }
     for (i = 0; i <= percent; i++) {
-        if (owner->f5B4 < (float)(Rand() % 100 + 1) / lbl_804D7760) {
+        if (owner->f5B4 < (float)(Rand() % 100 + 1) / 100.0f) {
             return 0;
         }
     }
@@ -2536,10 +2507,6 @@ void fn_80090390(void* p, int value);
 void fn_801D55CC(void* p);
 void fn_800B20B8(void* owner, int handle);
 
-extern float lbl_804D77D8;
-extern float lbl_804D77DC;
-extern float lbl_804D77E0;
-extern float lbl_804D77E4;
 }
 
 int Fn800F8A98(unsigned long id);
@@ -2559,13 +2526,13 @@ int ItemHitMessage(EffectOwner* owner, EffectMsg* msg)
     float dx;
     float dz;
 
-    if (owner->condition <= lbl_804D778C) {
+    if (owner->condition <= 0.0f) {
         return 0;
     }
     dy = (float)owner->posY - msg->y;
     dx = (float)owner->posX - msg->x;
     dz = (float)owner->posZ - msg->z;
-    if (fabs(dy * dy + dx * dx + dz * dz) > lbl_804D77D8) {
+    if (fabs(dy * dy + dx * dx + dz * dz) > 90000.0f) {
         return 0;
     }
     if (msg->type == 0) {
@@ -2580,7 +2547,7 @@ int ItemHitMessage(EffectOwner* owner, EffectMsg* msg)
         if (fn_80116E08(owner) == 0) {
             return 0;
         }
-        reply.value = lbl_804D77DC;
+        reply.value = 1.0f;
         reply.handle = msg->handle;
         owner->dispatch(0xC0A, &reply);
         return reply.result != 1;
@@ -2588,7 +2555,7 @@ int ItemHitMessage(EffectOwner* owner, EffectMsg* msg)
         if (fn_80116E08(owner) == 0) {
             return 0;
         }
-        reply.value = lbl_804D779C;
+        reply.value = 0.3f;
         reply.handle = msg->handle;
         owner->dispatch(0xC0A, &reply);
         return reply.result != 1;
@@ -2596,7 +2563,7 @@ int ItemHitMessage(EffectOwner* owner, EffectMsg* msg)
         if (fn_80116E08(owner) == 0) {
             return 0;
         }
-        reply.value = lbl_804D77A8;
+        reply.value = 0.5f;
         reply.handle = msg->handle;
         owner->dispatch(0xC0A, &reply);
         return reply.result != 1;
@@ -2604,7 +2571,7 @@ int ItemHitMessage(EffectOwner* owner, EffectMsg* msg)
         if (fn_80116E08(owner) == 0) {
             return 0;
         }
-        reply.value = lbl_804D77C4;
+        reply.value = 0.1f;
         reply.handle = msg->handle;
         owner->dispatch(0xC0A, &reply);
         return reply.result != 1;
@@ -2658,7 +2625,7 @@ int ItemWearMessage(WearOwner* owner, ExtraMsg* msg)
         return 0;
     }
     msg->active = 1;
-    value = lbl_804D778C;
+    value = 0.0f;
     if (QueryName(0x4B000000, 0x0E83B88B) == 0) {
         if (msg->handle != OwnerId((Owner*)owner)) {
             team = PlayerTeam(HandleToPlayer(msg->handle));
@@ -2669,11 +2636,11 @@ int ItemWearMessage(WearOwner* owner, ExtraMsg* msg)
     }
     asset = (int)AssetFind(0xF1754BF2, 0x21C5E0);
     if (ModelBoneName(owner->model, msg->bone) == asset) {
-        msg->f0C = lbl_804D77E0 * msg->f0C;
+        msg->f0C = 3.0f * msg->f0C;
     }
     if (fn_800F7C64(owner->itemState, 0x32819B90) != 0 ||
         fn_800FC3B8(0x13) != 0) {
-        msg->f0C = lbl_804D77A8 * msg->f0C;
+        msg->f0C = 0.5f * msg->f0C;
     }
     switch (msg->type) {
     case 0x2EFC66CA:
@@ -2698,14 +2665,14 @@ int ItemWearMessage(WearOwner* owner, ExtraMsg* msg)
         }
         break;
     case 0x672F35C2:
-        if (owner->condition <= lbl_804D778C) {
+        if (owner->condition <= 0.0f) {
             fn_800FC764(OwnerId((Owner*)owner), 0);
             return 1;
         }
         break;
     case 0x403548D0:
         if (fn_80116E08(owner) == 0) {
-            value = msg->f0C * lbl_804D77A8;
+            value = msg->f0C * 0.5f;
         }
         break;
     case 0x75715902:
@@ -2718,16 +2685,16 @@ int ItemWearMessage(WearOwner* owner, ExtraMsg* msg)
         value = msg->f0C;
         break;
     }
-    if (owner->condition <= lbl_804D778C) {
+    if (owner->condition <= 0.0f) {
         if (owner->trail != 0) {
             ExtraTrailApply((ExtraHolder*)owner->trail, msg);
         }
         return 1;
     }
-    if (value > lbl_804D77E4) {
+    if (value > 0.0f) {
         owner->condition = owner->condition - value;
         owner->unk214 = msg->bone;
-        if (owner->condition > lbl_804D778C) {
+        if (owner->condition > 0.0f) {
             ConditionSetBit(owner->cond, 4, 1);
         } else {
             if (HasCondition(owner->cond, 0xC) != 0) {
@@ -2801,15 +2768,15 @@ int ItemUpdate(EventOwner* o)
         return 0;
     }
     info = o->info;
-    if (o->f904 > lbl_804D778C) {
+    if (o->f904 > 0.0f) {
         if (info->unk0 == -1) {
             info->unk0 = ItemSelectState(o);
             lbl_8039EDD8[info->unk0].enter(o);
         }
         if (o->state->fBC == -1) {
-            fn_800B42E0((char*)o + 0x84, o->handle, lbl_804D77E8, 1, 1);
+            fn_800B42E0((char*)o + 0x84, o->handle, 101.0f, 1, 1);
         } else {
-            fn_800B42E0((char*)o + 0x84, o->handle, lbl_804D77E8, 1, 2);
+            fn_800B42E0((char*)o + 0x84, o->handle, 101.0f, 1, 2);
         }
         ZoneUpdate((char*)o->state + 0x1E8, (IVec3*)((char*)o + 0x24));
         active = lbl_8039EDD8[info->unk0].check(o);
@@ -2878,7 +2845,7 @@ void ItemCreate(void* arg)
     o->f904 = (float)*(int*)(*(int*)((char*)o + 0xC4) + 0x30);
     o->filter = IsSameTeamOtherActor;
     info->unk0 = -1;
-    info->f0C = lbl_804D7788;
+    info->f0C = 750.0f;
     info->target = -1;
     info->type = 0;
     if (fn_80117D80(o) == 0) {
