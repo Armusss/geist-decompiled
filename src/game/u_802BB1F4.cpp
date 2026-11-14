@@ -62,6 +62,7 @@ struct Actor {
     void*   unk10C;                // 0x10c
     u8      unk110[0x130 - 0x110]; // 0x110
     BehData* beh;                  // 0x130
+    u8      unk134[4];             // 0x134
     f32     unk138;                // 0x138
     u8      unk13C[0x21C - 0x13C]; // 0x13c
     s32     unk21C;                // 0x21c
@@ -1296,14 +1297,14 @@ int FshSveMainUpdate(Actor* self)
 // attached object list and unregister the two status behaviours.
 bool FshSveClearHeld(Actor* self)
 {
-    if (self != 0) {
-        ConditionUpdateBit((u8*)self + 0x270, 0, 0);
-        ConditionUpdateBit((u8*)self + 0x270, 4, 0);
-        fn_80162610(self, (u8*)self + 0x894, 0);
-        fn_8029B070(self, 0x73b1e248);
-        fn_8029B070(self, 0x86a69297);
-    }
-    return self != 0;
+    if (self == 0)
+        return false;
+    ConditionUpdateBit(self->unk270, 0, 0);
+    ConditionUpdateBit(self->unk270, 4, 0);
+    fn_80162610(self, self->unk894, 0);
+    fn_8029B070(self, 0x73b1e248);
+    fn_8029B070(self, 0x86a69297);
+    return true;
 }
 
 // Begin the throw/drop state: fix the behaviour state at 5, seed the two
@@ -1624,12 +1625,12 @@ int FshSveAlwaysTrue(void)
 // reports whether the pointer was non-null.
 bool FshSveFollowTargetReset(Actor* self)
 {
-    if (self != 0) {
-        self->beh->state = 0;
-        self->unk288 = 0;
-        fn_800BBCA8();
-    }
-    return self != 0;
+    if (self == 0)
+        return false;
+    self->beh->state = 0;
+    self->unk288 = 0;
+    fn_800BBCA8();
+    return true;
 }
 
 // Picks the state that follows the current one. The follow-line flag at
