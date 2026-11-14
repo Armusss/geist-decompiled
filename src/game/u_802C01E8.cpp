@@ -180,13 +180,6 @@ struct QueryMsg {
     QueryResult result;                        // 0x0C
 };
 
-extern float lbl_804DAD78;                     // shared float constant (other unit)
-extern float lbl_804DAD7C;                     // shared float constant (other unit)
-extern float lbl_804DAD9C;                     // range factor (other unit)
-extern float lbl_804DADB0;                     // range scale (other unit)
-extern float lbl_804DADB8;                     // range factor (other unit)
-extern float lbl_804DADBC;                     // range factor (other unit)
-extern float lbl_804DADC0;                     // range factor (other unit)
 extern float lbl_804D39E0;                     // range factor (other unit)
 extern BehaviorDesc lbl_803C4CE0[];            // state table (other unit)
 
@@ -217,9 +210,9 @@ extern "C" int fn_802C01E8(int msg, void* data)
     switch (msg) {
     case 0x400:
         q->id = OwnerId(owner);
-        q->valid = owner->f904 > lbl_804DAD78;
-        q->unk10 = lbl_804DAD7C;
-        q->unk14 = lbl_804DAD7C;
+        q->valid = owner->f904 > 0.0f;
+        q->unk10 = 1.0f;
+        q->unk14 = 1.0f;
         q->flags = 2;
         q->unk1C = 0;
         return 1;
@@ -242,7 +235,7 @@ extern "C" int fn_802C01E8(int msg, void* data)
         }
         if (MemFlagIsSet(owner->conditions, 0xB) != 0)
             return 1;
-        if (owner->f904 > lbl_804DAD78 && HasCondition(owner->conditions, 0xA) == 0 &&
+        if (owner->f904 > 0.0f && HasCondition(owner->conditions, 0xA) == 0 &&
             (a.flags & 2) != 0 && q->hash == 0x3CA34BD6) {
             q->valid = 0x1379C466;
             return 1;
@@ -280,7 +273,7 @@ extern "C" int fn_802C0564(Owner* owner)
 {
     BehaviorState* st = owner->state;
 
-    if (owner->f904 > lbl_804DAD78) {
+    if (owner->f904 > 0.0f) {
         if (owner->mode == 2) {
             QueryAnswer q;
             int ok = SendMsg(owner->target->id, 0x400, &q);
@@ -301,7 +294,7 @@ extern "C" int fn_802C0564(Owner* owner)
                 v = owner->mode != 0;
             }
             if (st->index != v && lbl_803C4CE0[st->index].onLeave(owner) != 0) {
-                st->timer = lbl_804DAD78;
+                st->timer = 0.0f;
                 lbl_803C4CE0[v].onEnter(owner);
                 ConditionSetBit(owner->conditions, 0x40, 0);
                 ConditionSetBit(owner->conditions, 0x41, 0);
@@ -349,7 +342,7 @@ void PossessedStatusInitState(Owner* owner)
         owner->unk10C = PossessedFollowUpdate;
         owner->unk118 = 0;
         owner->unk108 = 0;
-        st->timer = lbl_804DAD78;
+        st->timer = 0.0f;
         if (owner == 0 || owner->state == 0) {
             eff = 0;
         } else {
@@ -406,7 +399,6 @@ struct FollowTarget {
     u32 flags;                                         // 0x38
 };
 
-extern float lbl_804DAD80;                             // shared float constant (other unit)
 extern "C" void* memset(void* dst, int c, unsigned long n);
 extern "C" int fn_800B26B8();
 extern "C" int fn_800BF2D0(void* p);
@@ -441,7 +433,7 @@ int PossessedStatusFollowTick(Owner* owner)
         fn_800B22F8(owner, kind);
         if (target != 0 && (target->flags >> 24) == 2) {
             fn_800B1F20(owner, kind);
-            fn_800B1AB8(lbl_804DAD80, owner, kind, 1);
+            fn_800B1AB8(-1.0f, owner, kind, 1);
             FollowSetTargetObj(owner->conditions, target);
             ConditionUpdateBit(owner->conditions, 4, 1);
             return 1;
@@ -520,9 +512,6 @@ struct StatusAnswer {
     u32 range;                                 // 0x2C
 };
 
-extern float lbl_804DAD84;                     // shared float constant (other unit)
-extern float lbl_804DAD90;                     // shared float constant (other unit)
-extern float lbl_804DAD94;                     // shared float constant (other unit)
 extern float lbl_804D39E4;                     // shared float constant (other unit)
 extern float lbl_804D39E8;                     // shared float constant (other unit)
 extern float lbl_804D39EC;                     // shared float constant (other unit)
@@ -531,10 +520,6 @@ extern float lbl_804D39D0;                     // shared float constant (other u
 extern float lbl_804D39D4;                     // shared float constant (other unit)
 extern float lbl_804D39D8;                     // shared float constant (other unit)
 extern float lbl_804D39DC;                     // shared float constant (other unit)
-extern float lbl_804DAD88;                     // shared float constant (other unit)
-extern float lbl_804DAD8C;                     // shared float constant (other unit)
-extern float lbl_804DADB0;                     // shared float constant (other unit)
-extern float lbl_804DADB4;                     // shared float constant (other unit)
 
 extern "C" double fabs(double x);
 extern "C" unsigned int rand();
@@ -558,7 +543,7 @@ int PossessedStatusUpdate(Owner* owner)
         st->unk50 = 0;
     } else {
         st->unk50 = 1;
-        st->unk04 = lbl_804DAD78;
+        st->unk04 = 0.0f;
     }
     st->unk04 = st->unk04 - owner->unk138;
 
@@ -573,10 +558,10 @@ int PossessedStatusUpdate(Owner* owner)
         SendMsg(st->unk10, 0xC07, &req);
     }
 
-    if (fabs(owner->f240) < lbl_804DAD84 && fabs(owner->f244) < lbl_804DAD84) {
+    if (fabs(owner->f240) < 0.0f && fabs(owner->f244) < 0.0f) {
         StatusAnswer ans;
 
-        owner->f2AC = lbl_804DAD78;
+        owner->f2AC = 0.0f;
         if (owner->target == 0) {
             int obj;
             int found;
@@ -601,31 +586,31 @@ int PossessedStatusUpdate(Owner* owner)
 
             if (range < z) {
                 if (z - range <= lbl_804D39E8 &&
-                    (lbl_804DAD84 <= *step || *step <= -lbl_804D39E4)) {
+                    (0.0f <= *step || *step <= -lbl_804D39E4)) {
                     float v = *step;
 
-                    if (lbl_804DAD84 <= v && v < lbl_804D39E4) {
-                        *step = lbl_804DAD94 * owner->unk138 * lbl_804D39EC + v;
+                    if (0.0f <= v && v < lbl_804D39E4) {
+                        *step = 0.001f * owner->unk138 * lbl_804D39EC + v;
                         if (*step > lbl_804D39E4)
                             *step = lbl_804D39E4;
                     }
                 } else {
-                    *step = -(lbl_804DAD94 * owner->unk138 * lbl_804D39EC - *step);
+                    *step = -(0.001f * owner->unk138 * lbl_804D39EC - *step);
                     if (*step < -lbl_804D39E4)
                         *step = -lbl_804D39E4;
                 }
             } else {
                 if (range - z <= lbl_804D39E8 &&
-                    (*step <= lbl_804DAD90 || lbl_804D39E4 <= *step)) {
+                    (*step <= -0.0f || lbl_804D39E4 <= *step)) {
                     float v = *step;
 
-                    if (v <= lbl_804DAD90 && -lbl_804D39E4 < v) {
-                        *step = -(lbl_804DAD94 * owner->unk138 * lbl_804D39EC - v);
+                    if (v <= -0.0f && -lbl_804D39E4 < v) {
+                        *step = -(0.001f * owner->unk138 * lbl_804D39EC - v);
                         if (*step < -lbl_804D39E4)
                             *step = -lbl_804D39E4;
                     }
                 } else {
-                    *step = lbl_804DAD94 * owner->unk138 * lbl_804D39EC + *step;
+                    *step = 0.001f * owner->unk138 * lbl_804D39EC + *step;
                     if (*step > lbl_804D39E4)
                         *step = lbl_804D39E4;
                 }
@@ -644,7 +629,7 @@ int PossessedStatusUpdate(Owner* owner)
             fn_800B22F8(owner, kind);
             if (target != 0 && (target->flags >> 24) == 2) {
                 fn_800B1F20(owner, kind);
-                fn_800B1AB8(lbl_804DAD80, owner, kind, 1);
+                fn_800B1AB8(-1.0f, owner, kind, 1);
                 FollowSetTargetObj(owner->conditions, target);
                 ConditionUpdateBit(owner->conditions, 4, 1);
             }
@@ -663,20 +648,20 @@ int PossessedStatusRandomize(Owner* owner)
     float clamped;
 
     st->index = 0;
-    st->unk04 = (lbl_804D39D0 - lbl_804D39D4) * ((float)rand() / lbl_804DAD88) + lbl_804D39D4;
-    st->unk24 = (int)((lbl_804D39DC - lbl_804D39D8) * ((float)rand() / lbl_804DAD88) +
+    st->unk04 = (lbl_804D39D0 - lbl_804D39D4) * ((float)rand() / 32767.0f) + lbl_804D39D4;
+    st->unk24 = (int)((lbl_804D39DC - lbl_804D39D8) * ((float)rand() / 32767.0f) +
                       lbl_804D39D8);
-    st->unk28 = (int)((lbl_804D39DC - lbl_804D39D8) * ((float)rand() / lbl_804DAD88) +
+    st->unk28 = (int)((lbl_804D39DC - lbl_804D39D8) * ((float)rand() / 32767.0f) +
                       lbl_804D39D8);
 
     dist = (float)*(u32*)(owner->unkC4 + 0x30);
-    clamped = lbl_804DAD7C - (owner->f904 - lbl_804DAD8C * dist) / dist;
-    if (clamped < lbl_804DAD78)
-        clamped = lbl_804DAD78;
-    else if (clamped > lbl_804DAD7C)
-        clamped = lbl_804DAD7C;
+    clamped = 1.0f - (owner->f904 - 0.2f * dist) / dist;
+    if (clamped < 0.0f)
+        clamped = 0.0f;
+    else if (clamped > 1.0f)
+        clamped = 1.0f;
 
-    st->unk54 = (float)rand() / lbl_804DAD88 <= lbl_804DADB4 * clamped + lbl_804DADB0;
+    st->unk54 = (float)rand() / 32767.0f <= 0.4f * clamped + 0.1f;
     return 1;
 }
 
@@ -791,27 +776,27 @@ int PossessedApplyRangeProperty(void* data)
     }
     tick = *(u32*)(owner->unkC4 + 0x30);
     if (q->name == 0x403548D0)
-        q->value = (float)tick * lbl_804DADB8;
+        q->value = (float)tick * 0.0125f;
     if (q->name == 0xB9FC42F5) {
         q->value = (float)tick * lbl_804D39E0;
         ActorPlayAnim(owner->id, 0xEC365A5E, q->type);
     }
     if (q->name == 0x75715902)
-        q->value *= lbl_804DADB0;
+        q->value *= 0.1f;
 
-    limit = (float)tick * lbl_804DADBC;
+    limit = (float)tick * 0.75f;
     if (owner->f904 > limit && limit >= owner->f904 - q->value) {
         ActorPlayAnim(owner->id, 0x24AE8385, q->type);
         state->unk4C = 0;
         state->unk48 = 1;
     } else {
-        limit = (float)tick * lbl_804DAD9C;
+        limit = (float)tick * 0.5f;
         if (owner->f904 > limit && limit >= owner->f904 - q->value) {
             ActorPlayAnim(owner->id, 0xECC78791, q->type);
             state->unk4C = 1;
             state->unk48 = 2;
         } else {
-            limit = (float)tick * lbl_804DADC0;
+            limit = (float)tick * 0.25f;
             if (limit < owner->f904 && owner->f904 - q->value <= limit) {
                 ActorPlayAnim(owner->id, 0x96BCC25A, q->type);
                 state->unk4C = 1;
@@ -871,12 +856,6 @@ extern "C" void fn_800E1098(float angle, float* out, float* in);   // 0x800E1098
 extern "C" void Vec3Set(float* dst, float x, float y, float z);    // 0x8016D67C
 extern "C" void EulerNormalize(float* dst, float* src);            // 0x8016D55C
 extern "C" int FollowOffsetUpdate(void* p);
-extern float lbl_804DADC4;
-extern float lbl_804DADC8;
-extern float lbl_804DADCC;
-extern float lbl_804DADD0;
-extern float lbl_804DADD4;
-extern float lbl_804DADD8;
 
 // Per-frame follow/position update installed as owner->unk10C: tracks the
 // follow target position, clamps the approach angle, turns the offset into a
@@ -894,12 +873,12 @@ int PossessedFollowUpdate(Owner* owner)
         FollowGetTargetPos(owner->conditions, target);
         angle = ActorAngleToPos(owner, target);
         owner->f2B0 = angle;
-        if (owner->f2B0 < lbl_804DADC4)
-            owner->f2B0 = lbl_804DADC4;
-        else if (owner->f2B0 > lbl_804DADC8)
-            owner->f2B0 = lbl_804DADC8;
+        if (owner->f2B0 < -60.0f)
+            owner->f2B0 = -60.0f;
+        else if (owner->f2B0 > 60.0f)
+            owner->f2B0 = 60.0f;
     } else {
-        owner->f2B0 = lbl_804DAD78;
+        owner->f2B0 = 0.0f;
     }
 
     if (owner->mode == 2 || owner->mode == 1) {
@@ -948,8 +927,8 @@ int PossessedFollowUpdate(Owner* owner)
         target[1] = target[1] - y;
         target[2] = target[2] - z;
 
-        if (((lbl_804DAD84 < fabs(target[0])) + (lbl_804DAD84 < fabs(target[1])) +
-             (lbl_804DAD84 < fabs(target[2]))) == 0) {
+        if (((0.0f < fabs(target[0])) + (0.0f < fabs(target[1])) +
+             (0.0f < fabs(target[2]))) == 0) {
             Vec3Set((float*)(owner->conditions + 0x0C), 0.0f, 0.0f, 0.0f);
         } else {
             float res[3];
@@ -967,18 +946,18 @@ int PossessedFollowUpdate(Owner* owner)
         bv[0] = *(float*)(owner->conditions + 0x00);
         bv[1] = *(float*)(owner->conditions + 0x04);
         bv[2] = 0.0f;
-        fn_800E1098(lbl_804DAD7C, ra, av);
-        fn_800E1098(lbl_804DAD7C, rb, bv);
+        fn_800E1098(1.0f, ra, av);
+        fn_800E1098(1.0f, rb, bv);
         dot = ra[0] * rb[0] + ra[1] * rb[1] + ra[2] * rb[2];
 
-        limit = lbl_804DADD4;
-        if (lbl_804DADCC < dot) {
+        limit = 16384.0f;
+        if (0.95f < dot) {
             limit = (av[2] * av[2] + av[0] * av[0] + av[1] * av[1]) /
-                    (lbl_804DADD0 * *(float*)(owner->unkC4 + 0xF8));
+                    (2.0f * *(float*)(owner->unkC4 + 0xF8));
             limit = limit * limit;
         }
 
-        if ((owner->unk21C == 0 && fabs(*(float*)(owner->conditions + 0x14)) < lbl_804DAD84) ||
+        if ((owner->unk21C == 0 && fabs(*(float*)(owner->conditions + 0x14)) < 0.0f) ||
             (bv[0] * bv[0] + bv[1] * bv[1] + bv[2] * bv[2] < limit)) {
             if (owner->mode == 2 && owner->target != 0 &&
                 (*(u32*)((u8*)owner->target + 0x38) >> 24) == 3) {
@@ -999,13 +978,13 @@ int PossessedFollowUpdate(Owner* owner)
         float dx = owner->f234 - owner->f254;
         float dy = owner->f22C - owner->f24C;
 
-        if (fabs(dx) < lbl_804DAD84 && fabs(dy) < lbl_804DAD84) {
+        if (fabs(dx) < 0.0f && fabs(dy) < 0.0f) {
             owner->mode = 0;
             ActorPlayAnim(owner->animId, owner->animHash, OwnerId(owner));
             return 1;
         }
         if (MemFlagIsSet(owner->conditions, 0x16) != 0 &&
-            fabs(owner->f2B0 - owner->f258) < lbl_804DADD8)
+            fabs(owner->f2B0 - owner->f258) < 10.0f)
             return 1;
         owner->unk288 = owner->unk218;
         Vec3Set((float*)(owner->conditions + 0x0C), dx, dy, 0.0f);
@@ -1018,7 +997,7 @@ int PossessedFollowUpdate(Owner* owner)
     }
 
     {
-        int reset = owner->f2AC < lbl_804DAD84;
+        int reset = owner->f2AC < 0.0f;
         int result = FollowOffsetUpdate(owner);
 
         if (reset != 0) {
@@ -1064,17 +1043,6 @@ struct EffectTextureEntry {
 extern EffectParticle* lbl_804D57A0;
 extern int lbl_804D57A4;
 extern EffectTextureEntry lbl_803C4D00[3];
-extern float lbl_804DADE0;
-extern float lbl_804DADE4;
-extern float lbl_804DADE8;
-extern float lbl_804DADEC;
-extern float lbl_804DADF0;
-extern float lbl_804DADF4;
-extern float lbl_804DAE00;
-extern float lbl_804DAE04;
-extern float lbl_804DAE08;
-extern float lbl_804DAE0C;
-extern float lbl_804DAE10;
 extern "C" void* memcpy(void* dest, const void* src, unsigned long n);
 extern "C" int fn_800C5B6C(float* pos, float f);
 
@@ -1098,22 +1066,22 @@ extern "C" bool fn_802C24E4(int* start, int* dir) {
     vec[0] = (float)dir[0];
     vec[1] = (float)dir[1];
     vec[2] = (float)dir[2];
-    if (fn_800C5B6C(pos, lbl_804DADE0) == 0) {
+    if (fn_800C5B6C(pos, 128.0f) == 0) {
         return false;
     }
     idx = lbl_804D57A4;
     lbl_804D57A4 = (idx + 1) % 32;
     p = &lbl_804D57A0[idx];
-    fn_800E1098(lbl_804DADE4, &p->x, vec);
+    fn_800E1098(8.0f, &p->x, vec);
     p->x += pos[0];
     p->y += pos[1];
     p->z += pos[2];
     memcpy(p->color, color, 4);
-    p->unk24 = lbl_804DADEC * ((float)rand() / lbl_804DADE8);
-    p->unk1C = lbl_804DADF0;
-    p->unk20 = lbl_804DADF0;
-    p->scale = lbl_804DADF4;
-    p->speed = lbl_804DADE0;
+    p->unk24 = 360.0f * ((float)rand() / 32767.0f);
+    p->unk1C = 200.0f;
+    p->unk20 = 200.0f;
+    p->scale = 0.0f;
+    p->speed = 128.0f;
     p->life = 0x32;
     p->alpha = 0xFF;
     p->id = lbl_803C4D00[1].handle;
@@ -1140,22 +1108,22 @@ bool SpawnEffectParticleTinted(int* start, int* dir) {
     vec[0] = (float)dir[0];
     vec[1] = (float)dir[1];
     vec[2] = (float)dir[2];
-    if (fn_800C5B6C(pos, lbl_804DAE00) == 0) {
+    if (fn_800C5B6C(pos, 800.0f) == 0) {
         return false;
     }
     idx = lbl_804D57A4;
     lbl_804D57A4 = (idx + 1) % 32;
     p = &lbl_804D57A0[idx];
-    fn_800E1098(lbl_804DAE04, &p->x, vec);
+    fn_800E1098(15.0f, &p->x, vec);
     p->x += pos[0];
     p->y += pos[1];
     p->z += pos[2];
     memcpy(p->color, color, 4);
-    p->unk24 = lbl_804DADEC * ((float)rand() / lbl_804DADE8);
-    p->unk1C = lbl_804DAE08;
-    p->unk20 = lbl_804DAE08;
-    p->scale = lbl_804DAE0C;
-    p->speed = lbl_804DAE00;
+    p->unk24 = 360.0f * ((float)rand() / 32767.0f);
+    p->unk1C = 300.0f;
+    p->unk20 = 300.0f;
+    p->scale = 500.0f;
+    p->speed = 800.0f;
     p->life = 0xFF;
     p->alpha = 0x32;
     p->id = lbl_803C4D00[2].handle;
@@ -1183,22 +1151,22 @@ extern "C" bool fn_802C28EC(int* pos, int* dir) {
     color[1] = 0xFF;
     color[2] = 0xFF;
     color[3] = 0xFF;
-    if (fn_800C5B6C(posf, lbl_804DAE10) == 0) {
+    if (fn_800C5B6C(posf, 64.0f) == 0) {
         return false;
     }
     idx = lbl_804D57A4;
     lbl_804D57A4 = (idx + 1) % 32;
     p = &lbl_804D57A0[idx];
-    fn_800E1098(lbl_804DADE4, &p->x, vec);
+    fn_800E1098(8.0f, &p->x, vec);
     p->x += posf[0];
     p->y += posf[1];
     p->z += posf[2];
     memcpy(p->color, color, 4);
-    p->unk24 = lbl_804DADEC * ((float)rand() / lbl_804DADE8);
-    p->unk1C = lbl_804DADF0;
-    p->unk20 = lbl_804DADF0;
-    p->scale = lbl_804DADF4;
-    p->speed = lbl_804DAE10;
+    p->unk24 = 360.0f * ((float)rand() / 32767.0f);
+    p->unk1C = 200.0f;
+    p->unk20 = 200.0f;
+    p->scale = 0.0f;
+    p->speed = 64.0f;
     p->life = 0;
     p->alpha = 0xFF;
     p->id = lbl_803C4D00[0].handle;
@@ -1236,7 +1204,7 @@ extern "C" bool fn_802C2AEC(int* start, int* dir, float scale, float speed, floa
     p->y += pos[1];
     p->z += pos[2];
     memcpy(p->color, color, 4);
-    p->unk24 = lbl_804DADEC * ((float)rand() / lbl_804DADE8);
+    p->unk24 = 360.0f * ((float)rand() / 32767.0f);
     p->unk1C = size;
     p->unk20 = size;
     p->scale = scale;
@@ -1262,8 +1230,6 @@ extern "C" void fn_802C2D20(void) {
 // ---- effect-particle drawing passes (retail 0x802C2D5C, 0x802C2E5C) ----
 // Each entry is a camera-facing quad whose near/far colour pair (life/alpha)
 // and size pair (scale/speed) are blended by t = unk1C / unk20.
-extern float lbl_804DAE14;   // 0.0f
-extern float lbl_804DAE18;   // 1.0f
 extern void Draw3DBegin(int id, void* data);
 extern void DrawWorldQuadFlipped(float size, float angle, float* pos,
                                  u8 r, u8 g, u8 b, u8 a);
@@ -1278,13 +1244,13 @@ extern "C" void fn_802C2D5C(void) {
         EffectParticle* p = &lbl_804D57A0[i];
         float t;
 
-        if (p->unk28 != 0 && lbl_804DAE14 < p->unk1C) {
+        if (p->unk28 != 0 && 0.0f < p->unk1C) {
             Draw3DBegin(p->id, 0);
             t = p->unk1C / p->unk20;
-            DrawWorldQuadFlipped(p->scale * t + p->speed * (lbl_804DAE18 - t),
+            DrawWorldQuadFlipped(p->scale * t + p->speed * (1.0f - t),
                                  p->unk24, &p->x, p->color[0], p->color[1], p->color[2],
                                  (int)((float)p->life * t +
-                                       (float)p->alpha * (lbl_804DAE18 - t)));
+                                       (float)p->alpha * (1.0f - t)));
             Draw3DEnd();
         }
     }
@@ -1299,13 +1265,13 @@ extern "C" void fn_802C2E5C(void) {
         EffectParticle* p = &lbl_804D57A0[i];
         float t;
 
-        if (p->unk28 != 1 && lbl_804DAE14 < p->unk1C) {
+        if (p->unk28 != 1 && 0.0f < p->unk1C) {
             Draw3DBegin(p->id, 0);
             t = p->unk1C / p->unk20;
-            DrawWorldQuadFlipped(p->scale * t + p->speed * (lbl_804DAE18 - t),
+            DrawWorldQuadFlipped(p->scale * t + p->speed * (1.0f - t),
                                  p->unk24, &p->x, p->color[0], p->color[1], p->color[2],
                                  (int)((float)p->life * t +
-                                       (float)p->alpha * (lbl_804DAE18 - t)));
+                                       (float)p->alpha * (1.0f - t)));
             Draw3DEnd();
         }
     }
@@ -1321,7 +1287,7 @@ extern "C" void fn_802C2F5C(float dt)
 
     for (i = 0; i < 32; i++) {
         if (lbl_804D57A0[i].unk1C <= dt)
-            lbl_804D57A0[i].unk1C = lbl_804DADF4;
+            lbl_804D57A0[i].unk1C = 0.0f;
         else
             lbl_804D57A0[i].unk1C -= dt;
     }
