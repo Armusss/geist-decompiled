@@ -1924,6 +1924,7 @@ int DogActorEnterIdleState(Actor* actor) {
 // the pending transition, refreshes the animation set and keeps the idle sound
 // playing with a random variant.
 int DogActorEnterRestState(Actor* actor) {
+    AiStateMachine* anim;
     AiStateMachine* ai = actor->ai;
 
     if (ai->unk28 != -1 && ai->state != 0 && ai->state != 1) {
@@ -1935,7 +1936,7 @@ int DogActorEnterRestState(Actor* actor) {
     ai->unk10 = ai->unk0C;
     ai->unk0C = 0;
 
-    AiStateMachine* anim = actor->ai;
+    anim = actor->ai;
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
         ConditionSetBit(&actor->conditions, 0x0c, 0);
         ConditionSetBit(&actor->conditions, 0x0e, 1);
