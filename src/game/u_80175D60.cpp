@@ -3213,7 +3213,6 @@ struct GunSpawnTimerBeh8017A918 {
 // block's range limits; when the spawn message answers with the start reply it
 // sends the aim payload on.
 void GunSpawnTimer8017A918(Owner* ownerArg, void* behArg) {
-    GunSpawnOwner8017A698* owner = (GunSpawnOwner8017A698*)ownerArg;
     GunSpawnTimerBeh8017A918* beh;
     GunSpawnTimerBlock8017A918* block;
     unsigned char payload[0x60];
@@ -3226,14 +3225,14 @@ void GunSpawnTimer8017A918(Owner* ownerArg, void* behArg) {
     block = beh->block;
     block->flags = 0;
     BehDone(beh);
-    ratio = (float)(unsigned)rand() / 32767.0f;
-    block->time = (float)(block->max - block->min) * ratio;
+    ratio = (float)rand() / 32767.0f;
+    block->time = ratio * (float)(block->max - block->min);
     block->time += (float)block->min;
-    if (Fn800F7DEC(owner->field8EC, owner->field8F0, 0x96224fcc, OwnerId(ownerArg),
+    if (Fn800F7DEC(((GunSpawnOwner8017A698*)ownerArg)->field8EC, ((GunSpawnOwner8017A698*)ownerArg)->field8F0, 0x96224fcc, OwnerId(ownerArg),
                    0) == 0x04a3e183 &&
         Fn80161FF4(ownerArg, payload, 0.0f) != 0) {
-        Fn800F7F5C(owner->field8EC, owner->field8F0, 0x96224fcc,
-                   OwnerId(ownerArg), payload, owner->field138);
+        Fn800F7F5C(((GunSpawnOwner8017A698*)ownerArg)->field8EC, ((GunSpawnOwner8017A698*)ownerArg)->field8F0, 0x96224fcc,
+                   OwnerId(ownerArg), payload, ((GunSpawnOwner8017A698*)ownerArg)->field138);
     }
 }
 
