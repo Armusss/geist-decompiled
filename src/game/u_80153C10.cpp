@@ -1,5 +1,10 @@
 // u_80153C10.cpp: ghost possession, quick flash and ghost-record bookkeeping.
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
 // Loose (unattached) ghosts: tick every active one that has an update callback.
 struct GhostSlot {
     GhostSlot* unk00;            // 0x00
@@ -138,8 +143,8 @@ struct QueryMsg {
 
 static inline void Query(int* out, int target, int msg, unsigned long hash) {
     QueryMsg m;
-    *(int*)&m.result = 0;
     m.hash = hash;
+    *(int*)&m.result = 0;
     m.unk8 = 0;
     SendMsg(target, msg, &m);
     *out = *(int*)&m.result;
@@ -229,12 +234,16 @@ check_done:
             GhostPossessEnd(self);
             self->unk88 = 1;
         }
-        if ((int)target->id != -1) {
-            MsgC14 msg;
-            msg.value = self->unk00->id;
-            msg.hash = 0x672F35C2;
-            msg.arg = 0;
-            SendMsg(target->id, 0xC14, &msg);
+        {
+            int owner = self->unk00->id;
+
+            if ((int)target->id != -1) {
+                MsgC14 msg;
+                msg.value = owner;
+                msg.hash = 0x672F35C2;
+                msg.arg = 0;
+                SendMsg(target->id, 0xC14, &msg);
+            }
         }
         return fn_801554E0(self, target, mode);
     }
@@ -1467,8 +1476,8 @@ void GhostRecordReset(GhostSlot* self) {
     }
     self->unk04 = 0;
     self->unk08 = 0;
-    float flash = lbl_804D7CC8;
     float reset = lbl_804D7CA0;
+    float flash = lbl_804D7CC8;
     self->unk50 = reset;
     self->unk48 = -1;
     self->unk4C = reset;
@@ -1589,7 +1598,7 @@ extern "C" int fn_8001F0DC(Actor* actor, IVec3* pos, int a, int b, int c, int d,
 extern "C" void fn_8016D68C(Vec3* out, Vec3* euler);
 extern "C" void fn_8016D4EC(Vec3* out, Vec3* euler);
 extern "C" void fn_800A025C(Vec3* out, Mtx34* mtx, int index);
-extern "C" void fn_800E1098(float scale, Vec3* dst, Vec3* src);
+extern "C" void fn_800E1098(Vec3* out, Vec3* in, float length);
 struct FlashSpotActor;
 unsigned long GhostFlashSpotFilter(int* candidate, int target);
 int GhostFlashSpotPlace(FlashSpotActor* other, FlashSpotActor* owner);
@@ -1763,11 +1772,11 @@ int GhostFlashFindSpot(Mtx34* out, GhostSlot* self, float angle) {
             }
             float rowScale = lbl_804D7CD4 * minHW;
             fn_800A025C(&ax, &base, 0);
-            fn_800E1098(rowScale, &ax, &ax);
+            fn_800E1098(&ax, &ax, rowScale);
             fn_800A025C(&ay, &base, 1);
-            fn_800E1098(rowScale, &ay, &ay);
+            fn_800E1098(&ay, &ay, rowScale);
             fn_800A025C(&az, &base, 2);
-            fn_800E1098(lbl_804D7CDC * (float)(bounds[5] - bounds[2]), &az, &az);
+            fn_800E1098(&az, &az, lbl_804D7CDC * (float)(bounds[5] - bounds[2]));
 
             offset.x = pos.x - base.m[9];
             offset.y = pos.y - base.m[10];
@@ -1873,7 +1882,7 @@ int GhostFlashSpotPlace(FlashSpotActor* other, FlashSpotActor* owner) {
         float px = owner->flashX - vec.x;
         float py = owner->flashY - vec.y;
         float pz = owner->flashZ - vec.z;
-        fn_800E1098(radius, &vec, &vec);
+        fn_800E1098(&vec, &vec, radius);
         vec.x = vec.x + px;
         vec.y = vec.y + py;
         vec.z = vec.z + pz;
