@@ -227,9 +227,9 @@ int fn_8016325C(void* obj);
 void fn_8008F4E8(void* zone, int arg);
 void fn_8008F378(void* zone);
 void fn_8008F4EC(void* zone, int arg);
-void fn_8008F230(float value, void* zone, int arg, int flag);
-void fn_80090974(float value, void* zone, int arg, int handle, int flag,
-                  void* fn, Actor* actor);
+void fn_8008F230(void* zone, float value, int arg, int flag);
+void fn_80090974(void* zone, int arg, int handle, int flag,
+                  void* fn, Actor* actor, float value);
 void fn_8016EEF4(int handle);
 void fn_8008DE4C(void* zone, int a, int b, int c);
 int fn_8016F120(u32 handle, void* target);
@@ -611,10 +611,10 @@ int DogActorChooseAiSubState(Actor* actor) {
                                       actor->context->value1C,
                                       lbl_803AAAD8[anim->state].unk00,
                                       subState, 0);
-            fn_8008F230(100.0f, actor->zone, 0, 1);
+            fn_8008F230(actor->zone, 100.0f, 0, 1);
             ConditionSetBit(&actor->conditions, 0, 0);
-            fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
-                        lbl_803AAAD8[anim->state].unk10, actor);
+            fn_80090974(actor->zone, 0, anim->unk04, 1,
+                        lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
             if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
                 fn_8016EEF4(anim->unk28);
                 anim->unk28 = -1;
@@ -984,10 +984,10 @@ int GeistA7DA0EnterDeathState(Actor* actor) {
             ai->unk04 = fn_800A1BC8(actor->context->value14,
                                     actor->context->value1C,
                                     lbl_803AAAD8[ai->state].unk00, result, 0);
-            fn_8008F230(100.0f, actor->zone, 0, 1);
+            fn_8008F230(actor->zone, 100.0f, 0, 1);
             ConditionSetBit(&actor->conditions, 0, 1);
-            fn_80090974(1.0f, actor->zone, 0, ai->unk04, 0x18,
-                        lbl_803AAAD8[ai->state].unk10, actor);
+            fn_80090974(actor->zone, 0, ai->unk04, 0x18,
+                        lbl_803AAAD8[ai->state].unk10, actor, 1.0f);
             if (ai->unk28 != -1 && ai->state != 0 && ai->state != 1) {
                 fn_8016EEF4(ai->unk28);
                 ai->unk28 = -1;
@@ -1034,10 +1034,10 @@ int GeistA7F94EnterFleeState(Actor* actor) {
         ai->unk04 = fn_800A1BC8(actor->context->value14,
                                 actor->context->value1C,
                                 lbl_803AAAD8[ai->state].unk00, sub, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(1.0f, actor->zone, 0, ai->unk04, 8,
-                    lbl_803AAAD8[ai->state].unk10, actor);
+        fn_80090974(actor->zone, 0, ai->unk04, 8,
+                    lbl_803AAAD8[ai->state].unk10, actor, 1.0f);
         if (ai->unk28 != -1 && ai->state != 0 && ai->state != 1) {
             fn_8016EEF4(ai->unk28);
             ai->unk28 = -1;
@@ -1106,10 +1106,10 @@ int GeistA81D0EnterState19(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, 0, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 0);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 1,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
@@ -1161,10 +1161,10 @@ int GeistA8370EnterState18(Actor* actor) {
             anim->unk04 = fn_800A1BC8(actor->context->value14,
                                       actor->context->value1C,
                                       lbl_803AAAD8[anim->state].unk00, 0, 0);
-            fn_8008F230(100.0f, actor->zone, 0, 1);
+            fn_8008F230(actor->zone, 100.0f, 0, 1);
             ConditionSetBit(&actor->conditions, 0, 0);
-            fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
-                        lbl_803AAAD8[anim->state].unk10, actor);
+            fn_80090974(actor->zone, 0, anim->unk04, 1,
+                        lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
             if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
                 fn_8016EEF4(anim->unk28);
                 anim->unk28 = -1;
@@ -1212,10 +1212,10 @@ int GeistA85BCEnterState17(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   rand() % count, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 0);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 1,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
@@ -1258,10 +1258,10 @@ int GeistA875CEnterState16(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, dir, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 0);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 1,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
@@ -1298,10 +1298,10 @@ int GeistA8940EnterState15(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   rand() % count, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 0);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 1,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
@@ -1341,10 +1341,10 @@ int GeistA8AE0EnterState14(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   rand() % count, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 9,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
@@ -1381,10 +1381,10 @@ int GeistA8C98EnterState13(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   0, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 0x18,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 0x18,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
@@ -1420,10 +1420,10 @@ int GeistA8E2CEnterState12(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   2, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 9,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
@@ -1460,10 +1460,10 @@ int GeistA8FC4EnterState11(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   1, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 9,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
@@ -1500,10 +1500,10 @@ int GeistA9158EnterState10(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   0, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 9,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
@@ -1542,10 +1542,10 @@ int GeistA92ECEnterState9(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, 2, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 0);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 1,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
@@ -1583,10 +1583,10 @@ int GeistA9484EnterState8(Actor* actor) {
             anim->unk04 = fn_800A1BC8(actor->context->value14,
                                       actor->context->value1C,
                                       lbl_803AAAD8[anim->state].unk00, 1, 0);
-            fn_8008F230(100.0f, actor->zone, 0, 1);
+            fn_8008F230(actor->zone, 100.0f, 0, 1);
             ConditionSetBit(&actor->conditions, 0, 0);
-            fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
-                        lbl_803AAAD8[anim->state].unk10, actor);
+            fn_80090974(actor->zone, 0, anim->unk04, 1,
+                        lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
             if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
                 fn_8016EEF4(anim->unk28);
                 anim->unk28 = -1;
@@ -1608,10 +1608,10 @@ int GeistA9484EnterState8(Actor* actor) {
             anim->unk04 = fn_800A1BC8(actor->context->value14,
                                       actor->context->value1C,
                                       lbl_803AAAD8[anim->state].unk00, 0, 0);
-            fn_8008F230(100.0f, actor->zone, 0, 1);
+            fn_8008F230(actor->zone, 100.0f, 0, 1);
             ConditionSetBit(&actor->conditions, 0, 0);
-            fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
-                        lbl_803AAAD8[anim->state].unk10, actor);
+            fn_80090974(actor->zone, 0, anim->unk04, 1,
+                        lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
             if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
                 fn_8016EEF4(anim->unk28);
                 anim->unk28 = -1;
@@ -1653,10 +1653,10 @@ int GeistA9798EnterState7(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, index, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 9,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
@@ -1698,10 +1698,10 @@ int GeistA9968EnterState6(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, index, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 9,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
@@ -1738,10 +1738,10 @@ int GeistA9B0CEnterState5(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, index, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 9,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
@@ -1778,10 +1778,10 @@ int GeistA9CB0EnterState4(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, index, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 9,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
@@ -1818,10 +1818,10 @@ int GeistA9E50EnterState3(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, index, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 9,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
@@ -1858,10 +1858,10 @@ int GeistA9FF0EnterState2(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, index, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 9,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
@@ -1903,10 +1903,10 @@ int DogActorEnterIdleState(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   index, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 9,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
@@ -1951,10 +1951,10 @@ int DogActorEnterRestState(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   index, 0);
-        fn_8008F230(100.0f, actor->zone, 0, 1);
+        fn_8008F230(actor->zone, 100.0f, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
-                    lbl_803AAAD8[anim->state].unk10, actor);
+        fn_80090974(actor->zone, 0, anim->unk04, 9,
+                    lbl_803AAAD8[anim->state].unk10, actor, 1.0f);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
             anim->unk28 = -1;
