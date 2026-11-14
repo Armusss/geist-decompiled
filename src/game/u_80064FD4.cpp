@@ -267,7 +267,7 @@ void fn_800A02C0(Mtx34* m, Vec3* v, int col);              // 0x800A02C0
 void fn_8009FC6C(Mtx34* out, Mtx34* a, Mtx34* b);          // 0x8009FC6C
 void fn_8009F63C(void* out, void* src);                    // 0x8009F63C
 float fn_800E1020(Vec3* v);                                // 0x800E1020
-void fn_800E1098(float scale, Vec3* v);                    // 0x800E1098
+void fn_800E1098(Vec3* out, Vec3* in, float length);        // 0x800E1098
 int fn_8001ACD4(Player* p, Vec3* cur, Vec3* a, Vec3* b, Vec3* c,
                 Vec3* vel, int flags, int (*cb)(void*, Vec3*),
                 Vec3* out);                                // 0x8001ACD4
@@ -280,11 +280,11 @@ int PlayerInHost(Actor* a);                                // 0x80049750
 void ActorAim(int* out, Actor* a, int idx);                // 0x8009F700
 
 // Other functions of this file (forward declarations; the base at 0x80064FD4 calls the later ones).
-void PlayerPoseUpdate(Player* p, float dt);                // 0x800666B4
+void PlayerPoseUpdate(Player* p, float dt);  // TODO (not drafted yet, 0xEA4 bytes at 0x800666B4)
 void PlayerGroundMove(Player* p, float dt);                // 0x800656EC
 void PlayerAirMove(Player* p, float dt);                   // 0x80065F58
 void PlayerAnimOffUpdate(Player* p, float dt);             // 0x80065F48
-void PlayerModelUpdate(Player* p);                         // 0x8006766C
+void PlayerModelUpdate(Player* p);  // TODO (not drafted yet, 0x6F4 bytes at 0x8006766C)
 void PlayerStepMove(Player* p, float dt);                  // 0x800653B4
 void PlayerExtraMove(Player* p, float dt);                 // 0x800652E0
 void PlayerSetTurnPreset(Player* p, int mode);             // 0x800665B8
@@ -876,19 +876,19 @@ void PlayerAirMove(Player* p, float dt) {
         fwd0.x = (float)aim.x;
         fwd0.y = (float)aim.y;
         fwd0.z = (float)aim.z;
-        fn_800E1098(scale, &fwd0);
+        fn_800E1098(&fwd0, &fwd0, scale);
 
         ActorAim((int*)&aim, (Actor*)p, 1);
         fwd1.x = (float)aim.x;
         fwd1.y = (float)aim.y;
         fwd1.z = (float)aim.z;
-        fn_800E1098(scale, &fwd1);
+        fn_800E1098(&fwd1, &fwd1, scale);
 
         ActorAim((int*)&aim, (Actor*)p, 2);
         fwd2.x = (float)aim.x;
         fwd2.y = (float)aim.y;
         fwd2.z = (float)aim.z;
-        fn_800E1098(0.25f * (float)(p->pad->v[5] - p->pad->v[2]), &fwd2);
+        fn_800E1098(&fwd2, &fwd2, 0.25f * (float)(p->pad->v[5] - p->pad->v[2]));
 
         if (fn_8001ACD4(p, &cur, &fwd0, &fwd1, &fwd2, &vel, 0x1000,
                         PlayerQueryPlace, res) == 1) {
@@ -968,12 +968,6 @@ int PlayerQueryPlace(void* owner, Vec3* out) {
     return 1;
 }
 
-// Stance / pose blend update. TODO: full body.
-void PlayerPoseUpdate(Player* p, float dt) {
-    (void)p;
-    (void)dt;
-}
-
 // Copies a 0x48-byte pose record.
 int Pose48Copy(Pose48* src, Pose48* dst) {
     dst->w[0] = src->w[0];
@@ -1006,11 +1000,6 @@ void PlayerBeginBlend(Player* p, PlaceF* src, float f) {
     p->unk284 = f;
     p->unk288 = 0.0f;
     p->anim = *src;
-}
-
-// Model / pose setup. TODO: full body.
-void PlayerModelUpdate(Player* p) {
-    (void)p;
 }
 
 void PlayerNoOp() {}
