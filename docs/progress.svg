@@ -217,7 +217,7 @@
 <rect x="68" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/Turf.cpp - partial: 9/22 functions match</title></rect>
 <rect x="88" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_8001598C.cpp - matching</title></rect>
 <rect x="108" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_80015A44.cpp - matching</title></rect>
-<rect x="128" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80015B64.cpp - partial: 21/36 functions match</title></rect>
+<rect x="128" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80015B64.cpp - partial: 22/36 functions match</title></rect>
 <rect x="148" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/File.cpp - matching</title></rect>
 <rect x="168" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/DbRoom.c - partial: 15/62 functions match</title></rect>
 <rect x="188" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_80022B10.cpp - partial: 36/57 functions match</title></rect>
