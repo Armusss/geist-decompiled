@@ -1246,7 +1246,7 @@ extern "C" void fn_802C2D5C(void) {
         EffectParticle* p = &lbl_804D57A0[i];
         float t;
 
-        if (p->unk28 != 0 && 0.0f < p->unk1C) {
+        if (p->unk28 != 0 && p->unk1C > 0.0f) {
             Draw3DBegin(p->id, 0);
             t = p->unk1C / p->unk20;
             DrawWorldQuadFlipped(p->scale * t + p->speed * (1.0f - t),
@@ -1267,7 +1267,7 @@ extern "C" void fn_802C2E5C(void) {
         EffectParticle* p = &lbl_804D57A0[i];
         float t;
 
-        if (p->unk28 != 1 && 0.0f < p->unk1C) {
+        if (p->unk28 != 1 && p->unk1C > 0.0f) {
             Draw3DBegin(p->id, 0);
             t = p->unk1C / p->unk20;
             DrawWorldQuadFlipped(p->scale * t + p->speed * (1.0f - t),
