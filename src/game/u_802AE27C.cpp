@@ -523,10 +523,10 @@ bool SetBehSecondaryState(void* selfPtr, int value)
 // slot, then returns the behaviour block's main state.
 int BehParamsSpawnGhost(void* actorPtr)
 {
-    BehActor* a = (BehActor*)actorPtr;
     BehParams* beh;
     BehSlot* slot;
     int i;
+    BehActor* a = (BehActor*)actorPtr;
 
     if (a == 0) {
         return 0;
@@ -553,7 +553,7 @@ int BehParamsSpawnGhost(void* actorPtr)
                 delta.y = *(float*)((unsigned char*)player + 0x680) - a->unk88;
                 delta.z = *(float*)((unsigned char*)player + 0x684) - a->unk8c;
                 fn_8016D440(&euler, &delta);
-                euler.x = euler.x + 9e+01f;
+                euler.x += 90.0f;
                 EulerNormalize(&euler, &euler);
                 MtxSetEuler(&mtx, &euler);
                 info = (Place*)OwnerGetInfo(slot->emitter);
