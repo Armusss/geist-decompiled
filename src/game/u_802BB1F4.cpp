@@ -1387,12 +1387,16 @@ bool FshSveCheckLeave(void)
 // condition bit 3 raised and the range tracker reset.
 bool FshSveEnterIdleState(void* p)
 {
-    if (p == 0)
+    Actor* self = (Actor*)p;
+    BehData* bd;
+
+    if (self == 0)
         return false;
-    *(s32*)((u8*)p + 0x288) = 3;
-    *(*(s32**)((u8*)p + 0x130)) = 3;
-    ConditionUpdateBit((u8*)p + 0x270, 3, 1);
-    RangeResetPending((u8*)p + 0x270);
+    bd = self->beh;
+    self->unk288 = 3;
+    bd->state = 3;
+    ConditionUpdateBit(self->unk270, 3, 1);
+    RangeResetPending(self->unk270);
     return true;
 }
 
