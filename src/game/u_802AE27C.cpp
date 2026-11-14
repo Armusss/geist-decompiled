@@ -1770,7 +1770,7 @@ extern "C" void fn_800A025C(Mtx34* out, Mtx34* in, int flag);
 extern "C" void fn_8016D648(Vec3* out, Vec3* a, Vec3* b);
 extern "C" float fn_800E1020(Vec3* v);
 extern "C" void fn_8016D4EC(Vec3* out, Vec3* in);
-extern "C" void fn_800E1098(float f, Vec3* out, Vec3* in);
+extern "C" void fn_800E1098(Vec3* out, Vec3* in, float f);
 extern "C" int MemFlagIsSet(void* cond, int bit);
 extern "C" float fn_800A1394(float x);
 extern "C" float fn_800A1418(float x);
@@ -1980,7 +1980,7 @@ extern "C" void GhostActorFrameUpdate(void* actorPtr)
         MemFlagIsSet(a->cond, 4) == 0) {
         f = fn_800E1020((Vec3*)&a->unk240);
         fn_8016D4EC((Vec3*)&a->unk240, &a->angles);
-        fn_800E1098(f, (Vec3*)&a->unk240, (Vec3*)&a->unk240);
+        fn_800E1098((Vec3*)&a->unk240, (Vec3*)&a->unk240, f);
     }
     GhostPlaceMatrix(a, &mtxPlace, &tmp);
 }
@@ -2004,7 +2004,7 @@ extern "C" void ModelNodeSetup(int model, int node, int a, int b);
 extern "C" int ModelFindBone(int model, int bone);
 extern "C" void Mtx34SetTranslation(Mtx34* mtx, Vec3* v);
 extern "C" void fn_8009FC6C(void* node, void* node2, Mtx34* mtx);
-extern "C" void fn_8003F15C(float f, int handle, int node, int arg,
+extern "C" void fn_8003F15C(int handle, int node, int arg, float f,
                             int* stream, void* desc);
 extern "C" int fn_8003A1F0(int handle, void* node, int anim);
 extern "C" int HandleToPlayer(int handle);
@@ -2098,7 +2098,7 @@ extern "C" int GhostActorStreamMsg(void* streamPtr, int mode)
                 f = f0;
             }
         }
-        fn_8003F15C(f, hnd, node, a->unk0d0, (int*)((char*)streamPtr + 0x10),
+        fn_8003F15C(hnd, node, a->unk0d0, f, (int*)((char*)streamPtr + 0x10),
                     0);
     } else {
         desc = lbl_8034BA28;
@@ -2109,7 +2109,7 @@ extern "C" int GhostActorStreamMsg(void* streamPtr, int mode)
         desc.colorB[0] = (unsigned char)(int)(255.0f * col[0]);
         desc.colorB[1] = (unsigned char)(int)(255.0f * col[1]);
         desc.colorB[2] = (unsigned char)(int)(255.0f * col[2]);
-        fn_8003F15C(1.0f, hnd, node, a->unk0d0,
+        fn_8003F15C(hnd, node, a->unk0d0, 1.0f,
                     (int*)((char*)streamPtr + 0x10), &desc);
     }
     a->unk13c = 0.0f;
