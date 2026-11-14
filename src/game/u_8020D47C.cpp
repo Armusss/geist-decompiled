@@ -1561,14 +1561,17 @@ void PossessSelectEnterHostSlot(PlayerSelectObj* obj)
 {
     Actor* host;
     HostPossessInfo* info;
-    unsigned int flag = 0;
-    int player;
     int index;
+    unsigned int flag;
+    int player;
+    int kind;
 
     player = PlayerInHost((Actor*)obj);
     host = (Actor*)obj->unk26E8;
     index = obj->unk73C;
-    if (((unsigned int)host->unk38 >> 24) == 0x13) {
+    flag = 0;
+    kind = host->unk38 >> 24;
+    if (kind == 0x13) {
         info = (HostPossessInfo*)fn_800A384C(host);
         if (HasCondition((unsigned char*)host + 0x270, 0xB) != 0)
             flag = 1;
