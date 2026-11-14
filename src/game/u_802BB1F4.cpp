@@ -62,6 +62,7 @@ struct Actor {
     void*   unk10C;                // 0x10c
     u8      unk110[0x130 - 0x110]; // 0x110
     BehData* beh;                  // 0x130
+    u8      unk134[4];             // 0x134
     f32     unk138;                // 0x138
     u8      unk13C[0x21C - 0x13C]; // 0x13c
     s32     unk21C;                // 0x21c
@@ -103,13 +104,6 @@ struct GeistString {
 };
 
 extern "C" {
-extern f32 lbl_804DACE0;
-extern f32 lbl_804DACE4;
-extern f64 lbl_804DACE8;
-extern f32 lbl_804DACF0;
-extern f32 lbl_804DACF4;
-extern f32 lbl_804DACF8;
-extern f32 lbl_804DACFC;
 extern s32 lbl_804D3970;
 extern u32 lbl_804D3974;
 extern u32 lbl_804D3978;
@@ -226,9 +220,9 @@ u32 fn_802BB1F4(int msg, MsgArg* args)
     if (msg < 0x40A) {
         if (msg == 0x400) {
             args[1].i = OwnerId((Owner*)self);
-            args[3].i = (lbl_804DACE0 < self->unk904);
-            args[4].f = lbl_804DACE4;
-            args[5].f = lbl_804DACE4;
+            args[3].i = (0.0f < self->unk904);
+            args[4].f = 1.0f;
+            args[5].f = 1.0f;
             args[6].i = 3 - ((__cntlzw(fn_80049940()) >> 5) & 1);
             args[7].i = 0;
             return 1;
@@ -260,8 +254,8 @@ u32 fn_802BB1F4(int msg, MsgArg* args)
         if ((u32)args[2].i >> 24 != 2)
             return 1;
         if (args[5].u == 0x2EFC66CA) {
-            bd->unk40 = lbl_804DACE0;
-            self->unk91C = lbl_804DACE4;
+            bd->unk40 = 0.0f;
+            self->unk91C = 1.0f;
         } else if (args[5].u < 0x2EFC66CA && args[5].u == 0xB9FC42F5 &&
                    bd->unk50 == 0) {
             args[3].i = (s32)(lbl_804D39C0 * (f32)self->unkC4->unk30);
@@ -285,8 +279,8 @@ u32 fn_802BB1F4(int msg, MsgArg* args)
             return 0;
         }
         if (args[3].u < 0x39CB0CB0 && args[3].u == 0x2EFC66CA) {
-            bd->unk14 = lbl_804DACE0;
-            self->unk91C = lbl_804DACE4;
+            bd->unk14 = 0.0f;
+            self->unk91C = 1.0f;
             bd->unk18 = 1;
             return 0;
         }
@@ -314,7 +308,7 @@ u32 fn_802BB1F4(int msg, MsgArg* args)
                     return 1;
                 }
             } else if (args[1].u == 0x2EAA5F62) {
-                args[3].i = (lbl_804DACE4 < self->unk91C);
+                args[3].i = (1.0f < self->unk91C);
                 return 1;
             }
             return 0;
@@ -379,31 +373,31 @@ u32 fn_802BB8E0(Actor* self)
                              (self->unk904 / (f32)self->unkC4->unk30) +
                          (f32)lbl_804D3990);
     fn_800C99E8(self, lbl_804D39B8 & 0xFF, lbl_804D39B4 & 0xFF, 1,
-                (s32)(lbl_804DACF0 * lbl_804D397C));
+                (s32)(1.5f * lbl_804D397C));
 
     // growth per frame, relative to the current scale
     delta = self->unk138 / self->unk91C;
     delta = delta / fn_802A2080();
 
     if (bd->unk14 < lbl_804D3984) {
-        bd->unk40 = lbl_804DACE0;
+        bd->unk40 = 0.0f;
         bd->unk14 = bd->unk14 + delta;
     }
 
     // normalise the current scale against the shrink/grow limits
-    value = (fn_802A2080() < lbl_804DACE4)
-                ? (self->unk91C - lbl_804DACE4) / (lbl_804D397C - lbl_804DACE4)
-                : (self->unk91C - lbl_804DACE4) / (lbl_804D3980 - lbl_804DACE4);
+    value = (fn_802A2080() < 1.0f)
+                ? (self->unk91C - 1.0f) / (lbl_804D397C - 1.0f)
+                : (self->unk91C - 1.0f) / (lbl_804D3980 - 1.0f);
 
     if ((bd->flags3C & 2) == 0) {
-        if (bd->unk40 < lbl_804DACE4) {
+        if (bd->unk40 < 1.0f) {
             bd->unk40 = bd->unk40 + self->unk138 / (f32)lbl_804D3988;
-            if (bd->unk40 > lbl_804DACE4)
-                bd->unk40 = lbl_804DACE4;
+            if (bd->unk40 > 1.0f)
+                bd->unk40 = 1.0f;
         }
     } else {
         bd->unk40 = bd->unk40 - self->unk138 / (f32)lbl_804D3988;
-        if (bd->unk40 <= lbl_804DACE0 && bd->unk48 == 0) {
+        if (bd->unk40 <= 0.0f && bd->unk48 == 0) {
             if ((bd->flags3C & 2) != 0) {
                 bd->flags3C &= ~2u;
                 if (lbl_804D39BC != 0)
@@ -414,28 +408,28 @@ u32 fn_802BB8E0(Actor* self)
     }
 
     if ((bd->flags3C & 2) == 0) {
-        if (lbl_804DACE0 < value) {
+        if (0.0f < value) {
             value = value - delta / (f32)lbl_804D3998;
-            if (value < lbl_804DACE0)
-                value = lbl_804DACE0;
+            if (value < 0.0f)
+                value = 0.0f;
         }
     } else {
-        if (value < lbl_804DACE4) {
+        if (value < 1.0f) {
             value = value + delta / (f32)lbl_804D3994;
-            if (value > lbl_804DACE4)
-                value = lbl_804DACE4;
+            if (value > 1.0f)
+                value = 1.0f;
         }
     }
-    if (value < lbl_804DACE0)
-        value = lbl_804DACE0;
-    else if (value > lbl_804DACE4)
-        value = lbl_804DACE4;
+    if (value < 0.0f)
+        value = 0.0f;
+    else if (value > 1.0f)
+        value = 1.0f;
 
     scale = fn_802A2080();
-    if (scale < lbl_804DACE4)
-        self->unk91C = value * (lbl_804D397C - lbl_804DACE4) + lbl_804DACE4;
+    if (scale < 1.0f)
+        self->unk91C = value * (lbl_804D397C - 1.0f) + 1.0f;
     else
-        self->unk91C = value * (lbl_804D3980 - lbl_804DACE4) + lbl_804DACE4;
+        self->unk91C = value * (lbl_804D3980 - 1.0f) + 1.0f;
 
     r = fn_800A7AC4(self->unk270, 9);
     if (r == 0) {
@@ -497,28 +491,28 @@ void FshSveCreateBehaviour(Actor* self)
         self->beh = b;
         self->unkFC = (void*)FshSveUpdatePossession;
         self->unk604 = (void*)FshSveCheckTargetId;
-        self->unk91C = lbl_804DACE4;
+        self->unk91C = 1.0f;
         b->state = 0;
-        b->unk04 = lbl_804DACE0;
+        b->unk04 = 0.0f;
         b->unk08 = 0;
-        b->unk0C = lbl_804DACE0;
-        b->unk10 = lbl_804DACE0;
+        b->unk0C = 0.0f;
+        b->unk10 = 0.0f;
         b->flags3C = 0;
-        b->unk40 = lbl_804DACE0;
+        b->unk40 = 0.0f;
         b->unk44 = 0xFFFFFFFF;
-        b->unk14 = lbl_804DACF4;
+        b->unk14 = 3.4028235e+38f;
         b->unk24 = (f32)(u32)lbl_804D3988;
         b->unk48 = 0;
         b->unk4C = 0;
         b->unk18 = 0;
         b->unk28 = -1;
         b->unk50 = 0;
-        b->unk2C = lbl_804DACE0;
+        b->unk2C = 0.0f;
         b->unk30 = 0;
-        b->unk34 = lbl_804DACE0;
+        b->unk34 = 0.0f;
         b->unk38 = -1;
-        ConditionUpdateBit((u8*)self + 0x270, 6, 1);
-        ConditionUpdateBit((u8*)self + 0x270, 0x22, 1);
+        ConditionUpdateBit(self->unk270, 6, 1);
+        ConditionUpdateBit(self->unk270, 0x22, 1);
         lbl_804D3970 = AssetFind(0xF1754BF2, 0x21C5E0);
         lbl_804D3974 = FxFind("dashin");
         lbl_804D3978 = FxFind("dashout");
@@ -543,10 +537,10 @@ int FshSveFollowStateUpdate(Actor* self)
 
     bd = self->beh;
     bd->unk34 = bd->unk34 - self->unk138 / self->unk91C;
-    if (bd->unk34 <= lbl_804DACE0)
+    if (bd->unk34 <= 0.0f)
         return 1;
 
-    target = (Actor*)FollowGetTargetObj((u8*)self + 0x270);
+    target = (Actor*)FollowGetTargetObj(self->unk270);
     if (target == 0)
         return 1;
     if (self->unk604 != 0 &&
@@ -554,8 +548,8 @@ int FshSveFollowStateUpdate(Actor* self)
         return 1;
 
     if ((self->beh->flags3C & 2) == 0 &&
-        HasCondition((u8*)self + 0x270, 9) == 0 &&
-        HasCondition((u8*)self + 0x270, 10) == 0) {
+        HasCondition(self->unk270, 9) == 0 &&
+        HasCondition(self->unk270, 10) == 0) {
         bd->unk48 = 1;
         b = self->beh;
         if ((b->flags3C & 2) == 0) {
@@ -566,25 +560,25 @@ int FshSveFollowStateUpdate(Actor* self)
         }
     }
 
-    target = (Actor*)FollowGetTargetObj((u8*)self + 0x270);
-    r = FollowLineCheckActorDist(self, target, lbl_804DACF8);
+    target = (Actor*)FollowGetTargetObj(self->unk270);
+    r = FollowLineCheckActorDist(self, target, 0.8f);
     if (r == 0 || fn_8029B3B0(self, 0x73B1E248) == 0) {
-        fn_80162610(self, (u8*)self + 0x894, 0);
-        ConditionUpdateBit((u8*)self + 0x270, 0, 0);
+        fn_80162610(self, self->unk894, 0);
+        ConditionUpdateBit(self->unk270, 0, 0);
     } else {
-        ConditionUpdateBit((u8*)self + 0x270, 0, 1);
-        ConditionUpdateBit((u8*)self + 0x270, 3, 1);
-        ConditionUpdateBit((u8*)self + 0x270, 4, 1);
-        if (fn_80162940((u8*)self + 0x894, 2) != 0 &&
-            fn_80162940((u8*)self + 0x894, 8) != 0) {
-            if (self->unk5B8 > (f32)rand() / lbl_804DACFC) {
-                fn_80162610(self, (u8*)self + 0x894, 2);
+        ConditionUpdateBit(self->unk270, 0, 1);
+        ConditionUpdateBit(self->unk270, 3, 1);
+        ConditionUpdateBit(self->unk270, 4, 1);
+        if (fn_80162940(self->unk894, 2) != 0 &&
+            fn_80162940(self->unk894, 8) != 0) {
+            if (self->unk5B8 > (f32)rand() / 32767.0f) {
+                fn_80162610(self, self->unk894, 2);
                 goto done;
             }
         }
-        if (fn_80162940((u8*)self + 0x894, 1) != 0 &&
-            fn_80162940((u8*)self + 0x894, 4) != 0)
-            fn_80162610(self, (u8*)self + 0x894, 1);
+        if (fn_80162940(self->unk894, 1) != 0 &&
+            fn_80162940(self->unk894, 4) != 0)
+            fn_80162610(self, self->unk894, 1);
     }
 
 done:
@@ -630,7 +624,7 @@ int FshSveFollowBegin(Actor* self)
     self->unk220 = 0;
     fn_800BBCA8();
     bd->unk38 = -1;
-    ConditionUpdateBit((u8*)self + 0x270, 0x16, 0);
+    ConditionUpdateBit(self->unk270, 0x16, 0);
     fn_8029B070(self, 0x73B1E248);
     return 1;
 }
@@ -663,9 +657,6 @@ extern f32 lbl_804D39AC;
 extern f32 lbl_804D39B0;
 extern f32 lbl_804D39C8;
 extern f32 lbl_804D39CC;
-extern f32 lbl_804DAD00;
-extern f32 lbl_804DAD04;
-extern f32 lbl_804DAD08;
 
 extern s32  fn_800B26B8(Actor* self);
 extern s32  fn_800B1EF4(Actor* self, s32 mode);
@@ -710,13 +701,13 @@ int FshSvePossessionBegin(Actor* self)
     bd->state = 8;
     bd->unk30 = 0;
     bd->unk34 = (lbl_804D39CC - lbl_804D39C8) *
-                    (lbl_804DACE4 - self->unk904 / (f32)self->unkC4->unk30) +
+                    (1.0f - self->unk904 / (f32)self->unkC4->unk30) +
                 lbl_804D39C8;
-    ConditionUpdateBit((u8*)self + 0x270, 4, 1);
-    ConditionUpdateBit((u8*)self + 0x270, 0x16, 1);
-    ConditionUpdateBit((u8*)self + 0x270, 0x17, 1);
+    ConditionUpdateBit(self->unk270, 4, 1);
+    ConditionUpdateBit(self->unk270, 0x16, 1);
+    ConditionUpdateBit(self->unk270, 0x17, 1);
 
-    target = FollowGetTargetObj((u8*)self + 0x270);
+    target = FollowGetTargetObj(self->unk270);
     if (target != 0) {
         if (self == 0 || target == 0)
             id = -1;
@@ -761,12 +752,12 @@ int FshSveFollowAimUpdate(Actor* self)
     if (self->unk220 != 0)
         return 1;
 
-    target = FollowGetTargetObj((u8*)self + 0x270);
+    target = FollowGetTargetObj(self->unk270);
     mode = fn_800B26B8(self);
     if (mode != 4) {
         if (fn_800B1EF4(self, mode) == 0) {
             if (fn_800B1ED4(self, mode) & 0x200) {
-                bd->unk40 = lbl_804DACE4;
+                bd->unk40 = 1.0f;
                 bd->unk48 = 1;
                 b = self->beh;
                 if ((b->flags3C & 2) == 0) {
@@ -780,21 +771,21 @@ int FshSveFollowAimUpdate(Actor* self)
             fn_800B22F8(self, mode);
             if (target == 0)
                 return 1;
-            fn_800B2418(lbl_804DAD00, self, mode);
+            fn_800B2418(1500000.0f, self, mode);
             fn_800B1F20(self, mode);
-            fn_800B1AB8(lbl_804DAD04, self, mode, 1);
-            FollowSetTargetObj((u8*)self + 0x270, target);
+            fn_800B1AB8(-1.0f, self, mode, 1);
+            FollowSetTargetObj(self->unk270, target);
         } else {
             if (fn_800B2454(self, mode) != 0)
                 return 1;
-            fn_800B2418(lbl_804DAD00, self, mode);
+            fn_800B2418(1500000.0f, self, mode);
         }
     }
 
     if (fn_800BAF40(self) == -1) {
         angle = ActorAimAngleToPos(target, (Vec3*)((u8*)self + 0x84));
         if (fabs(angle) > lbl_804D399C) {
-            bd->unk40 = lbl_804DACE0;
+            bd->unk40 = 0.0f;
             b = self->beh;
             if (b->flags3C & 2) {
                 b->flags3C &= ~2u;
@@ -804,7 +795,7 @@ int FshSveFollowAimUpdate(Actor* self)
             }
             return 1;
         }
-        bd->unk20 = lbl_804DACE0;
+        bd->unk20 = 0.0f;
     }
 
     // Ask who currently possesses the follow target; the reply is a single
@@ -816,7 +807,7 @@ int FshSveFollowAimUpdate(Actor* self)
         return 1;
 
     bd->unk20 = bd->unk20 - self->unk138;
-    if (bd->unk20 <= lbl_804DACE0) {
+    if (bd->unk20 <= 0.0f) {
         bd->unk20 = lbl_804D39B0;
         fn_800BB8B8(self, &aim);
         angle = ActorAimAngleToPos(target, &aim);
@@ -829,15 +820,15 @@ int FshSveFollowAimUpdate(Actor* self)
             EulerNormalize(&dir, &dir);
 
             spread = (lbl_804D39A4 - lbl_804D39A0) *
-                         ((f32)rand() / lbl_804DACFC) + lbl_804D39A0;
+                         ((f32)rand() / 32767.0f) + lbl_804D39A0;
             if (bd->unk4C == 0) {
-                if (dir.z < lbl_804DACE0)
-                    spread = spread * lbl_804DAD04;
+                if (dir.z < 0.0f)
+                    spread = spread * -1.0f;
             } else {
                 spread = spread * (f32)bd->unk4C;
             }
             turn = (lbl_804D39AC - lbl_804D39A8) *
-                       ((f32)rand() / lbl_804DACFC) + lbl_804D39A8;
+                       ((f32)rand() / 32767.0f) + lbl_804D39A8;
             euler.z = euler.z + spread + dir.z;
             fn_8016D4EC(&aim, &euler);
             fn_800E1098(&aim, &aim, turn);
@@ -846,7 +837,7 @@ int FshSveFollowAimUpdate(Actor* self)
             aim.z += mtx.tz;
             if (fn_800BF2D0(&aim) == -1) {
                 if (bd->unk4C == 0) {
-                    spread = spread * lbl_804DAD08;
+                    spread = spread * -2.0f;
                     euler.z = euler.z + spread;
                     fn_8016D4EC(&aim, &euler);
                     fn_800E1098(&aim, &aim, turn);
@@ -863,11 +854,11 @@ int FshSveFollowAimUpdate(Actor* self)
                         self->flags4C |= 0x1000;
                     b->unk44 = fn_8016F120(lbl_804D3978, (u8*)self + 0x24);
                 }
-                bd->unk40 = lbl_804DACE0;
+                bd->unk40 = 0.0f;
                 return 1;
             }
         accepted:
-            if (spread < lbl_804DACE0)
+            if (spread < 0.0f)
                 bd->unk4C = -1;
             else
                 bd->unk4C = 1;
@@ -901,16 +892,16 @@ int FshSvePrepareFollow(Actor* self)
     self->unk288 = 0;
     bd->unk4C = 0;
     fn_800BBCA8();
-    ConditionUpdateBit((u8*)self + 0x270, 4, 1);
-    ConditionUpdateBit((u8*)self + 0x270, 3, 0);
+    ConditionUpdateBit(self->unk270, 4, 1);
+    ConditionUpdateBit(self->unk270, 3, 0);
     mode = fn_800B26B8(self);
     if (mode == 4)
         return 0;
     fn_800B261C(self, mode, &target);
     if (target == 0)
         return 0;
-    FollowSetTargetObj((u8*)self + 0x270, target);
-    bd->unk20 = lbl_804DACE0;
+    FollowSetTargetObj(self->unk270, target);
+    bd->unk20 = 0.0f;
     return 1;
 }
 
@@ -930,10 +921,10 @@ int FshSveFollowTargetUpdate(Actor* self)
         return 0;
 
     bd = self->beh;
-    target = FollowGetTargetObj((u8*)self + 0x270);
+    target = FollowGetTargetObj(self->unk270);
     mode = fn_800B26B8(self);
     if (target == 0) {
-        ConditionUpdateBit((u8*)self + 0x270, 4, 0);
+        ConditionUpdateBit(self->unk270, 4, 0);
         return 1;
     }
 
@@ -942,7 +933,7 @@ int FshSveFollowTargetUpdate(Actor* self)
         if (fn_800B1EF4(self, mode) == 0) {
             fn_800B261C(self, mode, &cur);
             if (fn_800B1ED4(self, mode) & 0x200) {
-                bd->unk40 = lbl_804DACE4;
+                bd->unk40 = 1.0f;
                 bd->unk48 = 1;
                 b = self->beh;
                 if ((b->flags3C & 2) == 0) {
@@ -954,8 +945,8 @@ int FshSveFollowTargetUpdate(Actor* self)
             }
             if (target != 0 && target != cur) {
                 fn_800B1F20(self, mode);
-                fn_800B2418(lbl_804DAD00, self, mode);
-                fn_800B1AB8(lbl_804DAD04, self, mode, 1);
+                fn_800B2418(1500000.0f, self, mode);
+                fn_800B1AB8(-1.0f, self, mode, 1);
             }
         }
     } else {
@@ -964,8 +955,8 @@ int FshSveFollowTargetUpdate(Actor* self)
     }
 
     if ((self->beh->flags3C & 2) == 0 &&
-        HasCondition((u8*)self + 0x270, 9) == 0 &&
-        HasCondition((u8*)self + 0x270, 10) == 0)
+        HasCondition(self->unk270, 9) == 0 &&
+        HasCondition(self->unk270, 10) == 0)
         ok = 1;
     else
         ok = 0;
@@ -981,7 +972,7 @@ int FshSveFollowTargetUpdate(Actor* self)
         }
     }
 
-    if (FollowLineCheckActorDist(self, target, lbl_804DACE4) != 0)
+    if (FollowLineCheckActorDist(self, target, 1.0f) != 0)
         return 1;
 
     if (fn_800BAF40(self) == -1) {
@@ -1013,14 +1004,14 @@ int FshSveRetargetState(Actor* self)
 
     bd = self->beh;
     bd->state = 6;
-    ConditionUpdateBit((u8*)self + 0x270, 3, 1);
+    ConditionUpdateBit(self->unk270, 3, 1);
     mode = fn_800B26B8(self);
     if (mode == 4)
         return 0;
     fn_800B261C(self, mode, &target);
     if (target == 0)
         return 0;
-    FollowSetTargetObj((u8*)self + 0x270, target);
+    FollowSetTargetObj(self->unk270, target);
     fn_800BC56C(self, target);
     self->unk288 = 3;
     return 1;
@@ -1031,12 +1022,6 @@ int FshSveRetargetState(Actor* self)
 struct ZoneList;
 
 extern "C" {
-extern f32 lbl_804DAD0C;
-extern f32 lbl_804DAD10;
-extern f32 lbl_804DAD14;
-extern f32 lbl_804DAD18;
-extern f32 lbl_804DAD1C;
-extern f32 lbl_804DAD20;
 
 void TalkPlay(s32 owner, s32 id);
 f32  OwnerValue(Owner* owner, void* target);
@@ -1058,9 +1043,9 @@ static inline int FshSveCanPossess(Actor* self)
 
     if ((b->flags3C & 2) != 0)
         return 0;
-    if (HasCondition((u8*)self + 0x270, 9) != 0)
+    if (HasCondition(self->unk270, 9) != 0)
         return 0;
-    if (HasCondition((u8*)self + 0x270, 10) != 0)
+    if (HasCondition(self->unk270, 10) != 0)
         return 0;
     return 1;
 }
@@ -1125,30 +1110,30 @@ int FshSveMainUpdate(Actor* self)
         fn_800B22F8(self, mode);
         if (fn_800B1EF4(self, mode) == 0) {
             if (fn_800B1ED4(self, mode) & 0x200) {
-                bd->unk40 = lbl_804DACE4;
+                bd->unk40 = 1.0f;
                 bd->unk48 = 1;
                 FshSvePossessOn(self);
             }
             if (target != 0 && fn_800B22F8(self, mode) < 2) {
-                fn_800B2418(lbl_804DAD00, self, mode);
+                fn_800B2418(1500000.0f, self, mode);
                 fn_800B1F20(self, mode);
-                fn_800B1AB8(lbl_804DAD04, self, mode, 1);
-                FollowSetTargetObj((u8*)self + 0x270, target);
+                fn_800B1AB8(-1.0f, self, mode, 1);
+                FollowSetTargetObj(self->unk270, target);
             }
         } else {
             if (fn_800B2454(self, mode) != 0)
                 return 1;
-            fn_800B2418(lbl_804DAD00, self, mode);
+            fn_800B2418(1500000.0f, self, mode);
         }
-        if (FollowGetTargetObj((u8*)self + 0x270) != target)
-            FollowSetTargetObj((u8*)self + 0x270, target);
+        if (FollowGetTargetObj(self->unk270) != target)
+            FollowSetTargetObj(self->unk270, target);
     }
 
-    target = FollowGetTargetObj((u8*)self + 0x270);
+    target = FollowGetTargetObj(self->unk270);
     if (target == 0 ||
         (self->unk604 != 0 &&
          ((ActorCheckFn)self->unk604)(self, ((Actor*)target)->unk38) == 0)) {
-        RangeResetPending((u8*)self + 0x270);
+        RangeResetPending(self->unk270);
         return 1;
     }
 
@@ -1156,7 +1141,7 @@ int FshSveMainUpdate(Actor* self)
     if ((buf[6] & 2) && self != 0) {
         b = self->beh;
         b->unk04 = b->unk04 - self->unk138;
-        if (b->unk04 <= lbl_804DACE0) {
+        if (b->unk04 <= 0.0f) {
             s32 died = 0;
 
             ZoneWalkNodes((ZoneList*)((u8*)self + 0x658),
@@ -1166,19 +1151,19 @@ int FshSveMainUpdate(Actor* self)
                 TalkPlay(OwnerId((Owner*)self), 5);
             else
                 TalkPlay(OwnerId((Owner*)self), 6);
-            b->unk04 = lbl_804DACE0;
+            b->unk04 = 0.0f;
         }
     }
 
     dist = OwnerValue((Owner*)self, target);
     if ((f32)self->unkC4->unkC8 < dist)
         return 1;
-    if (FollowLineCheckActorDist(self, target, lbl_804DACF8) == 0)
+    if (FollowLineCheckActorDist(self, target, 0.8f) == 0)
         return 1;
 
     if ((buf[6] & 2) == 0) {
-        f31 = lbl_804DACE4;
-        f30 = lbl_804DAD04;
+        f31 = 1.0f;
+        f30 = -1.0f;
         if (FshSveCanPossess(self)) {
             bd->unk48 = 1;
             FshSvePossessOn(self);
@@ -1207,57 +1192,57 @@ int FshSveMainUpdate(Actor* self)
                 if (possessed != 0 || bd->unk30 != 0)
                     return 1;
             } else {
-                bd->unk40 = lbl_804DACE0;
+                bd->unk40 = 0.0f;
                 FshSvePossessOff(self);
             }
-            f31 = lbl_804DACE4;
-            f30 = lbl_804DAD04;
+            f31 = 1.0f;
+            f30 = -1.0f;
         } else if ((bd->flags3C & 2) == 0) {
             if (FshSveCanPossess(self)) {
                 bd->unk48 = 1;
                 FshSvePossessOn(self);
             }
         } else {
-            f31 = lbl_804DACE4;
-            f30 = lbl_804DAD04;
+            f31 = 1.0f;
+            f30 = -1.0f;
         }
     }
 
-    if (bd->unk40 == lbl_804DACE4) {
+    if (bd->unk40 == 1.0f) {
         if (FshSveCanPossess(self)) {
             bd->unk48 = 0;
             FshSvePossessOn(self);
         }
     }
 
-    if (f31 <= lbl_804DACE0)
+    if (f31 <= 0.0f)
         fn_8029B070(self, 0x73B1E248);
-    if (f30 <= lbl_804DACE0)
+    if (f30 <= 0.0f)
         fn_8029B070(self, 0x86A69297);
 
     bd->unk1C = bd->unk1C - self->unk138;
 
     if (fn_80162940(self->unk894, 2) != 0 &&
         fn_80162940(self->unk894, 8) != 0 &&
-        (f32)rand() / lbl_804DACFC <= f30 &&
+        (f32)rand() / 32767.0f <= f30 &&
         fn_8029B3B0(self, 0x86A69297) != 0) {
         angle = ActorAimAngleToPos(target, (Vec3*)((u8*)self + 0x84));
-        if (fabs(angle) < lbl_804DAD0C ||
-            (bd->unk1C = bd->unk1C - self->unk138) <= lbl_804DACE0) {
+        if (fabs(angle) < 90.0f ||
+            (bd->unk1C = bd->unk1C - self->unk138) <= 0.0f) {
             if (fn_8029B3B0(self, 0x86A69297) != 0) {
-                bd->unk1C = lbl_804DAD10;
+                bd->unk1C = 6000.0f;
                 fn_80162610(self, self->unk894, 2);
             }
         }
     } else if (fn_80162940(self->unk894, 1) != 0 &&
                fn_80162940(self->unk894, 4) != 0 &&
-               (f32)rand() / lbl_804DACFC <= f31 &&
+               (f32)rand() / 32767.0f <= f31 &&
                fn_8029B3B0(self, 0x73B1E248) != 0) {
         fn_80162610(self, self->unk894, 1);
     }
 
     if (fn_80162940(self->unk894, 0x800) != 0) {
-        ConditionUpdateBit((u8*)self + 0x270, 0x1D, 1);
+        ConditionUpdateBit(self->unk270, 0x1D, 1);
         fn_800BC56C(self, target);
         self->unk288 = 3;
     } else if (fn_80162940(self->unk894, 0x400) != 0) {
@@ -1268,7 +1253,7 @@ int FshSveMainUpdate(Actor* self)
         dir.x = *(f32*)((u8*)self + 0x84) - dir.x;
         dir.y = *(f32*)((u8*)self + 0x88) - dir.y;
         dir.z = *(f32*)((u8*)self + 0x8C) - dir.z;
-        fn_800E1098(&dir, &dir, lbl_804DAD14);
+        fn_800E1098(&dir, &dir, 2000.0f);
         pos.x = dir.x + *(f32*)((u8*)self + 0x84);
         pos.y = dir.y + *(f32*)((u8*)self + 0x88);
         pos.z = dir.z + *(f32*)((u8*)self + 0x8C);
@@ -1277,31 +1262,31 @@ int FshSveMainUpdate(Actor* self)
                         &out2) != 0) {
             f32 t = fn_800E1020(&dir);
 
-            fn_800BAFF8(angle, t * (lbl_804DACE4 - angle), self, &dir, out1,
+            fn_800BAFF8(angle, t * (1.0f - angle), self, &dir, out1,
                         out2, &pos);
         }
         if (fn_800BF2D0((u8*)self + 0x84) == fn_800BF2D0(&pos)) {
-            ConditionUpdateBit((u8*)self + 0x270, 0x1D, 1);
+            ConditionUpdateBit(self->unk270, 0x1D, 1);
             fn_800BC5A8(self, &pos);
             self->unk288 = 3;
         }
     } else if (fn_800BAF40(self) != -1) {
         dist = OwnerValue((Owner*)self, target);
-        if (MemFlagIsSet((u8*)self + 0x270, 0x1D) != 0 &&
+        if (MemFlagIsSet(self->unk270, 0x1D) != 0 &&
             dist > (f32)*(u16*)((u8*)self + 0x8B2) &&
             dist < (f32)*(u16*)((u8*)self + 0x8B4)) {
-            ConditionUpdateBit((u8*)self + 0x270, 0x1D, 0);
+            ConditionUpdateBit(self->unk270, 0x1D, 0);
             fn_800BBCA8();
         }
     } else {
         angle = ActorAimAngleToPos(target, (Vec3*)((u8*)self + 0x84));
-        if (fabs(angle) < lbl_804DAD18) {
+        if (fabs(angle) < 4.0f) {
             bd->unk10 = bd->unk10 - self->unk138;
-            if (bd->unk10 < lbl_804DACE0) {
+            if (bd->unk10 < 0.0f) {
                 bd->unk08 = 0;
                 fn_800CCA88(self, &bd->unk08);
-                bd->unk10 = lbl_804DAD20 * ((f32)rand() / lbl_804DACFC) +
-                            lbl_804DAD1C;
+                bd->unk10 = 500.0f * ((f32)rand() / 32767.0f) +
+                            300.0f;
             }
         }
     }
@@ -1312,14 +1297,14 @@ int FshSveMainUpdate(Actor* self)
 // attached object list and unregister the two status behaviours.
 bool FshSveClearHeld(Actor* self)
 {
-    if (self != 0) {
-        ConditionUpdateBit((u8*)self + 0x270, 0, 0);
-        ConditionUpdateBit((u8*)self + 0x270, 4, 0);
-        fn_80162610(self, (u8*)self + 0x894, 0);
-        fn_8029B070(self, 0x73b1e248);
-        fn_8029B070(self, 0x86a69297);
-    }
-    return self != 0;
+    if (self == 0)
+        return false;
+    ConditionUpdateBit(self->unk270, 0, 0);
+    ConditionUpdateBit(self->unk270, 4, 0);
+    fn_80162610(self, self->unk894, 0);
+    fn_8029B070(self, 0x73b1e248);
+    fn_8029B070(self, 0x86a69297);
+    return true;
 }
 
 // Begin the throw/drop state: fix the behaviour state at 5, seed the two
@@ -1336,17 +1321,17 @@ int FshSveThrowBegin(Actor* self)
 
     bd = self->beh;
     bd->state = 5;
-    bd->unk04 = lbl_804DACE0;
-    bd->unk10 = lbl_804DAD20 * ((f32)rand() / lbl_804DACFC) + lbl_804DAD1C;
-    bd->unk1C = lbl_804DAD10;
-    ConditionUpdateBit((u8*)self + 0x270, 4, 1);
-    ConditionUpdateBit((u8*)self + 0x270, 3, 1);
+    bd->unk04 = 0.0f;
+    bd->unk10 = 500.0f * ((f32)rand() / 32767.0f) + 300.0f;
+    bd->unk1C = 6000.0f;
+    ConditionUpdateBit(self->unk270, 4, 1);
+    ConditionUpdateBit(self->unk270, 3, 1);
     self->unk288 = 0;
 
     mode = fn_800B26B8(self);
     if (mode < 4 && fn_800B1EF4(self, mode) == 0) {
         if (fn_800B1ED4(self, mode) & 0x200) {
-            bd->unk40 = lbl_804DACE4;
+            bd->unk40 = 1.0f;
             bd->unk48 = 1;
             b = self->beh;
             if ((b->flags3C & 2) == 0) {
@@ -1357,11 +1342,11 @@ int FshSveThrowBegin(Actor* self)
             }
         }
         fn_800B1F20(self, mode);
-        fn_800B1AB8(lbl_804DAD04, self, mode, 1);
+        fn_800B1AB8(-1.0f, self, mode, 1);
         fn_800B261C(self, mode, &target);
         if (target == 0)
             return 0;
-        FollowSetTargetObj((u8*)self + 0x270, target);
+        FollowSetTargetObj(self->unk270, target);
     }
     return 1;
 }
@@ -1386,8 +1371,8 @@ int FshSveEnterRangedState(Actor* self)
     bd = self->beh;
     self->unk288 = 3;
     bd->state = 4;
-    ConditionUpdateBit((u8*)self + 0x270, 3, 1);
-    RangeResetPending((u8*)self + 0x270);
+    ConditionUpdateBit(self->unk270, 3, 1);
+    RangeResetPending(self->unk270);
     return 1;
 }
 
@@ -1402,12 +1387,16 @@ bool FshSveCheckLeave(void)
 // condition bit 3 raised and the range tracker reset.
 bool FshSveEnterIdleState(void* p)
 {
-    if (p == 0)
+    Actor* self = (Actor*)p;
+    BehData* bd;
+
+    if (self == 0)
         return false;
-    *(s32*)((u8*)p + 0x288) = 3;
-    *(*(s32**)((u8*)p + 0x130)) = 3;
-    ConditionUpdateBit((u8*)p + 0x270, 3, 1);
-    RangeResetPending((u8*)p + 0x270);
+    bd = self->beh;
+    self->unk288 = 3;
+    bd->state = 3;
+    ConditionUpdateBit(self->unk270, 3, 1);
+    RangeResetPending(self->unk270);
     return true;
 }
 
@@ -1443,19 +1432,19 @@ int FshSveFollowUpdate(Actor* self)
 
     if (fn_800B1EF4(self, mode) == 0 || fn_800B2454(self, mode) == 0) {
         if (fn_800B1ED4(self, mode) & 0x200) {
-            bd->unk40 = lbl_804DACE4;
+            bd->unk40 = 1.0f;
             bd->unk48 = 1;
             FshSvePossessOn(self);
         }
 
-        if (RangeIsIdle((u8*)self + 0x270) != 0) {
+        if (RangeIsIdle(self->unk270) != 0) {
             fn_800B1F20(self, mode);
             OwnerSlotGetPosition((s32)self, mode, &pos.x);
-            FollowSetTargetVec((u8*)self + 0x270, &pos);
+            FollowSetTargetVec(self->unk270, &pos);
             fn_800BC5A8(self, &pos);
         } else {
             if (fn_800B1EF4(self, mode) == 0) {
-                RangeResetPending((u8*)self + 0x270);
+                RangeResetPending(self->unk270);
                 self->unk268 = fn_800B22F8(self, mode);
                 return 1;
             }
@@ -1479,11 +1468,11 @@ int FshSveFollowUpdate(Actor* self)
             if (OwnerValue((Owner*)self, (Vec3*)((u8*)self + 0x2b4)) <=
                 (f32)range) {
                 self->unk268 = 4;
-                fn_800B2418(lbl_804DACE4, self, mode);
+                fn_800B2418(1.0f, self, mode);
                 return 1;
             }
         }
-        fn_800B2418(lbl_804DAD00, self, mode);
+        fn_800B2418(1500000.0f, self, mode);
     }
     return 0;
 }
@@ -1506,10 +1495,10 @@ bool FshSveEnterGrabState(void* p)
     if (self == 0)
         return false;
     bd = self->beh;
-    *(s32*)((u8*)self + 0x288) = 2;
+    self->unk288 = 2;
     bd->state = 2;
-    ConditionUpdateBit((u8*)self + 0x270, 3, 1);
-    RangeResetPending((u8*)self + 0x270);
+    ConditionUpdateBit(self->unk270, 3, 1);
+    RangeResetPending(self->unk270);
     return true;
 }
 
@@ -1531,7 +1520,7 @@ int FshSveFollowStateProcess(Actor* self)
     if (mode != 4) {
         self->unk268 = fn_800B22F8(self, mode);
         if (fn_800B1ED4(self, mode) & 0x200) {
-            bd->unk40 = lbl_804DACE4;
+            bd->unk40 = 1.0f;
             bd->unk48 = 1;
             bd = self->beh;
             if ((bd->flags3C & 2) == 0) {
@@ -1541,24 +1530,24 @@ int FshSveFollowStateProcess(Actor* self)
                 bd->unk44 = fn_8016F120(lbl_804D3974, (u8*)self + 0x24);
             }
         }
-        if (MemFlagIsSet((u8*)self + 0x270, 5) == 0)
+        if (MemFlagIsSet(self->unk270, 5) == 0)
             return 1;
     }
 
-    if (self->unk220 == 0 && MemFlagIsSet((u8*)self + 0x270, 5) == 0)
+    if (self->unk220 == 0 && MemFlagIsSet(self->unk270, 5) == 0)
         return 1;
 
     if (self->unk220 == 2) {
         self->unk10C = (void*)fn_800C748C;
-        if (FollowGetTargetObj((u8*)self + 0x270) != (void*)self->unk22C) {
-            FollowSetTargetObj((u8*)self + 0x270, (void*)self->unk22C);
+        if (FollowGetTargetObj(self->unk270) != (void*)self->unk22C) {
+            FollowSetTargetObj(self->unk270, (void*)self->unk22C);
             if (self->unk21C != 0) {
                 self->unk288 = self->unk21C;
                 fn_800BC56C(self, (void*)self->unk22C);
             }
         }
         if (fn_800BAF40(self) == -1 && self->unk21C != 0) {
-            FollowSetTargetObj((u8*)self + 0x270, 0);
+            FollowSetTargetObj(self->unk270, 0);
             self->unk288 = 0;
         }
     } else {
@@ -1579,8 +1568,8 @@ int FshSveFollowOffsetResume(Actor* self)
     self->unk10C = (void*)FollowOffsetUpdate;
     if (self->unk220 == 4)
         self->unk220 = 0;
-    if (HasCondition((u8*)self + 0x270, 0xd) != 0)
-        ConditionSetBit((u8*)self + 0x270, 0xd, 0);
+    if (HasCondition(self->unk270, 0xd) != 0)
+        ConditionSetBit(self->unk270, 0xd, 0);
     return 1;
 }
 
@@ -1611,7 +1600,7 @@ int FshSveBehCheckDetach(Actor* self)
     if (state != 4) {
         fn_800B261C(self, state, keep);
         if (fn_800B1ED4(self, state) & 0x200) {
-            beh->unk40 = lbl_804DACE4;
+            beh->unk40 = 1.0f;
             beh->unk48 = 1;
             beh = self->beh;
             if (!(beh->flags3C & 2)) {
@@ -1640,12 +1629,12 @@ int FshSveAlwaysTrue(void)
 // reports whether the pointer was non-null.
 bool FshSveFollowTargetReset(Actor* self)
 {
-    if (self != 0) {
-        self->beh->state = 0;
-        self->unk288 = 0;
-        fn_800BBCA8();
-    }
-    return self != 0;
+    if (self == 0)
+        return false;
+    self->beh->state = 0;
+    self->unk288 = 0;
+    fn_800BBCA8();
+    return true;
 }
 
 // Picks the state that follows the current one. The follow-line flag at
@@ -1676,10 +1665,10 @@ u32 FshSveNextState(Actor* self)
     bd = self->beh;
     count = self->unk268;
     mode = fn_800B26B8(self);
-    target = FollowGetTargetObj((u8*)self + 0x270);
+    target = FollowGetTargetObj(self->unk270);
 
     if ((bd->flags3C & 1) != 0 && target != 0) {
-        if (FollowLineCheckActorDist(self, target, lbl_804DACE4) != 0) {
+        if (FollowLineCheckActorDist(self, target, 1.0f) != 0) {
             limit = 8000;
             if (self->unkC4->unkC8 < limit)
                 limit = self->unkC4->unkC8;
@@ -1688,7 +1677,7 @@ u32 FshSveNextState(Actor* self)
         } else {
             state = 3;
         }
-    } else if (MemFlagIsSet((u8*)self + 0x270, 5) != 0) {
+    } else if (MemFlagIsSet(self->unk270, 5) != 0) {
         state = 4;
     } else if (count > 1 && (bd->flags3C & 1) == 0) {
         state = (count <= 3) ? 1 : 0;
@@ -1698,7 +1687,7 @@ u32 FshSveNextState(Actor* self)
         fn_800B261C(self, mode, &target);
         if (target == 0) {
             state = 1;
-        } else if (FollowLineCheckActorDist(self, target, lbl_804DACE4) != 0) {
+        } else if (FollowLineCheckActorDist(self, target, 1.0f) != 0) {
             limit = 8000;
             if (self->unkC4->unkC8 < limit)
                 limit = self->unkC4->unkC8;
@@ -1767,7 +1756,7 @@ u32 FshSveZoneCheckOwner(void* node, Owner* owner, s32* out)
     if (OwnerId(owner) != -1) {
         q.owner = (s32)owner;
         ((FshOwnerObj*)owner)->msg(0x401, &q);
-        if (q.result > lbl_804DACE0)
+        if (q.result > 0.0f)
             *out = 1;
     }
     return 1;
@@ -1781,7 +1770,7 @@ u32 FshSveUpdatePossession(Actor* self)
     s32 i;
     u8* slot;
 
-    if (MemFlagIsSet((u8*)self + 0x270, 5) == 0) {
+    if (MemFlagIsSet(self->unk270, 5) == 0) {
         fn_800B2E34(self, 0, 1);
         fn_800B3164(self, 0, 1);
         fn_800CECCC(self);
@@ -1798,7 +1787,7 @@ u32 FshSveUpdatePossession(Actor* self)
                 if ((*(u32*)(slot + 0x158) & 0x200) != 0) {
                     BehData* b;
 
-                    bd->unk40 = lbl_804DACE4;
+                    bd->unk40 = 1.0f;
                     bd->unk48 = 1;
                     b = self->beh;
                     if ((b->flags3C & 2) == 0) {
@@ -1937,21 +1926,21 @@ u32 FshSveQueryResponse(MsgArg* args)
         }
         return 0;
     }
-    if (MemFlagIsSet((u8*)actor + 0x270, 0xb) != 0)
+    if (MemFlagIsSet(actor->unk270, 0xb) != 0)
         return 1;
     if (beh->unk14 < lbl_804D3984)
         return 1;
-    if (HasCondition((u8*)actor + 0x270, 10) != 0 ||
-        HasCondition((u8*)actor + 0x270, 9) != 0)
+    if (HasCondition(actor->unk270, 10) != 0 ||
+        HasCondition(actor->unk270, 9) != 0)
         return 0;
     if (args[2].u == 0x3CA34BD6 &&
-        MemFlagIsSet((u8*)actor + 0x270, 0x20) == 0) {
+        MemFlagIsSet(actor->unk270, 0x20) == 0) {
         args[3].u = 0x1379C466;
         return 1;
     }
     if (ActorAnimState((int)actor->unk38, 0xDC35206A) == 0)
         return 0;
-    if (HasCondition((u8*)actor + 0x270, 0xb) != 0)
+    if (HasCondition(actor->unk270, 0xb) != 0)
         return 0;
     player = GetPlayer();
     if (player == 0)
@@ -1964,7 +1953,7 @@ u32 FshSveQueryResponse(MsgArg* args)
         FshSveHostId(player) == 0xE0AB9B4F ||
         FshSveHostId(player) == 0x0000FFF5)
         return 0;
-    if (MemFlagIsSet((u8*)actor + 0x270, 0x1e) != 0)
+    if (MemFlagIsSet(actor->unk270, 0x1e) != 0)
         return 0;
     if (args[2].u == 0x7C44EC3D) {
         mode = fn_800B26B8(actor);
@@ -2001,10 +1990,6 @@ extern FshTintSet lbl_803C4A70;
 
 extern s32 lbl_804D579C;
 
-extern f32 lbl_804DAD30;
-extern f32 lbl_804DAD34;
-extern f32 lbl_804DAD38;
-extern f32 lbl_804DAD3C;
 
 extern "C" {
 void* fn_800AFD48(void* actor, s32* out, s32 mode);
@@ -2036,7 +2021,7 @@ u32 FshSveFrameUpdate(MsgArg* args)
     MsgArg* pos = args + 4;
     FshTintSet* tints = &lbl_803C4A70;
     void* reply = 0;
-    void* target = FollowGetTargetObj((u8*)actor + 0x270);
+    void* target = FollowGetTargetObj(actor->unk270);
 
     if (target != 0) {
         // message 0x41E: ask the follow target for its link state
@@ -2056,10 +2041,10 @@ u32 FshSveFrameUpdate(MsgArg* args)
         fn_8028B9C0(&msg.str, 0);
     }
 
-    if (*(f32*)((u8*)actor + 0x13C) > lbl_804DAD30)
+    if (*(f32*)((u8*)actor + 0x13C) > 20000.0f)
         ActorPlayAnim((int)(u32)actor->unk38, 0xDBE2CAE6,
                       (int)(u32)actor->unk38);
-    *(f32*)((u8*)actor + 0x13C) = lbl_804DACE0;
+    *(f32*)((u8*)actor + 0x13C) = 0.0f;
 
     s32 animState;
     void* handle = fn_800AFD48(actor, &animState, 0);
@@ -2071,12 +2056,12 @@ u32 FshSveFrameUpdate(MsgArg* args)
     f32 fade = beh->unk14;
     if (fade < lbl_804D3984) {
         f32 t;
-        if (fade < lbl_804DAD34)
-            t = fade / lbl_804DAD34;
-        else if (fade > lbl_804D3984 - lbl_804DAD34)
-            t = (lbl_804D3984 - fade) / lbl_804DAD34;
+        if (fade < 200.0f)
+            t = fade / 200.0f;
+        else if (fade > lbl_804D3984 - 200.0f)
+            t = (lbl_804D3984 - fade) / 200.0f;
         else
-            t = lbl_804DACE4;
+            t = 1.0f;
 
         if (beh->unk18 != 0) {
             fn_80158C3C((u8*)actor + 0x84, 0x39FD698D, -1, -1, -1, -1, -1);
@@ -2086,8 +2071,8 @@ u32 FshSveFrameUpdate(MsgArg* args)
             }
             beh->unk28 = HazardCreate(0, (int)(u32)actor->unk38,
                                       (u8*)actor + 0x84, 0x403548D0,
-                                      (int)(u32)actor->unk38, lbl_804DACE0,
-                                      lbl_804DAD38, lbl_804DAD3C, lbl_804DAD3C);
+                                      (int)(u32)actor->unk38, 0.0f,
+                                      512.0f, 1000.0f, 1000.0f);
             beh->unk18 = 0;
         }
         skin = (void*)SkinBlendTint(pos, 0, 0xFF, 0, t);
@@ -2100,14 +2085,14 @@ u32 FshSveFrameUpdate(MsgArg* args)
             f32 c;
             if (range >= lbl_804D397C)
                 range = lbl_804D397C;
-            raw = (*(f32*)((u8*)actor + 0x91C) - lbl_804DACE4) / range;
-            c = lbl_804DACE0;
-            if (raw >= lbl_804DACE0) {
-                c = lbl_804DACE4;
-                if (raw <= lbl_804DACE4)
+            raw = (*(f32*)((u8*)actor + 0x91C) - 1.0f) / range;
+            c = 0.0f;
+            if (raw >= 0.0f) {
+                c = 1.0f;
+                if (raw <= 1.0f)
                     c = raw;
             }
-            if (c < lbl_804DACE0)
+            if (c < 0.0f)
                 skin = pos;
         }
     }
@@ -2120,47 +2105,47 @@ u32 FshSveFrameUpdate(MsgArg* args)
     if (*(s32*)((u8*)actor + 0x8F8) == 6) {
         f32 total = (f32)fn_800BA84C(9);
         f32 raw = (total - *(f32*)((u8*)actor + 0x8FC)) / total;
-        f32 c = lbl_804DACE0;
-        if (raw >= lbl_804DACE0) {
-            c = lbl_804DACE4;
-            if (raw <= lbl_804DACE4)
+        f32 c = 0.0f;
+        if (raw >= 0.0f) {
+            c = 1.0f;
+            if (raw <= 1.0f)
                 c = raw;
         }
-        if (c > lbl_804DACE0)
+        if (c > 0.0f)
             fn_8003F15C(handle, shape, *(u32*)((u8*)actor + 0xD0), pos, 0, c);
     } else {
         if ((beh->flags3C & 2) != 0 && reply == 0) {
             if (lbl_804D579C != 0) {
                 fn_8003F15C(handle, shape, *(u32*)((u8*)actor + 0xD0), pos,
-                            &tints->unk168, lbl_804DACE4);
+                            &tints->unk168, 1.0f);
                 fn_8003F15C(handle, shape, *(u32*)((u8*)actor + 0xD0), pos,
-                            &tints->unk1A4, lbl_804DACE4);
+                            &tints->unk1A4, 1.0f);
             } else {
                 f32 v = (f32)lbl_804D39B4;
                 fn_8003F15C(handle, shape, *(u32*)((u8*)actor + 0xD0), pos, 0, v);
             }
         } else {
             fn_8003F15C(handle, shape, *(u32*)((u8*)actor + 0xD0), skin, 0,
-                        lbl_804DACE4);
+                        1.0f);
         }
     }
 
-    if (HasCondition((u8*)actor + 0x270, 0x22) != 0)
+    if (HasCondition(actor->unk270, 0x22) != 0)
         return 1;
-    if (HasCondition((u8*)actor + 0x270, 0x21) == 0) {
+    if (HasCondition(actor->unk270, 0x21) == 0) {
         if (animState >= 6)
             return 1;
         if (Fn80080FA8() != 0)
             return 1;
-        if (HasCondition((u8*)actor + 0x270, 9) != 0)
+        if (HasCondition(actor->unk270, 9) != 0)
             return 1;
-        if (HasCondition((u8*)actor + 0x270, 10) != 0)
+        if (HasCondition(actor->unk270, 10) != 0)
             return 1;
         if (fn_80049660(GetPlayer()) != 0 && fn_800BA7FC(0x35) == 0)
             return 1;
     }
 
-    if (fn_80115F68(*(u32*)((u8*)actor + 0x38)) <= lbl_804DACE0) {
+    if (fn_80115F68(*(u32*)((u8*)actor + 0x38)) <= 0.0f) {
         tints->unk1E0.unk14 = 0;
         tints->unk1E0.unk10 = 0xFF;
         tints->unk1E0.unk18 = 0;
@@ -2178,7 +2163,7 @@ u32 FshSveFrameUpdate(MsgArg* args)
                 void* outline =
                     fn_8003A1F0((void*)id, *(u32*)((u8*)actor + 0xF0), anim2);
                 fn_8003F15C((void*)id, outline, *(u32*)((u8*)actor + 0xD0), 0,
-                            &tints->unk1E0, lbl_804DACE4);
+                            &tints->unk1E0, 1.0f);
             }
         }
     }
