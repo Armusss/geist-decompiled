@@ -279,11 +279,12 @@ void TextDrawChar(int ch)
     if ((int)(lbl_804D3318 - lbl_803B4284 + 5) < 0x4000) {
         u8* p = lbl_804D3318;
 
-        *p = 8;                     // 0x0: command id
-        lbl_804D3318 = p + 1;
-        *(u32*)lbl_804D3318 = ch;   // 0x1: glyph id
-        lbl_804D3318 += 4;
-        *lbl_804D3318 = 0;          // 0x5: terminator
+        *p++ = 8;
+        lbl_804D3318 = p;
+        *(u32*)p = ch;
+        p += 4;
+        lbl_804D3318 = p;
+        *p = 0;
     }
 }
 
