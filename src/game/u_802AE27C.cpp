@@ -125,22 +125,9 @@ struct StrObj {
     int   unk10;                        // 0x10
 };
 
-struct TypeNameBlob {
-    unsigned char unk00[0x48];
-    char name[9];                       // 0x48
-    char msgName[2];                    // 0x51
-    char dieName[10];                   // 0x53  "Ghost_Die"
-};
-
 extern "C" BehStateEntry lbl_803C4138[];
-extern "C" TypeNameBlob lbl_8034BA64;
 extern "C" void* __vt__6String[];
 extern "C" unsigned char __upper_map[];
-extern "C" float lbl_804DA9F0;
-extern "C" float lbl_804DA9F4;
-extern "C" float lbl_804DA9F8;
-extern "C" float lbl_804DA9FC;
-extern "C" float lbl_804DAA00;
 extern "C" void* lbl_804D38F8;
 extern "C" int rand(void);
 extern "C" void fn_800CDD10(void* actor);
@@ -161,9 +148,6 @@ void EmitterDestroy(int id);
 void EmitterSetEnabled(unsigned long id, int enabled);
 int HasCondition(void* cond, int id);
 int fn_8008EA9C(void* handle, int arg);
-extern "C" float lbl_804DAA10;
-extern "C" float lbl_804DAA14;
-extern "C" float lbl_804DAA18;
 int ZoneClassifyDirection(void* self, Vec3* dir);
 float __fabsf(float f);
 extern "C" void fn_8016D440(Vec3* out, Vec3* in);
@@ -225,7 +209,7 @@ int BehParamsMsgHandler(int msg, void* data)
             return 0;
         }
         fn_8028C400(&strC, lbl_803C4138[beh->state].name);
-        fn_8028C400(&strB, lbl_8034BA64.msgName);
+        fn_8028C400(&strB, "\n");
         fn_800225C8(&strA, &strC, &strB);
         fn_8028C188(&m->written, strA.data, strA.len);
         strA.vtable = __vt__6String;
@@ -270,7 +254,7 @@ int BehParamsMsgHandler(int msg, void* data)
             m->status = 0;
             return 1;
         }
-        h = BehNameHash(lbl_8034BA64.name);
+        h = BehNameHash("[FASSVE]");
         memcpy(m->cursor, &h, 4);
         m->written += 4;
         m->remaining -= 4;
@@ -296,7 +280,7 @@ int BehParamsMsgHandler(int msg, void* data)
             m->written += 4;
             m->remaining -= 4;
             m->cursor += 4;
-            ok = (word == BehNameHash(lbl_8034BA64.name));
+            ok = (word == BehNameHash("[FASSVE]"));
         }
         if (!ok) {
             return 1;
@@ -327,9 +311,9 @@ int BehParamsUpdate(void* actorPtr)
     }
     beh = a->beh;
     if (HasCondition(a->cond, 9) && *(int*)a->msgCtx == (int)0xFE14BFB5) {
-        a->unk13c = lbl_804DA9F0;
+        a->unk13c = 0.0f;
     }
-    if (beh->fade > lbl_804DA9F0) {
+    if (beh->fade > 0.0f) {
         beh->fade = beh->fade - a->unk138;
     }
     if (HasCondition(a->cond, 9)) {
@@ -338,26 +322,26 @@ int BehParamsUpdate(void* actorPtr)
     for (i = 0; i < 2; i++) {
         slot = &beh->slot0 + i;
         if (slot->emitter != -1 && slot->flag != 0) {
-            if (slot->timer > lbl_804DA9F0) {
+            if (slot->timer > 0.0f) {
                 slot->timer = slot->timer - a->unk138 / a->unk91c;
-                if (slot->timer <= lbl_804DA9F0) {
+                if (slot->timer <= 0.0f) {
                     EmitterSetEnabled(slot->emitter, 0);
                 }
             }
-            if (slot->timerEnd > lbl_804DA9F0) {
+            if (slot->timerEnd > 0.0f) {
                 slot->timerEnd = slot->timerEnd - a->unk138 / a->unk91c;
-                if (slot->timerEnd <= lbl_804DA9F0) {
+                if (slot->timerEnd <= 0.0f) {
                     EmitterDestroy(slot->emitter);
                     slot->emitter = -1;
                 }
             }
         }
     }
-    if (a->unk8fc >= lbl_804DA9F4 && HasCondition(a->cond, 9) && !HasCondition(a->cond, 10)) {
+    if (a->unk8fc >= 2.5e+03f && HasCondition(a->cond, 9) && !HasCondition(a->cond, 10)) {
         if (beh->slot0.emitter == -1 && beh->slot1.emitter == -1) {
-            a->unk8fc = lbl_804DA9F8;
+            a->unk8fc = 99999.0f;
         } else {
-            a->unk8fc = lbl_804DA9F4;
+            a->unk8fc = 2.5e+03f;
         }
     }
     next = fn_8008EA9C(a->unk0d4, 0);
@@ -423,21 +407,21 @@ void BehParamsInit(int id, void* actorPtr)
     beh->unk10 = -1;
     beh->unk18 = 0;
     beh->unk14 = -1;
-    beh->unk60 = lbl_804DA9F0;
-    beh->unk5c = lbl_804DA9F0;
-    beh->unk58 = lbl_804DA9F0;
-    beh->unk50 = lbl_804DAA00 * ((float)rand() / lbl_804DA9FC) + lbl_804DAA00;
+    beh->unk60 = 0.0f;
+    beh->unk5c = 0.0f;
+    beh->unk58 = 0.0f;
+    beh->unk50 = 3e+03f * ((float)rand() / 32767.0f) + 3e+03f;
     beh->unk54 = (float)(Rand() % 1000);
-    beh->unk48 = lbl_804DA9F0;
-    beh->fade = lbl_804DA9F0;
+    beh->unk48 = 0.0f;
+    beh->fade = 0.0f;
     beh->unk64 = 0;
     beh->slot0.emitter = -1;
     beh->slot1.emitter = -1;
-    beh->progress = lbl_804DA9F0;
+    beh->progress = 0.0f;
     if (*(int*)a->msgCtx == (int)0xFC5A4B84 || *(int*)a->msgCtx == (int)0xFE14BFB5) {
         beh->unk64 = 0x5dc;
     }
-    if (a->unk904 <= lbl_804DA9F0) {
+    if (a->unk904 <= 0.0f) {
         beh->state = 0xb;
         beh->state2 = 0xc;
     } else {
@@ -446,7 +430,7 @@ void BehParamsInit(int id, void* actorPtr)
     }
     ConditionSetBit((int*)a->cond, 0, 0);
     fn_80090634(a->unk0d4, 0, 0, 0);
-    lbl_804D38F8 = FxFind(lbl_8034BA64.dieName);
+    lbl_804D38F8 = FxFind("Ghost_Die");
 }
 
 extern "C" int fn_8016325C(unsigned char* stream);
@@ -569,7 +553,7 @@ int BehParamsSpawnGhost(void* actorPtr)
                 delta.y = *(float*)((unsigned char*)player + 0x680) - a->unk88;
                 delta.z = *(float*)((unsigned char*)player + 0x684) - a->unk8c;
                 fn_8016D440(&euler, &delta);
-                euler.x = euler.x + lbl_804DAA10;
+                euler.x = euler.x + 9e+01f;
                 EulerNormalize(&euler, &euler);
                 MtxSetEuler(&mtx, &euler);
                 info = (Place*)OwnerGetInfo(slot->emitter);
@@ -629,13 +613,13 @@ int BehParamsGhostIdleState(void* actorPtr)
             return 0xd;
         }
         if (HasCondition(a->cond, 4) && !HasCondition(a->cond, 9) &&
-            !HasCondition(a->cond, 10) && beh->fade <= lbl_804DA9F0) {
+            !HasCondition(a->cond, 10) && beh->fade <= 0.0f) {
             return 6;
         }
         if (a->unk26c == 0) {
             return 3;
         }
-        if (lbl_804DAA14 <= __fabsf(a->turn.z)) {
+        if (1.0f <= __fabsf(a->turn.z)) {
             return beh->state;
         }
         return 4;
@@ -645,7 +629,7 @@ int BehParamsGhostIdleState(void* actorPtr)
 
 // Picks the ghost's hunting behaviour state: 5 when the target direction
 // changed, 1 without possession, 4 when the direction query says "no target",
-// 7 when the target sits more than lbl_804DAA18 off the facing, else the
+// 7 when the target sits more than 35.0f off the facing, else the
 // current state.
 int BehParamsGhostChaseState(void* actorPtr)
 {
@@ -665,7 +649,7 @@ int BehParamsGhostChaseState(void* actorPtr)
             return 0xd;
         }
         if (HasCondition(a->cond, 4) && !HasCondition(a->cond, 9) &&
-            !HasCondition(a->cond, 10) && beh->fade <= lbl_804DA9F0) {
+            !HasCondition(a->cond, 10) && beh->fade <= 0.0f) {
             return 6;
         }
         if (a->unk26c == 0) {
@@ -680,10 +664,10 @@ int BehParamsGhostChaseState(void* actorPtr)
             return 5;
         }
         turn = a->turn.z;
-        if (turn < lbl_804DA9F0) {
+        if (turn < 0.0f) {
             turn = -turn;
         }
-        if (turn <= lbl_804DAA18) {
+        if (turn <= 35.0f) {
             return beh->state;
         }
         return 7;
@@ -714,7 +698,7 @@ int BehParamsGhostSpawnState(void* actorPtr)
             return 0xd;
         }
         if (HasCondition(a->cond, 4) && !HasCondition(a->cond, 9) &&
-            !HasCondition(a->cond, 10) && beh->fade <= lbl_804DA9F0) {
+            !HasCondition(a->cond, 10) && beh->fade <= 0.0f) {
             return 6;
         }
         if (a->unk288 == 0) {
@@ -729,10 +713,10 @@ int BehParamsGhostSpawnState(void* actorPtr)
             return 4;
         }
         turn = a->turn.z;
-        if (turn < lbl_804DA9F0) {
+        if (turn < 0.0f) {
             turn = -turn;
         }
-        if (turn <= lbl_804DAA18) {
+        if (turn <= 35.0f) {
             return beh->state;
         }
         return 7;
@@ -760,11 +744,11 @@ int BehParamsGhostWatchState(void* actorPtr)
             return 0xd;
         }
         if (HasCondition(a->cond, 4) && !HasCondition(a->cond, 9) &&
-            !HasCondition(a->cond, 10) && beh->fade <= lbl_804DA9F0) {
+            !HasCondition(a->cond, 10) && beh->fade <= 0.0f) {
             return 2;
         }
         if (a->unk26c == 0) {
-            if (lbl_804DAA14 <= __fabsf(a->turn.z)) {
+            if (1.0f <= __fabsf(a->turn.z)) {
                 return beh->state;
             }
             return 0;
@@ -796,7 +780,7 @@ int BehParamsGhostFollowState(void* actorPtr)
             return 0xd;
         }
         if (HasCondition(a->cond, 4) && !HasCondition(a->cond, 9) &&
-            !HasCondition(a->cond, 10) && beh->fade <= lbl_804DA9F0) {
+            !HasCondition(a->cond, 10) && beh->fade <= 0.0f) {
             return 2;
         }
         if (a->unk26c != 0) {
@@ -806,10 +790,10 @@ int BehParamsGhostFollowState(void* actorPtr)
             return 0;
         }
         turn = a->turn.z;
-        if (turn < lbl_804DA9F0) {
+        if (turn < 0.0f) {
             turn = -turn;
         }
-        if (turn <= lbl_804DAA18) {
+        if (turn <= 35.0f) {
             return beh->state;
         }
         return 3;
@@ -840,7 +824,7 @@ int BehParamsGhostWaitState(void* actorPtr)
             return 0xd;
         }
         if (HasCondition(a->cond, 4) && !HasCondition(a->cond, 9) &&
-            !HasCondition(a->cond, 10) && beh->fade <= lbl_804DA9F0) {
+            !HasCondition(a->cond, 10) && beh->fade <= 0.0f) {
             return 2;
         }
         if (a->unk26c != 0) {
@@ -850,16 +834,16 @@ int BehParamsGhostWaitState(void* actorPtr)
             return 1;
         }
         turn = a->turn.z;
-        if (turn < lbl_804DA9F0) {
+        if (turn < 0.0f) {
             turn = -turn;
         }
-        if (turn > lbl_804DAA18) {
+        if (turn > 35.0f) {
             return 3;
         }
         if (beh->state != 8) {
             timer = beh->unk50 - a->unk138;
             beh->unk50 = timer;
-            if (timer <= lbl_804DA9F0) {
+            if (timer <= 0.0f) {
                 return 8;
             }
         }
@@ -884,7 +868,6 @@ extern "C" void fn_8008F230(float f, void* handle, int a, int b);
 extern "C" void fn_8008DE4C(void* handle, int a, int b, int c);
 extern "C" int fn_802A1D04(void);
 extern "C" void fn_800FC764(int id, int arg);
-extern "C" float lbl_804DAA1C;
 void RangeResetFields(void* self);
 void ActorPlayAnim(int handle, unsigned long animId, int arg);
 struct Owner;
@@ -917,15 +900,15 @@ int BehParamsGhostCueState(void* actorPtr)
         buf = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                   lbl_803C4138[beh->state].unk00, 0, 0);
-        fn_80090974(lbl_804DAA14, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
         } else {
-            fn_8008F230(lbl_804DAA1C, a->unk0d4, 0, 1);
+            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
         }
     }
     return 1;
@@ -961,32 +944,6 @@ int BehParamsGhostRevealState(void* actorPtr)
     return 1;
 }
 
-extern "C" float lbl_804DAA20;
-extern "C" float lbl_804DAA24;
-extern "C" float lbl_804DAA28;
-extern "C" float lbl_804DAA2C;
-extern "C" float lbl_804DAA30;
-extern "C" float lbl_804DAA34;
-extern "C" float lbl_804DAA38;
-extern "C" float lbl_804DAA3C;
-extern "C" float lbl_804DAA40;
-extern "C" float lbl_804DAA44;
-extern "C" float lbl_804DAA48;
-extern "C" float lbl_804DAA4C;
-extern "C" float lbl_804DAA50;
-extern "C" float lbl_804DAA54;
-extern "C" float lbl_804DAA58;
-extern "C" float lbl_804DAA5C;
-extern "C" float lbl_804DAA60;
-extern "C" float lbl_804DAA64;
-extern "C" float lbl_804DAA68;
-extern "C" float lbl_804DAA6C;
-extern "C" float lbl_804DAA70;
-extern "C" float lbl_804DAA74;
-extern "C" float lbl_804DAA78;
-extern "C" float lbl_804DAA7C;
-extern "C" float lbl_804DAA80;
-extern "C" float lbl_804DAA84;
 
 // Emitter creation descriptor; only the fields the game sets are named.  The
 // gaps are left untouched by the original code, so they stay explicit.
@@ -1075,51 +1032,51 @@ int BehParamsGhostEmitState(void* actorPtr)
         descA.posX = a->unk84;
         descA.posY = a->unk88;
         descA.posZ = a->unk8c;
-        descA.unk0c = lbl_804DA9F0;
-        descA.unk10 = lbl_804DAA20;
-        descA.unk14 = lbl_804DAA20;
-        descA.unk18 = lbl_804DA9F0;
+        descA.unk0c = 0.0f;
+        descA.unk10 = -0.707f;
+        descA.unk14 = -0.707f;
+        descA.unk18 = 0.0f;
         descA.unk1c = 1;
         descA.unk20 = 0;
-        descA.unk24 = lbl_804DAA24;
+        descA.unk24 = 4.0f;
         descA.unk28 = 1;
         descA.asset = AssetFind(0xF2E2BEB8, 0x60A26EDB);
         descA.unk30 = 0xfe;
-        descA.unk6c = lbl_804DAA28;
-        descA.unk70 = lbl_804DAA2C;
-        descA.unk74 = lbl_804DA9F0;
-        descA.unk78 = lbl_804DA9F0;
+        descA.unk6c = 45.014f;
+        descA.unk70 = 25.895f;
+        descA.unk74 = 0.0f;
+        descA.unk78 = 0.0f;
         descA.unk7c = 1000;
-        descA.unk80 = lbl_804DAA30;
-        descA.unk84 = lbl_804DAA14;
+        descA.unk80 = 1.2e+02f;
+        descA.unk84 = 1.0f;
         descA.unk88 = 8;
-        descA.unk8c = lbl_804DA9F0;
-        descA.unk90 = lbl_804DAA14;
-        descA.unk94 = lbl_804DA9F0;
+        descA.unk8c = 0.0f;
+        descA.unk90 = 1.0f;
+        descA.unk94 = 0.0f;
         descA.unk98 = 1;
         descA.unk9c = 1;
 
         lbl_804A4950.posX = a->unk84;
         lbl_804A4950.posY = a->unk88;
         lbl_804A4950.posZ = a->unk8c;
-        lbl_804A4950.unk0c = lbl_804DAA34;
-        lbl_804A4950.unk10 = lbl_804DA9F0;
-        lbl_804A4950.unk14 = lbl_804DAA20;
-        lbl_804A4950.unk18 = lbl_804DA9F0;
+        lbl_804A4950.unk0c = 0.707f;
+        lbl_804A4950.unk10 = 0.0f;
+        lbl_804A4950.unk14 = -0.707f;
+        lbl_804A4950.unk18 = 0.0f;
         lbl_804A4950.unk1c = 1;
-        lbl_804A4950.unk20 = lbl_804DAA38;
-        lbl_804A4950.unk24 = lbl_804DA9F0;
+        lbl_804A4950.unk20 = -1.2e+02f;
+        lbl_804A4950.unk24 = 0.0f;
 
         descA.unkA0 = &lbl_804A4950;
         descA.unkA4 = 0;
-        descA.unkAC = lbl_804DA9F0;
-        descA.unkB0 = lbl_804DA9F0;
-        descA.unkB4 = lbl_804DAA3C;
-        descA.unkB8 = lbl_804DA9F0;
-        descA.unkBC = lbl_804DA9F0;
-        descA.unkC0 = lbl_804DA9F0;
-        descA.unkC4 = lbl_804DA9F0;
-        descA.unkC8 = lbl_804DAA40;
+        descA.unkAC = 0.0f;
+        descA.unkB0 = 0.0f;
+        descA.unkB4 = 0.1f;
+        descA.unkB8 = 0.0f;
+        descA.unkBC = 0.0f;
+        descA.unkC0 = 0.0f;
+        descA.unkC4 = 0.0f;
+        descA.unkC8 = 0.333f;
         descA.colorCC[0] = 0xff;
         descA.colorCC[1] = 0xff;
         descA.colorCC[2] = 0xff;
@@ -1138,51 +1095,51 @@ int BehParamsGhostEmitState(void* actorPtr)
         EmitterSetEnabled((unsigned long)beh->slot0.emitter, 0);
         ctx = (MsgBuf*)a->msgCtx;
         if (*(int*)ctx == (int)0xFE14BFB5) {
-            beh->slot0.timer = lbl_804DAA44;
-            beh->slot0.timerEnd = lbl_804DAA48;
-            beh->slot0.unk08 = lbl_804DAA4C;
+            beh->slot0.timer = 1e+02f;
+            beh->slot0.timerEnd = 1.1e+03f;
+            beh->slot0.unk08 = 4.9e+03f;
         } else {
-            beh->slot0.timer = lbl_804DAA44;
-            beh->slot0.timerEnd = lbl_804DAA48;
-            beh->slot0.unk08 = lbl_804DAA50;
+            beh->slot0.timer = 1e+02f;
+            beh->slot0.timerEnd = 1.1e+03f;
+            beh->slot0.unk08 = 2.4e+03f;
         }
         beh->slot0.flag = 0;
 
         descB.posX = a->unk84;
         descB.posY = a->unk88;
         descB.posZ = a->unk8c;
-        descB.unk0c = lbl_804DAA34;
-        descB.unk10 = lbl_804DA9F0;
-        descB.unk14 = lbl_804DA9F0;
-        descB.unk18 = lbl_804DAA34;
+        descB.unk0c = 0.707f;
+        descB.unk10 = 0.0f;
+        descB.unk14 = 0.0f;
+        descB.unk18 = 0.707f;
         descB.unk1c = 1;
         descB.unk20 = 2;
-        descB.unk24 = lbl_804DAA54;
+        descB.unk24 = -1.0737418e+08f;
         descB.unk28 = 1;
         descB.asset = AssetFind(0xF2E2BEB8, 0x60A26EDB);
         descB.unk30 = 0xfe;
-        descB.unk6c = lbl_804DAA58;
-        descB.unk70 = lbl_804DAA5C;
-        descB.unk74 = lbl_804DA9F0;
-        descB.unk78 = lbl_804DAA60;
+        descB.unk6c = 4.838f;
+        descB.unk70 = 5.379f;
+        descB.unk74 = 0.0f;
+        descB.unk78 = 0.5f;
         descB.unk7c = 5;
-        descB.unk80 = lbl_804DAA64;
-        descB.unk84 = lbl_804DAA14;
+        descB.unk80 = 166.0f;
+        descB.unk84 = 1.0f;
         descB.unk88 = 0x10;
-        descB.unk8c = lbl_804DA9F0;
-        descB.unk90 = lbl_804DAA68;
-        descB.unk94 = lbl_804DAA6C;
+        descB.unk8c = 0.0f;
+        descB.unk90 = 0.133f;
+        descB.unk94 = 837.0f;
         descB.unk98 = 1;
         descB.unk9c = 0;
         descB.unkA4 = 0;
-        descB.unkAC = lbl_804DAA70;
-        descB.unkB0 = lbl_804DA9F0;
-        descB.unkB4 = lbl_804DAA3C;
-        descB.unkB8 = lbl_804DA9F0;
-        descB.unkBC = lbl_804DA9F0;
-        descB.unkC0 = lbl_804DA9F0;
-        descB.unkC4 = lbl_804DA9F0;
-        descB.unkC8 = lbl_804DAA3C;
+        descB.unkAC = 1e+01f;
+        descB.unkB0 = 0.0f;
+        descB.unkB4 = 0.1f;
+        descB.unkB8 = 0.0f;
+        descB.unkBC = 0.0f;
+        descB.unkC0 = 0.0f;
+        descB.unkC4 = 0.0f;
+        descB.unkC8 = 0.1f;
         descB.colorCC[0] = 0xd6;
         descB.colorCC[1] = 0xe4;
         descB.colorCC[2] = 0x99;
@@ -1200,13 +1157,13 @@ int BehParamsGhostEmitState(void* actorPtr)
         beh->slot1.emitter = EmitterCreate(&descB);
         EmitterSetEnabled((unsigned long)beh->slot1.emitter, 0);
         if (*(int*)ctx == (int)0xFE14BFB5) {
-            beh->slot1.timer = lbl_804DAA74;
-            beh->slot1.timerEnd = lbl_804DAA78;
-            beh->slot1.unk08 = lbl_804DAA7C;
+            beh->slot1.timer = 8e+02f;
+            beh->slot1.timerEnd = 1.9e+03f;
+            beh->slot1.unk08 = 4.1e+03f;
         } else {
-            beh->slot1.timer = lbl_804DAA74;
-            beh->slot1.timerEnd = lbl_804DAA78;
-            beh->slot1.unk08 = lbl_804DAA80;
+            beh->slot1.timer = 8e+02f;
+            beh->slot1.timerEnd = 1.9e+03f;
+            beh->slot1.unk08 = 1.6e+03f;
         }
         beh->slot1.flag = 0;
     }
@@ -1220,16 +1177,16 @@ int BehParamsGhostEmitState(void* actorPtr)
         beh->unk0c = fn_800A1BC8(ctx->unk14, ctx->unk1c,
                                   lbl_803C4138[0xb].unk00, 0, 0);
         ConditionSetBit(a->cond, 0xe, 1);
-        fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 1);
+        fn_8008F230(0.0f, a->unk0d4, 0, 1);
         a->mode = 4;
         ConditionSetBit(a->cond, 0xd, 1);
-        fn_80090974(lbl_804DAA14, a->unk0d4, 0, beh->unk0c, 0x58,
+        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 0x58,
                     lbl_803C4138[0xb].unk10, a);
         RangeResetPending(a->cond);
         ConditionSetBit(a->cond, 0xc, 1);
         ConditionSetBit(a->cond, 0xd, 1);
-        a->unk13c = lbl_804DA9F0;
-        fn_800913EC(a->unk0d4, lbl_804DAA14, 0);
+        a->unk13c = 0.0f;
+        fn_800913EC(a->unk0d4, 1.0f, 0);
     } else {
         ConditionSetBit(a->cond, 9, 1);
         ConditionSetBit(a->cond, 0, 1);
@@ -1245,15 +1202,15 @@ int BehParamsGhostEmitState(void* actorPtr)
             }
             beh->unk0c = fn_800A1BC8(ctx->unk14, ctx->unk1c,
                                       lbl_803C4138[beh->state].unk00, 0, 0);
-            fn_80090974(lbl_804DAA14, a->unk0d4, 0, beh->unk0c, 9,
+            fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
                         lbl_803C4138[beh->state].unk10, a);
             if (HasCondition(a->cond, 0xe)) {
-                fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+                fn_8008F230(0.0f, a->unk0d4, 0, 0);
                 ConditionSetBit(a->cond, 0xe, 0);
             } else if (beh->unk10 == beh->unk0c) {
-                fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+                fn_8008F230(0.0f, a->unk0d4, 0, 0);
             } else {
-                fn_8008F230(lbl_804DAA1C, a->unk0d4, 0, 1);
+                fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
             }
         }
     }
@@ -1288,23 +1245,21 @@ int BehParamsGhostApproachState(void* actorPtr)
         ctx = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(ctx->unk14, ctx->unk1c,
                                   lbl_803C4138[beh->state].unk00, 0, 0);
-        fn_80090974(lbl_804DAA84, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(2.0f, a->unk0d4, 0, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
         } else {
-            fn_8008F230(lbl_804DAA1C, a->unk0d4, 0, 1);
+            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
         }
     }
     return 1;
 }
 
 extern "C" int AnimBankGetSetCount(unsigned short a, unsigned short b, unsigned short c);
-extern "C" float lbl_804DAA88;
-extern "C" float lbl_804DAA8C;
 
 // Behaviour update for state 9: plays the first animation set of the state's
 // bank and primes the fade emitter, like the other ghost states.
@@ -1334,15 +1289,15 @@ int BehParamsGhostSearchState(void* actorPtr)
         buf = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                   lbl_803C4138[beh->state].unk00, 0, 0);
-        fn_80090974(lbl_804DAA88, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(1.5f, a->unk0d4, 0, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
         } else {
-            fn_8008F230(lbl_804DAA1C, a->unk0d4, 0, 1);
+            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
         }
     }
     return 1;
@@ -1364,7 +1319,7 @@ int BehParamsGhostRoamState(void* actorPtr)
     beh = a->beh;
     beh->state = 8;
     beh->state2 = 0;
-    beh->unk50 = lbl_804DAA00 * ((float)(unsigned int)rand() / lbl_804DA9FC) + lbl_804DAA00;
+    beh->unk50 = 3e+03f * ((float)(unsigned int)rand() / 32767.0f) + 3e+03f;
     beh->unk18 = 0;
     beh->unk10 = beh->unk0c;
     ctx = (MsgBuf*)a->msgCtx;
@@ -1389,15 +1344,15 @@ int BehParamsGhostRoamState(void* actorPtr)
                 ctx = (MsgBuf*)a->msgCtx;
                 beh->unk0c = fn_800A1BC8(ctx->unk14, ctx->unk1c,
                                           lbl_803C4138[beh->state].unk00, 0, 0);
-                fn_80090974(lbl_804DAA14, a->unk0d4, 0, beh->unk0c, 9,
+                fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
                             lbl_803C4138[beh->state].unk10, a);
                 if (HasCondition(a->cond, 0xe)) {
-                    fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+                    fn_8008F230(0.0f, a->unk0d4, 0, 0);
                     ConditionSetBit(a->cond, 0xe, 0);
                 } else if (beh->unk10 == beh->unk0c) {
-                    fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+                    fn_8008F230(0.0f, a->unk0d4, 0, 0);
                 } else {
-                    fn_8008F230(lbl_804DAA1C, a->unk0d4, 0, 1);
+                    fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
                 }
             }
         }
@@ -1416,15 +1371,15 @@ int BehParamsGhostRoamState(void* actorPtr)
         ctx = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(ctx->unk14, ctx->unk1c,
                                   lbl_803C4138[beh->state].unk00, set, 0);
-        fn_80090974(lbl_804DAA14, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
         } else {
-            fn_8008F230(lbl_804DAA1C, a->unk0d4, 0, 1);
+            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
         }
     }
     return 1;
@@ -1447,7 +1402,7 @@ int BehParamsGhostTurnState(void* actorPtr)
     beh->state2 = 7;
     beh->unk18 = 0;
     beh->unk10 = beh->unk0c;
-    if (a->turn.z <= lbl_804DA9F0) {
+    if (a->turn.z <= 0.0f) {
         if (a != 0) {
             beh = a->beh;
             if (HasCondition(a->cond, 0xc)) {
@@ -1460,15 +1415,15 @@ int BehParamsGhostTurnState(void* actorPtr)
             buf = (MsgBuf*)a->msgCtx;
             beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                       lbl_803C4138[beh->state].unk00, 1, 0);
-            fn_80090974(lbl_804DAA14, a->unk0d4, 0, beh->unk0c, 9,
+            fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
                         lbl_803C4138[beh->state].unk10, a);
             if (HasCondition(a->cond, 0xe)) {
-                fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+                fn_8008F230(0.0f, a->unk0d4, 0, 0);
                 ConditionSetBit(a->cond, 0xe, 0);
             } else if (beh->unk10 == beh->unk0c) {
-                fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+                fn_8008F230(0.0f, a->unk0d4, 0, 0);
             } else {
-                fn_8008F230(lbl_804DAA1C, a->unk0d4, 0, 1);
+                fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
             }
         }
     } else {
@@ -1484,15 +1439,15 @@ int BehParamsGhostTurnState(void* actorPtr)
             buf = (MsgBuf*)a->msgCtx;
             beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                       lbl_803C4138[beh->state].unk00, 0, 0);
-            fn_80090974(lbl_804DAA14, a->unk0d4, 0, beh->unk0c, 9,
+            fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
                         lbl_803C4138[beh->state].unk10, a);
             if (HasCondition(a->cond, 0xe)) {
-                fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+                fn_8008F230(0.0f, a->unk0d4, 0, 0);
                 ConditionSetBit(a->cond, 0xe, 0);
             } else if (beh->unk10 == beh->unk0c) {
-                fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+                fn_8008F230(0.0f, a->unk0d4, 0, 0);
             } else {
-                fn_8008F230(lbl_804DAA1C, a->unk0d4, 0, 1);
+                fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
             }
         }
     }
@@ -1515,7 +1470,7 @@ int BehParamsGhostPauseState(void* actorPtr)
     beh = a->beh;
     beh->state2 = beh->state;
     beh->state = 6;
-    beh->fade = lbl_804DAA8C;
+    beh->fade = 1.5e+03f;
     beh->unk10 = beh->unk0c;
     a->unk288 = 1;
     ConditionSetBit(a->cond, 4, 0);
@@ -1532,15 +1487,15 @@ int BehParamsGhostPauseState(void* actorPtr)
         buf = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                   lbl_803C4138[beh->state].unk00, arg, 0);
-        fn_80090974(lbl_804DAA14, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
         } else {
-            fn_8008F230(lbl_804DAA1C, a->unk0d4, 0, 1);
+            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
         }
     }
     return 1;
@@ -1575,15 +1530,15 @@ int BehParamsGhostState5(void* actorPtr)
         buf = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                   lbl_803C4138[beh->state].unk00, arg, 0);
-        fn_80090974(lbl_804DAA14, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
         } else {
-            fn_8008F230(lbl_804DAA1C, a->unk0d4, 0, 1);
+            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
         }
     }
     return 1;
@@ -1618,15 +1573,15 @@ int BehParamsGhostState4(void* actorPtr)
         buf = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                   lbl_803C4138[beh->state].unk00, arg, 0);
-        fn_80090974(lbl_804DAA14, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
         } else {
-            fn_8008F230(lbl_804DAA1C, a->unk0d4, 0, 1);
+            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
         }
     }
     return 1;
@@ -1653,15 +1608,15 @@ static inline void GhostCueStart(void* actorPtr, int loop)
         buf = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                   lbl_803C4138[beh->state].unk00, loop, 0);
-        fn_80090974(lbl_804DAA14, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
         } else {
-            fn_8008F230(lbl_804DAA1C, a->unk0d4, 0, 1);
+            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
         }
     }
 }
@@ -1682,7 +1637,7 @@ int BehParamsGhostState3(void* actorPtr)
     beh->state2 = 0;
     beh->unk18 = 0;
     beh->unk10 = beh->unk0c;
-    if (a->turn.z > lbl_804DA9F0) {
+    if (a->turn.z > 0.0f) {
         GhostCueStart(a, 0);
     } else {
         GhostCueStart(a, 1);
@@ -1703,7 +1658,7 @@ int BehParamsGhostState2(void* actorPtr)
     beh = a->beh;
     beh->state2 = beh->state;
     beh->state = 2;
-    beh->fade = lbl_804DAA8C;
+    beh->fade = 1.5e+03f;
     beh->unk18 = 0;
     beh->unk10 = beh->unk0c;
     ConditionSetBit(a->cond, 4, 0);
@@ -1739,15 +1694,15 @@ int BehParamsGhostActivateState(void* actorPtr)
         buf = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                   lbl_803C4138[beh->state].unk00, 0, 0);
-        fn_80090974(lbl_804DAA14, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
         } else {
-            fn_8008F230(lbl_804DAA1C, a->unk0d4, 0, 1);
+            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
         }
     }
     return 1;
@@ -1781,34 +1736,21 @@ int BehParamsGhostDeactivateState(void* actorPtr)
         buf = (MsgBuf*)a->msgCtx;
         beh->unk0c = fn_800A1BC8(buf->unk14, buf->unk1c,
                                   lbl_803C4138[beh->state].unk00, 0, 0);
-        fn_80090974(lbl_804DAA14, a->unk0d4, 0, beh->unk0c, 9,
+        fn_80090974(1.0f, a->unk0d4, 0, beh->unk0c, 9,
                     lbl_803C4138[beh->state].unk10, a);
         if (HasCondition(a->cond, 0xe)) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
             ConditionSetBit(a->cond, 0xe, 0);
         } else if (beh->unk10 == beh->unk0c) {
-            fn_8008F230(lbl_804DA9F0, a->unk0d4, 0, 0);
+            fn_8008F230(0.0f, a->unk0d4, 0, 0);
         } else {
-            fn_8008F230(lbl_804DAA1C, a->unk0d4, 0, 1);
+            fn_8008F230(1.5e+02f, a->unk0d4, 0, 1);
         }
     }
     return 1;
 }
 
 // ---- shared ghost frame-update helpers --------------------------------------
-extern "C" float lbl_804DAA90;
-extern "C" float lbl_804DAA94;
-extern "C" float lbl_804DAA98;
-extern "C" float lbl_804DAA9C;
-extern "C" float lbl_804DAAA0;
-extern "C" float lbl_804DAAA4;
-extern "C" float lbl_804DAAA8;
-extern "C" float lbl_804DAAAC;
-extern "C" float lbl_804DAAB0;
-extern "C" float lbl_804DAAB4;
-extern "C" float lbl_804DAAB8;
-extern "C" float lbl_804DAABC;
-extern "C" float lbl_804DAAC0;
 extern "C" float lbl_804D5778;
 extern "C" float lbl_804D38F0;
 extern "C" float lbl_804D38F4;
@@ -1839,7 +1781,7 @@ static inline void GhostPlaceMatrix(BehActor* a, Mtx34* mtx, Vec3* tmp)
 {
     float* trans;
 
-    Vec3Set(tmp, a->angles.z, lbl_804DA9F0, lbl_804DA9F0);
+    Vec3Set(tmp, a->angles.z, 0.0f, 0.0f);
     EulerNormalize(tmp, tmp);
     MtxSetEuler(mtx, tmp);
     trans = (float*)((unsigned char*)mtx + 0x24);
@@ -1900,22 +1842,22 @@ extern "C" void GhostActorFrameUpdate(void* actorPtr)
             }
             ModelSetMatrix(a->model, 0, (char*)a->unk0f0);
         } else {
-            if (f != lbl_804DAA98) {
+            if (f != -999999.0f) {
                 a->unk8c = a->unk8c + *(float*)((unsigned char*)a->unk0f0 + 0x18);
-                *(float*)((unsigned char*)a->unk0f0 + 0x18) = lbl_804DA9F0;
+                *(float*)((unsigned char*)a->unk0f0 + 0x18) = 0.0f;
             }
             a->unk2c = (int)a->unk8c;
-            *(float*)((unsigned char*)a->unk0f0 + 0x10) = lbl_804DA9F0;
-            *(float*)((unsigned char*)a->unk0f0 + 0x14) = lbl_804DA9F0;
-            *(float*)((unsigned char*)a->unk0f0 + 0x18) = lbl_804DA9F0;
+            *(float*)((unsigned char*)a->unk0f0 + 0x10) = 0.0f;
+            *(float*)((unsigned char*)a->unk0f0 + 0x14) = 0.0f;
+            *(float*)((unsigned char*)a->unk0f0 + 0x18) = 0.0f;
             ActorGetMatrix(&mtx, a);
             fn_800A0168(&mtx, &mtx);
             fn_800A0030(&rot, &mtx, &rot);
             a->unk240 = rot.x;
             a->unk244 = rot.y;
             a->unk248 = rot.z;
-            a->unk248 = lbl_804DA9F0;
-            f = lbl_804DAA94 / a->unk138;
+            a->unk248 = 0.0f;
+            f = 1e+03f / a->unk138;
             a->unk240 = a->unk240 * f;
             a->unk244 = a->unk244 * f;
             a->unk248 = a->unk248 * f;
@@ -1930,25 +1872,25 @@ extern "C" void GhostActorFrameUpdate(void* actorPtr)
     } else if (a->angles.x > limit) {
         a->angles.x = limit;
     }
-    f = lbl_804DAA90;
+    f = 0.05f;
     beh->unk54 = beh->unk54 + a->unk138;
     f = fn_800A1394(f * beh->unk54);
     a->unk8c = a->unk8c
-             + (a->unk138 * (lbl_804DAA44 * f)) / lbl_804DAA94;
+             + (a->unk138 * (1e+02f * f)) / 1e+03f;
     f = fn_800CC308(a, beh->unk64, 1, 0, &beh->unk14);
-    if (f != lbl_804DAA98) {
+    if (f != -999999.0f) {
         float d = a->unk8c - f;
 
-        if (d < lbl_804DAA9C) {
-            a->unk8c = lbl_804DAA9C + f;
-        } else if (d > lbl_804DAAA0) {
-            a->unk8c = lbl_804DAAA0 + f;
+        if (d < 3e+02f) {
+            a->unk8c = 3e+02f + f;
+        } else if (d > 7e+02f) {
+            a->unk8c = 7e+02f + f;
         }
     }
     a->unk2c = (int)a->unk8c;
-    *(float*)((unsigned char*)a->unk0f0 + 0x10) = lbl_804DA9F0;
-    *(float*)((unsigned char*)a->unk0f0 + 0x14) = lbl_804DA9F0;
-    *(float*)((unsigned char*)a->unk0f0 + 0x18) = lbl_804DA9F0;
+    *(float*)((unsigned char*)a->unk0f0 + 0x10) = 0.0f;
+    *(float*)((unsigned char*)a->unk0f0 + 0x14) = 0.0f;
+    *(float*)((unsigned char*)a->unk0f0 + 0x18) = 0.0f;
     if (HasCondition(a->cond, 0) != 0) {
         ActorGetMatrix(&mtx, a);
         fn_800A0168(&mtx, &mtx);
@@ -1956,8 +1898,8 @@ extern "C" void GhostActorFrameUpdate(void* actorPtr)
         a->unk240 = rot.x;
         a->unk244 = rot.y;
         a->unk248 = rot.z;
-        a->unk248 = lbl_804DA9F0;
-        f = lbl_804DAA94 / a->unk138;
+        a->unk248 = 0.0f;
+        f = 1e+03f / a->unk138;
         a->unk240 = a->unk240 * f;
         a->unk244 = a->unk244 * f;
         a->unk248 = a->unk248 * f;
@@ -1968,29 +1910,29 @@ extern "C" void GhostActorFrameUpdate(void* actorPtr)
         float v;
 
         lbl_804D5778 = lbl_804D5778 + a->unk138;
-        beh->unk5c = lbl_804DA9F0;
-        accel = lbl_804DAAA8 * (*(float*)((unsigned char*)a->msgCtx + 0xc0) * a->unk138);
-        if (rate > lbl_804DAAA4) {
+        beh->unk5c = 0.0f;
+        accel = 0.001f * (*(float*)((unsigned char*)a->msgCtx + 0xc0) * a->unk138);
+        if (rate > 1.1920929e-07f) {
             v = accel;
             if (v > rate) {
                 v = rate;
             }
             a->angles.z = a->angles.z + v;
-            v = lbl_804DAAB0 * rate;
-            spd = (v < lbl_804DAAAC) ? v : lbl_804DAAAC;
-        } else if (rate < lbl_804DAAB4) {
+            v = 5.0f * rate;
+            spd = (v < 3e+01f) ? v : 3e+01f;
+        } else if (rate < -1.1920929e-07f) {
             v = -accel;
             if (v < rate) {
                 v = rate;
             }
             a->angles.z = a->angles.z + v;
-            v = lbl_804DAAB0 * rate;
-            spd = (v > lbl_804DAAB8) ? v : lbl_804DAAB8;
+            v = 5.0f * rate;
+            spd = (v > -3e+01f) ? v : -3e+01f;
         } else {
-            spd = lbl_804DA9F0;
+            spd = 0.0f;
         }
-        if (yawRate <= lbl_804DAAA4) {
-            if (yawRate < lbl_804DAAB4) {
+        if (yawRate <= 1.1920929e-07f) {
+            if (yawRate < -1.1920929e-07f) {
                 v = -accel;
                 if (yawRate < v) {
                     yawRate = v;
@@ -2005,17 +1947,17 @@ extern "C" void GhostActorFrameUpdate(void* actorPtr)
             a->angles.x = a->angles.x + yawRate;
         }
         if (a->unk26c != 0) {
-            beh->unk5c = lbl_804DAABC
+            beh->unk5c = 57.29578f
                        * ((a->unk138
                            * (lbl_804D38F4
                               * fn_800A1394(lbl_804D5778 * lbl_804D38F0)))
-                          / lbl_804DAA94);
-            beh->unk60 = lbl_804DAABC
+                          / 1e+03f);
+            beh->unk60 = 57.29578f
                        * ((a->unk138
                            * (lbl_804D38F4
                               * fn_800A1418(lbl_804D5778 * lbl_804D38F0)))
-                          / lbl_804DAA94);
-            v = lbl_804DAAA8 * (lbl_804DAAC0 * a->unk138);
+                          / 1e+03f);
+            v = 0.001f * (45.0f * a->unk138);
             if (beh->unk58 < spd) {
                 float diff = spd - beh->unk58;
 
@@ -2053,9 +1995,6 @@ struct GhostFxDesc {
 };
 
 extern "C" GhostFxDesc lbl_8034BA28;
-extern "C" float lbl_804DAAC4;
-extern "C" float lbl_804DAAC8;
-extern "C" float lbl_804DAACC;
 
 extern "C" int fn_80158AFC(int id, void* stream);
 extern "C" int fn_80116E08(void* actor);
@@ -2120,9 +2059,9 @@ extern "C" int GhostActorStreamMsg(void* streamPtr, int mode)
                 ModelNodeSetup(a->model, a->unk0e4, 1, 1);
             }
             bone = ModelFindBone(a->model, a->unk0e0);
-            rnd.x = lbl_804DAA88 - (float)(Rand() % 2048) / lbl_804DAAC4;
-            rnd.y = lbl_804DAA88 - (float)(Rand() % 2048) / lbl_804DAAC4;
-            rnd.z = lbl_804DAA88 - (float)(Rand() % 2048) / lbl_804DAAC4;
+            rnd.x = 1.5f - (float)(Rand() % 2048) / 4096.0f;
+            rnd.y = 1.5f - (float)(Rand() % 2048) / 4096.0f;
+            rnd.z = 1.5f - (float)(Rand() % 2048) / 4096.0f;
             Mtx34SetTranslation(&mtxT, &rnd);
             if (bone != -1) {
                 char* dst = (char*)node + bone * 0x30;
@@ -2136,25 +2075,25 @@ extern "C" int GhostActorStreamMsg(void* streamPtr, int mode)
         }
     }
     if (fn_80116E08(a) == 0) {
-        f = lbl_804DAA14;
+        f = 1.0f;
         if (HasCondition(a->cond, 0xa) != 0) {
             return 1;
         }
         if (HasCondition(a->cond, 9) != 0) {
             if (*(int*)a->msgCtx == (int)0xFE14BFB5) {
-                f0 = beh->progress - lbl_804DAAC8;
-                if (f0 < lbl_804DA9F0) {
-                    f0 = lbl_804DA9F0;
+                f0 = beh->progress - 4e+03f;
+                if (f0 < 0.0f) {
+                    f0 = 0.0f;
                 }
-                f0 = f0 / lbl_804DAA94;
+                f0 = f0 / 1e+03f;
             } else {
-                f0 = beh->progress / lbl_804DA9F4;
+                f0 = beh->progress / 2.5e+03f;
             }
-            f0 = lbl_804DAA14 - f0;
-            if (f0 < lbl_804DA9F0) {
-                f = lbl_804DA9F0;
-            } else if (f0 > lbl_804DAA14) {
-                f = lbl_804DAA14;
+            f0 = 1.0f - f0;
+            if (f0 < 0.0f) {
+                f = 0.0f;
+            } else if (f0 > 1.0f) {
+                f = 1.0f;
             } else {
                 f = f0;
             }
@@ -2164,15 +2103,15 @@ extern "C" int GhostActorStreamMsg(void* streamPtr, int mode)
     } else {
         desc = lbl_8034BA28;
         col = (float*)fn_800FD3FC(PlayerTeam(HandleToPlayer(a->unk38)));
-        desc.colorA[0] = (unsigned char)(int)(lbl_804DAACC * col[0]);
-        desc.colorA[1] = (unsigned char)(int)(lbl_804DAACC * col[1]);
-        desc.colorA[2] = (unsigned char)(int)(lbl_804DAACC * col[2]);
-        desc.colorB[0] = (unsigned char)(int)(lbl_804DAACC * col[0]);
-        desc.colorB[1] = (unsigned char)(int)(lbl_804DAACC * col[1]);
-        desc.colorB[2] = (unsigned char)(int)(lbl_804DAACC * col[2]);
-        fn_8003F15C(lbl_804DAA14, hnd, node, a->unk0d0,
+        desc.colorA[0] = (unsigned char)(int)(255.0f * col[0]);
+        desc.colorA[1] = (unsigned char)(int)(255.0f * col[1]);
+        desc.colorA[2] = (unsigned char)(int)(255.0f * col[2]);
+        desc.colorB[0] = (unsigned char)(int)(255.0f * col[0]);
+        desc.colorB[1] = (unsigned char)(int)(255.0f * col[1]);
+        desc.colorB[2] = (unsigned char)(int)(255.0f * col[2]);
+        fn_8003F15C(1.0f, hnd, node, a->unk0d0,
                     (int*)((char*)streamPtr + 0x10), &desc);
     }
-    a->unk13c = lbl_804DA9F0;
+    a->unk13c = 0.0f;
     return 1;
 }
