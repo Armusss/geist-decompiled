@@ -30,22 +30,6 @@ void BoneSetMatrix(void* bone, Mtx34* mtx);
 void EulerNormalize(Vec3* out, Vec3* in);
 
 // Shared constants and tables owned by other units.
-extern float lbl_804D7548;
-extern float lbl_804D754C;
-extern float lbl_804D7550;
-extern float lbl_804D7554;
-extern float lbl_804D7558;
-extern float lbl_804D755C;
-extern float lbl_804D7560;
-extern float lbl_804D7564;
-extern float lbl_804D7568;
-extern float lbl_804D756C;
-extern float lbl_804D7570;
-extern float lbl_804D7580;
-extern float lbl_804D7584;
-extern float lbl_804D7588;
-extern float lbl_804D758C;
-extern float lbl_804D7590;
 extern float lbl_8039EA48;
 extern float lbl_8039EA54;
 extern int lbl_8039EA60[5];
@@ -75,9 +59,6 @@ struct SplineState {
 };
 extern SplineState lbl_8045E768;
 
-extern float lbl_804D75B4;
-extern float lbl_804D75B8;
-extern double lbl_804D75C0;
 extern "C" int BitsetFirstClear(u32* bits, int words, int n);
 extern "C" void* memset(void* dst, int c, u32 n);
 
@@ -127,15 +108,6 @@ extern int lbl_804D4C14;
 extern int lbl_804D4C18;
 extern int lbl_804D4C1C;
 extern int lbl_803A59A8[8];
-extern float lbl_804D7598;
-extern float lbl_804D759C;
-extern float lbl_804D75A0;
-extern float lbl_804D75A4;
-extern float lbl_804D75A8;
-extern float lbl_804D75AC;
-extern float lbl_804D75B0;
-extern float lbl_804D75C8;
-extern float lbl_804D75CC;
 
 extern "C" void fn_8000519C(void* dst, void* src, int n);
 extern "C" void fn_800F8ED0();
@@ -198,9 +170,9 @@ extern int lbl_804D2DA8;
 // Evaluates a cubic Hermite segment at t: p0 and p1 are the end points, m0 and m1 their tangents.
 // The three components are blended into out; always returns 1.
 int SplineHermiteEval(float t, Vec3* p0, Vec3* m0, Vec3* p1, Vec3* m1, Vec3* out) {
-    float h00 = lbl_804D7548 + (lbl_804D754C * t * t * t - lbl_804D7550 * t * t);
-    float h01 = lbl_804D7554 * t * t * t + lbl_804D7550 * t * t;
-    float h10 = t + (t * t * t - lbl_804D754C * t * t);
+    float h00 = 1.0f + (2.0f * t * t * t - 3.0f * t * t);
+    float h01 = -2.0f * t * t * t + 3.0f * t * t;
+    float h10 = t + (t * t * t - 2.0f * t * t);
     float h11 = t * t * t - t * t;
 
     out->x = p0->x * h00 + p1->x * h01 + m0->x * h10 + m1->x * h11;
@@ -228,10 +200,10 @@ void ItemColorApply(int handle1, int handle2, int colorIndex) {
         float* color = fn_800FD3FC(colorIndex);
 
         hasColor = 1;
-        r = (int)(lbl_804D7558 * color[0]) & 0xff;
-        g = (int)(lbl_804D7558 * color[1]) & 0xff;
-        b = (int)(lbl_804D7558 * color[2]) & 0xff;
-        a = (int)(lbl_804D7558 * color[3]) & 0xff;
+        r = (int)(255.0f * color[0]) & 0xff;
+        g = (int)(255.0f * color[1]) & 0xff;
+        b = (int)(255.0f * color[2]) & 0xff;
+        a = (int)(255.0f * color[3]) & 0xff;
     }
 
     if (handle1 != -1) {
@@ -266,16 +238,16 @@ void BoneAddRotX(void* bones, int index, float angle) {
     BoneGetMatrix(&mtx, bone);
     MtxGetEuler(&euler, &mtx);
     euler.x += angle;
-    d = lbl_804D755C * fabsf(angle);
-    if (d >= lbl_804D7560) {
-        d = lbl_804D7560;
+    d = 0.83f * fabsf(angle);
+    if (d >= 45.0f) {
+        d = 45.0f;
     }
     d = fn_800A127C(d);
-    d = lbl_804D7548 - d;
-    if (d < lbl_804D7564) {
-        d = lbl_804D7564;
-    } else if (d > lbl_804D7568) {
-        d = lbl_804D7568;
+    d = 1.0f - d;
+    if (d < 0.3f) {
+        d = 0.3f;
+    } else if (d > 0.8f) {
+        d = 0.8f;
     }
     euler.z *= d;
     EulerNormalize(&euler, &euler);
@@ -308,9 +280,9 @@ void SplineQuatRotateRange(float t, float* quats, int start, int end, u32 type) 
         return;
     }
 
-    a = lbl_804D756C;
+    a = -35.0f;
     if (t >= a) {
-        a = lbl_804D7570;
+        a = 35.0f;
         if (t <= a) {
             a = t;
         }
@@ -377,9 +349,9 @@ void SplineQuatRotateRamp(float t, float* quats, int start, int end, u32 type) {
         return;
     }
 
-    a = lbl_804D7580;
+    a = -30.0f;
     if (t >= a) {
-        a = lbl_804D7584;
+        a = 30.0f;
         if (t <= a) {
             a = t;
         }
@@ -429,11 +401,11 @@ void ItemColorDrawQuad(int owner, int value, int start, int count, float* color)
     int r, g, b, a;
 
     fn_8013AC68(owner, fn_800C6448());
-    r = (int)(lbl_804D7558 * color[0]) & 0xff;
-    g = (int)(lbl_804D7558 * color[1]) & 0xff;
-    b = (int)(lbl_804D7558 * color[2]) & 0xff;
-    a = (int)(lbl_804D7558 * color[3]) & 0xff;
-    fn_8013A400(value, r, g, b, a, (float)(start + count) * lbl_804D7588, lbl_804D758C);
+    r = (int)(255.0f * color[0]) & 0xff;
+    g = (int)(255.0f * color[1]) & 0xff;
+    b = (int)(255.0f * color[2]) & 0xff;
+    a = (int)(255.0f * color[3]) & 0xff;
+    fn_8013A400(value, r, g, b, a, (float)(start + count) * 0.5f, 0.0f);
     fn_8013A3D4();
 }
 
@@ -443,11 +415,11 @@ void ItemColorDrawQuadRange(int owner, int value, int start, int count, float* c
     int r, g, b, a;
 
     fn_8013AC68(owner, fn_800C6448());
-    r = (int)(lbl_804D7558 * color[0]) & 0xff;
-    g = (int)(lbl_804D7558 * color[1]) & 0xff;
-    b = (int)(lbl_804D7558 * color[2]) & 0xff;
-    a = (int)(lbl_804D7558 * color[3]) & 0xff;
-    fn_8013A834(value, r, g, b, a, (float)(start + count) * lbl_804D7588, lbl_804D7590);
+    r = (int)(255.0f * color[0]) & 0xff;
+    g = (int)(255.0f * color[1]) & 0xff;
+    b = (int)(255.0f * color[2]) & 0xff;
+    a = (int)(255.0f * color[3]) & 0xff;
+    fn_8013A834(value, r, g, b, a, (float)(start + count) * 0.5f, 180.0f);
     fn_8013A3D4();
 }
 
@@ -570,11 +542,39 @@ struct SplineCmdMsg {
 
 extern int lbl_8045E7BC[8];
 extern int lbl_8045E7DC[8];
-extern char lbl_80345737[];
 extern "C" int fn_8002394C(u32 id);
 extern "C" void fn_800FF4E4(int a);
 
 void SplineSceneUnload(SplineGroup* g);
+void SplineResetState(void);
+void SplineSetup(int* cfg);
+void SplineShutdown(void);
+void SplineTick(float time, SplineGroup* g);
+void SplineModeUpdate(SplineGroup* g, int msg);
+int SplineMsg(int owner, int msg, void* p);
+
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
+// Spline subsystem descriptor (0x8039EB50): name plus the seven entry points.
+struct SplineSystemType {
+    const char* name;
+    void (*reset)(void);
+    void (*setup)(int*);
+    void (*shutdown)(void);
+    void (*tick)(float, SplineGroup*);
+    void (*modeUpdate)(SplineGroup*, int);
+    int (*msg)(int, int, void*);
+    void (*sceneUnload)(SplineGroup*);
+};
+
+SplineSystemType gSplineSystemType = {
+    "CTH Bot",    SplineResetState, SplineSetup,   SplineShutdown,
+    SplineTick,   SplineModeUpdate, SplineMsg,     SplineSceneUnload,
+};
+
 void SplineEntryUpdate(SplineGroup* g, int index);
 int SplineEntryLink(int owner, int a, int b);
 int SplineEntryAttach(int owner, int a, int b);
@@ -645,10 +645,10 @@ int SplineMsg(int owner, int msg, void* p) {
             fn_8013FCF0(owner, -1, p2);
         } else {
             u32 t = fn_80086364(0xceffe6b);
-            fn_800FEF2C(lbl_804D7598, lbl_804D7598, lbl_804D7598, lbl_804D759C, p2, t);
+            fn_800FEF2C(1.0f, 1.0f, 1.0f, 22.0f, p2, t);
         }
-        fn_80120C80(lbl_804D75A0, 0xe2d6a9c0, 0, p2);
-        fn_80120C80(lbl_804D75A0, 0xe2d6a9c0, 1, h);
+        fn_80120C80(-1.0f, 0xe2d6a9c0, 0, p2);
+        fn_80120C80(-1.0f, 0xe2d6a9c0, 1, h);
         return 1;
     }
     if (n < 0x53d74347) {
@@ -760,7 +760,7 @@ void SplineModeUpdate(SplineGroup* g, int msg) {
             }
             Fn801ED0C8();
             Fn801ED2A0(0x14);
-            t = (int)(lbl_804D75A4 * (lbl_8045E768.unk08 / lbl_804D75A8));
+            t = (int)(255.0f * (lbl_8045E768.unk08 / 1200.0f));
             Fn801ED1E4(0xff, 0xff, 0xff, t & 0xff);
             Fn801ED1A0(2);
             Fn801ED3FC(0, 0x280, 0, 0x150);
@@ -793,8 +793,8 @@ void SplineTick(float time, SplineGroup* g) {
         done = 0;
         if (lbl_8039F6B0[1] != 0) {
             lbl_8045E768.unk04 = lbl_8045E768.unk04 - time;
-            if (lbl_8045E768.unk04 <= lbl_804D75AC) {
-                lbl_8045E768.unk04 = lbl_804D75AC;
+            if (lbl_8045E768.unk04 <= 0.0f) {
+                lbl_8045E768.unk04 = 0.0f;
                 done = 1;
             }
         }
@@ -819,7 +819,7 @@ void SplineTick(float time, SplineGroup* g) {
             }
             fn_800FF4E4(0xffffffff);
             lbl_8045E768.unk00 = 3;
-            lbl_8045E768.unk08 = lbl_804D75B0;
+            lbl_8045E768.unk08 = 5000.0f;
             out.a = 1;
             out.b = 0x4b000000;
             out.c = 0xf8629c97;
@@ -828,20 +828,20 @@ void SplineTick(float time, SplineGroup* g) {
     } else {
         if (lbl_8045E768.unk00 < 2) {
             if (lbl_8045E768.unk00 == 0) {
-                if (lbl_804D75AC < lbl_8045E768.unk08 - time) {
+                if (0.0f < lbl_8045E768.unk08 - time) {
                     lbl_8045E768.unk08 = lbl_8045E768.unk08 - time;
                     return;
                 }
                 lbl_8045E768.unk00 = 1;
-                lbl_8045E768.unk08 = lbl_804D75A8;
+                lbl_8045E768.unk08 = 1200.0f;
                 return;
             }
             if (lbl_8045E768.unk00 >= 0) {
-                if (lbl_804D75AC < lbl_8045E768.unk08 - time) {
+                if (0.0f < lbl_8045E768.unk08 - time) {
                     lbl_8045E768.unk08 = lbl_8045E768.unk08 - time;
                     return;
                 }
-                lbl_8045E768.unk08 = lbl_804D75AC;
+                lbl_8045E768.unk08 = 0.0f;
                 lbl_8045E768.unk00 = 2;
                 for (i = 0; i < g->count; i++) {
                     ItemColorSendMode0(i);
@@ -998,8 +998,8 @@ void SplineSetup(int* cfg) {
         fn_80127D7C();
         Fn80140918();
         for (i = 0; i < g->count; i++) {
-            fn_80120D28(lbl_804D75AC, 0x7bfb940d, 0, i, 0, 0);
-            fn_80120D28(lbl_804D75AC, 0xe2d6a9c0, 0, i, 0, 0);
+            fn_80120D28(0.0f, 0x7bfb940d, 0, i, 0, 0);
+            fn_80120D28(0.0f, 0xe2d6a9c0, 0, i, 0, 0);
         }
         fn_800B949C(0x5a9b315c, b1, 1, 1);
         for (i = 0; i < g->count; i++) {
@@ -1018,12 +1018,12 @@ void SplineSetup(int* cfg) {
             }
         }
         for (i = 0; i < fn_800A3854(); i++) {
-            fn_80120D28(lbl_804D75AC, 0x7bfb940d, 3, i, 0, 0);
+            fn_80120D28(0.0f, 0x7bfb940d, 3, i, 0, 0);
         }
     }
     for (i = 0; i < 8; i++) {
         if ((g->unk128 & (4 << i)) != 0) {
-            fn_80120D28(lbl_804D75AC, 0xe2d6a9c0, 1, i, 0, 0);
+            fn_80120D28(0.0f, 0xe2d6a9c0, 1, i, 0, 0);
         }
     }
 }
@@ -1036,9 +1036,9 @@ void SplineResetState(void) {
     lbl_804D4C08 = 1;
     memset(&lbl_8045E768, 0, sizeof(lbl_8045E768));
     lbl_8045E768.unk00 = 0;
-    lbl_8045E768.unk08 = lbl_804D75B4;
+    lbl_8045E768.unk08 = 3000.0f;
     lbl_8045E768.unk50 = -1;
-    lbl_8045E768.unk04 = lbl_804D75B8 * (float)lbl_8039F6B0[2];
+    lbl_8045E768.unk04 = 1000.0f * (float)lbl_8039F6B0[2];
     for (i = 0; i < 8; i++) {
         lbl_8039EB70[i] = 0;
     }
@@ -1052,8 +1052,8 @@ void SplineSceneUnload(SplineGroup* g) {
     SplineCmdMsg cmd;
 
     lbl_8045E768.unk00 = 0;
-    lbl_8045E768.unk08 = lbl_804D75B4;
-    lbl_8045E768.unk04 = lbl_804D75B8 * (float)lbl_8039F6B0[2];
+    lbl_8045E768.unk08 = 3000.0f;
+    lbl_8045E768.unk04 = 1000.0f * (float)lbl_8039F6B0[2];
     fn_800F8ED0();
     fn_800B969C();
     fn_800FC764(lbl_8045E768.unk50, 0);
@@ -1061,8 +1061,8 @@ void SplineSceneUnload(SplineGroup* g) {
         fn_800FC764((i & 0xffffff) | 0x13000000, 0);
     }
     for (i = 0; i < g->count; i++) {
-        fn_80120AC0(lbl_804D75AC, 0x7bfb940d, 0, i);
-        fn_80120AC0(lbl_804D75AC, 0xe2d6a9c0, 0, i);
+        fn_80120AC0(0.0f, 0x7bfb940d, 0, i);
+        fn_80120AC0(0.0f, 0xe2d6a9c0, 0, i);
         if ((u32)g->ids[i] >> 24 == 0x13) {
             cmd.a = 1;
             SendMsg(g->ids[i], 0xc00, &cmd);
@@ -1148,11 +1148,11 @@ void SplineEntryUpdate(SplineGroup* g, int index) {
         lbl_8045E7BC[index] = score;
     }
     Fn801ED0C8();
-    Fn801ED1E4((int)(lbl_804D75A4 * color[0]) & 0xff, (int)(lbl_804D75A4 * color[1]) & 0xff,
-               (int)(lbl_804D75A4 * color[2]) & 0xff, 0xff);
+    Fn801ED1E4((int)(255.0f * color[0]) & 0xff, (int)(255.0f * color[1]) & 0xff,
+               (int)(255.0f * color[2]) & 0xff, 0xff);
     fn_8007E1E8(text[3]);
     fn_8007E570(text[0], text[1], 2);
-    Fn801EB188(lbl_80345737 + 8, score);
+    Fn801EB188(" %02d", score);
     if (score != lbl_8045E7BC[index]) {
         lbl_8045E7BC[index] = score;
     }
@@ -1169,10 +1169,10 @@ void SplineEntryUpdate(SplineGroup* g, int index) {
             if (s != lbl_8045E7DC[index]) {
                 lbl_8045E7DC[index] = s;
             }
-            Fn801ED1E4((int)(lbl_804D75A4 * color[0]) & 0xff,
-                       (int)(lbl_804D75A4 * color[1]) & 0xff,
-                       (int)(lbl_804D75A4 * color[2]) & 0xff, 0xff);
-            Fn801EB188(lbl_80345737 + 0xe, s);
+            Fn801ED1E4((int)(255.0f * color[0]) & 0xff,
+                       (int)(255.0f * color[1]) & 0xff,
+                       (int)(255.0f * color[2]) & 0xff, 0xff);
+            Fn801EB188("+%d", s);
         }
         if (s == 0) {
             lbl_8045E7DC[index] = 0;
@@ -1194,7 +1194,7 @@ static inline int SplineAbs(int x) {
 }
 
 int SplineEntryLink(int owner, int a, int b) {
-    float time = lbl_804D7598;
+    float time = 1.0f;
     int p1;
     int p2;
     int t1;
@@ -1211,7 +1211,7 @@ int SplineEntryLink(int owner, int a, int b) {
         int out[2];
         fn_8012071C(0xe2d6a9c0, 0, out, 1, 1);
         if (fn_80120C14(0xe2d6a9c0, 0, out[0]) == fn_80120C14(0xe2d6a9c0, 0, p1)) {
-            time = lbl_804D75C8;
+            time = 2.0f;
         }
     }
     fn_8013FCF0(owner, p2, p1);
@@ -1230,13 +1230,13 @@ int SplineEntryLink(int owner, int a, int b) {
         return 1;
     }
     if (lbl_8039F6B0[12] == 0) {
-        if (fn_80120C14(0x7bfb940d, 0, p2) >= lbl_804D75CC) {
-            time = lbl_804D75AC;
+        if (fn_80120C14(0x7bfb940d, 0, p2) >= 16.0f) {
+            time = 0.0f;
         }
     } else {
         float d = fn_80120C14(0x7bfb940d, 0, p2);
-        time = (d < lbl_804D7598) ? lbl_804D7598
-                                  : ((lbl_804D75CC <= d) ? lbl_804D75AC : d);
+        time = (d < 1.0f) ? 1.0f
+                                  : ((16.0f <= d) ? 0.0f : d);
     }
     {
         u32 id = fn_800FD6EC(p2);
@@ -1273,7 +1273,7 @@ int SplineEntryAttach(int owner, int a, int b) {
     fn_8012E5A8(b);
     team = fn_800FD68C(h);
     if (lbl_8039F6B0[4] == 0 || lbl_8039F6B0[7] == 0 ||
-        fn_80120C14(0x7bfb940d, 0, h) != lbl_804D75AC) {
+        fn_80120C14(0x7bfb940d, 0, h) != 0.0f) {
         add = (lbl_8039F6B0[8] != 0);
         if (h == -1) {
             fn_80120C80((float)add, 0xe2d6a9c0, 1, team);
@@ -1293,7 +1293,7 @@ int SplineEntryAttach(int owner, int a, int b) {
                 add = lbl_8039F6B0[0] - cur;
             }
             fn_80120C80((float)add, 0xe2d6a9c0, 0, h);
-            fn_80120AC0(lbl_804D75AC, 0x7bfb940d, 0, h);
+            fn_80120AC0(0.0f, 0x7bfb940d, 0, h);
             fn_80120C80((float)add, 0xe2d6a9c0, 1, team);
             q.hash = 0x372c8784;
             q.unk8 = 0;
@@ -1311,11 +1311,11 @@ int SplineEntryAttach(int owner, int a, int b) {
                 ent = fn_800FD334(h);
                 fl = mag > 1 ? 0x73 : 0;
                 fn_802F09EC(buf, key, ent, add, fl);
-                text = fn_80170834(lbl_80345737 + 0x12);
+                text = fn_80170834("multi_score");
                 fn_8016F390(text, 0, 0);
                 for (i = 0; i < ((SplineGroup*)owner)->count; i++) {
                     if (fn_800FD6EC(i) >> 24 == 2) {
-                        fn_800FEF2C(color[0], color[1], color[2], lbl_804D759C, i, buf);
+                        fn_800FEF2C(color[0], color[1], color[2], 22.0f, i, buf);
                     }
                 }
                 text = fn_8007EB34(0x92234d44, 0xbbd48fcc);
