@@ -688,15 +688,15 @@ int PossessedApplyStateProperty(void* data)
     state = owner->state;
     switch (q->hash) {
     case 0x63F94A69:
-        if (q->value == -1) {
-            owner->mode = 0;
-            owner->target = 0;
-            RangeResetPending(owner->conditions);
-        } else {
+        if (q->value != -1) {
             SendMsg(q->value, 0x400, answer);
             owner->mode = 2;
             owner->target = (MsgTarget*)answer[0];
             FollowSetTargetObj(owner->conditions, (void*)answer[0]);
+        } else {
+            owner->mode = 0;
+            owner->target = 0;
+            RangeResetPending(owner->conditions);
         }
         return 1;
     case 0x94D64981:
@@ -707,7 +707,7 @@ int PossessedApplyStateProperty(void* data)
         if (q->value != -1)
             state->unk18 = q->value;
         return 1;
-    case 0xA604ED5C:
+    case 0xA603ED5C:
         if (q->value != -1)
             state->unk1C = q->value;
         return 1;
