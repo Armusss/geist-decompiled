@@ -201,7 +201,8 @@ struct RideActor {
     s32 unk288;                 // 0x288  ride link word (0 = no ride target)
     u8  pad28C[0x5F0 - 0x28C];
     u32 unk5F0;                 // 0x5F0  ride stream state handle (0 = none)
-    u8  unk5F4[0x904 - 0x5F4];  // 0x5F4  rest of the condition/flag block
+    u8  unk5F4[0x894 - 0x5F4];  // 0x5F4  rest of the condition/flag block
+    u8  stream[0x904 - 0x894];  // 0x894  ride state stream object
     f32 unk904;                 // 0x904
 };
 
@@ -222,15 +223,8 @@ struct RideEvent {
 extern "C" RideActorTables lbl_803C54D8;
 extern "C" s32 lbl_803C560C[];
 extern "C" RideBehaviourType lbl_803C5664[];
-extern "C" f32 lbl_804DB120;
-extern "C" f32 lbl_804DB124;
-extern "C" f32 lbl_804DB138;
-extern "C" f32 lbl_804DB13C;
-extern "C" f32 lbl_804DB140;
 extern "C" f32 lbl_804D3D04;
 extern "C" f32 lbl_804D3D0C;
-extern "C" f32 lbl_804DB128;
-extern "C" f32 lbl_804DB150;
 extern "C" f32 lbl_804D5808;
 extern "C" void* lbl_804D3D10;
 extern "C" void* lbl_804D3D14;
@@ -272,7 +266,7 @@ int RideEventHandler(int msg, void* argp)
         int h = fn_800AFD20(a);
         int anim = ModelAnimate(a->model, 0, 0);
         int r = fn_8003A1F0(h, a->unk0F0, anim);
-        fn_8003F15C(lbl_804DB124, h, r, a->unk0D0, &e->unk10, 0);
+        fn_8003F15C(1.0f, h, r, a->unk0D0, &e->unk10, 0);
         return 1;
     }
     case 0x407:
@@ -446,7 +440,7 @@ int RideApplyDamage(void* argp)
         }
         if (beh->value[i] <= 0.0f) {
             ConditionSetBit(a->unk270, 4, 1);
-            a->unk904 -= lbl_804DB128 * (f32)a->state->unk30;
+            a->unk904 -= 0.334f * (f32)a->state->unk30;
             beh->lastPart = i;
             if (i == 0) {
                 ActorPlayAnim(a->unk038, 0x452BE671, e->ref.u);
@@ -502,28 +496,28 @@ int RideUpdatePartVisuals(void* argp)
     RideBehaviourType* types = lbl_803C5664;
 
     for (int i = 0; i < 4; i++) {
-        if (beh->value[i] <= lbl_804DB120) {
+        if (beh->value[i] <= 0.0f) {
             ModelNodeSetup(a->model, show[i], 0, 1);
         }
         if (i == 3) {
-            if (beh->value[2] > lbl_804DB120 || beh->value[3] <= lbl_804DB120) {
+            if (beh->value[2] > 0.0f || beh->value[3] <= 0.0f) {
                 ModelNodeSetup(a->model, show[i], 0, 1);
             } else {
                 ModelNodeSetup(a->model, show[i], 1, 1);
             }
         }
-        if (beh->value[i + 4] > lbl_804DB120) {
-            f32 t = lbl_804DB138 * (beh->value[i + 4] / lbl_804D3D0C);
-            if (t < lbl_804DB120) {
-                t = lbl_804DB120;
-            } else if (t > lbl_804DB124) {
-                t = lbl_804DB124;
+        if (beh->value[i + 4] > 0.0f) {
+            f32 t = 3.0f * (beh->value[i + 4] / lbl_804D3D0C);
+            if (t < 0.0f) {
+                t = 0.0f;
+            } else if (t > 1.0f) {
+                t = 1.0f;
             }
-            f32 r = fn_800A1394(lbl_804DB13C * t);
-            u8 shade = (u8)(s32)(lbl_804DB140 * (lbl_804DB124 - r));
+            f32 r = fn_800A1394(9e+01f * t);
+            u8 shade = (u8)(s32)(255.0f * (1.0f - r));
             fn_80037EC0(a->model, show[i], 1, 0xFF, shade, shade, 0xFF);
             beh->value[i + 4] -= a->unk138;
-            if (beh->value[i + 4] <= lbl_804DB120) {
+            if (beh->value[i + 4] <= 0.0f) {
                 fn_80037EC0(a->model, show[i], 0, 0xFF, 0xFF, 0xFF, 0xFF);
                 ModelNodeSetup(a->model, hide[i], 0, 1);
             }
@@ -580,9 +574,6 @@ void* FxFind(const char* name);
 extern "C" void fn_800CDD10(void* owner);
 extern "C" void fn_80090634(int handle, int a, int b, int c);
 extern "C" void fn_800CB8BC(void* owner, void* state, int arg, int param);
-extern "C" f32 lbl_804DB144;
-extern "C" f32 lbl_804DB148;
-extern "C" f32 lbl_804DB14C;
 extern "C" f32 lbl_804D3D08;
 
 // Allocates the actor's behaviour block, looks up the part/bone tables and
@@ -605,7 +596,7 @@ void RideInitBehaviour(void* arg0, void* argp)
     memset(beh, 0, 0x70);
     a->behaviour = beh;
 
-    if (HasCondition(a->unk270, 10) != 0 || a->unk904 <= lbl_804DB120) {
+    if (HasCondition(a->unk270, 10) != 0 || a->unk904 <= 0.0f) {
         beh->type = 3;
         beh->unk04 = 4;
     } else {
@@ -667,16 +658,16 @@ void RideInitBehaviour(void* arg0, void* argp)
     lbl_804D3D14 = FxFind(lbl_8034C308 + 0x60);   // Impact_NoDamage
     lbl_804D3D18 = FxFind(lbl_8034C308 + 0x70);   // Truck_Horn
 
-    f32 health = lbl_804DB144;
+    f32 health = -1.0f;
     for (int i = 0; i < 4; i++) {
         beh->value[4 + i] = health;
         ModelNodeSetup(a->model, t->nodeHide4[i], 0, 1);
     }
 
-    beh->value[0] = lbl_804DB148;
-    beh->value[1] = lbl_804DB148;
-    beh->value[2] = lbl_804DB14C;
-    beh->value[3] = lbl_804DB148;
+    beh->value[0] = 8e+02f;
+    beh->value[1] = 8e+02f;
+    beh->value[2] = 4e+02f;
+    beh->value[3] = 8e+02f;
 
     for (int i = 0; i < 11; i++) {
         beh->value[8 + i] = lbl_804D3D08;
@@ -685,7 +676,7 @@ void RideInitBehaviour(void* arg0, void* argp)
         }
     }
 
-    beh->unk14 = lbl_804DB120;
+    beh->unk14 = 0.0f;
     ConditionSetBit(a->unk270, 1, 1);
     fn_80090634(a->unk0D4, 0, 0, 0);
 }
@@ -722,7 +713,6 @@ int RideHostMsgHandler(int msg, void* argp)
 
     RideActor* a = (RideActor*)argp;
     RideBehaviour* beh = a->behaviour;
-    void* stream = &a->unk5F4[0x894 - 0x5F4];  // 0x894, ride state stream object
 
     switch (msg) {
     case 0x04A5C9FC:
@@ -732,17 +722,17 @@ int RideHostMsgHandler(int msg, void* argp)
         break;
     case 0x20EE36:
     case 0xF829DB93:
-        if (fn_8016325C(stream) == 4) {
-            fn_80162610(a, stream, 0x20EE36);
-        } else if (fn_8016325C(stream) == 5) {
-            fn_80162610(a, stream, 0xF829DB93);
+        if (fn_8016325C(a->stream) == 4) {
+            fn_80162610(a, a->stream, 0x20EE36);
+        } else if (fn_8016325C(a->stream) == 5) {
+            fn_80162610(a, a->stream, 0xF829DB93);
         }
         break;
     case 0x1B83833F:
         lbl_803C5664[beh->type].unk08(a, beh->unk04);
         lbl_803C5664[beh->unk04].unk04(a);
-        if (fn_8016325C(stream) != 0) {
-            fn_80162610(a, stream, 0x1B83833F);
+        if (fn_8016325C(a->stream) != 0) {
+            fn_80162610(a, a->stream, 0x1B83833F);
         }
         break;
     }
@@ -766,7 +756,7 @@ int RideBehaviourGetType(void* argp)
     return a->behaviour->type;
 }
 
-// Refreshes the ride behaviour: when no ride stream state exists yet, or the
+// Refreshes the ride behaviour: when no ride a->stream state exists yet, or the
 // entity reports a valid ride target, the per-frame ride update runs; the
 // behaviour's type index is returned either way.
 int RideRefreshStreamState(void* argp)
@@ -791,53 +781,51 @@ int RideUpdateAndGetType(void* argp)
     return beh->type;
 }
 
-// Per-frame ride stream handler: refreshes the ride update, re-sends the
-// switch event while the stream reports it is still starting up, and reports
+// Per-frame ride a->stream handler: refreshes the ride update, re-sends the
+// switch event while the a->stream reports it is still starting up, and reports
 // 0 (no ride target), 2 (condition reached) or the behaviour type.
 int RideStreamStateHandler(void* argp)
 {
+    RideBehaviour* beh = ((RideActor*)argp)->behaviour;
     RideActor* a = (RideActor*)argp;
-    RideBehaviour* beh = a->behaviour;
-    u8* stream = a->unk5F4 + (0x894 - 0x5F4);  // 0x894  ride state stream object
 
     RideHostUpdate(a);
-    if (fn_8016325C(stream) == 6) {
-        fn_80162610(a, stream, 0xE6B71BCC);
-        fn_80162610(a, stream, 0x1B83833F);
-    } else if (fn_8016325C(stream) == 7) {
-        fn_80162610(a, stream, 0x968CBE3D);
-        fn_80162610(a, stream, 0x1B83833F);
+    if (fn_8016325C(a->stream) == 6) {
+        fn_80162610(a, a->stream, 0xE6B71BCC);
+        fn_80162610(a, a->stream, 0x1B83833F);
+    } else if (fn_8016325C(a->stream) == 7) {
+        fn_80162610(a, a->stream, 0x968CBE3D);
+        fn_80162610(a, a->stream, 0x1B83833F);
     }
     if (a->unk288 == 0) {
         return 0;
     }
-    if (HasCondition(a->unk270, 4) == 0) {
-        return beh->type;
+    if (HasCondition(a->unk270, 4) != 0) {
+        ConditionSetBit(a->unk270, 4, 0);
+        return 2;
     }
-    ConditionSetBit(a->unk270, 4, 0);
-    return 2;
+    return beh->type;
 }
 
-// Refreshes the ride stream, forwards its startup/end events, then reports 1
+// Refreshes the ride a->stream, forwards its startup/end events, then reports 1
 // while a ride target is linked and the behaviour type otherwise.
 int RideStreamUpdateHandler(void* argp)
 {
+    RideBehaviour* beh = ((RideActor*)argp)->behaviour;
     RideActor* a = (RideActor*)argp;
-    RideBehaviour* beh = a->behaviour;
-    u8* stream = a->unk5F4 + (0x894 - 0x5F4);  // 0x894  ride state stream object
 
     RideHostUpdate(a);
-    if (fn_8016325C(stream) == 6) {
-        fn_80162610(a, stream, 0xE6B71BCC);
-        fn_80162610(a, stream, 0x1B83833F);
-    } else if (fn_8016325C(stream) == 7) {
-        fn_80162610(a, stream, 0x968CBE3D);
-        fn_80162610(a, stream, 0x1B83833F);
+    if (fn_8016325C(a->stream) == 6) {
+        fn_80162610(a, a->stream, 0xE6B71BCC);
+        fn_80162610(a, a->stream, 0x1B83833F);
+    } else if (fn_8016325C(a->stream) == 7) {
+        fn_80162610(a, a->stream, 0x968CBE3D);
+        fn_80162610(a, a->stream, 0x1B83833F);
     }
-    if (a->unk288 == 0) {
-        return beh->type;
+    if (a->unk288 != 0) {
+        return 1;
     }
-    return 1;
+    return beh->type;
 }
 
 // Starts the ride: installs the range-field reset callback, sets the behaviour
@@ -890,12 +878,12 @@ int RideEnterBrokenType(void* argp)
             if (fn_8008E7D0() != 0) {
                 ConditionSetBit(a->unk270, 0x1C, 0);
                 if (HasCondition(a->unk270, 0xE) == 0 && anim != b->unk08) {
-                    fn_8008F230(lbl_804DB150, a->unk0D4, 0, 1);
+                    fn_8008F230(1.5e+02f, a->unk0D4, 0, 1);
                 } else {
-                    fn_8008F230(lbl_804DB120, a->unk0D4, 0, 0);
+                    fn_8008F230(0.0f, a->unk0D4, 0, 0);
                     ConditionSetBit(a->unk270, 0xE, 0);
                 }
-                fn_80090974(lbl_804DB124, a->unk0D4, 0, anim, 9,
+                fn_80090974(1.0f, a->unk0D4, 0, anim, 9,
                             lbl_803C5664[b->type].unk10, a);
                 b->unk08 = anim;
             }
@@ -934,12 +922,12 @@ int RideEnterDamagedType(void* argp)
             if (fn_8008E7D0() != 0) {
                 ConditionSetBit(a->unk270, 0x1C, 0);
                 if (HasCondition(a->unk270, 0xE) == 0 && anim != b->unk08) {
-                    fn_8008F230(lbl_804DB150, a->unk0D4, 0, 1);
+                    fn_8008F230(1.5e+02f, a->unk0D4, 0, 1);
                 } else {
-                    fn_8008F230(lbl_804DB120, a->unk0D4, 0, 0);
+                    fn_8008F230(0.0f, a->unk0D4, 0, 0);
                     ConditionSetBit(a->unk270, 0xE, 0);
                 }
-                fn_80090974(lbl_804DB124, a->unk0D4, 0, anim, 9,
+                fn_80090974(1.0f, a->unk0D4, 0, anim, 9,
                             lbl_803C5664[b->type].unk10, a);
                 b->unk08 = anim;
             }
@@ -952,9 +940,6 @@ int RideEnterDamagedType(void* argp)
 // the animation index from the actor's damage distance and plays the set.
 extern "C" f32 lbl_804D3CFC;
 extern "C" f32 lbl_804D3D00;
-extern "C" f32 lbl_804DB154;
-extern "C" f32 lbl_804DB158;
-extern "C" f32 lbl_804DB15C;
 extern "C" int rand(void);
 
 int RideEnterIntactType(void* argp)
@@ -964,16 +949,16 @@ int RideEnterIntactType(void* argp)
 
     if (beh->type != 1) {
         beh->unk14 = (lbl_804D3D00 - lbl_804D3CFC) *
-                         ((f32)rand() / lbl_804DB154) + lbl_804D3CFC;
+                         ((f32)rand() / 32767.0f) + lbl_804D3CFC;
     }
     beh->type = 1;
     beh->unk04 = 1;
 
     f32 span = (f32)a->state->unk30;
     int idx;
-    if (a->unk904 < lbl_804DB158 * span) {
+    if (a->unk904 < 0.34f * span) {
         idx = 2;
-    } else if (a->unk904 < lbl_804DB15C * span) {
+    } else if (a->unk904 < 0.67f * span) {
         idx = 1;
     } else {
         idx = 0;
@@ -999,12 +984,12 @@ int RideEnterIntactType(void* argp)
             if (fn_8008E7D0() != 0) {
                 ConditionSetBit(a->unk270, 0x1C, 0);
                 if (HasCondition(a->unk270, 0xE) == 0 && anim != b->unk08) {
-                    fn_8008F230(lbl_804DB150, a->unk0D4, 0, 1);
+                    fn_8008F230(1.5e+02f, a->unk0D4, 0, 1);
                 } else {
-                    fn_8008F230(lbl_804DB120, a->unk0D4, 0, 0);
+                    fn_8008F230(0.0f, a->unk0D4, 0, 0);
                     ConditionSetBit(a->unk270, 0xE, 0);
                 }
-                fn_80090974(lbl_804DB124, a->unk0D4, 0, anim, 9,
+                fn_80090974(1.0f, a->unk0D4, 0, anim, 9,
                             lbl_803C5664[b->type].unk10, a);
                 b->unk08 = anim;
             }
@@ -1042,12 +1027,12 @@ int RideEnterIdleType(void* argp)
             if (fn_8008E7D0() != 0) {
                 ConditionSetBit(a->unk270, 0x1C, 0);
                 if (HasCondition(a->unk270, 0xE) == 0 && anim != b->unk08) {
-                    fn_8008F230(lbl_804DB150, a->unk0D4, 0, 1);
+                    fn_8008F230(1.5e+02f, a->unk0D4, 0, 1);
                 } else {
-                    fn_8008F230(lbl_804DB120, a->unk0D4, 0, 0);
+                    fn_8008F230(0.0f, a->unk0D4, 0, 0);
                     ConditionSetBit(a->unk270, 0xE, 0);
                 }
-                fn_80090974(lbl_804DB124, a->unk0D4, 0, anim, 9,
+                fn_80090974(1.0f, a->unk0D4, 0, anim, 9,
                             lbl_803C5664[b->type].unk10, a);
                 b->unk08 = anim;
             }
