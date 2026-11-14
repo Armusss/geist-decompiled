@@ -205,13 +205,6 @@ void EulerNormalize(Vec3* out, Vec3* in);
 void Vec3Set(Vec3* out, float x, float y, float z);
 void DogActorUpdateMove(Actor* actor);
 
-extern float lbl_804D87D8;
-extern float lbl_804D87F4;
-extern float lbl_804D87F8;
-extern float lbl_804D87FC;
-extern float lbl_804D8800;
-extern float lbl_804D8804;
-extern float lbl_804D8808;
 
 extern "C" {
 void* memset(void* dest, int value, unsigned long size);
@@ -508,14 +501,6 @@ int GeistA28A4ClearFollowCondition(Actor* actor, int value) {
 }
 
 extern "C" int rand(void);
-extern double lbl_804D87D0;     // 2^52 bias for the unsigned int -> float idiom
-extern float lbl_804D87DC;      // random range scale
-extern float lbl_804D87E0;      // delay base
-extern float lbl_804D87E4;      // delay scale
-extern float lbl_804D87D8;      // AI timer threshold
-extern float lbl_804D87E8;      // effect fade-in delay
-extern float lbl_804D87EC;      // effect delay
-extern float lbl_804D87F0;      // AI timer reset value
 
 // Behaviour "set target" callback: records the caller's value as the pending AI
 // target and arms a randomised delay before the next state change.
@@ -523,7 +508,7 @@ int DogActorSetTargetDelay(Actor* actor, int value) {
     AiStateMachine* ai = actor->ai;
     u32 roll = rand();
     ai->unk14 = value;
-    ai->unk20 = lbl_804D87E4 * ((float)roll / lbl_804D87DC) + lbl_804D87E0;
+    ai->unk20 = 6000.0f * ((float)roll / 32767.0f) + 2000.0f;
     return 1;
 }
 
@@ -588,7 +573,7 @@ int DogActorChooseAiSubState(Actor* actor) {
         return 0x0d;
     if (HasCondition(&actor->conditions, 4) != 0) {
         ConditionSetBit(&actor->conditions, 4, 0);
-        if (ai->unk1C <= lbl_804D87D8)
+        if (ai->unk1C <= 0.0f)
             return 0x16;
     }
 
@@ -626,9 +611,9 @@ int DogActorChooseAiSubState(Actor* actor) {
                                       actor->context->value1C,
                                       lbl_803AAAD8[anim->state].unk00,
                                       subState, 0);
-            fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+            fn_8008F230(100.0f, actor->zone, 0, 1);
             ConditionSetBit(&actor->conditions, 0, 0);
-            fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 1,
+            fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
                         lbl_803AAAD8[anim->state].unk10, actor);
             if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
                 fn_8016EEF4(anim->unk28);
@@ -700,7 +685,7 @@ int GeistA72C0QueryState(Actor* actor) {
         return 0x14;
     if (HasCondition(&actor->conditions, 4) != 0) {
         ConditionSetBit(&actor->conditions, 4, 0);
-        if (ai->unk1C <= lbl_804D87D8)
+        if (ai->unk1C <= 0.0f)
             return 0x16;
     }
     return ai->state;
@@ -756,7 +741,7 @@ int DogActorChooseIndexedSubState(Actor* actor) {
         return 0x0d;
     if (HasCondition(&actor->conditions, 4) != 0) {
         ConditionSetBit(&actor->conditions, 4, 0);
-        if (ai->unk1C <= lbl_804D87D8)
+        if (ai->unk1C <= 0.0f)
             return 0x16;
     }
     if (MemFlagIsSet(&actor->conditions, 9) != 0) {
@@ -792,7 +777,7 @@ int DogActorChooseZoneSubState(Actor* actor) {
         return 0x0d;
     if (HasCondition(&actor->conditions, 4) != 0) {
         ConditionSetBit(&actor->conditions, 4, 0);
-        if (ai->unk1C <= lbl_804D87D8)
+        if (ai->unk1C <= 0.0f)
             return 0x16;
     }
 
@@ -832,7 +817,7 @@ int DogActorChooseFlagSubState(Actor* actor) {
         return 0x0d;
     if (HasCondition(&actor->conditions, 4) != 0) {
         ConditionSetBit(&actor->conditions, 4, 0);
-        if (ai->unk1C <= lbl_804D87D8)
+        if (ai->unk1C <= 0.0f)
             return 0x16;
     }
 
@@ -846,7 +831,7 @@ int DogActorChooseFlagSubState(Actor* actor) {
     if (MemFlagIsSet(&actor->conditions, 0x0f) != 0)
         return 3;
     if (MemFlagIsSet(&actor->conditions, 0x10) != 0) {
-        if (ai->unk20 <= lbl_804D87D8)
+        if (ai->unk20 <= 0.0f)
             return 5;
         return ai->state;
     }
@@ -871,7 +856,7 @@ int DogActorChooseZoneFlagSubState(Actor* actor) {
         return 0x0e;
     if (HasCondition(&actor->conditions, 4) != 0) {
         ConditionSetBit(&actor->conditions, 4, 0);
-        if (ai->unk1C <= lbl_804D87D8)
+        if (ai->unk1C <= 0.0f)
             return 0x16;
     }
 
@@ -913,7 +898,7 @@ int GeistA28A4StateQuery(Actor* actor) {
         return 0x0d;
     if (HasCondition(&actor->conditions, 4) != 0) {
         ConditionSetBit(&actor->conditions, 4, 0);
-        if (ai->unk1C <= lbl_804D87D8)
+        if (ai->unk1C <= 0.0f)
             return 0x16;
     }
 
@@ -945,7 +930,7 @@ int GeistA28A4StateQuery(Actor* actor) {
     } else if (MemFlagIsSet(&actor->conditions, 0x0e) == 0) {
         return 0;
     }
-    if (ai->unk20 <= lbl_804D87D8)
+    if (ai->unk20 <= 0.0f)
         return 1;
     return ai->state;
 }
@@ -999,9 +984,9 @@ int GeistA7DA0EnterDeathState(Actor* actor) {
             ai->unk04 = fn_800A1BC8(actor->context->value14,
                                     actor->context->value1C,
                                     lbl_803AAAD8[ai->state].unk00, result, 0);
-            fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+            fn_8008F230(100.0f, actor->zone, 0, 1);
             ConditionSetBit(&actor->conditions, 0, 1);
-            fn_80090974(lbl_804D87EC, actor->zone, 0, ai->unk04, 0x18,
+            fn_80090974(1.0f, actor->zone, 0, ai->unk04, 0x18,
                         lbl_803AAAD8[ai->state].unk10, actor);
             if (ai->unk28 != -1 && ai->state != 0 && ai->state != 1) {
                 fn_8016EEF4(ai->unk28);
@@ -1023,7 +1008,7 @@ int GeistA7DA0EnterDeathState(Actor* actor) {
 int GeistA7F94EnterFleeState(Actor* actor) {
     AiStateMachine* ai = actor->ai;
 
-    ai->unk1C = lbl_804D87F0;
+    ai->unk1C = 1500.0f;
     ai->unk14 = ai->state;
     ai->state = 0x16;
     ai->unk10 = ai->unk0C;
@@ -1049,9 +1034,9 @@ int GeistA7F94EnterFleeState(Actor* actor) {
         ai->unk04 = fn_800A1BC8(actor->context->value14,
                                 actor->context->value1C,
                                 lbl_803AAAD8[ai->state].unk00, sub, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, ai->unk04, 8,
+        fn_80090974(1.0f, actor->zone, 0, ai->unk04, 8,
                     lbl_803AAAD8[ai->state].unk10, actor);
         if (ai->unk28 != -1 && ai->state != 0 && ai->state != 1) {
             fn_8016EEF4(ai->unk28);
@@ -1121,9 +1106,9 @@ int GeistA81D0EnterState19(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, 0, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 0);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 1,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -1143,9 +1128,9 @@ int GeistA8370EnterState18(Actor* actor) {
 
     AiStateMachine* ai = actor->ai;
     Vec3 zero;
-    zero.x = lbl_804D87D8;
-    zero.y = lbl_804D87D8;
-    zero.z = lbl_804D87D8;
+    zero.x = 0.0f;
+    zero.y = 0.0f;
+    zero.z = 0.0f;
 
     actor->unk288 = 0;
     actor->unk26C = 0;
@@ -1176,9 +1161,9 @@ int GeistA8370EnterState18(Actor* actor) {
             anim->unk04 = fn_800A1BC8(actor->context->value14,
                                       actor->context->value1C,
                                       lbl_803AAAD8[anim->state].unk00, 0, 0);
-            fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+            fn_8008F230(100.0f, actor->zone, 0, 1);
             ConditionSetBit(&actor->conditions, 0, 0);
-            fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 1,
+            fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
                         lbl_803AAAD8[anim->state].unk10, actor);
             if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
                 fn_8016EEF4(anim->unk28);
@@ -1227,9 +1212,9 @@ int GeistA85BCEnterState17(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   rand() % count, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 0);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 1,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -1273,9 +1258,9 @@ int GeistA875CEnterState16(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, dir, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 0);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 1,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -1313,9 +1298,9 @@ int GeistA8940EnterState15(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   rand() % count, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 0);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 1,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -1356,9 +1341,9 @@ int GeistA8AE0EnterState14(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   rand() % count, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 9,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -1396,9 +1381,9 @@ int GeistA8C98EnterState13(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   0, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 0x18,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 0x18,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -1435,9 +1420,9 @@ int GeistA8E2CEnterState12(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   2, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 9,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -1475,9 +1460,9 @@ int GeistA8FC4EnterState11(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   1, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 9,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -1515,9 +1500,9 @@ int GeistA9158EnterState10(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   0, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 9,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -1557,9 +1542,9 @@ int GeistA92ECEnterState9(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, 2, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 0);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 1,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -1598,9 +1583,9 @@ int GeistA9484EnterState8(Actor* actor) {
             anim->unk04 = fn_800A1BC8(actor->context->value14,
                                       actor->context->value1C,
                                       lbl_803AAAD8[anim->state].unk00, 1, 0);
-            fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+            fn_8008F230(100.0f, actor->zone, 0, 1);
             ConditionSetBit(&actor->conditions, 0, 0);
-            fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 1,
+            fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
                         lbl_803AAAD8[anim->state].unk10, actor);
             if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
                 fn_8016EEF4(anim->unk28);
@@ -1623,9 +1608,9 @@ int GeistA9484EnterState8(Actor* actor) {
             anim->unk04 = fn_800A1BC8(actor->context->value14,
                                       actor->context->value1C,
                                       lbl_803AAAD8[anim->state].unk00, 0, 0);
-            fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+            fn_8008F230(100.0f, actor->zone, 0, 1);
             ConditionSetBit(&actor->conditions, 0, 0);
-            fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 1,
+            fn_80090974(1.0f, actor->zone, 0, anim->unk04, 1,
                         lbl_803AAAD8[anim->state].unk10, actor);
             if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
                 fn_8016EEF4(anim->unk28);
@@ -1668,9 +1653,9 @@ int GeistA9798EnterState7(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, index, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 9,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -1713,9 +1698,9 @@ int GeistA9968EnterState6(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, index, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 9,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -1753,9 +1738,9 @@ int GeistA9B0CEnterState5(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, index, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 9,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -1793,9 +1778,9 @@ int GeistA9CB0EnterState4(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, index, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 9,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -1833,9 +1818,9 @@ int GeistA9E50EnterState3(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, index, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 9,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -1873,9 +1858,9 @@ int GeistA9FF0EnterState2(Actor* actor) {
         anim->unk04 = fn_800A1BC8(actor->context->value14,
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00, index, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 9,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -1918,9 +1903,9 @@ int DogActorEnterIdleState(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   index, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 9,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -1966,9 +1951,9 @@ int DogActorEnterRestState(Actor* actor) {
                                   actor->context->value1C,
                                   lbl_803AAAD8[anim->state].unk00,
                                   index, 0);
-        fn_8008F230(lbl_804D87E8, actor->zone, 0, 1);
+        fn_8008F230(100.0f, actor->zone, 0, 1);
         ConditionSetBit(&actor->conditions, 0, 1);
-        fn_80090974(lbl_804D87EC, actor->zone, 0, anim->unk04, 9,
+        fn_80090974(1.0f, actor->zone, 0, anim->unk04, 9,
                     lbl_803AAAD8[anim->state].unk10, actor);
         if (anim->unk28 != -1 && anim->state != 0 && anim->state != 1) {
             fn_8016EEF4(anim->unk28);
@@ -2002,7 +1987,7 @@ void DogActorUpdateMove(Actor* actor) {
               actor->unk0D0);
 
     if (HasCondition(&actor->conditions, 0x0c) != 0) {
-        actor->unk918 = lbl_804D87F4;
+        actor->unk918 = -999999.0f;
         fn_800CC2D0(actor, 0, 0, 0);
         if (fn_8008EA9C(actor->zone, 0) != 0) {
             if (HasCondition(&actor->conditions, 0x0c) != 0) {
@@ -2016,7 +2001,7 @@ void DogActorUpdateMove(Actor* actor) {
                 actor->cellY = (int)actor->placement->y;
                 actor->cellZ = (int)actor->placement->z;
             } else {
-                Vec3Set(&angle, actor->euler.z, lbl_804D87D8, lbl_804D87D8);
+                Vec3Set(&angle, actor->euler.z, 0.0f, 0.0f);
                 EulerNormalize(&angle, &angle);
                 MtxSetEuler(&place.m, &angle);
                 place.pos.x = (float)actor->cellX;
@@ -2030,11 +2015,11 @@ void DogActorUpdateMove(Actor* actor) {
     }
 
     if (HasCondition(&actor->conditions, 0x0d) != 0) {
-        actor->unk918 = lbl_804D87F4;
+        actor->unk918 = -999999.0f;
         float f = fn_800CC2D0(actor, 0, 0, 0);
-        if (f != lbl_804D87F4) {
+        if (f != -999999.0f) {
             actor->pos.z = f + actor->placement->z;
-            actor->placement->z = lbl_804D87D8;
+            actor->placement->z = 0.0f;
         }
         actor->cellZ = (int)actor->pos.z;
 
@@ -2042,12 +2027,12 @@ void DogActorUpdateMove(Actor* actor) {
         fn_800A0168(&mtx, &mtx);
         fn_800A0030(&offset, &mtx, &offset);
 
-        actor->unk240.x = lbl_804D87D8;
-        actor->unk240.y = lbl_804D87D8;
-        actor->unk240.z = lbl_804D87D8;
+        actor->unk240.x = 0.0f;
+        actor->unk240.y = 0.0f;
+        actor->unk240.z = 0.0f;
 
         EulerNormalize(&actor->euler, &actor->euler);
-        Vec3Set(&angle, actor->euler.z, lbl_804D87D8, lbl_804D87D8);
+        Vec3Set(&angle, actor->euler.z, 0.0f, 0.0f);
         EulerNormalize(&angle, &angle);
         MtxSetEuler(&place.m, &angle);
         place.pos.x = (float)actor->cellX;
@@ -2057,7 +2042,7 @@ void DogActorUpdateMove(Actor* actor) {
 
         ActorGetMatrix(&mtx, actor);
         fn_800A0168(&mtx, &mtx);
-        offset.z = lbl_804D87D8;
+        offset.z = 0.0f;
         fn_800A0030(&offset, &mtx, &offset);
         place.pos.x += offset.x;
         place.pos.y += offset.y;
@@ -2076,15 +2061,15 @@ void DogActorUpdateMove(Actor* actor) {
         value = limit;
     actor->euler.x = value;
 
-    actor->unk918 = lbl_804D87F4;
+    actor->unk918 = -999999.0f;
     float f = fn_800CC2D0(actor, 0, 0, 0);
-    if (f != lbl_804D87F4)
+    if (f != -999999.0f)
         actor->pos.z = f + actor->placement->z;
 
     actor->cellZ = (int)actor->pos.z;
-    actor->placement->x = lbl_804D87D8;
-    actor->placement->y = lbl_804D87D8;
-    actor->placement->z = lbl_804D87D8;
+    actor->placement->x = 0.0f;
+    actor->placement->y = 0.0f;
+    actor->placement->z = 0.0f;
 
     if (HasCondition(&actor->conditions, 0) == 0 &&
         MemFlagIsSet(&actor->conditions, 4) == 0 &&
@@ -2100,31 +2085,31 @@ void DogActorUpdateMove(Actor* actor) {
     float t = actor->unk27C;
     float speed;
     if (HasCondition(&actor->conditions, 0x28) != 0)
-        speed = lbl_804D87F8 * actor->context->unkC0;
+        speed = 4.0f * actor->context->unkC0;
     else if (HasCondition(&actor->conditions, 0x27) != 0)
         speed = actor->context->unkC0;
     else
-        speed = lbl_804D87FC * actor->context->unkC0;
+        speed = 5.5f * actor->context->unkC0;
 
-    if (s > lbl_804D8800) {
-        float d = (speed * actor->unk138) / lbl_804D8804;
+    if (s > 1.1920929e-07f) {
+        float d = (speed * actor->unk138) / 1000.0f;
         if (d >= s)
             d = s;
         actor->euler.z = actor->euler.z + d;
-    } else if (s < lbl_804D8808) {
-        float d = -(speed * actor->unk138 / lbl_804D8804);
+    } else if (s < -3.1861838222649046e-58) {
+        float d = -(speed * actor->unk138 / 1000.0f);
         if (d <= s)
             d = s;
         actor->euler.z = actor->euler.z + d;
     }
 
-    if (t > lbl_804D8800) {
-        float d = (actor->context->unkC0 * actor->unk138) / lbl_804D8804;
+    if (t > 1.1920929e-07f) {
+        float d = (actor->context->unkC0 * actor->unk138) / 1000.0f;
         if (d >= t)
             d = t;
         actor->euler.x = actor->euler.x + d;
-    } else if (t < lbl_804D8808) {
-        float d = -(actor->context->unkC0 * actor->unk138 / lbl_804D8804);
+    } else if (t < -3.1861838222649046e-58) {
+        float d = -(actor->context->unkC0 * actor->unk138 / 1000.0f);
         if (d <= t)
             d = t;
         actor->euler.x = actor->euler.x + d;
@@ -2134,26 +2119,26 @@ void DogActorUpdateMove(Actor* actor) {
         ActorGetMatrix(&mtx, actor);
         fn_800A0168(&mtx, &mtx);
         fn_800A0030(&offset, &mtx, &offset);
-        if (actor->unk138 > lbl_804D87D8) {
+        if (actor->unk138 > 0.0f) {
             actor->unk240.x = offset.x;
             actor->unk240.y = offset.y;
             actor->unk240.z = offset.z;
-            actor->unk240.z = lbl_804D87D8;
-            float scale = lbl_804D8804 / actor->unk138;
+            actor->unk240.z = 0.0f;
+            float scale = 1000.0f / actor->unk138;
             actor->unk240.x = actor->unk240.x * scale;
             actor->unk240.y = actor->unk240.y * scale;
             actor->unk240.z = actor->unk240.z * scale;
         } else {
-            actor->unk240.x = lbl_804D87D8;
-            actor->unk240.y = lbl_804D87D8;
-            actor->unk240.z = lbl_804D87D8;
+            actor->unk240.x = 0.0f;
+            actor->unk240.y = 0.0f;
+            actor->unk240.z = 0.0f;
         }
     } else if (HasCondition(&actor->conditions, 0x2d) == 0) {
         fn_800CAD0C(actor, handle);
     }
 
     EulerNormalize(&actor->euler, &actor->euler);
-    Vec3Set(&angle, actor->euler.z, lbl_804D87D8, lbl_804D87D8);
+    Vec3Set(&angle, actor->euler.z, 0.0f, 0.0f);
     MtxSetEuler(&place.m, &angle);
     place.pos.x = (float)actor->cellX;
     place.pos.y = (float)actor->cellY;
@@ -2162,8 +2147,8 @@ void DogActorUpdateMove(Actor* actor) {
 
     ActorGetMatrix(&mtx, actor);
     fn_800A0168(&mtx, &mtx);
-    offset.y = lbl_804D87D8;
-    offset.z = lbl_804D87D8;
+    offset.y = 0.0f;
+    offset.z = 0.0f;
     fn_800A0030(&offset, &mtx, &offset);
     place.pos.x += offset.x;
     place.pos.y += offset.y;
