@@ -26,8 +26,7 @@ int fclose(FILE* file) {
 }
 
 int fflush(FILE* file) {
-    long pos;
-    int ioresult;
+    fpos_t position;
 
     if (file == NULL) {
         return __flush_all();
@@ -54,23 +53,18 @@ int fflush(FILE* file) {
         return 0;
     }
 
-    if (file->file_mode.file_kind == __disk_file) {
-        pos = ftell(file);
-    } else {
-        pos = 0;
-    }
+    // MSL shape: fpos_t is unsigned, so the `< 0` test folds away but still costs the saved r29.
+    if (file->file_mode.file_kind != __disk_file || (position = ftell(file)) < 0)
+        position = 0;
 
-    ioresult = __flush_buffer(file, 0);
-
-    // Status: the only difference left in this unit; retail reserves r29 here but compares r3 directly.
-    if (ioresult) {
+    if (__flush_buffer(file, 0)) {
         file->file_state.error = 1;
         file->buffer_length = 0;
         return -1;
     }
 
     file->file_state.io_state = __neutral;
-    file->position = pos;
+    file->position = position;
     file->buffer_length = 0;
     return 0;
 }
