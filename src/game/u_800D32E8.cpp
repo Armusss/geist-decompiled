@@ -267,7 +267,7 @@ extern "C" void C_QUATSlerp(float t, const float* from, const float* to,
                             float* out);
 extern "C" int fn_80026680(int id, void (*callback)(void), int arg);
 extern "C" int fn_80026660(int id, void (*callback)(void), int arg);
-extern "C" void fn_800D8664(u32 param_1, int* param_2, int param_3);
+extern "C" void fn_800D8664(u32 fileId, int* data, int size);
 extern "C" int lbl_804D2BD4;
 extern "C" double lbl_804D7050;
 extern "C" float lbl_804D70A8;
@@ -2773,7 +2773,7 @@ extern "C" void fn_800D72CC(void* param)
 // Parse the emitter sub-descriptor pool out of a loaded asset chunk: validate
 // the header, carve the descriptor and spawn-list arrays out of the raw buffer
 // and point every descriptor at its own slice of the two lists.
-extern "C" void fn_800D8664(u32 param_1, int* param_2, int param_3)
+extern "C" void fn_800D8664(u32 fileId, int* data, int size)
 {
     EmitterSubList* hdr;
     EmitterSub* sub;
@@ -2784,13 +2784,13 @@ extern "C" void fn_800D8664(u32 param_1, int* param_2, int param_3)
     int i;
     int j;
 
-    if (param_3 > 0) {
-        lbl_804D4950 = (EmitterSubList*)param_2;
+    if (size > 0) {
+        lbl_804D4950 = (EmitterSubList*)data;
     } else {
         lbl_804D4950 = 0;
     }
-    param_2 += 8;
-    baseSize = param_3 - 0x20;
+    data += 8;
+    baseSize = size - 0x20;
     FileFlushBuffer(lbl_804D4950, 0x20);
     if (lbl_804D4950->magic != 0xD) {
         lbl_804D4950 = 0;
@@ -2798,19 +2798,19 @@ extern "C" void fn_800D8664(u32 param_1, int* param_2, int param_3)
     }
     hdr = lbl_804D4950;
     if (baseSize > 0 && hdr->count * 0xEC > 0) {
-        hdr->subs = (EmitterSub*)param_2;
+        hdr->subs = (EmitterSub*)data;
     } else {
         hdr->subs = 0;
     }
     remaining = baseSize - hdr->count * 0xEC;
     if (remaining > 0 && hdr->countA * 0x2C > 0) {
-        hdr->listA = (EmitterParticle*)(param_2 + hdr->count * 0x3B);
+        hdr->listA = (EmitterParticle*)(data + hdr->count * 0x3B);
     } else {
         hdr->listA = 0;
     }
     FileFlushBuffer(hdr->listA, hdr->countA * 0x2C);
     if (remaining - hdr->countA * 0x2C > 0 && hdr->countB * 0x2C > 0) {
-        hdr->listB = (EmitterParticle*)(param_2 + hdr->count * 0x3B +
+        hdr->listB = (EmitterParticle*)(data + hdr->count * 0x3B +
                                         hdr->countA * 0xB);
     } else {
         hdr->listB = 0;
