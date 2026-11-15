@@ -235,7 +235,7 @@ void BoneSetMatrix(void* bone, Mtx34* m);                  // 0x800A0AC4
 void BoneGetMatrix(Mtx34* m, void* bone);                  // 0x800A0EF0
 void ActorGetMatrix(Mtx34* m, Actor* a);                   // 0x8009ED70
 void PlacementToMatrix(Mtx34* m, PlaceF* p);               // 0x8009EF04
-void RadToFixed(IVec3* out, Vec3* in);                     // 0x8016D220
+void RadToFixed(IVec3* out, const Vec3* in);                     // 0x8016D220
 void VecSwapXY2(IVec3* out, IVec3* in);                    // 0x8016D18C
 void MakeVec(IVec3* out, int x, int y, int z);             // 0x8016D430
 int PadPressed(int, int, int);                             // 0x800DC930

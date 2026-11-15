@@ -564,7 +564,7 @@ void fn_80090778(double a, int h, int b, int c, int d, int e, int f);
 void fn_80090974(double a, int h, int b, int c, int d, int e, int f);
 }
 void VecSwapXY(IVec3* out, IVec3* in);
-void FixedToRad(Vec3* out, IVec3* in);
+void FixedToRad(Vec3* out, const IVec3* in);
 
 // Message handler of the light actors.
 int LightFxMsg(int msg, Msg* m) {

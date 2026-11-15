@@ -391,7 +391,7 @@ void DebugDrawBoneBox(Vec3*, void*, int, int, int);
 extern "C" void* fn_80037B6C(int);
 extern "C" u32 fn_80037230(int, u16);
 Vec3* ModelBonePositions(int);
-void Vec3Copy(Vec3*, Vec3*);
+void Vec3Copy(Vec3*, const Vec3*);
 
 int ActorFn8002378C(Actor* a, int id, int mtx, int msgFn, int model,
                                int ptr40, int p6) {

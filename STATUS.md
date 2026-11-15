@@ -41,7 +41,8 @@ published; generate your own from your copy of the game if you want it.
   splits; convert the lbl_804DAE* externs to literals and check pool order.
 
 **GC/2.0 const sweep (opus-const, 2026-11-15), merged a7eb8c6:** on GC/2.0 no unit lost a match (counts only rise).
-Proposals awaiting the user (variants in ~/geist-work/ds/opus-const-tools/):
+Proposals (variants in ~/geist-work/ds/opus-const-tools/); the first four were APPLIED 2026-11-15 (see G4 list; the agent's two
+angle/Euler files turned out to be one file, u_8016D170, because their .sdata2 pools are contiguous and 4-aligned):
 - u_8016C244: split new file .text 0x8016D170-0x8016D440 + .sdata2 0x804D8028-0x804D803C on GC/2.0 (8/8; duplicate
   11.377778f and 0x4330 double). Mangled renames FixedToRad/RadToFixed/VecToAngles -> PC args.
 - Msx: split C .text 0x8016D440-0x8016D6BC/.sdata2 0x804D803C-0x804D804C (8/8 on 2.0) and D .text 0x8016D6BC-
@@ -487,6 +488,14 @@ is now game/u_8019FDD0.cpp.
 Files on GC/2.0: **u_8012071C** (qsort comparators 0x80120A78/0x80120A9C, pre-stwu loads; 1.3.2 cannot).
 **u_800E0CB8** (Vec3 helpers, user-approved 2026-11-15): all 5 functions have pre-stwu loads; GC/2.0 matches the
 whole file (AUDIT OK) once the input vectors are `const` pointers. GC/1.3.2 never schedules them with any shape.
+**u_800D32E8** and **u_8009DE94** (user-approved 2026-11-15): whole-file GC/2.0; EmitterHitParamCompare (`const void*`)
+and fn_800A089C (`const int*`) match only on 2.0; every other function gives the same result on both compilers.
+**u_8016D170** (new file split from u_8016C244 + Msx, user-approved 2026-11-15): .text 0x8016D170-0x8016D6BC, .sdata2
+0x804D8028-0x804D804C (own 11.377778f / 0x4330 double copies; one 4-aligned pool). 16/16 on GC/2.0, Matching.
+**u_8016D6BC** (new file split from Msx): .text 0x8016D6BC-0x8016E20C, .sdata2 0x804D8050-0x804D8068 (own 0x4330
+double). 11/14 on GC/2.0 (fn_8016D6BC 12, fn_8016DA30 32, fn_8016DE2C 30).
+Renames (user-approved): FixedToRad/RadToFixed/VecToAngles/Vec3Copy take const inputs (PC mangling); lbl_804D8048
+resized 8 -> 4 (0x804D804C is alignment padding).
 History: on 2026-10-13 the Lead briefly switched the whole game block to 2.0 after checking only matched
 files. That missed the plane function, so it was reverted.
 

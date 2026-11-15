@@ -1,5 +1,5 @@
 // u_8016C244.cpp: the "collect_point" ghost behaviour (a ghost collectible that a nearby player picks
-// up) plus the 12-bit fixed-point angle helpers it uses. The behaviour's descriptor (enter/done/update/
+// up) The 12-bit fixed-point angle helpers it uses are in u_8016D170.cpp. The behaviour's descriptor (enter/done/update/
 // name) lives in .data; the action-name string pool is the same header table every actor file carries.
 // Reconstructed from the retail DOL; names are descriptive guesses.
 
@@ -176,8 +176,6 @@ int fn_800BB218(Actor* actor, int flags, Vec3* from, Vec3* to, Actor* actor2,
 void fn_8009F63C(void* mtx, Actor* actor);
 void fn_800E0E9C(IVec3* out, IVec3* in, int scale);
 void fn_8009F44C(IVec3* out, Mtx34* mtx, IVec3* in);
-void fn_8016D430(IVec3* out, int a, int b, int c);
-void fn_8016D330(IVec3* out, IVec3* in);
 int fn_800A1558(int a, int b);
 int fn_800A1688(int a);
 int fn_800A1624(int a);
@@ -218,14 +216,15 @@ static BehType gCollectBehTypes[] = {
     { CollectEnter, CollectDone, CollectUpdate, "" },
 };
 
-// The retail file carries this unit's two source files; the helpers below are the angle math.
+// Angle helpers from u_8016D170.cpp.
 void VecSwapXY(IVec3* out, IVec3* in);
 void VecSwapXY2(IVec3* out, IVec3* in);
-void FixedToRad(Vec3* out, IVec3* in);
-void RadToFixed(IVec3* out, Vec3* in);
-void VecToAngles(IVec3* out, IVec3* in);
+void FixedToRad(Vec3* out, const IVec3* in);
+void RadToFixed(IVec3* out, const Vec3* in);
+void VecToAngles(IVec3* out, const IVec3* in);
 void RotateVec(IVec3* out, IVec3* in);
 void WrapAngle(IVec3* out, IVec3* in);
+void MakeVec(IVec3* out, int a, int b, int c);
 
 // 0x8016C244: per-frame update.
 int CollectUpdate(void* p) {
@@ -257,8 +256,8 @@ int CollectUpdate(void* p) {
             pos.y = (float)o->pos.y;
             pos.z = (float)o->pos.z;
             fn_8009F63C(&mtx, o);
-            fn_8016D430(&ang, (int)(11.377778f * (float)(rand() % 360)), 0, 0);
-            fn_8016D330(&vec, &ang);
+            MakeVec(&ang, (int)(11.377778f * (float)(rand() % 360)), 0, 0);
+            RotateVec(&vec, &ang);
             fn_800E0E9C(&vec, &vec, (rand() % 10 + 1) * 500);
             fn_8009F44C(&vec, &mtx, &vec);
             int iy = o->pos.y + vec.y;
@@ -310,8 +309,8 @@ int CollectEnter(void* p) {
     pos.y = (float)o->pos.y;
     pos.z = (float)o->pos.z;
     fn_8009F63C(&mtx, o);
-    fn_8016D430(&ang, (int)(11.377778f * (float)(rand() % 360)), 0, 0);
-    fn_8016D330(&vec, &ang);
+    MakeVec(&ang, (int)(11.377778f * (float)(rand() % 360)), 0, 0);
+    RotateVec(&vec, &ang);
     fn_800E0E9C(&vec, &vec, (rand() % 10 + 1) * 500);
     fn_8009F44C(&vec, &mtx, &vec);
     {
@@ -620,112 +619,4 @@ void CollectInit(Actor* o) {
     ConditionSetBit(o->cond, 1, 1);
     ConditionUpdateBit(o->cond, 6, 0);
     fn_800B6CAC(o, (void*)fn_800B5028);
-}
-
-// 0x8016D170: swap x and y (used by the ghost action code).
-void VecSwapXY(IVec3* out, IVec3* in) {
-    int t = in->y;
-    int x = in->x;
-
-    out->x = t;
-    t = in->z;
-    out->y = x;
-    out->z = t;
-}
-
-// 0x8016D18C: swap x and y (second copy used by the angle helpers).
-void VecSwapXY2(IVec3* out, IVec3* in) {
-    int t = in->y;
-    int x = in->x;
-
-    out->x = t;
-    t = in->z;
-    out->y = x;
-    out->z = t;
-}
-
-// 0x8016D1A8: 12-bit fixed point -> degrees.
-void FixedToRad(Vec3* out, IVec3* in) {
-    float z = 0.087890625f * (float)in->z;
-    float x = 0.087890625f * (float)in->x;
-    float y = 0.087890625f * (float)in->y;
-    out->z = z;
-    out->x = x;
-    out->y = y;
-}
-
-// 0x8016D220: degrees -> 12-bit fixed point.
-void RadToFixed(IVec3* out, Vec3* in) {
-    float z = 11.377778f * in->z;
-    float x = 11.377778f * in->x;
-    float y = 11.377778f * in->y;
-    out->z = (int)z;
-    out->x = (int)x;
-    out->y = (int)y;
-}
-
-// 0x8016D278: horizontal direction of a vector, as fixed-point angles.
-void VecToAngles(IVec3* out, IVec3* in) {
-    int len2 = in->y * in->y + in->x * in->x;
-    int n;
-
-    if (len2 <= 0) {
-        n = 0;
-    } else {
-        n = (int)(float)sqrt((double)len2);
-    }
-    out->z = fn_800A1558(-in->x, in->y);
-    out->x = fn_800A1558(in->z, n);
-    out->y = 0;
-}
-
-// 0x8016D330: rotate a fixed-point vector by another.
-void RotateVec(IVec3* out, IVec3* in) {
-    int a;
-    int b;
-    int sina;
-    int cosa;
-    int sinb;
-    int cosb;
-
-    a = in->z;
-    b = in->x;
-    cosa = fn_800A1688(a);
-    sina = fn_800A1624(a);
-    cosb = fn_800A1688(b);
-    sinb = fn_800A1624(b);
-    out->x = (-sina * cosb) / 4096;
-    out->y = (cosa * cosb) / 4096;
-    out->z = sinb;
-}
-
-// 0x8016D3B4: wrap each fixed-point angle into [-0x800, 0x7FF].
-void WrapAngle(IVec3* out, IVec3* in) {
-    int v;
-
-    v = in->z;
-    if (v > 0x7FF) {
-        out->z = v - 0x1000;
-    } else if (v < -0x800) {
-        out->z = v + 0x1000;
-    }
-    v = in->x;
-    if (v > 0x7FF) {
-        out->x = v - 0x1000;
-    } else if (v < -0x800) {
-        out->x = v + 0x1000;
-    }
-    v = in->y;
-    if (v > 0x7FF) {
-        out->y = v - 0x1000;
-    } else if (v < -0x800) {
-        out->y = v + 0x1000;
-    }
-}
-
-// 0x8016D430: build a fixed-point vector from three components (z first).
-void MakeVec(IVec3* out, int a, int b, int c) {
-    out->z = a;
-    out->x = b;
-    out->y = c;
 }

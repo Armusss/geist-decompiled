@@ -432,13 +432,21 @@ game/u_8016A774.cpp:
 	.sdata2     start:0x804D7FE8 end:0x804D7FF8
 
 game/u_8016C244.cpp:
-	.text       start:0x8016C244 end:0x8016D440
+	.text       start:0x8016C244 end:0x8016D170
 	.rodata     start:0x803469D0 end:0x80346A28
 	.data       start:0x803A7C78 end:0x803A7C88
-	.sdata2     start:0x804D7FF8 end:0x804D803C
+	.sdata2     start:0x804D7FF8 end:0x804D8028
+
+game/u_8016D170.cpp:
+	.text       start:0x8016D170 end:0x8016D6BC
+	.sdata2     start:0x804D8028 end:0x804D804C
+
+game/u_8016D6BC.cpp:
+	.text       start:0x8016D6BC end:0x8016E20C
+	.sdata2     start:0x804D8050 end:0x804D8068
 
 game/Msx.cpp:
-	.text       start:0x8016D440 end:0x80175D60
+	.text       start:0x8016E20C end:0x80175D60
 	.ctors      start:0x80341220 end:0x80341224
 
 game/u_80175D60.cpp:

@@ -260,7 +260,7 @@ void ActorRender(Actor* a);                                      // 0x800C7CE8
 void GhostNotify(void* ghost, int a, int b);                     // 0x80154594
 void ActorRefreshHostState(Actor* actor, int a);                // 0x80022B1C
 int ActorVisibleFlag(Actor* actor);                              // 0x80022B10
-void VecToAngles(IVec3* out, IVec3* in);                         // 0x8016D278
+void VecToAngles(IVec3* out, const IVec3* in);                         // 0x8016D278
 int fn_8007EF48(int a, int b, const char* text, int c, int d, int e, int f, int g, int h,
                 int ghost);                                      // 0x8007EF48
 void FontRelease(int font);                                      // 0x8007C8A4

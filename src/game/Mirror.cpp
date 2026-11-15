@@ -107,7 +107,7 @@ int ModelBoneCount(int model);                           // 0x80037BEC
 int ModelBoneName(int model, int bone);                  // 0x80018B44
 int ModelNodeFind(int model, int name);                  // 0x80037464
 Vec3* ModelBonePositions(int model);                     // 0x8003A14C
-void Vec3Copy(Vec3* out, Vec3* in);                      // 0x8016D7A8
+void Vec3Copy(Vec3* out, const Vec3* in);                      // 0x8016D7A8
 void BoneWorldMatrix(Mtx34* out, Bone* bone, float* pos); // 0x800A09A8
 void ModelNodeSetup(int model, int node, int a, int b);  // 0x80038AE8
 void ShotFire(Actor* a, int model, int node, float speed, float size, Vec3* org, Mtx34* m, Vec3* pos, Vec3* dir); // 0x80231984

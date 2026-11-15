@@ -305,7 +305,7 @@ class Actor;
 
 int OwnerId(Owner* owner);
 void VecSwapXY2(IVec3* dst, IVec3* src);
-void VecToAngles(IVec3* dst, IVec3* src);
+void VecToAngles(IVec3* dst, const IVec3* src);
 void MemCopyVec3(float* dst, float* src);
 void ActorAim(int* out, Actor* actor, int flag);
 void ModelNodeSetup(int a, int b, int c, int d);

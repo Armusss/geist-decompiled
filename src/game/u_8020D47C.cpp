@@ -183,7 +183,7 @@ int ModelBoneName(int model, int bone);
 int ModelBoneCount(int model);
 int ModelNodeFind(int model, int name);
 Vec3* ModelBonePositions(int model);
-void Vec3Copy(Vec3* dst, Vec3* src);
+void Vec3Copy(Vec3* dst, const Vec3* src);
 void BoneWorldMatrix(Mtx34* dst, Bone* bone, float* rot);
 void ModelNodeSetup(int model, int node, int a, int b);
 void ModelLoadIds(short* ids, int count);

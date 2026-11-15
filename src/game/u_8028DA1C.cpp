@@ -274,7 +274,7 @@ void ActorAim(int* out, Actor* a, int b);
 int OwnerGetInfo(u32 handle);
 int ZoneFindNearestHit(void* zone, Vec3* from, Vec3* to, float* dist, int* hit, float* frac, int flags);
 void VecSwapXY(IVec3* a, IVec3* b);
-void FixedToRad(Vec3* out, IVec3* in);
+void FixedToRad(Vec3* out, const IVec3* in);
 void MtxGetEuler(Vec3* out, Mtx34* m);
 void EulerNormalize(float* a, float* b);
 void Vec3Set(float* out, float x, float y, float z);

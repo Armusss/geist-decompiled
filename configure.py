@@ -611,14 +611,14 @@ config.libs = [
             Object(NonMatching, "game/u_8008DCDC.cpp"),  # guess
             Object(NonMatching, "game/Shadow2.cpp"),  # guess
             Object(Matching, "game/Memory.cpp"),  # guess
-            Object(NonMatching, "game/u_8009DE94.cpp"),  # known
+            Object(NonMatching, "game/u_8009DE94.cpp", mw_version="GC/2.0"),  # known; GC/2.0: const-pointer pre-stwu loads in fn_800A089C (STATUS G4)
             Object(NonMatching, "game/u_800A6F18.cpp"),  # guess
             Object(NonMatching, "game/u_800B1834.cpp"),  # guess
             Object(NonMatching, "game/u_800BAA14.cpp"),  # guess
             Object(NonMatching, "game/u_800C5028.cpp"),  # guess
             Object(NonMatching, "game/Progress.cpp"),  # guess
             Object(NonMatching, "game/u_800D0BF4.cpp"),  # guess
-            Object(NonMatching, "game/u_800D32E8.cpp"),  # guess
+            Object(NonMatching, "game/u_800D32E8.cpp", mw_version="GC/2.0"),  # guess; GC/2.0: EmitterHitParamCompare const void* pre-stwu loads (STATUS G4)
             Object(Matching, "game/u_800DD92C.cpp"),  # NPC talk
             Object(NonMatching, "game/u_800DE0C4.cpp"),  # pinned
             Object(Matching, "game/u_800DED18.cpp"),  # level variables DB
@@ -665,6 +665,8 @@ config.libs = [
             Object(NonMatching, "game/u_80161FF4.cpp"),  # guess
             Object(NonMatching, "game/u_8016A774.cpp"),  # pinned
             Object(NonMatching, "game/u_8016C244.cpp"),  # guess
+            Object(Matching, "game/u_8016D170.cpp", mw_version="GC/2.0"),  # angle/Euler/Vec3 helpers; GC/2.0: const-pointer pre-stwu loads (STATUS G4)
+            Object(NonMatching, "game/u_8016D6BC.cpp", mw_version="GC/2.0"),  # box helpers; GC/2.0: const-pointer pre-stwu loads (STATUS G4)
             Object(NonMatching, "game/Msx.cpp"),  # guess
             Object(NonMatching, "game/u_80175D60.cpp"),  # known
             Object(Matching, "game/DataStream.cpp"),

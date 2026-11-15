@@ -748,7 +748,7 @@ struct BoneHitBox {
 Actor* FollowGetTargetObj(void* owner);
 Vec3* ModelBonePositions(int model);
 void ActorGetMatrix(Mtx34* mtx, Actor* actor);
-void Vec3Copy(Vec3* dst, Vec3* src);
+void Vec3Copy(Vec3* dst, const Vec3* src);
 int ModelBoneHitBox(int, int, int, int);
 extern "C" void fn_8016D864(void* out, int value);
 extern "C" void fn_8016DD14(Vec3* vec, Vec3* offset);

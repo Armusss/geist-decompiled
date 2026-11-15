@@ -95,7 +95,7 @@ struct Actor;
 struct IVec3 { int x; int y; int z; };
 
 int ActorAim(int* out, Actor* actor, int flag);
-void VecToAngles(IVec3* out, IVec3* in);
+void VecToAngles(IVec3* out, const IVec3* in);
 void VecSwapXY2(IVec3* out, IVec3* in);
 
 extern "C" void fn_800A3990(unsigned long value);
@@ -1582,7 +1582,7 @@ void ActorGetMatrix(Mtx34* mtx, Actor* actor);
 void MtxGetEuler(Vec3* euler, Mtx34* mtx);
 void MtxSetEuler(Mtx34* mtx, Vec3* euler);
 void EulerNormalize(Vec3* out, Vec3* in);
-void RadToFixed(IVec3* out, Vec3* in);
+void RadToFixed(IVec3* out, const Vec3* in);
 void VecSwapXY2(IVec3* out, IVec3* in);
 void PlayerBeginBlend(Player* player, Place* place, float value);
 int BitsetFirstClear(unsigned long* bits, int start, int count);
