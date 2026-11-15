@@ -128,8 +128,9 @@ u_8011818C 15/49 (ds-2 draft): fn_8011F66C (0x660) and fn_8011FCEC (0x674) not d
   argument orders (fn_8008F230/fn_80090974/fn_800E1098/...), struct pads, real C++ classes for Buffer/String/ODE/menus.
   New real data: gPossessableClockType, gGhostBarrierType, gSplineSystemType, gFshSveStates (type descriptors/tables).
   Per-unit leftovers (register-only near-misses for brute force, structural redrafts) are in ~/geist-work/ds/lead/review_log.txt.
-  Pending USER decisions (signature/mangled-name changes): GeomUserTest (Geom*,Geom*,float*), BatsqueekRunModeHook04
-  (2-arg?), FSHSVEFollowExitState/FSHSVEDetachExitState take Actor* (both then match). Accepted by the Lead: ClockPageBuffer
+  Signature changes applied (user approved 2026-11-14), all match: FSHSVEFollowExitState/FSHSVEDetachExitState take
+  Actor*; GeomUserTest + GeomDefaultTest take (Geom*, Geom*, float*) (ODE AABBTest slot); BatsqueekRunModeHook04 takes
+  (Player*, int) and passes the int to the hook. Accepted by the Lead: ClockPageBuffer
   destructor renamed to __dt__15ClockPageBufferFv (real class dtor).
   Lead TODO: data splits / boundaries (u_8018FAE8 hint object; u_80125DE4+u_80120D98 one source file; u_802B7120 range
   holds several files; u_801AADA8 TypeNameData string blob + rodata 0x80348490; u_802D4D18 lbl_8034C308+0x48 strings;
