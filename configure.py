@@ -731,7 +731,9 @@ config.libs = [
             Object(NonMatching, "game/u_8024CAA0.cpp"),  # known
             Object(Matching, "game/Scannable.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_8024E5D0.cpp"),  # guess
-            Object(NonMatching, "game/u_80251CB8.cpp"),  # pinned
+            Object(Matching, "game/u_80251CB8.cpp"),  # imp actor
+            Object(Matching, "game/u_80252F2C.cpp"),  # imp attack sub-behaviour
+            Object(Matching, "game/u_80253614.cpp"),  # IMP FIRE effect type
             Object(Matching, "game/u_802541D4.cpp"),  # imp fire ball actor
             Object(NonMatching, "game/u_80254F54.cpp"),  # host type callbacks + gun-with-grenade host states
             Object(Matching, "game/GunWithGrenade.cpp"),  # "GUNWITHGRENADE" effect type

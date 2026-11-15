@@ -790,10 +790,21 @@ game/u_8024E5D0.cpp:
 	.text       start:0x8024E5D0 end:0x80251CB8
 
 game/u_80251CB8.cpp:
-	.text       start:0x80251CB8 end:0x802541D4
-	.rodata     start:0x8034A660 end:0x8034A718
-	.data       start:0x803BECD8 end:0x803BEE18
-	.sdata2     start:0x804D9DD0 end:0x804D9E50
+	.text       start:0x80251CB8 end:0x80252F2C
+	.rodata     start:0x8034A660 end:0x8034A6C8
+	.data       start:0x803BECD8 end:0x803BED88
+	.sdata2     start:0x804D9DD0 end:0x804D9E18
+
+game/u_80252F2C.cpp:
+	.text       start:0x80252F2C end:0x80253614
+	.data       start:0x803BED88 end:0x803BEDE8
+	.sdata2     start:0x804D9E18 end:0x804D9E20
+
+game/u_80253614.cpp:
+	.text       start:0x80253614 end:0x802541D4
+	.rodata     start:0x8034A6C8 end:0x8034A718
+	.data       start:0x803BEDE8 end:0x803BEE18
+	.sdata2     start:0x804D9E20 end:0x804D9E50
 
 game/u_802541D4.cpp:
 	.text       start:0x802541D4 end:0x80254F54
