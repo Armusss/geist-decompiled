@@ -15,7 +15,7 @@ int TargetSlotUsable(int** slot, int* other)
     return 1;
 }
 
-typedef unsigned int u32;
+typedef unsigned long u32;
 typedef unsigned char u8;
 
 class String
@@ -25,10 +25,6 @@ public:
     ~String();
 };
 
-extern "C" float lbl_804D6598;
-extern "C" float lbl_804D659C;
-extern "C" float lbl_804D65A0;
-extern "C" double lbl_804D65A8;
 
 extern "C" void fn_80064EE4(void*);
 int PlayerGunVecNonZero(void*);
@@ -50,19 +46,19 @@ void PlayerUpdateStun(float dt, void* owner, void* arg)
     u32 flags = *(u32*)(p + 0x7B4);
     if ((flags & 0x80000) == 0 || (flags & 0x2000000) != 0 || PlayerGunVecNonZero(p) == 0)
     {
-        *(float*)(p + 0x804) = lbl_804D65A0;
+        *(float*)(p + 0x804) = 5000.0f;
     }
     else
     {
         *(float*)(p + 0x804) -= dt;
-        if (*(float*)(p + 0x804) <= lbl_804D6598)
+        if (*(float*)(p + 0x804) <= 0.0f)
         {
             String s;
             int data[2];
             data[1] = 0x7FFCFD4F;
             *(int*)&s = 0xE6669026;
             SendMsg(fn_800498D0(p), 0x41D, data);
-            *(float*)(p + 0x804) = lbl_804D659C;
+            *(float*)(p + 0x804) = 10000.0f;
         }
     }
 
@@ -75,11 +71,11 @@ void PlayerUpdateStun(float dt, void* owner, void* arg)
     }
 
     *(float*)(p + 0x7D8) -= dt;
-    if (*(float*)(p + 0x7D8) < lbl_804D6598)
-        *(float*)(p + 0x7D8) = lbl_804D6598;
+    if (*(float*)(p + 0x7D8) < 0.0f)
+        *(float*)(p + 0x7D8) = 0.0f;
 
     if (fn_8020B97C(p) != 0 || *(int*)(p + 0x960) == 1 || fn_80049940() != 0)
-        *(float*)(p + 0x7D8) = lbl_804D659C;
+        *(float*)(p + 0x7D8) = 10000.0f;
 
     (*(void (**)(float, void*, void*))(p + 0x810))(dt, p, arg);
 
@@ -87,8 +83,6 @@ void PlayerUpdateStun(float dt, void* owner, void* arg)
         *(float*)(p + 0x64C) = (float)(-*(int*)(p + 0xA14));
 }
 
-extern "C" float lbl_804D65B0;
-extern "C" float lbl_804D65B4;
 
 extern "C" void fn_8008F230(float value, int slots, int index, int flag);
 extern "C" void fn_80090390(int slots, int index);
@@ -108,9 +102,9 @@ void PlayerUpdateHeldSlots(void* owner)
         u8* q = p + i * 4;
 
         if (*(int*)(q + 0x80) == *(int*)(q + 0x98))
-            fn_8008F230(lbl_804D6598, *(int*)(p + 0x7C), i, 1);
+            fn_8008F230(0.0f, *(int*)(p + 0x7C), i, 1);
         else
-            fn_8008F230(lbl_804D65B4, *(int*)(p + 0x7C), i, 1);
+            fn_8008F230(100.0f, *(int*)(p + 0x7C), i, 1);
 
         if (*(int*)(q + 0x98) == -1)
         {
@@ -123,13 +117,13 @@ void PlayerUpdateHeldSlots(void* owner)
         {
             if (*(int*)(q + 0x8C) == 0)
             {
-                fn_80090778((float)*(u32*)(q + 0xB0) / lbl_804D65B0,
+                fn_80090778((float)*(u32*)(q + 0xB0) / 4096.0f,
                             *(int*)(p + 0x7C), i, *(int*)(q + 0x98),
                             *(int*)(q + 0xA4), *(int*)(p + 0x38), p);
             }
             else
             {
-                fn_80090974((float)*(u32*)(q + 0xB0) / lbl_804D65B0,
+                fn_80090974((float)*(u32*)(q + 0xB0) / 4096.0f,
                             *(int*)(p + 0x7C), i, *(int*)(q + 0x98),
                             *(int*)(q + 0xA4), *(int*)(q + 0x8C), p);
             }
@@ -137,9 +131,9 @@ void PlayerUpdateHeldSlots(void* owner)
         *(int*)(q + 0x80) = *(int*)(q + 0x98);
 
         if (*(int*)(q + 0xD8) == *(int*)(q + 0xF0))
-            fn_8008F230(lbl_804D6598, *(int*)(p + 0xD4), i, 1);
+            fn_8008F230(0.0f, *(int*)(p + 0xD4), i, 1);
         else
-            fn_8008F230(lbl_804D65B4, *(int*)(p + 0xD4), i, 1);
+            fn_8008F230(100.0f, *(int*)(p + 0xD4), i, 1);
 
         if (*(int*)(q + 0xF0) == -1)
         {
@@ -150,13 +144,13 @@ void PlayerUpdateHeldSlots(void* owner)
         {
             if (*(int*)(q + 0xE4) == 0)
             {
-                fn_80090778((float)*(u32*)(q + 0x108) / lbl_804D65B0,
+                fn_80090778((float)*(u32*)(q + 0x108) / 4096.0f,
                             *(int*)(p + 0xD4), i, *(int*)(q + 0xF0),
                             *(int*)(q + 0xFC), *(int*)(p + 0x38), p);
             }
             else
             {
-                fn_80090974((float)*(u32*)(q + 0x108) / lbl_804D65B0,
+                fn_80090974((float)*(u32*)(q + 0x108) / 4096.0f,
                             *(int*)(p + 0xD4), i, *(int*)(q + 0xF0),
                             *(int*)(q + 0xFC), *(int*)(q + 0xE4), p);
             }
@@ -181,7 +175,6 @@ extern "C" int fn_802A1D04(void);
 // Retail calls this as (int handle, float* out) (see 0x8006E66C); the older
 // call sites in this draft still pass a leading float and need revisiting.
 extern "C" void fn_800913EC(int handle, float scale, void* out);
-extern "C" float lbl_804D65B8;
 
 // C++-mangled helper of another unit (Fiif).
 void Fn8008E33C(int slot, int hand, float value);
@@ -217,8 +210,8 @@ void PlayerResetHeldSlots(void* owner)
 
     PlayerUpdateHeldSlots(owner);
 
-    fn_800913EC(*(int*)((u8*)owner + 0x7C), lbl_804D65B8, 0);
-    fn_800913EC(*(int*)((u8*)owner + 0xD4), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)((u8*)owner + 0x7C), 1.0f, 0);
+    fn_800913EC(*(int*)((u8*)owner + 0xD4), 1.0f, 0);
 
     *(int*)((u8*)owner + 0x7A8) = 0x15;
 }
@@ -240,8 +233,8 @@ void PlayerEnterIdle(void* owner)
 
     PlayerUpdateHeldSlots(p);
 
-    fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
-    fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)(p + 0x7C), 1.0f, 0);
+    fn_800913EC(*(int*)(p + 0xD4), 1.0f, 0);
 }
 
 // Picks the player's held-slot state from the slot word at 0x7D0
@@ -275,8 +268,8 @@ void PlayerApplyHeldSlotState(void* owner)
 
         PlayerUpdateHeldSlots(p);
 
-        fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
-        fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
+        fn_800913EC(*(int*)(p + 0x7C), 1.0f, 0);
+        fn_800913EC(*(int*)(p + 0xD4), 1.0f, 0);
     }
     else
     {
@@ -294,8 +287,8 @@ void PlayerApplyHeldSlotState(void* owner)
 
         PlayerUpdateHeldSlots(p);
 
-        fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
-        fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
+        fn_800913EC(*(int*)(p + 0x7C), 1.0f, 0);
+        fn_800913EC(*(int*)(p + 0xD4), 1.0f, 0);
     }
 }
 
@@ -379,8 +372,8 @@ void Fn8006CE5C(Player* player, int value, int index, int flags, int param5,
 
     PlayerUpdateHeldSlots(p);
 
-    fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
-    fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)(p + 0x7C), 1.0f, 0);
+    fn_800913EC(*(int*)(p + 0xD4), 1.0f, 0);
 }
 
 // Stores one pending held-slot entry into both slot groups and refreshes the
@@ -407,7 +400,7 @@ void fn_8006CF44(void* owner, int value, int index, u32 flags, int param5,
     {
         u8* e = p + i * 4;
 
-        fn_8008F230(lbl_804D6598, *(int*)(p + 0x12C), i, 1);
+        fn_8008F230(0.0f, *(int*)(p + 0x12C), i, 1);
 
         if (*(int*)(e + 0x148) == -1)
         {
@@ -415,7 +408,7 @@ void fn_8006CF44(void* owner, int value, int index, u32 flags, int param5,
         }
         else
         {
-            fn_80090778((float)*(u32*)(e + 0x160) / lbl_804D65B0,
+            fn_80090778((float)*(u32*)(e + 0x160) / 4096.0f,
                         *(int*)(p + 0x12C), i, *(int*)(e + 0x148),
                         *(int*)(e + 0x154), *(int*)(p + 0x38), p);
         }
@@ -442,8 +435,8 @@ void fn_8006D038(void* owner)
 
     PlayerUpdateHeldSlots(p);
 
-    fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
-    fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)(p + 0x7C), 1.0f, 0);
+    fn_800913EC(*(int*)(p + 0xD4), 1.0f, 0);
 }
 
 // Leaves the player's held-slot action state 0x0C and refreshes the slots
@@ -463,8 +456,8 @@ void PlayerExitHeldSlotState0C(void* owner)
 
     PlayerUpdateHeldSlots(p);
 
-    fn_800913EC(*(int*)(p + 0x7C), lbl_804D65B8, 0);
-    fn_800913EC(*(int*)(p + 0xD4), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)(p + 0x7C), 1.0f, 0);
+    fn_800913EC(*(int*)(p + 0xD4), 1.0f, 0);
 }
 
 // Stores a value at offset 0x28 of the object (a setter; name is a guess).
@@ -515,8 +508,8 @@ void PlayerSetHeldSlotMode(void* owner, int mode)
 
     PlayerUpdateHeldSlots(owner);
 
-    fn_800913EC(*(int*)((u8*)owner + 0x7C), lbl_804D65B8, 0);
-    fn_800913EC(*(int*)((u8*)owner + 0xD4), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)((u8*)owner + 0x7C), 1.0f, 0);
+    fn_800913EC(*(int*)((u8*)owner + 0xD4), 1.0f, 0);
 }
 
 // Switches the player to the given held-item action mode and refreshes the
@@ -537,8 +530,8 @@ void PlayerSetActionMode(void* owner, int mode)
 
     PlayerUpdateHeldSlots(owner);
 
-    fn_800913EC(*(int*)((u8*)owner + 0x7C), lbl_804D65B8, 0);
-    fn_800913EC(*(int*)((u8*)owner + 0xD4), lbl_804D65B8, 0);
+    fn_800913EC(*(int*)((u8*)owner + 0x7C), 1.0f, 0);
+    fn_800913EC(*(int*)((u8*)owner + 0xD4), 1.0f, 0);
 }
 
 // Callbacks installed on the player when it holds a given item (offsets are
@@ -697,19 +690,19 @@ void PlayerInitGunState(void* owner)
     state->field_08 = 0;
     state->field_0C = 0;
     state->field_14 = -1;
-    state->f24 = lbl_804D6598;
+    state->f24 = 0.0f;
     state->field_28 = 0;
     state->field_2C = 1;
     state->field_30 = 0;
-    state->f34 = lbl_804D659C;
+    state->f34 = 10000.0f;
     state->field_3C = 0;
-    state->f40 = lbl_804D65B4;
+    state->f40 = 100.0f;
     state->field_50 = -1;
     state->field_54 = -1;
     state->field_4C = 0;
-    state->f58 = lbl_804D6598;
-    state->f5C = lbl_804D6598;
-    state->f60 = lbl_804D65A0;
+    state->f58 = 0.0f;
+    state->f5C = 0.0f;
+    state->f60 = 5000.0f;
 
     def = lbl_80394190;
     for (i = 0; i < 0x17; i++)
@@ -758,7 +751,7 @@ void PlayerInitGunState(void* owner)
 // a guess; the offset is transcribed from retail.
 void PlayerResetGunTimer(void* owner)
 {
-    *(float*)((u8*)owner + 0x7D8) = lbl_804D659C;
+    *(float*)((u8*)owner + 0x7D8) = 10000.0f;
 }
 
 // Calls the player's callback at offset 0x824 if one is installed
@@ -785,11 +778,6 @@ void PlayerCallCallback81c(void* owner)
         (*(void (**)(void))((u8*)owner + 0x81C))();
 }
 
-extern "C" float lbl_804D65C0;
-extern "C" float lbl_804D65C4;
-extern "C" float lbl_804D65C8;
-extern "C" float lbl_804D65CC;
-extern "C" double lbl_804D65D0;
 
 extern "C" int lbl_804D2960;
 extern "C" float lbl_804D296C;
@@ -833,7 +821,7 @@ int PlayerHandleGunEvent(void* owner, void* data)
             {
                 if (*(int*)(d + 0xC) < 1)
                 {
-                    lbl_804D298C = lbl_804D65C8;
+                    lbl_804D298C = -1.0f;
                     lbl_804D2988 = lbl_804D298C;
                 }
                 else
@@ -850,10 +838,10 @@ int PlayerHandleGunEvent(void* owner, void* data)
             {
                 if (*(int*)(d + 0xC) != 0)
                 {
-                    *(float*)(p + 0x798) = lbl_804D65C8;
+                    *(float*)(p + 0x798) = -1.0f;
                     *(float*)(p + 0x79C) =
-                        lbl_804D65C4 * ((float)(u32)rand() / lbl_804D65C0);
-                    *(float*)(p + 0x7A0) = lbl_804D65C8;
+                        360.0f * ((float)(u32)rand() / 32767.0f);
+                    *(float*)(p + 0x7A0) = -1.0f;
                     if (*(int*)(p + 0x794) == 0)
                     {
                         ActorPlayAnim(*(int*)(p + 0x38), 0x7B3A7CF7,
@@ -863,7 +851,7 @@ int PlayerHandleGunEvent(void* owner, void* data)
                 }
                 else if (*(int*)(p + 0x794) != 0)
                 {
-                    fn_800F47F4(lbl_804D65CC);
+                    fn_800F47F4(0.0f);
                     ActorPlayAnim(*(int*)(p + 0x38), 0xEC152137,
                                   *(int*)(p + 0x38));
                     *(int*)(p + 0x794) = 0;
@@ -881,7 +869,7 @@ int PlayerHandleGunEvent(void* owner, void* data)
     {
         if (msg == 0x7386CCFC)
         {
-            if (lbl_804D2988 > lbl_804D65CC)
+            if (lbl_804D2988 > 0.0f)
                 lbl_804D2984 = (float)*(u32*)(d + 0xC);
             else
                 lbl_804D2970 = (float)*(u32*)(d + 0xC);
@@ -898,7 +886,7 @@ int PlayerHandleGunEvent(void* owner, void* data)
         }
         else if (msg == 0x7386CDEA)
         {
-            if (lbl_804D2988 > lbl_804D65CC)
+            if (lbl_804D2988 > 0.0f)
                 lbl_804D2980 = (float)*(u32*)(d + 0xC);
             else
                 lbl_804D296C = (float)*(u32*)(d + 0xC);
@@ -974,14 +962,6 @@ void PlayerGunFxUpdate(float, void*);
 extern "C" void fn_80075F94(float, void*, float*);
 extern "C" void fn_80075560(float, void*);
 
-extern "C" float lbl_804D65D8;
-extern "C" float lbl_804D65DC;
-extern "C" float lbl_804D65E0;
-extern "C" float lbl_804D65E4;
-extern "C" float lbl_804D65E8;
-extern "C" float lbl_804D65EC;
-extern "C" float lbl_804D65F0;
-extern "C" float lbl_804D65F4;
 
 // Per-frame motion update of a player holding an item: advances the streamed
 // slot offsets, integrates the drift/random walk of the hand, moves the model
@@ -1000,12 +980,12 @@ void PlayerUpdateGunMotion(float dt, void* owner)
     Mtx34 mtx;
     int i;
 
-    streamPos[0] = lbl_804D65CC;
-    streamPos[1] = lbl_804D65CC;
-    streamPos[2] = lbl_804D65CC;
-    move[0] = lbl_804D65CC;
-    move[1] = lbl_804D65CC;
-    move[2] = lbl_804D65CC;
+    streamPos[0] = 0.0f;
+    streamPos[1] = 0.0f;
+    streamPos[2] = 0.0f;
+    move[0] = 0.0f;
+    move[1] = 0.0f;
+    move[2] = 0.0f;
 
     *(int*)(p + 0x660) = 0;
     *(int*)(p + 0x664) = 0;
@@ -1041,7 +1021,7 @@ void PlayerUpdateGunMotion(float dt, void* owner)
         vx = *(float*)(p + 0x650);
         vy = *(float*)(p + 0x654);
         vz = *(float*)(p + 0x658);
-        if (vx != lbl_804D65CC || vy != lbl_804D65CC || vz != lbl_804D65CC)
+        if (vx != 0.0f || vy != 0.0f || vz != 0.0f)
         {
             move[0] = vx * dt;
             move[1] = vy * dt;
@@ -1055,21 +1035,21 @@ void PlayerUpdateGunMotion(float dt, void* owner)
 
         fn_8009F44C((void*)(p + 0x66C), &mtx, (void*)(p + 0x660));
 
-        if (fabsf(move[0]) > lbl_804D65E0 || fabsf(move[1]) > lbl_804D65E0 ||
-            fabsf(move[2]) > lbl_804D65D8)
+        if (fabsf(move[0]) > 0.0f || fabsf(move[1]) > 0.0f ||
+            fabsf(move[2]) > 1.0f)
         {
             *(float*)(p + 0x6CC) = move[0];
             *(float*)(p + 0x6D0) = move[1];
             *(float*)(p + 0x6D4) = move[2];
             PlayerCollisionMove(p, move);
 
-            if (!(fabsf(*(float*)(p + 0x650)) > lbl_804D65E0 ||
-                  fabsf(*(float*)(p + 0x654)) > lbl_804D65E0 ||
-                  fabsf(*(float*)(p + 0x658)) > lbl_804D65E0))
+            if (!(fabsf(*(float*)(p + 0x650)) > 0.0f ||
+                  fabsf(*(float*)(p + 0x654)) > 0.0f ||
+                  fabsf(*(float*)(p + 0x658)) > 0.0f))
             {
-                move[0] = lbl_804D65CC;
-                move[1] = lbl_804D65CC;
-                move[2] = lbl_804D65CC;
+                move[0] = 0.0f;
+                move[1] = 0.0f;
+                move[2] = 0.0f;
             }
         }
         else if ((PlayerInHost((Actor*)p) == 0 ||
@@ -1080,27 +1060,27 @@ void PlayerUpdateGunMotion(float dt, void* owner)
             delta[1] = *(float*)(p + 0x680) - *(float*)(p + 0x6DC);
             delta[2] = *(float*)(p + 0x684) - *(float*)(p + 0x6E0);
 
-            if (fn_800E1020(delta) < lbl_804D65E4)
+            if (fn_800E1020(delta) < 0.01f)
             {
                 delta[0] = *(float*)(p + 0x6CC);
                 delta[1] = *(float*)(p + 0x6D0);
                 delta[2] = *(float*)(p + 0x6D4);
             }
 
-            if (fn_800E1020(delta) < lbl_804D65E4)
+            if (fn_800E1020(delta) < 0.01f)
             {
-                float randA = (float)rand() / lbl_804D65C0;
-                float randB = (float)rand() / lbl_804D65C0;
+                float randA = (float)rand() / 32767.0f;
+                float randB = (float)rand() / 32767.0f;
 
-                delta[2] = lbl_804D65C8;
-                delta[1] = randA / lbl_804D65E8 - lbl_804D65EC;
-                delta[0] = randB / lbl_804D65E8 - lbl_804D65EC;
+                delta[2] = -1.0f;
+                delta[1] = randA / 20.0f - 0.1f;
+                delta[0] = randB / 20.0f - 0.1f;
             }
 
-            fn_800E1098(lbl_804D65F0, delta, delta);
+            fn_800E1098(0.75f, delta, delta);
             PlayerCollisionMove(p, delta);
 
-            if (fn_800E1020(delta) > lbl_804D65D8)
+            if (fn_800E1020(delta) > 1.0f)
             {
                 move[0] = delta[0];
                 move[1] = delta[1];
@@ -1108,9 +1088,9 @@ void PlayerUpdateGunMotion(float dt, void* owner)
             }
             else
             {
-                move[0] = lbl_804D65CC;
-                move[1] = lbl_804D65CC;
-                move[2] = lbl_804D65CC;
+                move[0] = 0.0f;
+                move[1] = 0.0f;
+                move[2] = 0.0f;
             }
         }
 
@@ -1118,15 +1098,15 @@ void PlayerUpdateGunMotion(float dt, void* owner)
         *(float*)(p + 0x6DC) = *(float*)(p + 0x680);
         *(float*)(p + 0x6E0) = *(float*)(p + 0x684);
 
-        if (dt == lbl_804D65CC)
+        if (dt == 0.0f)
         {
-            *(float*)(p + 0x650) = lbl_804D65CC;
-            *(float*)(p + 0x654) = lbl_804D65CC;
-            *(float*)(p + 0x658) = lbl_804D65CC;
+            *(float*)(p + 0x650) = 0.0f;
+            *(float*)(p + 0x654) = 0.0f;
+            *(float*)(p + 0x658) = 0.0f;
         }
         else
         {
-            float scale = lbl_804D65D8 / dt;
+            float scale = 1.0f / dt;
 
             *(float*)(p + 0x650) = move[0] * scale;
             *(float*)(p + 0x654) = move[1] * scale;
@@ -1143,7 +1123,7 @@ void PlayerUpdateGunMotion(float dt, void* owner)
         *(float*)(p + 0x680) += move[1] + (float)*(int*)(p + 0x670);
         if ((*(u32*)(p + 0x7B4) & 0x100) == 0)
             *(float*)(p + 0x684) += move[2];
-        else if (move[2] < lbl_804D65CC)
+        else if (move[2] < 0.0f)
             *(float*)(p + 0x684) += move[2];
 
         fn_80075560(dt, p);
@@ -1204,9 +1184,9 @@ void PlayerUpdateGunMotion(float dt, void* owner)
             int host;
             int value;
 
-            *(float*)(anim + 0x10) = lbl_804D65CC;
-            *(float*)(anim + 0x14) = lbl_804D65CC;
-            *(float*)(anim + 0x18) = lbl_804D65CC;
+            *(float*)(anim + 0x10) = 0.0f;
+            *(float*)(anim + 0x14) = 0.0f;
+            *(float*)(anim + 0x18) = 0.0f;
 
             if (anim[*(int*)(p + 0x12C4)] != (char)0xFF &&
                 anim[*(int*)(p + 0x12B4)] != (char)0xFF)
@@ -1228,7 +1208,7 @@ void PlayerUpdateGunMotion(float dt, void* owner)
 
                 if (fn_802A1D04() != 0)
                 {
-                    float val = *(float*)(p + 0x1F0) * lbl_804D65F4;
+                    float val = *(float*)(p + 0x1F0) * 0.5f;
                     int bone = (u8)anim[*(int*)(p + 0x12C4)];
 
                     host = PlayerInHost((Actor*)p);
@@ -1248,7 +1228,7 @@ void PlayerUpdateGunMotion(float dt, void* owner)
     }
 
     if (PlayerInHost((Actor*)p) != 0 &&
-        *(float*)(*(int*)(p + 0x738) + 8) > lbl_804D65CC)
+        *(float*)(*(int*)(p + 0x738) + 8) > 0.0f)
     {
         if (ActorPlayAnim(*(int*)(*(int*)(p + 0x26E4) + 0x38), 0xFB2744AA,
                           *(int*)(p + 0x38)) == 0)
@@ -1264,12 +1244,12 @@ void PlayerUpdateGunMotion(float dt, void* owner)
 
     PlayerGunFxUpdate(dt, p);
 
-    if (*(float*)(p + 0x734) < lbl_804D65D8)
+    if (*(float*)(p + 0x734) < 1.0f)
     {
-        float timer = *(float*)(p + 0x734) + dt / lbl_804D65DC;
+        float timer = *(float*)(p + 0x734) + dt / 4000.0f;
 
         *(float*)(p + 0x734) = timer;
-        *(float*)(p + 0x734) = timer < lbl_804D65D8 ? timer : lbl_804D65D8;
+        *(float*)(p + 0x734) = timer < 1.0f ? timer : 1.0f;
     }
 }
 
@@ -1429,9 +1409,9 @@ after_anim:
     {
         float* anim = (float*)*(int*)(p + 0x1400);
 
-        anim[4] = lbl_804D65CC;
-        anim[5] = lbl_804D65CC;
-        anim[6] = lbl_804D65CC;
+        anim[4] = 0.0f;
+        anim[5] = 0.0f;
+        anim[6] = 0.0f;
         ModelSetMatrix(*(int*)(p + 0x54), (Mtx34*)(p + 0x1450),
                        *(char**)(p + 0x1400));
     }
@@ -1440,7 +1420,7 @@ after_anim:
     {
         PlayerModelUpdate((Player*)p);
         fn_800C64FC(*(int*)(p + 0x248));
-        fn_800C6D08(lbl_804D65D8);
+        fn_800C6D08(1.0f);
     }
 
 finished:
@@ -1474,11 +1454,6 @@ extern "C" void fn_8016F018(int handle, int value);
 extern "C" int lbl_804D452C;
 extern "C" int lbl_804D4530;
 
-extern "C" float lbl_804D65F8;
-extern "C" float lbl_804D65FC;
-extern "C" float lbl_804D6600;
-extern "C" float lbl_804D6604;
-extern "C" float lbl_804D6608;
 
 // Ticks the two effect handles a player carries while holding an item (the
 // charge sparkle at 0x708 and the pick-up glow at 0x710): starts / stops the
@@ -1508,8 +1483,8 @@ void PlayerGunFxUpdate(float dt, void* owner)
             *(int*)(p + 0x710) = -1;
         }
 
-        limit = (int)(lbl_804D6604 +
-                      (lbl_804D6608 * *(float*)(p + 0x65C)) /
+        limit = (int)(3200.0f +
+                      (896.0f * *(float*)(p + 0x65C)) /
                           *(float*)(*(int*)(p + 0x738) + 8));
         target = 0x1000;
         if (limit < 0x1000)
@@ -1518,13 +1493,13 @@ void PlayerGunFxUpdate(float dt, void* owner)
         cur = *(int*)(p + 0x70C);
         if (target < cur)
         {
-            *(int*)(p + 0x70C) = cur - (int)(lbl_804D6600 * dt);
+            *(int*)(p + 0x70C) = cur - (int)(1.25f * dt);
             if (*(int*)(p + 0x70C) < target)
                 *(int*)(p + 0x70C) = target;
         }
         else
         {
-            *(int*)(p + 0x70C) = cur + (int)(lbl_804D6600 * dt);
+            *(int*)(p + 0x70C) = cur + (int)(1.25f * dt);
             if (target < *(int*)(p + 0x70C))
                 *(int*)(p + 0x70C) = target;
         }
@@ -1546,8 +1521,8 @@ void PlayerGunFxUpdate(float dt, void* owner)
             if (*(int*)(p + 0x710) == -1)
                 *(int*)(p + 0x710) = FxStart(lbl_804D4530, 0, 0);
 
-            limit = (int)(lbl_804D65F8 +
-                          (lbl_804D65FC * *(float*)(p + 0x65C)) /
+            limit = (int)(1500.0f +
+                          (2596.0f * *(float*)(p + 0x65C)) /
                               *(float*)(*(int*)(p + 0x738) + 8));
             target = 0x1000;
             if (limit < 0x1000)
@@ -1556,13 +1531,13 @@ void PlayerGunFxUpdate(float dt, void* owner)
             cur = *(int*)(p + 0x714);
             if (target < cur)
             {
-                *(int*)(p + 0x714) = cur - (int)(lbl_804D6600 * dt);
+                *(int*)(p + 0x714) = cur - (int)(1.25f * dt);
                 if (*(int*)(p + 0x714) < target)
                     *(int*)(p + 0x714) = target;
             }
             else
             {
-                *(int*)(p + 0x714) = cur + (int)(lbl_804D6600 * dt);
+                *(int*)(p + 0x714) = cur + (int)(1.25f * dt);
                 if (target < *(int*)(p + 0x714))
                     *(int*)(p + 0x714) = target;
             }
@@ -1623,15 +1598,6 @@ extern "C" float lbl_80394a28;
 extern "C" float lbl_80394a2c;
 extern "C" float lbl_80394a30;
 
-extern "C" float lbl_804D660C;
-extern "C" float lbl_804D6610;
-extern "C" float lbl_804D6614;
-extern "C" float lbl_804D6618;
-extern "C" float lbl_804D661C;
-extern "C" float lbl_804D6620;
-extern "C" float lbl_804D6624;
-extern "C" float lbl_804D6628;
-extern "C" float lbl_804D662C;
 
 // Player collision: queries the level collision system with the player's
 // motion, slides the motion along the contact planes (iterating a few times
@@ -1707,11 +1673,11 @@ void PlayerCollisionMove(void* owner, float* motion)
     ref2[2] = (float)(u32)raw[2];
 
     if (!(*(u32*)(p + 0x7b4) & 0x80000))
-        fn_800E1098(lbl_804D65F4 * *(float*)(*(int*)(p + 0x738) + 0x70) +
+        fn_800E1098(0.5f * *(float*)(*(int*)(p + 0x738) + 0x70) +
                         *(float*)(*(int*)(p + 0x738) + 0x6c),
                     ref2, ref2);
     else
-        fn_800E1098(lbl_804D65D8 + *(float*)(*(int*)(p + 0x738) + 0x6c),
+        fn_800E1098(1.0f + *(float*)(*(int*)(p + 0x738) + 0x6c),
                     ref2, ref2);
 
     lbl_80423848 = motion[0];
@@ -1732,7 +1698,7 @@ void PlayerCollisionMove(void* owner, float* motion)
     {
         lbl_804d451c = saved;
         lbl_804d4524 = 0;
-        *(float*)(p + 0x6bc) = lbl_804D660C;
+        *(float*)(p + 0x6bc) = 3.4028235e+38f;
         *(float*)(p + 0x6c0) = 0.0f;
         *(float*)(p + 0x6c4) = 0.0f;
         *(float*)(p + 0x6c8) = 0.0f;
@@ -1764,7 +1730,7 @@ void PlayerCollisionMove(void* owner, float* motion)
             lbl_8042384c = 0.0f;
             lbl_80423850 = 0.0f;
 
-            if (fn_800E1020(motion) < lbl_804D65D8)
+            if (fn_800E1020(motion) < 1.0f)
             {
                 accY = 0.0f;
                 accX = 0.0f;
@@ -1777,14 +1743,14 @@ void PlayerCollisionMove(void* owner, float* motion)
 
             if (!touching ||
                 (touching &&
-                 lbl_804D6610 <=
+                 1.22f <=
                      (prev[0] - contact[5]) * (prev[0] - contact[5]) +
                          (prev[1] - contact[3]) * (prev[1] - contact[3]) +
                          (prev[2] - contact[4]) * (prev[2] - contact[4])))
             {
                 flags = *(u32*)(p + 0x7b4);
 
-                if (fn_800E1020(motion) > lbl_804D6614)
+                if (fn_800E1020(motion) > 0.99f)
                 {
                     if (!(flags & 0x40000) && !(flags & 0x8000000))
                     {
@@ -1813,9 +1779,9 @@ void PlayerCollisionMove(void* owner, float* motion)
                 prev[2] = contact[4];
                 prev[0] = contact[5];
 
-                if (!(fabsf(lbl_80423848) > lbl_804D65E0 ||
-                      fabsf(lbl_8042384c) > lbl_804D65E0 ||
-                      fabsf(lbl_80423850) > lbl_804D65E0))
+                if (!(fabsf(lbl_80423848) > 0.0f ||
+                      fabsf(lbl_8042384c) > 0.0f ||
+                      fabsf(lbl_80423850) > 0.0f))
                 {
                     nrm[0] = 0.0f;
                     nrm[1] = 0.0f;
@@ -1853,9 +1819,9 @@ void PlayerCollisionMove(void* owner, float* motion)
                     }
                     hit[3] = 0.0f;
 
-                    if (!(fabsf(hit[0]) > lbl_804D65E0 ||
-                          fabsf(hit[1]) > lbl_804D65E0 ||
-                          fabsf(hit[2]) > lbl_804D65E0))
+                    if (!(fabsf(hit[0]) > 0.0f ||
+                          fabsf(hit[1]) > 0.0f ||
+                          fabsf(hit[2]) > 0.0f))
                         continue;
 
                     PlayerCollisionSlideVector((int)slideBuf, hit);
@@ -1863,7 +1829,7 @@ void PlayerCollisionMove(void* owner, float* motion)
                     fn_800A0030(crossBuf, slideBuf, nrm);
                     fn_800A0030(nrm, rotBuf, crossBuf);
 
-                    if (fn_800E1020(nrm) < lbl_804D6618)
+                    if (fn_800E1020(nrm) < 0.05f)
                     {
                         nrm[0] = 0.0f;
                         nrm[1] = 0.0f;
@@ -1871,9 +1837,9 @@ void PlayerCollisionMove(void* owner, float* motion)
                         break;
                     }
 
-                    if (!(fabsf(nrm[0]) > lbl_804D65E0 ||
-                          fabsf(nrm[1]) > lbl_804D65E0 ||
-                          fabsf(nrm[2]) > lbl_804D65E0))
+                    if (!(fabsf(nrm[0]) > 0.0f ||
+                          fabsf(nrm[1]) > 0.0f ||
+                          fabsf(nrm[2]) > 0.0f))
                     {
                         nrm[0] = 0.0f;
                         nrm[1] = 0.0f;
@@ -1897,10 +1863,10 @@ void PlayerCollisionMove(void* owner, float* motion)
                         if (((!(flags & 0x40000) && !(flags & 0x8000000)) ||
                              nrm[2] <= 0.0f))
                         {
-                            if (dot < lbl_804D661C)
+                            if (dot < 0.25f)
                                 slide = true;
                         }
-                        else if (dot < lbl_804D65F4)
+                        else if (dot < 0.5f)
                         {
                             slide = true;
                         }
@@ -1918,7 +1884,7 @@ void PlayerCollisionMove(void* owner, float* motion)
                         float baseAmt;
 
                         if (!(flags & 0x40000) && !(flags & 0x8000000))
-                            scaled = lbl_804D6620 * speed;
+                            scaled = 0.98f * speed;
                         else
                             scaled = speed;
 
@@ -1937,11 +1903,11 @@ void PlayerCollisionMove(void* owner, float* motion)
                             maxSpeed = speed;
                             if (maxSpeed < scaled)
                                 maxSpeed = scaled;
-                            amount = lbl_804D6618 * (maxSpeed - depth);
+                            amount = 0.05f * (maxSpeed - depth);
 
-                            limit = lbl_804D6624;
-                            if (lbl_804D6618 * speed < limit)
-                                limit = lbl_804D6618 * speed;
+                            limit = 5.0f;
+                            if (0.05f * speed < limit)
+                                limit = 0.05f * speed;
 
                             if (!(flags & 0x40000) && !(flags & 0x8000000))
                             {
@@ -1951,23 +1917,23 @@ void PlayerCollisionMove(void* owner, float* motion)
                             }
                             else
                             {
-                                baseAmt = lbl_804D6628 * limit;
+                                baseAmt = 2.0f * limit;
                                 if (baseAmt < amount)
                                     baseAmt = amount;
                             }
 
-                            if (limit <= lbl_804D662C)
+                            if (limit <= 1.5f)
                                 baseAmt = 0.0f;
 
                             if (((flags & 0x40000) || (flags & 0x8000000)) &&
                                 point[2] <
-                                    -(lbl_804D65F0 * ref2[2] - pos[2]))
+                                    -(0.75f * ref2[2] - pos[2]))
                                 corr[2] = 0.0f;
 
                             maxSpeed = speed;
                             if (maxSpeed < scaled)
                                 maxSpeed = scaled;
-                            amount = lbl_804D65D8 + (maxSpeed - depth);
+                            amount = 1.0f + (maxSpeed - depth);
                             if (baseAmt < amount)
                                 amount = baseAmt;
 
@@ -1986,9 +1952,9 @@ void PlayerCollisionMove(void* owner, float* motion)
                 fn_8009ED70(matBuf, p);
                 fn_800A0030(tmpVec, matBuf, &lbl_80423848);
 
-                if (!(fabsf(lbl_80423848) > lbl_804D65E0 ||
-                      fabsf(lbl_8042384c) > lbl_804D65E0 ||
-                      fabsf(lbl_80423850) > lbl_804D65E0))
+                if (!(fabsf(lbl_80423848) > 0.0f ||
+                      fabsf(lbl_8042384c) > 0.0f ||
+                      fabsf(lbl_80423850) > 0.0f))
                 {
                     normMotion[0] = 0.0f;
                     normMotion[1] = 0.0f;
@@ -2013,7 +1979,7 @@ void PlayerCollisionMove(void* owner, float* motion)
                     float len;
 
                     if (dot == 0.0f)
-                        dot = lbl_804D65E4;
+                        dot = 0.01f;
 
                     len = fn_800E1020(tmpVec);
                     lbl_80423848 = dot * (len * nrm[0]);
@@ -2087,23 +2053,23 @@ int PlayerCollisionSlideVector(int obj, float* motion)
     float y = motion[1];
     float z = motion[2];
 
-    if (!(fabsf(x) > lbl_804D65E0 || fabsf(y) > lbl_804D65E0 ||
-          fabsf(z) > lbl_804D65E0))
+    if (!(fabsf(x) > 0.0f || fabsf(y) > 0.0f ||
+          fabsf(z) > 0.0f))
         return 0;
 
     fn_800A02C0(obj, motion, 1);
 
-    if (fabsf(x) < lbl_804D65E0 && fabsf(y) < lbl_804D65E0)
+    if (fabsf(x) < 0.0f && fabsf(y) < 0.0f)
     {
-        px = lbl_804D65CC;
+        px = 0.0f;
         py = z;
-        pz = lbl_804D65CC;
+        pz = 0.0f;
     }
     else if (fabsf(x) <= fabsf(y))
     {
         float len = sqrtf(y * y + z * z);
 
-        px = lbl_804D65CC;
+        px = 0.0f;
         py = z / len;
         pz = -y / len;
     }
@@ -2112,16 +2078,16 @@ int PlayerCollisionSlideVector(int obj, float* motion)
         float len = sqrtf(x * x + z * z);
 
         px = z / len;
-        py = lbl_804D65CC;
+        py = 0.0f;
         pz = -x / len;
     }
 
-    if (!(fabsf(px) > lbl_804D65E0 || fabsf(py) > lbl_804D65E0 ||
-          fabsf(pz) > lbl_804D65E0))
+    if (!(fabsf(px) > 0.0f || fabsf(py) > 0.0f ||
+          fabsf(pz) > 0.0f))
     {
-        px = lbl_804D65CC;
-        py = lbl_804D65CC;
-        pz = lbl_804D65CC;
+        px = 0.0f;
+        py = 0.0f;
+        pz = 0.0f;
     }
     else
     {
@@ -2159,14 +2125,6 @@ int PlayerCollisionSlideVector(int obj, float* motion)
 
 // --- collision query callback ---------------------------------------------
 
-extern "C" float lbl_804D6630;
-extern "C" float lbl_804D6634;
-extern "C" float lbl_804D6638;
-extern "C" float lbl_804D663C;
-extern "C" float lbl_804D6640;
-extern "C" float lbl_804D6644;
-extern "C" float lbl_804D6648;
-extern "C" float lbl_804D664C;
 
 extern "C" float lbl_80394a34;
 extern "C" float lbl_80394a38;
@@ -2185,12 +2143,12 @@ extern "C" float sqrtf(float);
 // Normalises a 3-vector in place; a near-zero vector becomes zero.
 static inline void PlayerNormalizeVec3(float* v)
 {
-    if (!(fabsf(v[0]) > lbl_804D65E0 || fabsf(v[1]) > lbl_804D65E0 ||
-          fabsf(v[2]) > lbl_804D65E0))
+    if (!(fabsf(v[0]) > 0.0f || fabsf(v[1]) > 0.0f ||
+          fabsf(v[2]) > 0.0f))
     {
-        v[0] = lbl_804D65CC;
-        v[1] = lbl_804D65CC;
-        v[2] = lbl_804D65CC;
+        v[0] = 0.0f;
+        v[1] = 0.0f;
+        v[2] = 0.0f;
         return;
     }
 
@@ -2213,7 +2171,7 @@ static inline void PlayerTrackClosest(u8* p, int* contact)
 
     d[0] = (float)contact[4] - lbl_80423860;
     d[1] = (float)contact[5] - lbl_80423864;
-    d[2] = lbl_804D65CC;
+    d[2] = 0.0f;
     len = fn_800E1020(d);
     if (len < *(float*)(p + 0x6BC))
     {
@@ -2299,15 +2257,15 @@ u32 PlayerCollisionCallback(int* contact, float* out)
     state = *(int*)(p + 0x634);
     if (state == 0 || state == 4 || state == 3)
     {
-        fwd[0] = lbl_804D6630 * (float)(*(u32*)(p + 0x604) ^ 0x80000000);
-        fwd[1] = lbl_804D6630 * (float)(*(u32*)(p + 0x608) ^ 0x80000000);
-        fwd[2] = lbl_804D6630 * (float)(*(u32*)(p + 0x60c) ^ 0x80000000);
+        fwd[0] = 0.00024414062f * (float)(*(u32*)(p + 0x604) ^ 0x80000000);
+        fwd[1] = 0.00024414062f * (float)(*(u32*)(p + 0x608) ^ 0x80000000);
+        fwd[2] = 0.00024414062f * (float)(*(u32*)(p + 0x60c) ^ 0x80000000);
     }
     else
     {
-        fwd[0] = lbl_804D65CC;
-        fwd[1] = lbl_804D65CC;
-        fwd[2] = lbl_804D65D8;
+        fwd[0] = 0.0f;
+        fwd[1] = 0.0f;
+        fwd[2] = 1.0f;
     }
 
     vec[0] = (float)contact[4] - *(float*)(p + 0x67C);
@@ -2317,11 +2275,11 @@ u32 PlayerCollisionCallback(int* contact, float* out)
     PlayerNormalizeVec3(vec);
 
     if (((flags & 0x40000) != 0 || (flags & 0x8000000) != 0) &&
-        (lbl_804D65D8 * dir[2] + lbl_804D65CC * dir[0] + lbl_804D65CC * dir[1] <
-             lbl_804D6634 &&
-         vec[2] * dir[2] + vec[0] * dir[0] + vec[1] * dir[1] < lbl_804D65CC &&
+        (1.0f * dir[2] + 0.0f * dir[0] + 0.0f * dir[1] <
+             -0.94f &&
+         vec[2] * dir[2] + vec[0] * dir[0] + vec[1] * dir[1] < 0.0f &&
          *contact != 0) &&
-        lbl_804D6638 *
+        0.85f *
                 (*(float*)(*(int*)(p + 0x738) + 0x70) +
                  *(float*)(*(int*)(p + 0x738) + 0x6c)) +
             *(float*)(p + 0x684) <
@@ -2330,8 +2288,8 @@ u32 PlayerCollisionCallback(int* contact, float* out)
         return 0;
     }
 
-    if (vec[2] * dir[2] + vec[0] * dir[0] + vec[1] * dir[1] < lbl_804D663C &&
-        lbl_804D662C < fn_800E1020(vec))
+    if (vec[2] * dir[2] + vec[0] * dir[0] + vec[1] * dir[1] < -0.707f &&
+        1.5f < fn_800E1020(vec))
     {
         return 0;
     }
@@ -2341,22 +2299,22 @@ u32 PlayerCollisionCallback(int* contact, float* out)
     vec[2] = (float)contact[9] - *(float*)(p + 0x684);
     PlayerNormalizeVec3(vec);
 
-    if (vec[2] * dir[2] + vec[0] * dir[0] + vec[1] * dir[1] < lbl_804D65CC &&
-        lbl_804D65F4 * *(float*)(*(int*)(p + 0x738) + 0x6c) <
+    if (vec[2] * dir[2] + vec[0] * dir[0] + vec[1] * dir[1] < 0.0f &&
+        0.5f * *(float*)(*(int*)(p + 0x738) + 0x6c) <
             vec[2] * vec[2] + vec[0] * vec[0] + vec[1] * vec[1])
     {
         return 0;
     }
 
-    acc[0] = lbl_804D65CC;
-    acc[1] = lbl_804D65CC;
-    acc[2] = lbl_804D65CC;
+    acc[0] = 0.0f;
+    acc[1] = 0.0f;
+    acc[2] = 0.0f;
 
-    if (lbl_804D662C < fn_800E1020(&lbl_80423854) &&
-        lbl_804D65D8 * lbl_8042385c + lbl_804D65CC * lbl_80423854 +
-                lbl_804D65CC * lbl_80423858 <
-            lbl_804D6620 &&
-        contactZ < lbl_804D662C)
+    if (1.5f < fn_800E1020(&lbl_80423854) &&
+        1.0f * lbl_8042385c + 0.0f * lbl_80423854 +
+                0.0f * lbl_80423858 <
+            0.98f &&
+        contactZ < 1.5f)
     {
         contact[6] = contact[9];
     }
@@ -2365,18 +2323,18 @@ u32 PlayerCollisionCallback(int* contact, float* out)
     {
         float f1 = fwd[2] * (float)contact[0xc] +
                    (fwd[0] * (float)contact[10] + fwd[1] * (float)contact[0xb]);
-        float f2 = lbl_804D65D8 * (float)contact[0xc] +
-                   (lbl_804D65CC * (float)contact[10] +
-                    lbl_804D65CC * (float)contact[0xb]);
+        float f2 = 1.0f * (float)contact[0xc] +
+                   (0.0f * (float)contact[10] +
+                    0.0f * (float)contact[0xb]);
 
         if (f2 < f1)
             f2 = f1;
 
         if ((*(u32*)(p + 0x678) & 0x200) == 0)
         {
-            if (lbl_804D65F4 < f2 &&
+            if (0.5f < f2 &&
                 (float)contact[6] <
-                    -(lbl_804D6640 *
+                    -(0.9f *
                           (*(float*)(*(int*)(p + 0x738) + 0x70) -
                            *(float*)(*(int*)(p + 0x738) + 0x6c)) -
                       *(float*)(p + 0x684)))
@@ -2384,7 +2342,7 @@ u32 PlayerCollisionCallback(int* contact, float* out)
                 return 0;
             }
 
-            if (lbl_804D6644 < f2)
+            if (0.95f < f2)
                 return 0;
         }
     }
@@ -2393,10 +2351,10 @@ u32 PlayerCollisionCallback(int* contact, float* out)
     {
         float* rec = &lbl_80421448[i * 4];
 
-        if ((fabsf(rec[0] - (float)contact[10]) <= lbl_804D65E0 &&
-             fabsf(rec[1] - (float)contact[0xb]) <= lbl_804D65E0 &&
-             fabsf(rec[2] - (float)contact[0xc]) <= lbl_804D65E0) ||
-            lbl_804D6648 < rec[2] * (float)contact[0xc] +
+        if ((fabsf(rec[0] - (float)contact[10]) <= 0.0f &&
+             fabsf(rec[1] - (float)contact[0xb]) <= 0.0f &&
+             fabsf(rec[2] - (float)contact[0xc]) <= 0.0f) ||
+            0.9984f < rec[2] * (float)contact[0xc] +
                                rec[0] * (float)contact[10] +
                                rec[1] * (float)contact[0xb])
         {
@@ -2409,15 +2367,15 @@ u32 PlayerCollisionCallback(int* contact, float* out)
             v[1] = (float)contact[0xb];
             v[2] = (float)contact[0xc];
             if ((flags & 0x40000) == 0 && (flags & 0x8000000) == 0)
-                v[2] = lbl_804D65CC;
+                v[2] = 0.0f;
 
-            if (lbl_804D65EC <= fn_800E1020(v))
+            if (0.1f <= fn_800E1020(v))
             {
                 PlayerNormalizeVec3(v);
                 dot = nrm[2] * v[2] + nrm[0] * v[0] + nrm[1] * v[1];
 
-                if (lbl_804D663C <= dot &&
-                    (lbl_80422448[i] == lbl_804D65CC || lbl_804D664C <= dot))
+                if (-0.707f <= dot &&
+                    (lbl_80422448[i] == 0.0f || 0.08f <= dot))
                     return 0;
 
                 PlayerWriteContact(out, nrm);
@@ -2519,7 +2477,7 @@ u32 PlayerCollisionCallback(int* contact, float* out)
     {
         float* rec = &lbl_80420048[i * 4];
 
-        if (lbl_804D6620 < rec[2] * (float)contact[0xc] +
+        if (0.98f < rec[2] * (float)contact[0xc] +
                                rec[0] * (float)contact[10] +
                                rec[1] * (float)contact[0xb])
         {
@@ -2554,13 +2512,13 @@ u32 PlayerCollisionCallback(int* contact, float* out)
             rec = &lbl_80420048[i * 4];
             if (rec[2] * (float)contact[0xc] + rec[0] * (float)contact[10] +
                     rec[1] * (float)contact[0xb] <
-                lbl_804D664C ||
-                lbl_804D65E0 < rec[3] + rec[2] * (float)contact[6] +
+                0.08f ||
+                0.0f < rec[3] + rec[2] * (float)contact[6] +
                                    rec[0] * (float)contact[4] +
                                    rec[1] * (float)contact[5])
             {
-                lbl_80421048[i] = lbl_804D65D8;
-                lbl_80421048[idx + i] = lbl_804D65D8;
+                lbl_80421048[i] = 1.0f;
+                lbl_80421048[idx + i] = 1.0f;
             }
         }
 
@@ -2589,8 +2547,8 @@ u32 PlayerCollisionCallback(int* contact, float* out)
         return 1;
     }
 
-    if (lbl_804D6624 < fabsf(lbl_80394a34 - (float)contact[7]) ||
-        lbl_804D6624 < fabsf(lbl_80394a38 - (float)contact[8]))
+    if (5.0f < fabsf(lbl_80394a34 - (float)contact[7]) ||
+        5.0f < fabsf(lbl_80394a38 - (float)contact[8]))
     {
         acc[0] = lbl_80394a28 + (float)contact[10];
         acc[1] = lbl_80394a2c + (float)contact[0xb];
@@ -2599,9 +2557,9 @@ u32 PlayerCollisionCallback(int* contact, float* out)
         PlayerWriteContact(out, acc);
 
         lbl_804d451c = 0;
-        lbl_80394a28 = lbl_804D65CC;
-        lbl_80394a2c = lbl_804D65CC;
-        lbl_80394a30 = lbl_804D65CC;
+        lbl_80394a28 = 0.0f;
+        lbl_80394a2c = 0.0f;
+        lbl_80394a30 = 0.0f;
 
         PlayerTrackClosest(p, contact);
         return 1;
@@ -2705,9 +2663,6 @@ extern "C" int fn_800F7C64(void*, unsigned long);
 extern "C" int fn_800FC3B8(int);
 extern "C" void fn_800495BC(void*, int, int);
 extern "C" float lbl_804D4548;
-extern "C" float lbl_804D6650;
-extern "C" float lbl_804D6618;
-extern "C" float lbl_804D6654;
 int VarFindInt(unsigned long, unsigned long, unsigned long);
 
 // Per-frame motion update of a player-like object: announces the motion
@@ -2759,29 +2714,29 @@ int PlayerUpdateMotionInput(float dt, void* owner)
         ActorGetMatrix(&mtx, (Actor*)p);
         fn_800A0030(pos, &mtx, (float*)(p + 0x650));
 
-        move[0] = lbl_804D65CC;
-        move[1] = lbl_804D65CC;
-        move[2] = lbl_804D65CC;
+        move[0] = 0.0f;
+        move[1] = 0.0f;
+        move[2] = 0.0f;
 
         v = *(float*)(p + 0x394);
-        if (v > lbl_804D65CC)
+        if (v > 0.0f)
         {
             move[1] = fabsf(v) * xScale;
             PlayerResetGunTimer(p);
         }
-        else if (v < lbl_804D65CC)
+        else if (v < 0.0f)
         {
             move[1] = -fabsf(v) * xScale;
             PlayerResetGunTimer(p);
         }
 
         v = *(float*)(p + 0x38C);
-        if (v < lbl_804D65CC)
+        if (v < 0.0f)
         {
             move[0] = -fabsf(v) * yScale;
             PlayerResetGunTimer(p);
         }
-        else if (v > lbl_804D65CC)
+        else if (v > 0.0f)
         {
             move[0] = fabsf(v) * yScale;
             PlayerResetGunTimer(p);
@@ -2847,16 +2802,16 @@ int PlayerUpdateMotionInput(float dt, void* owner)
             }
         }
 
-        if (pos[2] == lbl_804D65CC)
+        if (pos[2] == 0.0f)
             pos[2] = -(*(float*)(state + 0x7C) * dt);
 
         fn_800A0168(&back, &mtx);
         fn_800A0030((float*)(p + 0x650), &back, pos);
 
-        if (*(float*)(p + 0x658) <= lbl_804D6650)
-            *(float*)(p + 0x658) = lbl_804D6650;
-        else if (*(float*)(p + 0x658) < lbl_804D6650)
-            *(float*)(p + 0x658) = lbl_804D6650;
+        if (*(float*)(p + 0x658) <= -20.0f)
+            *(float*)(p + 0x658) = -20.0f;
+        else if (*(float*)(p + 0x658) < -20.0f)
+            *(float*)(p + 0x658) = -20.0f;
 
         if (*(int*)(p + 0x73C) != 4)
             *(u32*)(p + 0x678) |= 0x80;
@@ -2873,7 +2828,7 @@ int PlayerUpdateMotionInput(float dt, void* owner)
         float zero;
 
         fn_800495BC(p, id, 0);
-        zero = lbl_804D65CC;
+        zero = 0.0f;
         result = 1;
         *(u32*)(p + 0x7B4) &= ~0x40000u;
         *(u32*)(p + 0x7B4) &= ~0x8000000u;
@@ -2937,9 +2892,9 @@ int PlayerUpdateMotionSeek(float dt, void* owner)
             fn_800E1098(lengthLimit, pos, pos);
 
         fn_800A0168(&inv, (Mtx34*)(p + 0x1C0));
-        move[0] = lbl_804D65CC;
-        move[1] = lbl_804D65CC;
-        move[2] = lbl_804D65CC;
+        move[0] = 0.0f;
+        move[1] = 0.0f;
+        move[2] = 0.0f;
         fn_800A0030(move, &inv, move);
         fn_800A0030(move, &mtx, move);
 
@@ -2994,16 +2949,16 @@ int PlayerUpdateMotionSeek(float dt, void* owner)
             }
         }
 
-        if (pos[2] == lbl_804D65CC)
+        if (pos[2] == 0.0f)
             pos[2] = -(*(float*)(state + 0x7C) * dt);
 
         fn_800A0168(&back, &mtx);
         fn_800A0030((float*)(p + 0x650), &back, pos);
 
-        if (*(float*)(p + 0x658) <= lbl_804D6650)
-            *(float*)(p + 0x658) = lbl_804D6650;
-        else if (*(float*)(p + 0x658) < lbl_804D6650)
-            *(float*)(p + 0x658) = lbl_804D6650;
+        if (*(float*)(p + 0x658) <= -20.0f)
+            *(float*)(p + 0x658) = -20.0f;
+        else if (*(float*)(p + 0x658) < -20.0f)
+            *(float*)(p + 0x658) = -20.0f;
 
         if (*(int*)(p + 0x73C) != 4)
             *(u32*)(p + 0x678) |= 0x80;
@@ -3020,7 +2975,7 @@ int PlayerUpdateMotionSeek(float dt, void* owner)
         float zero;
 
         fn_800495BC(p, id, 0);
-        zero = lbl_804D65CC;
+        zero = 0.0f;
         result = 1;
         *(u32*)(p + 0x7B4) &= ~0x40000u;
         *(u32*)(p + 0x7B4) &= ~0x8000000u;
@@ -3047,9 +3002,9 @@ void PlayerCalcMotionTarget(float dt, Player* player, float* out)
     int active = 0;
     u8* state;
 
-    if (*(float*)(*(u8**)(p + 0x738) + 0x80) <= lbl_804D65CC)
+    if (*(float*)(*(u8**)(p + 0x738) + 0x80) <= 0.0f)
     {
-        *(float*)(p + 0x72C) = lbl_804D65CC;
+        *(float*)(p + 0x72C) = 0.0f;
     }
     else
     {
@@ -3076,7 +3031,7 @@ void PlayerCalcMotionTarget(float dt, Player* player, float* out)
 
         if (active == 0)
         {
-            *(float*)(p + 0x72C) = lbl_804D65CC;
+            *(float*)(p + 0x72C) = 0.0f;
         }
         else
         {
@@ -3087,7 +3042,7 @@ void PlayerCalcMotionTarget(float dt, Player* player, float* out)
             }
             else if (*(float*)(p + 0x72C) < *(float*)(p + 0x730))
             {
-                *(float*)(p + 0x72C) = *(float*)(p + 0x72C) + lbl_804D6618 * dt;
+                *(float*)(p + 0x72C) = *(float*)(p + 0x72C) + 0.05f * dt;
                 if (*(float*)(p + 0x72C) > *(float*)(p + 0x730))
                 {
                     *(float*)(p + 0x72C) = *(float*)(p + 0x730);
@@ -3095,7 +3050,7 @@ void PlayerCalcMotionTarget(float dt, Player* player, float* out)
             }
             else if (*(float*)(p + 0x72C) > *(float*)(p + 0x730))
             {
-                *(float*)(p + 0x72C) = *(float*)(p + 0x72C) - lbl_804D6654 * dt;
+                *(float*)(p + 0x72C) = *(float*)(p + 0x72C) - 0.003f * dt;
                 if (*(float*)(p + 0x72C) < *(float*)(p + 0x730))
                 {
                     *(float*)(p + 0x72C) = *(float*)(p + 0x730);
@@ -3104,9 +3059,9 @@ void PlayerCalcMotionTarget(float dt, Player* player, float* out)
         }
     }
 
-    out[0] = lbl_804D65CC;
+    out[0] = 0.0f;
     out[1] = *(float*)(p + 0x72C);
-    out[2] = lbl_804D65CC;
+    out[2] = 0.0f;
 }
 
 // Per-frame positional offset of a player-like object: takes the host state's
@@ -3120,9 +3075,9 @@ int PlayerApplyFrameOffset(Player* player)
     Mtx34 mtx;
     int host;
 
-    offset[0] = lbl_804D65CC;
+    offset[0] = 0.0f;
     offset[1] = *(float*)(*(u8**)(p + 0x738) + 0x74);
-    offset[2] = lbl_804D65CC;
+    offset[2] = 0.0f;
 
     fn_800A0168(&mtx, (Mtx34*)(p + 0x1C0));
     fn_800A0030(offset, &mtx, offset);
@@ -3148,8 +3103,6 @@ int PlayerApplyFrameOffset(Player* player)
 // set and the speed crossed zero, the move flags are cleared and 1 returned.
 // Name and field meanings are guesses; offsets, flag bits and constants are
 // transcribed from retail (0x80072C74).
-extern "C" float lbl_804D6658;
-extern "C" float lbl_804D665C;
 extern "C" int lbl_804D2904;
 extern "C" float lbl_804D2908;
 extern "C" float lbl_804D290C;
@@ -3175,23 +3128,23 @@ int PlayerUpdateMotionBrake(void* owner, int mode, float dt)
 
     stop = 0;
 
-    if (*(float*)(p + 0x2664) > lbl_804D65CC)
+    if (*(float*)(p + 0x2664) > 0.0f)
     {
         *(float*)(p + 0x2664) -= dt;
-        if (*(float*)(p + 0x2664) < lbl_804D65CC)
-            *(float*)(p + 0x2664) = lbl_804D65CC;
+        if (*(float*)(p + 0x2664) < 0.0f)
+            *(float*)(p + 0x2664) = 0.0f;
     }
-    else if (*(float*)(p + 0x265C) > lbl_804D65CC)
+    else if (*(float*)(p + 0x265C) > 0.0f)
     {
         *(float*)(p + 0x265C) -= dt;
-        if (*(float*)(p + 0x265C) < lbl_804D65CC)
-            *(float*)(p + 0x265C) = lbl_804D65CC;
+        if (*(float*)(p + 0x265C) < 0.0f)
+            *(float*)(p + 0x265C) = 0.0f;
     }
-    else if (*(float*)(p + 0x2660) > lbl_804D65CC)
+    else if (*(float*)(p + 0x2660) > 0.0f)
     {
         *(float*)(p + 0x2660) -= dt;
-        if (*(float*)(p + 0x2660) < lbl_804D65CC)
-            *(float*)(p + 0x2660) = lbl_804D65CC;
+        if (*(float*)(p + 0x2660) < 0.0f)
+            *(float*)(p + 0x2660) = 0.0f;
     }
 
     if (fn_800F7C64(*(void**)&s, 0x8B267329u) != 0 || fn_800FC3B8(0x10) != 0)
@@ -3203,7 +3156,7 @@ int PlayerUpdateMotionBrake(void* owner, int mode, float dt)
     if (*(u32*)(p + 0x7B4) & 0x1000)
     {
         reversed = 1;
-        *(float*)(p + 0x658) = -(lbl_804D65F4 * *(float*)(p + 0x658));
+        *(float*)(p + 0x658) = -(0.5f * *(float*)(p + 0x658));
         *(u32*)(p + 0x7B4) &= ~0x1000u;
     }
 
@@ -3214,35 +3167,35 @@ int PlayerUpdateMotionBrake(void* owner, int mode, float dt)
     fn_800A0030((float*)(p + 0x650), &inv, pos);
 
     speed = *(float*)(p + 0x658);
-    if (speed > lbl_804D6650)
+    if (speed > -20.0f)
     {
         if (!stop)
             *(float*)(p + 0x658) =
                 speed - *(float*)(*(int*)(p + 0x738) + 0x7C) * dt;
         else
             *(float*)(p + 0x658) =
-                speed - lbl_804D6638 *
+                speed - 0.85f *
                             (*(float*)(*(int*)(p + 0x738) + 0x7C) * dt);
 
-        if (reversed == 1 && speed > lbl_804D65CC &&
-            *(float*)(p + 0x658) < lbl_804D65CC)
+        if (reversed == 1 && speed > 0.0f &&
+            *(float*)(p + 0x658) < 0.0f)
         {
             *(u32*)(p + 0x7B4) &= ~0x40000u;
             *(u32*)(p + 0x7B4) &= ~0x8000000u;
             *(u32*)(p + 0x7B4) &= ~0x4000000u;
             *(u32*)(p + 0x7B4) &= ~8u;
-            *(float*)(p + 0x658) = lbl_804D65CC;
+            *(float*)(p + 0x658) = 0.0f;
             *(u32*)(p + 0x610) = *(u32*)(p + 0x614);
-            *(float*)(p + 0x618) = lbl_804D65CC;
+            *(float*)(p + 0x618) = 0.0f;
             return 1;
         }
 
-        if (*(float*)(p + 0x658) < lbl_804D6650)
-            *(float*)(p + 0x658) = lbl_804D6650;
+        if (*(float*)(p + 0x658) < -20.0f)
+            *(float*)(p + 0x658) = -20.0f;
     }
     else
     {
-        *(float*)(p + 0x658) = lbl_804D6650;
+        *(float*)(p + 0x658) = -20.0f;
     }
 
     if (*(int*)(p + 0x73C) != 4)
@@ -3266,10 +3219,10 @@ int PlayerUpdateMotionPath(void* owner, float dt)
     switch (*(int*)(p + 0x720))
     {
     case 1:
-        if (*(float*)(p + 0x658) <= lbl_804D65CC)
+        if (*(float*)(p + 0x658) <= 0.0f)
         {
             *(int*)(p + 0x720) = 2;
-            *(float*)(p + 0x724) = lbl_804D65CC;
+            *(float*)(p + 0x724) = 0.0f;
         }
         break;
 
@@ -3278,15 +3231,15 @@ int PlayerUpdateMotionPath(void* owner, float dt)
         if (lbl_804D2904 == 0 || *(float*)(p + 0x724) >= lbl_804D2908 ||
             *(int*)(p + 0x328) == 0)
         {
-            *(float*)(p + 0x724) = lbl_804D65CC;
+            *(float*)(p + 0x724) = 0.0f;
             *(int*)(p + 0x720) = 3;
-            *(float*)(p + 0x658) = lbl_804D6658;
+            *(float*)(p + 0x658) = -0.1f;
         }
         break;
     }
 
     if ((*(u32*)(p + 0x7B4) & 0x1000) &&
-        *(float*)(p + 0x658) <= lbl_804D65CC)
+        *(float*)(p + 0x658) <= 0.0f)
     {
         int host = PlayerInHost((Actor*)p);
         int id = VarFindInt(0x7982059Cu,
@@ -3295,7 +3248,7 @@ int PlayerUpdateMotionPath(void* owner, float dt)
         float zero;
 
         fn_800495BC(p, id, 0);
-        zero = lbl_804D65CC;
+        zero = 0.0f;
         *(int*)(p + 0x720) = 0;
         *(u32*)(p + 0x7B4) &= ~0x40000u;
         *(u32*)(p + 0x7B4) &= ~0x8000000u;
@@ -3315,8 +3268,8 @@ int PlayerUpdateMotionPath(void* owner, float dt)
     float xScale;
     float yScale;
     float zScale;
-    float moveX = lbl_804D65CC;
-    float moveZ = lbl_804D65CC;
+    float moveX = 0.0f;
+    float moveZ = 0.0f;
     float v;
     int scaleDown = 0;
 
@@ -3356,29 +3309,29 @@ int PlayerUpdateMotionPath(void* owner, float dt)
     yScale *= scale;
     zScale *= scale;
 
-    if (*(float*)(p + 0x2664) > lbl_804D65CC)
+    if (*(float*)(p + 0x2664) > 0.0f)
     {
-        xScale *= lbl_804D65CC;
-        yScale *= lbl_804D65CC;
+        xScale *= 0.0f;
+        yScale *= 0.0f;
         *(float*)(p + 0x2664) -= dt;
-        if (*(float*)(p + 0x2664) < lbl_804D65CC)
-            *(float*)(p + 0x2664) = lbl_804D65CC;
+        if (*(float*)(p + 0x2664) < 0.0f)
+            *(float*)(p + 0x2664) = 0.0f;
     }
-    else if (*(float*)(p + 0x265C) > lbl_804D65CC)
+    else if (*(float*)(p + 0x265C) > 0.0f)
     {
-        xScale *= lbl_804D665C;
-        yScale *= lbl_804D665C;
+        xScale *= 0.76f;
+        yScale *= 0.76f;
         *(float*)(p + 0x265C) -= dt;
-        if (*(float*)(p + 0x265C) < lbl_804D65CC)
-            *(float*)(p + 0x265C) = lbl_804D65CC;
+        if (*(float*)(p + 0x265C) < 0.0f)
+            *(float*)(p + 0x265C) = 0.0f;
     }
-    else if (*(float*)(p + 0x2660) > lbl_804D65CC)
+    else if (*(float*)(p + 0x2660) > 0.0f)
     {
-        xScale *= lbl_804D6638;
-        yScale *= lbl_804D6638;
+        xScale *= 0.85f;
+        yScale *= 0.85f;
         *(float*)(p + 0x2660) -= dt;
-        if (*(float*)(p + 0x2660) < lbl_804D65CC)
-            *(float*)(p + 0x2660) = lbl_804D65CC;
+        if (*(float*)(p + 0x2660) < 0.0f)
+            *(float*)(p + 0x2660) = 0.0f;
     }
 
     if (*(int*)(p + 0x9EC) != 0)
@@ -3395,9 +3348,9 @@ int PlayerUpdateMotionPath(void* owner, float dt)
 
     if (scaleDown)
     {
-        xScale *= lbl_804D662C;
-        yScale *= lbl_804D662C;
-        zScale *= lbl_804D662C;
+        xScale *= 1.5f;
+        yScale *= 1.5f;
+        zScale *= 1.5f;
     }
 
     PlayerResetGunTimer(p);
@@ -3405,24 +3358,24 @@ int PlayerUpdateMotionPath(void* owner, float dt)
     fn_800A0030(pos, &mtx, (float*)(p + 0x650));
 
     v = *(float*)(p + 0x394);
-    if (v > lbl_804D65CC)
+    if (v > 0.0f)
     {
         moveX = fabsf(v) * xScale;
         PlayerResetGunTimer(p);
     }
-    else if (v < lbl_804D65CC)
+    else if (v < 0.0f)
     {
         moveX = -fabsf(v) * xScale;
         PlayerResetGunTimer(p);
     }
 
     v = *(float*)(p + 0x38C);
-    if (v < lbl_804D65CC)
+    if (v < 0.0f)
     {
         moveZ = -fabsf(v) * yScale;
         PlayerResetGunTimer(p);
     }
-    else if (v > lbl_804D65CC)
+    else if (v > 0.0f)
     {
         moveZ = fabsf(v) * yScale;
         PlayerResetGunTimer(p);
@@ -3466,21 +3419,21 @@ int PlayerUpdateMotionPath(void* owner, float dt)
     int state = *(int*)(p + 0x720);
     if (state == 1 || state == 3)
     {
-        if (*(float*)(p + 0x658) > lbl_804D6650)
+        if (*(float*)(p + 0x658) > -20.0f)
         {
             *(float*)(p + 0x658) -=
                 *(float*)(*(int*)(p + 0x738) + 0x7C) * dt;
-            if (*(float*)(p + 0x658) < lbl_804D6650)
-                *(float*)(p + 0x658) = lbl_804D6650;
+            if (*(float*)(p + 0x658) < -20.0f)
+                *(float*)(p + 0x658) = -20.0f;
         }
         else
         {
-            *(float*)(p + 0x658) = lbl_804D6650;
+            *(float*)(p + 0x658) = -20.0f;
         }
     }
     else if (state == 2)
     {
-        *(float*)(p + 0x658) = lbl_804D65CC;
+        *(float*)(p + 0x658) = 0.0f;
     }
 
     if (*(int*)(p + 0x73C) != 4)
@@ -3542,9 +3495,6 @@ static inline int PlayerQueryName(int target, int msg, u32 hash)
     return *(int*)&m.result;
 }
 
-extern "C" float lbl_804D6638;
-extern "C" float lbl_804D665C;
-extern "C" float lbl_804D6660;
 extern "C" float fn_80221100(void*);
 
 // Per-frame update of the player's gun/hand offset: damps the hand velocities
@@ -3558,7 +3508,7 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
     float x = *(float*)(*(int*)(p + 0x738) + 0x10) * *(float*)(p + 0x734);
     float y = *(float*)(*(int*)(p + 0x738) + 0x14) * *(float*)(p + 0x734);
     float z = *(float*)(*(int*)(p + 0x738) + 0x2C) * *(float*)(p + 0x734);
-    float zero = lbl_804D65CC;
+    float zero = 0.0f;
     int b1 = 0;
     int b2 = 0;
     int q = PlayerQueryName(*(int*)(p + 0x38), 0x41E, 0x2DA8293C);
@@ -3573,7 +3523,7 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
     }
     else if (*(float*)(p + 0x265C) > zero)
     {
-        float k = lbl_804D665C;
+        float k = 0.76f;
         x = x * k;
         y = y * k;
         *(float*)(p + 0x265C) = *(float*)(p + 0x265C) - dt;
@@ -3582,7 +3532,7 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
     }
     else if (*(float*)(p + 0x2660) > zero)
     {
-        float k = lbl_804D6638;
+        float k = 0.85f;
         x = x * k;
         y = y * k;
         *(float*)(p + 0x2660) = *(float*)(p + 0x2660) - dt;
@@ -3603,7 +3553,7 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
 
     if (b1)
     {
-        float k = lbl_804D662C;
+        float k = 1.5f;
         x = x * k;
         y = y * k;
         z = z * k;
@@ -3615,7 +3565,7 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
 
         if (mode == 1)
         {
-            float k = lbl_804D6660;
+            float k = 1.75f;
             x = x * k;
             y = y * k;
             z = z * k;
@@ -3624,7 +3574,7 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
         {
             if (mode >= 0)
             {
-                float k = lbl_804D662C;
+                float k = 1.5f;
                 x = x * k;
                 y = y * k;
                 z = z * k;
@@ -3632,7 +3582,7 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
         }
         else if (mode < 3)
         {
-            float k = lbl_804D6628;
+            float k = 2.0f;
             x = x * k;
             y = y * k;
             z = z * k;
@@ -3644,7 +3594,7 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
 
         if (mode == 3)
         {
-            float k = lbl_804D65F4;
+            float k = 0.5f;
             x = x * k;
             y = y * k;
             z = z * k;
@@ -3653,14 +3603,14 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
         {
             if (mode == 1)
             {
-                float k = lbl_804D65F4;
+                float k = 0.5f;
                 x = x * k;
                 y = y * k;
                 z = z * k;
             }
             else if (mode > 0)
             {
-                float k = lbl_804D661C;
+                float k = 0.25f;
                 x = x * k;
                 y = y * k;
                 z = z * k;
@@ -3668,14 +3618,14 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
         }
         else if (mode == 5)
         {
-            float k = lbl_804D661C;
+            float k = 0.25f;
             x = x * k;
             y = y * k;
             z = z * k;
         }
         else if (mode < 5)
         {
-            float k = lbl_804D65F4;
+            float k = 0.5f;
             x = x * k;
             y = y * k;
             z = z * k;
@@ -3697,9 +3647,9 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
         *(u32*)(p + 0x7B4) &= ~0x8000000u;
         *(u32*)(p + 0x7B4) &= ~0x4000000u;
         *(u32*)(p + 0x7B4) &= ~0x8u;
-        *(float*)(p + 0x658) = lbl_804D65CC;
+        *(float*)(p + 0x658) = 0.0f;
         *(float*)(p + 0x610) = *(float*)(p + 0x614);
-        *(float*)(p + 0x618) = lbl_804D65CC;
+        *(float*)(p + 0x618) = 0.0f;
         return 1;
     }
 
@@ -3715,25 +3665,25 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
         ActorGetMatrix(&mtx, (Actor*)p);
         fn_800A0030(vec, &mtx, (float*)(p + 0x650));
 
-        tz = lbl_804D65CC;
-        if (*(float*)(p + 0x394) > lbl_804D65CC)
+        tz = 0.0f;
+        if (*(float*)(p + 0x394) > 0.0f)
         {
             tz = fabsf(*(float*)(p + 0x394)) * x;
             PlayerResetGunTimer(p);
         }
-        else if (*(float*)(p + 0x394) < lbl_804D65CC)
+        else if (*(float*)(p + 0x394) < 0.0f)
         {
             tz = -fabsf(*(float*)(p + 0x394)) * x;
             PlayerResetGunTimer(p);
         }
 
-        tx = lbl_804D65CC;
-        if (*(float*)(p + 0x38C) < lbl_804D65CC)
+        tx = 0.0f;
+        if (*(float*)(p + 0x38C) < 0.0f)
         {
             tx = -fabsf(*(float*)(p + 0x38C)) * y;
             PlayerResetGunTimer(p);
         }
-        else if (*(float*)(p + 0x38C) > lbl_804D65CC)
+        else if (*(float*)(p + 0x38C) > 0.0f)
         {
             tx = fabsf(*(float*)(p + 0x38C)) * y;
             PlayerResetGunTimer(p);
@@ -3741,7 +3691,7 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
 
         if (arg == 0)
         {
-            tx = lbl_804D65CC;
+            tx = 0.0f;
             tz = tx;
         }
 
@@ -3793,7 +3743,7 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
     {
         *(float*)(p + 0x27E0) = *(float*)(p + 0x27E0) - dt;
 
-        if (*(float*)(p + 0x27E0) <= lbl_804D65CC ||
+        if (*(float*)(p + 0x27E0) <= 0.0f ||
             *(int*)(p + 0x964) != 0 || *(int*)(p + 0x960) != 0 ||
             *(int*)(p + 0x9E4) != 0)
         {
@@ -3802,7 +3752,7 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
         else
         {
             float t = *(float*)(p + 0x27E0) / *(float*)(p + 0x27DC);
-            float a = lbl_804D65F0 * *(float*)(p + 0x27D8);
+            float a = 0.75f * *(float*)(p + 0x27D8);
 
             fn_800E1098(a * t + a, (float*)(p + 0x650),
                         (float*)(p + 0x27E8));
@@ -3813,7 +3763,7 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
         }
     }
 
-    if (*(float*)(p + 0x658) > lbl_804D6650 &&
+    if (*(float*)(p + 0x658) > -20.0f &&
         (*(u32*)(p + 0x50) & 0x20000000) == 0)
     {
         if (!b2)
@@ -3826,16 +3776,16 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
         {
             *(float*)(p + 0x658) =
                 *(float*)(p + 0x658) -
-                lbl_804D6638 *
+                0.85f *
                     (*(float*)(*(int*)(p + 0x738) + 0x7C) * dt);
         }
 
-        if (*(float*)(p + 0x658) < lbl_804D6650)
-            *(float*)(p + 0x658) = lbl_804D6650;
+        if (*(float*)(p + 0x658) < -20.0f)
+            *(float*)(p + 0x658) = -20.0f;
     }
     else if ((*(u32*)(p + 0x50) & 0x20000000) == 0)
     {
-        *(float*)(p + 0x658) = lbl_804D6650;
+        *(float*)(p + 0x658) = -20.0f;
     }
 
     if (*(int*)(p + 0x73C) != 4)
@@ -3845,9 +3795,6 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
     return 0;
 }
 
-extern "C" float lbl_804D6664;
-extern "C" float lbl_804D6668;
-extern "C" float lbl_804D6678;
 
 int ActorCount();
 Actor* ActorGet(int index);
@@ -3886,10 +3833,10 @@ int PlayerSlideByVar(void* owner)
         nameB = *(int*)&msgName;
     }
 
-    scale = lbl_804D65CC;
+    scale = 0.0f;
     t = (float)(u32)Fn800F7DEC(nameA, nameB, (int)0x6FAB23FE,
                               fn_800498D0(p), 0) /
-        lbl_804D65F8;
+        1500.0f;
     if (t > scale)
         scale = t;
 
@@ -3901,9 +3848,9 @@ int PlayerSlideByVar(void* owner)
         float vec[3];
         Mtx34 mtx;
 
-        vec[0] = lbl_804D65CC;
-        vec[1] = lbl_804D6664 * scale + lbl_804D6628;
-        vec[2] = lbl_804D6668 * scale + lbl_804D662C;
+        vec[0] = 0.0f;
+        vec[1] = 4.0f * scale + 2.0f;
+        vec[2] = 2.5f * scale + 1.5f;
         ActorGetMatrix(&mtx, (Actor*)p);
         fn_800A0168(&mtx, &mtx);
         fn_800A0030(vec, &mtx, vec);
@@ -3946,7 +3893,7 @@ extern "C" void fn_800758E4(void);
 void PlayerResetGunMotionFlags(void* owner)
 {
     u8* p = (u8*)owner;
-    float zero = lbl_804D65CC;
+    float zero = 0.0f;
 
     *(u32*)(p + 0x7B4) &= ~0x00040000u;
     *(u32*)(p + 0x7B4) &= ~0x08000000u;
@@ -3984,7 +3931,7 @@ void PlayerResetGunMotion(void* owner)
 int PlayerGunVecNonZero(void* owner)
 {
     u8* p = (u8*)owner;
-    float zero = lbl_804D65CC;
+    float zero = 0.0f;
 
     if (zero != *(float*)(p + 0x650) || zero != *(float*)(p + 0x654) ||
         zero != *(float*)(p + 0x658))
