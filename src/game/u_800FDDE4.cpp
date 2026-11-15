@@ -440,17 +440,20 @@ void HudRefreshSlots(HudState* s) {
 }
 
 // Clears the four countdown timers of one HUD slot.
-void HudTimerReset(int slot) {
-    if (slot < 0) {
-        return;
-    }
-    if (slot < 4) {
+static inline void HudClearTimers(int slot) {
+    if (slot >= 0 && slot < 4) {
         lbl_8045D9F0[slot].entries[0].timer = lbl_804D7500;
         lbl_8045D9F0[slot].entries[1].timer = lbl_804D7500;
         lbl_8045D9F0[slot].entries[2].timer = lbl_804D7500;
         lbl_8045D9F0[slot].entries[3].timer = lbl_804D7500;
+    }
+}
+
+void HudTimerReset(int slot) {
+    if (slot < 0) {
         return;
     }
+    HudClearTimers(slot);
 }
 
 // Restarts one timer of a HUD slot; when the timer runs out (value <= 0) the entry is
@@ -1449,3 +1452,20 @@ void HudNotifyBar(float dt) {
         }
     }
 }
+
+// Not drafted yet (signatures unknown, nothing here calls them).
+// TODO (not drafted yet, 0x368 bytes at 0x800FEF2C): fn_800FEF2C
+// TODO (not drafted yet, 0x204 bytes at 0x800FF294): fn_800FF294
+// TODO (not drafted yet, 0x4c bytes at 0x800FF498): fn_800FF498
+// TODO (not drafted yet, 0x4c bytes at 0x800FF4E4): fn_800FF4E4
+// TODO (not drafted yet, 0x13c bytes at 0x800FF530): fn_800FF530
+// TODO (not drafted yet, 0x44 bytes at 0x800FF66C): fn_800FF66C
+// TODO (not drafted yet, 0x30 bytes at 0x800FF6B0): fn_800FF6B0
+// TODO (not drafted yet, 0x38 bytes at 0x800FF6E0): fn_800FF6E0
+// TODO (not drafted yet, 0x750 bytes at 0x800FF718): fn_800FF718
+// TODO (not drafted yet, 0x160 bytes at 0x800FFE68): fn_800FFE68
+// TODO (not drafted yet, 0x194 bytes at 0x800FFFC8): fn_800FFFC8
+// TODO (not drafted yet, 0x4d8 bytes at 0x8010015C): fn_8010015C
+// TODO (not drafted yet, 0x1d8 bytes at 0x80100634): fn_80100634
+// TODO (not drafted yet, 0x360 bytes at 0x80100864): fn_80100864
+// TODO (not drafted yet, 0x2ec bytes at 0x80100BC4): fn_80100BC4
