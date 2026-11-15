@@ -29,7 +29,7 @@ inline float FastSqrt(float x) {
     return r;
 }
 
-extern "C" int fn_800E0CB8(IVec3* out, IVec3* in) {
+extern "C" int fn_800E0CB8(IVec3* out, const IVec3* in) {
     float x, y, z;
     float sq;
     float len;
@@ -56,7 +56,7 @@ extern "C" int fn_800E0CB8(IVec3* out, IVec3* in) {
     return len;
 }
 
-extern "C" int fn_800E0DBC(IVec3* v) {
+extern "C" int fn_800E0DBC(const IVec3* v) {
     if ((v->x | v->y | v->z) == 0) {
         return 0;
     }
@@ -64,56 +64,38 @@ extern "C" int fn_800E0DBC(IVec3* v) {
     return FastSqrt(sq);
 }
 
-extern "C" void fn_800E0E9C(IVec3* out, IVec3* in, int length) {
-    float sq;
-    float len;
-    float scale;
-
+extern "C" void fn_800E0E9C(IVec3* out, const IVec3* in, int length) {
     if ((in->x | in->y | in->z) == 0) {
         out->x = 0;
         out->y = 0;
         out->z = 0;
         return;
     }
-    sq = (float)in->x * (float)in->x + (float)in->y * (float)in->y + (float)in->z * (float)in->z;
-    len = FastSqrt(sq);
-    scale = (float)length / len;
-    {
-        int ix = in->x;
-        int iy = in->y;
-        int iz = in->z;
-
-        out->x = (float)ix * scale;
-        out->y = (float)iy * scale;
-        out->z = (float)iz * scale;
-    }
+    float sq = (float)in->x * (float)in->x + (float)in->y * (float)in->y + (float)in->z * (float)in->z;
+    float scale = (float)length / FastSqrt(sq);
+    out->x = (float)in->x * scale;
+    out->y = (float)in->y * scale;
+    out->z = (float)in->z * scale;
 }
 
-extern "C" float fn_800E1020(Vec3* v) {
-    if (((*(unsigned long*)&v->x | *(unsigned long*)&v->y | *(unsigned long*)&v->z) & 0x7FFFFFFF) == 0) {
+extern "C" float fn_800E1020(const Vec3* v) {
+    if (((*(const unsigned long*)&v->x | *(const unsigned long*)&v->y | *(const unsigned long*)&v->z) & 0x7FFFFFFF) == 0) {
         return 0.0f;
     }
     float sq = v->x * v->x + v->y * v->y + v->z * v->z;
     return FastSqrt(sq);
 }
 
-extern "C" void fn_800E1098(Vec3* out, Vec3* in, float length) {
-    float sq;
-    float scale;
-    float x, y, z;
-
-    if (((*(unsigned long*)&in->x | *(unsigned long*)&in->y | *(unsigned long*)&in->z) & 0x7FFFFFFF) == 0) {
+extern "C" void fn_800E1098(Vec3* out, const Vec3* in, float length) {
+    if (((*(const unsigned long*)&in->x | *(const unsigned long*)&in->y | *(const unsigned long*)&in->z) & 0x7FFFFFFF) == 0) {
         out->x = 0.0f;
         out->y = 0.0f;
         out->z = 0.0f;
         return;
     }
-    sq = in->x * in->x + in->y * in->y + in->z * in->z;
-    scale = length / FastSqrt(sq);
-    x = in->x;
-    y = in->y;
-    z = in->z;
-    out->x = x * scale;
-    out->y = y * scale;
-    out->z = z * scale;
+    float sq = in->x * in->x + in->y * in->y + in->z * in->z;
+    float scale = length / FastSqrt(sq);
+    out->x = in->x * scale;
+    out->y = in->y * scale;
+    out->z = in->z * scale;
 }

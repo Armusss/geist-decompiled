@@ -624,7 +624,7 @@ config.libs = [
             Object(Matching, "game/u_800DED18.cpp"),  # level variables DB
             Object(Matching, "game/u_800DFE3C.cpp"),  # music streams, split from u_800DEC54
             Object(NonMatching, "game/SAM.cpp"),  # guess
-            Object(NonMatching, "game/u_800E0CB8.cpp"),  # Vec3 helpers
+            Object(Matching, "game/u_800E0CB8.cpp", mw_version="GC/2.0"),  # Vec3 helpers; GC/2.0: const-pointer loads before stwu (STATUS G4)
             Object(Matching, "game/asyncio.cpp"),  # guess
             Object(NonMatching, "game/u_800E1B5C.cpp"),  # guess
             Object(Matching, "game/u_800E9418.cpp"),  # guess

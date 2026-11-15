@@ -399,6 +399,9 @@ because it makes a function line up. Each file uses the compiler its retail code
    source shapes first.
 4. GC/2.6 stays ruled out for game code (it also fails the plane function, and nothing needs it over 2.0).
 
+**Correction (opus-vec, 2026-11-15):** GC/2.0 moves loads before `stwu` only when they go through a pointer-to-const
+(`const T*`, `const T&`, `const void*`); non-const, `__restrict` and `void*` keep stwu first. GC/1.3.2/1.3.2r/1.2.5n never
+do. The caveat below came from tests with non-const pointers; early branching is irrelevant.
 **Fingerprint caveat (helper-a, 2026-10-14):** the pre-stwu load is necessary evidence but not sufficient.
 In u_800E0CB8 (Vec3 helpers) every compiler 1.3.2-2.7 puts stwu first, even a minimal zero-vector-test
 version. Those functions branch early, unlike the qsort comparators. So u_800E0CB8 stays on 1.3.2,
@@ -472,6 +475,8 @@ is now game/u_8019FDD0.cpp.
   As C++ those are 12, 0 and 7. No C-only evidence.
 
 Files on GC/2.0: **u_8012071C** (qsort comparators 0x80120A78/0x80120A9C, pre-stwu loads; 1.3.2 cannot).
+**u_800E0CB8** (Vec3 helpers, user-approved 2026-11-15): all 5 functions have pre-stwu loads; GC/2.0 matches the
+whole file (AUDIT OK) once the input vectors are `const` pointers. GC/1.3.2 never schedules them with any shape.
 History: on 2026-10-13 the Lead briefly switched the whole game block to 2.0 after checking only matched
 files. That missed the plane function, so it was reverted.
 
