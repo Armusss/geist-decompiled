@@ -403,16 +403,19 @@ extern float          lbl_804D6D44;
 // Drop every registry entry that belongs to this owner.
 void OwnerSlotRemove(Owner* owner)
 {
+    OwnerSlotEntry* e;
+    int i;
+
     if (owner == 0) {
         return;
     }
-    Owner* o = owner;
-    for (int i = 0; i < 8; i++) {
-        if (lbl_80449568[i].id == OwnerId(o)) {
-            lbl_80449568[i].id = -1;
-            lbl_80449568[i].a = 0;
-            lbl_80449568[i].b = 0;
-            lbl_80449568[i].c = 0;
+    e = lbl_80449568;
+    for (i = 0; i < 8; i++, e++) {
+        if (e->id == OwnerId(owner)) {
+            e->id = -1;
+            e->a = 0;
+            e->b = 0;
+            e->c = 0;
         }
     }
 }
