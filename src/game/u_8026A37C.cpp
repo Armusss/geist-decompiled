@@ -41,14 +41,18 @@ struct UserGeomClass {
     void (*release)(Geom* g);                   // 0x10
 };
 
-// The per-object class table (only its first five entries are visible here; spaces
-// have more entries, declared in SpaceVtbl below).
+// The per-object class table of a plain geometry (five words: two header words, the
+// destructor, computeAabb and the AABB test).
 struct GeomVtbl {
     int unk00;                             // 0x00
     int unk04;                             // 0x04
     Geom* (*destroy)(Geom* g, short del);  // 0x08
     void (*computeAabb)(Geom* g);          // 0x0c
     int (*isDefault)(Geom* g, Geom* other, float* aabb); // 0x10
+};
+
+// A collision space's class table extends the geometry's with the space entries.
+struct SpaceVtbl : GeomVtbl {
     int (*getNumGeoms)(Geom* g);                // 0x14
     void (*addGeom)(Geom* g, Geom* child, int arg);   // 0x18
     void (*removeGeom)(Geom* g, Geom* child);   // 0x1c
@@ -74,9 +78,6 @@ struct GeomV {
     virtual void collideSpace(void* data, SpaceCallback cb);                  // 0x28
     virtual void collideGeom(void* data, Geom* other, SpaceCallback cb);      // 0x2c
 };
-
-// A collision space's class table has the same layout as a geometry's.
-typedef GeomVtbl SpaceVtbl;
 
 // A rigid body (only the fields used here).
 struct Body {
@@ -160,8 +161,8 @@ void SolverFreeBlock(void* block, u32 size);
 void SolverClearFloats(float* p, int n);
 
 // Class tables handed to spaces; they live in the neighbouring unit's .data.
-extern GeomVtbl lbl_803C0434;
-extern GeomVtbl lbl_803C0464;
+extern SpaceVtbl lbl_803C0434;
+extern SpaceVtbl lbl_803C0464;
 
 // The class tables of this file.
 extern GeomVtbl gUserGeomVtbl;
@@ -179,7 +180,7 @@ static const char sTooManyUserClasses[] =
     "too many user classes, you must increase the limit and recompile ODE";
 
 // Forward declarations.
-int GeomRegisterClass(UserGeomClass* cls);
+int GeomRegisterClass(const UserGeomClass* cls);
 int UserGeomCollide(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
 int GeomUserTest(Geom* g, Geom* other, float* aabb);
 void GeomUpdateUserAabb(Geom* g);
@@ -218,7 +219,7 @@ static inline void GeomSetAllColliders(int type, ColliderFn fn)
     }
 }
 
-int GeomRegisterClass(UserGeomClass* cls)
+int GeomRegisterClass(const UserGeomClass* cls)
 {
     int type;
 
