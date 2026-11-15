@@ -633,8 +633,8 @@ int BehParamsGhostIdleState(void* actorPtr)
 // current state.
 int BehParamsGhostChaseState(void* actorPtr)
 {
-    BehActor* a = (BehActor*)actorPtr;
     BehParams* beh;
+    BehActor* a = (BehActor*)actorPtr;
     float turn;
     int dir;
 
@@ -682,8 +682,8 @@ int BehParamsGhostChaseState(void* actorPtr)
 // facing is too far off the target, else the current state.
 int BehParamsGhostSpawnState(void* actorPtr)
 {
-    BehActor* a = (BehActor*)actorPtr;
     BehParams* beh;
+    BehActor* a = (BehActor*)actorPtr;
     float turn;
     int dir;
 
@@ -1018,9 +1018,9 @@ extern "C" void fn_800913EC(void* handle, float f, void* out);
 // the slot timing constants and switches the object into the 0xb state.
 int BehParamsGhostEmitState(void* actorPtr)
 {
+    MsgBuf* ctx;
     BehActor* a = (BehActor*)actorPtr;
     BehParams* beh;
-    MsgBuf* ctx;
     EmitterDesc descA;
     EmitterDesc descB;
 
@@ -1308,10 +1308,10 @@ int BehParamsGhostSearchState(void* actorPtr)
 int BehParamsGhostRoamState(void* actorPtr)
 {
     BehActor* a = (BehActor*)actorPtr;
-    BehParams* beh;
     MsgBuf* ctx;
     int setCount;
     int set;
+    BehParams* beh;
 
     if (a == 0) {
         return 0;
@@ -1459,9 +1459,9 @@ int BehParamsGhostTurnState(void* actorPtr)
 // word and re-arms the state's effect with the block's 0x18 value.
 int BehParamsGhostPauseState(void* actorPtr)
 {
-    BehActor* a = (BehActor*)actorPtr;
     BehParams* beh;
     MsgBuf* buf;
+    BehActor* a = (BehActor*)actorPtr;
     int arg;
 
     if (a == 0) {
