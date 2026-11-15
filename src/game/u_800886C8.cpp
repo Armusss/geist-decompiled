@@ -2374,7 +2374,7 @@ int FxScreenRecordCopy17(FxScreenRecord17* dst, const FxScreenRecord17* src,
 {
     int mode = 0;
 
-    *dst = *src;
+    *(StateBlock17*)dst = *(StateBlock17*)src;
     if (cfg[3] == 1) {
         mode = 4;
     }
