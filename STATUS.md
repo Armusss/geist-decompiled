@@ -79,6 +79,16 @@ TODO is resolved (no lbl+offset left). Tools: ~/geist-work/ds/opus-full-B2-tools
 a r30; twin fn_800E8760 0x800E8760 has the same pattern, so they likely share an inline). u_8012071C 9/9 with data splits:
 flip needs `force_active: [StatGetDebug__Fiii]` in config.yml (unreferenced but kept in retail), awaiting the user.
 
+**Recurring unsolved shapes (fullmatch round 2026-11-15):**
+- `li r4,9` before `addi r3,rX,624` at a HasCondition call: HostRideBUpdate/HostRideTick (2 diffs each), BehParamsUpdate,
+  CreatureUpdate, NpcSveUpdateActor, fn_801CAA48, fn_80295634, fn_8004C9C8, CrabUpdate. `#pragma scheduling off` (probe) still
+  puts addi first. 5040 decl orders + wrappers tried. Scanner: ~/geist-work/ds/opus-full-B5-tools/scan.py.
+- HostRideMsg/HostRideBMsg 15: retail loads the actor into r5 and copies to r31; passing it as fn_80019F88's 2nd arg in case
+  0x41D forces r4 in ours (passing 0 as a probe gives retail's code).
+- Host-ride update fix that worked: convert to float first, then subtract in place (`dx = (float)t->x; dx -= a->f84;`).
+- Retinal 7/8: RetinalTrigger 33, FPR numbering only, coupled between the line and glow blocks (`?:` vs `if` changes
+  conversion-temp slot reuse). Tools: ~/geist-work/ds/opus-full-A4-tools/.
+
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
 They are started with `~/geist-work/ds/run_worker.sh NAME [MAX_TURNS]` (allowlist + 150-turn cap), at most 3 at once.
