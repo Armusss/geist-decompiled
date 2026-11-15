@@ -75,6 +75,10 @@ block 0x802D47C0-0x802D4808 (retail stores msg.actor first, then p->unk1C/a->unk
 orders, annealing, MakeHitMsg inline variants) never below 9; likely needs a real message struct/initialiser. lbl_8034C308
 TODO is resolved (no lbl+offset left). Tools: ~/geist-work/ds/opus-full-B2-tools/.
 
+**Fullmatch round (2026-11-15) leftovers:** u_80254F54 43/44 (GunHostState13Enter 21, register-only: retail slot temp r31 /
+a r30; twin fn_800E8760 0x800E8760 has the same pattern, so they likely share an inline). u_8012071C 9/9 with data splits:
+flip needs `force_active: [StatGetDebug__Fiii]` in config.yml (unreferenced but kept in retail), awaiting the user.
+
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
 They are started with `~/geist-work/ds/run_worker.sh NAME [MAX_TURNS]` (allowlist + 150-turn cap), at most 3 at once.
