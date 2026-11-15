@@ -39,28 +39,20 @@ int RangeSyncUnit(void)
 // sync slot per word.  An empty or inverted span costs nothing.
 void RangeSyncWords(void* start, void* end)
 {
-    unsigned long count = ((unsigned long)end + 3 - (unsigned long)start) >> 2;
+    unsigned long* p = (unsigned long*)start;
 
-    if ((unsigned long)start >= (unsigned long)end) {
-        return;
+    for (; p < (unsigned long*)end; p++) {
     }
-    do {
-        count -= 1;
-    } while (count != 0);
 }
 
 // Walk the word-aligned span [start, end) one word at a time, spending one
 // touch slot per word.  An empty or inverted span costs nothing.
 void RangeTouchWords(void* start, void* end)
 {
-    unsigned long count = ((unsigned long)end + 3 - (unsigned long)start) >> 2;
+    unsigned long* p = (unsigned long*)start;
 
-    if ((unsigned long)start >= (unsigned long)end) {
-        return;
+    for (; p < (unsigned long*)end; p++) {
     }
-    do {
-        count -= 1;
-    } while (count != 0);
 }
 
 // A range is idle when there is nothing to touch: no object, or the pending
@@ -1541,7 +1533,7 @@ float RangeValueDistance2D(void* self)
     delta[2] = pos[5] - pos[2];
     delta[2] = 0;
     float d = fn_800E0DBC(delta);
-    return d * 0.5f;
+    return 0.5f * d;
 }
 
 // Engine RNG (mangled C++ name Rand__Fv), declared through its real prototype.
@@ -1815,7 +1807,7 @@ float Vec2DistSq(float* a, float* b)
     float dx = a[0] - b[0];
     float dy = a[1] - b[1];
 
-    return dx * dx + dy * dy + 0.0f;
+    return 0.0f + (dx * dx + dy * dy);
 }
 
 // Squared 3D distance between two points.  Name is a descriptive guess.
