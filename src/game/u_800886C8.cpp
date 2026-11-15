@@ -1388,7 +1388,7 @@ int FxBuildScreenScrollItemsTex(int* out, int* in, int* item)
 // Twelve-word (0x30-byte) state block that the scroll-item builders copy into
 // their output. Size and use are descriptive guesses.
 struct ScrollItemState12 {
-    int w[12];
+    int a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11;
 };
 
 // Builds one scroll-item row whose facing direction is the segment between the
@@ -1481,7 +1481,7 @@ struct ScrollItemState17 {
 // advances the material clock; always returns 1. Names are descriptive guesses.
 int FxCopyScrollItemState17(int* out, int* in)
 {
-    *(ScrollItemState17*)out = *(ScrollItemState17*)in;
+    *(StateBlock17*)out = *(StateBlock17*)in;
     fn_80105D84(lbl_804D470C);
     return 1;
 }
