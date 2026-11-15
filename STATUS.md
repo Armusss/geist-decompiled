@@ -85,6 +85,11 @@ flip needs `force_active: [StatGetDebug__Fiii]` in config.yml (unreferenced but 
   puts addi first. 5040 decl orders + wrappers tried. Scanner: ~/geist-work/ds/opus-full-B5-tools/scan.py.
 - HostRideMsg/HostRideBMsg 15: retail loads the actor into r5 and copies to r31; passing it as fn_80019F88's 2nd arg in case
   0x41D forces r4 in ours (passing 0 as a probe gives retail's code).
+- Switch tree pivoting on 1 (`cmpwi 1; beq TAIL; bge R; b TAIL; R: cmpwi 3; bge TAIL; li 1`): RideBehavior inline in
+  u_802B9088 RideUpdate/RideInit (5 each). `case 0: break; case 2: return 1; case 1: return 0;` gives the tree plus one
+  extra block; ~80 variants. Tools: ~/geist-work/ds/opus-full-A9-tools/.
+- u_802DC82C HostDie 42 words: retail emits all 18 `pos.f[]` stores before `desc` stores, as if the 376(r1) array were
+  aliased (passing &pos to a call reproduces it); a Trail{pos;dirs} struct fixes order but merges loop registers.
 - Host-ride update fix that worked: convert to float first, then subtract in place (`dx = (float)t->x; dx -= a->f84;`).
 - Retinal 7/8: RetinalTrigger 33, FPR numbering only, coupled between the line and glow blocks (`?:` vs `if` changes
   conversion-temp slot reuse). Tools: ~/geist-work/ds/opus-full-A4-tools/.
