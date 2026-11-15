@@ -31,18 +31,30 @@ class String : public Buffer {
 public:
     String();
     ~String() {}
-    void Format(const char* fmt, ...);
 };
 
-class Skin;
+// Draw parameters of a model pass (0x3C bytes): flags, offset and two RGBA colours.
+struct Skin {
+    u32 flags;
+    u32 unk04;
+    f32 unk08;
+    u32 unk0C;
+    int color0[4];
+    int color1[4];
+    int unk30;
+    int unk34;
+    int unk38;
+};
+
+// Fade timing of the emitter: life time, fade-in and fade-out lengths.
+static f32 sFxLifeTime = 200.0f;
+static f32 sFxFadeInTime = 200.0f;
+static f32 sFxFadeOutTime;
+// Set once a parent has taken over the emitter; cleared by the next draw.
+static int sFxParentTaken;
 
 extern "C" {
-    extern f32 lbl_804D3AD0;
-    extern f32 lbl_804D3AD4;
-    extern f32 lbl_804D57C8;
-    extern int lbl_804D57CC;
     extern int lbl_804D3408;
-    extern u8  lbl_803C4FE0[];
 
     u32  fn_800E7890(Actor* actor, int* out);
     u32  fn_800390D8(u32 model, u32 a);
@@ -84,6 +96,7 @@ float GfxOwnerBrightness(u32 id);
 void CrouchSpawnFx(Actor* a, int kind);
 
 extern "C" void fn_8028C188(void* dst, const char* src, int len);
+extern "C" int fn_8028BF80(Buffer* self, const char* format, ...);
 int FxEmitterSpawnFromMsg(int* d);
 
 typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
@@ -104,6 +117,9 @@ int FxEmitterHandleMessage(Actor* self, int msg, void* data, int arg4);
 void ActorFxEmitterUpdate(Actor* self, f32 dt);
 int ActorFxEmitterInit(Actor* self);
 void BossForward88E0();
+
+// Outline pass drawn over the emitter's parent.
+static Skin sFxOutlineSkin = { 0x1034, 0, -10.5f, 0, { 0xFF, 0, 0, 0xFF }, { 0xFF, 0xFF, 0xFF, 0xFF }, -1, -1, 0 };
 
 ActorType gDestroyableType = { 0, "Destroyable", FxEmitterHandleMessage, ActorFxEmitterUpdate, ActorFxEmitterInit, 0, BossForward88E0 };
 
@@ -197,7 +213,7 @@ void ActorFxEmitterUpdate(Actor* self, f32 dt)
     if (fn_80212730(*(u32*)(base + 0x38)) != -1) {
         memset(&info, 0, sizeof(info));
         if ((SendMsg(*(u32*)(base + 0xA8), 0x400, &info) == 0 || info.actor == 0 || info.unkC == 0) &&
-            lbl_804D57CC == 0) {
+            sFxParentTaken == 0) {
             if (info.actor != 0)
                 ActorGetMatrix(&mtx, info.actor);
             else
@@ -269,7 +285,7 @@ void ActorFxEmitterUpdate(Actor* self, f32 dt)
 
             fn_8021284C(*(u32*)(base + 0x38));
             data[4] = 0.0f;
-            lbl_804D57CC = 1;
+            sFxParentTaken = 1;
         }
     }
 
@@ -365,7 +381,7 @@ int FxEmitterHandleMessage(Actor* self, int msg, void* data, int arg4)
             {
                 String s;
 
-                s.Format("Parent: 0x%08x\n", fn_80212730(*(u32*)(owner + 0x38)));
+                fn_8028BF80(&s, "Parent: 0x%08x\n", fn_80212730(*(u32*)(owner + 0x38)));
                 fn_8028C188(d + 3, s.data, s.length);
             }
             result = 0;
@@ -398,8 +414,8 @@ int FxEmitterUpdateState(void* data, int mode)
     u32 id;
     Skin* skin;
 
-    if (lbl_804D57CC != 0)
-        lbl_804D57CC = 0;
+    if (sFxParentTaken != 0)
+        sFxParentTaken = 0;
 
     if (*(u32*)(st + 0x18) & 0x10)
         return 1;
@@ -416,10 +432,10 @@ int FxEmitterUpdateState(void* data, int mode)
         f32 v = *(f32*)(st + 0x40);
         f32 t;
 
-        if (v > lbl_804D3AD0 - lbl_804D57C8)
-            t = (lbl_804D3AD0 - v) / lbl_804D57C8;
-        else if (v < lbl_804D3AD4)
-            t = v / lbl_804D3AD4;
+        if (v > sFxLifeTime - sFxFadeOutTime)
+            t = (sFxLifeTime - v) / sFxFadeOutTime;
+        else if (v < sFxFadeInTime)
+            t = v / sFxFadeInTime;
         else
             t = 1.0f;
 
@@ -442,7 +458,7 @@ int FxEmitterUpdateState(void* data, int mode)
             if ((int)idx >= 0) {
                 u32 shape2 = fn_8003A1F0(idx, *(u32*)((u8*)actor + 0x9C), anim);
 
-                fn_8003F15C(idx, shape2, *(u32*)((u8*)actor + 0x94), 0, lbl_803C4FE0, 1.0f);
+                fn_8003F15C(idx, shape2, *(u32*)((u8*)actor + 0x94), 0, &sFxOutlineSkin, 1.0f);
             }
             CrouchSpawnFx(actor, 0);
         }
@@ -604,7 +620,7 @@ int FxEmitterSpawnFromMsg(int* d)
         d[1] = (int)actor;
         SendMsg(id, 0x407, d);
         if (*(f32*)(st + 0x40) <= 0.0f)
-            *(f32*)(st + 0x40) = lbl_804D3AD0;
+            *(f32*)(st + 0x40) = sFxLifeTime;
         return 1;
     }
 
