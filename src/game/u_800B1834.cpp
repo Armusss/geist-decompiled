@@ -2590,12 +2590,15 @@ extern "C" int fn_800B6CAC(u32* object, u32 id)
 // Store `value` in the first free group-handle word at object+0x5a0.
 extern "C" int fn_800B6D04(u32* object, u32 value)
 {
+    int i;
+    u32* base;
+
     if (object == 0) {
         return 0;
     }
-    u32* base = object;
-    for (int i = 0; i < 4; i++) {
-        if (object[0x5a0 / 4 + i] == 0) {
+    base = object;
+    for (i = 0; i < 4; object++, i++) {
+        if (object[0x5a0 / 4] == 0) {
             base[0x5a0 / 4 + i] = value;
             return 1;
         }
