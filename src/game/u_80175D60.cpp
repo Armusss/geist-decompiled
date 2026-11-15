@@ -4010,10 +4010,10 @@ struct GunStateStepBlk8017BBBC {
 void GunStateStep8017BBBC(void* p) {
     GunStateStepBlk8017BBBC* b = (GunStateStepBlk8017BBBC*)p;
 
-    if (b->id == (int)0xff676981) {
+    if (b->id == (int)0xff676982) {
         return;
     }
-    if (b->id == (int)0xff676982) {
+    if (b->id == (int)0xff676981) {
         return;
     }
     if (b->id < 0) {
@@ -4025,8 +4025,6 @@ void GunStateStep8017BBBC(void* p) {
         b->id = 1;
         break;
     case 1:
-        b->id++;
-        break;
     case 2:
         b->id++;
         break;
