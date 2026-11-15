@@ -18,14 +18,14 @@ void* memcpy(void* dst, const void* src, u32 n);
 // Callees in other files, not named yet.
 int fn_802A1D04(void);
 int fn_8014FF10(const char* level);
-void fn_800259C8(void* p, int size, int arg);
-void fn_800FE724(int arg);
 void fn_80026660(int id, int (*handler)(int, int, void*), int arg);
 extern int lbl_804D5828;
 extern int lbl_804D5860;
 }
 
 extern "C" int SendMsg(int target, int msg, void* data);
+int BitsetCount(u32* bits, int a, int b);
+void HudTimerReset(int arg);
 void HudMessage(int id, const char* text, float r, float g, float b);
 int StoreSave(int mode, const char* name, int size, u32 flags, void* src);
 int StoreLoad(int mode, const char* name, int size, u32 flags, void* dst);
@@ -104,7 +104,7 @@ u32 sSaveKeys[2] = {0x63000000, 0x02000000};
 static int sSaveSlot;
 static float sSaveTimer;
 static int sSaveBusy;
-static int sSaveLoaded;
+int gSaveLoaded;  // also read by u_80157730
 
 int SaveCommand(int cmd, int arg);
 int SaveTryWrite(int mode, SaveData* save, u32 flags);
@@ -126,7 +126,7 @@ void SaveUpdate(float dt) {
         sSaveTimer -= dt;
         if (sSaveTimer <= 0.0f) {
             if (SaveFlush(2, 0x10) == 1) {
-                fn_800FE724(0);
+                HudTimerReset(0);
                 HudMessage(0, "Save Complete", 1.0f, 1.0f, 1.0f);
             }
         }
@@ -164,17 +164,26 @@ const char* SaveGetSlotName(int slot) {
     return "xXx";
 }
 
-void SaveResetOptions(void) { fn_800259C8(sSave.options, 0x40, 1); }
+void SaveResetOptions(void) { BitsetCount((u32*)sSave.options, 0x40, 1); }
 
-static inline void SaveCollectBlocks(SaveSlot* slot) {
+static inline void SaveCollectBlocks(const char* name) {
+    int level;
     SaveBlockMsg block;
     u32* entry;
+    SaveSlot* slot;
     int i;
     int used;
     int end;
     u32* key;
     u8* data;
     SaveBlocks* blk;
+
+    slot = &sSave.slots[sSaveSlot];
+    strcpy(slot->name, name);
+    level = fn_8014FF10(slot->name);
+    if (level > slot->bestLevel) {
+        slot->bestLevel = level;
+    }
 
     used = 0;
     data = slot->blk.data;
@@ -204,6 +213,28 @@ static inline void SaveCollectBlocks(SaveSlot* slot) {
     blk->used = used;
 }
 
+static inline char* SaveBaseName(const char* path) {
+    char* p;
+
+    if (path == 0) {
+        return 0;
+    }
+    strcpy(sSavePath, path);
+    p = strchr(sSavePath, '.');
+    if (p) {
+        *p = 0;
+    }
+    p = strrchr(sSavePath, '/');
+    if (p) {
+        return p + 1;
+    }
+    p = strrchr(sSavePath, '\\');
+    if (p) {
+        return p + 1;
+    }
+    return sSavePath;
+}
+
 int SaveCommand(int cmd, int arg) {
     SaveMsg msgLoad;
     SaveMsg msgTitle;
@@ -214,27 +245,7 @@ int SaveCommand(int cmd, int arg) {
         int* hdr;
         char* name;
 
-        if ((const char*)arg == 0) {
-            name = 0;
-        } else {
-            char* p;
-            strcpy(sSavePath, (const char*)arg);
-            p = strchr(sSavePath, '.');
-            if (p) {
-                *p = 0;
-            }
-            p = strrchr(sSavePath, '/');
-            if (p) {
-                name = p + 1;
-            } else {
-                p = strrchr(sSavePath, '\\');
-                if (p) {
-                    name = p + 1;
-                } else {
-                    name = sSavePath;
-                }
-            }
-        }
+        name = SaveBaseName((const char*)arg);
 
         hdr = &sSave.hdr10;
         msgLoad.data = hdr;
@@ -251,15 +262,7 @@ int SaveCommand(int cmd, int arg) {
         SendMsg(0x63000000, 0x7104, &msgLoad);
 
         if (sSaveSlot >= 0 && name) {
-            SaveSlot* slot = &sSave.slots[sSaveSlot];
-            int level;
-
-            strcpy(slot->name, name);
-            level = fn_8014FF10(slot->name);
-            if (level > slot->bestLevel) {
-                slot->bestLevel = level;
-            }
-            SaveCollectBlocks(slot);
+            SaveCollectBlocks(name);
         }
         StoreCardUnmount();
         sSave.flags |= SAVE_VALID;
@@ -296,7 +299,7 @@ int SaveCommand(int cmd, int arg) {
         if (flags == 1) {
             mode = 1;
         }
-        if (mode == 2 && sSaveLoaded == 0) {
+        if (mode == 2 && gSaveLoaded == 0) {
             mode = 1;
         }
         if (mode == 2) {
@@ -307,11 +310,11 @@ int SaveCommand(int cmd, int arg) {
                 break;
             case 3:
                 StoreLoad(1, "Geist Save Data", 0x420, 0x10, &sSave);
-                sSaveLoaded = 1;
+                gSaveLoaded = 1;
                 break;
             default:
                 StoreLoad(1, "Geist Save Data", 0x420, 0x10, &sSave);
-                sSaveLoaded = 0;
+                gSaveLoaded = 0;
                 break;
             }
         } else if (StoreLoad(1, "Geist Save Data", 0x420, 0, &sSave) == 1) {
