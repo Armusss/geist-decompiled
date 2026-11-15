@@ -116,12 +116,18 @@ void StatSet(int id, int a, int b, float value) {
     }
 }
 
+// Float-to-int helper. Retail's register choice in StatGetDebug needs the inline call; a plain (int) cast
+// differs.
+inline int StatToInt(float f) {
+    return (int)f;
+}
+
 float StatGetDebug(int id, int a, int b) {
     int i;
 
     for (i = 0; i < sStatCount; i++) {
         if (sStats[i].id == id && sStats[i].a == a && sStats[i].b == b) {
-            fn_800872BC(0x20, "[ Get             ] 0x%08x:%d:%d  %3d", id, a, b, (int)sStats[i].value);
+            fn_800872BC(0x20, "[ Get             ] 0x%08x:%d:%d  %3d", id, a, b, StatToInt(sStats[i].value));
             return sStats[i].value;
         }
     }
