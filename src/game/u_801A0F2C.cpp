@@ -108,7 +108,6 @@ int PickupScanMsg(int a, int b, void* c);
 
 int MirrorObjRegister(void* src, Actor* actor, Actor* obj, int objId) {
     float place[6];
-    MirrorReg* e;
     int r;
 
     if (objId != -1 && obj == 0) {
@@ -130,18 +129,17 @@ int MirrorObjRegister(void* src, Actor* actor, Actor* obj, int objId) {
         if (r == -1) {
             return 0;
         }
-        e = &lbl_80495D84[lbl_804D514C];
-        e->mesh = r;
-        e->actor = actor;
-        e->obj = obj;
-        e->objId = objId;
-        e->model = actor->unk48;
-        e->pos[0] = (int)place[0];
-        e->pos[1] = (int)place[1];
-        e->pos[2] = (int)place[2];
-        e->pos[3] = (int)place[3];
-        e->pos[4] = (int)place[4];
-        e->pos[5] = (int)place[5];
+        lbl_80495D84[lbl_804D514C].mesh = r;
+        lbl_80495D84[lbl_804D514C].actor = actor;
+        lbl_80495D84[lbl_804D514C].obj = obj;
+        lbl_80495D84[lbl_804D514C].objId = objId;
+        lbl_80495D84[lbl_804D514C].model = actor->unk48;
+        lbl_80495D84[lbl_804D514C].pos[0] = (int)place[0];
+        lbl_80495D84[lbl_804D514C].pos[1] = (int)place[1];
+        lbl_80495D84[lbl_804D514C].pos[2] = (int)place[2];
+        lbl_80495D84[lbl_804D514C].pos[3] = (int)place[3];
+        lbl_80495D84[lbl_804D514C].pos[4] = (int)place[4];
+        lbl_80495D84[lbl_804D514C].pos[5] = (int)place[5];
         lbl_804D514C++;
         if (obj) {
             ActorFn80022D98(obj, 0);
