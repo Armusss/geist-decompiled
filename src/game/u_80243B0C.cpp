@@ -18,15 +18,17 @@ extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
 
 inline u32 StrHash(const char* s, u32 h) {
-    int i;
-
     if (s == 0) {
-        return 0;
+        h = 0;
+    } else {
+        int i;
+        for (i = 0; s[i] != 0; i++) {
+            h *= 31;
+            h += (unsigned char)toupper(s[i]);
+        }
+        h %= 0xFFFFFFFF;
     }
-    for (i = 0; s[i] != 0; i++) {
-        h = h * 31 + (unsigned char)toupper(s[i]);
-    }
-    return h % 0xFFFFFFFF;
+    return h;
 }
 
 class Buffer {
@@ -66,10 +68,8 @@ struct Animator {
 };
 
 struct AnimInfo {
-    char pad0[4];
-    int unk4;
-    char pad8[8];
-    int unk10;
+    int min[3];
+    int max[3];
 };
 
 struct ObjInfo {
@@ -77,8 +77,21 @@ struct ObjInfo {
     u32 id;
 };
 
+struct IVec {
+    int x, y, z;
+};
+
+struct IMtx {
+    int rot[9];
+    IVec pos;
+};
+
+struct IBox {
+    int v[6];
+};
+
 struct Actor {
-    int matrix[12];        // 0x00
+    IMtx matrix;           // 0x00
     char pad30[8];         // 0x30
     int handle;            // 0x38
     char pad3C[4];         // 0x3C
@@ -115,6 +128,9 @@ struct Actor {
     void* objects[2];      // 0x26C4
 };
 
+// The possessed actor as the dash callbacks see it.
+struct LargeActor : Actor {};
+
 struct MsgC06 {
     int unk0;
     u32 event;
@@ -140,6 +156,8 @@ struct FxMsg {
     int unkC;
     int unk10;
     int unk14;
+    int unk18;
+    int unk1C;
 };
 
 struct PosMsg {
@@ -150,6 +168,9 @@ struct PosMsg {
     int x;
     int y;
     int z;
+    int unk1C;
+    int unk20;
+    int unk24;
 };
 
 struct PlaceMsg {
@@ -169,9 +190,9 @@ int AssetFind(u32 table, u32 key);                        // 0x8007EB34
 extern "C" {
 void fn_80090634(int a, int b, int c, int d);
 int fn_800C5210(int handle, int msg, void* data);
-void* fn_8016F120(void* fx, int* pos);
-int fn_8001ED98(int* p, int len, int (*cb)(Actor*, Actor*), Actor* a, int b);
-int fn_8001F45C(Actor* a, int* box, int* pos, int flags, int b, int c);
+void* fn_8016F120(void* fx, IVec* pos);
+int fn_8001ED98(IVec* p, int len, int (*cb)(Actor*, Actor*), Actor* a, int b);
+int fn_8001F45C(Actor* a, int* box, IMtx* pos, int flags, int b, int c);
 int fn_800A1BC8(u32 key, u32 value, int a, int b, int c);
 int fn_80073E80(Actor* a);
 void fn_800E1098(float* out, float* in, float length);
@@ -182,10 +203,10 @@ void PlayerSetActionMode(void* owner, int mode);
 static float sDashOutRate = 5000.0f;
 static float sDashInRate = 5000.0f;
 
-int DashOnEvent(int event, Actor* a);
+int DashOnEvent(int event, Actor* actor);
 void DashSendAnim(Actor* a, int arg);
 int DashUpdate(Actor* a);
-int DashAim(Actor* a, Actor* target);
+int DashAim(Actor* actor, Actor* target);
 
 // Tells the animator the anim finished (0 if it has no handle).
 inline int AnimNotify(int to, int handle, u32 key) {
@@ -200,7 +221,8 @@ inline int AnimNotify(int to, int handle, u32 key) {
     return SendMsg(to, 0xC14, &q);
 }
 
-int DashOnEvent(int event, Actor* a) {
+int DashOnEvent(int event, Actor* actor) {
+    LargeActor* a = (LargeActor*)actor;
     MsgC06 m;
 
     m.handle = a->handle;
@@ -267,6 +289,16 @@ void DashSendAnim(Actor* a, int arg) {
     fn_800A1BC8(0x3506D0CE, ((ObjInfo*)a->objects[i])->id, arg, (int)index, 0);
 }
 
+// Sets an animator query value on an actor.
+inline void SetQuery(int handle, u32 hash, int value) {
+    QueryMsg q;
+
+    q.hash = hash;
+    *(int*)&q.result = value;
+    q.unk8 = 0;
+    SendMsg(handle, 0x41D, &q);
+}
+
 int DashUpdate(Actor* a) {
     int done = 0;
     int state = *(int*)((char*)a->objects[1] + 0x12C);
@@ -283,39 +315,22 @@ int DashUpdate(Actor* a) {
                 a->flags &= ~0x10000000;
                 ActorPlayAnim(0x4E000000, 0x9968CC53, a->handle);
                 fx = (int)FxFind("dashout");
-                fn_8016F120((void*)fx, a->matrix + 9);
+                fn_8016F120((void*)fx, &a->matrix.pos);
                 m.id = 0xCAE448F3;
                 m.unkC = -1;
                 m.unk10 = 0;
                 m.unk14 = 0x14;
                 SendMsg(0x3C000000, 0x5F03, &m);
-                {
-                    QueryMsg q;
-
-                    q.hash = 0xA7140990;
-                    *(int*)&q.result = 0x24A738;
-                    q.unk8 = 0;
-                    SendMsg(a->handle, 0x41D, &q);
-                }
+                SetQuery(a->handle, 0xA7140990, 0x24A738);
                 if (a->dashValue <= 0.0f) {
                     int id1 = AssetFind(0xAC67AC45, 0x7D3F60E5);
                     int id2 = AssetFind(0xAC67AC45, 0x7D3F60E6);
 
                     if (id1 != -1) {
-                        MsgC14 msg;
-
-                        msg.unk4 = 0;
-                        msg.handle = a->handle;
-                        msg.key = 0xCAD6DE50;
-                        SendMsg(id1, 0xC14, &msg);
+                        AnimNotify(id1, a->handle, 0xCAD6DE50);
                     }
                     if (id2 != -1) {
-                        MsgC14 msg;
-
-                        msg.unk4 = 0;
-                        msg.handle = a->handle;
-                        msg.key = 0xCAD6DE50;
-                        SendMsg(id2, 0xC14, &msg);
+                        AnimNotify(id2, a->handle, 0xCAD6DE50);
                     }
                 }
             } else {
@@ -325,23 +340,19 @@ int DashUpdate(Actor* a) {
             if (a->unk328 & 1) {
                 FxMsg m;
                 int fx;
-                QueryMsg q;
 
                 a->flags |= 0x10000000;
                 a->unk14F8 = 2;
                 ActorPlayAnim(0x4E000000, 0x798BF8DB, a->handle);
                 fx = (int)FxFind("dashin");
-                fn_8016F120((void*)fx, a->matrix + 9);
+                fn_8016F120((void*)fx, &a->matrix.pos);
                 m.id = 0xCAE448F3;
                 m.unkC = -1;
                 m.unk10 = 0;
                 m.unk14 = 0x14;
                 SendMsg(0x3C000000, 0x5F03, &m);
-                q.hash = 0xA7140990;
-                *(int*)&q.result = 0x86DF6221;
-                q.unk8 = 0;
-                SendMsg(a->handle, 0x41D, &q);
-                fn_8001ED98(a->matrix + 9, a->anim->unk10 - a->anim->unk4, DashAim, a, 0);
+                SetQuery(a->handle, 0xA7140990, 0x86DF6221);
+                fn_8001ED98(&a->matrix.pos, a->anim->max[1] - a->anim->min[1], DashAim, a, 0);
                 done = 1;
             } else {
                 if (a->dashValue < 1.0f) {
@@ -351,47 +362,42 @@ int DashUpdate(Actor* a) {
             }
         }
         break;
-    case 0xA922FADD:
-        if (a->unk328 != 0) {
-            if ((a->flags & 0x100000) == 0) {
-                a->flags |= 0x200000;
-                return 1;
-            }
-        } else {
+    case 0xA921FADD:
+        if (a->unk328 != 0 && (a->flags & 0x100000) == 0) {
+            a->flags |= 0x200000;
+            return 1;
+        }
+        if (a->unk328 == 0) {
             a->flags &= ~0x200000;
+        }
+        break;
+    case 0x164545B1:
+        if ((a->unk328 & 1) && PlayerInHost(a) && (a->flags & 0x40000) == 0 && (a->flags & 0x80000) == 0) {
+            fn_80073E80(a);
+            return 1;
         }
         break;
     case 0x8DEF6E7D:
         if (a->unk328 == 1) {
             if (a->flags & 0x80000) {
-                int box[6];
-                int pos[12];
+                IBox box;
+                IMtx pos;
 
-                box[0] = a->bounds[0];
-                box[1] = a->bounds[1];
-                box[2] = a->bounds[2];
-                box[3] = a->bounds[3];
-                box[4] = a->bounds[4];
-                box[5] = a->bounds[5];
-                *(u32*)&pos[0] = ((u32*)a)[0];
-                *(u32*)&pos[1] = ((u32*)a)[1];
-                *(u32*)&pos[2] = ((u32*)a)[2];
-                *(u32*)&pos[3] = ((u32*)a)[3];
-                *(u32*)&pos[4] = ((u32*)a)[4];
-                *(u32*)&pos[5] = ((u32*)a)[5];
-                *(u32*)&pos[6] = ((u32*)a)[6];
-                *(u32*)&pos[7] = ((u32*)a)[7];
-                *(u32*)&pos[8] = ((u32*)a)[8];
-                *(u32*)&pos[9] = ((u32*)a)[9];
-                *(u32*)&pos[10] = ((u32*)a)[10];
-                *(u32*)&pos[11] = ((u32*)a)[11] + 400;
-                box[0] = -110;
-                box[1] = -110;
-                box[2] = -120;
-                box[3] = 110;
-                box[4] = 110;
-                box[5] = 120;
-                if (fn_8001F45C(a, box, pos, 0x10000000, 0, 0) == 0) {
+                box.v[0] = a->bounds[0];
+                box.v[1] = a->bounds[1];
+                box.v[2] = a->bounds[2];
+                box.v[3] = a->bounds[3];
+                box.v[4] = a->bounds[4];
+                box.v[5] = a->bounds[5];
+                pos = a->matrix;
+                box.v[0] = -110;
+                box.v[1] = -110;
+                box.v[2] = -120;
+                box.v[3] = 110;
+                box.v[4] = 110;
+                box.v[5] = 120;
+                pos.pos.z += 400;
+                if (fn_8001F45C(a, box.v, &pos, 0x10000000, 0, 0) == 0) {
                     a->flags &= ~0x80000;
                     a->unk678 |= 0x80;
                 }
@@ -410,12 +416,6 @@ int DashUpdate(Actor* a) {
             return 1;
         }
         break;
-    case 0x164545B1:
-        if ((a->unk328 & 1) && PlayerInHost(a) && (a->flags & 0x40000) == 0 && (a->flags & 0x80000) == 0) {
-            fn_80073E80(a);
-            return 1;
-        }
-        break;
     case 0x164350F8:
     case 0xB2270119:
         break;
@@ -424,72 +424,75 @@ int DashUpdate(Actor* a) {
     return done;
 }
 
-int DashAim(Actor* a, Actor* target) {
-    PosMsg m;
-    int ok;
-    int value;
+int DashAim(Actor* actor, Actor* target) {
+    if (actor != 0) {
+        LargeActor* a = (LargeActor*)actor;
 
-    int h;
+        if ((int)((u32)target->handle >> 24) == 2) {
+            int h = a->handle;
 
-    if (a == 0 || (int)((u32)target->handle >> 24) != 2) {
-        return 0;
-    }
-    h = a->handle;
-    if ((int)((u32)h >> 24) != 1) {
-        return 0;
-    }
+            if ((int)((u32)h >> 24) == 1) {
+                PosMsg m;
+                int ok;
+                int value;
 
-    {
-        QueryMsg q;
+                {
+                    QueryMsg q;
 
-        q.hash = 0x914B98A8;
-        *(int*)&q.result = 0;
-        q.unk8 = 0;
-        ok = SendMsg(h, 0x41E, &q);
-        value = *(int*)&q.result;
-    }
-    if (ok != 0 && value >= 0) {
-        float r[3];
-        int aim[3];
-        int dx, dy, dz;
-        float ax, ay, az;
-        float t;
+                    q.hash = 0x914B98A8;
+                    *(int*)&q.result = 0;
+                    q.unk8 = 0;
+                    ok = SendMsg(h, 0x41E, &q);
+                    value = *(int*)&q.result;
+                }
+                if (ok != 0 && value >= 0) {
+                    float r[3];
+                    int v[3];
+                    float ax, ay, az;
+                    float t;
 
-        ActorAim(aim, a, value);
-        dx = target->matrix[9] - a->matrix[9];
-        dy = target->matrix[10] - a->matrix[10];
-        dz = target->matrix[11] - a->matrix[11];
-        ax = (float)aim[0] * 0.000244140625f;
-        ay = (float)aim[1] * 0.000244140625f;
-        az = (float)aim[2] * 0.000244140625f;
-        t = (ay * (float)dy + ax * (float)dx + az * (float)dz) / (ay * ay + ax * ax + az * az);
-        r[0] = ax * t;
-        r[1] = ay * t;
-        r[2] = az * t;
+                    ActorAim(v, a, value);
+                    ax = (float)v[0] * 0.000244140625f;
+                    ay = (float)v[1] * 0.000244140625f;
+                    az = (float)v[2] * 0.000244140625f;
+                    v[0] = target->matrix.pos.x - a->matrix.pos.x;
+                    v[1] = target->matrix.pos.y - a->matrix.pos.y;
+                    v[2] = target->matrix.pos.z - a->matrix.pos.z;
+                    t = (ax * (float)v[0] + ay * (float)v[1] + az * (float)v[2]) / (ax * ax + ay * ay + az * az);
+                    r[0] = ax * t;
+                    r[1] = ay * t;
+                    r[2] = az * t;
 
-        float range = (float)(target->anim->unk10 - target->anim->unk4);
-        float limit;
+                    float range = (float)(target->anim->max[1] - target->anim->min[1]);
+                    float limit;
 
-        if (t < 0.0f) {
-            limit = 1.1f * (range - (float)((int*)a->anim)[value]);
-        } else {
-            limit = 1.1f * (range + (float)((int*)a->anim)[value + 3]);
+                    if (t < 0.0f) {
+                        limit = 1.1f * (range - (float)a->anim->min[value]);
+                    } else {
+                        limit = 1.1f * (range + (float)a->anim->max[value]);
+                    }
+                    if (r[0] * r[0] + r[1] * r[1] + r[2] * r[2] < limit * limit) {
+                        float px = -r[0];
+                        float py = -r[1];
+                        float pz = -r[2];
+
+                        px += target->vx;
+                        py += target->vy;
+                        pz += target->vz;
+                        fn_800E1098(r, r, limit);
+                        r[0] += px;
+                        r[1] += py;
+                        r[2] += pz;
+                        m.type = 1;
+                        m.x = (int)r[0];
+                        m.y = (int)r[1];
+                        m.z = (int)r[2];
+                        SendMsg(target->handle, 0xC07, &m);
+                    }
+                }
+                return 1;
+            }
         }
-        if (r[0] * r[0] + r[1] * r[1] + r[2] * r[2] < limit * limit) {
-            float px = -r[0] + target->vx;
-            float py = -r[1] + target->vy;
-            float pz = -r[2] + target->vz;
-
-            fn_800E1098(&r[0], &r[0], limit);
-            r[0] += px;
-            r[1] += py;
-            r[2] += pz;
-            m.type = 1;
-            m.x = (int)r[0];
-            m.y = (int)r[1];
-            m.z = (int)r[2];
-            SendMsg(target->handle, 0xC07, &m);
-        }
     }
-    return 1;
+    return 0;
 }
