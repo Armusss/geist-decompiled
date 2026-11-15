@@ -37,13 +37,12 @@ public:
 class Skin;
 
 extern "C" {
-    extern const f32 lbl_804DAEC8;
-    extern const f32 lbl_804DAECC;
-    extern const f32 lbl_804DAED0;
-    extern const f32 lbl_804DAED4;
-    extern const f32 lbl_804DAED8;
-    extern const f32 lbl_804DAEDC;
-    extern const f32 lbl_804DAEE0;
+
+
+
+
+
+
     extern f32 lbl_804D3AD0;
     extern f32 lbl_804D3AD4;
     extern f32 lbl_804D57C8;
@@ -124,7 +123,7 @@ void ActorFxEmitterUpdate(Actor* self, f32 dt)
     Mtx34 mtx;
     int r;
 
-    if (data[0x10] > lbl_804DAEC8)
+    if (data[0x10] > 0.0f)
         data[0x10] -= dt;
 
     if (fn_80212730(*(u32*)(base + 0x38)) != -1) {
@@ -154,9 +153,9 @@ void ActorFxEmitterUpdate(Actor* self, f32 dt)
                 fn_8016D864(rot, *(u32*)(base + 0x40));
                 fn_8016D6BC(rot, rot);
 
-                handle = fn_801D5B38(lbl_804DAECC * *(f32*)(rot + 0x0C),
-                                     lbl_804DAECC * *(f32*)(rot + 0x10),
-                                     lbl_804DAECC * *(f32*)(rot + 0x14),
+                handle = fn_801D5B38(2.0f * *(f32*)(rot + 0x0C),
+                                     2.0f * *(f32*)(rot + 0x10),
+                                     2.0f * *(f32*)(rot + 0x14),
                                      *(u32*)(base + 0x38), -1, h1, h2, 0x1FFFFFFF, rot, 0);
                 *(u32*)(base + 0x11C) = handle;
 
@@ -167,9 +166,9 @@ void ActorFxEmitterUpdate(Actor* self, f32 dt)
                     fn_8009ED70(m, self);
                     fn_800A0168(m, m);
                     fn_801D52E0(handle, m);
-                    v[0] = lbl_804DAEC8;
-                    v[1] = lbl_804DAEC8;
-                    v[2] = lbl_804DAEC8;
+                    v[0] = 0.0f;
+                    v[1] = 0.0f;
+                    v[2] = 0.0f;
                     fn_801D5298(handle, v);
                     fn_801D5260(handle, v);
                     fn_801D5110(handle, 1);
@@ -177,16 +176,16 @@ void ActorFxEmitterUpdate(Actor* self, f32 dt)
                         fn_801D556C(handle);
                 }
 
-                *(f32*)(view + 0x08) = lbl_804DAED0;
-                *(f32*)(view + 0x0C) = lbl_804DAED4;
-                *(f32*)(view + 0x10) = lbl_804DAED8;
-                *(f32*)(view + 0x14) = lbl_804DAED8;
-                *(f32*)(view + 0x18) = lbl_804DAEC8;
-                *(f32*)(view + 0x1C) = lbl_804DAEC8;
-                *(f32*)(view + 0x20) = lbl_804DAEC8;
-                *(f32*)(view + 0x24) = lbl_804DAEC8;
-                *(f32*)(view + 0x28) = lbl_804DAEC8;
-                *(f32*)(view + 0x2C) = lbl_804DAEC8;
+                *(f32*)(view + 0x08) = 360.0f;
+                *(f32*)(view + 0x0C) = 1000.0f;
+                *(f32*)(view + 0x10) = 2000.0f;
+                *(f32*)(view + 0x14) = 2000.0f;
+                *(f32*)(view + 0x18) = 0.0f;
+                *(f32*)(view + 0x1C) = 0.0f;
+                *(f32*)(view + 0x20) = 0.0f;
+                *(f32*)(view + 0x24) = 0.0f;
+                *(f32*)(view + 0x28) = 0.0f;
+                *(f32*)(view + 0x2C) = 0.0f;
 
                 fn_801D902C(&mtx, info[0], self, view);
             } else {
@@ -200,7 +199,7 @@ void ActorFxEmitterUpdate(Actor* self, f32 dt)
             }
 
             fn_8021284C(*(u32*)(base + 0x38));
-            data[4] = lbl_804DAEC8;
+            data[4] = 0.0f;
             lbl_804D57CC = 1;
         }
     }
@@ -235,8 +234,8 @@ int ActorFxEmitterInit(Actor* self)
     *(u32*)(p + 0x18) &= ~0x08000000;
     *(u32*)(p + 0x18) &= ~0x8;
     *(u32*)(p + 0x18) &= ~0x6;
-    *(f32*)(p + 0x34) = lbl_804DAEDC;
-    *(f32*)(p + 0x38) = lbl_804DAED4;
+    *(f32*)(p + 0x34) = 400.0f;
+    *(f32*)(p + 0x38) = 1000.0f;
     if (*(u32*)(base + 0x84) == 0 || *(u32*)(*(u32*)(base + 0x84) + 0x24) == 0x24A738)
         *(u32*)(p + 0x18) |= 0x30000000;
 
@@ -253,9 +252,9 @@ int ActorFxEmitterInit(Actor* self)
         fn_8016D864(view, *(u32*)(base + 0x40));
         fn_8016D6BC(view, view);
 
-        *(u32*)(base + 0x11C) = fn_801D5B38(lbl_804DAECC * *(f32*)(view + 0x0C),
-                             lbl_804DAECC * *(f32*)(view + 0x10),
-                             lbl_804DAECC * *(f32*)(view + 0x14),
+        *(u32*)(base + 0x11C) = fn_801D5B38(2.0f * *(f32*)(view + 0x0C),
+                             2.0f * *(f32*)(view + 0x10),
+                             2.0f * *(f32*)(view + 0x14),
                              *(u32*)(base + 0x38), -1, h1, h2, 0x1FFFFFFF, view, 1);
 
         if (*(u32*)(base + 0x11C) != 0) {
@@ -344,7 +343,7 @@ int FxEmitterUpdateState(void* data, int mode)
     shape = fn_8003A1F0(id, *(u32*)((u8*)actor + 0x9C), anim);
     player = GetPlayer();
 
-    if (*(f32*)(st + 0x40) > lbl_804DAEC8) {
+    if (*(f32*)(st + 0x40) > 0.0f) {
         f32 v = *(f32*)(st + 0x40);
         f32 t;
 
@@ -353,42 +352,33 @@ int FxEmitterUpdateState(void* data, int mode)
         else if (v < lbl_804D3AD4)
             t = v / lbl_804D3AD4;
         else
-            t = lbl_804DAEE0;
+            t = 1.0f;
 
-        {
-            f32 alpha = lbl_804DAEC8;
-
-            if (t >= alpha) {
-                alpha = lbl_804DAEE0;
-                if (t <= alpha)
-                    alpha = t;
-            }
-            skin = SkinBlendTint((Skin*)((u8*)data + 0x10), 0xFF, 0, 0, alpha);
-        }
+        skin = SkinBlendTint((Skin*)((u8*)data + 0x10), 0xFF, 0, 0, t < 0.0f ? 0.0f : (t > 1.0f ? 1.0f : t));
     } else {
         skin = (Skin*)((u8*)data + 0x10);
     }
 
     if (!(PlayerInHost(player) != 0 && lbl_804D3408 == 0) && Fn80080FA8() == 0 &&
-        *(f32*)(st + 0x10) > lbl_804DAEC8 &&
+        *(f32*)(st + 0x10) > 0.0f &&
         *((int**)((u8*)player + 0x26C4))[PlayerInHost(player)] != 0x07C48821 &&
         local < 6) {
         f32 v = fn_80115F68(*(u32*)((u8*)actor + 0x38));
 
-        fn_8003F15C(id, shape, *(u32*)((u8*)actor + 0x94), skin, 0, lbl_804DAEE0);
+        fn_8003F15C(id, shape, *(u32*)((u8*)actor + 0x94), skin, 0, 1.0f);
 
-        if (v <= lbl_804DAEC8) {
-            int idx = *(int*)(*(u32*)((u8*)actor + 0x84) + 0xA8);
+        if (v <= 0.0f) {
+            u32 idx = *(u32*)(*(u32*)((u8*)actor + 0x84) + 0xA8);
 
-            if (idx >= 0) {
+            if ((int)idx >= 0) {
                 u32 shape2 = fn_8003A1F0(idx, *(u32*)((u8*)actor + 0x9C), anim);
 
-                fn_8003F15C(idx, shape2, *(u32*)((u8*)actor + 0x94), 0, lbl_803C4FE0, lbl_804DAEE0);
+                fn_8003F15C(idx, shape2, *(u32*)((u8*)actor + 0x94), 0, lbl_803C4FE0, 1.0f);
             }
             fn_801FAD18(actor, 0);
         }
     } else {
-        fn_8003F15C(id, shape, *(u32*)((u8*)actor + 0x94), skin, 0, lbl_804DAEE0);
+        fn_8003F15C(id, shape, *(u32*)((u8*)actor + 0x94), skin, 0, 1.0f);
     }
 
     return 1;
@@ -421,10 +411,9 @@ struct FxNameMsg {
 };
 
 extern "C" {
-    extern const f32 lbl_804DAEE4;
-    extern const f32 lbl_804DAEE8;
-    extern const f32 lbl_804DAEEC;
-    extern const f32 lbl_804DAEF0;
+
+
+
     float fabsf(float x);
     void fn_8009F7A8(void* mtx, f32* v);
     void fn_800E1098(f32* dst, f32* src, f32 scale);
@@ -462,7 +451,7 @@ int FxEmitterSpawnFromMsg(int* d)
     if (d[2] == id && d[5] != 0x6CA5F172)
         return 1;
 
-    if (*(f32*)(st + 0x10) <= lbl_804DAEC8) {
+    if (*(f32*)(st + 0x10) <= 0.0f) {
         // Idle emitter: build a one-shot fx straight from the payload.
         f32 scale = *(f32*)((u8*)d + 0x4C);
         f32 alpha;
@@ -470,12 +459,12 @@ int FxEmitterSpawnFromMsg(int* d)
         f32 pos[3];
         Mtx34 mtx;
 
-        if (fabsf(scale) < lbl_804DAEE4)
+        if (fabsf(scale) < 1.1920929e-07f)
             return 1;
 
         switch (d[5]) {
         case 0xB9FC42F5:
-            alpha = lbl_804DAEE8;
+            alpha = 3000.0f;
             break;
         case 0x12DD2E2A:
         case 0xC8769B80:
@@ -485,21 +474,21 @@ int FxEmitterSpawnFromMsg(int* d)
             return 1;
         case 0x75715902:
         default:
-            alpha = lbl_804DAED4;
+            alpha = 1000.0f;
             break;
         }
         alpha *= scale;
 
-        info.f0 = lbl_804DAED0;
-        info.f1 = lbl_804DAEEC;
+        info.f0 = 360.0f;
+        info.f1 = 1500.0f;
         info.f2 = alpha;
         info.f3 = alpha;
-        info.f4 = lbl_804DAEC8;
-        info.f5 = lbl_804DAEC8;
-        info.f6 = lbl_804DAEC8;
-        info.f7 = lbl_804DAEC8;
-        info.f8 = lbl_804DAEC8;
-        info.f9 = lbl_804DAEC8;
+        info.f4 = 0.0f;
+        info.f5 = 0.0f;
+        info.f6 = 0.0f;
+        info.f7 = 0.0f;
+        info.f8 = 0.0f;
+        info.f9 = 0.0f;
 
         pos[0] = (f32)d[12];
         pos[1] = (f32)d[13];
@@ -510,8 +499,8 @@ int FxEmitterSpawnFromMsg(int* d)
         mtx.m[10] = (f32)d[7];
         mtx.m[11] = (f32)d[8];
 
-        if (*(f32*)((u8*)d + 0x50) > lbl_804DAEE4) {
-            fn_800E1098(pos, pos, lbl_804DAEE0);
+        if (*(f32*)((u8*)d + 0x50) > 1.1920929e-07f) {
+            fn_800E1098(pos, pos, 1.0f);
             if (pos[2] <= *(f32*)((u8*)d + 0x50))
                 pos[2] = *(f32*)((u8*)d + 0x50);
         }
@@ -528,18 +517,18 @@ int FxEmitterSpawnFromMsg(int* d)
     case 0xA349664A:
         break;
     case 0x6CA5F172:
-        *(f32*)(st + 0x10) = lbl_804DAEF0;
+        *(f32*)(st + 0x10) = -1.0f;
         break;
     default:
         d[2] = *(int*)((u8*)actor + 0x38);
         d[1] = (int)actor;
         SendMsg(id, 0x407, d);
-        if (*(f32*)(st + 0x40) <= lbl_804DAEC8)
+        if (*(f32*)(st + 0x40) <= 0.0f)
             *(f32*)(st + 0x40) = lbl_804D3AD0;
         return 1;
     }
 
-    if (*(f32*)(st + 0x10) > lbl_804DAEC8)
+    if (*(f32*)(st + 0x10) > 0.0f)
         return 1;
 
     {
@@ -586,8 +575,8 @@ int FxEmitterSpawnFromMsg(int* d)
             fn_8016D6BC(rot.m, rot.m);
 
             *(u32*)((u8*)actor + 0x11C) =
-                fn_801D5B38(lbl_804DAECC * rot.m[3], lbl_804DAECC * rot.m[4],
-                            lbl_804DAECC * rot.m[5], *(u32*)((u8*)actor + 0x38),
+                fn_801D5B38(2.0f * rot.m[3], 2.0f * rot.m[4],
+                            2.0f * rot.m[5], *(u32*)((u8*)actor + 0x38),
                             -1, h1, h2, 0x1FFFFFFF, rot.m, 0);
 
             if (*(u32*)((u8*)actor + 0x11C) != 0) {
@@ -595,9 +584,9 @@ int FxEmitterSpawnFromMsg(int* d)
                 fn_800A0168(&fxMtx, &fxMtx);
                 fn_801D52E0(*(u32*)((u8*)actor + 0x11C), &fxMtx);
 
-                v[0] = lbl_804DAEC8;
-                v[1] = lbl_804DAEC8;
-                v[2] = lbl_804DAEC8;
+                v[0] = 0.0f;
+                v[1] = 0.0f;
+                v[2] = 0.0f;
                 fn_801D5298(*(u32*)((u8*)actor + 0x11C), v);
                 fn_801D5260(*(u32*)((u8*)actor + 0x11C), v);
                 fn_801D5110(*(u32*)((u8*)actor + 0x11C), 1);
@@ -605,16 +594,16 @@ int FxEmitterSpawnFromMsg(int* d)
                     fn_801D556C(*(u32*)((u8*)actor + 0x11C));
             }
 
-            info.f0 = lbl_804DAED0;
-            info.f1 = lbl_804DAED4;
-            info.f2 = lbl_804DAED8;
-            info.f3 = lbl_804DAED8;
-            info.f4 = lbl_804DAEC8;
-            info.f5 = lbl_804DAEC8;
-            info.f6 = lbl_804DAEC8;
-            info.f7 = lbl_804DAEC8;
-            info.f8 = lbl_804DAEC8;
-            info.f9 = lbl_804DAEC8;
+            info.f0 = 360.0f;
+            info.f1 = 1000.0f;
+            info.f2 = 2000.0f;
+            info.f3 = 2000.0f;
+            info.f4 = 0.0f;
+            info.f5 = 0.0f;
+            info.f6 = 0.0f;
+            info.f7 = 0.0f;
+            info.f8 = 0.0f;
+            info.f9 = 0.0f;
 
             fn_801D902C(&parentMtx, found[0], actor, &info);
         }
