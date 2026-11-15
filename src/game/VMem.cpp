@@ -21,11 +21,12 @@ typedef void (*VMemCallback)(int op, void* data, int arg);
 
 enum { VMEM_FREE = 1, VMEM_USED = 2 };
 
-// One block header (32 bytes) in front of its data.
+// One block header (32 bytes) in front of its data. The sized constructor takes the span of the whole block
+// (header + data), as Init/Alloc/Compact know it.
 class VMemList {
 public:
     VMemList();
-    VMemList(u32 sz) : prev(0), next(0), size(sz), state(0), cb(0), arg(0), data(this + 1) {
+    VMemList(u32 span) : prev(0), next(0), size(span - sizeof(VMemList)), state(0), cb(0), arg(0), data(this + 1) {
         end = (char*)data + size;
     }
 
@@ -171,7 +172,7 @@ u32 VMem::Compact(u32 maxBytes) {
                         if (isVirtual) VMDeallocPages(oldData, oldSize);
                         nf = (VMemList*)f->end;
                         LockHeader(nf);
-                        new (nf) VMemList(freeSize);
+                        new (nf) VMemList(freeSize + sizeof(VMemList));
                         nf->state = VMEM_FREE;
                         nf->Link(f, f->next);
                         f->cb(1, f->data, f->arg);
@@ -220,7 +221,7 @@ void* VMem::Alloc(int size, int a, int c) {
                     b->SetSize(sz);
                     nb = (VMemList*)b->end;
                     LockHeader(nb);
-                    new (nb) VMemList(rest - 32);
+                    new (nb) VMemList(rest);
                     nb->state = b->state;
                     nb->Link(b, b->next);
                 }
@@ -261,7 +262,7 @@ void VMem::Init(void* base, int size, int fast, int isVirtual) {
 
     b = (VMemList*)mBase;
     LockHeader(b);
-    new (b) VMemList(mSize - 32);
+    new (b) VMemList(mSize);
     b->state = VMEM_FREE;
     b->Link(&mHead, 0);
     mRover = mHead.next;
