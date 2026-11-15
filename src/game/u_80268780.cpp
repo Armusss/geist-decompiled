@@ -537,9 +537,8 @@ inline int VecNonZero(const Vec3* v) {
 }
 
 inline float VecNormalize(Vec3* out, const Vec3* in) {
-    register float x, y, z;
-    register float len, t, zz;
-    float r;
+    double x, y, z, len;
+    float inv;
 
     if (VecNonZero(in) == 0) {
         out->x = 0.0f;
@@ -547,26 +546,15 @@ inline float VecNormalize(Vec3* out, const Vec3* in) {
         out->z = 0.0f;
         return 0.0f;
     }
-    x = in->x;
-    y = in->y;
-    z = in->z;
-    asm {
-        fmul len, x, x
-        fmul t, y, y
-        fmul zz, z, z
-        fadd len, len, t
-        fadd len, len, zz
-        ps_rsqrte len, len
-        fmul x, x, len
-        fmul y, y, len
-        fmul z, z, len
-        ps_res t, len
-        stfs t, r
-    }
-    out->x = x;
-    out->y = y;
-    out->z = z;
-    return r;
+    x = (double)in->x;
+    y = (double)in->y;
+    z = (double)in->z;
+    len = x * x + y * y + z * z;
+    inv = __frsqrte((float)len);
+    out->x = (float)(x * inv);
+    out->y = (float)(y * inv);
+    out->z = (float)(z * inv);
+    return __fres(inv);
 }
 
 u32 HermitSpitAmmoQuery(EffectObj* obj, int msg) {
