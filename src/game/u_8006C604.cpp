@@ -350,15 +350,15 @@ void Fn8006CE5C(Player* player, int value, int index, int flags, int param5,
     *(int*)(p + 0x114) = param6;
     *(int*)(p + 0x118) = 0;
 
-    if ((flags & 0x10) == 0)
-    {
-        *(int*)(p + 0xC4) = value;
-        *(int*)(p + 0x11C) = value;
-    }
-    else
+    if ((flags & 0x10) != 0)
     {
         *(int*)(p + 0xC4) = -1;
         *(int*)(p + 0x11C) = -1;
+    }
+    else
+    {
+        *(int*)(p + 0xC4) = value;
+        *(int*)(p + 0x11C) = value;
     }
 
     if (*(void (**)(void*))(p + 0x814) != 0)
