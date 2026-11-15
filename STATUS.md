@@ -70,6 +70,11 @@ address=r28; ours reversed); ~90 variants. Lead: `u8* block = SAMBlockData(data)
 Data ready for the flip: .sdata 0x804D2BF0-0x804D2C28, .sbss 0x804D49F8-0x804D4A0C/10, .bss 0x80453700-0x80455780,
 .sdata2 0x804D7178-0x804D7180. Tools: ~/geist-work/ds/opus-full-A2-tools/.
 
+**u_802D439C 3/4 (opus-full-B2, 2026-11-15):** GhostGunUpdate is 9 diffs (not 21), all scheduling in the 0x407 hit-message
+block 0x802D47C0-0x802D4808 (retail stores msg.actor first, then p->unk1C/a->unkCC/p->unk18 loads). ~3000 compiles (statement
+orders, annealing, MakeHitMsg inline variants) never below 9; likely needs a real message struct/initialiser. lbl_8034C308
+TODO is resolved (no lbl+offset left). Tools: ~/geist-work/ds/opus-full-B2-tools/.
+
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
 They are started with `~/geist-work/ds/run_worker.sh NAME [MAX_TURNS]` (allowlist + 150-turn cap), at most 3 at once.
