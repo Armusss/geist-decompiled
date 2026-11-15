@@ -136,8 +136,15 @@ def main():
     gitems = [item(p, ok) for p, ok in us if p.startswith('game/')]
     gdone = sum(st == "g" for st, _ in gitems)
     gpart = sum(st == "p" for st, _ in gitems)
+    gfm = sum(m for k, (m, n) in pc.items() if k.startswith("game/"))
+    gfn = sum(n for k, (m, n) in pc.items() if k.startswith("game/"))
+    gpct = 100 * gdone / len(gitems)
+    y += 30
+    text(8, y, f"Game code: {gdone}/{len(gitems)} files ({gpct:.1f}%) byte-identical, "
+               f"{100 - gpct:.1f}% to go", 16, weight="bold")
     y += 20
-    text(8, y, f"Game code: {gdone}/{len(gitems)} files matching, {gpart} partly matched "
+    text(8, y, f"{gpart} files partly matched; functions matching: {gfm:,}/{gfn:,} "
+               f"({100 * gfm / max(gfn, 1):.1f}%, {100 - 100 * gfm / max(gfn, 1):.1f}% to go) "
                f"(provisional file boundaries)", 13, MUTED)
     y = squares(gitems, y + 6)
     y += 22
