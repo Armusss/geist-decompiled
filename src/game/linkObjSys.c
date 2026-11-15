@@ -455,9 +455,9 @@ static inline void LinkUnlink(LinkRequest* r)
     if (id != -1) {
         ChildNode* node = fn_80243448(fn_80242BA4(sLinkTree), LinkNodeMatchId, &id);
         if (node) {
-            node = DetachChildNode((ChildNode**)sLinkTree, node);
-            if (node) {
-                AppendChildNode((ChildNode**)sLinkTree, fn_80242BA4(sLinkTree), node);
+            ChildNode* detached = DetachChildNode((ChildNode**)sLinkTree, node);
+            if (detached) {
+                AppendChildNode((ChildNode**)sLinkTree, fn_80242BA4(sLinkTree), detached);
             }
         }
     }
@@ -637,20 +637,18 @@ static inline void LinkNodeResetPose(ChildNode* node)
 }
 
 // Asks an actor for its placement (0x411 query) and converts it to a matrix.
-static inline int LinkQueryMatrix(Mtx34* out, LinkRef* ref, int bone)
+static inline int LinkQueryMatrix(Mtx34* out, int id, int bone)
 {
     PlaceQuery q;
-    int ok = 0;
-    if (ref) {
-        q.mUnk0 = 0;
-        q.mBone = bone;
-        if (SendMsg(ref->id, 0x411, &q)) {
-            ActorGetMatrix(out, (Actor*)&q.mPlace);
-            ok = 1;
-        } else {
-            LinkInfoInit(out);
-            ok = 0;
-        }
+    int ok;
+    q.mUnk0 = 0;
+    q.mBone = bone;
+    if (SendMsg(id, 0x411, &q)) {
+        ActorGetMatrix(out, (Actor*)&q.mPlace);
+        ok = 1;
+    } else {
+        LinkInfoInit(out);
+        ok = 0;
     }
     return ok;
 }
@@ -663,15 +661,18 @@ static inline void LinkNodeRebase(ChildNode* node)
     Mtx34 inv;
     LinkRef* ref = &node->mRef;
     ChildNode* parent;
-    if (!LinkQueryMatrix(&world, ref, -1)) {
+    if (!ref || !LinkQueryMatrix(&world, ref->id, -1)) {
         LinkNodeResetPose(node);
         return;
     }
     parent = node->mParent;
     if (parent == 0 || parent->mParent == 0) {
         LinkInfoInit(&parentMtx);
-    } else if (!LinkQueryMatrix(&parentMtx, &parent->mRef, ref->bone)) {
-        LinkInfoInit(&parentMtx);
+    } else {
+        LinkRef* pref = &parent->mRef;
+        if (!pref || !LinkQueryMatrix(&parentMtx, pref->id, ref->bone)) {
+            LinkInfoInit(&parentMtx);
+        }
     }
     node->mPose.pos[0] = world.pos.x - parentMtx.pos.x;
     node->mPose.pos[1] = world.pos.y - parentMtx.pos.y;
@@ -833,20 +834,25 @@ void HostRideStateD(Actor* a)
     }
 }
 
+// The host's animation set and whether it is in condition 11 (only set for a host of kind 0x13).
+static inline void HostRideHostSet(Actor* host, PlayerAnimSet** set, int* hasCond)
+{
+    if ((int)(host->mId >> 24) == 0x13) {
+        *set = (PlayerAnimSet*)fn_800A384C(host);
+        if (HasCondition(host->mConditions, 11)) {
+            *hasCond = 1;
+        }
+    }
+}
+
 void HostRideEnterC(void* p)
 {
-    Actor* a = (Actor*)p;
-    Actor* host = a->mHost;
     int* table;
     PlayerAnimSet* set;
     int hasCond = 0;
     int inHost;
-    if ((int)(host->mId >> 24) == 0x13) {
-        set = (PlayerAnimSet*)fn_800A384C(host);
-        if (HasCondition(host->mConditions, 11)) {
-            hasCond = 1;
-        }
-    }
+    HostRideHostSet(((Actor*)p)->mHost, &set, &hasCond);
+    Actor* a = (Actor*)p;
     inHost = PlayerInHost(a);
     table = HostAnimEntry(lbl_803BC148.mC, a->mHostKind);
     a->mSlot[0].mAnim = fn_800A1BC8(set->mUnk14, set->mUnk18, *table, hasCond, 0);
@@ -882,12 +888,16 @@ void HostRideStateE(Actor* a)
 void HostRideEnterD(void* p)
 {
     Actor* a = (Actor*)p;
-    int inHost = PlayerInHost(a);
-    Actor* host = a->mHost;
-    int kind = a->mHostKind;
-    int hasCond = 0;
+    Actor* host;
     PlayerAnimSet* set;
+    int inHost;
+    int kind;
+    int hasCond;
     int* table;
+    inHost = PlayerInHost(a);
+    host = a->mHost;
+    kind = a->mHostKind;
+    hasCond = 0;
     if ((int)(host->mId >> 24) == 0x13) {
         set = (PlayerAnimSet*)fn_800A384C(host);
         if (HasCondition(host->mConditions, 11)) {
