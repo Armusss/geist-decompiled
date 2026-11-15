@@ -58,6 +58,13 @@ function order; test-only compile reproduces retail .text order and sizes), plus
 (dRandReal, dRealloc, ...) that created the earlier constants; .sbss gaps = per-file padding. Fix needs: file splits,
 per-file `-inline deferred` (a flag change), and real dead ODE functions. Tools: ~/geist-work/ds/opus-full-B-tools/f2/.
 
+**Store.c 13/15, rare loop shape (opus-full-A, 2026-11-15):** StoreSave 12 / StoreInit 7, only the inlined
+StoreLoadBanner icon loop: retail does `i += 1` before the `i*8` offset step despite an initial jump to the test, and
+ranks dst=r27/off=r29. ~150 variants and every compiler 1.3.2-2.7 give the usual order (source shape). Retail has 14 such
+loops (StoreSave/Init, BossUpdate, AllyMsg, EffectEmitterInit/Shutdown/TablesLoad, fn_8003E1C8, fn_8004B378,
+fn_800C9D3C, u_80277600); none matched yet, so solving it once helps all. A macro gives retail's registers in StoreInit
+(2 diffs) but not StoreSave, and panic line numbers say inline. Tools: ~/geist-work/ds/opus-full-A-tools/store/.
+
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
 They are started with `~/geist-work/ds/run_worker.sh NAME [MAX_TURNS]` (allowlist + 150-turn cap), at most 3 at once.
