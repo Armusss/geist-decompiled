@@ -766,9 +766,12 @@ extern "C" void fn_800A0168(Mtx34* dst, Mtx34* src)
 // Extract the translation column (element 9..11) of a 3x4 matrix.
 void Mtx34GetTranslation(Vec3* out, Mtx34* m)
 {
-    out->x = m->m[9];
-    out->y = m->m[10];
-    out->z = m->m[11];
+    float x = m->m[9];
+    float y = m->m[10];
+    out->x = x;
+    float z = m->m[11];
+    out->y = y;
+    out->z = z;
 }
 
 // Copy column `col` of a row-major 3x4 float matrix into a vector.
@@ -3434,8 +3437,9 @@ void NeoAgentPoolShutdown(void)
     int i;
 
     if (lbl_804D47D0 != 0) {
+        i = 0;
         offset = 0;
-        for (i = 0; i < lbl_804D47C4 + 0x10; i++) {
+        for (; i < lbl_804D47C4 + 0x10; i++) {
             if (i < lbl_804D47C4 ||
                 (lbl_804D47E0[(i - lbl_804D47C4) / 32] &
                  (1 << ((i - lbl_804D47C4) & 31)))) {
