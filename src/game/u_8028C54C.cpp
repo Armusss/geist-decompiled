@@ -494,7 +494,7 @@ int HostRideBUpdate(void* p) {
     int result;
     int aim[3];
     float dist;
-    float dy, dx, dz;
+    float dx, dy, dz;
     Target* t;
 
     if (a == 0) {
@@ -516,10 +516,13 @@ int HostRideBUpdate(void* p) {
         t = OwnerGetInfo(b->unk08);
         if (t != 0) {
             ActorAim(aim, a, 1);
-            dx = (float)t->x - a->f84;
-            dy = (float)t->y - a->f88;
-            dz = (float)t->z - a->f8C;
-            dist = dx * (float)aim[0] + dy * (float)aim[1] + dz * (float)aim[2];
+            dx = (float)t->x;
+            dy = (float)t->y;
+            dz = (float)t->z;
+            dx -= a->f84;
+            dy -= a->f88;
+            dz -= a->f8C;
+            dist = (float)aim[0] * dx + (float)aim[1] * dy + (float)aim[2] * dz;
             if (a->i21C == 1) {
                 if (dist > b->f10 * b->f10) {
                     a->i21C = 2;
