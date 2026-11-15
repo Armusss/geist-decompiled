@@ -209,6 +209,7 @@ struct EmitterAttachMsg {
     u8 pad0C[0x34];
 };
 
+extern "C" float lbl_804D70A8;
 extern "C" Emitter* lbl_804D4960;
 extern "C" int lbl_804D4964;
 extern "C" EmitterBank* lbl_804D4954;
@@ -239,16 +240,7 @@ void ActorUnlinkOwnerObjects(Actor* actor);
 void VFree(void* p);
 void* VAlloc(int size);
 
-extern "C" float lbl_804D7058;
-extern "C" float lbl_804D705C;
-extern "C" float lbl_804D7060;
 extern "C" float lbl_804D7064;
-extern "C" float lbl_804D7068;
-extern "C" float lbl_804D7078;
-extern "C" float lbl_804D707C;
-extern "C" float lbl_804D7080;
-extern "C" float lbl_804D7084;
-extern "C" float lbl_804D7088;
 
 extern "C" int fn_8000FECC(int handle);
 extern "C" void fn_800A0168(void* dst, const void* src);
@@ -267,13 +259,8 @@ extern "C" void C_QUATSlerp(float t, const float* from, const float* to,
                             float* out);
 extern "C" int fn_80026680(int id, void (*callback)(void), int arg);
 extern "C" int fn_80026660(int id, void (*callback)(void), int arg);
-extern "C" void fn_800D8664(u32 param_1, int* param_2, int param_3);
+extern "C" void fn_800D8664(u32 fileId, int* data, int size);
 extern "C" int lbl_804D2BD4;
-extern "C" double lbl_804D7050;
-extern "C" float lbl_804D70A8;
-extern "C" float lbl_804D70B0;
-extern "C" float lbl_804D70B4;
-extern "C" float lbl_804D70B8;
 extern "C" void fn_80019A0C(void);
 extern "C" int fn_800C64AC(void);
 extern "C" float fn_800097B4(void);
@@ -313,19 +300,12 @@ int SelectionSetTest(u32 handle);
 void ObjSendC00(void* object, int value);
 extern "C" float lbl_8039BD20[];
 
-extern "C" float lbl_804D708C;
-extern "C" float lbl_804D7090;
-extern "C" float lbl_804D7094;
-extern "C" float lbl_804D7098;
-extern "C" float lbl_804D709C;
-extern "C" float lbl_804D70AC;
 extern "C" Mtx34 lbl_80451F00[];
 
 extern "C" int rand(void);
 extern "C" float sqrtf(float);
 extern "C" float fabsf(float);
 extern "C" double exp(double);
-extern "C" float lbl_804D70A0;
 extern "C" void* memcpy(void* dst, const void* src, u32 n);
 int Rand(void);
 
@@ -356,14 +336,14 @@ void EmitterSpawnSample(float t, Emitter* em, EmitterBank* bank, EmitterSub* sub
 // Uniform random value in [0, 1).
 static inline float RandUnit(void)
 {
-    return (float)rand() / lbl_804D708C;
+    return (float)rand() / 32767.0f;
 }
 
 // Random offset in [-range/2, range/2) stepping by one.
 static inline float RandRange(float range)
 {
     int n = (int)fabsf(range);
-    float v = lbl_804D705C;
+    float v = 0.0f;
 
     if (n != 0) {
         v = (float)(Rand() % n - n / 2);
@@ -438,15 +418,15 @@ int EmitterSetEnabled(u32 handle, int on)
                     if (sub->field98 == 0) {
                         f = sub->field94;
                     } else {
-                        f = lbl_804D705C;
-                        if (sub->field90 > lbl_804D7058) {
+                        f = 0.0f;
+                        if (sub->field90 > 1.1920929e-07f) {
                             f = (float)sub->field7C / sub->field90;
                         }
                     }
                     f *= em->fieldB4;
                     em->bank->field14 =
-                        (f > lbl_804D7058) ? lbl_804D7060 / f : lbl_804D7064;
-                    em->fieldBC = lbl_804D705C;
+                        (f > 1.1920929e-07f) ? 1000.0f / f : lbl_804D7064;
+                    em->fieldBC = 0.0f;
                     {
                         Mtx34 matrix;
 
@@ -455,7 +435,7 @@ int EmitterSetEnabled(u32 handle, int on)
                     }
                 } else {
                     em->flags &= ~1;
-                    em->fieldA8 = lbl_804D705C;
+                    em->fieldA8 = 0.0f;
                 }
             }
             break;
@@ -587,14 +567,14 @@ void EmitterDescBlend(float t, u32 handle, Actor* actor, EmitterDesc* from,
     sub = em->bank->sub;
     ActorGetMatrix(&mtx, actor);
 
-    tt = lbl_804D705C;
-    if (t >= lbl_804D705C) {
-        tt = lbl_804D7068;
-        if (t <= lbl_804D7068) {
+    tt = 0.0f;
+    if (t >= 0.0f) {
+        tt = 1.0f;
+        if (t <= 1.0f) {
             tt = t;
         }
     }
-    s = lbl_804D7068 - tt;
+    s = 1.0f - tt;
 
     v.x = from->posX * s + to->posX * tt;
     v.y = from->posY * s + to->posY * tt;
@@ -851,14 +831,14 @@ void EmitterSystemInit(void)
 // Scales the fields that every emitter sub-descriptor shares.
 static inline void EmitterSubScaleCommon(EmitterSub* sub)
 {
-    float s = lbl_804D7078;
+    float s = 8.0f;
 
     sub->field70 = sub->field70 * s;
     sub->field6C = sub->field6C * s;
 
     switch (sub->state) {
     case 0:
-        sub->field80 = (sub->field80 * sub->field78) / lbl_804D707C;
+        sub->field80 = (sub->field80 * sub->field78) / 10.0f;
         sub->field80 = sub->field80 * s;
         break;
     case 2:
@@ -871,9 +851,9 @@ static inline void EmitterSubScaleCommon(EmitterSub* sub)
 // sub-descriptor as already scaled.
 static inline void EmitterSubScaleGroups(EmitterSub* sub)
 {
-    float s = lbl_804D7078;
-    float range = lbl_804D7060;
-    float rate = lbl_804D7080;
+    float s = 8.0f;
+    float range = 1000.0f;
+    float rate = 96.0f;
     int i;
 
     sub->fieldAC = sub->fieldAC * s;
@@ -893,7 +873,7 @@ static inline void EmitterSubScaleGroups(EmitterSub* sub)
         particle->field20 = particle->field20 * s;
     }
     for (i = 0; i < sub->count9C; i++) {
-        sub->listA0[i].field20 = sub->listA0[i].field20 * lbl_804D7084;
+        sub->listA0[i].field20 = sub->listA0[i].field20 * 1152.0f;
     }
 
     sub->field88 |= 1;
@@ -956,7 +936,7 @@ void fn_800D4754(Emitter* em, float t)
                 }
             } else if (bank->field10 > 0) {
                 em->fieldA8 = em->fieldA8 + t;
-                if (lbl_804D7060 * bank->sub->field90 < em->fieldA8 &&
+                if (1000.0f * bank->sub->field90 < em->fieldA8 &&
                     em->state < 2 && em->state >= 0 && bank->field10 > 0) {
                     bank->field10 = 0;
                     if (bank->field04 != 0) {
@@ -997,20 +977,20 @@ void fn_800D4754(Emitter* em, float t)
         em->fieldBC = em->fieldBC + t;
     } else {
         em->fieldB8 = t;
-        if (lbl_804D7058 <= em->fieldBC ||
-            lbl_804D705C < bank->sub->field8C) {
+        if (1.1920929e-07f <= em->fieldBC ||
+            0.0f < bank->sub->field8C) {
             if (bank->sub->field8C <= em->fieldBC + t) {
                 if (grew) {
                     float next = em->fieldBC + t;
 
                     em->fieldBC = next;
-                    t = lbl_804D7060 * bank->sub->field90;
+                    t = 1000.0f * bank->sub->field90;
                 } else {
                     em->fieldBC = em->fieldBC + t;
                 }
             } else {
                 em->fieldBC = em->fieldBC + t;
-                t = lbl_804D705C;
+                t = 0.0f;
             }
         } else {
             float absValue = bank->sub->field8C;
@@ -1050,7 +1030,7 @@ void EmitterParticleUpdate(Emitter* em, float t)
     int i;
     int g;
 
-    if (t < lbl_804D7058) {
+    if (t < 1.1920929e-07f) {
         return;
     }
     if (bank->field0C == 0) {
@@ -1062,13 +1042,13 @@ void EmitterParticleUpdate(Emitter* em, float t)
     if (sub->field28 > 0) {
         particles = (EmitterParticleState*)bank->field04;
         spare = (EmitterSlotData*)bank->field08;
-        interval = lbl_804D7060 * sub->field90;
-        bounds.min.x = lbl_804D7088;
-        bounds.min.y = lbl_804D7088;
-        bounds.min.z = lbl_804D7088;
-        bounds.max.x = lbl_804D7068;
-        bounds.max.y = lbl_804D7068;
-        bounds.max.z = lbl_804D7068;
+        interval = 1000.0f * sub->field90;
+        bounds.min.x = -1.0f;
+        bounds.min.y = -1.0f;
+        bounds.min.z = -1.0f;
+        bounds.max.x = 1.0f;
+        bounds.max.y = 1.0f;
+        bounds.max.z = 1.0f;
 
         if ((sub->field88 & 0x40) == 0) {
             ActorGetMatrix(&mtx, (Actor*)em);
@@ -1078,13 +1058,13 @@ void EmitterParticleUpdate(Emitter* em, float t)
 
         if (sub->field98 == 0) {
             fade = sub->field94;
-        } else if (sub->field90 > lbl_804D7058) {
+        } else if (sub->field90 > 1.1920929e-07f) {
             fade = (float)sub->field7C / sub->field90;
         } else {
-            fade = lbl_804D705C;
+            fade = 0.0f;
         }
         fade = fade * em->fieldB4;
-        life = (fade > lbl_804D7058) ? lbl_804D7060 / fade : lbl_804D7064;
+        life = (fade > 1.1920929e-07f) ? 1000.0f / fade : lbl_804D7064;
 
         for (i = 0; i < sub->count9C; i++) {
             EmitterParticle* desc = &sub->listA0[i];
@@ -1119,7 +1099,7 @@ void EmitterParticleUpdate(Emitter* em, float t)
         }
 
         for (i = 0; i < bank->field10; i++) {
-            if (particles[i].clock > lbl_804D7058) {
+            if (particles[i].clock > 1.1920929e-07f) {
                 EmitterSlotRefresh(em, &particles[i], &spare[i]);
                 EmitterSpawnAccumForce(&particles[i].data, sub->listA0, basis, sub->count9C);
                 spawned++;
@@ -1146,7 +1126,7 @@ void EmitterParticleUpdate(Emitter* em, float t)
             }
             cursor = (sub->field28 != 0) ? bank->field18 : 0;
             timer = bank->field14;
-            while (timer > lbl_804D7058) {
+            while (timer > 1.1920929e-07f) {
                 groups[cursor]++;
                 cursor = (sub->field28 != 0) ? (cursor + 1) % n : 0;
                 timer -= life;
@@ -1165,7 +1145,7 @@ void EmitterParticleUpdate(Emitter* em, float t)
                     end = start + chunk;
                 }
                 for (; p < end && todo > 0; p++) {
-                    if (particles[p].clock > lbl_804D7058) {
+                    if (particles[p].clock > 1.1920929e-07f) {
                         continue;
                     }
                     EmitterSpawnSample(interval, em, bank, sub, &sub->groups[g],
@@ -1200,7 +1180,7 @@ void EmitterParticleUpdate(Emitter* em, float t)
 
         if (spawned != 0) {
             for (i = 0; i < bank->field10; i++) {
-                if (particles[i].clock <= lbl_804D705C) {
+                if (particles[i].clock <= 0.0f) {
                     continue;
                 }
                 EmitterParticleSpawnCommit(em, &mtx, &particles[i], &spare[i],
@@ -1264,12 +1244,12 @@ void EmitterSpawnSample(float t, Emitter* em, EmitterBank* bank, EmitterSub* sub
 
     if (sub->field88 & 0x20) {
         float radius = sub->field70;
-        float z = lbl_804D7090 * RandUnit() - lbl_804D7068;
-        float theta = lbl_804D7098 * (lbl_804D7094 * RandUnit());
-        float r = lbl_804D705C;
+        float z = 2.0f * RandUnit() - 1.0f;
+        float theta = 57.29578f * (6.2831855f * RandUnit());
+        float r = 0.0f;
 
-        if (lbl_804D7068 - z * z > lbl_804D705C) {
-            r = sqrtf(lbl_804D7068 - z * z);
+        if (1.0f - z * z > 0.0f) {
+            r = sqrtf(1.0f - z * z);
         }
         dir.x = r * fn_800A1418(theta) * radius;
         dir.y = r * fn_800A1394(theta) * radius;
@@ -1277,15 +1257,15 @@ void EmitterSpawnSample(float t, Emitter* em, EmitterBank* bank, EmitterSub* sub
     } else {
         dir.x = RandRange(sub->field70);
         dir.y = RandRange(sub->field6C);
-        dir.z = lbl_804D705C + RandRange(lbl_804D705C);
+        dir.z = 0.0f + RandRange(0.0f);
     }
 
     if (sub->field88 & 0x20) {
-        if (((fabsf(dir.x) > lbl_804D7058) + (fabsf(dir.y) > lbl_804D7058) +
-             (fabsf(dir.z) > lbl_804D7058)) == 0) {
-            off.x = lbl_804D705C;
-            off.y = lbl_804D705C;
-            off.z = lbl_804D705C;
+        if (((fabsf(dir.x) > 1.1920929e-07f) + (fabsf(dir.y) > 1.1920929e-07f) +
+             (fabsf(dir.z) > 1.1920929e-07f)) == 0) {
+            off.x = 0.0f;
+            off.y = 0.0f;
+            off.z = 0.0f;
         } else {
             float inv = 1.0f / sqrtf(dir.x * dir.x + dir.y * dir.y +
                                      dir.z * dir.z);
@@ -1298,7 +1278,7 @@ void EmitterSpawnSample(float t, Emitter* em, EmitterBank* bank, EmitterSub* sub
         off.y *= em->fieldB0;
         off.z *= em->fieldB0;
     } else {
-        float spread = lbl_804D7090 * sub->field74;
+        float spread = 2.0f * sub->field74;
 
         off.x = RandRange(spread);
         off.y = RandRange(spread);
@@ -1311,9 +1291,9 @@ void EmitterSpawnSample(float t, Emitter* em, EmitterBank* bank, EmitterSub* sub
     EmitterSpawnAccumDir(&data, sub->listA0, basis, sub->count9C);
 
     if (sub->field88 & 0x10) {
-        data.field24 = lbl_804D709C * RandUnit();
+        data.field24 = 4095.0f * RandUnit();
     } else {
-        data.field24 = lbl_804D705C;
+        data.field24 = 0.0f;
     }
 
     if (sub->field88 & 0x40) {
@@ -1356,7 +1336,7 @@ void EmitterSpawnSample(float t, Emitter* em, EmitterBank* bank, EmitterSub* sub
 extern "C" void EmitterSpawnAccumForce(EmitterSpawnData* data, EmitterParticle* descs,
                             Mtx34* basis, int count)
 {
-    float sx = lbl_804D705C;
+    float sx = 0.0f;
     float sy = sx;
     float sz = sx;
     int i;
@@ -1364,24 +1344,24 @@ extern "C" void EmitterSpawnAccumForce(EmitterSpawnData* data, EmitterParticle* 
     for (i = 0; i < count; i++) {
         float decay = descs->field20;
         float dist = descs->field24;
-        float len = lbl_804D705C;
+        float len = 0.0f;
         Vec3 dir;
 
-        if (dist < lbl_804D705C) {
-            dist = lbl_804D705C;
+        if (dist < 0.0f) {
+            dist = 0.0f;
         }
-        dir.x = lbl_804D705C;
-        dir.y = lbl_804D705C;
-        dir.z = lbl_804D705C;
+        dir.x = 0.0f;
+        dir.y = 0.0f;
+        dir.z = 0.0f;
 
         switch (descs->field1C) {
         case 1:
-            dir.x = (basis->m[3][0] - data->pos.x) * lbl_804D70A0;
-            dir.y = (basis->m[3][1] - data->pos.y) * lbl_804D70A0;
-            dir.z = (basis->m[3][2] - data->pos.z) * lbl_804D70A0;
-            if (fabsf(dir.x) > lbl_804D7058 ||
-                fabsf(dir.y) > lbl_804D7058 ||
-                fabsf(dir.z) > lbl_804D7058) {
+            dir.x = (basis->m[3][0] - data->pos.x) * 0.125f;
+            dir.y = (basis->m[3][1] - data->pos.y) * 0.125f;
+            dir.z = (basis->m[3][2] - data->pos.z) * 0.125f;
+            if (fabsf(dir.x) > 1.1920929e-07f ||
+                fabsf(dir.y) > 1.1920929e-07f ||
+                fabsf(dir.z) > 1.1920929e-07f) {
                 float inv = 1.0f / sqrtf(dir.x * dir.x + dir.y * dir.y +
                                          dir.z * dir.z);
 
@@ -1390,11 +1370,11 @@ extern "C" void EmitterSpawnAccumForce(EmitterSpawnData* data, EmitterParticle* 
                 dir.z *= inv;
                 len = 1.0f / inv;
             } else {
-                dir.x = lbl_804D705C;
-                dir.y = lbl_804D705C;
-                dir.z = lbl_804D705C;
+                dir.x = 0.0f;
+                dir.y = 0.0f;
+                dir.z = 0.0f;
             }
-            if (dist > lbl_804D7058) {
+            if (dist > 1.1920929e-07f) {
                 decay *= exp(-dist * len);
             }
             dir.x *= decay;
@@ -1403,14 +1383,14 @@ extern "C" void EmitterSpawnAccumForce(EmitterSpawnData* data, EmitterParticle* 
             break;
         case 0:
             fn_800A025C(&dir, basis, 2);
-            if (dist > lbl_804D7058) {
+            if (dist > 1.1920929e-07f) {
                 decay *= exp(-dist *
                              (dir.y * (data->pos.y - basis->m[3][1]) *
-                                  lbl_804D70A0 +
+                                  0.125f +
                               dir.x * (data->pos.x - basis->m[3][0]) *
-                                  lbl_804D70A0 +
+                                  0.125f +
                               dir.z * (data->pos.z - basis->m[3][2]) *
-                                  lbl_804D70A0));
+                                  0.125f));
             }
             dir.x *= decay;
             dir.y *= decay;
@@ -1453,19 +1433,18 @@ extern "C" int EmitterParticleStep(Emitter* em, EmitterParticleState* particle,
 {
     if (spare == 0)
         return -1;
-    if (particle->clock <= lbl_804D705C)
+    if (particle->clock <= 0.0f)
         return 0;
     return EmitterParticleAdvance(em, particle, t);
 }
 
-extern "C" float lbl_804D70A4;
 
 // Advances one particle spawn clock by t and samples its spawn offset.
 extern "C" int EmitterParticleAdvance(Emitter* em, EmitterParticleState* particle,
                                       float t)
 {
     if (particle->clock > 0.0f) {
-        if (lbl_804D70A4 != particle->clock)
+        if (1000000.0f != particle->clock)
             particle->clock -= t;
         EmitterSampleSpawnOffset(em, particle, &particle->data, 0, t);
         if (particle->clock > 0.0f)
@@ -1474,7 +1453,6 @@ extern "C" int EmitterParticleAdvance(Emitter* em, EmitterParticleState* particl
     return 0;
 }
 
-extern "C" float lbl_804D70A8;
 
 void EmitterSpawnOffset(float t, EmitterSpawnData* src, Vec3* pos, Vec3* dir,
                         float* scale, Emitter* em, float* out);
@@ -1542,17 +1520,17 @@ static float EmitterRampParam(float t, float total, float rise, float fall,
                               float start, float mid, float end)
 {
     if (t < rise) {
-        float s = lbl_804D7068;
+        float s = 1.0f;
 
-        if (rise > lbl_804D7058) {
+        if (rise > 1.1920929e-07f) {
             s = t / rise;
         }
         return s * (mid - start) + start;
     }
     if (total - fall < t) {
-        float s = lbl_804D7068;
+        float s = 1.0f;
 
-        if (fall > lbl_804D7058) {
+        if (fall > 1.1920929e-07f) {
             s = (t - (total - fall)) / fall;
         }
         return s * (end - mid) + mid;
@@ -1577,7 +1555,7 @@ void EmitterSlotRefresh(Emitter* em, EmitterParticleState* particle,
         return;
     }
     sub = bank->sub;
-    total = lbl_804D7060 * sub->field90;
+    total = 1000.0f * sub->field90;
     t = total - particle->clock;
 
     if ((em->flags & 8) != 0) {
@@ -1587,29 +1565,29 @@ void EmitterSlotRefresh(Emitter* em, EmitterParticleState* particle,
         spare->byte0F = sub->byteCF;
     }
 
-    value = lbl_804D7068;
+    value = 1.0f;
     for (i = 0; i < sub->field28; i++) {
         if (sub->groups[i].id == spare->id) {
-            value = (float)sub->groups[i].byte04 / lbl_804D70AC;
+            value = (float)sub->groups[i].byte04 / 255.0f;
         }
     }
     value = EmitterRampParam(t, total, sub->fieldC4, sub->fieldC8,
                              sub->fieldBC, value, sub->fieldC0);
-    spare->byte0F = (u8)(int)(lbl_804D70AC * value);
+    spare->byte0F = (u8)(int)(255.0f * value);
 
     if (sub->state == 0) {
         value = (float)sub->byteD3;
-        if (lbl_804D70AC == value) {
+        if (255.0f == value) {
             for (i = 0; i < sub->field28; i++) {
                 if (sub->groups[i].id == spare->id) {
                     value = (float)sub->groups[i].byte04;
                 }
             }
         }
-        value /= lbl_804D70AC;
+        value /= 255.0f;
         value = EmitterRampParam(t, total, sub->fieldC4, sub->fieldC8,
                                  sub->fieldBC, value, sub->fieldC0);
-        spare->byte13 = (u8)(int)(lbl_804D70AC * value);
+        spare->byte13 = (u8)(int)(255.0f * value);
         spare->field08 = (int)EmitterRampParam(t, total, sub->fieldB4,
                                                sub->fieldB8, sub->fieldAC,
                                                sub->field80, sub->fieldB0);
@@ -1724,20 +1702,20 @@ void EmitterSpawnTracePick(float t, EmitterSpawnData* data, Vec3* pos,
         slot->basisCopy.m[3][0] = slot->basis.m[3][0];
         slot->basisCopy.m[3][1] = slot->basis.m[3][1];
         slot->basisCopy.m[3][2] = slot->basis.m[3][2];
-        a = lbl_804D70A8 * descs[i].field20;
-        b = lbl_804D70A8 * descs[i].field24;
+        a = 0.5f * descs[i].field20;
+        b = 0.5f * descs[i].field24;
         slot->corners[0].x = -a;
         slot->corners[0].y = -b;
-        slot->corners[0].z = lbl_804D705C;
+        slot->corners[0].z = 0.0f;
         slot->corners[1].x = -a;
         slot->corners[1].y = b;
-        slot->corners[1].z = lbl_804D705C;
+        slot->corners[1].z = 0.0f;
         slot->corners[2].x = a;
         slot->corners[2].y = b;
-        slot->corners[2].z = lbl_804D705C;
+        slot->corners[2].z = 0.0f;
         slot->corners[3].x = a;
         slot->corners[3].y = -b;
-        slot->corners[3].z = lbl_804D705C;
+        slot->corners[3].z = 0.0f;
         slot->corner[0] = &slot->corners[0];
         slot->corner[1] = &slot->corners[1];
         slot->corner[2] = &slot->corners[2];
@@ -1754,9 +1732,9 @@ void EmitterSpawnTracePick(float t, EmitterSpawnData* data, Vec3* pos,
         slot->pos.y = data->pos.y - slot->basis.m[3][1];
         slot->pos.z = data->pos.z - slot->basis.m[3][2];
         fn_800A0030(&slot->pos, &slot->basis, &slot->pos);
-        if (fabsf(data->dir.x) > lbl_804D7058 ||
-            fabsf(data->dir.y) > lbl_804D7058 ||
-            fabsf(data->dir.z) > lbl_804D7058) {
+        if (fabsf(data->dir.x) > 1.1920929e-07f ||
+            fabsf(data->dir.y) > 1.1920929e-07f ||
+            fabsf(data->dir.z) > 1.1920929e-07f) {
             float inv = 1.0f / sqrtf(data->dir.x * data->dir.x +
                                      data->dir.y * data->dir.y +
                                      data->dir.z * data->dir.z);
@@ -1766,10 +1744,10 @@ void EmitterSpawnTracePick(float t, EmitterSpawnData* data, Vec3* pos,
             slot->dir.z = data->dir.z * inv;
             len = 1.0f / inv;
         } else {
-            slot->dir.x = lbl_804D705C;
-            slot->dir.y = lbl_804D705C;
-            slot->dir.z = lbl_804D705C;
-            len = lbl_804D705C;
+            slot->dir.x = 0.0f;
+            slot->dir.y = 0.0f;
+            slot->dir.z = 0.0f;
+            len = 0.0f;
         }
         slot->speed = t * len;
         fn_800A0030(&slot->dir, &slot->basis, &slot->dir);
@@ -1784,7 +1762,7 @@ void EmitterSpawnTracePick(float t, EmitterSpawnData* data, Vec3* pos,
                                             &slot->dir, &found[hits].t,
                                             &found[hits].u, &found[hits].v);
 
-            if (hit != 0 && found[hits].t > lbl_804D7058 &&
+            if (hit != 0 && found[hits].t > 1.1920929e-07f &&
                 found[hits].t <= slot->speed) {
                 found[hits].index = i;
                 hits++;
@@ -1814,9 +1792,9 @@ void EmitterSpawnTracePick(float t, EmitterSpawnData* data, Vec3* pos,
         float len;
 
         // Direction towards the hit.
-        if (fabsf(data->dir.x) > lbl_804D7058 ||
-            fabsf(data->dir.y) > lbl_804D7058 ||
-            fabsf(data->dir.z) > lbl_804D7058) {
+        if (fabsf(data->dir.x) > 1.1920929e-07f ||
+            fabsf(data->dir.y) > 1.1920929e-07f ||
+            fabsf(data->dir.z) > 1.1920929e-07f) {
             float inv = 1.0f / sqrtf(data->dir.x * data->dir.x +
                                      data->dir.y * data->dir.y +
                                      data->dir.z * data->dir.z);
@@ -1826,10 +1804,10 @@ void EmitterSpawnTracePick(float t, EmitterSpawnData* data, Vec3* pos,
             v.z = data->dir.z * inv;
             len = 1.0f / inv;
         } else {
-            v.x = lbl_804D705C;
-            v.y = lbl_804D705C;
-            v.z = lbl_804D705C;
-            len = lbl_804D705C;
+            v.x = 0.0f;
+            v.y = 0.0f;
+            v.z = 0.0f;
+            len = 0.0f;
         }
 
         w.x = v.x * found[0].t;
@@ -1840,16 +1818,16 @@ void EmitterSpawnTracePick(float t, EmitterSpawnData* data, Vec3* pos,
         origin.z = data->pos.z + w.z;
 
         fn_800A0030(&w, &slot->basis, &data->dir);
-        w.z *= lbl_804D7088;
+        w.z *= -1.0f;
         w.x *= descs[idx].field1C;
         w.y *= descs[idx].field1C;
         w.z *= descs[idx].field1C;
         fn_800A0030(&data->dir, &slot->basisCopy, &w);
 
         // Re-normalise the resulting direction.
-        if (fabsf(data->dir.x) > lbl_804D7058 ||
-            fabsf(data->dir.y) > lbl_804D7058 ||
-            fabsf(data->dir.z) > lbl_804D7058) {
+        if (fabsf(data->dir.x) > 1.1920929e-07f ||
+            fabsf(data->dir.y) > 1.1920929e-07f ||
+            fabsf(data->dir.z) > 1.1920929e-07f) {
             float inv = 1.0f / sqrtf(data->dir.x * data->dir.x +
                                      data->dir.y * data->dir.y +
                                      data->dir.z * data->dir.z);
@@ -1859,14 +1837,14 @@ void EmitterSpawnTracePick(float t, EmitterSpawnData* data, Vec3* pos,
             v.z = data->dir.z * inv;
             len = 1.0f / inv;
         } else {
-            v.x = lbl_804D705C;
-            v.y = lbl_804D705C;
-            v.z = lbl_804D705C;
-            len = lbl_804D705C;
+            v.x = 0.0f;
+            v.y = 0.0f;
+            v.z = 0.0f;
+            len = 0.0f;
         }
 
         // Push the spawn point the remaining distance along the hit direction.
-        if (len > lbl_804D7058) {
+        if (len > 1.1920929e-07f) {
             float k = slot->speed - found[0].t;
 
             w.x = v.x * k;
@@ -1879,8 +1857,8 @@ void EmitterSpawnTracePick(float t, EmitterSpawnData* data, Vec3* pos,
 
         data->field24 = *speed;
         ActorPlayAnim(em->handle, 0xF94BF500u, em->handle);
-        if (descs[idx].field1C <= lbl_804D7058) {
-            *out = lbl_804D705C;
+        if (descs[idx].field1C <= 1.1920929e-07f) {
+            *out = 0.0f;
         }
     }
 }
@@ -1986,8 +1964,8 @@ int EmitterMsgHandler(u32 arg, int msg, int* data)
             if ((int)index >= 0 && (int)index < lbl_804D4964) {
                 data[1] = (int)arg;
                 data[3] = lbl_804D4960[index].field98;
-                ((float*)data)[4] = lbl_804D7068;
-                ((float*)data)[5] = lbl_804D7068;
+                ((float*)data)[4] = 1.0f;
+                ((float*)data)[5] = 1.0f;
                 data[6] = 0;
                 data[7] = 0;
             }
@@ -2093,15 +2071,15 @@ int EmitterMsgHandler(u32 arg, int msg, int* data)
                 em->flags |= 1;
                 if (sub->field98 == 0) {
                     f = sub->field94;
-                } else if (sub->field90 > lbl_804D7058) {
+                } else if (sub->field90 > 1.1920929e-07f) {
                     f = (float)sub->field7C / sub->field90;
                 } else {
-                    f = lbl_804D705C;
+                    f = 0.0f;
                 }
                 f *= em->fieldB4;
                 em->bank->field14 =
-                    (f > lbl_804D7058) ? lbl_804D7060 / f : lbl_804D7064;
-                em->fieldBC = lbl_804D705C;
+                    (f > 1.1920929e-07f) ? 1000.0f / f : lbl_804D7064;
+                em->fieldBC = 0.0f;
                 {
                     Mtx34 mtx;
 
@@ -2110,7 +2088,7 @@ int EmitterMsgHandler(u32 arg, int msg, int* data)
                 }
             } else {
                 em->flags &= ~1u;
-                em->fieldA8 = lbl_804D705C;
+                em->fieldA8 = 0.0f;
             }
             return 1;
         }
@@ -2212,12 +2190,12 @@ extern "C" void fn_800D72CC(void* param)
     if (dist < rel.y) {
         denom = rel.y;
     }
-    scaled = lbl_804D70B0 * (dist / denom);
-    fade = lbl_804D705C;
+    scaled = 6.0f * (dist / denom);
+    fade = 0.0f;
     if (fade <= scaled) {
         fade = scaled;
-        if (lbl_804D7068 < scaled) {
-            fade = lbl_804D7068;
+        if (1.0f < scaled) {
+            fade = 1.0f;
         }
     }
 
@@ -2240,7 +2218,7 @@ extern "C" void fn_800D72CC(void* param)
             origin.x = mtx.m[3][0];
             origin.y = mtx.m[3][1];
             origin.z = mtx.m[3][2];
-            speed = lbl_804D7060;
+            speed = 1000.0f;
             group = sub->groups;
             for (g = 0; g < groupCount; g++) {
                 end = count;
@@ -2255,18 +2233,18 @@ extern "C" void fn_800D72CC(void* param)
                 flags = fn_80010000(id) & 0x18;
                 n = fn_8000F904(id);
                 step = (speed * sub->field90) /
-                       (float)((double)n - lbl_804D7050);
+                       (float)n;
                 if (flags == 0) {
                     fn_8013AC68(id, 0);
                 }
                 for (i = start; i < end; i++) {
-                    if (lbl_804D705C < states[i].clock) {
+                    if (0.0f < states[i].clock) {
                         fn_800A0030(&pos, &basis, &states[i].data.pos);
                         pos.x += origin.x;
                         pos.y += origin.y;
                         pos.z += origin.z;
                         life = states[i].data.field24;
-                        scale = lbl_804D70A8 *
+                        scale = 0.5f *
                                 (((float*)&slots[i])[1] +
                                  ((float*)&slots[i])[2]);
                         handle = id;
@@ -2299,13 +2277,13 @@ extern "C" void fn_800D72CC(void* param)
                 group++;
             }
         } else {
-            alphaMax = lbl_804D70B4;
-            alpha = lbl_804D70A0 * (fade * sub->field80);
+            alphaMax = 42.5f;
+            alpha = 0.125f * (fade * sub->field80);
             if (alpha < alphaMax) {
                 alphaMax = alpha;
             }
             start = 0;
-            speed = lbl_804D7060;
+            speed = 1000.0f;
             group = sub->groups;
             for (g = 0; g < groupCount; g++) {
                 end = count;
@@ -2320,24 +2298,24 @@ extern "C" void fn_800D72CC(void* param)
                 flags = fn_80010000(id) & 0x18;
                 n = fn_8000F904(id);
                 step = (speed * sub->field90) /
-                       (float)((double)n - lbl_804D7050);
+                       (float)n;
                 if (flags == 0) {
                     fn_8013B6F8(alphaMax, id, &mtx);
                 }
                 for (i = start; i < end; i++) {
-                    if (lbl_804D705C < states[i].clock) {
+                    if (0.0f < states[i].clock) {
                         if ((sub->field88 & 8) == 0) {
                             if ((sub->field88 & 2) == 0) {
                                 fn_800A025C(&dir, &mtx, 2);
                                 dir.x = -dir.x;
                                 dir.y = -dir.y;
                                 dir.z = -dir.z;
-                                if ((fabsf(dir.x) > lbl_804D7058) +
-                                    (fabsf(dir.y) > lbl_804D7058) +
-                                    (fabsf(dir.z) > lbl_804D7058) == 0) {
-                                    dir.x = lbl_804D705C;
-                                    dir.y = lbl_804D705C;
-                                    dir.z = lbl_804D705C;
+                                if ((fabsf(dir.x) > 1.1920929e-07f) +
+                                    (fabsf(dir.y) > 1.1920929e-07f) +
+                                    (fabsf(dir.z) > 1.1920929e-07f) == 0) {
+                                    dir.x = 0.0f;
+                                    dir.y = 0.0f;
+                                    dir.z = 0.0f;
                                 } else {
                                     inv = 1.0f / sqrtf(dir.x * dir.x +
                                                        dir.y * dir.y +
@@ -2354,12 +2332,12 @@ extern "C" void fn_800D72CC(void* param)
                                 dir.x = states[i].data.dir.x;
                                 dir.y = states[i].data.dir.y;
                                 dir.z = states[i].data.dir.z;
-                                if ((fabsf(dir.x) > lbl_804D7058) +
-                                    (fabsf(dir.y) > lbl_804D7058) +
-                                    (fabsf(dir.z) > lbl_804D7058) == 0) {
-                                    dir.x = lbl_804D705C;
-                                    dir.y = lbl_804D705C;
-                                    dir.z = lbl_804D705C;
+                                if ((fabsf(dir.x) > 1.1920929e-07f) +
+                                    (fabsf(dir.y) > 1.1920929e-07f) +
+                                    (fabsf(dir.z) > 1.1920929e-07f) == 0) {
+                                    dir.x = 0.0f;
+                                    dir.y = 0.0f;
+                                    dir.z = 0.0f;
                                 } else {
                                     inv = 1.0f / sqrtf(dir.x * dir.x +
                                                        dir.y * dir.y +
@@ -2377,13 +2355,13 @@ extern "C" void fn_800D72CC(void* param)
                             dir.x = states[i].data.dir.x;
                             dir.y = states[i].data.dir.y;
                             dir.z = states[i].data.dir.z;
-                            if ((fabsf(dir.x) > lbl_804D7058) +
-                                (fabsf(dir.y) > lbl_804D7058) +
-                                (fabsf(dir.z) > lbl_804D7058) == 0) {
-                                dir.x = lbl_804D705C;
-                                dir.y = lbl_804D705C;
-                                dir.z = lbl_804D705C;
-                                mag = lbl_804D705C;
+                            if ((fabsf(dir.x) > 1.1920929e-07f) +
+                                (fabsf(dir.y) > 1.1920929e-07f) +
+                                (fabsf(dir.z) > 1.1920929e-07f) == 0) {
+                                dir.x = 0.0f;
+                                dir.y = 0.0f;
+                                dir.z = 0.0f;
+                                mag = 0.0f;
                             } else {
                                 inv = 1.0f / sqrtf(dir.x * dir.x +
                                                    dir.y * dir.y +
@@ -2393,7 +2371,7 @@ extern "C" void fn_800D72CC(void* param)
                                 dir.z *= inv;
                                 mag = 1.0f / inv;
                             }
-                            scale = -sub->field24 * (mag / lbl_804D70B8);
+                            scale = -sub->field24 * (mag / 60.0f);
                             dir.x *= scale;
                             dir.y *= scale;
                             dir.z *= scale;
@@ -2439,13 +2417,13 @@ extern "C" void fn_800D72CC(void* param)
         }
     } else if (state < 2) {
         if (state == 0) {
-            alphaMax = lbl_804D70B4;
+            alphaMax = 42.5f;
             alpha = fade * sub->field84;
             if (alpha < alphaMax) {
                 alphaMax = alpha;
             }
             start = 0;
-            speed = lbl_804D7060;
+            speed = 1000.0f;
             group = sub->groups;
             for (g = 0; g < groupCount; g++) {
                 end = count;
@@ -2460,24 +2438,24 @@ extern "C" void fn_800D72CC(void* param)
                 flags = fn_80010000(id) & 0x18;
                 n = fn_8000F904(id);
                 step = (speed * sub->field90) /
-                       (float)((double)n - lbl_804D7050);
+                       (float)n;
                 if (flags == 0) {
                     fn_8013B6F8(alphaMax, id, &mtx);
                 }
                 for (i = start; i < end; i++) {
-                    if (lbl_804D705C < states[i].clock) {
+                    if (0.0f < states[i].clock) {
                         if ((sub->field88 & 8) == 0) {
                             if ((sub->field88 & 2) == 0) {
                                 fn_800A025C(&dir, &mtx, 2);
                                 dir.x = -dir.x;
                                 dir.y = -dir.y;
                                 dir.z = -dir.z;
-                                if ((fabsf(dir.x) > lbl_804D7058) +
-                                    (fabsf(dir.y) > lbl_804D7058) +
-                                    (fabsf(dir.z) > lbl_804D7058) == 0) {
-                                    dir.x = lbl_804D705C;
-                                    dir.y = lbl_804D705C;
-                                    dir.z = lbl_804D705C;
+                                if ((fabsf(dir.x) > 1.1920929e-07f) +
+                                    (fabsf(dir.y) > 1.1920929e-07f) +
+                                    (fabsf(dir.z) > 1.1920929e-07f) == 0) {
+                                    dir.x = 0.0f;
+                                    dir.y = 0.0f;
+                                    dir.z = 0.0f;
                                 } else {
                                     inv = 1.0f / sqrtf(dir.x * dir.x +
                                                        dir.y * dir.y +
@@ -2494,12 +2472,12 @@ extern "C" void fn_800D72CC(void* param)
                                 dir.x = states[i].data.dir.x;
                                 dir.y = states[i].data.dir.y;
                                 dir.z = states[i].data.dir.z;
-                                if ((fabsf(dir.x) > lbl_804D7058) +
-                                    (fabsf(dir.y) > lbl_804D7058) +
-                                    (fabsf(dir.z) > lbl_804D7058) == 0) {
-                                    dir.x = lbl_804D705C;
-                                    dir.y = lbl_804D705C;
-                                    dir.z = lbl_804D705C;
+                                if ((fabsf(dir.x) > 1.1920929e-07f) +
+                                    (fabsf(dir.y) > 1.1920929e-07f) +
+                                    (fabsf(dir.z) > 1.1920929e-07f) == 0) {
+                                    dir.x = 0.0f;
+                                    dir.y = 0.0f;
+                                    dir.z = 0.0f;
                                 } else {
                                     inv = 1.0f / sqrtf(dir.x * dir.x +
                                                        dir.y * dir.y +
@@ -2517,13 +2495,13 @@ extern "C" void fn_800D72CC(void* param)
                             dir.x = states[i].data.dir.x;
                             dir.y = states[i].data.dir.y;
                             dir.z = states[i].data.dir.z;
-                            if ((fabsf(dir.x) > lbl_804D7058) +
-                                (fabsf(dir.y) > lbl_804D7058) +
-                                (fabsf(dir.z) > lbl_804D7058) == 0) {
-                                dir.x = lbl_804D705C;
-                                dir.y = lbl_804D705C;
-                                dir.z = lbl_804D705C;
-                                mag = lbl_804D705C;
+                            if ((fabsf(dir.x) > 1.1920929e-07f) +
+                                (fabsf(dir.y) > 1.1920929e-07f) +
+                                (fabsf(dir.z) > 1.1920929e-07f) == 0) {
+                                dir.x = 0.0f;
+                                dir.y = 0.0f;
+                                dir.z = 0.0f;
+                                mag = 0.0f;
                             } else {
                                 inv = 1.0f / sqrtf(dir.x * dir.x +
                                                    dir.y * dir.y +
@@ -2533,7 +2511,7 @@ extern "C" void fn_800D72CC(void* param)
                                 dir.z *= inv;
                                 mag = 1.0f / inv;
                             }
-                            scale = -sub->field24 * (mag / lbl_804D70B8);
+                            scale = -sub->field24 * (mag / 60.0f);
                             dir.x *= scale;
                             dir.y *= scale;
                             dir.z *= scale;
@@ -2577,13 +2555,13 @@ extern "C" void fn_800D72CC(void* param)
                 group++;
             }
         } else if (state >= 0) {
-            alphaMax = lbl_804D70B4;
+            alphaMax = 42.5f;
             alpha = fade * sub->field80;
             if (alpha < alphaMax) {
                 alphaMax = alpha;
             }
             start = 0;
-            speed = lbl_804D7060;
+            speed = 1000.0f;
             group = sub->groups;
             for (g = 0; g < groupCount; g++) {
                 end = count;
@@ -2598,24 +2576,24 @@ extern "C" void fn_800D72CC(void* param)
                 flags = fn_80010000(id) & 0x18;
                 n = fn_8000F904(id);
                 step = (speed * sub->field90) /
-                       (float)((double)n - lbl_804D7050);
+                       (float)n;
                 if (flags == 0) {
                     fn_8013B918(alphaMax, id, &mtx);
                 }
                 for (i = start; i < end; i++) {
-                    if (lbl_804D705C < states[i].clock) {
+                    if (0.0f < states[i].clock) {
                         if ((sub->field88 & 8) == 0) {
                             if ((sub->field88 & 2) == 0) {
                                 fn_800A025C(&dir, &mtx, 2);
                                 dir.x = -dir.x;
                                 dir.y = -dir.y;
                                 dir.z = -dir.z;
-                                if ((fabsf(dir.x) > lbl_804D7058) +
-                                    (fabsf(dir.y) > lbl_804D7058) +
-                                    (fabsf(dir.z) > lbl_804D7058) == 0) {
-                                    dir.x = lbl_804D705C;
-                                    dir.y = lbl_804D705C;
-                                    dir.z = lbl_804D705C;
+                                if ((fabsf(dir.x) > 1.1920929e-07f) +
+                                    (fabsf(dir.y) > 1.1920929e-07f) +
+                                    (fabsf(dir.z) > 1.1920929e-07f) == 0) {
+                                    dir.x = 0.0f;
+                                    dir.y = 0.0f;
+                                    dir.z = 0.0f;
                                 } else {
                                     inv = 1.0f / sqrtf(dir.x * dir.x +
                                                        dir.y * dir.y +
@@ -2632,12 +2610,12 @@ extern "C" void fn_800D72CC(void* param)
                                 dir.x = states[i].data.dir.x;
                                 dir.y = states[i].data.dir.y;
                                 dir.z = states[i].data.dir.z;
-                                if ((fabsf(dir.x) > lbl_804D7058) +
-                                    (fabsf(dir.y) > lbl_804D7058) +
-                                    (fabsf(dir.z) > lbl_804D7058) == 0) {
-                                    dir.x = lbl_804D705C;
-                                    dir.y = lbl_804D705C;
-                                    dir.z = lbl_804D705C;
+                                if ((fabsf(dir.x) > 1.1920929e-07f) +
+                                    (fabsf(dir.y) > 1.1920929e-07f) +
+                                    (fabsf(dir.z) > 1.1920929e-07f) == 0) {
+                                    dir.x = 0.0f;
+                                    dir.y = 0.0f;
+                                    dir.z = 0.0f;
                                 } else {
                                     inv = 1.0f / sqrtf(dir.x * dir.x +
                                                        dir.y * dir.y +
@@ -2655,13 +2633,13 @@ extern "C" void fn_800D72CC(void* param)
                             dir.x = states[i].data.dir.x;
                             dir.y = states[i].data.dir.y;
                             dir.z = states[i].data.dir.z;
-                            if ((fabsf(dir.x) > lbl_804D7058) +
-                                (fabsf(dir.y) > lbl_804D7058) +
-                                (fabsf(dir.z) > lbl_804D7058) == 0) {
-                                dir.x = lbl_804D705C;
-                                dir.y = lbl_804D705C;
-                                dir.z = lbl_804D705C;
-                                mag = lbl_804D705C;
+                            if ((fabsf(dir.x) > 1.1920929e-07f) +
+                                (fabsf(dir.y) > 1.1920929e-07f) +
+                                (fabsf(dir.z) > 1.1920929e-07f) == 0) {
+                                dir.x = 0.0f;
+                                dir.y = 0.0f;
+                                dir.z = 0.0f;
+                                mag = 0.0f;
                             } else {
                                 inv = 1.0f / sqrtf(dir.x * dir.x +
                                                    dir.y * dir.y +
@@ -2671,7 +2649,7 @@ extern "C" void fn_800D72CC(void* param)
                                 dir.z *= inv;
                                 mag = 1.0f / inv;
                             }
-                            scale = -sub->field24 * (mag / lbl_804D70B8);
+                            scale = -sub->field24 * (mag / 60.0f);
                             dir.x *= scale;
                             dir.y *= scale;
                             dir.z *= scale;
@@ -2715,7 +2693,7 @@ extern "C" void fn_800D72CC(void* param)
         }
     } else if (state < 4) {
         start = 0;
-        speed = lbl_804D7060;
+        speed = 1000.0f;
         group = sub->groups;
         for (g = 0; g < groupCount; g++) {
             end = count;
@@ -2730,9 +2708,9 @@ extern "C" void fn_800D72CC(void* param)
             flags = fn_80010000(id);
             n = fn_8000F904(id);
             step = (speed * sub->field90) /
-                   (float)((double)n - lbl_804D7050);
+                   (float)n;
             for (i = start; i < end; i++) {
-                if (lbl_804D705C < states[i].clock) {
+                if (0.0f < states[i].clock) {
                     handle = id;
                     if ((flags & 0x18) != 0) {
                         idx = (int)(states[i].clock / step);
@@ -2751,7 +2729,7 @@ extern "C" void fn_800D72CC(void* param)
                         fn_8013A30C(handle, &mtx);
                     } else {
                         Vec3Set(&euler, states[i].data.field24,
-                                lbl_804D705C, lbl_804D705C);
+                                0.0f, 0.0f);
                         MtxSetEuler(&eulerMtx, &euler);
                         fn_8009FC6C(&eulerMtx, &eulerMtx, &mtx);
                         eulerMtx.m[3][0] = mtx.m[3][0];
@@ -2760,7 +2738,7 @@ extern "C" void fn_800D72CC(void* param)
                         fn_8013A30C(handle, &eulerMtx);
                     }
                     GXBegin(0x98, 2, 4);
-                    *(volatile float*)0xCC008000 = lbl_804D705C;
+                    *(volatile float*)0xCC008000 = 0.0f;
                     fn_8013A2E8();
                 }
             }
@@ -2773,7 +2751,7 @@ extern "C" void fn_800D72CC(void* param)
 // Parse the emitter sub-descriptor pool out of a loaded asset chunk: validate
 // the header, carve the descriptor and spawn-list arrays out of the raw buffer
 // and point every descriptor at its own slice of the two lists.
-extern "C" void fn_800D8664(u32 param_1, int* param_2, int param_3)
+extern "C" void fn_800D8664(u32 fileId, int* data, int size)
 {
     EmitterSubList* hdr;
     EmitterSub* sub;
@@ -2784,13 +2762,13 @@ extern "C" void fn_800D8664(u32 param_1, int* param_2, int param_3)
     int i;
     int j;
 
-    if (param_3 > 0) {
-        lbl_804D4950 = (EmitterSubList*)param_2;
+    if (size > 0) {
+        lbl_804D4950 = (EmitterSubList*)data;
     } else {
         lbl_804D4950 = 0;
     }
-    param_2 += 8;
-    baseSize = param_3 - 0x20;
+    data += 8;
+    baseSize = size - 0x20;
     FileFlushBuffer(lbl_804D4950, 0x20);
     if (lbl_804D4950->magic != 0xD) {
         lbl_804D4950 = 0;
@@ -2798,19 +2776,19 @@ extern "C" void fn_800D8664(u32 param_1, int* param_2, int param_3)
     }
     hdr = lbl_804D4950;
     if (baseSize > 0 && hdr->count * 0xEC > 0) {
-        hdr->subs = (EmitterSub*)param_2;
+        hdr->subs = (EmitterSub*)data;
     } else {
         hdr->subs = 0;
     }
     remaining = baseSize - hdr->count * 0xEC;
     if (remaining > 0 && hdr->countA * 0x2C > 0) {
-        hdr->listA = (EmitterParticle*)(param_2 + hdr->count * 0x3B);
+        hdr->listA = (EmitterParticle*)(data + hdr->count * 0x3B);
     } else {
         hdr->listA = 0;
     }
     FileFlushBuffer(hdr->listA, hdr->countA * 0x2C);
     if (remaining - hdr->countA * 0x2C > 0 && hdr->countB * 0x2C > 0) {
-        hdr->listB = (EmitterParticle*)(param_2 + hdr->count * 0x3B +
+        hdr->listB = (EmitterParticle*)(data + hdr->count * 0x3B +
                                         hdr->countA * 0xB);
     } else {
         hdr->listB = 0;
@@ -2887,19 +2865,19 @@ Emitter* EmitterBuildFromSub(EmitterDesc* sub)
     bank->sub = sub;
     em->bank = bank;
     em->fieldB0 = sub->field78;
-    em->fieldB4 = lbl_804D7068;
+    em->fieldB4 = 1.0f;
     if (sub->field98 == 0) {
         fade = sub->field94;
     } else {
-        fade = lbl_804D705C;
-        if (sub->field90 > lbl_804D7058) {
+        fade = 0.0f;
+        if (sub->field90 > 1.1920929e-07f) {
             fade = (float)sub->field7C / sub->field90;
         }
     }
     fade *= em->fieldB4;
     bank->field14 =
-        (fade > lbl_804D7058) ? lbl_804D7060 / fade : lbl_804D7064;
-    em->fieldA8 = lbl_804D705C;
+        (fade > 1.1920929e-07f) ? 1000.0f / fade : lbl_804D7064;
+    em->fieldA8 = 0.0f;
 
     BoneGetMatrix(&matrix, sub->rot);
     matrix.m[3][0] = sub->posX;
@@ -2986,13 +2964,6 @@ extern "C" EmitterChannel lbl_80452560[4];
 extern "C" EmitterCurveTable lbl_8039BA20[];
 extern "C" float lbl_80452500[];
 extern "C" u32 lbl_804D2BD8;
-extern "C" float lbl_804D70C0;
-extern "C" float lbl_804D70C4;
-extern "C" float lbl_804D70C8;
-extern "C" float lbl_804D70CC;
-extern "C" float lbl_804D70D0;
-extern "C" float lbl_804D70D4;
-extern "C" float lbl_804D70D8;
 
 float ShapeRampA(float x);
 float ShapeRampB(float x);
@@ -3004,7 +2975,7 @@ extern "C" float fn_800D9E44(float x);
 // A zero stays zero; anything else passes through.
 static inline float ZeroOr(float v)
 {
-    return (v == lbl_804D70C4) ? lbl_804D70C4 : v;
+    return (v == 0.0f) ? 0.0f : v;
 }
 
 // sin(k*x) squared, keeping the sign of x.
@@ -3012,11 +2983,11 @@ static inline float ShapeSineSquare(float x)
 {
     float v;
 
-    if (x > lbl_804D70C4) {
-        v = fn_800A1394(lbl_804D70D0 * x);
+    if (x > 0.0f) {
+        v = fn_800A1394(90.0f * x);
         v = v * v;
     } else {
-        v = fn_800A1394(lbl_804D70D0 * -x);
+        v = fn_800A1394(90.0f * -x);
         v = -v * v;
     }
     return v;
@@ -3027,11 +2998,11 @@ static inline float ShapeSineCube(float x)
 {
     float v;
 
-    if (x > lbl_804D70C4) {
-        v = fn_800A1394(lbl_804D70D0 * x);
+    if (x > 0.0f) {
+        v = fn_800A1394(90.0f * x);
         v = v * (v * v);
     } else {
-        v = fn_800A1394(lbl_804D70D0 * -x);
+        v = fn_800A1394(90.0f * -x);
         v = v * (-v * v);
     }
     return v;
@@ -3040,11 +3011,11 @@ static inline float ShapeSineCube(float x)
 // Rescale a shaped value around zero, keeping its sign.
 static inline float ShapeGain(float v)
 {
-    float sign = (v >= lbl_804D70C4) ? lbl_804D70CC : lbl_804D70C8;
-    float t = (fabsf(v) - lbl_804D70D4) / lbl_804D70D8;
-    float lo = lbl_804D70C4;
+    float sign = (v >= 0.0f) ? 1.0f : -1.0f;
+    float t = (fabsf(v) - 0.17f) / 0.83f;
+    float lo = 0.0f;
 
-    if (lbl_804D70C4 <= t) {
+    if (0.0f <= t) {
         lo = t;
     }
     return sign * lo;
@@ -3064,10 +3035,10 @@ extern "C" float fn_800D8BE4(int idx, int mode, int type, int arg)
         active = 0;
     }
     if (active == 0) {
-        return lbl_804D70C0;
+        return -99.0f;
     }
     if ((lbl_804D2BD8 & (1 << idx)) == 0) {
-        return lbl_804D70C4;
+        return 0.0f;
     }
     ch = &lbl_80452560[idx];
 
@@ -3104,7 +3075,7 @@ extern "C" float fn_800D8BE4(int idx, int mode, int type, int arg)
             return SampleEmitterCurve(ch->field70, ch->field6C, &lbl_8039BA20[3],
                                idx, arg);
         case 4:
-            return ShapeRampB(lbl_804D70C4);
+            return ShapeRampB(0.0f);
         }
         break;
     case 3:
@@ -3122,7 +3093,7 @@ extern "C" float fn_800D8BE4(int idx, int mode, int type, int arg)
             return SampleEmitterCurve(ch->field70, ch->field6C, &lbl_8039BA20[7],
                                idx, arg);
         case 4:
-            return ShapeRampB(lbl_804D70C4);
+            return ShapeRampB(0.0f);
         }
         break;
     case 5:
@@ -3136,7 +3107,7 @@ extern "C" float fn_800D8BE4(int idx, int mode, int type, int arg)
         case 3:
             return fn_800D9E44(ZeroOr(ch->field70));
         case 4:
-            return ShapeRampB(lbl_804D70C4);
+            return ShapeRampB(0.0f);
         }
         break;
     case 6:
@@ -3150,64 +3121,64 @@ extern "C" float fn_800D8BE4(int idx, int mode, int type, int arg)
         case 3:
             return fn_800D9E44(ZeroOr(ch->field70));
         case 4:
-            return ShapeRampB(lbl_804D70C4);
+            return ShapeRampB(0.0f);
         }
         break;
     case 7:
         switch (type) {
         case 0:
-            return fn_800D9E44(lbl_804D70C4);
+            return fn_800D9E44(0.0f);
         case 1:
             return ShapeRampB(ZeroOr(ch->field64));
         case 2:
             return ShapeRampA(ZeroOr(ch->field68));
         case 4:
-            return ShapeRampB(lbl_804D70C4);
+            return ShapeRampB(0.0f);
         }
         break;
     case 8:
         switch (type) {
         case 0:
-            return ShapeRampC(lbl_804D70C4);
+            return ShapeRampC(0.0f);
         case 1:
             return ShapeRampB(ZeroOr(ch->field64));
         case 2:
             return ShapeRampA(ZeroOr(ch->field68));
         case 3:
-            return fn_800D9E44(lbl_804D70C4);
+            return fn_800D9E44(0.0f);
         case 4:
-            return ShapeRampB(lbl_804D70C4);
+            return ShapeRampB(0.0f);
         }
         break;
     case 9:
         switch (type) {
         case 0:
             if (ch->field28 != 0) {
-                return ShapeRampC(lbl_804D70C8);
+                return ShapeRampC(-1.0f);
             }
             if (ch->field2C != 0) {
-                return ShapeRampC(lbl_804D70CC);
+                return ShapeRampC(1.0f);
             }
-            return lbl_804D70C4;
+            return 0.0f;
         case 1:
-            return ShapeRampB((ch->field64 == lbl_804D70C4) ? ch->field6C
+            return ShapeRampB((ch->field64 == 0.0f) ? ch->field6C
                                                              : ch->field64);
         case 2:
             return ShapeRampA(ZeroOr(ch->field68));
         case 3:
             return fn_800D9E44(ZeroOr(ch->field70));
         case 4:
-            return ShapeRampB(lbl_804D70C4);
+            return ShapeRampB(0.0f);
         }
         break;
     case 10:
         switch (type) {
         case 0:
             if (ch->field60 != 0) {
-                return ShapeRampC(lbl_804D70C8);
+                return ShapeRampC(-1.0f);
             }
             if (ch->field5C != 0) {
-                return ShapeRampC(lbl_804D70CC);
+                return ShapeRampC(1.0f);
             }
             return ShapeRampC(ZeroOr(ch->field6C));
         case 1:
@@ -3217,13 +3188,13 @@ extern "C" float fn_800D8BE4(int idx, int mode, int type, int arg)
         case 3:
             return fn_800D9E44(ZeroOr(ch->field70));
         case 4:
-            return ShapeRampB(lbl_804D70C4);
+            return ShapeRampB(0.0f);
         }
         break;
     case 11:
         switch (type) {
         case 0:
-            return ShapeRampC(lbl_804D70C4);
+            return ShapeRampC(0.0f);
         case 1:
             return ShapeRampB(ZeroOr(ch->field64));
         case 2:
@@ -3265,7 +3236,7 @@ extern "C" float fn_800D8BE4(int idx, int mode, int type, int arg)
     case 3:
         return ShapeGain(ShapeSineSquare(ZeroOr(ch->field70)));
     }
-    return lbl_804D70C0;
+    return -99.0f;
 }
 
 // Piecewise-linear curve through the breakpoints of lbl_80452500: it stays 0
@@ -3273,11 +3244,11 @@ extern "C" float fn_800D8BE4(int idx, int mode, int type, int arg)
 // saturates at one from 0x5C on.  The curve is odd-symmetric around zero.
 extern "C" float fn_800D9E44(float x)
 {
-    float a = (x > lbl_804D70C4) ? x : -x;
+    float a = (x > 0.0f) ? x : -x;
     float r;
 
     if (a <= lbl_80452500[18]) {
-        r = lbl_804D70C4;
+        r = 0.0f;
     } else if (a <= lbl_80452500[19]) {
         r = lbl_80452500[20] * ((a - lbl_80452500[18]) /
                                 (lbl_80452500[19] - lbl_80452500[18]));
@@ -3287,14 +3258,14 @@ extern "C" float fn_800D9E44(float x)
                  (lbl_80452500[21] - lbl_80452500[19])) +
             lbl_80452500[20];
     } else if (a <= lbl_80452500[23]) {
-        r = (lbl_804D70CC - lbl_80452500[22]) *
+        r = (1.0f - lbl_80452500[22]) *
                 ((a - lbl_80452500[21]) /
                  (lbl_80452500[23] - lbl_80452500[21])) +
             lbl_80452500[22];
     } else {
-        r = lbl_804D70CC;
+        r = 1.0f;
     }
-    return (x > lbl_804D70C4) ? r : -r;
+    return (x > 0.0f) ? r : -r;
 }
 
 // Piecewise-linear curve through the first breakpoints of lbl_80452500 (0x00
@@ -3302,11 +3273,11 @@ extern "C" float fn_800D9E44(float x)
 // saturates at one past 0x14.  The curve is odd-symmetric around zero.
 float ShapeRampA(float x)
 {
-    float a = (x > lbl_804D70C4) ? x : -x;
+    float a = (x > 0.0f) ? x : -x;
     float r;
 
     if (a <= lbl_80452500[0]) {
-        r = lbl_804D70C4;
+        r = 0.0f;
     } else if (a <= lbl_80452500[1]) {
         r = lbl_80452500[2] * ((a - lbl_80452500[0]) /
                                (lbl_80452500[1] - lbl_80452500[0]));
@@ -3316,14 +3287,14 @@ float ShapeRampA(float x)
                  (lbl_80452500[3] - lbl_80452500[1])) +
             lbl_80452500[2];
     } else if (a <= lbl_80452500[5]) {
-        r = (lbl_804D70CC - lbl_80452500[4]) *
+        r = (1.0f - lbl_80452500[4]) *
                 ((a - lbl_80452500[3]) /
                  (lbl_80452500[5] - lbl_80452500[3])) +
             lbl_80452500[4];
     } else {
-        r = lbl_804D70CC;
+        r = 1.0f;
     }
-    return (x > lbl_804D70C4) ? r : -r;
+    return (x > 0.0f) ? r : -r;
 }
 
 // Piecewise-linear curve through the second group of breakpoints of
@@ -3331,11 +3302,11 @@ float ShapeRampA(float x)
 // and 0x24/0x28 and saturates at one past 0x2C.  Odd-symmetric around zero.
 float ShapeRampB(float x)
 {
-    float a = (x > lbl_804D70C4) ? x : -x;
+    float a = (x > 0.0f) ? x : -x;
     float r;
 
     if (a <= lbl_80452500[6]) {
-        r = lbl_804D70C4;
+        r = 0.0f;
     } else if (a <= lbl_80452500[7]) {
         r = lbl_80452500[8] * ((a - lbl_80452500[6]) /
                                (lbl_80452500[7] - lbl_80452500[6]));
@@ -3345,14 +3316,14 @@ float ShapeRampB(float x)
                  (lbl_80452500[9] - lbl_80452500[7])) +
             lbl_80452500[8];
     } else if (a <= lbl_80452500[11]) {
-        r = (lbl_804D70CC - lbl_80452500[10]) *
+        r = (1.0f - lbl_80452500[10]) *
                 ((a - lbl_80452500[9]) /
                  (lbl_80452500[11] - lbl_80452500[9])) +
             lbl_80452500[10];
     } else {
-        r = lbl_804D70CC;
+        r = 1.0f;
     }
-    return (x > lbl_804D70C4) ? r : -r;
+    return (x > 0.0f) ? r : -r;
 }
 
 // Piecewise-linear curve through the third group of breakpoints of
@@ -3360,11 +3331,11 @@ float ShapeRampB(float x)
 // and 0x3C/0x40 and saturates at one past 0x44.  Odd-symmetric around zero.
 float ShapeRampC(float x)
 {
-    float a = (x > lbl_804D70C4) ? x : -x;
+    float a = (x > 0.0f) ? x : -x;
     float r;
 
     if (a <= lbl_80452500[12]) {
-        r = lbl_804D70C4;
+        r = 0.0f;
     } else if (a <= lbl_80452500[13]) {
         r = lbl_80452500[14] * ((a - lbl_80452500[12]) /
                                 (lbl_80452500[13] - lbl_80452500[12]));
@@ -3374,14 +3345,14 @@ float ShapeRampC(float x)
                  (lbl_80452500[15] - lbl_80452500[13])) +
             lbl_80452500[14];
     } else if (a <= lbl_80452500[17]) {
-        r = (lbl_804D70CC - lbl_80452500[16]) *
+        r = (1.0f - lbl_80452500[16]) *
                 ((a - lbl_80452500[15]) /
                  (lbl_80452500[17] - lbl_80452500[15])) +
             lbl_80452500[16];
     } else {
-        r = lbl_804D70CC;
+        r = 1.0f;
     }
-    return (x > lbl_804D70C4) ? r : -r;
+    return (x > 0.0f) ? r : -r;
 }
 
 // Reads one button of a channel's 0x60-byte button table.  The record of the
@@ -3935,23 +3906,6 @@ struct PadRuntimeChannel {
     u8 pad8A[2];                // 0x8A
 };
 
-extern "C" float lbl_804D70DC;
-extern "C" float lbl_804D70E0;
-extern "C" float lbl_804D70E4;
-extern "C" float lbl_804D70E8;
-extern "C" float lbl_804D70EC;
-extern "C" float lbl_804D70F0;
-extern "C" float lbl_804D70F4;
-extern "C" float lbl_804D70F8;
-extern "C" float lbl_804D70FC;
-extern "C" float lbl_804D7100;
-extern "C" float lbl_804D7104;
-extern "C" float lbl_804D7108;
-extern "C" float lbl_804D710C;
-extern "C" float lbl_804D7110;
-extern "C" float lbl_804D7114;
-extern "C" float lbl_804D7118;
-extern "C" float lbl_804D711C;
 extern "C" int lbl_804D4994;
 extern "C" float fn_800A1128(void);
 void ScreenPrintf(const char* fmt, ...);
@@ -3960,34 +3914,34 @@ void ScreenPrintf(const char* fmt, ...);
 // connection-change callback.
 void PadManagerInit(void)
 {
-    lbl_80452500[0] = lbl_804D70DC;
+    lbl_80452500[0] = 0.2734375f;
     lbl_804D4988 = 0;
     lbl_804D498C = 0;
     lbl_804D4994 = 1;
     lbl_804D4998 = 0;
-    lbl_80452500[1] = lbl_804D70CC;
-    lbl_80452500[2] = lbl_804D70CC;
-    lbl_80452500[3] = lbl_804D70CC;
-    lbl_80452500[4] = lbl_804D70CC;
-    lbl_80452500[5] = lbl_804D70CC;
-    lbl_80452500[6] = lbl_804D70E0;
-    lbl_80452500[7] = lbl_804D70E4;
-    lbl_80452500[8] = lbl_804D70E8;
-    lbl_80452500[9] = lbl_804D70EC;
-    lbl_80452500[10] = lbl_804D70F0;
-    lbl_80452500[11] = lbl_804D70CC;
-    lbl_80452500[12] = lbl_804D70F4;
-    lbl_80452500[13] = lbl_804D70F8;
-    lbl_80452500[14] = lbl_804D70FC;
-    lbl_80452500[15] = lbl_804D70CC;
-    lbl_80452500[16] = lbl_804D70CC;
-    lbl_80452500[17] = lbl_804D70CC;
-    lbl_80452500[18] = lbl_804D70DC;
-    lbl_80452500[19] = lbl_804D70E4;
-    lbl_80452500[20] = lbl_804D70E8;
-    lbl_80452500[21] = lbl_804D70EC;
-    lbl_80452500[22] = lbl_804D70F0;
-    lbl_80452500[23] = lbl_804D70CC;
+    lbl_80452500[1] = 1.0f;
+    lbl_80452500[2] = 1.0f;
+    lbl_80452500[3] = 1.0f;
+    lbl_80452500[4] = 1.0f;
+    lbl_80452500[5] = 1.0f;
+    lbl_80452500[6] = 0.15f;
+    lbl_80452500[7] = 0.35f;
+    lbl_80452500[8] = 0.2f;
+    lbl_80452500[9] = 0.95f;
+    lbl_80452500[10] = 0.55f;
+    lbl_80452500[11] = 1.0f;
+    lbl_80452500[12] = 0.21875f;
+    lbl_80452500[13] = 0.890625f;
+    lbl_80452500[14] = 0.375f;
+    lbl_80452500[15] = 1.0f;
+    lbl_80452500[16] = 1.0f;
+    lbl_80452500[17] = 1.0f;
+    lbl_80452500[18] = 0.2734375f;
+    lbl_80452500[19] = 0.35f;
+    lbl_80452500[20] = 0.2f;
+    lbl_80452500[21] = 0.95f;
+    lbl_80452500[22] = 0.55f;
+    lbl_80452500[23] = 1.0f;
 }
 
 // Updates one pad channel from this frame's status snapshot: the button hold
@@ -4059,38 +4013,38 @@ void PadChannelUpdate(int channel, float value)
         // Analogue mode: scale each axis pair by its combined magnitude,
         // clamped to the unit range and jittered by a random factor.
         for (i = 0; i < 4; i += 2) {
-            float divisor = (i == 0) ? lbl_804D7100 : lbl_804D7108;
+            float divisor = (i == 0) ? 72.0f : 59.0f;
 
             magnitude = (fabsf(sticks[i]) + fabsf(sticks[i + 1])) / divisor;
             for (j = 0; j < 2; j++) {
                 float sign =
-                    (sticks[i + j] < lbl_804D70C4) ? lbl_804D70C8 : lbl_804D70CC;
+                    (sticks[i + j] < 0.0f) ? -1.0f : 1.0f;
                 float random = fn_800A1128();
                 float amount = magnitude;
                 float ratio;
                 float scale;
 
-                if (amount > lbl_804D70CC) {
-                    amount = lbl_804D70CC;
+                if (amount > 1.0f) {
+                    amount = 1.0f;
                 }
-                if (amount < lbl_804D70C8) {
-                    amount = lbl_804D70C8;
+                if (amount < -1.0f) {
+                    amount = -1.0f;
                 }
-                ratio = fn_800A1418(random) / fn_800A1418(lbl_804D7104);
-                scale = (ratio < lbl_804D70CC) ? ratio : lbl_804D70CC;
+                ratio = fn_800A1418(random) / fn_800A1418(45.0f);
+                scale = (ratio < 1.0f) ? ratio : 1.0f;
                 sticks[i + j] = (sign * amount) * scale;
             }
         }
     } else {
         // Digital mode: the raw axis values scaled into -1..1.
         for (i = 0; i < 4; i++) {
-            float divisor = (i < 2) ? lbl_804D710C : lbl_804D7110;
+            float divisor = (i < 2) ? 40.0f : 31.0f;
             float v = (float)status->sticks[i] / divisor;
 
-            if (v < lbl_804D70C8) {
-                v = lbl_804D70C8;
-            } else if (v > lbl_804D70CC) {
-                v = lbl_804D70CC;
+            if (v < -1.0f) {
+                v = -1.0f;
+            } else if (v > 1.0f) {
+                v = 1.0f;
             }
             sticks[i] = v;
         }
@@ -4104,8 +4058,8 @@ void PadChannelUpdate(int channel, float value)
                      sticks[3]);
     }
 
-    ch->triggerR = (float)status->triggerR / lbl_804D7114;
-    ch->triggerL = (float)status->triggerL / lbl_804D7114;
+    ch->triggerR = (float)status->triggerR / 255.0f;
+    ch->triggerL = (float)status->triggerL / 255.0f;
 
     // Two auto-repeat counters per axis: one counts while the axis is below
     // the positive threshold, the other while it is above the negative one.
@@ -4113,17 +4067,16 @@ void PadChannelUpdate(int channel, float value)
         float v = sticks[i];
 
         ch->repeat[i * 2] =
-            (v >= lbl_804D711C)
+            (v >= -0.29f)
                 ? 0
                 : (ch->repeat[i * 2] != 0 ? ch->repeat[i * 2] + 1 : 1);
         ch->repeat[i * 2 + 1] =
-            (lbl_804D7118 < v)
+            (0.29f < v)
                 ? (ch->repeat[i * 2 + 1] != 0 ? ch->repeat[i * 2 + 1] + 1 : 1)
                 : 0;
     }
 }
 
-extern "C" float lbl_804D7130;
 
 // Bilinear sample of a 0x60-byte emitter curve table: four x knots, four y
 // knots and a 4x4 grid of values. Two of the eight tables mirror the result,
@@ -4131,7 +4084,7 @@ extern "C" float lbl_804D7130;
 float SampleEmitterCurve(float x, float y, EmitterCurveTable* table, int idx,
                          int mirrored)
 {
-    float scale = lbl_804D70CC;
+    float scale = 1.0f;
 
     if (mirrored == 0) {
         if ((table == &lbl_8039BA20[2] || table == &lbl_8039BA20[6]) &&
@@ -4145,17 +4098,17 @@ float SampleEmitterCurve(float x, float y, EmitterCurveTable* table, int idx,
         }
     }
 
-    float ax = (x < lbl_804D70C4) ? -x : x;
-    if (y < lbl_804D70C4) {
+    float ax = (x < 0.0f) ? -x : x;
+    if (y < 0.0f) {
         y = -y;
     }
 
     if (ax <= table->value[0]) {
-        return lbl_804D70C4;
+        return 0.0f;
     }
     if (ax >= table->value[3]) {
-        if (x <= lbl_804D70C4) {
-            return lbl_804D70C8 * scale;
+        if (x <= 0.0f) {
+            return -1.0f * scale;
         }
         return scale;
     }
@@ -4178,7 +4131,7 @@ float SampleEmitterCurve(float x, float y, EmitterCurveTable* table, int idx,
     if (x0 == 3) {
         xa = 3;
         xb = 3;
-        frac = lbl_804D70C4;
+        frac = 0.0f;
     } else {
         xb = x0 + 1;
         frac = (ax - table->value[x0]) / (table->value[xb] - table->value[x0]);
@@ -4201,10 +4154,10 @@ float SampleEmitterCurve(float x, float y, EmitterCurveTable* table, int idx,
     float hi = frac * (table->value[xb * 4 + yb + 8] - v10) + v10;
     float result = frac * (hi - lo) + lo;
 
-    if (x <= lbl_804D70C4) {
+    if (x <= 0.0f) {
         result = -result;
     }
-    if (ax > lbl_804D7130) {
+    if (ax > 0.988f) {
         result *= scale;
     }
     return result;
