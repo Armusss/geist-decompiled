@@ -40,8 +40,8 @@ ninja            # rebuilds main.dol and checks it against config/GITE01/build.s
 A good build ends with `build/GITE01/main.dol: OK`.
 
 ## State
-- **Libraries:** 201 of 203 units build from C and match: Dolphin SDK 77/77, MusyX 26/26, zlib 12/12,
-  Runtime 8/8, MSL C 51/52, MetroTRK 27/28.
+- **Libraries:** All 203 units build from C and match: Dolphin SDK 77/77, MusyX 26/26, zlib 12/12,
+  Runtime 8/8, MSL C 52/52, MetroTRK 28/28.
 - **Game code** (CodeWarrior GC/1.3.2, C++) is split into 220 provisional units; file boundaries are corrected
   as files get matched. 68 are fully matched, each verified byte-identical in the linked DOL, and 150 more are
   partly matched (orange on the progress map): they have C source and some of their functions already compile
