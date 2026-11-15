@@ -144,7 +144,7 @@ float* fn_800FD424(void);
 int HandleToPlayer(int handle);
 int PlayerTeam(int player);
 u32 StrFindKeySkip(u32 key);
-void StatAdd(float v, int a, int b, int c);
+void StatAdd(int a, int b, int c, float v);
 float StatGet(int a, int b, int c);
 void StatSet(float v, int a, int b, int c);
 void StatRegister(float v, int a, int b, int c, void (*fn)(void*), void* p);
@@ -476,8 +476,8 @@ int RulesPlayerMsg(int from, u32 key, int arg1, int arg2) {
             fn_800FEF2C(1.0f, 1.0f, 1.0f, 22.0f, pb, name);
         }
         sc = GetVar(arg1, 0x9BD4EF06);
-        StatAdd(-1.0f, 0xE2D6A9C0, 0, pb);
-        StatAdd(-1.0f, 0xE2D6A9C0, 1, sc);
+        StatAdd(0xE2D6A9C0, 0, pb, -1.0f);
+        StatAdd(0xE2D6A9C0, 1, sc, -1.0f);
         return 1;
     }
     case 0x901EEFA2:
@@ -511,18 +511,18 @@ int RulesPlayerMsg(int from, u32 key, int arg1, int arg2) {
 
                     x = (h / a) * (1 << a);
                 }
-                StatAdd((float)x, 0xE2D6A9C0, 1, tb);
-                StatAdd((float)x, 0xE2D6A9C0, 0, pb);
+                StatAdd(0xE2D6A9C0, 1, tb, (float)x);
+                StatAdd(0xE2D6A9C0, 0, pb, (float)x);
             }
             return 1;
         }
         sc = GetVar(arg1, 0x9BD4EF06);
         if (pa == pb) {
-            StatAdd(-1.0f, 0xE2D6A9C0, 0, pb);
-            StatAdd(-1.0f, 0xE2D6A9C0, 1, sc);
+            StatAdd(0xE2D6A9C0, 0, pb, -1.0f);
+            StatAdd(0xE2D6A9C0, 1, sc, -1.0f);
         } else {
-            StatAdd(1.0f, 0xE2D6A9C0, 0, pb);
-            StatAdd(1.0f, 0xE2D6A9C0, 1, sc);
+            StatAdd(0xE2D6A9C0, 0, pb, 1.0f);
+            StatAdd(0xE2D6A9C0, 1, sc, 1.0f);
         }
         return 1;
     }
