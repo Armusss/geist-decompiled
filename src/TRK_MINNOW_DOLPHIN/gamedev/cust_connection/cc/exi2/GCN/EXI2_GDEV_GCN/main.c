@@ -46,7 +46,7 @@ int gdev_cc_close() {
 int gdev_cc_read(u8* data, int size) {
     u8 buff[GDEV_BUF_SIZE];
     u32 p1;
-    int p2;
+    u32 p2;
     u32 retval;
     int poll;
     retval = 0;
@@ -56,8 +56,7 @@ int gdev_cc_read(u8* data, int size) {
 
     TRACE(1, "Expected packet size : 0x%08x (%ld)\n", size, size);
 
-    p1 = size;
-    p2 = p1;
+    p1 = p2 = size;
     while ((u32)CBGetBytesAvailableForRead(&gRecvCB) < p1) {
         retval = 0;
         poll = DBQueryData();
