@@ -37,7 +37,7 @@ struct UserGeomClass {
     u32 size;                                   // 0x00  per-geometry user data size
     ColliderFn (*getCollider)(int type);        // 0x04  pick a collider for the other type
     void (*computeAabb)(Geom* g, float* aabb);  // 0x08
-    int (*test)(Geom* g);                       // 0x0c
+    int (*test)(Geom* g, Geom* other, float* aabb); // 0x0c
     void (*release)(Geom* g);                   // 0x10
 };
 
@@ -48,7 +48,7 @@ struct GeomVtbl {
     int unk04;                             // 0x04
     Geom* (*destroy)(Geom* g, short del);  // 0x08
     void (*computeAabb)(Geom* g);          // 0x0c
-    int (*isDefault)(Geom* g);             // 0x10
+    int (*isDefault)(Geom* g, Geom* other, float* aabb); // 0x10
     int (*getNumGeoms)(Geom* g);                // 0x14
     void (*addGeom)(Geom* g, Geom* child, int arg);   // 0x18
     void (*removeGeom)(Geom* g, Geom* child);   // 0x1c
@@ -181,7 +181,7 @@ static const char sTooManyUserClasses[] =
 // Forward declarations.
 int GeomRegisterClass(UserGeomClass* cls);
 int UserGeomCollide(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
-int GeomUserTest(Geom* g);
+int GeomUserTest(Geom* g, Geom* other, float* aabb);
 void GeomUpdateUserAabb(Geom* g);
 Geom* GeomUserDestroy(Geom* g, short del);
 Geom* UserGeomCreate(UserGeom* g, int type);
@@ -297,12 +297,12 @@ int UserGeomCollide(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int ski
 }
 
 // 0x8026A948
-int GeomUserTest(Geom* g)
+int GeomUserTest(Geom* g, Geom* other, float* aabb)
 {
     UserGeomClass* cls = &gUserGeomClasses[g->type - 0xb];
 
     if (cls->test != 0) {
-        return cls->test(g);
+        return cls->test(g, other, aabb);
     }
     return 1;
 }
@@ -564,7 +564,7 @@ Geom* GeomGetNext(Geom* g)
     return g->next;
 }
 // 0x8026AEB4
-int GeomDefaultTest(Geom* g)
+int GeomDefaultTest(Geom* g, Geom* other, float* aabb)
 {
     return 1;
 }
