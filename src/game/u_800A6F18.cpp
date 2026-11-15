@@ -1774,17 +1774,30 @@ float ActorAngleToPos(void* self, Vec3* pos)
 // Distance between two 2D points; the squared difference sum is offset by the
 // shared zero constant and square-rooted only when it is positive.  Names are
 // descriptive guesses.
+inline float FastSqrt(float x) {
+    float r;
+    if (x <= 0.0f) {
+        r = 0.0f;
+    } else {
+        float y;
+        register float t;
+        asm {
+            lfs t, x
+            ps_rsqrte t, t
+            ps_res t, t
+            stfs t, y
+        }
+        r = y;
+    }
+    return r;
+}
+
 float Distance2D(float* a, float* b)
 {
     float dx = a[0] - b[0];
     float dy = a[1] - b[1];
     float dist = 0.0f + (dx * dx + dy * dy);
-    float result = 0.0f;
-
-    if (dist > 0.0f) {
-        result = sqrtf(dist);
-    }
-    return result;
+    return FastSqrt(dist);
 }
 
 // Same as Distance2D, over all three components.
@@ -1794,12 +1807,7 @@ float Distance3D(float* a, float* b)
     float dy = a[1] - b[1];
     float dz = a[2] - b[2];
     float dist = dx * dx + dy * dy + dz * dz;
-    float result = 0.0f;
-
-    if (dist > 0.0f) {
-        result = sqrtf(dist);
-    }
-    return result;
+    return FastSqrt(dist);
 }
 
 // Squared planar distance between two points, biased by a tuning constant.
