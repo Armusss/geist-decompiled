@@ -22,10 +22,10 @@ extern int lbl_804482A8;
 // fn_800886C8
 extern "C" void* fn_800886C8(void)
 {
-    if (lbl_804D46F8 < 0) {
-        return 0;
+    if (lbl_804D46F8 >= 0) {
+        return lbl_80441598[lbl_804D46F8];
     }
-    return lbl_80441598[lbl_804D46F8];
+    return 0;
 }
 
 // Pops the most recent entry off the active-entry stack.
@@ -2586,12 +2586,11 @@ int IsEntryFlagSet(unsigned int param)
     u32* entry;
 
     idx = (int)(param >> 16) / 8;
-    if (idx < 0 || idx >= 0x300) {
-        return 0;
-    }
-    entry = (u32*)((u8*)lbl_804416A0 + idx * 0x24);
-    if ((*entry & 1) != 0) {
-        return 1;
+    if (idx >= 0 && idx < 0x300) {
+        entry = (u32*)((u8*)lbl_804416A0 + idx * 0x24);
+        if ((*entry & 1) != 0) {
+            return 1;
+        }
     }
     return 0;
 }
