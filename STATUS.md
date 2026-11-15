@@ -40,6 +40,16 @@ published; generate your own from your copy of the game if you want it.
   **Lead TODO before a flip:** .rodata (pool 0x8034BF90), .data 0x803C4FE0-0x803C5050 and .sdata2 0x804DAEC0..
   splits; convert the lbl_804DAE* externs to literals and check pool order.
 
+**GC/2.0 const sweep (opus-const, 2026-11-15), merged a7eb8c6:** on GC/2.0 no unit lost a match (counts only rise).
+Proposals awaiting the user (variants in ~/geist-work/ds/opus-const-tools/):
+- u_8016C244: split new file .text 0x8016D170-0x8016D440 + .sdata2 0x804D8028-0x804D803C on GC/2.0 (8/8; duplicate
+  11.377778f and 0x4330 double). Mangled renames FixedToRad/RadToFixed/VecToAngles -> PC args.
+- Msx: split C .text 0x8016D440-0x8016D6BC/.sdata2 0x804D803C-0x804D804C (8/8 on 2.0) and D .text 0x8016D6BC-
+  0x8016E20C/.sdata2 0x804D8050-0x804D8068 (11/14). Rename Vec3Copy__FP4Vec3P4Vec3 -> ...PC4Vec3.
+- u_800D32E8 (EmitterHitParamCompare 3->0) and u_8009DE94 (fn_800A089C 15->0): per-file GC/2.0, +1 each.
+- u_8008DCDC, u_80277600: not yet (functions not decompiled); u_80277600 file starts proposed at .text 0x80278D2C,
+  0x80279558, 0x8027B4F8, 0x8027BD5C (.sdata2 0x804DA318/340/358/388).
+
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
 They are started with `~/geist-work/ds/run_worker.sh NAME [MAX_TURNS]` (allowlist + 150-turn cap), at most 3 at once.
