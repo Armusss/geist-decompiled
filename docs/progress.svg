@@ -244,7 +244,7 @@
 <rect x="608" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_80085CDC.cpp - matching</title></rect>
 <rect x="628" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_80085E50.cpp - matching</title></rect>
 <rect x="648" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/AppMain.c - partial: 15/23 functions match</title></rect>
-<rect x="668" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_800886C8.cpp - partial: 26/70 functions match</title></rect>
+<rect x="668" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_800886C8.cpp - partial: 39/70 functions match</title></rect>
 <rect x="688" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8008DCDC.cpp - partial: 14/130 functions match</title></rect>
 <rect x="708" y="382" width="18" height="18" rx="2" fill="#d29922"><title>game/Shadow2.cpp - partial: 6/12 functions match</title></rect>
 <rect x="728" y="382" width="18" height="18" rx="2" fill="#2ea043"><title>game/Memory.cpp - matching</title></rect>
