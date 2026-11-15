@@ -664,7 +664,7 @@ config.libs = [
             Object(Matching, "game/u_80161F40.cpp"),  # behaviour registry
             Object(NonMatching, "game/u_80161FF4.cpp"),  # guess
             Object(NonMatching, "game/u_8016A774.cpp"),  # pinned
-            Object(NonMatching, "game/u_8016C244.cpp"),  # guess
+            Object(Matching, "game/u_8016C244.cpp"),  # guess
             Object(Matching, "game/u_8016D170.cpp", mw_version="GC/2.0"),  # angle/Euler/Vec3 helpers; GC/2.0: const-pointer pre-stwu loads (STATUS G4)
             Object(NonMatching, "game/u_8016D6BC.cpp", mw_version="GC/2.0"),  # box helpers; GC/2.0: const-pointer pre-stwu loads (STATUS G4)
             Object(NonMatching, "game/Msx.cpp"),  # guess

@@ -154,8 +154,6 @@ int rand(void);
 double sqrt(double);
 int SendMsg(int target, int msg, void* data);                     // 0x800265D4
 int fn_80117FB4(Actor* actor);
-void fn_8011818C(Actor* actor);
-void fn_80118250(Actor* actor, u32 id);
 void fn_80118084(GhostObj* obj, u32 id, void* data);
 int fn_80117FF8(GhostObj* obj, u32 id, void* data);
 int fn_80116D40(Actor* actor, void* msg);
@@ -169,7 +167,7 @@ int fn_80117D80(Actor* actor);
 void fn_800B6CAC(Actor* actor, void* fn);
 void fn_800B5028();
 void fn_800A31A0(Actor* actor);
-void fn_8001ED98(void* pos, int id, int (*cb)(Actor*, Actor*), Actor* actor, int unk);
+void fn_8001ED98(void* pos, int id, int (*cb)(void*, void*), Actor* actor, int unk);
 void fn_800B42E0(void* a, int b, float f, int c, int d);
 int fn_800BB218(Actor* actor, int flags, Vec3* from, Vec3* to, Actor* actor2,
                 float* scale, float* unk1, float* unk2, float dist);
@@ -181,23 +179,25 @@ int fn_800A1688(int a);
 int fn_800A1624(int a);
 int fn_801BD694(Actor* actor);
 int fn_80116E08(Actor* actor);
-float fn_80120C14(u32 hash, int a, int h);
-void fn_80120C80(float f, u32 hash, int a, int h);
-void* FxFind(const char* name);
 void FxStart(void* fx, int a, int b);
 int fn_8001F928(Actor* actor, int* coords, u32 flags, int (*cb)(u32*, u32), Actor* actor2);
 void fn_8028C188(String* dst, char* data, int len);
+void* memset(void* dst, int val, unsigned long n);
+String fn_800225C8(String& a, String& b);
+}
+void ClearStateMachine(void* actor);                              // 0x8011818C
+void SetStateMachineState(void* actor, u32 id);                   // 0x80118250
+float StatGet(int stat, int index, int who);                      // 0x80120C14
+void StatAdd(int stat, int index, int who, float v);              // 0x80120C80
+void* FxFind(const char* name);
 void* VAlloc(int size);
 void VFree(void* ptr);
-void* memset(void* dst, int val, unsigned long n);
 int HasCondition(void* cond, int id);
 int OwnerId(Owner* owner);
 int PlayerInHost(Actor* actor);
 int HandleToPlayer(int handle);
 int ModelAnimate(int model, char* name, int unk);
 void ZoneUpdate(void* zone, IVec3* pos);
-String fn_800225C8(String& a, String& b);
-}
 int ConditionUpdateBit(void* cond, int bit, int set);
 int ConditionSetBit(void* cond, int bit, int set);
 
@@ -209,7 +209,7 @@ static const char* sActionNames[] = {
 int CollectUpdate(void* p);
 int CollectDone(void* p);
 int CollectEnter(void* p);
-int CollectCheck(Actor* a, Actor* o);
+int CollectCheck(void* p0, void* p1);
 int CollectMatch(u32* id, u32 other);
 
 static BehType gCollectBehTypes[] = {
@@ -268,15 +268,17 @@ int CollectUpdate(void* p) {
             out.y = (float)iy;
             out.z = (float)iz;
             if (fn_800BB218(o, o->f2c4, &pos, &out, o, &scale, &unk1, &unk2, o->f900)) {
-                float sx = (float)vec.x;
-                float sy = (float)vec.y;
-                float sz = (float)vec.z;
-                sx *= scale;
-                sy *= scale;
-                sz *= scale;
-                out.x = pos.x + sx;
-                out.y = pos.y + sy;
-                out.z = pos.z + sz;
+                Vec3 d;
+                
+                d.x = (float)vec.x;
+                d.y = (float)vec.y;
+                d.z = (float)vec.z;
+                d.x *= scale;
+                d.y *= scale;
+                d.z *= scale;
+                out.x = pos.x + d.x;
+                out.y = pos.y + d.y;
+                out.z = pos.z + d.z;
             }
             st->pos = out;
         }
@@ -323,20 +325,22 @@ int CollectEnter(void* p) {
         out.z = (float)iz;
     }
     if (fn_800BB218(o, o->f2c4, &pos, &out, o, &scale, &unk1, &unk2, o->f900)) {
-        float sx = (float)vec.x;
-        float sy = (float)vec.y;
-        float sz = (float)vec.z;
-        sx *= scale;
-        sy *= scale;
-        sz *= scale;
-        out.x = pos.x + sx;
-        out.y = pos.y + sy;
-        out.z = pos.z + sz;
+        Vec3 d;
+        
+        d.x = (float)vec.x;
+        d.y = (float)vec.y;
+        d.z = (float)vec.z;
+        d.x *= scale;
+        d.y *= scale;
+        d.z *= scale;
+        out.x = pos.x + d.x;
+        out.y = pos.y + d.y;
+        out.z = pos.z + d.z;
     }
     st->pos = out;
     radius = 300.0f;
-    fn_8011818C(o);
-    fn_80118250(o, 0x469ABA3B);
+    ClearStateMachine(o);
+    SetStateMachineState(o, 0x469ABA3B);
     fn_80118084(o->obj, 0x0329C15B, &st->pos);
     fn_80118084(o->obj, 0x033FA508, &radius);
     return 1;
@@ -363,6 +367,7 @@ static inline void CollectStateName(String* out, const char* s) {
 static inline int CollectAnimate(Actor* o, Msg* m) {
     Beh* st;
     int anim;
+    void* mtx;
 
     if (o == 0) {
         return 0;
@@ -372,8 +377,8 @@ static inline int CollectAnimate(Actor* o, Msg* m) {
         return 1;
     }
     anim = fn_800AFD20(o);
-    fn_8003F15C(anim, (void*)fn_8003A1F0(anim, o->bone, ModelAnimate(o->model, 0, 0)),
-                o->anim, 1.0f, &m->f10, 0);
+    mtx = (void*)fn_8003A1F0(anim, o->bone, ModelAnimate(o->model, 0, 0));
+    fn_8003F15C(anim, mtx, o->anim, 1.0f, &m->f10, 0);
     o->f13c = 0.0f;
     return 1;
 }
@@ -525,7 +530,7 @@ int CollectCheck(void* p0, void* p1) {
         if (!PlayerInHost(a)) {
             return 0;
         }
-        if (fn_80120C14(0x7BFB940D, 0, HandleToPlayer(a->handle)) >= 16.0f) {
+        if (StatGet(0x7BFB940D, 0, HandleToPlayer(a->handle)) >= 16.0f) {
             return 0;
         }
         break;
@@ -548,7 +553,7 @@ int CollectCheck(void* p0, void* p1) {
         coords[4] = o->pos.y;
         coords[5] = o->pos.z;
         if (fn_8001F928(o, coords, 0x12000000, CollectMatch, a) == 0) {
-            fn_80120C80(1.0f, 0x7BFB940D, 0, HandleToPlayer(a->handle));
+            StatAdd(0x7BFB940D, 0, HandleToPlayer(a->handle), 1.0f);
             FxStart(FxFind("collect_point"), 0, 0);
             st->timer = -1.0f;
         }
@@ -570,7 +575,7 @@ void CollectRelease(Actor* o) {
     if (o == 0) {
         return;
     }
-    fn_8011818C(o);
+    ClearStateMachine(o);
     VFree(o->beh);
     o->f104 = 0;
     o->beh = 0;
