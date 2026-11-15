@@ -432,21 +432,23 @@ void ExtraTrailRelease(ExtraHolder* e) {
     e->state = 0;
 }
 
+inline void V3Scale(Vec3* v, float s) { v->x *= s; v->y *= s; v->z *= s; }
+
 void ExtraTrailAttach(ExtraHolder* e) {
     ActorMsg msg;
     Mtx34 mtx;
     int anim;
     Vec3 pos;
     Vec3 vel;
-    int total;
     int i;
     int kind;
     float scale;
+    ExtraRecord* r;
     ExtraHolder** p;
     ExtraHolder** end;
     ExtraHolder* other;
     ExtraHolder** victim;
-    ExtraRecord* r;
+    int total;
     float best;
 
     if (!e) {
@@ -474,7 +476,8 @@ void ExtraTrailAttach(ExtraHolder* e) {
     if (!e->actor) {
         return;
     }
-    if (e->recs) {
+    r = e->recs;
+    if (r) {
         pos.x = 0.0f;
         pos.y = 0.0f;
         pos.z = 0.0f;
@@ -484,7 +487,6 @@ void ExtraTrailAttach(ExtraHolder* e) {
         total = 0;
         kind = lbl_804D5444;
         scale = 18.0f;
-        r = e->recs;
         for (i = 0; i < 4; i++, r++) {
             if (r->time < 0 || r->time >= 100) {
                 continue;
@@ -502,22 +504,23 @@ void ExtraTrailAttach(ExtraHolder* e) {
             }
         }
         if (total > 0) {
-            float inv = 1.0f / (float)total;
-            pos.x *= inv;
-            pos.y *= inv;
-            pos.z *= inv;
+            V3Scale(&pos, 1.0f / (float)total);
             fn_801E0EDC(e->actor, &pos, &vel, kind, scale);
         }
         VFree(e->recs);
         e->recs = 0;
     }
     if ((lbl_804D5440->size >> 2) >= 8) {
+        ExtraHolder** q;
+        ExtraHolder** qe;
         best = -1.0f;
-        end = (ExtraHolder**)((char*)lbl_804D5440->data + lbl_804D5440->size);
-        for (p = (ExtraHolder**)lbl_804D5440->data; p != end; p++) {
-            other = *p;
+        qe = (ExtraHolder**)lbl_804D5440->data;
+        q = qe;
+        qe = (ExtraHolder**)((char*)qe + lbl_804D5440->size);
+        for (; q != qe; q++) {
+            other = *q;
             if (other->life > best) {
-                victim = p;
+                victim = q;
                 best = other->life;
             }
         }
