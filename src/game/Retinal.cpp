@@ -231,13 +231,15 @@ void RetinalUpdate(Actor* a, float dt) {
     ActorUpdate(a, dt);
 }
 
-static inline int RetinalGhostQuery(int ghost, int* ok) {
+static inline int RetinalGhostQuery(int ghost, int* result) {
     QueryMsg q;
+    int ok;
     q.hash = 0x00251E4A;
     *(int*)&q.result = 0;
     q.unk8 = 0;
-    *ok = SendMsg(ghost, 0x41E, &q);
-    return *(int*)&q.result;
+    ok = SendMsg(ghost, 0x41E, &q);
+    *result = *(int*)&q.result;
+    return ok;
 }
 
 static inline int RetinalOnQuery(void* data) {
@@ -249,7 +251,7 @@ static inline int RetinalOnQuery(void* data) {
     if (ActorPlayAnim(actor->handle, StrHash("QUERY", ((u32*)data)[2]), ((int*)data)[1])) return 1;
 
     if (actor->ghost != -1) {
-        ghost = RetinalGhostQuery(actor->ghost, &ok);
+        ok = RetinalGhostQuery(actor->ghost, &ghost);
         if (ok && ghost == 1) return 1;
     }
 
@@ -451,28 +453,23 @@ int RetinalTrigger(void* data) {
                 float maxX;
                 float hi2;
                 int b1, b2, b3;
-                float h, l;
                 float u1, u2;
-                if (x2 - lo2 > 200.0f) lo2 = x2 - 200.0f;
+                lo2 = x2 - lo2 > 200.0f ? x2 - 200.0f : lo2;
                 maxX = 320.0f / gAspectScale;
-                if (lo2 < (-320.0f / gAspectScale)) {
-                    lo2 = (-320.0f / gAspectScale);
-                } else if (lo2 > maxX) {
-                    lo2 = maxX;
-                }
+                lo2 = lo2 < (-320.0f / gAspectScale) ? (-320.0f / gAspectScale) : (lo2 > maxX ? maxX : lo2);
                 hi2 = x2 < (-320.0f / gAspectScale) ? (-320.0f / gAspectScale) : (x2 > maxX ? maxX : x2);
-                b1 = 255 - (int)(255.0f * ((hi2 - lo2) / 600.0f));
-                b2 = 255 - (int)(255.0f * (((float)(d->progress - 320) - hi2) / 600.0f));
                 b3 = 255.0f * ((hi2 - lo2) / 200.0f);
                 u1 = (lo2 + maxX) / (640.0f / gAspectScale);
                 u2 = (hi2 + maxX) / (640.0f / gAspectScale);
+                b1 = 255 - (int)(255.0f * ((hi2 - lo2) / 600.0f));
+                b2 = 255 - (int)(255.0f * (((float)(d->progress - 320) - hi2) / 600.0f));
                 DrawSetTexture(actor->info->glowTexture);
-                l = 320.0f + lo2;
-                DrawVertex(b1, b1, b1, 0, l, 0.0f, u1, 1.0f);
-                h = 320.0f + hi2;
-                DrawVertex(b2, b2, b2, b3, h, 0.0f, u2, 1.0f);
-                DrawVertex(b2, b2, b2, b3, h, 480.0f, u2, 0.0f);
-                DrawVertex(b1, b1, b1, 0, l, 480.0f, u1, 0.0f);
+                lo2 = 320.0f + lo2;
+                DrawVertex(b1, b1, b1, 0, lo2, 0.0f, u1, 1.0f);
+                hi2 = 320.0f + hi2;
+                DrawVertex(b2, b2, b2, b3, hi2, 0.0f, u2, 1.0f);
+                DrawVertex(b2, b2, b2, b3, hi2, 480.0f, u2, 0.0f);
+                DrawVertex(b1, b1, b1, 0, lo2, 480.0f, u1, 0.0f);
                 DrawFlush();
             }
         }
