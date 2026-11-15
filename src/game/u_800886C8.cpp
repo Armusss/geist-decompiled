@@ -1155,27 +1155,21 @@ int GfxApplyStateConfig12(int* dst, int* src, void* config)
 
 // Same as GfxApplyStateConfig12, but for a 17-word state block (the larger
 // 0x44-byte variant of the state record). Names are descriptive guesses.
+// 0x44-byte render state block copied as one struct.
+struct StateBlock17 {
+    int p0[2];
+    int s0, s1, s2;
+    int p1[2];
+    int p2[2];
+    int p3[2];
+    int t0, t1, t2, t3, t4, t5;
+};
+
 int GfxApplyStateConfig17(int* dst, int* src, void* config)
 {
     unsigned int* colour = (unsigned int*)config;
 
-    dst[0] = src[0];
-    dst[1] = src[1];
-    dst[2] = src[2];
-    dst[3] = src[3];
-    dst[4] = src[4];
-    dst[5] = src[5];
-    dst[6] = src[6];
-    dst[7] = src[7];
-    dst[8] = src[8];
-    dst[9] = src[9];
-    dst[10] = src[10];
-    dst[11] = src[11];
-    dst[12] = src[12];
-    dst[13] = src[13];
-    dst[14] = src[14];
-    dst[15] = src[15];
-    dst[16] = src[16];
+    *(StateBlock17*)dst = *(StateBlock17*)src;
 
     GfxSetCullMode(0);
     fn_80104AAC(lbl_804D470C, colour[1] & 0xff, colour[2] & 0xff, colour[3] & 0xff);
@@ -1209,23 +1203,7 @@ int GfxApplyStateBlock12(int* dst, int* src)
 // the state record. Names are descriptive guesses.
 int GfxApplyStateBlock17(int* dst, int* src)
 {
-    dst[0] = src[0];
-    dst[1] = src[1];
-    dst[2] = src[2];
-    dst[3] = src[3];
-    dst[4] = src[4];
-    dst[5] = src[5];
-    dst[6] = src[6];
-    dst[7] = src[7];
-    dst[8] = src[8];
-    dst[9] = src[9];
-    dst[10] = src[10];
-    dst[11] = src[11];
-    dst[12] = src[12];
-    dst[13] = src[13];
-    dst[14] = src[14];
-    dst[15] = src[15];
-    dst[16] = src[16];
+    *(StateBlock17*)dst = *(StateBlock17*)src;
 
     fn_80105260(lbl_804D470C);
     return 1;
