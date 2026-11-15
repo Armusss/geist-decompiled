@@ -100,6 +100,8 @@ flip needs `force_active: [StatGetDebug__Fiii]` in config.yml (unreferenced but 
   before a flip: .text should start at 0x802126C8 (MarkLookupEntryFlag, fn_80212730, fn_802127A0, fn_80212814,
   fn_8021284C move from u_80210D80; they use sLinkTree/queue lbl_804D53A8-B0), and the HostRide tail 0x8021399C-0x8021427C
   is another file (ghost-action state callbacks in lbl_803BC148, no own data). Tools: ~/geist-work/ds/opus-full-A10-tools/.
+- VM.c 3/5 (opus-full-A11): fn_80286EAC 6 and VMAllocPages 5; `intr` (OSDisableInterrupts result) takes a register retail
+  gives another variable, and neither function reacts to declaration order (all 120 orders tried).
 - Host-ride update fix that worked: convert to float first, then subtract in place (`dx = (float)t->x; dx -= a->f84;`).
 - Retinal 7/8: RetinalTrigger 33, FPR numbering only, coupled between the line and glow blocks (`?:` vs `if` changes
   conversion-temp slot reuse). Tools: ~/geist-work/ds/opus-full-A4-tools/.
