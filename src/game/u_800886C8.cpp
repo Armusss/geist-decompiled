@@ -22,10 +22,10 @@ extern int lbl_804482A8;
 // fn_800886C8
 extern "C" void* fn_800886C8(void)
 {
-    if (lbl_804D46F8 < 0) {
-        return 0;
+    if (lbl_804D46F8 >= 0) {
+        return lbl_80441598[lbl_804D46F8];
     }
-    return lbl_80441598[lbl_804D46F8];
+    return 0;
 }
 
 // Pops the most recent entry off the active-entry stack.
@@ -153,12 +153,6 @@ void FxSetScrollType(unsigned int type)
 
 // Proximity-fade constants (float pool) and the current fade strengths.
 // Names are descriptive guesses.
-extern float lbl_804D6898;
-extern float lbl_804D689C;
-extern float lbl_804D68A0;
-extern float lbl_804D68A4;
-extern float lbl_804D68A8;
-extern float lbl_804D68AC;
 extern float lbl_804D2A18;
 extern float lbl_804D2A1C;
 extern float lbl_804D2A20;
@@ -167,7 +161,7 @@ extern float lbl_804D2A20;
 // result as the current proximity scale. Names are descriptive guesses.
 void FxSetProximityScale(float value)
 {
-    lbl_804D2A20 = value / lbl_804D6898;
+    lbl_804D2A20 = value / 255.0f;
 }
 
 // Position the fade is measured from, kept in .bss right next to the constants
@@ -202,12 +196,12 @@ void FxUpdateProximityFade(float* pos)
     local[1] = pos[1] - source->y;
     local[2] = pos[2] - source->z;
     dist = fn_800E1020(local);
-    if (dist < lbl_804D689C) {
-        lbl_804D2A18 = lbl_804D68A0;
-    } else if (dist > lbl_804D68A4) {
-        lbl_804D2A18 = lbl_804D68A8;
+    if (dist < 5e+02f) {
+        lbl_804D2A18 = 1.0f;
+    } else if (dist > 2.5e+03f) {
+        lbl_804D2A18 = 0.0f;
     } else {
-        lbl_804D2A18 = (lbl_804D68AC - (dist - lbl_804D689C)) / lbl_804D68AC;
+        lbl_804D2A18 = (2e+03f - (dist - 5e+02f)) / 2e+03f;
     }
     lbl_804D2A1C = lbl_804D2A18;
 }
@@ -724,10 +718,6 @@ extern "C" float fn_800A1394(float x);
 extern "C" float fn_800A1418(float x);
 extern "C" void fn_80112D84(void* record, int mode, void* out, float scale);
 extern void GfxSetMaterial(void* buf);
-extern float lbl_804D68B0;
-extern float lbl_804D68B4;
-extern float lbl_804D68B8;
-extern float lbl_804D68BC;
 
 // Builds the transform of one scroll item for the current scroll clock and
 // combines it with the caller's 3x4 matrix. Returns 0 when the scroll system is
@@ -760,11 +750,11 @@ int FxBuildScrollItemTransform(int* out, int* in, int* item)
     anim.unk04 = 0x80;
     anim.unk05 = 0x80;
     anim.unk06 = 0x80;
-    anim.unk07 = (unsigned char)(int)(lbl_804D68B0 * lbl_804D2A20);
+    anim.unk07 = (unsigned char)(int)(128.0f * lbl_804D2A20);
     anim.unk0C = 1;
-    anim.sinAngle = fn_800A1394((float)(lbl_804D470C * item[4]) / lbl_804D68B4);
-    anim.cosAngle = fn_800A1418((float)(lbl_804D470C * item[4]) / lbl_804D68B4);
-    anim.fade = lbl_804D68A8;
+    anim.sinAngle = fn_800A1394((float)(lbl_804D470C * item[4]) / 4096.0f);
+    anim.cosAngle = fn_800A1418((float)(lbl_804D470C * item[4]) / 4096.0f);
+    anim.fade = 0.0f;
     anim.unk10 = -1;
     anim.index = 1;
 
@@ -774,27 +764,27 @@ int FxBuildScrollItemTransform(int* out, int* in, int* item)
     row->x = (float)item[1];
     row->y = (float)item[2];
     row->z = (float)item[3];
-    row->scale = lbl_804D68B8 * lbl_804D2A20;
+    row->scale = 0.7529412f * lbl_804D2A20;
 
     dir = &row->dirX;
-    dir[0] = fn_800A1394((float)(lbl_804D470C * item[4]) / lbl_804D68B4);
-    dir[1] = fn_800A1418((float)(lbl_804D470C * item[4]) / lbl_804D68B4);
-    dir[2] = fn_800A1394((float)(lbl_804D470C * item[5]) / lbl_804D68B4);
+    dir[0] = fn_800A1394((float)(lbl_804D470C * item[4]) / 4096.0f);
+    dir[1] = fn_800A1418((float)(lbl_804D470C * item[4]) / 4096.0f);
+    dir[2] = fn_800A1394((float)(lbl_804D470C * item[5]) / 4096.0f);
 
     count = 0;
-    if (fabsf(dir[2]) > lbl_804D68BC) {
+    if (fabsf(dir[2]) > 1.1920929e-07f) {
         count++;
     }
-    if (fabsf(dir[0]) > lbl_804D68BC) {
+    if (fabsf(dir[0]) > 1.1920929e-07f) {
         count++;
     }
-    if (fabsf(dir[1]) > lbl_804D68BC) {
+    if (fabsf(dir[1]) > 1.1920929e-07f) {
         count++;
     }
     if (count == 0) {
-        dir[0] = lbl_804D68A8;
-        dir[1] = lbl_804D68A8;
-        dir[2] = lbl_804D68A8;
+        dir[0] = 0.0f;
+        dir[1] = 0.0f;
+        dir[2] = 0.0f;
     } else {
         len = dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2];
         inv = 1.0f / sqrtf(len);
@@ -804,7 +794,7 @@ int FxBuildScrollItemTransform(int* out, int* in, int* item)
     }
 
     row->unk38 = -0x20;
-    fn_80112D84(&anim, 0x107, buffer, lbl_804D68A0);
+    fn_80112D84(&anim, 0x107, buffer, 1.0f);
     GfxSetMaterial(buffer);
     return 1;
 }
@@ -814,15 +804,12 @@ int FxBuildScrollItemTransform(int* out, int* in, int* item)
 void FxAdvanceScrollItem(int* item, int delta)
 {
     item[0] = item[0] + delta;
-    item[7] = (int)(lbl_804D68B4 * fn_800A1394((float)(item[0] * item[4]) / lbl_804D68B4));
-    item[8] = (int)(lbl_804D68B4 * fn_800A1418((float)(item[0] * item[4]) / lbl_804D68B4));
+    item[7] = (int)(4096.0f * fn_800A1394((float)(item[0] * item[4]) / 4096.0f));
+    item[8] = (int)(4096.0f * fn_800A1418((float)(item[0] * item[4]) / 4096.0f));
 }
 
 // Copies a 12-word state block and hands a randomly scaled value (0..1 times
-// lbl_804D68CC) to fn_80105188. Names are descriptive guesses.
-extern double lbl_804D68C0;
-extern float lbl_804D68C8;
-extern float lbl_804D68CC;
+// 3.6e+02f) to fn_80105188. Names are descriptive guesses.
 extern "C" void fn_80105188(float value);
 extern "C" unsigned int rand(void);
 
@@ -842,12 +829,12 @@ int CopyState12Randomize(unsigned int* dst, unsigned int* src)
     dst[11] = src[11];
 
     unsigned int r = rand();
-    fn_80105188(lbl_804D68CC * ((float)r / lbl_804D68C8));
+    fn_80105188(3.6e+02f * ((float)r / 32767.0f));
     return 1;
 }
 
 // Copies a 17-word state block and hands a randomly scaled value (0..1 times
-// lbl_804D68CC) to fn_80105188. Names are descriptive guesses.
+// 3.6e+02f) to fn_80105188. Names are descriptive guesses.
 int CopyState17Randomize(unsigned int* dst, unsigned int* src)
 {
     dst[0] = src[0];
@@ -869,7 +856,7 @@ int CopyState17Randomize(unsigned int* dst, unsigned int* src)
     dst[16] = src[16];
 
     unsigned int r = rand();
-    fn_80105188(lbl_804D68CC * ((float)r / lbl_804D68C8));
+    fn_80105188(3.6e+02f * ((float)r / 32767.0f));
     return 1;
 }
 
@@ -890,7 +877,7 @@ int CopyState12Scaled(unsigned int* dst, unsigned int* src, int* scale)
     dst[10] = src[10];
     dst[11] = src[11];
 
-    fn_80105188(((float)lbl_804D470C / lbl_804D68B4) * (float)scale[1]);
+    fn_80105188(((float)lbl_804D470C / 4096.0f) * (float)scale[1]);
     return 1;
 }
 
@@ -916,7 +903,7 @@ int CopyState17Scaled(unsigned int* dst, unsigned int* src, int* scale)
     dst[15] = src[15];
     dst[16] = src[16];
 
-    fn_80105188(((float)lbl_804D470C / lbl_804D68B4) * (float)scale[1]);
+    fn_80105188(((float)lbl_804D470C / 4096.0f) * (float)scale[1]);
     return 1;
 }
 
@@ -931,8 +918,6 @@ struct Vec3 {
 void ViewPlaneFromNormal(float* plane, const Vec3* normal, const Vec3* point);
 
 // Blend and shrink factors applied to every scroll item.
-extern float lbl_804D68D0;
-extern float lbl_804D68D4;
 
 // Builds the scroll-item animation record for the current scroll clock: with no
 // active scroll table it is a single default item, otherwise it is a copy of the
@@ -971,10 +956,10 @@ int FxBuildScreenScrollItems(int* out, int* in, int* item)
         row->x = (float)item[1];
         row->y = (float)item[2];
         row->z = (float)item[3];
-        row->scale = lbl_804D68A0;
-        row->dirX = fn_800A1394((float)(lbl_804D470C * item[4]) / lbl_804D68B4);
-        row->dirY = fn_800A1418((float)(lbl_804D470C * item[4]) / lbl_804D68B4);
-        row->dirZ = lbl_804D68A8;
+        row->scale = 1.0f;
+        row->dirX = fn_800A1394((float)(lbl_804D470C * item[4]) / 4096.0f);
+        row->dirY = fn_800A1418((float)(lbl_804D470C * item[4]) / 4096.0f);
+        row->dirZ = 0.0f;
         row->unk38 = -0x20;
     } else {
         anim = *table;
@@ -996,27 +981,27 @@ int FxBuildScreenScrollItems(int* out, int* in, int* item)
                 if (d0 != d1) {
                     t = (-plane[3] - d0) / (d1 - d0);
                 } else {
-                    t = lbl_804D68A8;
+                    t = 0.0f;
                 }
                 lerpX = row->src8 + (px - row->src8) * t;
                 lerpY = row->src9 + (py - row->src9) * t;
                 lerpZ = row->srcA + (pz - row->srcA) * t;
-                row->src8 += (lerpX - row->src8) * lbl_804D68D0;
-                row->src9 += (lerpY - row->src9) * lbl_804D68D0;
-                row->srcA += (lerpZ - row->srcA) * lbl_804D68D0;
+                row->src8 += (lerpX - row->src8) * 2.0f;
+                row->src9 += (lerpY - row->src9) * 2.0f;
+                row->srcA += (lerpZ - row->srcA) * 2.0f;
             }
-            row->dirX *= lbl_804D68D4;
-            row->dirY *= lbl_804D68D4;
-            row->dirZ *= lbl_804D68D4;
+            row->dirX *= -1.0f;
+            row->dirY *= -1.0f;
+            row->dirZ *= -1.0f;
             row->x = (float)item[1];
             row->y = (float)item[2];
             row->z = (float)item[3];
-            row->scale = lbl_804D68A0;
+            row->scale = 1.0f;
             row->unk38 = -0x20;
         }
     }
 
-    fn_80112D84(&anim, 0x105, buffer, lbl_804D68A0);
+    fn_80112D84(&anim, 0x105, buffer, 1.0f);
     GfxSetMaterial(buffer);
     return 1;
 }
@@ -1026,12 +1011,11 @@ int FxBuildScreenScrollItems(int* out, int* in, int* item)
 void FxAdvanceScreenScrollItem(int* item, int delta)
 {
     item[0] = item[0] + delta;
-    item[7] = (int)(lbl_804D68B4 * fn_800A1394((float)(item[0] * item[4]) / lbl_804D68B4));
-    item[8] = (int)(lbl_804D68B4 * fn_800A1418((float)(item[0] * item[4]) / lbl_804D68B4));
+    item[7] = (int)(4096.0f * fn_800A1394((float)(item[0] * item[4]) / 4096.0f));
+    item[8] = (int)(4096.0f * fn_800A1418((float)(item[0] * item[4]) / 4096.0f));
 }
 
 // Wave amplitude and sine helper used by the screen-scroll items below.
-extern float lbl_804D68D8;
 float fn_80017084(float x);
 
 // Builds a screen-scroll item record whose direction starts as the difference
@@ -1067,7 +1051,7 @@ int FxBuildScreenScrollItemWave(int* out, int* in, int* item)
     row->x = (float)item[1];
     row->y = (float)item[2];
     row->z = (float)item[3];
-    row->scale = lbl_804D68A0;
+    row->scale = 1.0f;
 
     dir = &row->dirX;
     dir[0] = lbl_80441620[0] - lbl_80441614[0];
@@ -1075,19 +1059,19 @@ int FxBuildScreenScrollItemWave(int* out, int* in, int* item)
     dir[2] = lbl_80441620[2] - lbl_80441614[2];
 
     count = 0;
-    if (fabsf(dir[2]) > lbl_804D68BC) {
+    if (fabsf(dir[2]) > 1.1920929e-07f) {
         count++;
     }
-    if (fabsf(dir[0]) > lbl_804D68BC) {
+    if (fabsf(dir[0]) > 1.1920929e-07f) {
         count++;
     }
-    if (fabsf(dir[1]) > lbl_804D68BC) {
+    if (fabsf(dir[1]) > 1.1920929e-07f) {
         count++;
     }
     if (count == 0) {
-        dir[0] = lbl_804D68A8;
-        dir[1] = lbl_804D68A8;
-        dir[2] = lbl_804D68A8;
+        dir[0] = 0.0f;
+        dir[1] = 0.0f;
+        dir[2] = 0.0f;
     } else {
         len = dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2];
         inv = 1.0f / sqrtf(len);
@@ -1096,27 +1080,27 @@ int FxBuildScreenScrollItemWave(int* out, int* in, int* item)
         dir[2] *= inv;
     }
 
-    dir[0] = lbl_804D68D8 *
-                 fn_80017084((float)(lbl_804D470C * item[4]) / lbl_804D68B4) + dir[0];
-    dir[1] = lbl_804D68D8 *
-                 fn_80017084((float)(lbl_804D470C * item[5]) / lbl_804D68B4) + dir[1];
-    dir[2] = lbl_804D68D8 *
-                 fn_80017084((float)(lbl_804D470C * item[6]) / lbl_804D68B4) + dir[2];
+    dir[0] = 0.5f *
+                 fn_80017084((float)(lbl_804D470C * item[4]) / 4096.0f) + dir[0];
+    dir[1] = 0.5f *
+                 fn_80017084((float)(lbl_804D470C * item[5]) / 4096.0f) + dir[1];
+    dir[2] = 0.5f *
+                 fn_80017084((float)(lbl_804D470C * item[6]) / 4096.0f) + dir[2];
 
     count = 0;
-    if (fabsf(dir[2]) > lbl_804D68BC) {
+    if (fabsf(dir[2]) > 1.1920929e-07f) {
         count++;
     }
-    if (fabsf(dir[0]) > lbl_804D68BC) {
+    if (fabsf(dir[0]) > 1.1920929e-07f) {
         count++;
     }
-    if (fabsf(dir[1]) > lbl_804D68BC) {
+    if (fabsf(dir[1]) > 1.1920929e-07f) {
         count++;
     }
     if (count == 0) {
-        dir[0] = lbl_804D68A8;
-        dir[1] = lbl_804D68A8;
-        dir[2] = lbl_804D68A8;
+        dir[0] = 0.0f;
+        dir[1] = 0.0f;
+        dir[2] = 0.0f;
     } else {
         len = dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2];
         inv = 1.0f / sqrtf(len);
@@ -1126,7 +1110,7 @@ int FxBuildScreenScrollItemWave(int* out, int* in, int* item)
     }
 
     row->unk38 = -0x20;
-    fn_80112D84(&anim, 0x101, buffer, lbl_804D68A0);
+    fn_80112D84(&anim, 0x101, buffer, 1.0f);
     GfxSetMaterial(buffer);
     return 1;
 }
@@ -1136,9 +1120,9 @@ int FxBuildScreenScrollItemWave(int* out, int* in, int* item)
 void FxAdvanceScreenScrollItemWave(int* item, int delta)
 {
     item[0] = item[0] + delta;
-    item[7] = (int)(lbl_804D68B4 * fn_80017084((float)(item[0] * item[4]) / lbl_804D68B4));
-    item[8] = (int)(lbl_804D68B4 * fn_80017084((float)(item[0] * item[5]) / lbl_804D68B4));
-    item[9] = (int)(lbl_804D68B4 * fn_80017084((float)(item[0] * item[6]) / lbl_804D68B4));
+    item[7] = (int)(4096.0f * fn_80017084((float)(item[0] * item[4]) / 4096.0f));
+    item[8] = (int)(4096.0f * fn_80017084((float)(item[0] * item[5]) / 4096.0f));
+    item[9] = (int)(4096.0f * fn_80017084((float)(item[0] * item[6]) / 4096.0f));
 }
 
 void GfxSetCullMode(int mode);
@@ -1171,27 +1155,21 @@ int GfxApplyStateConfig12(int* dst, int* src, void* config)
 
 // Same as GfxApplyStateConfig12, but for a 17-word state block (the larger
 // 0x44-byte variant of the state record). Names are descriptive guesses.
+// 0x44-byte render state block copied as one struct.
+struct StateBlock17 {
+    int p0[2];
+    int s0, s1, s2;
+    int p1[2];
+    int p2[2];
+    int p3[2];
+    int t0, t1, t2, t3, t4, t5;
+};
+
 int GfxApplyStateConfig17(int* dst, int* src, void* config)
 {
     unsigned int* colour = (unsigned int*)config;
 
-    dst[0] = src[0];
-    dst[1] = src[1];
-    dst[2] = src[2];
-    dst[3] = src[3];
-    dst[4] = src[4];
-    dst[5] = src[5];
-    dst[6] = src[6];
-    dst[7] = src[7];
-    dst[8] = src[8];
-    dst[9] = src[9];
-    dst[10] = src[10];
-    dst[11] = src[11];
-    dst[12] = src[12];
-    dst[13] = src[13];
-    dst[14] = src[14];
-    dst[15] = src[15];
-    dst[16] = src[16];
+    *(StateBlock17*)dst = *(StateBlock17*)src;
 
     GfxSetCullMode(0);
     fn_80104AAC(lbl_804D470C, colour[1] & 0xff, colour[2] & 0xff, colour[3] & 0xff);
@@ -1225,23 +1203,7 @@ int GfxApplyStateBlock12(int* dst, int* src)
 // the state record. Names are descriptive guesses.
 int GfxApplyStateBlock17(int* dst, int* src)
 {
-    dst[0] = src[0];
-    dst[1] = src[1];
-    dst[2] = src[2];
-    dst[3] = src[3];
-    dst[4] = src[4];
-    dst[5] = src[5];
-    dst[6] = src[6];
-    dst[7] = src[7];
-    dst[8] = src[8];
-    dst[9] = src[9];
-    dst[10] = src[10];
-    dst[11] = src[11];
-    dst[12] = src[12];
-    dst[13] = src[13];
-    dst[14] = src[14];
-    dst[15] = src[15];
-    dst[16] = src[16];
+    *(StateBlock17*)dst = *(StateBlock17*)src;
 
     fn_80105260(lbl_804D470C);
     return 1;
@@ -1353,19 +1315,19 @@ int FxBuildScreenScrollItemsTex(int* out, int* in, int* item)
         dz = lbl_80441620[2] - lbl_80441614[2];
 
         count = 0;
-        if (fabsf(dz) > lbl_804D68BC) {
+        if (fabsf(dz) > 1.1920929e-07f) {
             count++;
         }
-        if (fabsf(dx) > lbl_804D68BC) {
+        if (fabsf(dx) > 1.1920929e-07f) {
             count++;
         }
-        if (fabsf(dy) > lbl_804D68BC) {
+        if (fabsf(dy) > 1.1920929e-07f) {
             count++;
         }
         if (count == 0) {
-            dx = lbl_804D68A8;
-            dy = lbl_804D68A8;
-            dz = lbl_804D68A8;
+            dx = 0.0f;
+            dy = 0.0f;
+            dz = 0.0f;
         } else {
             len = dx * dx + dy * dy + dz * dz;
             inv = 1.0f / sqrtf(len);
@@ -1373,9 +1335,9 @@ int FxBuildScreenScrollItemsTex(int* out, int* in, int* item)
             dy *= inv;
             dz *= inv;
         }
-        row->dirX = dx * lbl_804D68D4;
-        row->dirY = dy * lbl_804D68D4;
-        row->dirZ = dz * lbl_804D68D4;
+        row->dirX = dx * -1.0f;
+        row->dirY = dy * -1.0f;
+        row->dirZ = dz * -1.0f;
         row->unk38 = -0x20;
     } else {
         anim = *table;
@@ -1397,18 +1359,18 @@ int FxBuildScreenScrollItemsTex(int* out, int* in, int* item)
                 if (d0 != d1) {
                     t = (-plane[3] - d0) / (d1 - d0);
                 } else {
-                    t = lbl_804D68A8;
+                    t = 0.0f;
                 }
                 lerpX = row->src8 + (px - row->src8) * t;
                 lerpY = row->src9 + (py - row->src9) * t;
                 lerpZ = row->srcA + (pz - row->srcA) * t;
-                row->src8 += (lerpX - row->src8) * lbl_804D68D0;
-                row->src9 += (lerpY - row->src9) * lbl_804D68D0;
-                row->srcA += (lerpZ - row->srcA) * lbl_804D68D0;
+                row->src8 += (lerpX - row->src8) * 2.0f;
+                row->src9 += (lerpY - row->src9) * 2.0f;
+                row->srcA += (lerpZ - row->srcA) * 2.0f;
             }
-            row->dirX *= lbl_804D68D4;
-            row->dirY *= lbl_804D68D4;
-            row->dirZ *= lbl_804D68D4;
+            row->dirX *= -1.0f;
+            row->dirY *= -1.0f;
+            row->dirZ *= -1.0f;
             row->x = (float)item[1];
             row->y = (float)item[2];
             row->z = (float)item[3];
@@ -1417,7 +1379,7 @@ int FxBuildScreenScrollItemsTex(int* out, int* in, int* item)
         }
     }
 
-    fn_80112D84(&anim, 0x105, buffer, lbl_804D68A0);
+    fn_80112D84(&anim, 0x105, buffer, 1.0f);
     GfxSetMaterial(buffer);
     GfxSetCullMode(2);
     return 1;
@@ -1426,7 +1388,7 @@ int FxBuildScreenScrollItemsTex(int* out, int* in, int* item)
 // Twelve-word (0x30-byte) state block that the scroll-item builders copy into
 // their output. Size and use are descriptive guesses.
 struct ScrollItemState12 {
-    int w[12];
+    int a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11;
 };
 
 // Builds one scroll-item row whose facing direction is the segment between the
@@ -1460,26 +1422,26 @@ int FxBuildScrollItemAlongSegment(int* out, int* in, int* item)
     anim.rows[anim.index].x = (float)item[1];
     anim.rows[anim.index].y = (float)item[2];
     anim.rows[anim.index].z = (float)item[3];
-    anim.rows[anim.index].scale = lbl_804D68A0;
+    anim.rows[anim.index].scale = 1.0f;
 
     dz = lbl_80441620[2] - lbl_80441614[2];
     dx = lbl_80441620[0] - lbl_80441614[0];
     dy = lbl_80441620[1] - lbl_80441614[1];
 
     count = 0;
-    if (fabsf(dz) > lbl_804D68BC) {
+    if (fabsf(dz) > 1.1920929e-07f) {
         count++;
     }
-    if (fabsf(dx) > lbl_804D68BC) {
+    if (fabsf(dx) > 1.1920929e-07f) {
         count++;
     }
-    if (fabsf(dy) > lbl_804D68BC) {
+    if (fabsf(dy) > 1.1920929e-07f) {
         count++;
     }
     if (count == 0) {
-        anim.rows[anim.index].dirX = lbl_804D68A8;
-        anim.rows[anim.index].dirY = lbl_804D68A8;
-        anim.rows[anim.index].dirZ = lbl_804D68A8;
+        anim.rows[anim.index].dirX = 0.0f;
+        anim.rows[anim.index].dirY = 0.0f;
+        anim.rows[anim.index].dirZ = 0.0f;
     } else {
         len = dx * dx + dy * dy + dz * dz;
         inv = 1.0f / sqrtf(len);
@@ -1488,13 +1450,13 @@ int FxBuildScrollItemAlongSegment(int* out, int* in, int* item)
         anim.rows[anim.index].dirZ = dz * inv;
     }
 
-    anim.rows[anim.index].dirX *= lbl_804D68D4;
-    anim.rows[anim.index].dirY *= lbl_804D68D4;
-    anim.rows[anim.index].dirZ *= lbl_804D68D4;
+    anim.rows[anim.index].dirX *= -1.0f;
+    anim.rows[anim.index].dirY *= -1.0f;
+    anim.rows[anim.index].dirZ *= -1.0f;
     anim.rows[anim.index].unk38 = -0x20;
     anim.index++;
 
-    fn_80112D84(&anim, 0x105, buffer, lbl_804D68A0);
+    fn_80112D84(&anim, 0x105, buffer, 1.0f);
     GfxSetMaterial(buffer);
     GfxSetCullMode(2);
     return 1;
@@ -1519,17 +1481,12 @@ struct ScrollItemState17 {
 // advances the material clock; always returns 1. Names are descriptive guesses.
 int FxCopyScrollItemState17(int* out, int* in)
 {
-    *(ScrollItemState17*)out = *(ScrollItemState17*)in;
+    *(StateBlock17*)out = *(StateBlock17*)in;
     fn_80105D84(lbl_804D470C);
     return 1;
 }
 
 // Wave and phase constants used by the scroll-item builders below.
-extern float lbl_804D68DC;
-extern float lbl_804D68E0;
-extern float lbl_804D68E4;
-extern float lbl_804D68E8;
-extern float lbl_804D68EC;
 extern "C" void fn_801D8A68(int arg);
 
 // Builds a wave-modulated scroll item record: the facing direction starts as
@@ -1566,10 +1523,10 @@ int FxBuildScrollItemWaveAtClock(int* out, int* in, int* item)
     row = &anim.rows[0];
     row->unk00 = 0;
     row->unk0C = 1;
-    row->x = (float)item[1] / lbl_804D6898;
-    row->y = (float)item[2] / lbl_804D6898;
-    row->z = (float)item[3] / lbl_804D6898;
-    row->scale = lbl_804D68A0;
+    row->x = (float)item[1] / 255.0f;
+    row->y = (float)item[2] / 255.0f;
+    row->z = (float)item[3] / 255.0f;
+    row->scale = 1.0f;
 
     dst = &row->dirX;
     dir[0] = lbl_80441620[0] - lbl_80441614[0];
@@ -1577,19 +1534,19 @@ int FxBuildScrollItemWaveAtClock(int* out, int* in, int* item)
     dir[2] = lbl_80441620[2] - lbl_80441614[2];
 
     count = 0;
-    if (fabsf(dir[2]) > lbl_804D68BC) {
+    if (fabsf(dir[2]) > 1.1920929e-07f) {
         count++;
     }
-    if (fabsf(dir[0]) > lbl_804D68BC) {
+    if (fabsf(dir[0]) > 1.1920929e-07f) {
         count++;
     }
-    if (fabsf(dir[1]) > lbl_804D68BC) {
+    if (fabsf(dir[1]) > 1.1920929e-07f) {
         count++;
     }
     if (count == 0) {
-        dst[0] = lbl_804D68A8;
-        dst[1] = lbl_804D68A8;
-        dst[2] = lbl_804D68A8;
+        dst[0] = 0.0f;
+        dst[1] = 0.0f;
+        dst[2] = 0.0f;
     } else {
         len = dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2];
         inv = 1.0f / sqrtf(len);
@@ -1599,29 +1556,29 @@ int FxBuildScrollItemWaveAtClock(int* out, int* in, int* item)
     }
 
     if (item[4] != 0 || item[5] != 0 || item[6] != 0) {
-        phase = lbl_804D68CC *
+        phase = 3.6e+02f *
                 (float)(((int)(lbl_80441620[0] + lbl_80441620[1] + lbl_80441620[2]) +
                          lbl_804D470C) &
                         0xfff) /
-                lbl_804D68DC;
-        dst[0] = lbl_804D68E0 * fn_800A1394(phase) + dst[0];
-        dst[1] = lbl_804D68E0 * fn_800A1394(lbl_804D68E8 * phase + lbl_804D68E4) + dst[1];
-        dst[2] = lbl_804D68E0 * fn_800A1394(lbl_804D68D0 * phase + lbl_804D68EC) + dst[2];
+                4095.0f;
+        dst[0] = 0.25f * fn_800A1394(phase) + dst[0];
+        dst[1] = 0.25f * fn_800A1394(3.0f * phase + 45.0f) + dst[1];
+        dst[2] = 0.25f * fn_800A1394(2.0f * phase + 65.0f) + dst[2];
 
         count = 0;
-        if (fabsf(dst[2]) > lbl_804D68BC) {
+        if (fabsf(dst[2]) > 1.1920929e-07f) {
             count++;
         }
-        if (fabsf(dst[0]) > lbl_804D68BC) {
+        if (fabsf(dst[0]) > 1.1920929e-07f) {
             count++;
         }
-        if (fabsf(dst[1]) > lbl_804D68BC) {
+        if (fabsf(dst[1]) > 1.1920929e-07f) {
             count++;
         }
         if (count == 0) {
-            dst[0] = lbl_804D68A8;
-            dst[1] = lbl_804D68A8;
-            dst[2] = lbl_804D68A8;
+            dst[0] = 0.0f;
+            dst[1] = 0.0f;
+            dst[2] = 0.0f;
         } else {
             len = dst[0] * dst[0] + dst[1] * dst[1] + dst[2] * dst[2];
             inv = 1.0f / sqrtf(len);
@@ -1636,7 +1593,7 @@ int FxBuildScrollItemWaveAtClock(int* out, int* in, int* item)
     dir[1] = -dir[1];
     dir[2] = -dir[2];
 
-    fn_80112D84(&anim, 0x101, buffer, lbl_804D68A0);
+    fn_80112D84(&anim, 0x101, buffer, 1.0f);
     GfxSetMaterial(buffer);
     GfxSetCullMode(2);
     fn_801D8A68(8);
@@ -1684,9 +1641,6 @@ struct FxStripDraw {
 
 void GfxSetVtxDesc(int desc);        // 0x80008DAC
 
-extern float lbl_804D68F0;
-extern float lbl_804D68F4;
-extern float lbl_804D68F8;
 
 // Reads an unaligned big-endian 16-bit index out of the vertex stream.
 static inline u16 FxReadStreamIndex(const u8* p)
@@ -1708,7 +1662,7 @@ int FxDrawStrip(void* owner, void* data)
     GfxSetVtxDesc(1);
     GXBegin((strip->flags & 1) ? GX_TRIANGLES : GX_TRIANGLESTRIP, GX_VTXFMT1,
             (u16)strip->count);
-    if (lbl_804D68A8 == lbl_804D2A18) {
+    if (0.0f == lbl_804D2A18) {
         for (i = 0; i < total; i += 13) {
             u8* rec = strip->stream + i + 0xb;
             f32* p0 = (f32*)(strip->positions + FxReadStreamIndex(rec + 1) * 0xc);
@@ -1727,7 +1681,7 @@ int FxDrawStrip(void* owner, void* data)
             GXTexCoord2s16(uv[0], uv[1]);
         }
     } else {
-        float phase = lbl_804D68F0 * (float)((double)lbl_804D470C - lbl_804D68C0);
+        float phase = 0.005f * (float)lbl_804D470C;
 
         for (i = 0; i < total; i += 13) {
             u8* rec = strip->stream + i + 0xb;
@@ -1742,16 +1696,16 @@ int FxDrawStrip(void* owner, void* data)
             float d2;
             u8 alpha;
 
-            d0 = lbl_804D2A18 * (lbl_804D68D0 *
-                 fn_800A1394(lbl_804D68E4 * (lbl_804D68F4 * p0[0] + phase)));
-            d1 = lbl_804D2A18 * (lbl_804D68D0 *
-                 fn_800A1394(lbl_804D68E4 * (lbl_804D68F4 * p0[1] + phase)));
-            d2 = lbl_804D2A18 * (lbl_804D68D0 *
-                 fn_800A1394(lbl_804D68E4 * (lbl_804D68F4 * p0[2] + phase)));
-            alpha = (u8)((int)(lbl_804D68F8 *
-                    ((lbl_804D68E0 * d0 + lbl_804D68D8) *
-                     (lbl_804D68E0 * d1 + lbl_804D68D8) *
-                     (lbl_804D68E0 * d2 + lbl_804D68D8))) + 0x7f);
+            d0 = lbl_804D2A18 * (2.0f *
+                 fn_800A1394(45.0f * (0.05f * p0[0] + phase)));
+            d1 = lbl_804D2A18 * (2.0f *
+                 fn_800A1394(45.0f * (0.05f * p0[1] + phase)));
+            d2 = lbl_804D2A18 * (2.0f *
+                 fn_800A1394(45.0f * (0.05f * p0[2] + phase)));
+            alpha = (u8)((int)(96.0f *
+                    ((0.25f * d0 + 0.5f) *
+                     (0.25f * d1 + 0.5f) *
+                     (0.25f * d2 + 0.5f))) + 0x7f);
 
             GXWGFifo.u8 = rec[0];
             GXPosition3f32(p0[0] + d0, p0[1] + d1, p0[2] + d2);
@@ -1856,7 +1810,6 @@ struct FxStripDrawState {
 extern u32 lbl_804D2A3C;
 extern u32 lbl_804D2A40;
 extern u32 lbl_804D2A44;
-extern float lbl_804D68FC;
 
 // Draws a triangle strip/fan from the strip's vertex stream with a constant
 // colour whose alpha comes from the draw state, and texture coordinates
@@ -1886,9 +1839,9 @@ int FxDrawStripProjected(void* owner, void* data, void* state)
         f32* v1 = (f32*)(strip->vectors + (FxReadStreamIndex(rec + 5) + 1) * 0xc);
         f32* v2 = (f32*)(strip->vectors + (FxReadStreamIndex(rec + 7) + 2) * 0xc);
         int offset = s->unk1C * s->unk14;
-        int u = (int)((float)s->unk10 * (lbl_804D68D0 * p0[0]) +
-                      lbl_804D68FC * (float)offset);
-        int v = (int)(lbl_804D68D0 * p0[2] + (float)offset);
+        int u = (int)((float)s->unk10 * (2.0f * p0[0]) +
+                      0.01f * (float)offset);
+        int v = (int)(2.0f * p0[2] + (float)offset);
 
         GXWGFifo.u8 = rec[0];
         GXPosition3f32(p0[0], p0[1], p0[2]);
@@ -1934,7 +1887,6 @@ extern int lbl_804D2A30;
 extern float lbl_804D2A34;
 extern float lbl_804D2A38;
 extern int lbl_804D4714;
-extern float lbl_804D6900;
 
 // Draws a triangle strip/fan from the strip's vertex stream like FxDrawStrip,
 // but projects the vertex position into screen space with fn_800A1688 and
@@ -1946,10 +1898,10 @@ int FxDrawStripScreenTex(void* owner, void* data, void* state)
     FxStripDraw* strip = (FxStripDraw*)data;
     FxStripScreenTexState* s = (FxStripScreenTexState*)state;
     u8 alpha = (u8)((s->unk0C * 0x7f) / 0x1000);
-    f32 scaleU = lbl_804D68A0 / lbl_804D2A34;
-    f32 scaleV = lbl_804D68A0 / lbl_804D2A38;
-    f32 biasU = (f32)lbl_804D2A28 / lbl_804D6900;
-    f32 biasV = (f32)lbl_804D2A2C / lbl_804D6900;
+    f32 scaleU = 1.0f / lbl_804D2A34;
+    f32 scaleV = 1.0f / lbl_804D2A38;
+    f32 biasU = (f32)lbl_804D2A28 / 2048.0f;
+    f32 biasV = (f32)lbl_804D2A2C / 2048.0f;
     int i;
 
     GfxSetVtxDesc(1);
@@ -1966,10 +1918,10 @@ int FxDrawStripScreenTex(void* owner, void* data, void* state)
         f32 su = scaleU * p0[0];
         f32 sv = scaleV * p0[2];
         int cu = fn_800A1688(s->unk1C +
-                             (int)(lbl_804D68D0 * (su - biasU) *
+                             (int)(2.0f * (su - biasU) *
                                    (sv * (f32)lbl_804D2A28)));
         int cv = fn_800A1624(s->unk20 +
-                             (int)(lbl_804D68D0 * (sv - biasV) *
+                             (int)(2.0f * (sv - biasV) *
                                    (su * (f32)lbl_804D2A2C)));
         s16 tu = (s16)(lbl_804D2A30 + s->unk18 * ((int)(f32)cu / 2) / 0x1000);
         s16 tv = (s16)(lbl_804D4714 + s->unk18 * ((int)(f32)cv / 2) / 0x1000);
@@ -2011,11 +1963,6 @@ struct FxStripWaveState {
     int unk00; // 0x00
 };
 
-extern float lbl_804D6920;
-extern float lbl_804D6924;
-extern float lbl_804D6928;
-extern float lbl_804D692C;
-extern float lbl_804D6930;
 
 // Draws a triangle strip/fan like FxDrawStrip, but drives the vertex colours
 // from a wave: the length of the (x, z) part of each position sets a sine whose
@@ -2041,18 +1988,18 @@ int FxDrawStripWave(void* owner, void* data, void* state)
         u8* col = strip->colors + FxReadStreamIndex(rec + 9) * 4;
         s16* uv = (s16*)(strip->texcoords + FxReadStreamIndex(rec + 11) * 4);
         f32 len = sqrtf(p0[0] * p0[0] + p0[2] * p0[2]);
-        f32 osc = lbl_804D68A8;
+        f32 osc = 0.0f;
         f32 sn;
         u8 alpha;
 
-        if (len != lbl_804D68A8) {
-            osc = lbl_804D6928 *
-                  (f32)cos(len * lbl_804D6920 +
-                           (f32)waveState->unk00 * lbl_804D6924);
+        if (len != 0.0f) {
+            osc = 48.0f *
+                  (f32)cos(len * 0.015625f +
+                           (f32)waveState->unk00 * 0.00390625f);
         }
 
-        sn = (f32)sin(lbl_804D692C * (len / lbl_804D6930));
-        alpha = (u8)(int)((lbl_804D68D0 * osc + lbl_804D68B0) *
+        sn = (f32)sin(3.1415927f * (len / 6e+03f));
+        alpha = (u8)(int)((2.0f * osc + 128.0f) *
                           (sn * sn * sn));
 
         GXWGFifo.u8 = rec[0];
@@ -2109,21 +2056,21 @@ int FxDrawStripDisplaced(void* owner, void* data, void* state)
         u8* col = strip->colors + FxReadStreamIndex(rec + 9) * 4;
         s16* uv = (s16*)(strip->texcoords + FxReadStreamIndex(rec + 11) * 4);
         f32 len = sqrtf(p0[0] * p0[0] + p0[2] * p0[2]);
-        f32 dx = lbl_804D68A8;
-        f32 dy = lbl_804D68A8;
-        f32 dz = lbl_804D68A8;
+        f32 dx = 0.0f;
+        f32 dy = 0.0f;
+        f32 dz = 0.0f;
         f32 sn;
         u8 alpha;
 
-        if (len != lbl_804D68A8) {
-            f32 t = len * lbl_804D6920;
-            f32 c = lbl_804D6928 *
-                    (f32)cos((f32)disp->time * lbl_804D6924 + t);
+        if (len != 0.0f) {
+            f32 t = len * 0.015625f;
+            f32 c = 48.0f *
+                    (f32)cos((f32)disp->time * 0.00390625f + t);
 
             dx = p0[0] / len * c;
             dz = p0[2] / len * c;
-            dy = lbl_804D6928 *
-                 (f32)cos((f32)disp->time * lbl_804D6924 + t);
+            dy = 48.0f *
+                 (f32)cos((f32)disp->time * 0.00390625f + t);
         }
 
         GXWGFifo.u8 = rec[0];
@@ -2132,8 +2079,8 @@ int FxDrawStripDisplaced(void* owner, void* data, void* state)
         GXPosition3f32(v1[0], v1[1], v1[2]);
         GXPosition3f32(v2[0], v2[1], v2[2]);
 
-        sn = (f32)sin(lbl_804D692C * (len / lbl_804D6930));
-        alpha = (u8)((int)((lbl_804D68D0 * dy + lbl_804D68B0) * (sn * sn)) *
+        sn = (f32)sin(3.1415927f * (len / 6e+03f));
+        alpha = (u8)((int)((2.0f * dy + 128.0f) * (sn * sn)) *
                      disp->alpha / 4096);
 
         GXColor4u8(col[0], col[1], col[2], alpha);
@@ -2372,7 +2319,6 @@ struct FxScreenRecord {
 // Screen-space callback shared with another unit; still under its placeholder
 // name there, so it is declared with C linkage.
 extern "C" void fn_8010EB70(float x, float y, int mode);
-extern float lbl_804D68B4;
 
 // Copies the caller's record and forwards the position stored at cfg[1]/cfg[2],
 // normalised by the scroll scale, to the screen-space callback. Name is a
@@ -2380,7 +2326,7 @@ extern float lbl_804D68B4;
 int FxScreenRecordCopy(FxScreenRecord* dst, const FxScreenRecord* src, int* cfg)
 {
     *dst = *src;
-    fn_8010EB70((float)cfg[1] / lbl_804D68B4, (float)cfg[2] / lbl_804D68B4, 0);
+    fn_8010EB70((float)cfg[1] / 4096.0f, (float)cfg[2] / 4096.0f, 0);
     return 1;
 }
 
@@ -2394,7 +2340,7 @@ int FxScreenRecordCopyMode(FxScreenRecord* dst, const FxScreenRecord* src, int* 
     if (cfg[3] == 1) {
         mode = 4;
     }
-    fn_8010EB70((float)cfg[7] / lbl_804D68B4, (float)cfg[8] / lbl_804D68B4, mode);
+    fn_8010EB70((float)cfg[7] / 4096.0f, (float)cfg[8] / 4096.0f, mode);
     return 1;
 }
 
@@ -2428,11 +2374,11 @@ int FxScreenRecordCopy17(FxScreenRecord17* dst, const FxScreenRecord17* src,
 {
     int mode = 0;
 
-    *dst = *src;
+    *(StateBlock17*)dst = *(StateBlock17*)src;
     if (cfg[3] == 1) {
         mode = 4;
     }
-    fn_8010EB70((float)cfg[7] / lbl_804D68B4, (float)cfg[8] / lbl_804D68B4,
+    fn_8010EB70((float)cfg[7] / 4096.0f, (float)cfg[8] / 4096.0f,
                 mode);
     return 1;
 }
@@ -2618,12 +2564,11 @@ int IsEntryFlagSet(unsigned int param)
     u32* entry;
 
     idx = (int)(param >> 16) / 8;
-    if (idx < 0 || idx >= 0x300) {
-        return 0;
-    }
-    entry = (u32*)((u8*)lbl_804416A0 + idx * 0x24);
-    if ((*entry & 1) != 0) {
-        return 1;
+    if (idx >= 0 && idx < 0x300) {
+        entry = (u32*)((u8*)lbl_804416A0 + idx * 0x24);
+        if ((*entry & 1) != 0) {
+            return 1;
+        }
     }
     return 0;
 }
