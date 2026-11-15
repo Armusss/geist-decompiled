@@ -19,11 +19,11 @@ published; generate your own from your copy of the game if you want it.
 | ds-2 (DeepSeek Flash) | `~/geist-work/ds/ds-2` / `ds/ds-2` | retired 2026-10-27 (user): Sonnet drafts untouched units instead | retired |
 | ds-3 (DeepSeek Flash) | `~/geist-work/ds/ds-3` / `ds/ds-3` | retired 2026-10-27 (user): Sonnet drafts untouched units instead | retired |
 | opus-1 (Opus 5.5 agent) | `~/geist-work/ds/opus-1` / `ds/opus-1` | near-miss sweep 4 done 2026-10-27: +22 functions (1,724 -> 1,746); paused | paused |
-| sonnet-1 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-1` / `ds/sonnet-1` | 2026-11-02: last named units drafted and merged | idle |
-| sonnet-2 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-2` / `ds/sonnet-2` | 2026-11-02: last named units drafted and merged | idle |
-| sonnet-3 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-3` / `ds/sonnet-3` | 2026-11-02: last named units drafted and merged | idle |
-| sonnet-4 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-4` / `ds/sonnet-4` | 2026-11-02: last named units drafted and merged | idle |
-| sonnet-5 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-5` / `ds/sonnet-5` | 2026-11-01/02 round done and merged | idle |
+| sonnet-1 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-1` / `ds/sonnet-1` | DeepSeek-review round done 2026-11-14 | idle |
+| sonnet-2 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-2` / `ds/sonnet-2` | DeepSeek-review round done 2026-11-14 | idle |
+| sonnet-3 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-3` / `ds/sonnet-3` | DeepSeek-review round done 2026-11-14 | idle |
+| sonnet-4 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-4` / `ds/sonnet-4` | DeepSeek-review round done 2026-11-14 | idle |
+| sonnet-5 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-5` / `ds/sonnet-5` | DeepSeek-review round done 2026-11-14 | idle |
 
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
@@ -121,6 +121,19 @@ u_8006C604 19/61 (ds-3 draft): 9 TODO functions incl. fn_80074018 (0xD50), fn_80
 u_80120D98 12/49 (ds-1 draft): HazardTargetAimDir TODO; HazardTrackTarget 155, TrackListUpdate 137; Clear vtable slot vs base class; lbl_8039EED8 needs a struct type (0x14C entries)
 u_8011818C 15/49 (ds-2 draft): fn_8011F66C (0x660) and fn_8011FCEC (0x674) not drafted; ItemSetupNearest/StatusEvent etc. have large diffs
 - u_800D32E8 16/50 (emitters/pads, ds-3 3 runs): 34 left.
+- **DeepSeek-review round (2026-11-02..14): 5 Sonnet agents reviewed and improved all 76 DeepSeek-drafted partial units**
+  (one unit at a time, easiest first): 2,727 -> 2,898 functions. Fixed DeepSeek leftovers: ~600 fake .sdata2 float externs ->
+  literals (lit.py / lit2.py in sonnet-1-tools), lbl+offset string tricks -> real strings, hand-built string blobs, address
+  arithmetic, Ghidra PTR_/param_ names, empty stub bodies -> TODO declarations, wrong hash constants (several), wrong
+  argument orders (fn_8008F230/fn_80090974/fn_800E1098/...), struct pads, real C++ classes for Buffer/String/ODE/menus.
+  New real data: gPossessableClockType, gGhostBarrierType, gSplineSystemType, gFshSveStates (type descriptors/tables).
+  Per-unit leftovers (register-only near-misses for brute force, structural redrafts) are in ~/geist-work/ds/lead/review_log.txt.
+  Pending USER decisions (signature/mangled-name changes): GeomUserTest (Geom*,Geom*,float*), BatsqueekRunModeHook04
+  (2-arg?), FSHSVEFollowExitState/FSHSVEDetachExitState take Actor* (both then match). Accepted by the Lead: ClockPageBuffer
+  destructor renamed to __dt__15ClockPageBufferFv (real class dtor).
+  Lead TODO: data splits / boundaries (u_8018FAE8 hint object; u_80125DE4+u_80120D98 one source file; u_802B7120 range
+  holds several files; u_801AADA8 TypeNameData string blob + rodata 0x80348490; u_802D4D18 lbl_8034C308+0x48 strings;
+  u_80022B10 fn_800234A4/A8 are ActorDetachOwnerObjects' tail; u_8028A77C fn_8028BAE0 weak BufferBase dtor ordering).
 - **Named-units round (2026-11-02): every game unit now has C source, verified with the fixed picker.** 2,503 -> 2,720
   functions. linkObjSys 18/23, AppMain 15/23 (auto_inline off: retail calls ChunkStart/ChunkTableWalk), FearActor 15/128
   (~110 undrafted), ModInfo 36/133 (auto_inline off: retail calls fn_80026660/80026680 from LightsInit; tables
