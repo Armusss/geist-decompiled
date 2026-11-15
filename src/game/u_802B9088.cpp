@@ -561,6 +561,11 @@ int RideState0Enter(Actor* actor) {
     return 1;
 }
 
+static inline int IsZero(float f) {
+    float a = fabsf(f);
+    return a < 1.1920929e-7f;
+}
+
 int RideTick(void* p) {
     Actor* actor;
     RideState* st;
@@ -627,7 +632,12 @@ int RideTick(void* p) {
         v.x -= f31;
         v.y -= f30;
         v.z -= f29;
-        n = (fabsf(v.x) > 1.1920929e-7f) + (fabsf(v.y) > 1.1920929e-7f) + (fabsf(v.z) > 1.1920929e-7f);
+        {
+            float ax = fabsf(v.x);
+            float ay = fabsf(v.y);
+            float az = fabsf(v.z);
+            n = (ax > 1.1920929e-7f) + (ay > 1.1920929e-7f) + (az > 1.1920929e-7f);
+        }
         if (n != 0) {
             fn_8016D440(&rot, &v);
             Vec3Set(&st->rot, rot.z - actor->v24C.z, rot.x - actor->v24C.x, 0.0f);
@@ -639,10 +649,10 @@ int RideTick(void* p) {
         fn_800E1098(&vb, &st->pos, 1.0f);
         dot = va.x * vb.x + va.y * vb.y + va.z * vb.z;
         if (dot > 0.95f) {
-            thr = (actor->v240.x * actor->v240.x + actor->v240.y * actor->v240.y +
-                   actor->v240.z * actor->v240.z) /
-                  (2.0f * actor->data->fF8);
-            thr = thr * thr;
+            float d = (actor->v240.x * actor->v240.x + actor->v240.y * actor->v240.y +
+                       actor->v240.z * actor->v240.z) /
+                      (2.0f * actor->data->fF8);
+            thr = d * d;
         } else {
             thr = 16384.0f;
         }
@@ -666,7 +676,7 @@ int RideTick(void* p) {
     } else if (state == 3) {
         rot.z = actor->f234 - actor->v24C.z;
         rot.x = actor->f22C - actor->v24C.x;
-        if (fabsf(rot.z) < 1.1920929e-7f && fabsf(rot.x) < 1.1920929e-7f) {
+        if (IsZero(rot.z) && IsZero(rot.x)) {
             actor->i220 = 0;
             ActorPlayAnim(actor->i224, actor->i228, OwnerId(actor));
         } else if (!MemFlagIsSet(st, 0x16) || fabsf(st->f40 - actor->f258) < 10.0f) {
