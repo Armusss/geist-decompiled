@@ -1,4 +1,5 @@
-// u_8016D6BC.cpp: box helpers (0x8016D6BC-0x8016E20C, .sdata2 0x804D8050-0x804D8068): center/extents,
+// u_8016D6BC.cpp: box helpers (0x8016D6BC-0x8016E20C, .data 0x803A7C88-0x803A7CA8 (BoxCorner switch table),
+// .sdata2 0x804D8050-0x804D8068): center/extents,
 // int/float/short box conversion, transforms and bounds. Split from Msx.cpp: it has its own copy of the
 // int-to-float constant, 8-aligned after padding. Built with GC/2.0: retail loads through the const input
 // pointers before the stack frame is set up (STATUS G4).
@@ -32,17 +33,20 @@ static inline void V3Set(Vec3* v, float x, float y, float z) {
     v->z = z;
 }
 
+static inline void IV3Set(IVec3* v, int x, int y, int z) {
+    v->x = x;
+    v->y = y;
+    v->z = z;
+}
+
 // BoxToCenterExtents: center in out[0..2], half size in out[3..5].
 extern "C" void fn_8016D6BC(Vec3* out, const Box* b) {
-    float dx = (b->max.x - b->min.x) * 0.5f;
     float sx = (b->max.x + b->min.x) * 0.5f;
     float sy = (b->max.y + b->min.y) * 0.5f;
-    float dy = (b->max.y - b->min.y) * 0.5f;
     float sz = (b->max.z + b->min.z) * 0.5f;
-    float dz = (b->max.z - b->min.z) * 0.5f;
-    out[1].x = dx;
-    out[1].y = dy;
-    out[1].z = dz;
+    out[1].x = (b->max.x - b->min.x) * 0.5f;
+    out[1].y = (b->max.y - b->min.y) * 0.5f;
+    out[1].z = (b->max.z - b->min.z) * 0.5f;
     out[0].x = sx;
     out[0].y = sy;
     out[0].z = sz;
@@ -113,16 +117,6 @@ extern "C" int fn_8016D920(Vec3* out, Box* b, int i) {
     return 1;
 }
 
-// BoxGrow: grows a box by a margin on each side.
-extern "C" void fn_8016DD14(Box* b, const Vec3* m) {
-    b->min.x -= m->x;
-    b->min.y -= m->y;
-    b->min.z -= m->z;
-    b->max.x += m->x;
-    b->max.y += m->y;
-    b->max.z += m->z;
-}
-
 static inline float MinF(float a, float b) { return (a < b) ? a : b; }
 static inline float MaxF(float a, float b) { return (a > b) ? a : b; }
 static inline void BoxAddPoint(Box* b, const Vec3* p) {
@@ -146,91 +140,25 @@ static inline void IBoxAddPoint(IBox* b, const IVec3* p) {
 }
 
 static inline void BoxCorners(Vec3* c, const Box* b) {
-    float y1;
-    float z1;
-    float z0;
-    float y0;
-    float x0;
-    float x1;
-    z0 = b->min.z;
-    y0 = b->min.y;
-    x0 = b->min.x;
-    z1 = b->max.z;
-    y1 = b->max.y;
-    x1 = b->max.x;
-    c[0].x = x0;
-    c[0].y = y0;
-    c[0].z = z0;
-    c[1].x = x0;
-    c[1].y = y0;
-    c[1].z = z1;
-    c[2].x = x0;
-    c[2].y = y1;
-    c[2].z = z0;
-    c[3].x = x0;
-    c[3].y = y1;
-    c[3].z = z1;
-    c[4].x = x1;
-    c[4].y = y0;
-    c[4].z = z0;
-    c[5].x = x1;
-    c[5].y = y0;
-    c[5].z = z1;
-    c[6].x = x1;
-    c[6].y = y1;
-    c[6].z = z0;
-    c[7].x = x1;
-    c[7].y = y1;
-    c[7].z = z1;
+    V3Set(&c[0], b->min.x, b->min.y, b->min.z);
+    V3Set(&c[1], b->min.x, b->min.y, b->max.z);
+    V3Set(&c[2], b->min.x, b->max.y, b->min.z);
+    V3Set(&c[3], b->min.x, b->max.y, b->max.z);
+    V3Set(&c[4], b->max.x, b->min.y, b->min.z);
+    V3Set(&c[5], b->max.x, b->min.y, b->max.z);
+    V3Set(&c[6], b->max.x, b->max.y, b->min.z);
+    V3Set(&c[7], b->max.x, b->max.y, b->max.z);
 }
 
 static inline void IBoxCorners(IVec3* c, const IBox* b) {
-    int y1;
-    int z1;
-    int z0;
-    int y0;
-    int x0;
-    int x1;
-    z0 = b->min.z;
-    y0 = b->min.y;
-    x0 = b->min.x;
-    z1 = b->max.z;
-    y1 = b->max.y;
-    x1 = b->max.x;
-    c[0].x = x0;
-    c[0].y = y0;
-    c[0].z = z0;
-    c[1].x = x0;
-    c[1].y = y0;
-    c[1].z = z1;
-    c[2].x = x0;
-    c[2].y = y1;
-    c[2].z = z0;
-    c[3].x = x0;
-    c[3].y = y1;
-    c[3].z = z1;
-    c[4].x = x1;
-    c[4].y = y0;
-    c[4].z = z0;
-    c[5].x = x1;
-    c[5].y = y0;
-    c[5].z = z1;
-    c[6].x = x1;
-    c[6].y = y1;
-    c[6].z = z0;
-    c[7].x = x1;
-    c[7].y = y1;
-    c[7].z = z1;
-}
-
-// BoxAddPoints: grows a box to include n points.
-extern "C" void fn_8016DD6C(Box* b, const Vec3* pts, int n) {
-    int i;
-
-    for (i = 0; i < n; i++) {
-        BoxAddPoint(b, pts);
-        pts++;
-    }
+    IV3Set(&c[0], b->min.x, b->min.y, b->min.z);
+    IV3Set(&c[1], b->min.x, b->min.y, b->max.z);
+    IV3Set(&c[2], b->min.x, b->max.y, b->min.z);
+    IV3Set(&c[3], b->min.x, b->max.y, b->max.z);
+    IV3Set(&c[4], b->max.x, b->min.y, b->min.z);
+    IV3Set(&c[5], b->max.x, b->min.y, b->max.z);
+    IV3Set(&c[6], b->max.x, b->max.y, b->min.z);
+    IV3Set(&c[7], b->max.x, b->max.y, b->max.z);
 }
 
 extern "C" {
@@ -240,8 +168,9 @@ void fn_8009F5B0(void* mtx);               // integer variant of fn_800A0100
 void fn_8009F50C(IVec3* out, IVec3* in);   // integer variant of fn_800A0094
 }
 
-// BoxTransformBounds: bounds of a box transformed by a matrix.
-extern "C" void fn_8016DA30(Box* out, const Box* in, void* mtx) {
+// BoxTransformBounds: bounds of a box transformed by a matrix. `in` is not const: retail reads it
+// after the prologue, interleaved with the corner stores (a const pointer would load before stwu).
+extern "C" void fn_8016DA30(Box* out, Box* in, void* mtx) {
     Vec3 c[8];
     Vec3* p;
     int i;
@@ -276,8 +205,28 @@ extern "C" void fn_8016DBD4(Box* out, const Box* in) {
     }
 }
 
+// BoxGrow: grows a box by a margin on each side.
+extern "C" void fn_8016DD14(Box* b, const Vec3* m) {
+    b->min.x -= m->x;
+    b->min.y -= m->y;
+    b->min.z -= m->z;
+    b->max.x += m->x;
+    b->max.y += m->y;
+    b->max.z += m->z;
+}
+
+// BoxAddPoints: grows a box to include n points.
+extern "C" void fn_8016DD6C(Box* b, const Vec3* pts, int n) {
+    int i;
+
+    for (i = 0; i < n; i++) {
+        BoxAddPoint(b, pts);
+        pts++;
+    }
+}
+
 // IBoxTransformBounds: integer version of BoxTransformBounds.
-extern "C" void fn_8016DE2C(IBox* out, const IBox* in, void* mtx) {
+extern "C" void fn_8016DE2C(IBox* out, IBox* in, void* mtx) {
     IVec3 c[8];
     IVec3* p;
     int i;
