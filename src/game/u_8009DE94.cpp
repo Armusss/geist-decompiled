@@ -3434,8 +3434,9 @@ void NeoAgentPoolShutdown(void)
     int i;
 
     if (lbl_804D47D0 != 0) {
+        i = 0;
         offset = 0;
-        for (i = 0; i < lbl_804D47C4 + 0x10; i++) {
+        for (; i < lbl_804D47C4 + 0x10; i++) {
             if (i < lbl_804D47C4 ||
                 (lbl_804D47E0[(i - lbl_804D47C4) / 32] &
                  (1 << ((i - lbl_804D47C4) & 31)))) {
