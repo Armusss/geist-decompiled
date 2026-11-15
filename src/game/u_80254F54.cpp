@@ -612,6 +612,7 @@ void GunHostState13Update(Actor* a, float dt) {
 }
 
 void GunHostState13Enter(Actor* a) {
+    HostData* hd;
     int host;
     int weapon;
     int chain;
@@ -621,7 +622,8 @@ void GunHostState13Enter(Actor* a) {
     fn_80050EB0(a);
     host = PlayerInHost(a);
     weapon = a->weapon;
-    a->anim = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->aim, lbl_803BF068[13].actions[weapon], 0, 0);
+    hd = a->hosts[host];
+    a->anim = fn_800A1BC8(hd->set, hd->aim, lbl_803BF068[13].actions[weapon], 0, 0);
     a->animMode = 80;
     if (a->bone == -1) {
         chain = 8;
@@ -632,9 +634,11 @@ void GunHostState13Enter(Actor* a) {
         }
     }
     if (a->flags & 0x80000) {
-        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->run, lbl_803BF068[13].actions[weapon], chain * 2, 0);
+        hd = a->hosts[host];
+        a->anim2 = fn_800A1BC8(hd->set, hd->run, lbl_803BF068[13].actions[weapon], chain * 2, 0);
     } else {
-        a->anim2 = fn_800A1BC8(a->hosts[host]->set, a->hosts[host]->walk, lbl_803BF068[13].actions[weapon], chain * 2, 0);
+        hd = a->hosts[host];
+        a->anim2 = fn_800A1BC8(hd->set, hd->walk, lbl_803BF068[13].actions[weapon], chain * 2, 0);
     }
     a->msgHandler2 = GunHostMsg;
     a->animMode2 = 80;
