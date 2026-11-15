@@ -364,29 +364,21 @@ void AnimTrackSelect(int id, int offset) {
 
 // Play every queued track entry whose timestamp has been reached.
 void AnimTrackUpdate(void) {
-    AnimTrackEntry* entry;
     AnimTrackEvent ev;
     u32 asset;
 
-    if (lbl_804D29C8 == -1) {
+    if (lbl_804D29C8 == -1 || lbl_804D4648 == 0) {
         return;
     }
-    if (lbl_804D4648 == 0) {
-        return;
-    }
-    for (;;) {
-        if ((int)(lbl_804D4650 - lbl_804D464C) >= lbl_804D4648->count) {
+    while ((int)(lbl_804D4650 - lbl_804D464C) < lbl_804D4648->count) {
+        if (lbl_804D4650->time + lbl_804D4654 > lbl_804D461C) {
             return;
         }
-        entry = lbl_804D4650;
-        if (entry->time + lbl_804D4654 > lbl_804D461C) {
-            return;
-        }
-        ev.time = entry->time + lbl_804D4654;
+        ev.time = lbl_804D4650->time + lbl_804D4654;
         ev.limit = lbl_804D461C;
-        ev.anim = entry->anim;
-        asset = AssetFind((u32)-1, entry->asset);
-        if (ActorPlayAnim(asset, entry->anim, 0x2C000000) == 0) {
+        ev.anim = lbl_804D4650->anim;
+        asset = AssetFind((u32)-1, lbl_804D4650->asset);
+        if (ActorPlayAnim(asset, lbl_804D4650->anim, 0x2C000000) == 0) {
             SendMsg(asset, 0x3002, &ev);
         }
         lbl_804D4650++;
