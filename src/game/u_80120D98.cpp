@@ -745,20 +745,22 @@ void HazardSetActive(s32 id, s32 active) {
     HazardSplineZone** p = (HazardSplineZone**)lbl_804D4CC8->used;
     HazardSplineZone** end = (HazardSplineZone**)(lbl_804D4CC8->used + lbl_804D4CC8->len);
 
-    for (; p != end; p++) {
-        if ((*p)->id - id == 0) {
-            found = *p;
+    while (p != end) {
+        HazardSplineZone* obj = *p;
+        if (obj->id - id == 0) {
+            found = obj;
             break;
         }
+        p++;
     }
     if (found == 0) {
         return;
     }
-    if (active == 0) {
+    if (active != 0) {
+        found->unk78 = 1;
+    } else {
         found->unk78 = 0;
-        return;
     }
-    found->unk78 = 1;
 }
 
 // Frees every hazard spline instance and clears the list.
