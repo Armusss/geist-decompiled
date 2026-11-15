@@ -2233,7 +2233,7 @@ extern "C" void fn_800D72CC(void* param)
                 flags = fn_80010000(id) & 0x18;
                 n = fn_8000F904(id);
                 step = (speed * sub->field90) /
-                       (float)((double)n - 4503601774854144.0);
+                       (float)n;
                 if (flags == 0) {
                     fn_8013AC68(id, 0);
                 }
@@ -2298,7 +2298,7 @@ extern "C" void fn_800D72CC(void* param)
                 flags = fn_80010000(id) & 0x18;
                 n = fn_8000F904(id);
                 step = (speed * sub->field90) /
-                       (float)((double)n - 4503601774854144.0);
+                       (float)n;
                 if (flags == 0) {
                     fn_8013B6F8(alphaMax, id, &mtx);
                 }
@@ -2438,7 +2438,7 @@ extern "C" void fn_800D72CC(void* param)
                 flags = fn_80010000(id) & 0x18;
                 n = fn_8000F904(id);
                 step = (speed * sub->field90) /
-                       (float)((double)n - 4503601774854144.0);
+                       (float)n;
                 if (flags == 0) {
                     fn_8013B6F8(alphaMax, id, &mtx);
                 }
@@ -2576,7 +2576,7 @@ extern "C" void fn_800D72CC(void* param)
                 flags = fn_80010000(id) & 0x18;
                 n = fn_8000F904(id);
                 step = (speed * sub->field90) /
-                       (float)((double)n - 4503601774854144.0);
+                       (float)n;
                 if (flags == 0) {
                     fn_8013B918(alphaMax, id, &mtx);
                 }
@@ -2708,7 +2708,7 @@ extern "C" void fn_800D72CC(void* param)
             flags = fn_80010000(id);
             n = fn_8000F904(id);
             step = (speed * sub->field90) /
-                   (float)((double)n - 4503601774854144.0);
+                   (float)n;
             for (i = start; i < end; i++) {
                 if (0.0f < states[i].clock) {
                     handle = id;
