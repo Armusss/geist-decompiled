@@ -51,6 +51,13 @@ angle/Euler files turned out to be one file, u_8016D170, because their .sdata2 p
 - u_8008DCDC, u_80277600: not yet (functions not decompiled); u_80277600 file starts proposed at .text 0x80278D2C,
   0x80279558, 0x8027B4F8, 0x8027BD5C (.sdata2 0x804DA318/340/358/388).
 
+**u_802766F0 needs a user decision (opus-full-B, 2026-11-15):** 21/21 functions match, but the .sdata2 pool order
+([1.0f,0.0f,...,u32cvt,2^32,s32cvt]) cannot come from source: CW pools a function's int-to-double constants after its
+literals. Evidence says it is several ODE files (memory/misc/matrix/obstack) compiled with `-inline deferred` (reverse
+function order; test-only compile reproduces retail .text order and sizes), plus linker-stripped ODE functions
+(dRandReal, dRealloc, ...) that created the earlier constants; .sbss gaps = per-file padding. Fix needs: file splits,
+per-file `-inline deferred` (a flag change), and real dead ODE functions. Tools: ~/geist-work/ds/opus-full-B-tools/f2/.
+
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
 They are started with `~/geist-work/ds/run_worker.sh NAME [MAX_TURNS]` (allowlist + 150-turn cap), at most 3 at once.
