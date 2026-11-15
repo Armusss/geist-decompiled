@@ -182,10 +182,27 @@ u32 PickupBehMsgId(int type, int id) {
     return 0x3DA260F7;
 }
 
-// String-pool helper: the retail .rodata also holds "Health Powerup" ahead of the effect name.
-static const char* PickupBehHealthPowerupName() {
-    return "Health Powerup";
-}
+int PickupBehGivePickup(int* owner, int id, int target, float* pos);
+
+// Effect/pickup type descriptor (0x803A7830), registered with the effect-type list at startup
+// (0x800EB834). Same layout as the other effect types (Homing, Foam): name, cached hash, then
+// the create/destroy/msg/query/update/reset callbacks.
+struct PickupType {
+    const char* name;
+    u32 hash;
+    int unk8[3];
+    void* create;
+    void* destroy;
+    int (*msg)(int* owner, int id, int target, float* pos);
+    u32 (*query)(int type, int id);
+    void* update;
+    void* reset;
+    int unk2C;
+};
+
+PickupType gHealthPowerupType = {
+    "Health Powerup", 0, {0, 0, 0}, 0, 0, PickupBehGivePickup, PickupBehMsgId, 0, 0, 0,
+};
 
 // 0x80160DE8
 int PickupBehGivePickup(int* owner, int id, int target, float* pos) {
@@ -287,9 +304,11 @@ void PickupBehState5Update(void* owner, void* beh) {
                     pos.y = o->posY;
                     pos.z = o->posZ;
                 }
-                delay = (int)(250.0f * ((float)rand() / 32767.0f) + 800.0f);
-                col.y = 0.3f * ((float)rand() / 32767.0f) + 0.3f;
+                float t = (float)rand() / 32767.0f;
+                delay = (int)(250.0f * t + 800.0f);
+                float r = (float)rand() / 32767.0f;
                 col.x = 1.0f;
+                col.y = 0.3f * r + 0.3f;
                 col.z = 0.0f;
                 col.w = 1.0f;
                 if (d->handle == -1) {
@@ -304,9 +323,7 @@ void PickupBehState5Update(void* owner, void* beh) {
                 }
             }
             if (d->flags & 0x10) {
-                int id = OwnerId(o);
-                int r = Fn800F7DEC(o->unk8EC, o->unk8F0, (int)0xF829DB93, id, 0);
-                switch (r) {
+                switch (Fn800F7DEC(o->unk8EC, o->unk8F0, (int)0xF829DB93, OwnerId(o), 0)) {
                 case (int)0xC0BECF7E: {
                     int handle = o->handle38;
                     int sent;
@@ -370,9 +387,11 @@ void PickupBehState4Update(void* owner, void* beh) {
                     pos.y = o->posY;
                     pos.z = o->posZ;
                 }
-                delay = (int)(250.0f * ((float)rand() / 32767.0f) + 800.0f);
-                col.y = 0.3f * ((float)rand() / 32767.0f) + 0.3f;
+                float t = (float)rand() / 32767.0f;
+                delay = (int)(250.0f * t + 800.0f);
+                float r = (float)rand() / 32767.0f;
                 col.x = 1.0f;
+                col.y = 0.3f * r + 0.3f;
                 col.z = 0.0f;
                 col.w = 1.0f;
                 if (d->handle == -1) {
@@ -387,9 +406,7 @@ void PickupBehState4Update(void* owner, void* beh) {
                 }
             }
             if (d->flags & 0x10) {
-                int id = OwnerId(o);
-                int r = Fn800F7DEC(o->unk8EC, o->unk8F0, (int)0x0020EE36, id, 0);
-                switch (r) {
+                switch (Fn800F7DEC(o->unk8EC, o->unk8F0, (int)0x0020EE36, OwnerId(o), 0)) {
                 case (int)0xC0BECF7E: {
                     int handle = o->handle38;
                     int sent;
@@ -611,13 +628,14 @@ int PickupBehMsg(void* owner, void* beh, int msg) {
 // 0x80161C44
 int PickupBehUpdate(void* owner_, void* beh_) {
     Beh* b = (Beh*)beh_;
+    BehData* d;
+    Owner* o = (Owner*)owner_;
 
     if (b == 0) {
         return 0;
     }
+    d = b->data;
     {
-        BehData* d = b->data;
-        Owner* o = (Owner*)owner_;
 
         if (HasCondition(o->cond, 9) != 0 ||
             HasCondition(o->cond, 10) != 0 ||
