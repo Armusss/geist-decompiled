@@ -530,35 +530,43 @@ inline u32 AmmoTypeHash(AmmoType* type) {
     return type->hash;
 }
 
+float __fabsf(float f);
+
 inline int VecNonZero(const Vec3* v) {
-    return (__fabs(v->x) > 1.1920929e-7f) + (__fabs(v->y) > 1.1920929e-7f) + (__fabs(v->z) > 1.1920929e-7f);
+    return (__fabsf(v->x) > 1.1920929e-7f) + (__fabsf(v->y) > 1.1920929e-7f) + (__fabsf(v->z) > 1.1920929e-7f);
 }
 
-inline float VecNormalize(Vec3* v) {
-    double x, y, z, len;
-    float inv;
+inline float VecNormalize(Vec3* out, const Vec3* in) {
+    register float x, y, z;
+    register float len, t, zz;
+    float r;
 
-    if (VecNonZero(v) == 0) {
-        v->x = 0.0f;
-        v->y = 0.0f;
-        v->z = 0.0f;
+    if (VecNonZero(in) == 0) {
+        out->x = 0.0f;
+        out->y = 0.0f;
+        out->z = 0.0f;
         return 0.0f;
     }
-    x = (double)v->x;
-    y = (double)v->y;
-    z = (double)v->z;
-    {
-        double xx = x * x;
-        double yy = y * y;
-        double zz = z * z;
-
-        len = xx + yy + zz;
+    x = in->x;
+    y = in->y;
+    z = in->z;
+    asm {
+        fmul len, x, x
+        fmul t, y, y
+        fmul zz, z, z
+        fadd len, len, t
+        fadd len, len, zz
+        ps_rsqrte len, len
+        fmul x, x, len
+        fmul y, y, len
+        fmul z, z, len
+        ps_res t, len
+        stfs t, r
     }
-    inv = __frsqrte((float)len);
-    v->x = (float)(x * inv);
-    v->y = (float)(y * inv);
-    v->z = (float)(z * inv);
-    return __fres(inv);
+    out->x = x;
+    out->y = y;
+    out->z = z;
+    return r;
 }
 
 u32 HermitSpitAmmoQuery(EffectObj* obj, int msg) {
@@ -614,7 +622,7 @@ void HermitSpitAmmoFire(int arg, int busy, void* data, int unk) {
         delta.x = target->pos.x;
         delta.y = target->pos.y;
         delta.z = target->pos.z;
-        if (((u32)target->handle >> 24) == 2) {
+        if ((int)((u32)target->handle >> 24) == 2) {
             delta.x += target->eye.x;
             delta.y += target->eye.y;
             delta.z += target->eye.z;
@@ -647,7 +655,7 @@ void HermitSpitAmmoFire(int arg, int busy, void* data, int unk) {
         FollowBoneMatrix(actor, &tmtx, 0);
         fn_800A025C(&facing, &tmtx, 1);
         facing.z = 0.0f;
-        VecNormalize(&facing);
+        VecNormalize(&facing, &facing);
         toTarget.x = target->pos.x;
         toTarget.y = target->pos.y;
         toTarget.z = target->pos.z;
@@ -655,7 +663,7 @@ void HermitSpitAmmoFire(int arg, int busy, void* data, int unk) {
         toTarget.y -= tmtx.pos.y;
         toTarget.z -= tmtx.pos.z;
         toTarget.z = 0.0f;
-        VecNormalize(&toTarget);
+        VecNormalize(&toTarget, &toTarget);
         if (facing.x * toTarget.x + facing.y * toTarget.y + facing.z * toTarget.z > cone) {
             memset(&hit, 0, sizeof(hit));
             hit.source = actor->handle;
@@ -740,7 +748,7 @@ extern u32 lbl_804D550C;      // the last sensor id
 
 extern "C" {
 void fn_80026660(int cls, int (*handler)(int, int, void*, int), int arg);
-int fn_8001F928(Sensor* actor, IVec3* pos, u32 flags, int a, int b);
+int fn_8001F928(Sensor* actor, void* seg, u32 flags, int a, int b);
 void fn_8001ED98(IVec3* pos, int range, int (*cb)(SensorActor*, Sensor*), Sensor* s, int a);
 int fn_802127A0(u32 handle, int a, int b, void* c, int d, int e, int f);
 int fn_80212814(u32 handle, int a, int b, int c, int d, int e);
@@ -797,23 +805,26 @@ void fn_80269944(void) {
     fn_80026660(0x5F, SensorHandler, 0);
 }
 
-inline void IVecToVec(Vec3* out, IVec3 in) {
-    out->x = in.x;
-    out->y = in.y;
-    out->z = in.z;
-}
+// A line-of-sight segment from the sensor to the actor, as fn_8001F928 takes it.
+struct SensorSegment {
+    IVec3 from;
+    IVec3 to;
+};
 
 // Called for each actor in range: if it is inside the sensor's frustum and the sensor has a clear
 // line to it, the sensor's actor is told.
 int SensorSeeActor(SensorActor* actor, Sensor* s) {
     Vec3 apos;
-    IVec3 spos;
+    SensorSegment seg;
     u32 out;
 
-    spos = s->place.pos;
-    IVecToVec(&apos, actor->pos);
+    seg.from = s->place.pos;
+    seg.to = actor->pos;
+    apos.x = seg.to.x;
+    apos.y = seg.to.y;
+    apos.z = seg.to.z;
     if (ViewFrustumClassifyPoints((int*)s->planes, &apos, &out, 1, 0) == 0 &&
-        fn_8001F928(s, &spos, 0x80000000, 0, 0) == 0) {
+        fn_8001F928(s, &seg, 0x80000000, 0, 0) == 0) {
         ActorPlayAnim(actor->handle, 0xF949E99C, s->handle);
     }
     return 1;
