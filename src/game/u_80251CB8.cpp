@@ -7,7 +7,7 @@
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
-    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN", "",
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
 };
 
 extern unsigned char __upper_map[256];
@@ -143,7 +143,21 @@ struct ImpStateType {
     const char* name;     // 0xC
 };
 
-extern ImpStateType lbl_803BECD8[3];
+int ImpIdleEnter(Actor* a);
+int ImpIdleExit(Actor* a);
+int ImpIdleUpdate(Actor* a);
+int ImpAttackEnter(Actor* a);
+int ImpAttackExit(Actor* a);
+int ImpAttackUpdate(void* owner);
+int ImpChaseEnter(Actor* a);
+int ImpChaseExit(Actor* a);
+int ImpChaseUpdate(Actor* a);
+
+ImpStateType gImpStates[3] = {
+    { (ImpStateFunc)ImpIdleEnter, (ImpStateFunc)ImpIdleExit, (ImpStateFunc)ImpIdleUpdate, "" },
+    { (ImpStateFunc)ImpAttackEnter, (ImpStateFunc)ImpAttackExit, ImpAttackUpdate, "" },
+    { (ImpStateFunc)ImpChaseEnter, (ImpStateFunc)ImpChaseExit, (ImpStateFunc)ImpChaseUpdate, "" },
+};
 
 // Message layouts. The offsets are the same across message types; each case uses its own view.
 struct Msg400 {
@@ -270,8 +284,8 @@ inline int ImpHandle41D(void* data) {
     b = o->beh;
     switch (m->cmd) {
     case 0x56D8C010:
-        lbl_803BECD8[b->state].exit(o);
-        lbl_803BECD8[1].enter(o);
+        gImpStates[b->state].exit(o);
+        gImpStates[1].enter(o);
         ConditionUpdateBit(o->st, 3, 1);
         b->timer = 500.0f;
         return 0;
@@ -300,7 +314,7 @@ int ImpMsg(int msg, void* data) {
 
         switch (m->cmd) {
         case 0xAD8576FA:
-            ImpStateName(&m->result, lbl_803BECD8[b->state].name);
+            ImpStateName(&m->result, gImpStates[b->state].name);
             return 0;
         }
         return 0;
@@ -415,11 +429,11 @@ int ImpTick(void* owner) {
             b->flags |= 1;
         }
     }
-    if (lbl_803BECD8[b->state].update(a) != 0 || (b->flags & 1)) {
+    if (gImpStates[b->state].update(a) != 0 || (b->flags & 1)) {
         b->flags &= ~1;
         next = ImpPickState(a);
-        if (b->state != next && lbl_803BECD8[b->state].exit(a)) {
-            lbl_803BECD8[next].enter(a);
+        if (b->state != next && gImpStates[b->state].exit(a)) {
+            gImpStates[next].enter(a);
             ConditionSetBit(a->st, 0x40, 0);
             ConditionSetBit(a->st, 0x41, 0);
             ConditionSetBit(a->st, 0x43, 0);
@@ -456,7 +470,7 @@ void ImpInit(void* owner) {
         b->flags = 0;
         b->seed = rand() % 256;
         b->hurt = -1.0f;
-        lbl_803BECD8[b->state].enter(a);
+        gImpStates[b->state].enter(a);
     }
 }
 
@@ -548,8 +562,11 @@ int ImpAttackUpdate(void* owner) {
         ConditionUpdateBit(a->st, 4, 1);
         if (b->timer <= 0.0f) {
             if (fn_80162940(a->unk894, 2) && fn_80162940(a->unk894, 8)) {
+                float t;
+
                 fn_80162610(a, a->unk894, 2);
-                b->timer = 800.0f * (rand() / 32767.0f) + 1600.0f;
+                t = rand() / 32767.0f;
+                b->timer = 800.0f * t + 1600.0f;
             }
         } else {
             b->timer -= a->dt;
@@ -713,7 +730,26 @@ void Fn800F7F5C(int a, int b, int c, int d, void* e, float f); // 0x800F7F5C
 int Fn80161FF4(Owner* o, void* buf, float f);            // 0x80161FF4
 void Fn8016295C(Owner* o, Beh* b);                        // 0x8016295C
 
-extern BehState lbl_803BED88[8];
+void ImpAttackBehState0Enter(void* owner, void* beh);
+void ImpAttackBehState0Exit(void* owner, void* beh);
+void ImpAttackBehState0Update(void* owner, void* beh);
+void ImpAttackBehState4Enter(void* owner, void* beh);
+void ImpAttackBehState4Exit(void* owner, void* beh);
+void ImpAttackBehState4Update(void* owner, void* beh);
+void ImpAttackBehState5Enter(void* owner, void* beh);
+void ImpAttackBehState5Exit(void* owner, void* beh);
+void ImpAttackBehState5Update(void* owner, void* beh);
+
+BehState gImpAttackBehStates[8] = {
+    { ImpAttackBehState0Enter, ImpAttackBehState0Exit, ImpAttackBehState0Update },
+    { 0, 0, 0 },
+    { 0, 0, 0 },
+    { 0, 0, 0 },
+    { ImpAttackBehState4Enter, ImpAttackBehState4Exit, ImpAttackBehState4Update },
+    { ImpAttackBehState5Enter, ImpAttackBehState5Exit, ImpAttackBehState5Update },
+    { 0, 0, 0 },
+    { 0, 0, 0 },
+};
 
 // Registered in gBehTypes (u_80161F40) under these names.
 extern "C" {
@@ -820,20 +856,20 @@ int fn_802531B4(void* owner, void* beh) {
         BehReset(b);
         BehDone(b);
     } else {
-        if (lbl_803BED88[d->state].update) {
-            lbl_803BED88[d->state].update(o, b);
+        if (gImpAttackBehStates[d->state].update) {
+            gImpAttackBehStates[d->state].update(o, b);
         }
         if (d->next != d->state) {
-            if (lbl_803BED88[d->state].exit) {
-                lbl_803BED88[d->state].exit(o, b);
+            if (gImpAttackBehStates[d->state].exit) {
+                gImpAttackBehStates[d->state].exit(o, b);
             }
             d->state = d->next;
             b->state = d->next;
             if (b->onState) {
                 b->onState(o, b, d->next);
             }
-            if (lbl_803BED88[d->state].enter) {
-                lbl_803BED88[d->state].enter(o, b);
+            if (gImpAttackBehStates[d->state].enter) {
+                gImpAttackBehStates[d->state].enter(o, b);
             }
         }
     }
@@ -866,8 +902,8 @@ int fn_80253360(void* owner, void* beh) {
     d->state = 0;
     d->next = 0;
     d->flags = 0;
-    if (lbl_803BED88[d->state].enter) {
-        lbl_803BED88[d->state].enter(owner, b);
+    if (gImpAttackBehStates[d->state].enter) {
+        gImpAttackBehStates[d->state].enter(owner, b);
     }
     return 1;
 }
@@ -1149,7 +1185,7 @@ inline int FxStartAt(void* fx, float* p, int* pos) {
     return h;
 }
 
-extern EffectType lbl_803BEDE8;  // the "IMP FIRE" type descriptor
+extern EffectType gImpFireType;
 
 void ImpFireReset(EffectObj* obj) {
     ImpFire* g = (ImpFire*)obj->data;
@@ -1352,7 +1388,7 @@ void ImpFireDestroy(EffectObj* obj) {
 }
 
 void* ImpFireCreate(int a, int id) {
-    EffectType* type = &lbl_803BEDE8;
+    EffectType* type = &gImpFireType;
     ImpFire* g;
 
     EffectTypeHash(type);
@@ -1368,6 +1404,11 @@ void* ImpFireCreate(int a, int id) {
     Fn800F840C(g->emitter, g->def->unk04, g->def->unk08);
     return g;
 }
+
+EffectType gImpFireType = {
+    "IMP FIRE", 0, {0, 0, 0}, ImpFireCreate, (void*)ImpFireDestroy,
+    (void*)ImpFireMsg, (void*)ImpFireQuery, (void*)ImpFireUpdate, (void*)ImpFireReset, 0,
+};
 
 
 // ---------------------------------------------------------------------------------------------------
