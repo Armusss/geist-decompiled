@@ -1175,17 +1175,12 @@ void fn_80158B90(int player, int a, int b) {
 
 // 0x80158BE0: is any player HUD effect running?
 int fn_80158BE0() {
-    if (lbl_8046DDE8[0].state != 0) {
-        return 1;
-    }
-    if (lbl_8046DDE8[1].state != 0) {
-        return 1;
-    }
-    if (lbl_8046DDE8[2].state != 0) {
-        return 1;
-    }
-    if (lbl_8046DDE8[3].state != 0) {
-        return 1;
+    int i;
+
+    for (i = 0; i < 4; i++) {
+        if (lbl_8046DDE8[i].state != 0) {
+            return 1;
+        }
     }
     return 0;
 }
