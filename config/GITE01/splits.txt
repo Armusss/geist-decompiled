@@ -423,10 +423,15 @@ game/GrenadeFx.cpp:
 	.sdata2     start:0x804D7E30 end:0x804D7E48
 
 game/u_80160DB0.cpp:
-	.text       start:0x80160DB0 end:0x80161F40
+	.text       start:0x80160DB0 end:0x80160F40
 	.rodata     start:0x80346788 end:0x803467B0
-	.data       start:0x803A7830 end:0x803A78C0
-	.sdata2     start:0x804D7E48 end:0x804D7E80
+	.data       start:0x803A7830 end:0x803A7860
+	.sdata2     start:0x804D7E48 end:0x804D7E58
+
+game/u_80160F40.cpp:
+	.text       start:0x80160F40 end:0x80161F40
+	.data       start:0x803A7860 end:0x803A78C0
+	.sdata2     start:0x804D7E58 end:0x804D7E80
 
 game/u_80161F40.cpp:
 	.text       start:0x80161F40 end:0x80161FF4

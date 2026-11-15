@@ -660,7 +660,8 @@ config.libs = [
             Object(NonMatching, "game/u_8015C79C.cpp"),  # split from u_80157730
             Object(Matching, "game/u_80160188.cpp"),  # guess
             Object(Matching, "game/GrenadeFx.cpp"),  # starts 0x801608A4 (helper-game-b)
-            Object(NonMatching, "game/u_80160DB0.cpp"),  # guess
+            Object(Matching, "game/u_80160DB0.cpp"),  # Health Powerup effect type
+            Object(Matching, "game/u_80160F40.cpp"),  # Health Powerup behaviour state machine
             Object(Matching, "game/u_80161F40.cpp"),  # behaviour registry
             Object(NonMatching, "game/u_80161FF4.cpp"),  # guess
             Object(NonMatching, "game/u_8016A774.cpp"),  # pinned
