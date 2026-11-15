@@ -62,7 +62,6 @@ extern "C" {
     int SendMsg(int to, int msg, void* data);
 
     int  fn_80212730(u32 x);
-    void fn_80211AA4(f32 dt, Actor* self);
     void fn_8021284C(u32 x);
     void fn_801D55CC(u32 handle);
     u32  fn_801D5B38(f32 x, f32 y, f32 z, u32 a, int b, u32 c, u32 d, u32 e, void* view, int f);
@@ -71,9 +70,7 @@ extern "C" {
     void fn_801D5260(u32 fx, void* v);
     void fn_801D5110(u32 fx, int v);
     void fn_801D556C(u32 fx);
-    void fn_8009ED70(void* m, Actor* a);
     void fn_800A0168(void* a, void* b);
-    int  fn_80022B10(Actor* a);
     void fn_8016D864(void* out, u32 v);
     void fn_8016D6BC(void* out, void* in);
     void fn_801D902C(void* mtx, u32 target, Actor* self, void* view);
@@ -81,6 +78,8 @@ extern "C" {
 }
 
 void ActorGetMatrix(Mtx34* mtx, Actor* actor);
+void Fn80211AA4(Actor* actor, float dt);
+int ActorVisibleFlag(Actor* actor);
 u32 VarFindHash(u32 a, u32 b, u32 c);
 
 int Fn802120A0(Actor* self, int msg, void* data, int arg4);
@@ -115,28 +114,56 @@ void BossForward88E0();
 
 ActorType gDestroyableType = { 0, "Destroyable", FxEmitterHandleMessage, ActorFxEmitterUpdate, ActorFxEmitterInit, 0, BossForward88E0 };
 
+// Answer slot of the 0x41D query: the receiver writes its result here.
+struct QueryResult {
+    String name;
+};
+
+// 0x41D "query" payload, answered by the receiving actor.
+struct QueryMsg {
+    int unk0;
+    u32 hash;
+    int unk8;
+    QueryResult result;
+};
+
+// Answer to the 0x400 query: the parent actor and its state.
+struct ParentQuery {
+    Actor* actor;
+    u32 unk4;
+    u32 unk8;
+    int unkC;
+    u32 unk10[4];
+};
+
 void ActorFxEmitterUpdate(Actor* self, f32 dt)
 {
     u8* base = (u8*)self;
     f32* data = *(f32**)(base + 0xA4);
-    u32 info[8];
+    ParentQuery info;
     Mtx34 mtx;
-    int r;
 
     if (data[0x10] > 0.0f)
         data[0x10] -= dt;
 
     if (fn_80212730(*(u32*)(base + 0x38)) != -1) {
-        memset(info, 0, sizeof(info));
-        r = SendMsg(*(u32*)(base + 0xA8), 0x400, info);
-        if ((r == 0 || info[0] == 0 || info[3] == 0) && lbl_804D57CC == 0) {
-            if (info[0] == 0)
+        memset(&info, 0, sizeof(info));
+        if ((SendMsg(*(u32*)(base + 0xA8), 0x400, &info) == 0 || info.actor == 0 || info.unkC == 0) &&
+            lbl_804D57CC == 0) {
+            if (info.actor != 0)
+                ActorGetMatrix(&mtx, info.actor);
+            else
                 return;
 
-            ActorGetMatrix(&mtx, (Actor*)info[0]);
+            if (*(u32*)(*(u32*)(base + 0x84) + 0x24) != 0x24A738) {
+                u32 id = *(u32*)(base + 0x38);
+                QueryMsg q;
 
-            if (*(u32*)(*(u32*)(base + 0x84) + 0x24) == 0x24A738) {
-                u32 handle;
+                q.hash = 0xDCC384C1;
+                *(int*)&q.result = id;
+                q.unk8 = 0;
+                SendMsg(id, 0x41D, &q);
+            } else {
                 u32 h1;
                 u32 h2;
                 u8 view[0x30];
@@ -147,33 +174,35 @@ void ActorFxEmitterUpdate(Actor* self, f32 dt)
                     *(u32*)(base + 0x11C) = 0;
                 }
 
-                h1 = VarFindHash(0xF3BEEEDF, *(u32*)(*(u32*)(base + 0x84) + 0x28), 0x4B35781);
-                h2 = VarFindHash(0xF3BEEEDF, *(u32*)(*(u32*)(base + 0x84) + 0x28), 0x40795527);
+                {
+                    u32 key = *(u32*)(*(u32*)(base + 0x84) + 0x28);
+                    h1 = VarFindHash(0xF3BEEEDF, key, 0x4B35781);
+                    h2 = VarFindHash(0xF3BEEEDF, key, 0x40795527);
+                }
 
                 fn_8016D864(rot, *(u32*)(base + 0x40));
                 fn_8016D6BC(rot, rot);
 
-                handle = fn_801D5B38(2.0f * *(f32*)(rot + 0x0C),
+                *(u32*)(base + 0x11C) = fn_801D5B38(2.0f * *(f32*)(rot + 0x0C),
                                      2.0f * *(f32*)(rot + 0x10),
                                      2.0f * *(f32*)(rot + 0x14),
                                      *(u32*)(base + 0x38), -1, h1, h2, 0x1FFFFFFF, rot, 0);
-                *(u32*)(base + 0x11C) = handle;
 
-                if (handle != 0) {
-                    u8 m[0x30];
+                if (*(u32*)(base + 0x11C) != 0) {
+                    Mtx34 m;
                     f32 v[3];
 
-                    fn_8009ED70(m, self);
-                    fn_800A0168(m, m);
-                    fn_801D52E0(handle, m);
+                    ActorGetMatrix(&m, self);
+                    fn_800A0168(&m, &m);
+                    fn_801D52E0(*(u32*)(base + 0x11C), &m);
                     v[0] = 0.0f;
                     v[1] = 0.0f;
                     v[2] = 0.0f;
-                    fn_801D5298(handle, v);
-                    fn_801D5260(handle, v);
-                    fn_801D5110(handle, 1);
-                    if (fn_80022B10(self) != 0)
-                        fn_801D556C(handle);
+                    fn_801D5298(*(u32*)(base + 0x11C), v);
+                    fn_801D5260(*(u32*)(base + 0x11C), v);
+                    fn_801D5110(*(u32*)(base + 0x11C), 1);
+                    if (ActorVisibleFlag(self) != 0)
+                        fn_801D556C(*(u32*)(base + 0x11C));
                 }
 
                 *(f32*)(view + 0x08) = 360.0f;
@@ -187,15 +216,7 @@ void ActorFxEmitterUpdate(Actor* self, f32 dt)
                 *(f32*)(view + 0x28) = 0.0f;
                 *(f32*)(view + 0x2C) = 0.0f;
 
-                fn_801D902C(&mtx, info[0], self, view);
-            } else {
-                String name;
-                u32 msg[3];
-
-                msg[0] = 0xDCC384C1;
-                msg[1] = 0;
-                (void)name;
-                SendMsg(*(u32*)(base + 0x38), 0x41D, msg);
+                fn_801D902C(&mtx, (u32)info.actor, self, view);
             }
 
             fn_8021284C(*(u32*)(base + 0x38));
@@ -204,7 +225,7 @@ void ActorFxEmitterUpdate(Actor* self, f32 dt)
         }
     }
 
-    fn_80211AA4(dt, self);
+    Fn80211AA4(self, dt);
 }
 
 void* VAlloc(int size);
@@ -260,10 +281,10 @@ int ActorFxEmitterInit(Actor* self)
         if (*(u32*)(base + 0x11C) != 0) {
             u8 m[0x30];
 
-            fn_8009ED70(m, self);
+            ActorGetMatrix((Mtx34*)m, self);
             fn_800A0168(m, m);
             fn_801D52E0(*(u32*)(base + 0x11C), m);
-            if (fn_80022B10(self) != 0)
+            if (ActorVisibleFlag(self) != 0)
                 fn_801D556C(*(u32*)(base + 0x11C));
         }
     }
@@ -421,7 +442,6 @@ extern "C" {
 }
 
 int FxFind(const char* name);
-int ActorVisibleFlag(Actor* actor);
 
 // Worker for actor message 0x407 on the effect-emitter actor.  `d` is the
 // message payload: d[0] is the owning actor, d[5] the effect variant (a name
