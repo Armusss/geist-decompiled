@@ -984,7 +984,7 @@ extern const float lbl_804D6ADC;  // 2.0f
 // Q12 quaternion (x, y, z, w). The products are Q24, so the unit term is
 // 0x1000000 and the result is divided back down by 4096.
 // fn_800A089C
-extern "C" void fn_800A089C(int* out, int* q)
+extern "C" void fn_800A089C(int* out, const int* q)
 {
     int x = q[0];
     int y = q[1];
@@ -993,15 +993,20 @@ extern "C" void fn_800A089C(int* out, int* q)
     int xx = x * x;
     int yy = y * y;
     int zz = z * z;
-
+    int xy = x * y;
+    int xz = x * z;
+    int xw = x * w;
+    int yz = y * z;
+    int yw = y * w;
+    int zw = z * w;
     out[0] = (0x1000000 - 2 * (yy + zz)) / 0x1000;
-    out[1] = 2 * (x * y - z * w) / 0x1000;
-    out[2] = 2 * (x * z + y * w) / 0x1000;
-    out[3] = 2 * (x * y + z * w) / 0x1000;
+    out[1] = 2 * (xy - zw) / 0x1000;
+    out[2] = 2 * (xz + yw) / 0x1000;
+    out[3] = 2 * (xy + zw) / 0x1000;
     out[4] = (0x1000000 - 2 * (xx + zz)) / 0x1000;
-    out[5] = 2 * (y * z - x * w) / 0x1000;
-    out[6] = 2 * (x * z - y * w) / 0x1000;
-    out[7] = 2 * (y * z + x * w) / 0x1000;
+    out[5] = 2 * (yz - xw) / 0x1000;
+    out[6] = 2 * (xz - yw) / 0x1000;
+    out[7] = 2 * (yz + xw) / 0x1000;
     out[8] = (0x1000000 - 2 * (xx + yy)) / 0x1000;
 }
 
