@@ -1084,11 +1084,10 @@ int FSHSVEFollowBegin(Actor* actor)
 }
 
 // Name is a descriptive guess: exit callback of the "[FSHSVE]" follow state.
-// Retail passes the callee no argument (no r3 setup), so it is reached through
-// a no-argument signature here.
-int FSHSVEFollowExitState(void)
+// The actor arrives in r3 and is passed straight on to fn_800BBCA8.
+int FSHSVEFollowExitState(Actor* actor)
 {
-    ((void (*)())fn_800BBCA8)();
+    fn_800BBCA8(actor);
     return 1;
 }
 
@@ -1108,11 +1107,10 @@ int FSHSVEFollowAbortState(Actor* actor)
 }
 
 // Name is a descriptive guess: second exit callback of the "[FSHSVE]" follow
-// state.  Retail sets up no argument, so it is reached through a no-argument
-// signature here as well.
-int FSHSVEDetachExitState(void)
+// state; like the first, it passes the actor straight on to fn_800BBCA8.
+int FSHSVEDetachExitState(Actor* actor)
 {
-    ((void (*)())fn_800BBCA8)();
+    fn_800BBCA8(actor);
     return 1;
 }
 
