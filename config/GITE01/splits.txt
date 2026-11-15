@@ -103,6 +103,9 @@ game/u_800776FC.cpp:
 
 game/Arena.c:
 	.text       start:0x8007C868 end:0x8007CC04
+	.rodata     start:0x80343608 end:0x80343610
+	.bss        start:0x80426870 end:0x80426910
+	.sbss       start:0x804D45A0 end:0x804D45B0
 
 game/Audio.c:
 	.text       start:0x8007CC04 end:0x8007DAC8
