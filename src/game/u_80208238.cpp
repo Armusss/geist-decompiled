@@ -851,16 +851,16 @@ void BatsqueekRunModeCallback(Player* player) {
 // Function pointers stored at the start of each 0x48-byte per-action-mode table entry.
 struct BatsqueekModeHooks {
     void (*hook00)(Player* player);     // 0x00
-    void (*hook04)(Player* player);     // 0x04
+    void (*hook04)(Player* player, int arg); // 0x04
     u8 pad008[0x40];
 };
 
 // Run the per-action-mode function pointer stored at table entry offset 0x04, if set.
-void BatsqueekRunModeHook04(Player* player) {
+void BatsqueekRunModeHook04(Player* player, int arg) {
     BatsqueekModeHooks* table = (BatsqueekModeHooks*)&lbl_803BA2B0;
-    void (*fn)(Player*) = table[player->field7A4].hook04;
+    void (*fn)(Player*, int) = table[player->field7A4].hook04;
     if (fn != 0) {
-        fn(player);
+        fn(player, arg);
     }
 }
 
