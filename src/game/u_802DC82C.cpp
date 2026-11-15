@@ -231,6 +231,7 @@ struct FxPosMsg {
     int unk8;
     int unkC;
     int x, y, z;
+    IVec3 rot;  // 0x1C, filled by VecSwapXY2
 };
 
 // 0xC00: effect flag message.
@@ -306,10 +307,6 @@ void fn_801D55CC(int object);
 int fn_802A1D04(void);
 void fn_800A0168(Mtx34* out, Mtx34* in);
 void fn_800A0030(void* out, void* m, void* in);
-void fn_8016D220(void* out, void* in);
-void fn_8016D18C(void* out, void* in);
-void fn_8016D1A8(void* out, void* in);
-void fn_8007EE6C(int font, int a, int b, int c, int d, int e);
 int fn_80212730(int id);
 void fn_80090974(int anim, int a, int b, int c, int d, Actor* actor, float f);
 void fn_8009F63C(void* out, Actor* actor);
@@ -318,17 +315,13 @@ void fn_8009F190(void* out, Actor* actor);
 int fn_80049940(void);
 void fn_80170E60(int a);
 void fn_80173DF8(int a);
-int fn_8007EF48(int hud, int a, const char* name, int b, int c, int d, int e, int f,
-                int g, int h);
 void fn_800BA7EC(int a);
 void fn_8017BA10(void);
 void fn_8001BAA8(int a);
-void fn_800F60E4(int a, int b, u32 c);
 void fn_8006811C(Actor* a, u32 hash);
 void fn_80158AAC(int a, Actor* actor, int b);
 void fn_80158990(int a, Actor* actor);
 void fn_80048A34(Actor* a, int b);
-float fn_80018A40(int model);
 void fn_8008F230(int anim, float f, int a, int b);
 void fn_800913EC(int anim, float f, void* buf);
 float fn_800C63A0(int a);
@@ -345,6 +338,14 @@ void fn_800EBCC4(int a, int b);
 void fn_800ECB18(void);
 }
 void PlayerSetHeldSlotMode(void* owner, int mode);
+void RadToFixed(IVec3* out, const Vec3* in);                      // 0x8016D220
+void VecSwapXY2(IVec3* out, IVec3* in);                           // 0x8016D18C
+void FixedToRad(Vec3* out, const IVec3* in);                      // 0x8016D1A8
+void fn_8007EE6C(int font, int a, int b, int c, int d, int e);
+int fn_8007EF48(int hud, int a, const char* name, int b, int c, int d, int e, int f, int g,
+                int h);
+void WeatherSetByTypeId(int a, int b, int c);                     // 0x800F60E4
+float ModelBoneMotionZ(int model);                                // 0x80018A40
 void EmitterSetEnabled(u32 handle, int a);
 
 int PlayerInHost(Actor* a);                                       // 0x80049750
@@ -396,6 +397,12 @@ static int sFxTarget;
 static int sFxTarget2;
 static int sSlowActive;
 static int sSlowUnused;
+
+inline void IVec3Set(IVec3* v, int x, int y, int z) {
+    v->x = x;
+    v->y = y;
+    v->z = z;
+}
 
 void HostCreateEmitters(Actor* a);
 void HostTimerReset(void);
@@ -570,7 +577,6 @@ void HostDie(Actor* a);
 // 0x802DCCD0: per-frame update.
 void HostUpdate(Actor* a, float dt) {
     Mtx34 m;
-    Vec3 v68;
     FxPosMsg msg;
     ActorMsg out;
     Vec3 rot;
@@ -609,8 +615,8 @@ void HostUpdate(Actor* a, float dt) {
                 msg.y = (int)fy;
                 msg.z = (int)fz;
                 MtxGetEuler(&rot, &a->mat);
-                fn_8016D220(&tmp, &rot);
-                fn_8016D18C(&v68, &tmp);
+                RadToFixed(&tmp, &rot);
+                VecSwapXY2(&msg.rot, &tmp);
                 msg.type = 3;
                 SendMsg(sFxTarget, 0xC07, &msg);
             }
@@ -682,7 +688,6 @@ void HostDeathCallback(int msg, void* data);
 
 // 0x802DD234: start possessing / release the host.
 void HostAction(Actor* a) {
-    IVec3 v2;
     FxPosMsg msg;
     FxAnimMsg animMsg;
     ActorMsg out;
@@ -724,9 +729,9 @@ void HostAction(Actor* a) {
             }
         } else {
             fn_8017BA10();
+            beginMsg.unk10 = 0;
             beginMsg.hash = 0x3BF55545;
             beginMsg.unk8 = -1;
-            beginMsg.unk10 = 0;
             SendMsg(0x2D000000, 0x3004, &beginMsg);
             a->state = 1;
             a->unk974 = 0;
@@ -735,12 +740,12 @@ void HostAction(Actor* a) {
                 a->flags7B4 |= 0x20000;
             } else {
                 fn_8001BAA8(0);
-                fn_800F60E4(a->hud, 0, 0x0024A738);
+                WeatherSetByTypeId(a->hud, 0, 0x0024A738);
                 msg.x = a->posX;
                 msg.y = a->posY;
                 msg.z = a->posZ;
                 fn_8009F190(&v, a);
-                fn_8016D18C(&v2, &v);
+                VecSwapXY2(&msg.rot, &v);
                 msg.type = 3;
                 SendMsg(sFxTarget, 0xC07, &msg);
                 SendMsg(sFxTarget2, 0xC07, &msg);
@@ -768,7 +773,6 @@ void HostAction(Actor* a) {
 void HostDie(Actor* a) {
     TrailVecs dirs;
     TrailVecs pos;
-    IVec3 v16c;
     FxPosMsg msg;
     Mtx34 v120;
     SpawnDesc desc;
@@ -781,14 +785,11 @@ void HostDie(Actor* a) {
     IVec3 t;
     IVec3 v14;
     float buf[3];
-    float* p;
-    float* d;
     int i;
     int handle;
     int fx;
     void* info;
     QueryActor* q;
-    float r;
     float ang;
     float c;
     float v1;
@@ -803,9 +804,9 @@ void HostDie(Actor* a) {
         a->unk2730 = 0.0f;
     }
     fn_8017BA10();
+    beginMsg.unk10 = 0;
     beginMsg.hash = 0x7B96F5AC;
     beginMsg.unk8 = -1;
-    beginMsg.unk10 = 0;
     SendMsg(0x2D000000, 0x3004, &beginMsg);
     sSlowActive = 0;
     fn_800BA7EC(1);
@@ -825,9 +826,7 @@ void HostDie(Actor* a) {
         }
     }
     a->unk9A8 = i;
-    t.x = 0;
-    t.y = a->unk9A8;
-    t.z = 0;
+    IVec3Set(&t, 0, a->unk9A8, 0);
     if (a->unk97C != -1) {
         FontRelease(a->unk97C);
         a->unk97C = -1;
@@ -848,12 +847,12 @@ void HostDie(Actor* a) {
         return;
     }
     fn_8001BAA8(0);
-    fn_800F60E4(a->hud, 1, 0x0024A738);
+    WeatherSetByTypeId(a->hud, 1, 0x0024A738);
     msg.x = a->posX;
     msg.y = a->posY;
     msg.z = a->posZ;
     fn_8009F190(&v2c, a);
-    fn_8016D18C(&v16c, &v2c);
+    VecSwapXY2(&msg.rot, &v2c);
     fn_8009F63C(&v120, a);
     fn_8009F44C(&t, &v120, &t);
     msg.x += t.x;
@@ -870,8 +869,8 @@ void HostDie(Actor* a) {
     if (a->unk978 == -1) {
         ang = fn_800C63A0(0);
         c = fn_800A127C(ang * gAspectScale);
-        v1 = (float)(-a->unk9A8) * c;
-        v2 = v1 * 0.9f;
+        v1 = v2 = (float)(-a->unk9A8) * c;
+        v2 *= 0.9f;
         v3 = (float)(-a->unk9A8) * fn_800A127C(ang);
         dirs = sTrailDirs0;
         dirs.f[0] = v2;
@@ -879,7 +878,7 @@ void HostDie(Actor* a) {
         dirs.f[7] = v2;
         dirs.f[10] = -v2;
         dirs.f[14] = v3;
-        dirs.f[17] = (-v1) * 0.5f + -50.0f - (a->unk1494 - a->unk1488);
+        dirs.f[17] = (-v1) / 2.0f + -50.0f - (a->unk1494 - a->unk1488);
         pos = sTrailPos0;
         pos.f[0] = v2;
         pos.f[1] = v2;
@@ -906,19 +905,17 @@ void HostDie(Actor* a) {
         desc.pos.y = (float)a->posY;
         desc.pos.z = (float)a->posZ;
         fn_8009F190(&v14, a);
-        fn_8016D1A8(&desc.rot, &v14);
+        FixedToRad(&desc.rot, &v14);
         a->unk9A4 = (SpawnObj*)fn_800C7E80(&desc);
-        p = pos.f;
-        d = dirs.f;
         for (i = 0; i < 6; i++) {
             handle = fn_801D54E8();
-            a->parts[i] = fn_801D5810(p[0], p[1], p[2], a->unk9A4->model, -1, 0x04B8D9AB, handle, d, 1);
+            a->parts[i] = fn_801D5810(pos.f[i * 3], pos.f[i * 3 + 1], pos.f[i * 3 + 2],
+                                      a->unk9A4->model, -1, 0x04B8D9AB, handle,
+                                      &dirs.f[i * 3], 1);
             BoneWorldMatrix(&boneMtx, a->unk9A4->bone, &a->unk9A4->bone->unk10);
             fn_800A0168(&boneMtx, &boneMtx);
             fn_801D52E0(a->parts[i], &boneMtx);
             fn_801D556C(a->parts[i]);
-            p += 3;
-            d += 3;
         }
     }
     info = OwnerGetInfo(a->unk9E0);
@@ -936,7 +933,7 @@ void HostDie(Actor* a) {
         fx = FxFind("host_die");
     }
     FxStart((void*)fx, 0, 0);
-    a->unk64C = fn_80018A40(a->model);
+    a->unk64C = ModelBoneMotionZ(a->model);
     a->posZ = (int)(a->unk610 + a->unk64C);
     a->flags7B4 &= ~0x02000000;
     a->flags7B4 &= ~0x00080000;
@@ -945,9 +942,10 @@ void HostDie(Actor* a) {
     a->state = 1;
     fn_8008F230(a->anim, 0.0f, 0, 1);
     fn_800913EC(a->anim, 100.0f, buf);
-    handle = ModelAnimate(a->model, a->bones, 1);
-    i = ModelBoneCount(a->model);
-    AnimApply(a->anim, a->bones, handle, i);
+    {
+        int anim = ModelAnimate(a->model, a->bones, 1);
+        AnimApply(a->anim, a->bones, anim, ModelBoneCount(a->model));
+    }
     ActorGetMatrix(&m, a);
     ModelSetMatrix(a->model, &m, a->bones);
 }
