@@ -252,12 +252,14 @@ inline u32 StrHash(const char* s, u32 h) {
         return 0;
     }
     for (i = 0; s[i] != 0; i++) {
-        h = h * 31 + (unsigned char)toupper(s[i]);
+        h *= 31;
+        h += (unsigned char)toupper(s[i]);
     }
-    return h % 0xFFFFFFFF;
+    h %= 0xFFFFFFFF;
+    return h;
 }
 
-void fn_800225C8(String* out, const String& a, const String& b); // 0x800225C8
+String fn_800225C8(const String& a, const String& b); // 0x800225C8
 void fn_8028C188(Buffer* b, char* data, int len);      // 0x8028C188
 void fn_8028BF80(String* s, const char* format, ...);  // 0x8028BF80
 
@@ -302,15 +304,60 @@ static inline int RideBehavior(Actor* actor) {
     return 0;
 }
 
+static inline int RideQuery(void* data) {
+    Msg41E* m = (Msg41E*)data;
+    Actor* actor = m->actor;
+    Beh* beh = actor->beh;
+
+    switch (m->hash) {
+    case 0xAD8576FA: {
+        String roll;
+        {
+            String name(gRideTypes[beh->idx].name);
+            String newline("\n");
+            const String& text = fn_800225C8(name, newline);
+            fn_8028C188(&((Msg41E*)data)->result, text.mData, text.mLength);
+        }
+        fn_8028BF80(&roll, "Roll: %f\n", actor->v24C.y);
+        fn_8028C188(&((Msg41E*)data)->result, roll.mData, roll.mLength);
+        return 0;
+    }
+    }
+    return 0;
+}
+
+static inline int RideTimer(void* data) {
+    Msg407* m = (Msg407*)data;
+    Actor* actor = m->actor;
+    Beh* beh = actor->beh;
+
+    if (m->hash == 0x403548D0) {
+        return 1;
+    }
+    if (m->hash == 0x76764749) {
+        beh->unk8 = 1;
+        beh->fC = 0.0f;
+        return 1;
+    }
+    if (m->hash == 0xB9FC42F5) {
+        if (beh->unk8 != 0) {
+            m->f0C = 0.036f * (float)actor->data->value;
+            beh->unk8 = 0;
+            beh->fC = 0.0f;
+        } else {
+            m->f0C = 0.34f * (float)actor->data->value;
+        }
+    }
+    return 0;
+}
+
 int RideMsg(int msg, void* data) {
     Actor* actor = *(Actor**)data;
     Beh* beh;
     Msg400* m400;
-    Msg407* m407;
     Msg409* m409;
     Msg40A* m40A;
     Msg41D* m41D;
-    Msg41E* m41E;
     Msg400 q;
     u32 hash;
     int r;
@@ -325,25 +372,8 @@ int RideMsg(int msg, void* data) {
         m400->flags = 2;
         m400->unk1C = 0;
         return 1;
-    case 0x41E: {
-        m41E = (Msg41E*)data;
-        beh = actor->beh;
-        switch (m41E->hash) {
-        case 0xAD8576FA: {
-            String s;
-            String a(gRideTypes[beh->idx].name);
-            String b("\n");
-            String c;
-
-            fn_800225C8(&c, a, b);
-            fn_8028C188(&m41E->result, c.mData, c.mLength);
-            fn_8028BF80(&s, "Roll: %f\n", actor->v24C.y);
-            fn_8028C188(&m41E->result, s.mData, s.mLength);
-            return 0;
-        }
-        }
-        return 0;
-    }
+    case 0x41E:
+        return RideQuery(data);
     case 0x41D:
         m41D = (Msg41D*)data;
         if (fn_80019F88(data, actor)) {
@@ -362,26 +392,7 @@ int RideMsg(int msg, void* data) {
         }
         return 0;
     case 0x407:
-        m407 = (Msg407*)data;
-        beh = actor->beh;
-        if (m407->hash == 0x403548D0) {
-            return 1;
-        }
-        if (m407->hash == 0x76764749) {
-            beh->unk8 = 1;
-            beh->fC = 0.0f;
-            return 1;
-        }
-        if (m407->hash == 0xB9FC42F5) {
-            if (beh->unk8 != 0) {
-                m407->f0C = 0.036f * (float)actor->data->value;
-                beh->unk8 = 0;
-                beh->fC = 0.0f;
-            } else {
-                m407->f0C = 0.34f * (float)actor->data->value;
-            }
-        }
-        return 0;
+        return RideTimer(data);
     case 0x40A:
         m40A = (Msg40A*)data;
         q.actor = actor;
