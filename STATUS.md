@@ -25,6 +25,21 @@ published; generate your own from your copy of the game if you want it.
 | sonnet-4 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-4` / `ds/sonnet-4` | DeepSeek-review round done 2026-11-14 | idle |
 | sonnet-5 (Sonnet 5.5 agent) | `~/geist-work/ds/sonnet-5` / `ds/sonnet-5` | DeepSeek-review round done 2026-11-14 | idle |
 
+**Opus brute-force round (2026-11-15), all merged and audited (AUDIT OK, SHA-1 6612f52c...):**
+- MSL C file_io.c: fflush matched with the original MSL shape (`fpos_t position`; the unsigned `< 0` test folds
+  away but still costs the saved r29). Flipped to Matching: MSL C 52/52.
+- MetroTRK EXI2_GDEV main.c: gdev_cc_read matched (`u32 p1, p2; p1 = p2 = size;`). Lead then named the
+  DebuggerDriver functions from their gdev_cc_* call sites (DBClose 8033F998, DBOpen 8033F99C, DBWrite 8033F9A0,
+  DBRead 8033FC00, DBQueryData 8033FC8C, DBInitInterrupts 8033FD28, DBInitComm 8033FD7C), added .rodata
+  8034E4E0-8034E5C0, .bss 804A7E50-804A8370 and .sbss 804D58A8-804D58B0 to the split, and flipped it: MetroTRK
+  28/28. **Libraries 203/203.**
+- u_802C8900 0/5 -> 2/5: ActorFxEmitterInit (sdata2 externs made const) and FxEmitterHandleMessage (real
+  gDestroyableType descriptor at .data 0x803C501C, 0x14-byte String) match. FxEmitterUpdateState 158 -> 19
+  (left: 0.0f kept in a register and reused, retail reloads it; idx in r30, retail r25). ActorFxEmitterUpdate 148,
+  FxEmitterSpawnFromMsg 391 not yet worked.
+  **Lead TODO before a flip:** .rodata (pool 0x8034BF90), .data 0x803C4FE0-0x803C5050 and .sdata2 0x804DAEC0..
+  splits; convert the lbl_804DAE* externs to literals and check pool order.
+
 DeepSeek budget: **$10/day** (user, 2026-10-20). `run_worker.sh` runs a 30-turn draft pass first when the unit has no source yet.
 Workers are headless Claude Code on **deepseek-flash** (DeepSeek-V4.1-Flash-1017, thinking on; `~/.local/bin/claude-deepseek`).
 They are started with `~/geist-work/ds/run_worker.sh NAME [MAX_TURNS]` (allowlist + 150-turn cap), at most 3 at once.
@@ -114,7 +129,7 @@ u_8003B98C 0/11 (ds-2 draft): closest fn_8003BA70 8, SetHandleEntryValue 13, Str
 u_8028703C 8/22 (ds-1 draft): 5 TODO functions incl. fn_8028787C (0x608), fn_80287EB8 (0x32C); fn_8028757C should inline the sprintf/halt body
 u_800B1834 38/94 (ds-3 draft, 3 runs): 19 TODO; register-rotation and branch-layout diffs noted in commit history
 u_8020A650 1/4 (ds-2 draft): BuildModel 814 diffs (0xCDC bytes), DestroyVtObject 24, InitNameTables
-u_802C8900 0/5 (ds-1 draft): all five functions 80-396 diffs; ActorFxEmitterUpdate's String/SendMsg(0x41D) else-branch layout is approximated
+u_802C8900 2/5 (see Opus brute-force round; was 0/5 ds-1 draft): all five functions 80-396 diffs; ActorFxEmitterUpdate's String/SendMsg(0x41D) else-branch layout is approximated
 u_800A6F18 12/64 (ds-2 draft): 14 TODO functions
 u_8009DE94 14/90 (ds-1 draft): 4 TODO; 42 shared math/AI helpers keep fn_ names (descriptive names in comments) until callers are relinked
 u_8006C604 19/61 (ds-3 draft): 9 TODO functions incl. fn_80074018 (0xD50), fn_80074D68 (0x7F8); PlayerUpdateGunMotion stack-buffer layout for ActorGetMatrix needs review
