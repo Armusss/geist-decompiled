@@ -689,7 +689,7 @@ void HazardSetFlag(s32 id, s32 flagA, s32 flagB) {
     HazardSplineZone** end = (HazardSplineZone**)(lbl_804D4CC8->used + lbl_804D4CC8->len);
 
     for (; p != end; p++) {
-        if ((*p)->id == id) {
+        if ((*p)->id - id == 0) {
             found = *p;
             break;
         }
@@ -709,7 +709,7 @@ void HazardDestroy(s32 id) {
 
     while (p != end) {
         HazardSplineZone* obj = *p;
-        if (id == obj->id) {
+        if (obj->id - id == 0) {
             VFree(obj);
             fn_8028B35C(lbl_804D4CC8, p, 4);
             return;
@@ -720,15 +720,17 @@ void HazardDestroy(s32 id) {
 
 // Moves the hazard spline with serial number id to the given position.
 void HazardMove(s32 id, Vec3* pos) {
+    HazardSplineZone* found = 0;
     HazardSplineZone** p = (HazardSplineZone**)lbl_804D4CC8->used;
     HazardSplineZone** end = (HazardSplineZone**)(lbl_804D4CC8->used + lbl_804D4CC8->len);
-    HazardSplineZone* found = 0;
 
-    for (; p != end; p++) {
-        if ((*p)->id == id) {
-            found = *p;
+    while (p != end) {
+        HazardSplineZone* obj = *p;
+        if (obj->id - id == 0) {
+            found = obj;
             break;
         }
+        p++;
     }
     if (found != 0) {
         found->pos.x = pos->x;
@@ -743,20 +745,22 @@ void HazardSetActive(s32 id, s32 active) {
     HazardSplineZone** p = (HazardSplineZone**)lbl_804D4CC8->used;
     HazardSplineZone** end = (HazardSplineZone**)(lbl_804D4CC8->used + lbl_804D4CC8->len);
 
-    for (; p != end; p++) {
-        if ((*p)->id == id) {
-            found = *p;
+    while (p != end) {
+        HazardSplineZone* obj = *p;
+        if (obj->id - id == 0) {
+            found = obj;
             break;
         }
+        p++;
     }
     if (found == 0) {
         return;
     }
-    if (active == 0) {
+    if (active != 0) {
+        found->unk78 = 1;
+    } else {
         found->unk78 = 0;
-        return;
     }
-    found->unk78 = 1;
 }
 
 // Frees every hazard spline instance and clears the list.
@@ -1283,24 +1287,18 @@ s32 HazardBlockAlign(void) { return 4; }
 // Walks the 4-byte-aligned spline pool range [start, end) one word at a time.
 // The per-word step does nothing for this pool, so only the counter is left.
 void HazardSplineRangeReset(u8* start, u8* end) {
-    u32 count = ((u32)end + 3 - (u32)start) >> 2;
-    if ((u32)end <= (u32)start) {
-        return;
+    u8* p;
+
+    for (p = start; p < end; p += 4) {
     }
-    do {
-        count--;
-    } while (count != 0);
 }
 
 // Same walk as HazardSplineRangeReset, for the block-copy source range.
 void HazardBlockRangeReset(u8* start, u8* end) {
-    u32 count = ((u32)end + 3 - (u32)start) >> 2;
-    if ((u32)end <= (u32)start) {
-        return;
+    u8* p;
+
+    for (p = start; p < end; p += 4) {
     }
-    do {
-        count--;
-    } while (count != 0);
 }
 
 // --- hazard target selection (descriptive names; the retail names are unknown) ---
@@ -1580,31 +1578,8 @@ s32 HazardTrackTarget(f32 dist, s32 type, HazardMsgPort* port, HazardTrackActor*
 
 // Averages an aim direction toward the nearest of the tracked targets and
 // returns the accumulated weight. Writes the direction into out (0 when none).
-// TODO HazardTargetAimDir (0x5E8 bytes): only the early-out checks are written; the averaging loop and
-// the return value are placeholders (unit is NonMatching).
-f32 HazardTargetAimDir(HazardTrackActor* self, Vec3* out) {
-    HazardTrackOwner* owner = self->owner;
-    HazardTargetList* list = owner->list;
-
-    if (self == 0) {
-        return lbl_804D7830;
-    }
-    if (list == 0) {
-        return lbl_804D7830;
-    }
-    if (list->count < 1) {
-        return lbl_804D7830;
-    }
-
-    f32 total = lbl_804D7830;
-    out->x = lbl_804D7830;
-    out->y = lbl_804D7830;
-    out->z = lbl_804D7830;
-
-    for (s32 i = 0; i < list->count; i--) {
-    }
-    return 0.0f;
-}
+// TODO (not drafted yet, 0x5E8 bytes at 0x8012366C): HazardTargetAimDir
+f32 HazardTargetAimDir(HazardTrackActor* self, Vec3* out);
 
 // Reply of the 0x400 message: word 0 is the object the target belongs to.
 struct HazardTargetProbe {
