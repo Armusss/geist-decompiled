@@ -240,6 +240,7 @@ game/SAM.cpp:
 
 game/u_800E0CB8.cpp:
 	.text       start:0x800E0CB8 end:0x800E1144
+	.sdata2     start:0x804D7180 end:0x804D7190
 
 game/asyncio.cpp:
 	.text       start:0x800E1144 end:0x800E1B5C
