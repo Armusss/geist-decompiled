@@ -10,6 +10,8 @@ void RangeSyncWords(void* start, void* end);    // fn_800A6FC8
 void RangeTouchWords(void* start, void* end);   // fn_800A6FE8
 
 // Engine hooks implemented in another unit (still fn_ placeholders).
+extern "C" float lbl_804D6C34;
+extern "C" float lbl_804D6C6C;
 extern "C" void fn_8028BC2C(void* self, void* addr, unsigned long size);
 extern "C" void fn_8028BC28(void* self, void* addr, unsigned long size);
 
@@ -1533,7 +1535,7 @@ float RangeValueDistance2D(void* self)
     delta[2] = pos[5] - pos[2];
     delta[2] = 0;
     float d = fn_800E0DBC(delta);
-    return 0.5f * d;
+    return d * lbl_804D6C6C;
 }
 
 // Engine RNG (mangled C++ name Rand__Fv), declared through its real prototype.
@@ -1807,7 +1809,7 @@ float Vec2DistSq(float* a, float* b)
     float dx = a[0] - b[0];
     float dy = a[1] - b[1];
 
-    return 0.0f + (dx * dx + dy * dy);
+    return lbl_804D6C34 + (dx * dx + dy * dy);
 }
 
 // Squared 3D distance between two points.  Name is a descriptive guess.
