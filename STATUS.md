@@ -90,6 +90,12 @@ flip needs `force_active: [StatGetDebug__Fiii]` in config.yml (unreferenced but 
   extra block; ~80 variants. Tools: ~/geist-work/ds/opus-full-A9-tools/.
 - u_802DC82C HostDie 42 words: retail emits all 18 `pos.f[]` stores before `desc` stores, as if the 376(r1) array were
   aliased (passing &pos to a call reproduces it); a Trail{pos;dirs} struct fixes order but merges loop registers.
+- u_80268780 (2026-11-15, opus-full-B9): SensorSeeActor 5 (ViewFrustumClassifyPoints arg-setup order). HermitSpitAmmoFire
+  474: an asm normalize got 331 but was rejected (asm only for hardware ops); retail's frame is 16 bytes larger and it
+  stores normalize pointer args to memory. Boundary TODO (duplicate 0.0f / 0x4330 doubles): HermitSpitMsg part
+  0x80268780-0x802690C8 (0.0f at 0x804DA13C, maybe the same file as u_80268528); HermitSpitAmmo 0x802690C8-0x802698D0
+  (.sdata2 0x804DA140-0x804DA1A8, .data from 0x803C0238); Sensor 0x802698D0-0x8026A0F0 (.sdata2 0x804DA1A8-0x804DA1C0,
+  .sbss 0x804D5508/0C).
 - Host-ride update fix that worked: convert to float first, then subtract in place (`dx = (float)t->x; dx -= a->f84;`).
 - Retinal 7/8: RetinalTrigger 33, FPR numbering only, coupled between the line and glow blocks (`?:` vs `if` changes
   conversion-temp slot reuse). Tools: ~/geist-work/ds/opus-full-A4-tools/.
