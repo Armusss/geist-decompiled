@@ -403,16 +403,19 @@ extern float          lbl_804D6D44;
 // Drop every registry entry that belongs to this owner.
 void OwnerSlotRemove(Owner* owner)
 {
+    OwnerSlotEntry* e;
+    int i;
+
     if (owner == 0) {
         return;
     }
-    Owner* o = owner;
-    for (int i = 0; i < 8; i++) {
-        if (lbl_80449568[i].id == OwnerId(o)) {
-            lbl_80449568[i].id = -1;
-            lbl_80449568[i].a = 0;
-            lbl_80449568[i].b = 0;
-            lbl_80449568[i].c = 0;
+    e = lbl_80449568;
+    for (i = 0; i < 8; i++, e++) {
+        if (e->id == OwnerId(owner)) {
+            e->id = -1;
+            e->a = 0;
+            e->b = 0;
+            e->c = 0;
         }
     }
 }
@@ -2590,12 +2593,15 @@ extern "C" int fn_800B6CAC(u32* object, u32 id)
 // Store `value` in the first free group-handle word at object+0x5a0.
 extern "C" int fn_800B6D04(u32* object, u32 value)
 {
+    int i;
+    u32* base;
+
     if (object == 0) {
         return 0;
     }
-    u32* base = object;
-    for (int i = 0; i < 4; i++) {
-        if (object[0x5a0 / 4 + i] == 0) {
+    base = object;
+    for (i = 0; i < 4; object++, i++) {
+        if (object[0x5a0 / 4] == 0) {
             base[0x5a0 / 4 + i] = value;
             return 1;
         }
