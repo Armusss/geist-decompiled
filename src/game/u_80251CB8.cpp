@@ -1203,10 +1203,10 @@ void ImpFireUpdate(EffectObj* obj, float dt) {
                 t.spin.x = 800.0f * rx - 400.0f;
                 t.spin.y = 800.0f * ry - 400.0f;
                 t.spin.z = 800.0f * rz - 400.0f;
+                dst = g->shot.target;
                 t.vel.x = 0.0f;
                 t.vel.y = 0.0f;
                 t.vel.z = 3500.0f;
-                dst = g->shot.target;
                 d.x = dst->x;
                 d.y = dst->y;
                 d.z = dst->z;
@@ -1216,9 +1216,9 @@ void ImpFireUpdate(EffectObj* obj, float dt) {
                 up = -(t.vel.z / t.accel.z);
                 root = FastSqrt((d.z - 0.5f * t.vel.z * up) / (0.5f * t.accel.z));
                 {
-                    float len = fn_800E1020(&d);
+                    float s = fn_800E1020(&d) / (up + root);
                     d.z = 0.0f;
-                    fn_800E1098(&d, &d, len / (up + root));
+                    fn_800E1098(&d, &d, s);
                 }
                 t.vel.x += d.x;
                 t.vel.y += d.y;
