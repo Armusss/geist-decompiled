@@ -37,12 +37,6 @@ public:
 class Skin;
 
 extern "C" {
-
-
-
-
-
-
     extern f32 lbl_804D3AD0;
     extern f32 lbl_804D3AD4;
     extern f32 lbl_804D57C8;
@@ -54,8 +48,6 @@ extern "C" {
     u32  fn_800390D8(u32 model, u32 a);
     u32  fn_8003A1F0(u32 a, u32 b, u32 c);
     int  fn_80158AFC(u32 id, void* data);
-    f32  fn_80115F68(u32 id);
-    void fn_801FAD18(Actor* actor, int flag);
     void fn_8003F15C(u32 a, u32 b, u32 c, void* d, void* e, float alpha);
 
     void* memset(void* dst, int val, unsigned long size);
@@ -74,7 +66,6 @@ extern "C" {
     void fn_8016D864(void* out, u32 v);
     void fn_8016D6BC(void* out, void* in);
     void fn_801D902C(void* mtx, u32 target, Actor* self, void* view);
-    void fn_8028B9C0(void* s, int v);
 }
 
 void ActorGetMatrix(Mtx34* mtx, Actor* actor);
@@ -89,6 +80,8 @@ int ModelAnimate(int model, char* name, int flags);
 Actor* GetPlayer();
 int PlayerInHost(Actor* actor);
 int Fn80080FA8();
+float GfxOwnerBrightness(u32 id);
+void CrouchSpawnFx(Actor* a, int kind);
 
 extern "C" void fn_8028C188(void* dst, const char* src, int len);
 int FxEmitterSpawnFromMsg(int* d);
@@ -135,6 +128,61 @@ struct ParentQuery {
     int unkC;
     u32 unk10[4];
 };
+
+// Sends a 0x41D query that carries `value` in the answer slot.
+inline void QueryValue(u32 target, u32 hash, int value)
+{
+    QueryMsg q;
+
+    q.hash = hash;
+    *(int*)&q.result = value;
+    q.unk8 = 0;
+    SendMsg(target, 0x41D, &q);
+}
+
+// (Re)creates the emitter's looping fx from the model's fx variables and places it on the actor.
+inline void FxEmitterStart(Actor* actor)
+{
+    u8 rot[0x18];
+    Mtx34 fxMtx;
+    f32 v[3];
+    u32 h1;
+    u32 h2;
+
+    if (*(u32*)((u8*)actor + 0x11C) != 0) {
+        fn_801D55CC(*(u32*)((u8*)actor + 0x11C));
+        *(u32*)((u8*)actor + 0x11C) = 0;
+    }
+
+    {
+        u32 key = *(u32*)(*(u32*)((u8*)actor + 0x84) + 0x28);
+        h1 = VarFindHash(0xF3BEEEDF, key, 0x4B35781);
+        h2 = VarFindHash(0xF3BEEEDF, key, 0x40795527);
+    }
+
+    fn_8016D864(rot, *(u32*)((u8*)actor + 0x40));
+    fn_8016D6BC(rot, rot);
+
+    *(u32*)((u8*)actor + 0x11C) = fn_801D5B38(2.0f * *(f32*)(rot + 0x0C),
+                             2.0f * *(f32*)(rot + 0x10),
+                             2.0f * *(f32*)(rot + 0x14),
+                             *(u32*)((u8*)actor + 0x38), -1, h1, h2, 0x1FFFFFFF, rot, 0);
+
+    if (*(u32*)((u8*)actor + 0x11C) != 0) {
+        ActorGetMatrix(&fxMtx, actor);
+        fn_800A0168(&fxMtx, &fxMtx);
+        fn_801D52E0(*(u32*)((u8*)actor + 0x11C), &fxMtx);
+
+        v[0] = 0.0f;
+        v[1] = 0.0f;
+        v[2] = 0.0f;
+        fn_801D5298(*(u32*)((u8*)actor + 0x11C), v);
+        fn_801D5260(*(u32*)((u8*)actor + 0x11C), v);
+        fn_801D5110(*(u32*)((u8*)actor + 0x11C), 1);
+        if (ActorVisibleFlag(actor) != 0)
+            fn_801D556C(*(u32*)((u8*)actor + 0x11C));
+    }
+}
 
 void ActorFxEmitterUpdate(Actor* self, f32 dt)
 {
@@ -384,7 +432,7 @@ int FxEmitterUpdateState(void* data, int mode)
         *(f32*)(st + 0x10) > 0.0f &&
         *((int**)((u8*)player + 0x26C4))[PlayerInHost(player)] != 0x07C48821 &&
         local < 6) {
-        f32 v = fn_80115F68(*(u32*)((u8*)actor + 0x38));
+        f32 v = GfxOwnerBrightness(*(u32*)((u8*)actor + 0x38));
 
         fn_8003F15C(id, shape, *(u32*)((u8*)actor + 0x94), skin, 0, 1.0f);
 
@@ -396,7 +444,7 @@ int FxEmitterUpdateState(void* data, int mode)
 
                 fn_8003F15C(idx, shape2, *(u32*)((u8*)actor + 0x94), 0, lbl_803C4FE0, 1.0f);
             }
-            fn_801FAD18(actor, 0);
+            CrouchSpawnFx(actor, 0);
         }
     } else {
         fn_8003F15C(id, shape, *(u32*)((u8*)actor + 0x94), skin, 0, 1.0f);
@@ -422,26 +470,33 @@ struct FxRenderInfo {
     f32 f9;
 };
 
-// Payload of message 0x41D: the receiver looks the parent actor up by id and
-// answers with its display name.
-struct FxNameMsg {
-    u32 unk0;
-    u32 magic;
-    u32 unk8;
-    u32 parentId;
-};
-
 extern "C" {
 
 
 
-    float fabsf(float x);
     void fn_8009F7A8(void* mtx, f32* v);
     void fn_800E1098(f32* dst, f32* src, f32 scale);
     void fn_8016F120(int fx, void* pos);
 }
 
 int FxFind(const char* name);
+
+inline float fabs(float f)
+{
+    return __fabsf(f);
+}
+
+inline void SendState(int to, u32 self, u32 hash)
+{
+    if (to != -1) {
+        u32 msg[4];
+
+        msg[2] = self;
+        msg[3] = hash;
+        msg[1] = 0;
+        SendMsg(to, 0xC14, msg);
+    }
+}
 
 // Worker for actor message 0x407 on the effect-emitter actor.  `d` is the
 // message payload: d[0] is the owning actor, d[5] the effect variant (a name
@@ -451,7 +506,6 @@ int FxEmitterSpawnFromMsg(int* d)
 {
     Actor* actor = (Actor*)d[0];
     u8* st = *(u8**)((u8*)actor + 0xA4);
-    u32* model = *(u32**)((u8*)actor + 0x84);
     int id = fn_80212730(*(u32*)((u8*)actor + 0x38));
 
     if (*(u32*)(st + 0x18) & 8) {
@@ -460,7 +514,7 @@ int FxEmitterSpawnFromMsg(int* d)
     }
 
     {
-        int attached[2];
+        int attached[4];
 
         if (id != -1 && SendMsg(id, 0xC17, attached) != 0 && attached[1] != 0) {
             d[0x16] = 1;
@@ -475,23 +529,23 @@ int FxEmitterSpawnFromMsg(int* d)
         // Idle emitter: build a one-shot fx straight from the payload.
         f32 scale = *(f32*)((u8*)d + 0x4C);
         f32 alpha;
+        Mtx34 mtx;
         FxRenderInfo info;
         f32 pos[3];
-        Mtx34 mtx;
 
-        if (fabsf(scale) < 1.1920929e-07f)
+        if (fabs(scale) < 1.1920929e-07f)
             return 1;
 
         switch (d[5]) {
-        case 0xB9FC42F5:
-            alpha = 3000.0f;
-            break;
         case 0x12DD2E2A:
-        case 0xC8769B80:
-        case 0x0021EE36:
+        case 0xC8759B80:
+        case 0x0020EE36:
         case 0x6CA5F172:
         case 0x672F35C2:
             return 1;
+        case 0xB9FC42F5:
+            alpha = 3000.0f;
+            break;
         case 0x75715902:
         default:
             alpha = 1000.0f;
@@ -510,19 +564,25 @@ int FxEmitterSpawnFromMsg(int* d)
         info.f8 = 0.0f;
         info.f9 = 0.0f;
 
-        pos[0] = (f32)d[12];
-        pos[1] = (f32)d[13];
-        pos[2] = (f32)d[14];
+        {
+            f32 x = (f32)d[6];
+            f32 y = (f32)d[7];
+            f32 z = (f32)d[8];
 
-        fn_8009F7A8(&mtx, pos);
-        mtx.m[9] = (f32)d[6];
-        mtx.m[10] = (f32)d[7];
-        mtx.m[11] = (f32)d[8];
+            pos[0] = (f32)d[12];
+            pos[1] = (f32)d[13];
+            pos[2] = (f32)d[14];
+
+            fn_8009F7A8(&mtx, pos);
+            mtx.m[9] = x;
+            mtx.m[10] = y;
+            mtx.m[11] = z;
+        }
 
         if (*(f32*)((u8*)d + 0x50) > 1.1920929e-07f) {
             fn_800E1098(pos, pos, 1.0f);
-            if (pos[2] <= *(f32*)((u8*)d + 0x50))
-                pos[2] = *(f32*)((u8*)d + 0x50);
+            f32 lim = *(f32*)((u8*)d + 0x50);
+            pos[2] = pos[2] > lim ? pos[2] : lim;
         }
         fn_800E1098(pos, pos, alpha);
 
@@ -548,71 +608,24 @@ int FxEmitterSpawnFromMsg(int* d)
         return 1;
     }
 
-    if (*(f32*)(st + 0x10) > 0.0f)
-        return 1;
-
-    {
-        u32 found[8];
+    if (*(f32*)(st + 0x10) <= 0.0f) {
+        ParentQuery found;
         Mtx34 parentMtx;
 
-        memset(found, 0, sizeof(found));
+        memset(&found, 0, sizeof(found));
 
-        id = fn_80212730(*(u32*)((u8*)actor + 0x38));
-        if (id == -1 || SendMsg(id, 0x400, found) == 0)
+        int id2 = fn_80212730(*(u32*)((u8*)actor + 0x38));
+        if (id2 != -1 && SendMsg(id2, 0x400, &found) != 0)
+            ActorGetMatrix(&parentMtx, found.actor);
+        else
             return 1;
 
-        ActorGetMatrix(&parentMtx, (Actor*)found[0]);
-
-        if (*(u32*)((u8*)model + 0x24) != 0x24A738) {
-            FxNameMsg msg;
-            // The retail code also constructs a String here and keeps the
-            // parent id in its first word; the original source shape for that
-            // is still unknown, so only the plain payload is modelled.
-            String name;
-
-            msg.magic = 0xDCC384C1;
-            msg.unk8 = 0;
-            msg.parentId = d[2];
-            (void)name;
-            SendMsg(*(u32*)((u8*)actor + 0x38), 0x41D, &msg);
+        if (*(u32*)(*(u32*)((u8*)actor + 0x84) + 0x24) != 0x24A738) {
+            QueryValue(*(u32*)((u8*)actor + 0x38), 0xDCC384C1, d[2]);
         } else {
             FxRenderInfo info;
-            Mtx34 rot;
-            Mtx34 fxMtx;
-            f32 v[3];
-            u32 h1;
-            u32 h2;
 
-            if (*(u32*)((u8*)actor + 0x11C) != 0) {
-                fn_801D55CC(*(u32*)((u8*)actor + 0x11C));
-                *(u32*)((u8*)actor + 0x11C) = 0;
-            }
-
-            h1 = VarFindHash(0xF3BEEEDF, *(u32*)((u8*)model + 0x28), 0x4B35781);
-            h2 = VarFindHash(0xF3BEEEDF, *(u32*)((u8*)model + 0x28), 0x40795527);
-
-            fn_8016D864(rot.m, *(u32*)((u8*)actor + 0x40));
-            fn_8016D6BC(rot.m, rot.m);
-
-            *(u32*)((u8*)actor + 0x11C) =
-                fn_801D5B38(2.0f * rot.m[3], 2.0f * rot.m[4],
-                            2.0f * rot.m[5], *(u32*)((u8*)actor + 0x38),
-                            -1, h1, h2, 0x1FFFFFFF, rot.m, 0);
-
-            if (*(u32*)((u8*)actor + 0x11C) != 0) {
-                ActorGetMatrix(&fxMtx, actor);
-                fn_800A0168(&fxMtx, &fxMtx);
-                fn_801D52E0(*(u32*)((u8*)actor + 0x11C), &fxMtx);
-
-                v[0] = 0.0f;
-                v[1] = 0.0f;
-                v[2] = 0.0f;
-                fn_801D5298(*(u32*)((u8*)actor + 0x11C), v);
-                fn_801D5260(*(u32*)((u8*)actor + 0x11C), v);
-                fn_801D5110(*(u32*)((u8*)actor + 0x11C), 1);
-                if (ActorVisibleFlag(actor) != 0)
-                    fn_801D556C(*(u32*)((u8*)actor + 0x11C));
-            }
+            FxEmitterStart(actor);
 
             info.f0 = 360.0f;
             info.f1 = 1000.0f;
@@ -625,20 +638,13 @@ int FxEmitterSpawnFromMsg(int* d)
             info.f8 = 0.0f;
             info.f9 = 0.0f;
 
-            fn_801D902C(&parentMtx, found[0], actor, &info);
+            fn_801D902C(&parentMtx, (u32)found.actor, actor, &info);
         }
 
         fn_8016F120(FxFind("BOSS_BREAK"), (u8*)actor + 0x24);
         fn_8021284C(*(u32*)((u8*)actor + 0x38));
 
-        if (id != -1) {
-            u32 stateMsg[4];
-
-            stateMsg[2] = *(u32*)((u8*)actor + 0x38);
-            stateMsg[3] = 0x90F5B327;
-            stateMsg[1] = 0;
-            SendMsg(id, 0xC14, stateMsg);
-        }
+        SendState(id2, *(u32*)((u8*)actor + 0x38), 0x90F4B327);
     }
     return 1;
 }
