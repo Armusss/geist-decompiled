@@ -40,6 +40,19 @@ extern StateEntry lbl_8039ED68[];
 extern int lbl_804D2E08;
 }
 
+// Index of the table entry for state id `state`, or -1.
+static inline int FindStateEntry(unsigned long state)
+{
+    int i;
+
+    for (i = 0; i < lbl_804D2E08; i++) {
+        if (state == lbl_8039ED68[i].id) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 // Clears the owner's current state (runs the leave callback first).
 int ClearStateMachine(void* arg)
 {
@@ -54,13 +67,7 @@ int ClearStateMachine(void* arg)
     }
     state = sm->state;
     if (state != 0xFFFFFFFF) {
-        idx = -1;
-        for (i = 0; i < lbl_804D2E08; i++) {
-            if (state == lbl_8039ED68[i].id) {
-                idx = i;
-                break;
-            }
-        }
+        idx = FindStateEntry(state);
         if (idx != -1) {
             lbl_8039ED68[idx].leave(arg, sm);
         }
@@ -87,25 +94,13 @@ int SetStateMachineState(void* arg, unsigned long newState)
     }
     state = sm->state;
     if (state != 0xFFFFFFFF) {
-        idx = -1;
-        for (i = 0; i < lbl_804D2E08; i++) {
-            if (state == lbl_8039ED68[i].id) {
-                idx = i;
-                break;
-            }
-        }
+        idx = FindStateEntry(state);
         if (idx != -1) {
             lbl_8039ED68[idx].leave(arg, sm);
         }
         sm->prevState = sm->state;
     }
-    idx = -1;
-    for (i = 0; i < lbl_804D2E08; i++) {
-        if (newState == lbl_8039ED68[i].id) {
-            idx = i;
-            break;
-        }
-    }
+    idx = FindStateEntry(newState);
     if (idx == -1) {
         sm->state = 0xFFFFFFFF;
     } else {
