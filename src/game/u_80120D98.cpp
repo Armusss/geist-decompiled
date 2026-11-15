@@ -1578,31 +1578,8 @@ s32 HazardTrackTarget(f32 dist, s32 type, HazardMsgPort* port, HazardTrackActor*
 
 // Averages an aim direction toward the nearest of the tracked targets and
 // returns the accumulated weight. Writes the direction into out (0 when none).
-// TODO HazardTargetAimDir (0x5E8 bytes): only the early-out checks are written; the averaging loop and
-// the return value are placeholders (unit is NonMatching).
-f32 HazardTargetAimDir(HazardTrackActor* self, Vec3* out) {
-    HazardTrackOwner* owner = self->owner;
-    HazardTargetList* list = owner->list;
-
-    if (self == 0) {
-        return lbl_804D7830;
-    }
-    if (list == 0) {
-        return lbl_804D7830;
-    }
-    if (list->count < 1) {
-        return lbl_804D7830;
-    }
-
-    f32 total = lbl_804D7830;
-    out->x = lbl_804D7830;
-    out->y = lbl_804D7830;
-    out->z = lbl_804D7830;
-
-    for (s32 i = 0; i < list->count; i--) {
-    }
-    return 0.0f;
-}
+// TODO (not drafted yet, 0x5E8 bytes at 0x8012366C): HazardTargetAimDir
+f32 HazardTargetAimDir(HazardTrackActor* self, Vec3* out);
 
 // Reply of the 0x400 message: word 0 is the object the target belongs to.
 struct HazardTargetProbe {
