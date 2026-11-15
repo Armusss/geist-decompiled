@@ -507,6 +507,7 @@ int HostRideTick(void* p) {
     Target* info;
     int aim[3];
     float f;
+    float dx, dy, dz;
     int r;
 
     if ((actor = (Actor*)p) == 0) {
@@ -527,9 +528,13 @@ int HostRideTick(void* p) {
         actor->i26C = 0;
     } else if (beh->target != -1 && (info = OwnerGetInfo(beh->target)) != 0) {
         ActorAim(aim, actor, 1);
-        f = (float)aim[0] * ((float)info->x - actor->f84) +
-            (float)aim[1] * ((float)info->y - actor->f88) +
-            (float)aim[2] * ((float)info->z - actor->f8C);
+        dx = (float)info->x;
+        dy = (float)info->y;
+        dz = (float)info->z;
+        dx -= actor->f84;
+        dy -= actor->f88;
+        dz -= actor->f8C;
+        f = (float)aim[0] * dx + (float)aim[1] * dy + (float)aim[2] * dz;
         if (actor->i21C == 1) {
             if (f > beh->f10 * beh->f10) {
                 actor->i21C = 2;
