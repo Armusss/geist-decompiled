@@ -211,7 +211,7 @@
 <rect x="528" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/MWTrace.c - matching</title></rect>
 <rect x="548" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/gc/MWCriticalSection_gc.c - matching</title></rect>
 <text x="8" y="386" font-family="sans-serif" font-size="16" font-weight="bold" fill="#ffffff">Game code: 81/225 files (36.0%) byte-identical</text>
-<text x="8" y="406" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">144 files partly matched; functions matching: 2,956/7,123 (41.5%) (provisional file boundaries)</text>
+<text x="8" y="406" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">144 files partly matched; functions matching: 2,957/7,123 (41.5%) (provisional file boundaries)</text>
 <rect x="8" y="412" width="18" height="18" rx="2" fill="#d29922"><title>game/Cube.cpp - partial: 49/112 functions match</title></rect>
 <rect x="28" y="412" width="18" height="18" rx="2" fill="#2ea043"><title>game/main.cpp - matching</title></rect>
 <rect x="48" y="412" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8000F2F0.cpp - partial: 10/38 functions match</title></rect>
@@ -395,7 +395,7 @@
 <rect x="728" y="472" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_80285014.cpp - matching</title></rect>
 <rect x="748" y="472" width="18" height="18" rx="2" fill="#2ea043"><title>game/Mirror.cpp - matching</title></rect>
 <rect x="768" y="472" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_80285ACC.cpp - matching</title></rect>
-<rect x="788" y="472" width="18" height="18" rx="2" fill="#d29922"><title>game/VM.c - partial: 2/5 functions match</title></rect>
+<rect x="788" y="472" width="18" height="18" rx="2" fill="#d29922"><title>game/VM.c - partial: 3/5 functions match</title></rect>
 <rect x="808" y="472" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8028703C.cpp - partial: 13/22 functions match</title></rect>
 <rect x="828" y="472" width="18" height="18" rx="2" fill="#2ea043"><title>game/Clock.cpp - matching</title></rect>
 <rect x="848" y="472" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8028865C.cpp - partial: 5/19 functions match</title></rect>
