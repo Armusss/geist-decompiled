@@ -595,7 +595,7 @@ config.libs = [
             Object(NonMatching, "game/u_80068004.cpp"),  # guess
             Object(NonMatching, "game/u_8006C604.cpp"),  # guess
             Object(NonMatching, "game/u_800776FC.cpp"),  # guess
-            Object(NonMatching, "game/Arena.c"),  # guess
+            Object(Matching, "game/Arena.c"),  # guess
             Object(Matching, "game/Audio.c", cflags=cflags_game_c),  # C: unprototyped 3/4-arg calls (STATUS G4)
             Object(Matching, "game/u_8007DAC8.cpp"),  # timers
             Object(Matching, "game/u_8007E1E8.cpp"),  # split-screen text helpers
