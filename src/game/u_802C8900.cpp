@@ -20,6 +20,11 @@ struct Mtx34 { f32 m[12]; };
 class Buffer {
 public:
     virtual ~Buffer();
+
+    char* data;
+    int length;
+    int unk0C;
+    int owned;
 };
 
 class String : public Buffer {
@@ -27,21 +32,18 @@ public:
     String();
     ~String() {}
     void Format(const char* fmt, ...);
-
-    char* data;
-    int length;
 };
 
 class Skin;
 
 extern "C" {
-    extern f32 lbl_804DAEC8;
-    extern f32 lbl_804DAECC;
-    extern f32 lbl_804DAED0;
-    extern f32 lbl_804DAED4;
-    extern f32 lbl_804DAED8;
-    extern f32 lbl_804DAEDC;
-    extern f32 lbl_804DAEE0;
+    extern const f32 lbl_804DAEC8;
+    extern const f32 lbl_804DAECC;
+    extern const f32 lbl_804DAED0;
+    extern const f32 lbl_804DAED4;
+    extern const f32 lbl_804DAED8;
+    extern const f32 lbl_804DAEDC;
+    extern const f32 lbl_804DAEE0;
     extern f32 lbl_804D3AD0;
     extern f32 lbl_804D3AD4;
     extern f32 lbl_804D57C8;
@@ -55,7 +57,7 @@ extern "C" {
     int  fn_80158AFC(u32 id, void* data);
     f32  fn_80115F68(u32 id);
     void fn_801FAD18(Actor* actor, int flag);
-    void fn_8003F15C(float alpha, u32 a, u32 b, u32 c, void* d, void* e);
+    void fn_8003F15C(u32 a, u32 b, u32 c, void* d, void* e, float alpha);
 
     void* memset(void* dst, int val, unsigned long size);
     int SendMsg(int to, int msg, void* data);
@@ -92,6 +94,27 @@ int Fn80080FA8();
 
 extern "C" void fn_8028C188(void* dst, const char* src, int len);
 int FxEmitterSpawnFromMsg(int* d);
+
+typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
+
+// Actor type descriptor of the effect emitter (retail .data 0x803C501C).
+struct ActorType {
+    int unk0;
+    const char* name;
+    ActorMsgFunc msg;
+    void (*update)(Actor* actor, float dt);
+    int (*init)(Actor* actor);
+    void* unk14;
+    void (*destroy)();
+    void* unk1C[5];
+};
+
+int FxEmitterHandleMessage(Actor* self, int msg, void* data, int arg4);
+void ActorFxEmitterUpdate(Actor* self, f32 dt);
+int ActorFxEmitterInit(Actor* self);
+void BossForward88E0();
+
+ActorType gDestroyableType = { 0, "Destroyable", FxEmitterHandleMessage, ActorFxEmitterUpdate, ActorFxEmitterInit, 0, BossForward88E0 };
 
 void ActorFxEmitterUpdate(Actor* self, f32 dt)
 {
@@ -209,16 +232,11 @@ int ActorFxEmitterInit(Actor* self)
         return 0;
     }
 
-    {
-        f32 b, a;
-        a = lbl_804DAEDC;
-        b = lbl_804DAED4;
-        *(u32*)(p + 0x18) &= ~0x08000000;
-        *(u32*)(p + 0x18) &= ~0x8;
-        *(u32*)(p + 0x18) &= ~0x6;
-        *(f32*)(p + 0x34) = a;
-        *(f32*)(p + 0x38) = b;
-    }
+    *(u32*)(p + 0x18) &= ~0x08000000;
+    *(u32*)(p + 0x18) &= ~0x8;
+    *(u32*)(p + 0x18) &= ~0x6;
+    *(f32*)(p + 0x34) = lbl_804DAEDC;
+    *(f32*)(p + 0x38) = lbl_804DAED4;
     if (*(u32*)(base + 0x84) == 0 || *(u32*)(*(u32*)(base + 0x84) + 0x24) == 0x24A738)
         *(u32*)(p + 0x18) |= 0x30000000;
 
@@ -275,25 +293,27 @@ int FxEmitterHandleMessage(Actor* self, int msg, void* data, int arg4)
     case 0x41E: {
         u32 owner = d[0];
         switch (d[1]) {
-        case 0xAD8576FA: {
-            String s;
+        case 0xAD8576FA:
+            {
+                String s;
 
-            s.Format("Parent: 0x%08x\n", fn_80212730(*(u32*)(owner + 0x38)));
-            fn_8028C188(d + 3, s.data, s.length);
+                s.Format("Parent: 0x%08x\n", fn_80212730(*(u32*)(owner + 0x38)));
+                fn_8028C188(d + 3, s.data, s.length);
+            }
+            result = 0;
             break;
+        default:
+            result = 0;
         }
-        }
-        result = 0;
         break;
     }
     }
 
-    if (result == -999999) {
-        result = 0;
-    } else if (result == 0) {
-        result = Fn802120A0(self, msg, data, arg4);
-    }
-    return result;
+    if (result == -999999)
+        return 0;
+    if (result != 0)
+        return result;
+    return Fn802120A0(self, msg, data, arg4);
 }
 
 // Per-frame update of the effect emitter.  `data` is the actor message buffer
@@ -301,15 +321,14 @@ int FxEmitterHandleMessage(Actor* self, int msg, void* data, int arg4)
 // Builds a tinted skin from the state's fade value and draws the effect.
 int FxEmitterUpdateState(void* data, int mode)
 {
-    u32* msg = (u32*)data;
-    Actor* actor = *(Actor**)msg;
+    Actor* actor = *(Actor**)data;
     u8* st = *(u8**)((u8*)actor + 0xA4);
-    int local[3];
-    u32 id;
-    u32 anim;
+    int local;
     u32 shape;
-    Skin* skin;
+    u32 anim;
     Actor* player;
+    u32 id;
+    Skin* skin;
 
     if (lbl_804D57CC != 0)
         lbl_804D57CC = 0;
@@ -317,53 +336,46 @@ int FxEmitterUpdateState(void* data, int mode)
     if (*(u32*)(st + 0x18) & 0x10)
         return 1;
 
-    if (mode == 0 && fn_80158AFC(*(u32*)((u8*)actor + 0x38), msg) != 0)
+    if (mode == 0 && fn_80158AFC(*(u32*)((u8*)actor + 0x38), data) != 0)
         return 1;
 
-    id = fn_800E7890(actor, local);
-    id = fn_800390D8(*(u32*)((u8*)actor + 0x90), id);
+    id = fn_800390D8(*(u32*)((u8*)actor + 0x90), fn_800E7890(actor, &local));
     anim = ModelAnimate(*(int*)((u8*)actor + 0x90), 0, 0);
     shape = fn_8003A1F0(id, *(u32*)((u8*)actor + 0x9C), anim);
     player = GetPlayer();
 
-    {
+    if (*(f32*)(st + 0x40) > lbl_804DAEC8) {
         f32 v = *(f32*)(st + 0x40);
+        f32 t;
 
-        if (v > lbl_804DAEC8) {
-            f32 t;
+        if (v > lbl_804D3AD0 - lbl_804D57C8)
+            t = (lbl_804D3AD0 - v) / lbl_804D57C8;
+        else if (v < lbl_804D3AD4)
+            t = v / lbl_804D3AD4;
+        else
+            t = lbl_804DAEE0;
 
-            if (v > lbl_804D3AD0 - lbl_804D57C8)
-                t = (lbl_804D3AD0 - v) / lbl_804D57C8;
-            else if (v < lbl_804D3AD4)
-                t = v / lbl_804D3AD4;
-            else
-                t = lbl_804DAEE0;
+        {
+            f32 alpha = lbl_804DAEC8;
 
-            {
-                f32 alpha = lbl_804DAEC8;
-
-                if (t >= alpha) {
-                    alpha = lbl_804DAEE0;
-                    if (t <= alpha)
-                        alpha = t;
-                }
-                skin = SkinBlendTint((Skin*)((u8*)data + 0x10), 0xFF, 0, 0, alpha);
+            if (t >= alpha) {
+                alpha = lbl_804DAEE0;
+                if (t <= alpha)
+                    alpha = t;
             }
-        } else {
-            skin = (Skin*)((u8*)data + 0x10);
+            skin = SkinBlendTint((Skin*)((u8*)data + 0x10), 0xFF, 0, 0, alpha);
         }
+    } else {
+        skin = (Skin*)((u8*)data + 0x10);
     }
 
-    if ((PlayerInHost(player) != 0 && lbl_804D3408 == 0) ||
-        Fn80080FA8() != 0 ||
-        *(f32*)(st + 0x10) <= lbl_804DAEC8 ||
-        *(int*)(*(u32*)((u8*)player + PlayerInHost(player) * 4 + 0x26C4)) == 0x07C48821 ||
-        local[0] >= 6) {
-        fn_8003F15C(lbl_804DAEE0, id, shape, *(u32*)((u8*)actor + 0x94), skin, 0);
-    } else {
+    if (!(PlayerInHost(player) != 0 && lbl_804D3408 == 0) && Fn80080FA8() == 0 &&
+        *(f32*)(st + 0x10) > lbl_804DAEC8 &&
+        *((int**)((u8*)player + 0x26C4))[PlayerInHost(player)] != 0x07C48821 &&
+        local < 6) {
         f32 v = fn_80115F68(*(u32*)((u8*)actor + 0x38));
 
-        fn_8003F15C(lbl_804DAEE0, id, shape, *(u32*)((u8*)actor + 0x94), skin, 0);
+        fn_8003F15C(id, shape, *(u32*)((u8*)actor + 0x94), skin, 0, lbl_804DAEE0);
 
         if (v <= lbl_804DAEC8) {
             int idx = *(int*)(*(u32*)((u8*)actor + 0x84) + 0xA8);
@@ -371,11 +383,12 @@ int FxEmitterUpdateState(void* data, int mode)
             if (idx >= 0) {
                 u32 shape2 = fn_8003A1F0(idx, *(u32*)((u8*)actor + 0x9C), anim);
 
-                fn_8003F15C(lbl_804DAEE0, idx, shape2, *(u32*)((u8*)actor + 0x94), 0,
-                            lbl_803C4FE0);
+                fn_8003F15C(idx, shape2, *(u32*)((u8*)actor + 0x94), 0, lbl_803C4FE0, lbl_804DAEE0);
             }
             fn_801FAD18(actor, 0);
         }
+    } else {
+        fn_8003F15C(id, shape, *(u32*)((u8*)actor + 0x94), skin, 0, lbl_804DAEE0);
     }
 
     return 1;
@@ -408,10 +421,10 @@ struct FxNameMsg {
 };
 
 extern "C" {
-    extern f32 lbl_804DAEE4;
-    extern f32 lbl_804DAEE8;
-    extern f32 lbl_804DAEEC;
-    extern f32 lbl_804DAEF0;
+    extern const f32 lbl_804DAEE4;
+    extern const f32 lbl_804DAEE8;
+    extern const f32 lbl_804DAEEC;
+    extern const f32 lbl_804DAEF0;
     float fabsf(float x);
     void fn_8009F7A8(void* mtx, f32* v);
     void fn_800E1098(f32* dst, f32* src, f32 scale);
