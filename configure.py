@@ -616,7 +616,7 @@ config.libs = [
             Object(NonMatching, "game/u_800B1834.cpp"),  # guess
             Object(NonMatching, "game/u_800BAA14.cpp"),  # guess
             Object(NonMatching, "game/u_800C5028.cpp"),  # guess
-            Object(NonMatching, "game/Progress.cpp"),  # guess
+            Object(Matching, "game/Progress.cpp"),  # guess
             Object(NonMatching, "game/u_800D0BF4.cpp"),  # guess
             Object(NonMatching, "game/u_800D32E8.cpp", mw_version="GC/2.0"),  # guess; GC/2.0: EmitterHitParamCompare const void* pre-stwu loads (STATUS G4)
             Object(Matching, "game/u_800DD92C.cpp"),  # NPC talk

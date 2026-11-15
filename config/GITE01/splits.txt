@@ -198,6 +198,11 @@ game/u_800C5028.cpp:
 
 game/Progress.cpp:
 	.text       start:0x800D0254 end:0x800D0BB8
+	.rodata     start:0x80344BF0 end:0x80344C08
+	.data       start:0x8039B960 end:0x8039B9F0
+	.bss        start:0x80451780 end:0x80451F00
+	.sbss       start:0x804D4900 end:0x804D4948
+	.sdata2     start:0x804D6FF8 end:0x804D7008
 
 game/u_800D0BF4.cpp:
 	.text       start:0x800D0BB8 end:0x800D32E8
