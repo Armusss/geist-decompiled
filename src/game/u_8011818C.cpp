@@ -101,13 +101,13 @@ int SetStateMachineState(void* arg, unsigned long newState)
         sm->prevState = sm->state;
     }
     idx = FindStateEntry(newState);
-    if (idx == -1) {
-        sm->state = 0xFFFFFFFF;
-    } else {
+    if (idx != -1) {
         sm->state = newState;
         lbl_8039ED68[idx].enter(arg, sm);
         sm->unkD8 = lbl_8039ED68[idx].data0C;
         sm->unkDC = lbl_8039ED68[idx].data14;
+    } else {
+        sm->state = 0xFFFFFFFF;
     }
     return sm->state;
 }
