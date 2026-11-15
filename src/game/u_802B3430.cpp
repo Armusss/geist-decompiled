@@ -12,7 +12,7 @@ static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
 };
 
-// Display name of the actor (its descriptor lives in retail data, unused here).
+// Handlers referenced by the actor type descriptor below.
 class Actor;
 int ClockActorMsg(Actor* self, int msg, void* data, int arg);
 void ClockActorUpdate(Actor* self, float dt);
@@ -37,10 +37,13 @@ PossessableClockType gPossessableClockType = {
 
 extern u8 __upper_map[];
 
-extern void* lbl_804D3900;
-extern void* lbl_804D3904;
-extern void* lbl_804D3908;
-extern float lbl_804D5780;
+// Sound effects looked up when a clock is set up (-1 until then).
+static void* sWindByHandFx = (void*)-1;
+static void* sGhostlyChimeFx = (void*)-1;
+static void* sClockChimeFx = (void*)-1;
+
+// Time since the winding sound was last started.
+static float sWindSoundTimer;
 
 #include <math.h>
 
@@ -151,9 +154,9 @@ extern "C" void fn_80212814(int a, int b, int c, int d, int e, int f);
 void ClockActorUpdateHands(Actor* self);
 
 int PlayerInHost(Actor* actor);
-float fn_8008E5CC(int handle, int flag);
-void fn_8008E824(float value, int handle, int flag);
-void fn_8008F230(float value, int handle, int a, int b);
+extern "C" float fn_8008E5CC(int handle, int flag);
+extern "C" void fn_8008E824(float value, int handle, int flag);
+extern "C" void fn_8008F230(int handle, int a, float value, int b);
 void Fn8006CDE8(Player* player, int a, int b);
 void Fn8006CE5C(Player* player, int a, int b, int c, int d, int e, int f);
 void Fn8006CD84(Player* player, int a, float value);
@@ -194,9 +197,9 @@ void ClockActorUpdate(Actor* self, float dt) {
 int ClockActorInit(Actor* self) {
     ClockWork* work;
 
-    lbl_804D3900 = FxFind("Clock_WindByHand");
-    lbl_804D3904 = FxFind("GhostlyChime");
-    lbl_804D3908 = FxFind("ClockChime");
+    sWindByHandFx = FxFind("Clock_WindByHand");
+    sGhostlyChimeFx = FxFind("GhostlyChime");
+    sClockChimeFx = FxFind("ClockChime");
 
     if (self->clock == 0) {
         work = (ClockWork*)VAlloc(0x50);
@@ -378,26 +381,29 @@ static inline void ClockSpinHands(Actor* self, Player* player, float dt, int han
         fn_8008E824(speed, player->field_D4, 0);
         Fn8006CDE8(player, 0, 1);
         if (fadeWhenEqual) {
-            fn_8008F230(0.0f, player->field_7C, 0, 0);
-            fn_8008F230(0.0f, player->field_D4, 0, 0);
+            fn_8008F230(player->field_7C, 0, 0.0f, 0);
+            fn_8008F230(player->field_D4, 0, 0.0f, 0);
         }
     } else {
         float limit;
+        float blend;
 
         Fn8006CE5C(player, target, 0, 0,
                    (int)(4096.0f *
                          (amount / ((45.0f * dt) / 1000.0f))), 0, 0);
         limit = 1.0f - base;
-        if (0.0f > limit) {
-            limit = 0.0f;
-        } else if (0.99999988f < limit) {
-            limit = 0.99999988f;
+        if (limit < 0.0f) {
+            blend = 0.0f;
+        } else if (limit > 0.99999988f) {
+            blend = 0.99999988f;
+        } else {
+            blend = limit;
         }
-        Fn8006CD84(player, 0, limit);
+        Fn8006CD84(player, 0, blend);
         Fn8006CDE8(player, 0, 1);
         if (!fadeWhenEqual) {
-            fn_8008F230(0.0f, player->field_7C, 0, 0);
-            fn_8008F230(0.0f, player->field_D4, 0, 0);
+            fn_8008F230(player->field_7C, 0, 0.0f, 0);
+            fn_8008F230(player->field_D4, 0, 0.0f, 0);
         }
     }
 }
@@ -432,23 +438,23 @@ void ClockActorTick(Actor* self, float dt) {
 
     work = self->clock;
     amount = 0.0f;
-    lbl_804D5780 = lbl_804D5780 + dt;
+    sWindSoundTimer = sWindSoundTimer + dt;
     base = fn_8008E5CC(player->field_7C, 0);
 
     if (work->field_30 == 1) {
         if (player->field_588 == 2) {
             if (fabsf(player->field_38C) > 1.1920929e-7f) {
-                if (2000.0f < lbl_804D5780) {
-                    lbl_804D5780 = 0.0f;
-                    FxStart(lbl_804D3900, 0, 0);
+                if (sWindSoundTimer > 2000.0f) {
+                    sWindSoundTimer = 0.0f;
+                    FxStart(sWindByHandFx, 0, 0);
                 }
                 amount = -((45.0f * player->field_38C) * dt / 1000.0f);
             }
         } else {
             if (fabsf(player->field_390) > 1.1920929e-7f) {
-                if (2000.0f < lbl_804D5780) {
-                    lbl_804D5780 = 0.0f;
-                    FxStart(lbl_804D3900, 0, 0);
+                if (sWindSoundTimer > 2000.0f) {
+                    sWindSoundTimer = 0.0f;
+                    FxStart(sWindByHandFx, 0, 0);
                 }
                 amount = -((45.0f * player->field_390) * dt / 1000.0f);
             }
@@ -462,11 +468,11 @@ void ClockActorTick(Actor* self, float dt) {
                 fabsf(work->field_38 - (float)work->field_40) < 1.0f) {
                 work->field_4C = 1;
                 ActorPlayAnim(self->field_38, 0xA4DBBCA0, self->field_38);
-                FxStart(lbl_804D3904, 0, 0);
+                FxStart(sGhostlyChimeFx, 0, 0);
                 work->field_30 = 3;
             } else {
                 ActorPlayAnim(self->field_38, 0xA738DF81, self->field_38);
-                FxStart(lbl_804D3908, 0, 0);
+                FxStart(sClockChimeFx, 0, 0);
                 work->field_4C = 0;
                 work->field_30 = 2;
             }
