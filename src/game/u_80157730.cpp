@@ -402,7 +402,7 @@ extern f32 lbl_804D4E30;
 extern s32 lbl_804D4E5C, lbl_804D4E60, lbl_804D4E64, lbl_804D4E68, lbl_804D4E6C, lbl_804D4E70;
 extern s32 lbl_804D4E74, lbl_804D4E78, lbl_804D4E7C, lbl_804D4E80, lbl_804D4E84, lbl_804D4E88;
 extern s32 lbl_804D4E8C, lbl_804D4E90, lbl_804D4E94, lbl_804D4E98;
-extern s32 lbl_804D49C4;
+extern s32 gSaveLoaded;
 
 extern s32 lbl_804D2F28;
 extern f32 lbl_804D2F2C;
@@ -1018,8 +1018,8 @@ void fn_8015860C() {
 
 // 0x80158744: check for a save file and create one if needed.
 void fn_80158744() {
-    lbl_804D49C4 = fn_80045524(0x420, 1, 0x38);
-    switch (lbl_804D49C4) {
+    gSaveLoaded = fn_80045524(0x420, 1, 0x38);
+    switch (gSaveLoaded) {
     case 0:
         break;
     case 1:
@@ -1027,7 +1027,7 @@ void fn_80158744() {
         break;
     case 2:
         SaveCommand(7, 0x30);
-        if (lbl_804D49C4 == 1) {
+        if (gSaveLoaded == 1) {
             fn_80158834();
         }
         break;
@@ -1037,8 +1037,8 @@ void fn_80158744() {
 
 // 0x801587B8: the same check with a caller-supplied mode.
 void fn_801587B8(int mode) {
-    lbl_804D49C4 = fn_80045524(0x420, 1, mode | 8);
-    switch (lbl_804D49C4) {
+    gSaveLoaded = fn_80045524(0x420, 1, mode | 8);
+    switch (gSaveLoaded) {
     case 0:
         break;
     case 1:
@@ -1046,7 +1046,7 @@ void fn_801587B8(int mode) {
         break;
     case 2:
         SaveCommand(7, mode);
-        if (lbl_804D49C4 == 1) {
+        if (gSaveLoaded == 1) {
             fn_80158834();
         }
         break;
@@ -1091,7 +1091,7 @@ void fn_80158834() {
     fn_800ECB18();
     SaveCommand(1, 0);
     r = SaveCommand(6, 0);
-    lbl_804D49C4 = (r == 1) ? 2 : 0;
+    gSaveLoaded = (r == 1) ? 2 : 0;
 }
 
 // 0x80158990: start the focus/lighten HUD effect on a player.
