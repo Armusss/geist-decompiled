@@ -107,7 +107,6 @@ struct Vec3 {
 
 void Vec3Set(Vec3* v, float x, float y, float z);
 
-extern float lbl_804D6C08;
 
 // Reset the vector/colour fields of a range object to the shared default
 // constant.  Returns false for a null object.
@@ -118,12 +117,12 @@ int RangeResetFields(void* range)
     if (range == 0) {
         return 0;
     }
-    value = lbl_804D6C08;
+    value = 0.0f;
     *(float*)((char*)range + 0x270) = value;
     *(float*)((char*)range + 0x274) = value;
     *(float*)((char*)range + 0x278) = value;
     Vec3Set((Vec3*)((char*)range + 0x27C), value, value, value);
-    value = lbl_804D6C08;
+    value = 0.0f;
     *(float*)((char*)range + 0x2AC) = value;
     *(float*)((char*)range + 0x2A8) = value;
     *(float*)((char*)range + 0x28C) = value;
@@ -179,13 +178,6 @@ extern "C" void fn_8016D68C(void* dst, void* src);
 extern "C" float fn_800E1020(void* p);
 float ActorAngleToPos(void* self, Vec3* pos);
 
-extern float lbl_804D6C0C;
-extern float lbl_804D6C10;
-extern float lbl_804D6C14;
-extern float lbl_804D6C18;
-extern float lbl_804D6C1C;
-extern float lbl_804D6C20;
-extern float lbl_804D6C24;
 
 // Query buffer shared by the asset/actor message round trips below.
 struct AssetActorMsg {
@@ -231,7 +223,7 @@ int FollowOffsetUpdate(void* self)
 
         if (type == 0x8FA05C1A || type == 0x00013C05 || type == 0xE0AB9B4F ||
             type == 0x0000FFF5 || type == 0x04624485 || type == 0x04A86D09) {
-            st->angle = lbl_804D6C08;
+            st->angle = 0.0f;
         } else {
             if (mode == 1) {
                 ang = st->target.vec;
@@ -252,15 +244,15 @@ int FollowOffsetUpdate(void* self)
             euler.y -= *(float*)((char*)self + 0x254);
             EulerNormalize(&euler, &euler);
 
-            while (st->angle < lbl_804D6C10) {
-                st->angle += lbl_804D6C0C;
+            while (st->angle < -180.0f) {
+                st->angle += 360.0f;
             }
-            while (st->angle >= lbl_804D6C14) {
-                st->angle -= lbl_804D6C0C;
+            while (st->angle >= 180.0f) {
+                st->angle -= 360.0f;
             }
 
-            float lo = euler.y - lbl_804D6C18;
-            float hi = euler.y + lbl_804D6C18;
+            float lo = euler.y - 60.0f;
+            float hi = euler.y + 60.0f;
             if (st->angle < lo) {
                 st->angle = lo;
             } else if (st->angle > hi) {
@@ -292,12 +284,12 @@ int FollowOffsetUpdate(void* self)
             }
         }
     } else {
-        st->angle = lbl_804D6C08;
+        st->angle = 0.0f;
     }
 
     if ((st->flags & 0x10) != 0) {
         if ((st->flags & 0x200000) == 0 ||
-            fabs(st->angle - *(float*)((char*)self + 0x258)) < lbl_804D6C1C) {
+            fabs(st->angle - *(float*)((char*)self + 0x258)) < 20.0f) {
             switch (mode) {
             case 1:
                 pos = st->target.vec;
@@ -312,7 +304,7 @@ int FollowOffsetUpdate(void* self)
                 break;
             }
         }
-    } else if (fn_800E1020((char*)self + 0x240) < lbl_804D6C20) {
+    } else if (fn_800E1020((char*)self + 0x240) < 1.1920929e-07f) {
         pos = base;
     }
 
@@ -320,13 +312,13 @@ int FollowOffsetUpdate(void* self)
     pos.y -= base.y;
     pos.z -= base.z;
 
-    if (fabs(pos.z) > lbl_804D6C20 || fabs(pos.x) > lbl_804D6C20 ||
-        fabs(pos.y) > lbl_804D6C20) {
+    if (fabs(pos.z) > 1.1920929e-07f || fabs(pos.x) > 1.1920929e-07f ||
+        fabs(pos.y) > 1.1920929e-07f) {
         fn_8016D440(&tmp, &pos);
         Vec3Set(&st->rot, tmp.z - *(float*)((char*)self + 0x254),
                           tmp.x - *(float*)((char*)self + 0x24c), 0.0f);
         if ((st->flags30 & 0x02000000) != 0) {
-            st->rot.z += lbl_804D6C14;
+            st->rot.z += 180.0f;
         }
         EulerNormalize(&st->rot, &st->rot);
     } else {
@@ -344,7 +336,7 @@ int FollowOffsetUpdate(void* self)
 
     if (*(int*)((char*)desc + 0xc) == 0x00012EC1) {
         if (st->flags & 0x10) {
-            st->scale *= lbl_804D6C24;
+            st->scale *= 0.6666f;
         }
     }
 
@@ -368,8 +360,8 @@ void FollowOffsetReset(void* self)
     st->flags30 = 0;
     st->unk34 = 0;
     st->index = 0;
-    st->unk38 = lbl_804D6C08;
-    st->unk3C = lbl_804D6C08;
+    st->unk38 = 0.0f;
+    st->unk3C = 0.0f;
     st->target.obj = NULL;
     st->mode = 0;
 
@@ -603,12 +595,6 @@ extern "C" void fn_800A0168(Mtx34* mtx, Mtx34* src);
 extern "C" void fn_800A0030(Vec3* out, Mtx34* mtx, Vec3* in);
 extern "C" void fn_800E1098(Vec3* out, Vec3* v, float scale);
 
-extern float lbl_804D6C30;
-extern float lbl_804D6C34;
-extern float lbl_804D6C38;
-extern float lbl_804D6C3C;
-extern float lbl_804D6C40;
-extern float lbl_804D6C50;
 
 // Unit forward/right basis vectors, three floats each.
 extern Vec3 lbl_803445A0;
@@ -626,13 +612,13 @@ int ZoneFindNearestHit(void* self, Vec3* a, Vec3* b, float* outBest,
     q.limit = *(float*)((char*)self + 0x900);
     q.a = *a;
     q.b = *b;
-    q.best = lbl_804D6C30;
+    q.best = 1.1f;
     q.flag = 0;
-    q.value = lbl_804D6C34;
+    q.value = 0.0f;
     q.arg = arg;
     ZoneWalkNodes((ZoneList*)((char*)self + 0x658), ZoneFindNearestVisit, &q);
 
-    if (q.best < lbl_804D6C38) {
+    if (q.best < 1.0f) {
         if (outBest != 0) {
             *outBest = q.best;
         }
@@ -645,13 +631,13 @@ int ZoneFindNearestHit(void* self, Vec3* a, Vec3* b, float* outBest,
         return 1;
     }
     if (outBest != 0) {
-        *outBest = lbl_804D6C30;
+        *outBest = 1.1f;
     }
     if (outFlag != 0) {
         *outFlag = 0;
     }
     if (outValue != 0) {
-        *outValue = lbl_804D6C34;
+        *outValue = 0.0f;
     }
     return 0;
 }
@@ -735,7 +721,7 @@ int ZoneFindNearestVisit(void* self, void* node, void* ctx)
         pos.x = (float)*(unsigned int*)((char*)object + 0x24);
         pos.y = (float)*(unsigned int*)((char*)object + 0x28);
         pos.z = (float)*(unsigned int*)((char*)object + 0x2c);
-        reach = lbl_804D6C3C;
+        reach = 1200.0f;
     } else {
         if (type != 0x13) {
             return 1;
@@ -754,12 +740,12 @@ int ZoneFindNearestVisit(void* self, void* node, void* ctx)
         reach = *(float*)((char*)object + 0x900);
     }
 
-    count = (fabsf(pos.x) > lbl_804D6C40) + (fabsf(pos.y) > lbl_804D6C40) +
-            (fabsf(pos.z) > lbl_804D6C40);
+    count = (fabsf(pos.x) > 1.1920929e-07f) + (fabsf(pos.y) > 1.1920929e-07f) +
+            (fabsf(pos.z) > 1.1920929e-07f);
     if (count == 0) {
         return 0;
     }
-    if (!(reach > lbl_804D6C34)) {
+    if (!(reach > 0.0f)) {
         return 0;
     }
 
@@ -772,10 +758,10 @@ int ZoneFindNearestVisit(void* self, void* node, void* ctx)
     radius = (reach + q->limit) * (reach + q->limit);
 
     length = fn_800E1020(&segment);
-    if (length < lbl_804D6C40) {
+    if (length < 1.1920929e-07f) {
         // Degenerate segment: only the start point can be hit.
         if (delta.y * delta.y + delta.x * delta.x + delta.z * delta.z <= radius) {
-            q->best = lbl_804D6C34;
+            q->best = 0.0f;
             q->flag = (int)node;
             q->value = reach;
         }
@@ -792,7 +778,7 @@ int ZoneFindNearestVisit(void* self, void* node, void* ctx)
             return 1;
         }
     }
-    if (along < lbl_804D6C34) {
+    if (along < 0.0f) {
         if (delta.y * delta.y + delta.x * delta.x + delta.z * delta.z > radius) {
             return 1;
         }
@@ -814,8 +800,8 @@ int ZoneFindNearestVisit(void* self, void* node, void* ctx)
 
     // Back the entry point off the sphere surface along the segment.
     gap = radius - dist;
-    root = lbl_804D6C34;
-    if (gap > lbl_804D6C34) {
+    root = 0.0f;
+    if (gap > 0.0f) {
         root = sqrtf(gap);
     }
     t = (along - root) / length;
@@ -831,8 +817,8 @@ int ZoneFindNearestVisit(void* self, void* node, void* ctx)
 // True when every component of a vector is inside the zero tolerance.
 static inline int Vec3IsZero(const Vec3* v)
 {
-    return ((fabsf(v->x) > lbl_804D6C40) + (fabsf(v->y) > lbl_804D6C40) +
-            (fabsf(v->z) > lbl_804D6C40)) == 0;
+    return ((fabsf(v->x) > 1.1920929e-07f) + (fabsf(v->y) > 1.1920929e-07f) +
+            (fabsf(v->z) > 1.1920929e-07f)) == 0;
 }
 
 // Scale a vector to unit length; a near-zero vector stays zero.  Returns the
@@ -842,10 +828,10 @@ static inline float Vec3Normalize(Vec3* out, const Vec3* v)
     float len;
 
     if (Vec3IsZero(v)) {
-        out->x = lbl_804D6C34;
-        out->y = lbl_804D6C34;
-        out->z = lbl_804D6C34;
-        return lbl_804D6C34;
+        out->x = 0.0f;
+        out->y = 0.0f;
+        out->z = 0.0f;
+        return 0.0f;
     }
     len = sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
     out->x = v->x / len;
@@ -874,16 +860,16 @@ int ZoneClassifyDirection(void* self, Vec3* dir)
     }
     Vec3Normalize(&normal, dir);
     dot = forward.y * normal.y + forward.x * normal.x + forward.z * normal.z;
-    if (fabsf(dot) < lbl_804D6C50) {
+    if (fabsf(dot) < 0.807f) {
         // Nearly perpendicular: fall back to the sideways axis.
         fn_800A0030(&right, &mtx, &right);
         if (right.y * normal.y + right.x * normal.x + right.z * normal.z >
-            lbl_804D6C34) {
+            0.0f) {
             return 2;
         }
         return 1;
     }
-    if (dot < lbl_804D6C34) {
+    if (dot < 0.0f) {
         return 3;
     }
     return 0;
@@ -897,7 +883,6 @@ extern "C" void fn_80039958(int model, Mtx34* mtx, void* pose, void* boxA,
                             void* boxB);
 extern "C" void fn_801D52E0(void* obj, Mtx34* mtx);
 
-extern float lbl_804D6C54;
 
 // Refresh the bone bounding box of an actor: while the animation is running
 // (+0xf0) the box is derived from the pose matrix of the current frame,
@@ -908,7 +893,7 @@ void ActorUpdateBoneBounds(void* self)
     Mtx34 attachMtx;
     Mtx34 poseMtx;
 
-    if (*(float*)((char*)self + 0x13c) <= lbl_804D6C54 &&
+    if (*(float*)((char*)self + 0x13c) <= 100.0f &&
         *(int*)((char*)self + 0xec) != 10) {
         if (*(int*)((char*)self + 0xf0) == 0) {
             *(int*)((char*)self + 0x90) = -0x20;
@@ -960,18 +945,18 @@ float SegmentClosestSquaredDist(float* p1, float* p2, float* p3, float* p4,
     float x;
     float z;
 
-    if (((fabsf(ax) > lbl_804D6C40) + (fabsf(ay) > lbl_804D6C40) +
-         (fabsf(az) > lbl_804D6C40)) == 0) {
-        *outT = lbl_804D6C34;
+    if (((fabsf(ax) > 1.1920929e-07f) + (fabsf(ay) > 1.1920929e-07f) +
+         (fabsf(az) > 1.1920929e-07f)) == 0) {
+        *outT = 0.0f;
     } else {
         *outT = -((p1[1] - p3[1]) * ay + (p1[0] - p3[0]) * ax +
                   (p1[2] - p3[2]) * az);
         *outT = *outT / (ay * ay + ax * ax + az * az);
     }
-    if (*outT > lbl_804D6C38) {
-        *outT = lbl_804D6C38;
-    } else if (*outT < lbl_804D6C34) {
-        *outT = lbl_804D6C34;
+    if (*outT > 1.0f) {
+        *outT = 1.0f;
+    } else if (*outT < 0.0f) {
+        *outT = 0.0f;
     }
 
     t = *outT;
@@ -989,7 +974,6 @@ extern "C" void fn_800090BC(void* a, void* b, int x, int y, int z);
 int ZoneProbeHitFilter(int self, float* out);
 int SlotOwnerMatches(void** slot, void* owner);
 
-extern float lbl_804D6C54;
 
 // Probe the line between this owner and another actor.  A set "already
 // handled" flag at +0x2f short-circuits to true.  The probe runs through the
@@ -1046,28 +1030,28 @@ int FollowLineCheck(void* self, void* target)
         fn_80009170(from, to, 0, 0, 0xff);
         result = fn_8001F928(self, from, 0x2000a200, (void*)ZoneProbeHitFilter, &hit);
         if (result != 0) {
-            a.x = hit.x + lbl_804D6C54;
+            a.x = hit.x + 100.0f;
             a.y = hit.y;
             a.z = hit.z;
-            b.x = hit.x - lbl_804D6C54;
+            b.x = hit.x - 100.0f;
             b.y = hit.y;
             b.z = hit.z;
             fn_800090BC(&a, &b, 0xff, 0, 0);
 
             a.x = hit.x;
-            a.y = hit.y + lbl_804D6C54;
+            a.y = hit.y + 100.0f;
             a.z = hit.z;
             b.x = hit.x;
-            b.y = hit.y - lbl_804D6C54;
+            b.y = hit.y - 100.0f;
             b.z = hit.z;
             fn_800090BC(&a, &b, 0xff, 0, 0);
 
             a.x = hit.x;
             a.y = hit.y;
-            a.z = hit.z + lbl_804D6C54;
+            a.z = hit.z + 100.0f;
             b.x = hit.x;
             b.y = hit.y;
-            b.z = hit.z - lbl_804D6C54;
+            b.z = hit.z - 100.0f;
             fn_800090BC(&a, &b, 0xff, 0, 0);
         }
     }
@@ -1115,28 +1099,28 @@ int FollowLineCheckPos(void* self, float* pos)
         fn_80009170(from, to, 0, 0, 0xff);
         result = fn_8001F928(self, from, 0x2000a200, (void*)ZoneProbeHitFilter, &hit);
         if (result != 0) {
-            a.x = hit.x + lbl_804D6C54;
+            a.x = hit.x + 100.0f;
             a.y = hit.y;
             a.z = hit.z;
-            b.x = hit.x - lbl_804D6C54;
+            b.x = hit.x - 100.0f;
             b.y = hit.y;
             b.z = hit.z;
             fn_800090BC(&a, &b, 0xff, 0, 0);
 
             a.x = hit.x;
-            a.y = hit.y + lbl_804D6C54;
+            a.y = hit.y + 100.0f;
             a.z = hit.z;
             b.x = hit.x;
-            b.y = hit.y - lbl_804D6C54;
+            b.y = hit.y - 100.0f;
             b.z = hit.z;
             fn_800090BC(&a, &b, 0xff, 0, 0);
 
             a.x = hit.x;
             a.y = hit.y;
-            a.z = hit.z + lbl_804D6C54;
+            a.z = hit.z + 100.0f;
             b.x = hit.x;
             b.y = hit.y;
-            b.z = hit.z - lbl_804D6C54;
+            b.z = hit.z - 100.0f;
             fn_800090BC(&a, &b, 0xff, 0, 0);
         }
     }
@@ -1153,11 +1137,6 @@ int FollowLineCheckPos(void* self, float* pos)
 extern "C" void fn_800E0CB8(void* dst, void* src);
 extern "C" void fn_8009F724(void* dst, void* src, int index);
 extern "C" void fn_8009F50C(void* dst, void* src);
-extern double lbl_804D6C48;
-extern float lbl_804D6C58;
-extern double lbl_804D6C60;
-extern float lbl_804D6C68;
-extern float lbl_804D6C6C;
 extern unsigned long lbl_80449038[12];
 
 void ActorAim(int* out, Actor* actor, int mode);
@@ -1183,28 +1162,28 @@ static inline void ProbeHitSweep(Vec3* hit)
     Vec3 a;
     Vec3 b;
 
-    a.x = hit->x + lbl_804D6C54;
+    a.x = hit->x + 100.0f;
     a.y = hit->y;
     a.z = hit->z;
-    b.x = hit->x - lbl_804D6C54;
+    b.x = hit->x - 100.0f;
     b.y = hit->y;
     b.z = hit->z;
     fn_800090BC(&a, &b, 0xff, 0, 0);
 
     a.x = hit->x;
-    a.y = hit->y + lbl_804D6C54;
+    a.y = hit->y + 100.0f;
     a.z = hit->z;
     b.x = hit->x;
-    b.y = hit->y - lbl_804D6C54;
+    b.y = hit->y - 100.0f;
     b.z = hit->z;
     fn_800090BC(&a, &b, 0xff, 0, 0);
 
     a.x = hit->x;
     a.y = hit->y;
-    a.z = hit->z + lbl_804D6C54;
+    a.z = hit->z + 100.0f;
     b.x = hit->x;
     b.y = hit->y;
-    b.z = hit->z - lbl_804D6C54;
+    b.z = hit->z - 100.0f;
     fn_800090BC(&a, &b, 0xff, 0, 0);
 }
 
@@ -1288,7 +1267,7 @@ int FollowLineCheckActorDist(void* self, void* target, float budget)
         if (MemFlagIsSet((int*)((char*)self + 0x270), 0x1a) != 0) {
             return 1;
         }
-        if (budget < (double)lbl_804D6C40) {
+        if (budget < (double)1.1920929e-07f) {
             ConditionUpdateBit((char*)self + 0x270, 0x1a, 1);
             return 1;
         }
@@ -1297,11 +1276,11 @@ int FollowLineCheckActorDist(void* self, void* target, float budget)
         dx = (float)to[0] - *(float*)((char*)self + 0x84);
         dy = (float)to[1] - *(float*)((char*)self + 0x88);
         dz = (float)to[2] - *(float*)((char*)self + 0x8c);
-        if (((fabsf(dx) > lbl_804D6C40) + (fabsf(dy) > lbl_804D6C40) +
-             (fabsf(dz) > lbl_804D6C40)) == 0) {
-            dx = lbl_804D6C34;
-            dy = lbl_804D6C34;
-            dz = lbl_804D6C34;
+        if (((fabsf(dx) > 1.1920929e-07f) + (fabsf(dy) > 1.1920929e-07f) +
+             (fabsf(dz) > 1.1920929e-07f)) == 0) {
+            dx = 0.0f;
+            dy = 0.0f;
+            dz = 0.0f;
         } else {
             float inv = 1.0f / sqrtf(dx * dx + dy * dy + dz * dz);
 
@@ -1309,10 +1288,10 @@ int FollowLineCheckActorDist(void* self, void* target, float budget)
             dy *= inv;
             dz *= inv;
         }
-        dot = dz * lbl_804D6C58 * (float)aim[2] +
-              dx * lbl_804D6C58 * (float)aim[0] +
-              dy * lbl_804D6C58 * (float)aim[1];
-        if (lbl_804D6C60 < (double)dot) {
+        dot = dz * 0.00024414062f * (float)aim[2] +
+              dx * 0.00024414062f * (float)aim[0] +
+              dy * 0.00024414062f * (float)aim[1];
+        if (0.9962 < (double)dot) {
             ConditionUpdateBit((char*)self + 0x270, 0x1a, 1);
             return 1;
         }
@@ -1447,7 +1426,7 @@ int FollowLineCheckSweep(void* self, float* pos)
     fn_8009F724(mat, dir, 1);
     fn_8009F724(mat, up, 2);
 
-    offset[0] = (int)(lbl_804D6C68 * *(float*)((char*)self + 0x900) * lbl_804D6C6C);
+    offset[0] = (int)(0.9f * *(float*)((char*)self + 0x900) * 0.5f);
     offset[1] = 0;
     offset[2] = 0;
 
@@ -1511,16 +1490,16 @@ static inline float OwnerValueDistance(Owner* owner, Vec3* vec)
     float dist;
 
     if (owner == 0 || vec == 0) {
-        return lbl_804D6C34;
+        return 0.0f;
     }
     dx = vec->x - (float)owner->x;
     dy = vec->y - (float)owner->y;
     dz = vec->z - (float)owner->z;
     dist = dy * dy + dx * dx + dz * dz;
-    if (dist > lbl_804D6C34) {
+    if (dist > 0.0f) {
         return sqrtf(dist);
     }
-    return lbl_804D6C34;
+    return 0.0f;
 }
 
 float OwnerValue(Owner* owner, Vec3* vec);
@@ -1532,7 +1511,7 @@ float OwnerValue(Owner* owner, void* value)
     Vec3 vec;
 
     if (owner == 0 || value == 0) {
-        return lbl_804D6C34;
+        return 0.0f;
     }
     vec.x = (float)*(int*)((char*)value + 0x24);
     vec.y = (float)*(int*)((char*)value + 0x28);
@@ -1562,7 +1541,7 @@ float RangeValueDistance2D(void* self)
     delta[2] = pos[5] - pos[2];
     delta[2] = 0;
     float d = fn_800E0DBC(delta);
-    return d * lbl_804D6C6C;
+    return d * 0.5f;
 }
 
 // Engine RNG (mangled C++ name Rand__Fv), declared through its real prototype.
@@ -1678,10 +1657,6 @@ float ZoneCastVertical(void* self, int* pos, int mask, Vec3* outPos,
 }
 
 // Angle range constants used to wrap a bearing into canonical form.
-extern float lbl_804D6C70;
-extern float lbl_804D6C74;
-extern float lbl_804D6C78;
-extern float lbl_804D6C7C;
 
 // Game math helper: angle of the vector (x, y), declared in another unit.
 float fn_800A1128(float y, float x);
@@ -1700,26 +1675,26 @@ float ActorAimAngleToPos(void* self, Vec3* pos)
     float inv;
 
     if (self == 0) {
-        return lbl_804D6C34;
+        return 0.0f;
     }
 
     dir.x = (float)*(int*)((char*)self + 0x24);
     dir.y = (float)*(int*)((char*)self + 0x28);
     dir.z = (float)*(int*)((char*)self + 0x2c);
-    if (((fabsf(dir.x - pos->x) > lbl_804D6C40) +
-         (fabsf(dir.y - pos->y) > lbl_804D6C40) +
-         (fabsf(dir.z - pos->z) > lbl_804D6C40)) == 0) {
-        return lbl_804D6C34;
+    if (((fabsf(dir.x - pos->x) > 1.1920929e-07f) +
+         (fabsf(dir.y - pos->y) > 1.1920929e-07f) +
+         (fabsf(dir.z - pos->z) > 1.1920929e-07f)) == 0) {
+        return 0.0f;
     }
 
     dir.x = pos->x - dir.x;
     dir.y = pos->y - dir.y;
     dir.z = pos->z - dir.z;
-    if (((fabsf(dir.x) > lbl_804D6C40) + (fabsf(dir.y) > lbl_804D6C40) +
-         (fabsf(dir.z) > lbl_804D6C40)) == 0) {
-        dir.x = lbl_804D6C34;
-        dir.y = lbl_804D6C34;
-        dir.z = lbl_804D6C34;
+    if (((fabsf(dir.x) > 1.1920929e-07f) + (fabsf(dir.y) > 1.1920929e-07f) +
+         (fabsf(dir.z) > 1.1920929e-07f)) == 0) {
+        dir.x = 0.0f;
+        dir.y = 0.0f;
+        dir.z = 0.0f;
     } else {
         inv = 1.0f / sqrtf(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
         dir.x *= inv;
@@ -1727,18 +1702,18 @@ float ActorAimAngleToPos(void* self, Vec3* pos)
         dir.z *= inv;
     }
 
-    angle = fn_800A1128(dir.y, dir.x) - lbl_804D6C70;
+    angle = fn_800A1128(dir.y, dir.x) - 90.0f;
 
     ActorAim(aim, (Actor*)self, 1);
     aimVec.x = (float)aim[0];
     aimVec.y = (float)aim[1];
     aimVec.z = (float)aim[2];
-    if (((fabsf(aimVec.x) > lbl_804D6C40) +
-         (fabsf(aimVec.y) > lbl_804D6C40) +
-         (fabsf(aimVec.z) > lbl_804D6C40)) == 0) {
-        aimVec.x = lbl_804D6C34;
-        aimVec.y = lbl_804D6C34;
-        aimVec.z = lbl_804D6C34;
+    if (((fabsf(aimVec.x) > 1.1920929e-07f) +
+         (fabsf(aimVec.y) > 1.1920929e-07f) +
+         (fabsf(aimVec.z) > 1.1920929e-07f)) == 0) {
+        aimVec.x = 0.0f;
+        aimVec.y = 0.0f;
+        aimVec.z = 0.0f;
     } else {
         inv = 1.0f / sqrtf(aimVec.x * aimVec.x + aimVec.y * aimVec.y +
                           aimVec.z * aimVec.z);
@@ -1750,10 +1725,10 @@ float ActorAimAngleToPos(void* self, Vec3* pos)
     fn_8016D440(&euler, &aimVec);
     angle -= euler.z;
 
-    if (angle < lbl_804D6C74) {
-        angle += lbl_804D6C78;
-    } else if (angle >= lbl_804D6C7C) {
-        angle -= lbl_804D6C78;
+    if (angle < -180.0f) {
+        angle += 360.0f;
+    } else if (angle >= 180.0f) {
+        angle -= 360.0f;
     }
     return angle;
 }
@@ -1770,20 +1745,20 @@ float ActorAngleToPos(void* self, Vec3* pos)
     dir.x = (float)*(int*)((char*)self + 0x24);
     dir.y = (float)*(int*)((char*)self + 0x28);
     dir.z = (float)*(int*)((char*)self + 0x2c);
-    if (((fabsf(dir.x - pos->x) > lbl_804D6C40) +
-         (fabsf(dir.y - pos->y) > lbl_804D6C40) +
-         (fabsf(dir.z - pos->z) > lbl_804D6C40)) == 0) {
-        return lbl_804D6C34;
+    if (((fabsf(dir.x - pos->x) > 1.1920929e-07f) +
+         (fabsf(dir.y - pos->y) > 1.1920929e-07f) +
+         (fabsf(dir.z - pos->z) > 1.1920929e-07f)) == 0) {
+        return 0.0f;
     }
 
     dir.x = pos->x - dir.x;
     dir.y = pos->y - dir.y;
     dir.z = pos->z - dir.z;
-    if (((fabsf(dir.x) > lbl_804D6C40) + (fabsf(dir.y) > lbl_804D6C40) +
-         (fabsf(dir.z) > lbl_804D6C40)) == 0) {
-        dir.x = lbl_804D6C34;
-        dir.y = lbl_804D6C34;
-        dir.z = lbl_804D6C34;
+    if (((fabsf(dir.x) > 1.1920929e-07f) + (fabsf(dir.y) > 1.1920929e-07f) +
+         (fabsf(dir.z) > 1.1920929e-07f)) == 0) {
+        dir.x = 0.0f;
+        dir.y = 0.0f;
+        dir.z = 0.0f;
     } else {
         inv = 1.0f / sqrtf(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
         dir.x *= inv;
@@ -1791,13 +1766,13 @@ float ActorAngleToPos(void* self, Vec3* pos)
         dir.z *= inv;
     }
 
-    angle = fn_800A1128(dir.y, dir.x) - lbl_804D6C70;
+    angle = fn_800A1128(dir.y, dir.x) - 90.0f;
     angle -= *(float*)((char*)self + 0x254);
 
-    if (angle < lbl_804D6C74) {
-        angle += lbl_804D6C78;
-    } else if (angle >= lbl_804D6C7C) {
-        angle -= lbl_804D6C78;
+    if (angle < -180.0f) {
+        angle += 360.0f;
+    } else if (angle >= 180.0f) {
+        angle -= 360.0f;
     }
     return angle;
 }
@@ -1809,10 +1784,10 @@ float Distance2D(float* a, float* b)
 {
     float dx = a[0] - b[0];
     float dy = a[1] - b[1];
-    float dist = lbl_804D6C34 + (dx * dx + dy * dy);
-    float result = lbl_804D6C34;
+    float dist = 0.0f + (dx * dx + dy * dy);
+    float result = 0.0f;
 
-    if (dist > lbl_804D6C34) {
+    if (dist > 0.0f) {
         result = sqrtf(dist);
     }
     return result;
@@ -1825,9 +1800,9 @@ float Distance3D(float* a, float* b)
     float dy = a[1] - b[1];
     float dz = a[2] - b[2];
     float dist = dx * dx + dy * dy + dz * dz;
-    float result = lbl_804D6C34;
+    float result = 0.0f;
 
-    if (dist > lbl_804D6C34) {
+    if (dist > 0.0f) {
         result = sqrtf(dist);
     }
     return result;
@@ -1840,7 +1815,7 @@ float Vec2DistSq(float* a, float* b)
     float dx = a[0] - b[0];
     float dy = a[1] - b[1];
 
-    return dx * dx + dy * dy + lbl_804D6C34;
+    return dx * dx + dy * dy + 0.0f;
 }
 
 // Squared 3D distance between two points.  Name is a descriptive guess.
@@ -1853,7 +1828,6 @@ float Vec3DistSq(float* a, float* b)
     return dx * dx + dy * dy + dz * dz;
 }
 
-extern float lbl_804D6C6C;
 
 // 2D bearing and "corner" distance from an actor's integer position to `pos`.
 // The bearing is taken relative to the heading kept at +0x254 and wrapped into
@@ -1869,22 +1843,21 @@ void ActorAimOffset2D(void* self, float* pos, float* outAngle, float* outDist)
 
     if (outAngle != 0) {
         *outAngle = *(float*)((char*)self + 0x254) - fn_800A1128(dy, dx) -
-                    lbl_804D6C70;
-        while (*outAngle < lbl_804D6C74) {
-            *outAngle += lbl_804D6C78;
+                    90.0f;
+        while (*outAngle < -180.0f) {
+            *outAngle += 360.0f;
         }
-        while (*outAngle > lbl_804D6C7C) {
-            *outAngle -= lbl_804D6C78;
+        while (*outAngle > 180.0f) {
+            *outAngle -= 360.0f;
         }
     }
 
-    adx = (dx < lbl_804D6C34) ? -dx : dx;
-    ady = (dy < lbl_804D6C34) ? -dy : dy;
+    adx = (dx < 0.0f) ? -dx : dx;
+    ady = (dy < 0.0f) ? -dy : dy;
     mn = (adx < ady) ? adx : ady;
-    *outDist = (adx + ady) - mn * lbl_804D6C6C;
+    *outDist = (adx + ady) - mn * 0.5f;
 }
 
-extern float lbl_804D6C80;
 
 // 3D version of ActorAimOffset2D: the bearing is computed from the XY deltas,
 // wrapped into [0, 2*pi] and then offset, while the distance combines all three
@@ -1902,22 +1875,22 @@ void ActorAimOffset3D(void* self, float* pos, float* outAngle, float* outDist)
     float mn;
 
     angle = *(float*)((char*)self + 0x254) -
-            (fn_800A1128(dy, dx) + lbl_804D6C70);
-    while (angle < lbl_804D6C34) {
-        angle += lbl_804D6C78;
+            (fn_800A1128(dy, dx) + 90.0f);
+    while (angle < 0.0f) {
+        angle += 360.0f;
     }
-    while (angle >= lbl_804D6C78) {
-        angle -= lbl_804D6C78;
+    while (angle >= 360.0f) {
+        angle -= 360.0f;
     }
-    *outAngle = angle - lbl_804D6C7C;
+    *outAngle = angle - 180.0f;
 
-    if (dx < lbl_804D6C34) {
+    if (dx < 0.0f) {
         dx = -dx;
     }
-    if (dy < lbl_804D6C34) {
+    if (dy < 0.0f) {
         dy = -dy;
     }
-    if (dz < lbl_804D6C34) {
+    if (dz < 0.0f) {
         dz = -dz;
     }
     adx = dx;
@@ -1927,7 +1900,7 @@ void ActorAimOffset3D(void* self, float* pos, float* outAngle, float* outDist)
     if (mn >= adz) {
         adz = mn;
     }
-    *outDist = (adx + ady + adz) - adz / lbl_804D6C80;
+    *outDist = (adx + ady + adz) - adz / 32.0;
 }
 
 // Probe callback for the vertical cast: let the hit object's query method
