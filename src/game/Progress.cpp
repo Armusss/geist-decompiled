@@ -4,22 +4,24 @@
 // directions), an overlay and a "done" picture, as textured screen quads.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+extern "C" int sprintf(char* s, const char* format, ...);
 #include <dolphin/gx.h>
 #include <dolphin/os.h>
 
 extern "C" {
 char* strcpy(char* dst, const char* src);
 size_t strlen(const char* s);
-int sprintf(char* s, const char* format, ...);
 
 // Callees in other files, not named yet.
 void fn_80005A64(float dt);
 int fn_800059D0(int arg);
 void fn_8000ADD8(void);
 void fn_80008D10(void);
-void fn_800448D0(void* mesh); // draw an indexed mesh
 }
 void PadUpdateAll(float dt);
+
+struct Mesh;
+void MeshDraw(Mesh* mesh); // u_800448D0.cpp
 
 extern "C" void MemFree(void* p, const char* file, int line);
 void* FileLoad(const char* name, int* outSize, int unused);
@@ -83,7 +85,7 @@ struct ProgressTri {
     u16 pad;
 };
 
-struct ProgressMesh {
+struct Mesh {
     int unk0;
     ProgressVertex* verts;
     ProgressTri* tris;
@@ -101,7 +103,7 @@ ProgressTri sQuadTris[2] = {
     {-2, 0, {0, 0, 0}, 0},
     {-2, 0, {0, 0, 0}, 0},
 };
-ProgressMesh sQuadMesh = {0, sQuadVerts, sQuadTris, 4, 2};
+Mesh sQuadMesh = {0, sQuadVerts, sQuadTris, 4, 2};
 
 static ProgressSlot sSlots[32];
 
@@ -200,12 +202,40 @@ int LoadingActive(const char* name) {
     return 0;
 }
 
+// Sets up slot i from the file's image i (texture data follows the 0x2C0-byte header).
+inline void LoadingInitSlot(int i, u8* texData) {
+    s16 h;
+    s16 w;
+    if (sFile->images[i].present) {
+        h = sFile->images[i].height;
+        w = sFile->images[i].width;
+        GXInitTexObj(&sSlots[i].tex, texData + sFile->images[i].offset, w, h, GX_TF_CMPR, GX_CLAMP, GX_CLAMP,
+                     GX_FALSE);
+        sSlots[i].unk28 = 0;
+        sSlots[i].width = w;
+        sSlots[i].height = h;
+        sSlots[i].uScale = 1.0f;
+        sSlots[i].vScale = 1.0f;
+        sSlots[i].valid = 1;
+        sSlots[i].extra = sFile->images[i].extra;
+    } else {
+        sSlots[i].valid = 0;
+        sSlots[i].extra = 0;
+    }
+}
+
+// Fades the loading screen in over 32 frames.
+inline void LoadingFadeIn(void) {
+    int j;
+    int alpha;
+    for (j = 0, alpha = 0; j < 32; j++, alpha += 8) {
+        LoadingDraw(sProgress, 0.0f, alpha);
+    }
+}
+
 int LoadingSetFile(ProgressFile* file) {
     u8* texData;
-    s16 w;
     int i;
-    int j;
-    s16 h;
 
     if (file) {
         sFile = file;
@@ -225,30 +255,10 @@ int LoadingSetFile(ProgressFile* file) {
 
             texData = (u8*)file + 0x2C0;
             for (i = 0; i < 32; i++) {
-                if (sFile->images[i].present) {
-                    h = sFile->images[i].height;
-                    w = sFile->images[i].width;
-                    GXInitTexObj(&sSlots[i].tex, texData + sFile->images[i].offset, w, h, GX_TF_CMPR,
-                                 GX_CLAMP, GX_CLAMP, GX_FALSE);
-                    sSlots[i].unk28 = 0;
-                    sSlots[i].width = w;
-                    sSlots[i].height = h;
-                    sSlots[i].uScale = 1.0f;
-                    sSlots[i].vScale = 1.0f;
-                    sSlots[i].valid = 1;
-                    sSlots[i].extra = sFile->images[i].extra;
-                } else {
-                    sSlots[i].valid = 0;
-                    sSlots[i].extra = 0;
-                }
+                LoadingInitSlot(i, texData);
             }
 
-            {
-                int alpha;
-                for (j = 0, alpha = 0; j < 32; j++, alpha += 8) {
-                    LoadingDraw(sProgress, 0.0f, alpha);
-                }
-            }
+            LoadingFadeIn();
             LoadingDraw(sProgress, 0.0f, 0xFF);
             return 1;
         }
@@ -400,5 +410,5 @@ void LoadingQuad(ProgressSlot* slot, int alpha, float x, float y, float w, float
     sQuadVerts[3].a = 0xFF;
 
     GXLoadTexObj(&slot->tex, GX_TEXMAP0);
-    fn_800448D0(&sQuadMesh);
+    MeshDraw(&sQuadMesh);
 }
