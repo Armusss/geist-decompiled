@@ -20,6 +20,11 @@ struct Mtx34 { f32 m[12]; };
 class Buffer {
 public:
     virtual ~Buffer();
+
+    char* data;
+    int length;
+    int unk0C;
+    int owned;
 };
 
 class String : public Buffer {
@@ -27,9 +32,6 @@ public:
     String();
     ~String() {}
     void Format(const char* fmt, ...);
-
-    char* data;
-    int length;
 };
 
 class Skin;
@@ -92,6 +94,27 @@ int Fn80080FA8();
 
 extern "C" void fn_8028C188(void* dst, const char* src, int len);
 int FxEmitterSpawnFromMsg(int* d);
+
+typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
+
+// Actor type descriptor of the effect emitter (retail .data 0x803C501C).
+struct ActorType {
+    int unk0;
+    const char* name;
+    ActorMsgFunc msg;
+    void (*update)(Actor* actor, float dt);
+    int (*init)(Actor* actor);
+    void* unk14;
+    void (*destroy)();
+    void* unk1C[5];
+};
+
+int FxEmitterHandleMessage(Actor* self, int msg, void* data, int arg4);
+void ActorFxEmitterUpdate(Actor* self, f32 dt);
+int ActorFxEmitterInit(Actor* self);
+void BossForward88E0();
+
+ActorType gDestroyableType = { 0, "Destroyable", FxEmitterHandleMessage, ActorFxEmitterUpdate, ActorFxEmitterInit, 0, BossForward88E0 };
 
 void ActorFxEmitterUpdate(Actor* self, f32 dt)
 {
@@ -270,25 +293,27 @@ int FxEmitterHandleMessage(Actor* self, int msg, void* data, int arg4)
     case 0x41E: {
         u32 owner = d[0];
         switch (d[1]) {
-        case 0xAD8576FA: {
-            String s;
+        case 0xAD8576FA:
+            {
+                String s;
 
-            s.Format("Parent: 0x%08x\n", fn_80212730(*(u32*)(owner + 0x38)));
-            fn_8028C188(d + 3, s.data, s.length);
+                s.Format("Parent: 0x%08x\n", fn_80212730(*(u32*)(owner + 0x38)));
+                fn_8028C188(d + 3, s.data, s.length);
+            }
+            result = 0;
             break;
+        default:
+            result = 0;
         }
-        }
-        result = 0;
         break;
     }
     }
 
-    if (result == -999999) {
-        result = 0;
-    } else if (result == 0) {
-        result = Fn802120A0(self, msg, data, arg4);
-    }
-    return result;
+    if (result == -999999)
+        return 0;
+    if (result != 0)
+        return result;
+    return Fn802120A0(self, msg, data, arg4);
 }
 
 // Per-frame update of the effect emitter.  `data` is the actor message buffer
