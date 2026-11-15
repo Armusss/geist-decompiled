@@ -1032,6 +1032,11 @@ game/u_802C30A4.cpp:
 
 game/u_802C8900.cpp:
 	.text       start:0x802C8900 end:0x802C9818
+	.rodata     start:0x8034BF90 end:0x8034C000
+	.data       start:0x803C4FE0 end:0x803C5050
+	.sdata      start:0x804D3AD0 end:0x804D3AD8
+	.sbss       start:0x804D57C8 end:0x804D57D0
+	.sdata2     start:0x804DAEC8 end:0x804DAF00
 
 game/u_802C9818.cpp:
 	.text       start:0x802C9818 end:0x802CBB44
