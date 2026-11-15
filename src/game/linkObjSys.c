@@ -15,6 +15,11 @@ inline double fabs(double f)
     return __fabs(f);
 }
 
+inline float fabs(float f)
+{
+    return __fabsf(f);
+}
+
 struct Vec3 {
     float x, y, z;
 };
@@ -266,10 +271,6 @@ static inline int* HostAnimEntry(int* table, int kind)
     return &table[kind];
 }
 extern int lbl_8049E260[];
-extern const float lbl_804D94A8;  // 0.0f
-extern const float lbl_804D94AC;
-extern const float lbl_804D94B0;
-extern const float lbl_804D94B4;  // 1.0f       // 0x8049E260
 
 static ChildNodeTree* sLinkTree;
 static LinkRequest* sLinkQueue;
@@ -405,13 +406,13 @@ static inline ChildNode* LinkNodeCreate(int id, int bone)
     node->mRef.id = id;
     node->mRef.bone = bone;
     node->mFlags = 0;
-    node->mPose.rot[0] = lbl_804D94A8;
-    node->mPose.rot[1] = lbl_804D94A8;
-    node->mPose.rot[2] = lbl_804D94A8;
-    node->mPose.rot[3] = lbl_804D94AC;
-    node->mPose.pos[0] = lbl_804D94A8;
-    node->mPose.pos[1] = lbl_804D94A8;
-    node->mPose.pos[2] = lbl_804D94A8;
+    node->mPose.rot[0] = 0.0f;
+    node->mPose.rot[1] = 0.0f;
+    node->mPose.rot[2] = 0.0f;
+    node->mPose.rot[3] = 1.0f;
+    node->mPose.pos[0] = 0.0f;
+    node->mPose.pos[1] = 0.0f;
+    node->mPose.pos[2] = 0.0f;
     if (id != -1) {
         ActorInfo* info = OwnerGetInfo(id);
         if (info) {
@@ -527,7 +528,7 @@ static inline u8 LinkMatricesAgree(Mtx34* a, Mtx34* b)
     d.x = a->pos.x - b->pos.x;
     d.y = a->pos.y - b->pos.y;
     d.z = a->pos.z - b->pos.z;
-    if (fabs(d.x) > lbl_804D94B0 || fabs(d.y) > lbl_804D94B0 || fabs(d.z) > lbl_804D94B0) {
+    if (fabs(d.x) > 4.0f || fabs(d.y) > 4.0f || fabs(d.z) > 4.0f) {
         return 0;
     }
     for (i = 0; i != 3; i++) {
@@ -535,7 +536,7 @@ static inline u8 LinkMatricesAgree(Mtx34* a, Mtx34* b)
         Vec3 rowB;
         fn_800A025C(&rowA, a, i);
         fn_800A025C(&rowB, b, i);
-        if (fabs(lbl_804D94AC - (rowA.x * rowB.x + rowA.y * rowB.y + rowA.z * rowB.z)) > lbl_804D94B4) {
+        if (fabs(1.0f - (rowA.x * rowB.x + rowA.y * rowB.y + rowA.z * rowB.z)) > 0.02f) {
             return 0;
         }
     }
@@ -639,13 +640,13 @@ u8 LinkNodeCheck(ChildNode* node, void* arg)
 // Resets a node's relative pose to identity.
 static inline void LinkNodeResetPose(ChildNode* node)
 {
-    node->mPose.rot[0] = lbl_804D94A8;
-    node->mPose.rot[1] = lbl_804D94A8;
-    node->mPose.rot[2] = lbl_804D94A8;
-    node->mPose.rot[3] = lbl_804D94AC;
-    node->mPose.pos[0] = lbl_804D94A8;
-    node->mPose.pos[1] = lbl_804D94A8;
-    node->mPose.pos[2] = lbl_804D94A8;
+    node->mPose.rot[0] = 0.0f;
+    node->mPose.rot[1] = 0.0f;
+    node->mPose.rot[2] = 0.0f;
+    node->mPose.rot[3] = 1.0f;
+    node->mPose.pos[0] = 0.0f;
+    node->mPose.pos[1] = 0.0f;
+    node->mPose.pos[2] = 0.0f;
 }
 
 // Recomputes a node's pose relative to its parent from the current world poses of both actors.
