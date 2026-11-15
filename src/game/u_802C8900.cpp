@@ -35,13 +35,13 @@ public:
 class Skin;
 
 extern "C" {
-    extern f32 lbl_804DAEC8;
-    extern f32 lbl_804DAECC;
-    extern f32 lbl_804DAED0;
-    extern f32 lbl_804DAED4;
-    extern f32 lbl_804DAED8;
-    extern f32 lbl_804DAEDC;
-    extern f32 lbl_804DAEE0;
+    extern const f32 lbl_804DAEC8;
+    extern const f32 lbl_804DAECC;
+    extern const f32 lbl_804DAED0;
+    extern const f32 lbl_804DAED4;
+    extern const f32 lbl_804DAED8;
+    extern const f32 lbl_804DAEDC;
+    extern const f32 lbl_804DAEE0;
     extern f32 lbl_804D3AD0;
     extern f32 lbl_804D3AD4;
     extern f32 lbl_804D57C8;
@@ -209,16 +209,11 @@ int ActorFxEmitterInit(Actor* self)
         return 0;
     }
 
-    {
-        f32 b, a;
-        a = lbl_804DAEDC;
-        b = lbl_804DAED4;
-        *(u32*)(p + 0x18) &= ~0x08000000;
-        *(u32*)(p + 0x18) &= ~0x8;
-        *(u32*)(p + 0x18) &= ~0x6;
-        *(f32*)(p + 0x34) = a;
-        *(f32*)(p + 0x38) = b;
-    }
+    *(u32*)(p + 0x18) &= ~0x08000000;
+    *(u32*)(p + 0x18) &= ~0x8;
+    *(u32*)(p + 0x18) &= ~0x6;
+    *(f32*)(p + 0x34) = lbl_804DAEDC;
+    *(f32*)(p + 0x38) = lbl_804DAED4;
     if (*(u32*)(base + 0x84) == 0 || *(u32*)(*(u32*)(base + 0x84) + 0x24) == 0x24A738)
         *(u32*)(p + 0x18) |= 0x30000000;
 
@@ -408,10 +403,10 @@ struct FxNameMsg {
 };
 
 extern "C" {
-    extern f32 lbl_804DAEE4;
-    extern f32 lbl_804DAEE8;
-    extern f32 lbl_804DAEEC;
-    extern f32 lbl_804DAEF0;
+    extern const f32 lbl_804DAEE4;
+    extern const f32 lbl_804DAEE8;
+    extern const f32 lbl_804DAEEC;
+    extern const f32 lbl_804DAEF0;
     float fabsf(float x);
     void fn_8009F7A8(void* mtx, f32* v);
     void fn_800E1098(f32* dst, f32* src, f32 scale);
