@@ -138,7 +138,8 @@ void VMAllocPages(void* addr, u32 size) {
     OSRestoreInterrupts(level);
 }
 
-void VMInitPages(void) {
+// VMInitPages (placeholder name kept: callers and symbols.txt use fn_80286E14, C linkage).
+extern "C" void fn_80286E14(void) {
     u32 i;
 
     lbl_804D5684 = 0;
@@ -153,7 +154,8 @@ void VMInitPages(void) {
     lbl_804D567C = lbl_804D5678 + (lbl_804D5664 << 12);
 }
 
-int VMFlushOnePage(void) {
+// VMFlushOnePage (placeholder name kept: Cube.cpp calls fn_80286EAC with C linkage).
+extern "C" int fn_80286EAC(void) {
     static u32 sNext = 0;
     BOOL level;
     void* page;
