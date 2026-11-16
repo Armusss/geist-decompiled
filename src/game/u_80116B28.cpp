@@ -411,24 +411,27 @@ struct U80116B28Type {
 // Reply buffer of the type's 0x400/0x401 queries: the type id at 0x4, the
 // range values at 0x10.
 struct U80116B28TypeQuery {
-    void* self;        // 0x0
-    int id;            // 0x4
+    U80116B28Type* self;    // 0x0
+    int id;                 // 0x4
     char pad08[8];
-    float value;       // 0x10
-    float limit;       // 0x14
+    float value;            // 0x10
+    float limit;            // 0x14
+    char pad18[8];
 };
 
 // Payload of the type's 0x40a query: caller, target and a name hash.
 struct U80116B28TypeBind {
-    void* self;          // 0x0
+    U80116B28Type* self; // 0x0
     int target;          // 0x4
     unsigned int hash;   // 0x8
+    int padC;
 };
 
 // Reply of message 0x419: the world object the type attaches to.
 struct U80116B28Msg419 {
     int pad00;
-    int value;    // 0x4
+    U80116B28Actor* value;    // 0x4
+    int pad08[2];
 };
 
 // Payload of message 0x402: a halfword flag and the aimed actor at 0x10.
@@ -436,7 +439,9 @@ struct U80116B28Msg402 {
     int pad00;         // 0x0
     short field_4;     // 0x4
     char pad06[0xA];
-    Actor* actor;      // 0x10
+    char target[0x24]; // 0x10: the aimed actor's record
+    IVec3 pos;         // 0x34
+    char pad40[0xC];
 };
 
 // Payload of message 0xC07 sent while attaching: kind, owner id and position.
@@ -454,6 +459,7 @@ struct U80116B28MsgC02 {
     int asset;    // 0x4
     int value;    // 0x8
     int flag;     // 0xC
+    char pad10[0xC];
 };
 
 // Sends a name request and returns the value the receiver leaves in the
@@ -654,31 +660,26 @@ extern "C" int fn_80116E30(U80116B28Owner* owner)
 // rebuilds the owner's model, bones, trail and asset references.
 // Called by other units as fn_801174B0, so the placeholder name and C linkage
 // are kept.
-extern "C" int fn_801174B0(void* ownerPtr, int typePtr)
+extern "C" int fn_801174B0(U80116B28Owner* owner, U80116B28Type* type)
 {
-    U80116B28Owner* owner = (U80116B28Owner*)ownerPtr;
-    U80116B28Type* type = (U80116B28Type*)typePtr;
     U80116B28Sub* sub;
-    U80116B28Actor* actor;
-    U80116B28BoneSet* bones;
+    U80116B28Msg402 q402;
+    U80116B28MsgC07 msgC07;
     U80116B28TypeQuery q400;
     U80116B28TypeQuery q401;
-    U80116B28TypeBind bind;
-    U80116B28Msg419 q419;
-    U80116B28Msg402 q402;
-    U80116B28MsgC07Aim msgC07;
     U80116B28MsgC02 msgC02a;
     U80116B28MsgC02 msgC02b;
+    U80116B28TypeBind bind;
+    U80116B28Msg419 q419;
+    U80116B28MsgC00 msgC00;
     IVec3 aim;
     IVec3 angles;
-    IVec3 swapped;
     float offsets[3];
-    int maxBones;
-    int bone;
     int i;
-    int ownerId;
+    int maxBones;
     int nameA;
     int nameB;
+    int found;
 
     if (owner == 0 || type == 0)
         return 0;
@@ -686,14 +687,7 @@ extern "C" int fn_801174B0(void* ownerPtr, int typePtr)
     if (sub->field_BC != -1)
         return 0;
 
-    if (type->field_38 != -1) {
-        U80116B28MsgC14 msg;
-
-        msg.field_4 = 0;
-        msg.field_8 = owner->field_38;
-        msg.hash = 0x672F35C2;
-        SendMsg(type->field_38, 0xC14, &msg);
-    }
+    U80116B28SendC14(type->field_38, 0, owner->field_38, 0x672F35C2);
 
     q400.self = type;
     q401.self = type;
@@ -701,30 +695,29 @@ extern "C" int fn_801174B0(void* ownerPtr, int typePtr)
     bind.target = owner->field_38;
     bind.hash = 0x3CA34BD6;
 
-    if (type->handler(0x400, &q400) == 0)
+    if (q400.self->handler(0x400, &q400) == 0)
         return 0;
-    if (type->handler(0x40A, &bind) == 0)
+    if (bind.self->handler(0x40A, &bind) == 0)
         return 0;
-    if (type->handler(0x401, &q401) == 0)
+    if (q401.self->handler(0x401, &q401) == 0)
         return 0;
 
     sub->field_14 = (int)type;
     sub->field_10 = (int)owner;
     sub->field_BC = q400.id;
+    sub->rangeB.limit = q401.limit;
     sub->field_5C = q401.value;
     sub->rangeB.value = q401.value;
-    sub->rangeB.limit = q401.limit;
     sub->field_1C = owner->field_C4;
 
     if (SendMsg(sub->field_BC, 0x419, &q419) == 0 || q419.value == 0)
         return 0;
-    owner->field_C4 = (U80116B28Actor*)q419.value;
+    owner->field_C4 = q419.value;
     sub->rangeA.value = owner->field_904;
     owner->field_904 = q401.value;
 
-    ActorPlayAnim(sub->field_BC, 0xC6144531, OwnerId((Owner*)owner));
-    ownerId = OwnerId((Owner*)owner);
-    ActorPlayAnim(OwnerId((Owner*)owner), 0xC6144531, ownerId);
+    ActorPlayAnim(sub->field_BC, 0x24AFB4E1, OwnerId((Owner*)owner));
+    ActorPlayAnim(OwnerId((Owner*)owner), 0x24AFB4E1, OwnerId((Owner*)owner));
 
     q402.field_4 = -1;
     SendMsg(sub->field_BC, 0x402, &q402);
@@ -737,47 +730,41 @@ extern "C" int fn_801174B0(void* ownerPtr, int typePtr)
     RangeResetPending(owner->field_270);
     owner->field_288 = 0;
 
-    ActorAim((int*)&aim, q402.actor, 1);
+    ActorAim((int*)&aim, (Actor*)q402.target, 1);
     aim.z = 0;
     VecToAngles(&angles, &aim);
-    VecSwapXY2(&swapped, &angles);
-
+    VecSwapXY2(&msgC07.swapped, &angles);
+    msgC07.pos = q402.pos;
     msgC07.kind = 3;
-    msgC07.ownerId = OwnerId((Owner*)owner);
-    msgC07.pos = aim;
+    msgC07.pad08 = OwnerId((Owner*)owner);
     SendMsg(OwnerId((Owner*)owner), 0xC07, &msgC07);
 
-    actor = owner->field_C4;
-    owner->field_E8 = (U80116B28BoneSet*)((char*)actor + 0x3C);
-    bones = owner->field_E8;
-    fn_8003F0D4(actor->field_48);
+    owner->field_E8 = (U80116B28BoneSet*)((char*)owner->field_C4 + 0x3C);
+    fn_8003F0D4(owner->field_C4->field_48);
     fn_800390F4(owner->field_CC);
-    owner->field_CC = fn_800391DC(bones->entries[4].handle);
+    owner->field_CC = fn_800391DC(owner->field_E8->entries[4].handle);
     owner->field_D0 = ModelBoneCount(owner->field_CC);
     if (fn_802A1D04() != 0)
         ItemColorApply(owner->field_CC, -1, PlayerTeam(HandleToPlayer(owner->field_38)));
 
-    if (fn_802A1D04() != 3 && ((unsigned int)type->field_38 >> 24) == 0x13) {
-        U80116B28MsgC00 msg;
-
+    if (fn_802A1D04() != 3 && (int)((unsigned int)type->field_38 >> 24) == 0x13) {
         ConditionUpdateBit(type->field_270, 0xB, 1);
-        msg.value = 0;
-        SendMsg(type->field_38, 0xC00, &msg);
+        msgC00.value = 0;
+        SendMsg(type->field_38, 0xC00, &msgC00);
     }
 
     if (owner->field_F0 != 0) {
-        maxBones = ModelBoneCount(bones->entries[4].handle);
+        maxBones = ModelBoneCount(owner->field_E8->entries[4].handle);
         VFree(owner->field_F0);
-        for (i = 1; i < 6; i++) {
-            bone = ModelBoneCount(bones->entries[i + 4].handle);
-            if (maxBones < bone)
-                maxBones = ModelBoneCount(bones->entries[i + 4].handle);
+        for (i = 5; i <= 9; i++) {
+            if (maxBones < ModelBoneCount(owner->field_E8->entries[i].handle))
+                maxBones = ModelBoneCount(owner->field_E8->entries[i].handle);
         }
         owner->field_F0 = (char*)VAlloc(maxBones * 0x1C);
     }
 
-    nameA = U80116B28RequestName(sub->field_BC, 0x41E, 0x2DA8293C, 0);
-    nameB = U80116B28RequestName(sub->field_BC, 0x41E, 0xDFF3097A, 0);
+    U80116B28QueryName(sub->field_BC, 0x2DA8293C, &nameA);
+    U80116B28QueryName(sub->field_BC, 0xDFF3097A, &nameB);
     sub->field_C4 = owner->field_8F0;
     sub->field_C0 = owner->field_8EC;
     owner->field_8EC = nameA;
@@ -786,29 +773,29 @@ extern "C" int fn_801174B0(void* ownerPtr, int typePtr)
     fn_801626A0(owner, owner->field_894);
     fn_801627A4(owner, owner->field_894, fn_800F8AF4(owner->field_8F0));
 
-    if (U80116B28RequestName(0x4B000000, 0x41E, 0x001512C7, 0) != 0) {
-        float stat;
-        int player;
+    U80116B28QueryName(0x4B000000, 0x001512C7, &found);
+    if (found != 0) {
+        float stat = StatGet(0x7BFB940D, 3, sub->field_BC & 0xFFFFFF);
 
-        stat = StatGet(0x7BFB940D, 3, sub->field_BC & 0xFFFFFF);
-        player = HandleToPlayer(OwnerId((Owner*)owner));
-        StatSet(0x7BFB940D, 0, player, stat);
+        StatSet(0x7BFB940D, 0, HandleToPlayer(OwnerId((Owner*)owner)), stat);
     }
 
     fn_80090634(owner->field_D4, 0, 0, 0);
-    fn_801BE9FC(owner);
-    if (fn_801BD694(owner) != 0)
-        fn_801BEABC(0x165E8B4A, actor->field_1C, owner);
-    else
-        fn_801BEABC(actor->field_10, actor->field_1C, owner);
+    if (fn_801BD694(owner) != 0) {
+        fn_801BE9FC(owner);
+        fn_801BEABC(0x165E8B4A, owner->field_C4->field_1C, owner);
+    } else {
+        fn_801BE9FC(owner);
+        fn_801BEABC(owner->field_C4->field_10, owner->field_C4->field_1C, owner);
+    }
 
-    if (actor->field_16C != 0) {
+    if (owner->field_C4->field_16C != 0) {
         if (owner->field_5F0 == 0)
             owner->field_5F0 = (ExtraHolder*)VAlloc(0x20);
         else
             ExtraTrailClear(owner->field_5F0);
-        ExtraTrailInit(owner->field_5F0, owner->field_38, owner->field_CC,
-                       owner->field_F0, actor->field_16C);
+        ExtraTrailInit(owner->field_5F0, owner->field_38, owner->field_CC, owner->field_F0,
+                       owner->field_C4->field_16C);
     } else if (owner->field_5F0 != 0) {
         ExtraTrailClear(owner->field_5F0);
         VFree(owner->field_5F0);
@@ -819,43 +806,39 @@ extern "C" int fn_801174B0(void* ownerPtr, int typePtr)
     owner->field_604 = (int)fn_800CF064;
     ModelNodeSetup(owner->field_CC, owner->field_E4, 0, 1);
 
-    if (actor->field_134 != 0) {
-        msgC02a.asset = AssetFind(0xD9044CBB, 0x4A2FB1A9);
+    if (owner->field_C4->field_134 != 0) {
+        msgC02a.flag = 1;
         msgC02a.value = 0;
-        msgC02a.flag = 1;
+        msgC02a.asset = AssetFind(0xD9044CBB, 0x4A2FB1A9);
         SendMsg(owner->field_38, 0xC02, &msgC02a);
-        msgC02a.asset = AssetFind(0xD9044CBB, actor->field_134);
         msgC02a.value = 1;
-        msgC02a.flag = 1;
+        msgC02a.asset = AssetFind(0xD9044CBB, owner->field_C4->field_134);
         SendMsg(owner->field_38, 0xC02, &msgC02a);
     }
-    if (actor->field_138 != 0) {
-        msgC02b.asset = AssetFind(0xD9044CBB, 0xEAB66145);
-        msgC02b.value = 0;
+    if (owner->field_C4->field_138 != 0) {
         msgC02b.flag = 1;
+        msgC02b.value = 0;
+        msgC02b.asset = AssetFind(0xD9044CBB, 0xEAB66145);
         SendMsg(owner->field_38, 0xC02, &msgC02b);
-        msgC02b.asset = AssetFind(0xD9044CBB, actor->field_138);
         msgC02b.value = 1;
         msgC02b.flag = 0;
+        msgC02b.asset = AssetFind(0xD9044CBB, owner->field_C4->field_138);
         SendMsg(owner->field_38, 0xC02, &msgC02b);
     }
 
-    owner->field_D8 = AssetFind(0xF1754BF2, actor->field_13C);
-    owner->field_DC = AssetFind(0xF1754BF2, actor->field_140);
-    owner->field_E0 = AssetFind(0xF1754BF2, actor->field_144);
-    owner->field_E4 = AssetFind(0xD9044CBB, actor->field_144);
-    owner->field_900 = actor->field_E0;
-    owner->field_620 = (int)Fn800DF814(0xE6BCD867, actor->field_10C[Rand() % 4]);
+    owner->field_D8 = AssetFind(0xF1754BF2, owner->field_C4->field_13C);
+    owner->field_DC = AssetFind(0xF1754BF2, owner->field_C4->field_140);
+    owner->field_E0 = AssetFind(0xF1754BF2, owner->field_C4->field_144);
+    owner->field_E4 = AssetFind(0xD9044CBB, owner->field_C4->field_144);
+    owner->field_900 = owner->field_C4->field_E0;
+    {
+        int pick = Rand() % 4;
+
+        owner->field_620 = (int)Fn800DF814(0xE6BCD867, owner->field_C4->field_10C[pick]);
+    }
 
     U80116B28RequestName(type->field_38, 0x41D, 0x1C1A4CC9, OwnerId((Owner*)owner));
-    if (owner->field_38 != -1) {
-        U80116B28MsgC14 msg;
-
-        msg.field_4 = (int)type;
-        msg.field_8 = type->field_38;
-        msg.hash = 0xCC5916FB;
-        SendMsg(owner->field_38, 0xC14, &msg);
-    }
+    U80116B28SendC14(owner->field_38, (int)type, type->field_38, 0xCC5916FB);
     return 1;
 }
 
