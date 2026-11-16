@@ -94,6 +94,11 @@ AnimBankUnref/Activate __FUlUl, AnimBankGetSetCount int callers. Open: u_8016A77
 SltAsset* with .data 0x803A7C60-78, .sdata 0x804D2FB8-C0, .sdata2 0x804D7FF0-F8); unproven signatures: QueuePopEach callback,
 TextSetOrigin, ClockEmitParticlePage*, TextSetColor. 89/229 files Matching, 2,978 functions.
 
+**User decisions (2026-11-15):** (1) the FastSqrt asm block (lfs; ps_rsqrte; ps_res; stfs) may be used in u_80230504
+ExtraTrailApply ONLY if the whole unit then matches byte for byte (flip + AUDIT OK); otherwise C only. (2) u_802766F0:
+investigate first in scratch (ODE file split, per-file `-inline deferred`, restored linker-removed ODE functions); nothing
+committed, and the flag change needs the user's final yes.
+
 **Recurring unsolved shapes (fullmatch round 2026-11-15):**
 - `li r4,9` before `addi r3,rX,624` at a HasCondition call: HostRideBUpdate/HostRideTick (2 diffs each), BehParamsUpdate,
   CreatureUpdate, NpcSveUpdateActor, fn_801CAA48, fn_80295634, fn_8004C9C8, CrabUpdate. `#pragma scheduling off` (probe) still
