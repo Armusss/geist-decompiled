@@ -867,11 +867,14 @@ game/Retinal.cpp:
 	.text       start:0x80267558 end:0x80268528
 
 game/u_80268528.cpp:
-	.text       start:0x80268528 end:0x80268780
-	.sdata2     start:0x804DA138 end:0x804DA13C
+	.text       start:0x80268528 end:0x802690C8
+	.rodata     start:0x8034AD18 end:0x8034AD80
+	.data       start:0x803C0208 end:0x803C0238
+	.sdata      start:0x804D3770 end:0x804D3778
+	.sdata2     start:0x804DA138 end:0x804DA140
 
-game/u_80268780.cpp:
-	.text       start:0x80268780 end:0x8026A0F0
+game/u_802690C8.cpp:
+	.text       start:0x802690C8 end:0x8026A0F0
 
 game/Timer.cpp:
 	.text       start:0x8026A0F0 end:0x8026A158
