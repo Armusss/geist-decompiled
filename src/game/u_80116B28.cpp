@@ -370,7 +370,7 @@ struct U80116B28MsgC14 {
 struct U80116B28MsgC07 {
     int pad00;
     int kind;
-    int pad08;
+    int ownerId;      // 0x8: sender id (attach only)
     int pad0C;
     IVec3 pos;        // 0x10
     IVec3 swapped;    // 0x1C
@@ -442,15 +442,6 @@ struct U80116B28Msg402 {
     char target[0x24]; // 0x10: the aimed actor's record
     IVec3 pos;         // 0x34
     char pad40[0xC];
-};
-
-// Payload of message 0xC07 sent while attaching: kind, owner id and position.
-struct U80116B28MsgC07Aim {
-    int pad00;      // 0x0
-    int kind;       // 0x4
-    int ownerId;    // 0x8
-    int pad0C;      // 0xC
-    IVec3 pos;      // 0x10
 };
 
 // Payload of message 0xC02: an asset id and two flags.
@@ -734,9 +725,11 @@ extern "C" int fn_801174B0(U80116B28Owner* owner, U80116B28Type* type)
     aim.z = 0;
     VecToAngles(&angles, &aim);
     VecSwapXY2(&msgC07.swapped, &angles);
-    msgC07.pos = q402.pos;
+    msgC07.pos.x = q402.pos.x;
+    msgC07.pos.y = q402.pos.y;
+    msgC07.pos.z = q402.pos.z;
     msgC07.kind = 3;
-    msgC07.pad08 = OwnerId((Owner*)owner);
+    msgC07.ownerId = OwnerId((Owner*)owner);
     SendMsg(OwnerId((Owner*)owner), 0xC07, &msgC07);
 
     owner->field_E8 = (U80116B28BoneSet*)((char*)owner->field_C4 + 0x3C);
@@ -1035,22 +1028,24 @@ extern "C" int fn_80118084(U80116B28Sub* sub, int arg1, int arg2)
     return 0;
 }
 
-// Returns the name registered for the state block's type id in the global
-// per-type table (entry field 0x18), or the empty-name default string when
-// there is no state block or the id is not registered.
-const char* U80116B28GetTypeName(U80116B28Owner* owner)
+// Returns the name registered for type id `id` in the global per-type table
+// (entry field 0x18), or "" when the id is not registered.
+static inline const char* U80116B28TypeName(unsigned long id)
 {
-    unsigned long id;
-    int count;
     int i;
 
-    if (owner->field_5EC == 0)
-        return "";
-    count = lbl_804D2E08;
-    id = owner->field_5EC->field_CC;
-    for (i = 0; i < count; i++) {
+    for (i = 0; i < lbl_804D2E08; i++) {
         if (id == lbl_8039ED68[i].id)
             return lbl_8039ED68[i].name;
     }
     return "";
+}
+
+// Returns the registered name of the state block's type, or "" when there is
+// no state block.
+const char* U80116B28GetTypeName(U80116B28Owner* owner)
+{
+    if (owner->field_5EC == 0)
+        return "";
+    return U80116B28TypeName(owner->field_5EC->field_CC);
 }
