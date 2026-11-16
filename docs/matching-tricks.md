@@ -257,8 +257,9 @@ moved a register (c2.cpp S9/C12, c9.cpp T6, c10.cpp U7/U8). The rule is a plain 
   after its definition with no call in between** (`v = g; other = v;`) ranks above the caller's locals, like a
   compiler temporary. With a call between the definition and the use (U3, U7, U8) or with the extra use at the
   end (T6) nothing moves.
-- Scorecard for this pass: 28 predictions written before compiling, 17 hit, 11 missed. All misses are in c6, c8
-  and c10 (U3, U6) and come from the forwarding effect above, which was not known when they were written.
+- Scorecard for this pass: 31 predictions written before compiling, 21 hit, 10 missed (c6 2/6, c7 4/4, c8 3/6,
+  c9 4/5, c10 3/5, c11 5/5). The misses in c6, c8 and c10 come from the forwarding effect above, which was not
+  known when they were written; the c9 miss (T6) is what ruled out a use-count cost.
 
 **Consequence for the evidence functions.** When our build has every instruction right and only two registers
 swapped, our interference graph is the same as retail's, so no change of uses, live ranges or "cost" can be the
