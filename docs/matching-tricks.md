@@ -214,3 +214,36 @@ reserve f0 for the whole function (if/else form, `r = 0.0f` in the if branch).
   for range-copy helpers.
 - **String pools starting at +71:** the unit defines the shared ghost-action name table (POSSESS..SCAN) before its
   own strings.
+
+## How GC/1.3.2 ranks callee-saved registers (fable-regrank, 2026-11-16)
+Measured with ~150 toy functions compiled with the game flags (~/geist-work/ds/fable-regrank-tools/p*.cpp, tc.py).
+The allocator is a Chaitin/Briggs graph colouring: nodes are pushed on a stack, then popped and given the first free
+register (r31 downward for values that live across a call, r3 upward for the rest). Two regimes:
+
+**Small regime (every node interferes with fewer than 10 other register candidates).** The pop order, i.e. the
+rank (first = r31), is fixed and does not depend on use counts, loop depth, live-range length or first use:
+1. **Uncopied call results**: a local assigned straight from a call (`x = f()`) that is never copied to a register
+   (not an argument, not `return x`, not a function pointer, not `y = x`): **last call first** (p5.cpp Q2-Q5, S3:
+   declaration order is irrelevant here). One such copy drops the local into group 3 (p3.cpp grid, p6.cpp M0-M7).
+2. **Inline locals**: the locals of an inline helper, **last declared first** (p15.cpp Y4: `int q; int r;` gives r r31,
+   q r30), above everything of the caller except group 1 (p23.cpp PR2). Address constants / CSE temps hoisted by
+   the compiler (`&table`, `i*4`, `a + host*4`) also sit here, above the caller's locals (p12.cpp H1-H4, p21.cpp PT1-4).
+3. **The caller's locals in declaration order** (first declared = highest), whatever the definition order or use
+   pattern (p1.cpp A1-A3, p4.cpp N0-N7, p10.cpp K3_L/K3_Cc). A local initialised from another local or a parameter
+   is still a local; copies that can be merged (`w = x`, x dead) take the merged local's slot.
+4. **Parameters, last parameter first** (p1.cpp B1-B2, p7.cpp PA-PE, p9.cpp W1-W5), below all locals and temps.
+   A parameter copied into a typed local (`void*` trick) moves into group 3.
+Verified by prediction before compiling: p23.cpp PR1 (z r31, x r30, y r29, b r28, a r27) and PR3.
+Practical moves: an argument copy or `return x` demotes a call result from group 1 to group 3; declaring a value
+inside an inline promotes it to group 2; `void*`-casting a parameter promotes it to group 3; declaration order
+only reorders group 3; parameters cannot be reordered among themselves.
+
+**Crowded regime (a node interferes with 10 or more other candidates, counting short-lived temporaries).** When no
+node has degree < 10 the compiler pushes the node with the lowest *cost/degree* first (cheap, long-lived values
+sink to the bottom registers; r21 for an inline local used twice in p18.cpp KK10-16, p17.cpp X7-X8), then the
+rest in the fixed order once degrees drop. The threshold is reached with 10 long-lived values or fewer plus live
+temporaries (p20.cpp TA/TB: two extra temps move it to 8-9 nodes), and scheduling changes the temps, so this
+regime is only predictable qualitatively: to push a value down give it fewer uses or a longer live range; to lift
+it, more uses (p19.cpp T) or a shorter live range. SAM.cpp SAMReadCallback (7 candidates + temps),
+GunHostState13Enter and VM.c fn_80286EAC behave as crowded functions: their swaps did not react to any
+declaration order, copy or cast in this pass, so the remaining fix must change costs/degrees (uses, live ranges).
