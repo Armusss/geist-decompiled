@@ -1583,7 +1583,7 @@ extern void AnimRef(int anim);
 
 // Release every animation referenced by bank `bankId`, group `groupId`.
 // Returns 0 if the bank or group is unknown, 1 if the entries were released.
-int AnimBankUnref(unsigned short bankId, unsigned short groupId)
+int AnimBankUnref(unsigned long bankId, unsigned long groupId)
 {
     AnimGroup* group;
     AnimSub* sub;
@@ -1593,7 +1593,7 @@ int AnimBankUnref(unsigned short bankId, unsigned short groupId)
 
     group = 0;
     for (i = 0; i < lbl_804D4790->count; i++) {
-        if (bankId == lbl_804D4790->items[i].id) {
+        if ((unsigned short)bankId == lbl_804D4790->items[i].id) {
             group = &lbl_804D4790->items[i];
             break;
         }
@@ -1603,7 +1603,7 @@ int AnimBankUnref(unsigned short bankId, unsigned short groupId)
 
     sub = 0;
     for (i = 0; i < group->count; i++) {
-        if (groupId == group->items[i].id) {
+        if ((unsigned short)groupId == group->items[i].id) {
             sub = &group->items[i];
             break;
         }
@@ -1666,7 +1666,7 @@ extern "C" void fn_80093478(int anim, int flag);
 
 // Enable every animation referenced by bank `bankId`, group `groupId`.
 // Returns 0 if the bank or group is unknown, 1 if the entries were flagged.
-int AnimBankActivate(unsigned short bankId, unsigned short groupId)
+int AnimBankActivate(unsigned long bankId, unsigned long groupId)
 {
     AnimGroup* group;
     AnimSub* sub;
@@ -1676,7 +1676,7 @@ int AnimBankActivate(unsigned short bankId, unsigned short groupId)
 
     group = 0;
     for (i = 0; i < lbl_804D4790->count; i++) {
-        if (bankId == lbl_804D4790->items[i].id) {
+        if ((unsigned short)bankId == lbl_804D4790->items[i].id) {
             group = &lbl_804D4790->items[i];
             break;
         }
@@ -1686,7 +1686,7 @@ int AnimBankActivate(unsigned short bankId, unsigned short groupId)
 
     sub = 0;
     for (i = 0; i < group->count; i++) {
-        if (groupId == group->items[i].id) {
+        if ((unsigned short)groupId == group->items[i].id) {
             sub = &group->items[i];
             break;
         }
