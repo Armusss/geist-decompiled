@@ -669,7 +669,8 @@ config.libs = [
             Object(Matching, "game/u_8016D170.cpp", mw_version="GC/2.0"),  # angle/Euler/Vec3 helpers; GC/2.0: const-pointer pre-stwu loads (STATUS G4)
             Object(Matching, "game/u_8016D6BC.cpp", mw_version="GC/2.0"),  # box helpers; GC/2.0: const-pointer pre-stwu loads (STATUS G4)
             Object(NonMatching, "game/Msx.cpp"),  # guess
-            Object(NonMatching, "game/u_80175D60.cpp"),  # known
+            Object(Matching, "game/u_80175D60.cpp"),  # known; live gun effect records and hooks
+            Object(NonMatching, "game/u_80176044.cpp"),  # gun slots and aim/fx behaviour states
             Object(Matching, "game/DataStream.cpp"),
             Object(NonMatching, "game/u_8017D794.cpp"),  # known
             Object(Matching, "game/SplineGun.cpp"),  # "SplineGun" effect type (starts at SplineGunReset)

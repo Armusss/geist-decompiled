@@ -478,7 +478,14 @@ game/Msx.cpp:
 	.ctors      start:0x80341220 end:0x80341224
 
 game/u_80175D60.cpp:
-	.text       start:0x80175D60 end:0x8017BE38
+	.text       start:0x80175D60 end:0x80176044
+	.rodata     start:0x80346EE0 end:0x80346EF0
+	.bss        start:0x80491020 end:0x80491760
+	.sbss       start:0x804D5040 end:0x804D5048
+	.sdata2     start:0x804D80E0 end:0x804D80E8
+
+game/u_80176044.cpp:
+	.text       start:0x80176044 end:0x8017BE38
 
 game/DataStream.cpp:
 	.text       start:0x8017BE38 end:0x8017D794
