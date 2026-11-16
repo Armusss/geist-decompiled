@@ -86,6 +86,14 @@ in u_80116B28 made CW emit functions out of source order (field-by-field copy ke
 u_802766F0 (ODE files / -inline deferred), u_8012071C force_active, u_8026A37C const rename (lead/u_8026A37C_flip.patch),
 u_8016A774 SAM renames, FastSqrt-style asm for u_80230504.
 
+**Boundary scan + name fixes (2026-11-15):** tools/boundary_scan.py, results in docs/boundary-scan.md (59 units, 144 cuts
+left). Applied: u_80268528 merged with the HERMIT SPIT message part; u_80175D60 / u_80176044; u_800BA6FC; u_800B4F98 /
+u_800B5028. opus-names (user-approved linker/name fixes): force_active StatGetDebug__Fiii (u_8012071C Matching),
+GeomRegisterClass const (u_8026A37C Matching), SAMPlay__FiUll / SAMNop__FsUl / SAMReset__Fi, ChildNodeTreeInit__FP13ChildNodeTreeii,
+AnimBankUnref/Activate __FUlUl, AnimBankGetSetCount int callers. Open: u_8016A774 file boundary at 0x8016BE58 (SltEffect*/
+SltAsset* with .data 0x803A7C60-78, .sdata 0x804D2FB8-C0, .sdata2 0x804D7FF0-F8); unproven signatures: QueuePopEach callback,
+TextSetOrigin, ClockEmitParticlePage*, TextSetColor. 89/229 files Matching, 2,978 functions.
+
 **Recurring unsolved shapes (fullmatch round 2026-11-15):**
 - `li r4,9` before `addi r3,rX,624` at a HasCondition call: HostRideBUpdate/HostRideTick (2 diffs each), BehParamsUpdate,
   CreatureUpdate, NpcSveUpdateActor, fn_801CAA48, fn_80295634, fn_8004C9C8, CrabUpdate. `#pragma scheduling off` (probe) still
