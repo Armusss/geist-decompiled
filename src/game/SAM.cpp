@@ -18,7 +18,7 @@ void fn_8016E270(void);
 void fn_8016E4C8(void);
 void fn_8016E314(void* left, void* right, int (*fill)(u8*, u8*, int), int rate);
 void fn_8016B998(int arg);
-void fn_8003BA00(short id);
+void fn_8003BA00(int id);
 void fn_80080714(u32 stream);
 void fn_80080D88(u32 stream);
 void fn_80080A34(u32 stream, int count, int (*cb)(u8*, int), int arg);
@@ -74,21 +74,21 @@ void SAMPause(void) {
     }
 }
 
-void SAMNop(void) {}
+void SAMNop(short id, u32 arg) {}
 
-void SAMReset(void) {
+void SAMReset(int id) {
     fn_80080714(sStream);
     sTrack = -1;
     fn_8016E270();
     sPendingTrack = -1;
 }
 
-int SAMPlay(short track, int doneArg, int preload) {
+int SAMPlay(int track, u32 doneArg, long preload) {
     sPlaying = 0;
     fn_8016E4C8();
     sState = 1;
 
-    if (preload != 0 || sPendingTrack != track) {
+    if (preload != 0 || sPendingTrack != (short)track) {
         sBlockCount = 0;
         sRingWrite[0] = 0;
         sRingWrite[1] = 0;
