@@ -24,6 +24,11 @@ void EmitterDestroy(int handle);                                        // 0x800
 void ActorRender(Actor* actor);                                         // 0x800C7CE8
 int PadPressed(int pad, int a, int button);                             // 0x800DC930
 int Fn800816B0(void);                                                   // 0x800816B0
+void AnimTrackSelect(int id, int offset);                               // 0x80081008
+void SAMSetStartDelay(float delay);                                     // 0x800E0554
+int SAMPlay(int track, u32 doneArg, u32 preload);                       // 0x800E05E0 (symbols.txt: SAMPlay__Fsii)
+void SAMNop(s16 id, u32 arg);                                           // 0x800E05A4 (symbols.txt: SAMNop__Fv)
+void SAMReset(int id);                                                  // 0x800E05A8 (symbols.txt: SAMReset__Fv)
 
 extern "C" {
 int sprintf(char* dst, const char* format, ...);
@@ -38,13 +43,8 @@ void fn_8003BA70(s16 id, u32 arg);                                      // 0x800
 void fn_8003C308(int id);                                               // 0x8003C308
 int fn_8003C38C(int id, char* name, u32 bind, int count, void* subs, u32 arg, int unk); // 0x8003C38C
 int fn_8003C48C(char* name, u32 bind, int count, void* subs, u32 arg, int flags, int id); // 0x8003C48C
-void fn_80081008(u32 handle);                                           // 0x80081008
 void fn_80081D0C(char* name, int a, int b, int c);                      // 0x80081D0C
 int fn_80082874(int id, u32 handle, u32 key);                           // 0x80082874
-void fn_800E0554(float a);                                              // 0x800E0554
-void fn_800E05A4(s16 id, u32 arg);                                      // 0x800E05A4
-void fn_800E05A8(int id);                                               // 0x800E05A8
-int fn_800E05E0(int id, u32 handle, u32 flags);                         // 0x800E05E0
 int fn_802810BC(u32 key);                                               // 0x802810BC
 void fn_80281124(u32 key);                                              // 0x80281124
 void fn_802A1FA0(void* p);                                              // 0x802A1FA0
@@ -201,7 +201,7 @@ int SltLoad(SltLoadMsg* msg);
 int SltCreate(SltCreateMsg* msg, int* index);
 int SltLoadIndex(int index, int arg);
 int SltLoadData(SltEntry* entry, int group, u32 handle, u32 flags);
-int SltRelease(u32 handle);
+int SltRelease(int handle);
 void SltDrawEntry(int slot);
 int SltFileHandler(void* fileData, int size, void* out);
 void SltEffectKillAll(void);
@@ -297,7 +297,7 @@ static inline int SltFadeOut(SltLoadMsg* m) {
         id = sSlots[slot].id;
     }
     fn_8003BA70(id, arg);
-    fn_800E05A4(id, arg);
+    SAMNop(id, arg);
     return 1;
 }
 
@@ -389,7 +389,7 @@ int SltUpdate(void) {
                             u32 a = sSlots[i].unk24;
                             u32 b = sSlots[i].unk2C;
                             u32 c = sSlots[i].unk20;
-                            fn_80081008(a);
+                            AnimTrackSelect(a, sSlots[i].unk14);
                             sSlots[i].unk10 += sSlots[i].unk18;
                             sSlots[i].unk14 = sSlots[i].unk1C;
                             sSlots[i].unk20 = sSlots[i].unk24;
@@ -527,7 +527,7 @@ int SltUnload(SltIdMsg* msg) {
             case 'M':
                 break;
             case 'A':
-                fn_800E05A8(sSlots[slot].id);
+                SAMReset(sSlots[slot].id);
                 break;
             }
         }
@@ -807,7 +807,7 @@ int SltLoadData(SltEntry* entry, int group, u32 handle, u32 flags) {
             }
             break;
         case 'A':
-            if (fn_800E05E0(id, handle, mask80) == 0) {
+            if (SAMPlay(id, handle, mask80) == 0) {
                 fn_8003C308(id);
                 return 0;
             }
@@ -816,7 +816,7 @@ int SltLoadData(SltEntry* entry, int group, u32 handle, u32 flags) {
                 if (entry->key == StrHash("01B_BossIntro")) {
                     f = 500.0f;
                 }
-                fn_800E0554(f);
+                SAMSetStartDelay(f);
             }
             break;
         case 'M':
@@ -866,7 +866,7 @@ int SltRelease(int handle) {
             case 'M':
                 break;
             case 'A':
-                fn_800E05A8(sSlots[slot].id);
+                SAMReset(sSlots[slot].id);
                 break;
             }
         }
