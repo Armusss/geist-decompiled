@@ -191,7 +191,14 @@ game/u_800A6F18.cpp:
 	.text       start:0x800A6F18 end:0x800B1834
 
 game/u_800B1834.cpp:
-	.text       start:0x800B1834 end:0x800BA6FC
+	.text       start:0x800B1834 end:0x800B4F98
+
+game/u_800B4F98.cpp:
+	.text       start:0x800B4F98 end:0x800B5028
+	.sdata2     start:0x804D6DA0 end:0x804D6DA8
+
+game/u_800B5028.cpp:
+	.text       start:0x800B5028 end:0x800BA6FC
 
 game/u_800BA6FC.cpp:
 	.text       start:0x800BA6FC end:0x800BAA14
