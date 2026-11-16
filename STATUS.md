@@ -79,6 +79,13 @@ TODO is resolved (no lbl+offset left). Tools: ~/geist-work/ds/opus-full-B2-tools
 a r30; twin fn_800E8760 0x800E8760 has the same pattern, so they likely share an inline). u_8012071C 9/9 with data splits:
 flip needs `force_active: [StatGetDebug__Fiii]` in config.yml (unreferenced but kept in retail), awaiting the user.
 
+**Fullmatch round summary (2026-11-15, 2 Opus agents, one file at a time):** 70 -> 84 game files Matching, 2,929 -> 2,976
+functions. Matched: Progress, VMem, u_8016C244, u_80160DB0 + u_80160F40 (Lead split), u_80251CB8 + u_80252F2C + u_80253614
+(Lead split), u_8016D6BC, u_802B3430, Arena, u_80243B0C, u_802C8900, u_80116B28. New CW quirk: an IVec3 struct assignment
+in u_80116B28 made CW emit functions out of source order (field-by-field copy keeps order). Decisions pending with the user:
+u_802766F0 (ODE files / -inline deferred), u_8012071C force_active, u_8026A37C const rename (lead/u_8026A37C_flip.patch),
+u_8016A774 SAM renames, FastSqrt-style asm for u_80230504.
+
 **Recurring unsolved shapes (fullmatch round 2026-11-15):**
 - `li r4,9` before `addi r3,rX,624` at a HasCondition call: HostRideBUpdate/HostRideTick (2 diffs each), BehParamsUpdate,
   CreatureUpdate, NpcSveUpdateActor, fn_801CAA48, fn_80295634, fn_8004C9C8, CrabUpdate. `#pragma scheduling off` (probe) still
