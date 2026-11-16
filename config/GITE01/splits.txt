@@ -330,6 +330,10 @@ game/u_80112308.cpp:
 
 game/u_80116B28.cpp:
 	.text       start:0x80116B28 end:0x8011818C
+	.rodata     start:0x803457B0 end:0x803457F8
+	.data       start:0x8039ED68 end:0x8039EDD8
+	.sdata      start:0x804D2E08 end:0x804D2E10
+	.sdata2     start:0x804D7750 end:0x804D7760
 
 game/u_8011818C.cpp:
 	.text       start:0x8011818C end:0x8012071C
