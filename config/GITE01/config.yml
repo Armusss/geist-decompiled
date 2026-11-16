@@ -16,3 +16,7 @@ mw_comment_version: 10
 #   hash: 20cc25827a68208dd48e0929e901ef6a83feda42
 #   symbols: config/GITE01/loader/symbols.txt
 #   splits: config/GITE01/loader/splits.txt
+
+# Functions unreferenced in retail that the original link still kept (dead-stripped otherwise).
+force_active:
+- StatGetDebug__Fiii

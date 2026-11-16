@@ -26,9 +26,9 @@ int PadPressed(int pad, int a, int button);                             // 0x800
 int Fn800816B0(void);                                                   // 0x800816B0
 void AnimTrackSelect(int id, int offset);                               // 0x80081008
 void SAMSetStartDelay(float delay);                                     // 0x800E0554
-int SAMPlay(int track, u32 doneArg, u32 preload);                       // 0x800E05E0 (symbols.txt: SAMPlay__Fsii)
-void SAMNop(s16 id, u32 arg);                                           // 0x800E05A4 (symbols.txt: SAMNop__Fv)
-void SAMReset(int id);                                                  // 0x800E05A8 (symbols.txt: SAMReset__Fv)
+int SAMPlay(int track, u32 doneArg, long preload);                       // 0x800E05E0
+void SAMNop(s16 id, u32 arg);                                           // 0x800E05A4
+void SAMReset(int id);                                                  // 0x800E05A8
 
 extern "C" {
 int sprintf(char* dst, const char* format, ...);

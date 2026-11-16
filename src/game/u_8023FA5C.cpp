@@ -1871,7 +1871,7 @@ ChildNodeTree* FreeChildNodeTree(ChildNodeTree* tree, short freeTree)
 // Initialises a child-node tree: zeroes the header, records the rounded size
 // of the node payload and sets up the node block descriptor at 0x08.
 // Descriptive name; retail: 0x80242DF4.
-ChildNodeTree* ChildNodeTreeInit(ChildNodeTree* tree, int nodeSize)
+ChildNodeTree* ChildNodeTreeInit(ChildNodeTree* tree, int nodeSize, int count)
 {
     tree->mRoot = 0;
     tree->mUnk04 = 0;
@@ -1881,7 +1881,7 @@ ChildNodeTree* ChildNodeTreeInit(ChildNodeTree* tree, int nodeSize)
     tree->mUnk14 = 0;
     tree->mUnk18 = 0;
     tree->mUnk04 = (nodeSize + 0x17) & ~3;
-    MemBlockInit((u32*)&tree->mUnk08, tree->mUnk04, 0);
+    MemBlockInit((u32*)&tree->mUnk08, tree->mUnk04, count);
     return tree;
 }
 

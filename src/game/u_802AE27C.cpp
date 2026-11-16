@@ -1259,7 +1259,7 @@ int BehParamsGhostApproachState(void* actorPtr)
     return 1;
 }
 
-extern "C" int AnimBankGetSetCount(unsigned short a, unsigned short b, unsigned short c);
+int AnimBankGetSetCount(int a, int b, int c);
 
 // Behaviour update for state 9: plays the first animation set of the state's
 // bank and primes the fade emitter, like the other ghost states.

@@ -28,9 +28,10 @@ void fn_802E1B38(void* card);
 void fn_802E1C10(void* card);
 int fn_802DE64C(int status, int* out);
 int fn_802DDEDC(int status, int a, int b, float dt);
-void fn_802DDE38(int a, int b);
-void fn_802DDE9C(void);
 }
+
+void HostReboot(int reset, int force);  // u_802DC82C
+void HostCardCleanup(void);             // u_802DC82C
 
 typedef struct TPLHeader {
     u16 height;
@@ -248,15 +249,15 @@ int StoreCardWait(u32 flags) {
                     sCardWork.busy = 0;
                     fn_802E1C1C(&sCardWork);
                 } else if (fn_8000A9E0() && (u32)(status + 3) > 2) {
-                    fn_802DDE38(0, 0);
+                    HostReboot(0, 0);
                 }
             }
         }
         if (status == 4) {
-            fn_802DDE38(1, 1);
+            HostReboot(1, 1);
         }
     }
-    fn_802DDE9C();
+    HostCardCleanup();
     return status;
 }
 

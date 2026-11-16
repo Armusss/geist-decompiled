@@ -181,7 +181,7 @@ extern "C" void fn_8028C258(void* dest, const char* text);
 extern "C" int  SendMsg(int to, int msg, void* data);
 
 int OwnerId(Owner* owner);
-void AnimBankUnref(unsigned short bank, unsigned short anim);
+void AnimBankUnref(unsigned long bank, unsigned long anim);
 
 extern s32 lbl_804D3804;
 extern s32 lbl_804D3808;
