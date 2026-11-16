@@ -292,7 +292,8 @@ Placement), `string.h` (Buffer, String), `msg.h` (QueryMsg, QueryResult, MsgResu
 - **The handle at actor +0x38 is unsigned** (top byte = object kind): `(int)(handle >> 24) == 2` needs the logical
   shift; compare with -1 through `(int)handle`.
 - **Per-type pointers are untyped in the shared structs** (`def`, `info`, `data`, `beh.data`): cast at the use
-  (`((HazardInfo*)a->info)->size`). The casts do not change code: 21 converted units stayed byte-identical.
+  (`((HazardInfo*)a->info)->size`). The casts do not change code: 19 converted units have byte-identical objects, and
+  ThermoBeh/Thermostat have identical code (only their symbol tables changed).
 - The owner words at +0x8EC/+0x8F0 are the last two words of the behaviour block at +0x894 (`beh.unk58/unk5C`).
 - Tools (local): ~/geist-work/ds/fable-types-tools/ — `ud.py snap|cmp` (per-function diff counts and object hash
   for all units in 3 s), `fields.py NAME` (merged offset table of every local definition of a struct),
