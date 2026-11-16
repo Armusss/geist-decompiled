@@ -41,7 +41,7 @@ extern "C" void fn_80090974(f32 v, u32 handle, int a, int b, int c, u32 callback
 extern "C" int fn_800A1BC8(u32 bank, u32 set, u16 anim, int frame, int a);
 void VFree(void* p);
 int Rand();
-int AnimBankGetSetCount(u16 bank, u16 set, u16 anim);
+int AnimBankGetSetCount(int bank, int set, int anim);
 
 // Named engine helpers (mangled names already exist in symbols.txt).
 void ModelNodeSetup(int model, int node, int a, int b);
