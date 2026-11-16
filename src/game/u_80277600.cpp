@@ -59,6 +59,46 @@ extern float lbl_804D3780;
 // Functions called from other units under their placeholder names.
 extern "C" void fn_8027D3E4(float v);
 
+// ODE 0.5 ode.cpp world functions (0x802775AC-0x80277600; reverse source order, as the ODE library was
+// built with -inline deferred). dxWorld layout from ODE 0.5 objects.h.
+struct dxWorld {
+    void* firstbody;     // 0x00
+    void* firstjoint;    // 0x04
+    int nb, nj;          // 0x08
+    float gravity[4];    // 0x10
+    float global_erp;    // 0x20
+    float global_cfm;    // 0x24
+    float adis[4];       // 0x28 dxAutoDisable
+    int adis_flag;       // 0x38
+    int qs_num_iterations;  // 0x3C dxQuickStepParameters
+    float qs_w;          // 0x40
+    float contactp[2];   // 0x44 dxContactParameters
+};
+typedef dxWorld* dWorldID;
+typedef void dstepper_fn_t(dxWorld* world, void* body, int nb, void* joint, int nj, float stepsize);
+extern "C" void fn_80279558(void);  // dInternalStepIsland (step.cpp)
+extern "C" void fn_8027BD5C(void);  // dxProcessIslands (util.cpp)
+void dxProcessIslands(dxWorld* world, float stepsize, dstepper_fn_t* stepper);
+void dInternalStepIsland(dxWorld* world, void* body, int nb, void* joint, int nj, float stepsize);
+
+void dWorldSetQuickStepNumIterations(dWorldID w, int num) {
+    w->qs_num_iterations = num;
+}
+
+void dWorldSetAutoDisableFlag(dWorldID w, int do_auto_disable) {
+    w->adis_flag = (do_auto_disable != 0);
+}
+
+void dWorldStep(dWorldID w, float stepsize) {
+    dxProcessIslands(w, stepsize, &dInternalStepIsland);
+}
+
+void dWorldSetGravity(dWorldID w, float x, float y, float z) {
+    w->gravity[0] = x;
+    w->gravity[1] = y;
+    w->gravity[2] = z;
+}
+
 // TODO (not drafted yet, 0xD4 bytes at 0x80277600)
 extern "C" void fn_80277600(void);
 

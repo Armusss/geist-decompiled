@@ -140,13 +140,13 @@ void AmmoRefillResetStatics(void)
 
 class UserGeom;
 
-UserGeom* SolverAllocBlock(unsigned long size);
+UserGeom* dAlloc(unsigned long size);
 UserGeom* UserGeomCreate(UserGeom* geom, int type);
 
 // Allocates a 0x50-byte user geometry and initialises it for the given type.
 UserGeom* UserGeomAlloc(int type)
 {
-    UserGeom* geom = SolverAllocBlock(0x50);
+    UserGeom* geom = dAlloc(0x50);
 
     if (geom != 0)
         geom = UserGeomCreate(geom, type);

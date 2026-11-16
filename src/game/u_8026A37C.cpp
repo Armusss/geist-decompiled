@@ -134,7 +134,6 @@ enum { GEOM_CLASSES = 15 };
 extern "C" {
 void* memcpy(void* dst, const void* src, unsigned long n);
 void* memset(void* dst, int c, unsigned long n);
-void fn_802734DC(int level, const char* msg, ...);
 void fn_8026D3A0(Geom* g);
 void fn_802788E4(Body* body);
 void fn_8027896C(Body* body);
@@ -155,10 +154,11 @@ int fn_8026D428(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
 int fn_80272060(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
 }
 
-// From the solver (shared with the rest of the physics library).
-void* SolverAllocBlock(u32 size);
-void SolverFreeBlock(void* block, u32 size);
-void SolverClearFloats(float* p, int n);
+// ODE memory.cpp / error.cpp.
+void* dAlloc(u32 size);
+void dDebug(int level, const char* msg, ...);
+void dFree(void* block, u32 size);
+void dSetZero(float* p, int n);
 
 // Class tables handed to spaces; they live in the neighbouring unit's .data.
 extern SpaceVtbl lbl_803C0434;
@@ -224,7 +224,7 @@ int GeomRegisterClass(const UserGeomClass* cls)
     int type;
 
     if (lbl_804D551C >= 4) {
-        fn_802734DC(0, sTooManyUserClasses);
+        dDebug(0, sTooManyUserClasses);
     }
     gUserGeomClasses[lbl_804D551C] = *cls;
     type = lbl_804D551C + 0xb;
@@ -328,14 +328,14 @@ Geom* GeomUserDestroy(Geom* g, short del)
         if (cls->release != 0) {
             cls->release(g);
         }
-        SolverFreeBlock(((UserGeom*)g)->data, cls->size);
+        dFree(((UserGeom*)g)->data, cls->size);
         if (g != 0) {
             g->vtbl = &gGeomVtbl;
             if (g->space != 0) {
                 SpaceRemoveGeom(g->space, g);
             }
             if ((g->flags & 4) != 0 && g->body == 0) {
-                SolverFreeBlock(g->pos, 0x40);
+                dFree(g->pos, 0x40);
             }
             body = g->body;
             if (body != 0) {
@@ -353,7 +353,7 @@ Geom* GeomUserDestroy(Geom* g, short del)
             }
         }
         if (del > 0) {
-            SolverFreeBlock(g, 0x50);
+            dFree(g, 0x50);
         }
     }
     return g;
@@ -368,7 +368,7 @@ Geom* UserGeomCreate(UserGeom* g, int type)
     g->vtbl = &gUserGeomVtbl;
     g->type = type;
     size = gUserGeomClasses[g->type - 0xb].size;
-    g->data = SolverAllocBlock(size);
+    g->data = dAlloc(size);
     memset(g->data, 0, size);
     return g;
 }
@@ -486,7 +486,7 @@ void GeomSetBody(Geom* g, Body* body)
         Geom** link;
 
         if (g->body == 0) {
-            SolverFreeBlock(g->pos, 0x40);
+            dFree(g->pos, 0x40);
         }
         g->pos = body->pos;
         g->rot = body->rot;
@@ -512,7 +512,7 @@ void GeomSetBody(Geom* g, Body* body)
         }
     } else {
         if (g->body != 0) {
-            float* p = (float*)SolverAllocBlock(0x40);
+            float* p = (float*)dAlloc(0x40);
             Body* old;
             Geom* q;
             Geom** link;
@@ -583,7 +583,7 @@ Geom* GeomDestroyBase(Geom* g, short del)
             SpaceRemoveGeom(g->space, g);
         }
         if ((g->flags & 4) != 0 && g->body == 0) {
-            SolverFreeBlock(g->pos, 0x40);
+            dFree(g->pos, 0x40);
         }
         body = g->body;
         if (body != 0) {
@@ -600,7 +600,7 @@ Geom* GeomDestroyBase(Geom* g, short del)
             g->next = 0;
         }
         if (del > 0) {
-            SolverFreeBlock(g, 0x4c);
+            dFree(g, 0x4c);
         }
     }
     return g;
@@ -620,10 +620,10 @@ Geom* GeomInit(Geom* g, Space* space, int isPlaceable)
     g->body = 0;
     g->next = 0;
     if (isPlaceable != 0) {
-        float* p = (float*)SolverAllocBlock(0x40);
+        float* p = (float*)dAlloc(0x40);
         g->pos = p;
         g->rot = p + 4;
-        SolverClearFloats(g->pos, 4);
+        dSetZero(g->pos, 4);
         fn_8027BD20(g->rot);
     } else {
         g->pos = 0;
@@ -632,7 +632,7 @@ Geom* GeomInit(Geom* g, Space* space, int isPlaceable)
     g->nextInSpace = 0;
     g->unk20 = 0;
     g->space = 0;
-    SolverClearFloats(g->aabb, 6);
+    dSetZero(g->aabb, 6);
     g->categoryBits = -1;
     g->collideBits = -1;
     if (space != 0) {
@@ -785,7 +785,7 @@ Geom* SpaceDestroy(Space* s, short del)
             GeomDestroyBase(s, 0);
         }
         if (del > 0) {
-            SolverFreeBlock(s, 0x6c);
+            dFree(s, 0x6c);
         }
     }
     return s;

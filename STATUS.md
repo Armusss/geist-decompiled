@@ -83,7 +83,7 @@ flip needs `force_active: [StatGetDebug__Fiii]` in config.yml (unreferenced but 
 functions. Matched: Progress, VMem, u_8016C244, u_80160DB0 + u_80160F40 (Lead split), u_80251CB8 + u_80252F2C + u_80253614
 (Lead split), u_8016D6BC, u_802B3430, Arena, u_80243B0C, u_802C8900, u_80116B28. New CW quirk: an IVec3 struct assignment
 in u_80116B28 made CW emit functions out of source order (field-by-field copy keeps order). Decisions pending with the user:
-u_802766F0 (ODE files / -inline deferred), u_8012071C force_active, u_8026A37C const rename (lead/u_8026A37C_flip.patch),
+u_8012071C force_active, u_8026A37C const rename (lead/u_8026A37C_flip.patch),
 u_8016A774 SAM renames, FastSqrt-style asm for u_80230504.
 
 **Boundary scan + name fixes (2026-11-15):** tools/boundary_scan.py, results in docs/boundary-scan.md (59 units, 144 cuts
@@ -569,6 +569,13 @@ is now game/u_8019FDD0.cpp.
 Files on GC/2.0: **u_8012071C** (qsort comparators 0x80120A78/0x80120A9C, pre-stwu loads; 1.3.2 cannot).
 **u_800E0CB8** (Vec3 helpers, user-approved 2026-11-15): all 5 functions have pre-stwu loads; GC/2.0 matches the
 whole file (AUDIT OK) once the input vectors are `const` pointers. GC/1.3.2 never schedules them with any shape.
+**game/ode/matrix.cpp, memory.cpp, misc.cpp, obstack.cpp** (user-approved 2026-11-15, was u_802766F0): ODE 0.5 library
+files built with `extra_cflags=["-inline deferred"]`, like zlib/MSL. Evidence: functions sit in reverse source order; with
+the default the .sdata2 pools cannot reach retail's order; with the flag every function's code is identical and only
+function and literal order change, and each file matches as a whole. Linker-stripped real ODE functions (dRandReal,
+dRealloc, dLDLTRemove, ...) are restored in source because their literals come first in the pools. Other ODE code
+(error.cpp in u_8026C200, collision_std, ode.cpp in u_80277600) shows the same reverse order; u_8026A37C matches only
+because its source was hand-reversed. Investigation and patch: opus-ode (~/geist-work/ds/opus-ode-tools/).
 **u_800D32E8** and **u_8009DE94** (user-approved 2026-11-15): whole-file GC/2.0; EmitterHitParamCompare (`const void*`)
 and fn_800A089C (`const int*`) match only on 2.0; every other function gives the same result on both compilers.
 **u_8016D170** (new file split from u_8016C244 + Msx, user-approved 2026-11-15): .text 0x8016D170-0x8016D6BC, .sdata2

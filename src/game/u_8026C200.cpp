@@ -25,9 +25,9 @@ struct ContactGeom {
 };
 
 // Solver memory, used by the classes' operator new/delete.
-void* SolverAllocBlock(u32 size);
-void SolverFreeBlock(void* block, u32 size);
-void SolverClearFloats(float* p, int n);
+void* dAlloc(u32 size);
+void dFree(void* block, u32 size);
+void dSetZero(float* p, int n);
 
 enum { GEOM_HASH_SPACE = 9 };
 enum { GEOM_DIRTY = 1, GEOM_AABB_BAD = 2 };
@@ -54,8 +54,8 @@ struct Geom {
     virtual void computeAABB() = 0;                   // 0x0c
     virtual int AABBTest(Geom* other, float* aabb);   // 0x10
 
-    void* operator new(u32 size) { return SolverAllocBlock(size); }
-    void operator delete(void* p, u32 size) { SolverFreeBlock(p, size); }
+    void* operator new(u32 size) { return dAlloc(size); }
+    void operator delete(void* p, u32 size) { dFree(p, size); }
 };
 
 // A collision space (dxSpace): a geometry that holds other geometries.
@@ -367,7 +367,7 @@ void Space::computeAABB()
         }
         memcpy(aabb, a, 0x18);
     } else {
-        SolverClearFloats(aabb, 6);
+        dSetZero(aabb, 6);
     }
 }
 

@@ -754,7 +754,13 @@ config.libs = [
             Object(Matching, "game/u_8026A158.cpp"),  # guess
             Object(Matching, "game/u_8026A37C.cpp"),  # guess
             Object(NonMatching, "game/u_8026C200.cpp"),  # guess
-            Object(NonMatching, "game/u_802766F0.cpp"),  # guess
+            # ODE 0.5 library files (STATUS G4): the ODE library was built with -inline deferred, so functions come
+            # out in reverse source order (also error.cpp, collision_std.cpp); with the default setting the
+            # .sdata2 literal order of matrix.cpp / misc.cpp cannot be produced. Proof: whole DOL matches.
+            Object(Matching, "game/ode/matrix.cpp", extra_cflags=["-inline deferred"]),
+            Object(Matching, "game/ode/memory.cpp", extra_cflags=["-inline deferred"]),
+            Object(Matching, "game/ode/misc.cpp", extra_cflags=["-inline deferred"]),
+            Object(Matching, "game/ode/obstack.cpp", extra_cflags=["-inline deferred"]),
             Object(NonMatching, "game/u_80277600.cpp"),  # guess
             Object(NonMatching, "game/u_8027D3EC.cpp"),  # guess
             Object(NonMatching, "game/u_8028009C.cpp"),  # guess
