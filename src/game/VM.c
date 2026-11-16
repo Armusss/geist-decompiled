@@ -101,8 +101,8 @@ void VMAllocPages(void* addr, u32 size) {
             u32 start = OSTicksToMicroseconds(OSGetTime());
             u8* page;
             int dirty;
+            u16 intr;
             void* slot;
-            int intr;
 
             lbl_804D5690[i] = 1;
             dirty = 0;
@@ -110,7 +110,7 @@ void VMAllocPages(void* addr, u32 size) {
             slot = fn_803407D8(i);
             while (ARGetDMAStatus()) {
             }
-            intr = (u16)__ARGetInterruptStatus();
+            intr = __ARGetInterruptStatus();
             if (slot) {
                 if (fn_80340654(slot)) {
                     fn_8028750C(slot);
@@ -124,7 +124,7 @@ void VMAllocPages(void* addr, u32 size) {
                 }
                 fn_80340578(slot, i);
             }
-            if (intr == 0) {
+            if ((int)intr == 0) {
                 __ARClearInterrupt();
             }
             if (lbl_804D5668) {
@@ -158,10 +158,10 @@ extern "C" void fn_80286E14(void) {
 extern "C" int fn_80286EAC(void) {
     static u32 sNext = 0;
     BOOL level;
+    u16 intr;
     void* page;
     u32 i;
     void* slot;
-    int intr;
 
     i = 0;
     OSDisableInterrupts();
@@ -178,12 +178,12 @@ extern "C" int fn_80286EAC(void) {
             level = OSDisableInterrupts();
             while (ARGetDMAStatus()) {
             }
-            intr = (u16)__ARGetInterruptStatus();
+            intr = __ARGetInterruptStatus();
             DCFlushRange(page, 0x1000);
             ARStartDMA(0, (u32)page, fn_8028757C(slot), 0x1000);
             while (ARGetDMAStatus()) {
             }
-            if (intr == 0) {
+            if ((int)intr == 0) {
                 __ARClearInterrupt();
             }
             OSRestoreInterrupts(level);

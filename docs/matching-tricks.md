@@ -238,12 +238,39 @@ Practical moves: an argument copy or `return x` demotes a call result from group
 inside an inline promotes it to group 2; `void*`-casting a parameter promotes it to group 3; declaration order
 only reorders group 3; parameters cannot be reordered among themselves.
 
-**Crowded regime (a node interferes with 10 or more other candidates, counting short-lived temporaries).** When no
-node has degree < 10 the compiler pushes the node with the lowest *cost/degree* first (cheap, long-lived values
-sink to the bottom registers; r21 for an inline local used twice in p18.cpp KK10-16, p17.cpp X7-X8), then the
-rest in the fixed order once degrees drop. The threshold is reached with 10 long-lived values or fewer plus live
-temporaries (p20.cpp TA/TB: two extra temps move it to 8-9 nodes), and scheduling changes the temps, so this
-regime is only predictable qualitatively: to push a value down give it fewer uses or a longer live range; to lift
-it, more uses (p19.cpp T) or a shorter live range. SAM.cpp SAMReadCallback (7 candidates + temps),
-GunHostState13Enter and VM.c fn_80286EAC behave as crowded functions: their swaps did not react to any
-declaration order, copy or cast in this pass, so the remaining fix must change costs/degrees (uses, live ranges).
+**Crowded regime (corrected by fable-cost, 2026-11-16; toys in ~/geist-work/ds/fable-cost-tools/c1-c11.cpp, predictions
+and hit/miss log in c6.pred.txt).** There is no cost term: use counts, loop depth and number of definitions never
+moved a register (c2.cpp S9/C12, c9.cpp T6, c10.cpp U7/U8). The rule is a plain degree threshold:
+- A call-crossing value can be simplified while it has **fewer than 18 neighbours** (18 callee-saved GPRs r14-r31).
+  The allocator walks the named values from the lowest rank to the highest; lower-ranked values already taken
+  out no longer count, but **every temporary it overlaps still counts** (temporaries are removed after the named
+  values). A value with 18 or more neighbours at that moment is skipped and pushed in the next pass, so it is
+  popped first: the skipped values take r31 downward (in the fixed rank order among themselves), then come the
+  rest in the fixed rank order.
+- Evidence: c11.cpp V1-V5, predicted before compiling, 5/5 including both sides of the threshold (V3: 3 higher
+  locals + 14 temps = 17, stays in declaration order; V4: one more local = 18, jumps to r31). It also explains
+  the older toys exactly: c4/c5 X4a/X4b/Y4 (`return v0+...+vN`: v_j overlaps N-1 locals and j-2 partial sums, the
+  promoted set is j >= 21-N), p18.cpp KK10 (all ten locals reach 18, only the inline local does not, so it is
+  pushed first and lands in r21) and p20.cpp TA9/TB8 (v0 alone reaches 18).
+- What the old "10 neighbours" was: 10 locals plus the 8 temporaries of the sum chain.
+- A second, separate effect was found (c9.cpp T1/T3/T5, c10.cpp U6, c8.cpp S2-S7): a local that is **used again
+  after its definition with no call in between** (`v = g; other = v;`) ranks above the caller's locals, like a
+  compiler temporary. With a call between the definition and the use (U3, U7, U8) or with the extra use at the
+  end (T6) nothing moves.
+- Scorecard for this pass: 31 predictions written before compiling, 21 hit, 10 missed (c6 2/6, c7 4/4, c8 3/6,
+  c9 4/5, c10 3/5, c11 5/5). The misses in c6, c8 and c10 come from the forwarding effect above, which was not
+  known when they were written; the c9 miss (T6) is what ruled out a use-count cost.
+
+**Consequence for the evidence functions.** When our build has every instruction right and only two registers
+swapped, our interference graph is the same as retail's, so no change of uses, live ranges or "cost" can be the
+fix: only the rank (the order the values are created in) differs. What worked:
+- VM.c VMAllocPages (5 -> 0) and fn_80286EAC (6 -> 2): `intr` was `int intr = (u16)__ARGetInterruptStatus()`, an
+  uncopied call result (group 1, always on top, deaf to declaration order). Declaring it `u16 intr` and assigning
+  the call directly makes it a converted value, i.e. an ordinary group 3 local, and declaration order then puts
+  it below `level`. The retail `cmpwi` needs `(int)intr == 0`. So: **a call result stored in a narrower local is
+  a group 3 local**; try the narrow type whenever a call result is masked right after the call.
+- Still open: fn_80286EAC keeps `li r31,0` (the strength-reduced index) after `bl OSDisableInterrupts` where
+  retail has it before (explicit second index, `for` forms, comma forms: no change). SAM.cpp SAMReadCallback
+  (`block` r29 vs the hoisted `&sRingWrite` r28): 30 more shapes (no `block` local, header pointer local, const,
+  parameter reuse, definition after the range check, whole body in one inline, no inline) gave 39 or worse; the
+  open question is how a local gets ranked between two hoisted address temporaries.
