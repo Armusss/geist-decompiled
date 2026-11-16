@@ -24,11 +24,16 @@ void EmitterDestroy(int handle);                                        // 0x800
 void ActorRender(Actor* actor);                                         // 0x800C7CE8
 int PadPressed(int pad, int a, int button);                             // 0x800DC930
 int Fn800816B0(void);                                                   // 0x800816B0
+void AnimTrackSelect(int id, int offset);                               // 0x80081008
+void SAMSetStartDelay(float delay);                                     // 0x800E0554
+int SAMPlay(int track, u32 doneArg, u32 preload);                       // 0x800E05E0 (symbols.txt: SAMPlay__Fsii)
+void SAMNop(s16 id, u32 arg);                                           // 0x800E05A4 (symbols.txt: SAMNop__Fv)
+void SAMReset(int id);                                                  // 0x800E05A8 (symbols.txt: SAMReset__Fv)
 
 extern "C" {
 int sprintf(char* dst, const char* format, ...);
 int SendMsg(int to, int msg, void* data);                               // 0x800265D4
-extern char __upper_map[];                                              // 0x803C6B08
+extern unsigned char __upper_map[];                                              // 0x803C6B08
 
 int fn_800059D0(int a);                                                 // 0x800059D0
 void fn_800070C0(void* p);                                              // 0x800070C0
@@ -38,13 +43,8 @@ void fn_8003BA70(s16 id, u32 arg);                                      // 0x800
 void fn_8003C308(int id);                                               // 0x8003C308
 int fn_8003C38C(int id, char* name, u32 bind, int count, void* subs, u32 arg, int unk); // 0x8003C38C
 int fn_8003C48C(char* name, u32 bind, int count, void* subs, u32 arg, int flags, int id); // 0x8003C48C
-void fn_80081008(u32 handle);                                           // 0x80081008
 void fn_80081D0C(char* name, int a, int b, int c);                      // 0x80081D0C
 int fn_80082874(int id, u32 handle, u32 key);                           // 0x80082874
-void fn_800E0554(float a);                                              // 0x800E0554
-void fn_800E05A4(s16 id, u32 arg);                                      // 0x800E05A4
-void fn_800E05A8(int id);                                               // 0x800E05A8
-int fn_800E05E0(int id, u32 handle, u32 flags);                         // 0x800E05E0
 int fn_802810BC(u32 key);                                               // 0x802810BC
 void fn_80281124(u32 key);                                              // 0x80281124
 void fn_802A1FA0(void* p);                                              // 0x802A1FA0
@@ -165,7 +165,6 @@ struct SltEffect {
 struct SltEffectIter {
     void* cur;   // 0x00
     void* next;  // 0x04
-    void* prev;  // 0x08
 };
 
 struct SltEffectList {
@@ -190,7 +189,6 @@ int sAssetB = -1;      // 0x804D2FBC
 
 SltGroup sGroups[2];            // 0x8046E3E8
 SltSlot sSlots[2];              // 0x8046E400
-SltEffectList sEffects = { 0, 0, 0, 0, 0, 0 }; // 0x803A7C60
 
 int SltMsgHandler(int actor, int msg, void* data);
 int SltUpdate(void);
@@ -202,13 +200,30 @@ int SltLoad(SltLoadMsg* msg);
 int SltCreate(SltCreateMsg* msg, int* index);
 int SltLoadIndex(int index, int arg);
 int SltLoadData(SltEntry* entry, int group, u32 handle, u32 flags);
-int SltRelease(u32 handle);
+int SltRelease(int handle);
 void SltDrawEntry(int slot);
 int SltFileHandler(void* fileData, int size, void* out);
 void SltEffectKillAll(void);
 void SltEffectUpdate(float dt);
 void SltAssetInit(void);
 void SltEffectCleanup(void);
+
+inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
+
+inline u32 StrHash(const char* s) {
+    int i;
+    u32 h;
+
+    if (s == 0) {
+        return 0;
+    }
+    h = 0;
+    for (i = 0; s[i] != 0; i++) {
+        h = h * 31 + (u8)toupper(s[i]);
+    }
+    h %= 0xFFFFFFFF;
+    return h;
+}
 
 // 0x8016A774
 static inline int SltFindEntry(SltGroup* grp, u32 key) {
@@ -226,9 +241,8 @@ static inline void SltUnloadEach(void) {
     SltIdMsg unload;
     int i;
 
-    i = 0;
     unload.unk0 = 0;
-    for (; i < 2; i++) {
+    for (i = 0; i < 2; i++) {
         if (sLoadedMask & (1 << i)) {
             unload.id = sSlots[i].handle;
             SltUnload(&unload);
@@ -276,13 +290,13 @@ static inline int SltFadeOut(SltLoadMsg* m) {
             return 0;
         }
         if ((id >> 20) != sSlots[slot].stamp) {
-            DebugPrintf("SLTFadeOut: Warning - invalid timestamp\n");
+            DebugPrintf("SLTFadeOut: Warning - invalid timeStamp\n");
             return 0;
         }
         id = sSlots[slot].id;
     }
     fn_8003BA70(id, arg);
-    fn_800E05A4(id, arg);
+    SAMNop(id, arg);
     return 1;
 }
 
@@ -360,15 +374,8 @@ int SltUpdate(void) {
     for (i = 0; i < 2; i++) {
         if (sSlots[i].ptr != 0) {
             if (sSlots[i].flags & 0x400) {
-                SltIdMsg unload;
                 sInputLock = 1;
-                unload.unk0 = 0;
-                for (int k = 0; k < 2; k++) {
-                    if (sLoadedMask & (1 << k)) {
-                        unload.id = sSlots[k].handle;
-                        SltUnload(&unload);
-                    }
-                }
+                SltUnloadEach();
                 sSlots[i].flags &= ~0x200;
                 sSlots[i].flags &= ~0x400;
             } else if (result == 0 && (sSlots[i].flags & 0x200)) {
@@ -377,11 +384,11 @@ int SltUpdate(void) {
             } else {
                 for (j = 0; j < sSlots[i].ptr->count; j++) {
                     if (sSlots[i].ptr->subs[j].type == 'R') {
-                        if (Fn800816B0() > sSlots[i].unk14) {
+                        if (Fn800816B0() > (int)sSlots[i].unk14) {
                             u32 a = sSlots[i].unk24;
                             u32 b = sSlots[i].unk2C;
                             u32 c = sSlots[i].unk20;
-                            fn_80081008(a);
+                            AnimTrackSelect(a, sSlots[i].unk14);
                             sSlots[i].unk10 += sSlots[i].unk18;
                             sSlots[i].unk14 = sSlots[i].unk1C;
                             sSlots[i].unk20 = sSlots[i].unk24;
@@ -519,14 +526,14 @@ int SltUnload(SltIdMsg* msg) {
             case 'M':
                 break;
             case 'A':
-                fn_800E05A8(sSlots[slot].id);
+                SAMReset(sSlots[slot].id);
                 break;
             }
         }
     }
 
     int target = sSlots[slot].unk2C;
-    int arg = sSlots[slot].unk30;
+    out.id = sSlots[slot].unk30;
     sSlots[slot].ptr = 0;
     sSlots[slot].id = -1;
     sSlots[slot].stamp = 0;
@@ -542,7 +549,6 @@ int SltUnload(SltIdMsg* msg) {
     sSlots[slot].unk2C = -1;
     sSlots[slot].unk30 = 0;
     sSlots[slot].id = -1;
-    out.id = arg;
     sLoadedMask &= ~(1 << slot);
     sSlots[slot].ptr = 0;
     if (target != -1) {
@@ -604,21 +610,28 @@ int SltLoad(SltLoadMsg* msg) {
     return 1;
 }
 
+static inline u32 SltMakeHandle(int seq, int slot, int group, int index) {
+    return (seq << 20) + (slot << 16) + (group << 12) + index;
+}
+
 // 0x8016B2BC
 int SltCreate(SltCreateMsg* msg, int* index) {
-    int result = 0;
+    int reuse;
+    int slot;
+    int g;
+    u32 result;
 
+    result = 0;
     if (msg == 0) {
         return 0;
     }
 
-    int slot;
     if (index != 0) {
         slot = *index;
     } else {
         if (sCurrentSlot >= 0) {
             if (msg->key == sSlots[sCurrentSlot].unk20 && (msg->flags & 0x80) == 0) {
-                result = 0x100;
+                result |= 0x100;
                 slot = 0;
             } else {
                 fn_8003C308(sSlots[sCurrentSlot].id);
@@ -663,39 +676,35 @@ int SltCreate(SltCreateMsg* msg, int* index) {
         sLBoxOn = 1;
     }
 
-    for (int g = 0; g < 2; g++) {
+    reuse = result & 0x100;
+    for (g = 0; g < 2; g++) {
         if (!sGroups[g].valid) {
             continue;
         }
-        int found = -1;
-        for (int k = 0; k < sGroups[g].file->count; k++) {
-            if (sGroups[g].entries[k].key == msg->key) {
-                found = k;
-                break;
-            }
-        }
+        int found = SltFindEntry(&sGroups[g], msg->key);
         if (found == -1) {
             continue;
         }
 
-        if ((result & 0x100) == 0) {
-            sHandleSeq = (sHandleSeq + 1) & 0xFFF;
+        if (reuse == 0) {
+            sHandleSeq++;
+            sHandleSeq &= 0xFFF;
         }
-        u32 handle = (sHandleSeq << 20) | (slot << 16) | (g << 12) | found;
-        msg->handle = handle;
+        msg->handle = SltMakeHandle(sHandleSeq, slot, g, found);
         sSlots[slot].flags = msg->flags;
-        sSlots[slot].handle = handle;
+        sSlots[slot].handle = msg->handle;
         sSlots[slot].stamp = sHandleSeq;
         sSlots[slot].ptr = &sGroups[g].entries[found];
         if (SltLoadData(sSlots[slot].ptr, g, msg->handle, result) != 0) {
-            if ((result & 0x100) == 0) {
+            int i;
+            SltEntry* entry = sSlots[slot].ptr;
+            if (reuse == 0) {
                 sSlots[slot].unk20 = 0;
                 sSlots[slot].unk24 = 0;
                 sSlots[slot].unk10 = 0;
                 sSlots[slot].unk18 = 0;
                 sSlots[slot].unk1C = 0;
-                SltEntry* entry = sSlots[slot].ptr;
-                for (int i = 0; i < entry->count; i++) {
+                for (i = 0; i < entry->count; i++) {
                     if (entry->subs[i].type == 'R') {
                         sSlots[slot].unk20 = msg->key;
                         sSlots[slot].unk10 = entry->subs[i].unk2;
@@ -716,8 +725,8 @@ int SltCreate(SltCreateMsg* msg, int* index) {
         }
     }
 
+    sLoadedMask &= ~(u32)(1 << slot);
     sSlots[slot].id = -1;
-    sLoadedMask &= ~(1 << slot);
     sSlots[slot].ptr = 0;
     if (msg->notify != -1) {
         SltIdMsg m;
@@ -747,6 +756,8 @@ int SltLoadIndex(int index, int arg) {
 
 // 0x8016B710
 int SltLoadData(SltEntry* entry, int group, u32 handle, u32 flags) {
+    u32 i;
+    int data = 0;
     int sltId = -1;
 
     if (!sGroups || sGroups[group].file == 0) {
@@ -759,10 +770,9 @@ int SltLoadData(SltEntry* entry, int group, u32 handle, u32 flags) {
     char path[0x400];
     int unkArg;
 
-    LevelLoadNames(sGroups[group].file->name, &unkArg, bufB, bufC, bufD);
-    sprintf(path, "/%s/%s%s", bufC, bufC, bufD);
+    LevelLoadNames(sGroups[group].file->name, &unkArg, bufC, bufB, bufD);
+    sprintf(path, "/%s/%s%s", bufB, bufB, bufD);
 
-    u8 data = 0;
     if (flags & 1) {
         data |= 1;
     }
@@ -772,7 +782,7 @@ int SltLoadData(SltEntry* entry, int group, u32 handle, u32 flags) {
     if (flags & 0x10) {
         data |= 4;
     }
-    u32 mask80 = flags & 0x80;
+    int mask80 = flags & 0x80;
     if (mask80) {
         data |= 8;
     }
@@ -786,33 +796,29 @@ int SltLoadData(SltEntry* entry, int group, u32 handle, u32 flags) {
         return 0;
     }
 
-    int i;
     for (i = 0; i < entry->count; i++) {
         SltSub* sub = &entry->subs[i];
         switch (sub->type) {
-        case 'A':
-            if (fn_800E05E0(id, handle, mask80) == 0) {
-                fn_8003C308(id);
-                return 0;
-            }
-            {
-                u32 hash = 0;
-                for (char* p = "01B_BossIntro"; *p != 0; p++) {
-                    u32 c = ((s8)*p == -1) ? 0xFFFFFFFF : (u8)__upper_map[(u8)*p];
-                    hash = hash * 0x1F + (c & 0xFF);
-                }
-                float f = 0.0f;
-                if (entry->key == hash % 0xFFFFFFFF) {
-                    f = 500.0f;
-                }
-                fn_800E0554(f);
-            }
-            break;
         case 'R':
             if (mask80 == 0 && fn_80082874(id, handle, entry->key) == 0) {
                 fn_8003C308(id);
                 return 0;
             }
+            break;
+        case 'A':
+            if (SAMPlay(id, handle, mask80) == 0) {
+                fn_8003C308(id);
+                return 0;
+            }
+            {
+                float f = 0.0f;
+                if (entry->key == StrHash("01B_BossIntro")) {
+                    f = 500.0f;
+                }
+                SAMSetStartDelay(f);
+            }
+            break;
+        case 'M':
             break;
         }
     }
@@ -859,13 +865,14 @@ int SltRelease(int handle) {
             case 'M':
                 break;
             case 'A':
-                fn_800E05A8(sSlots[slot].id);
+                SAMReset(sSlots[slot].id);
                 break;
             }
         }
 
+        SltIdMsg m;
         int target = sSlots[slot].unk2C;
-        int arg = sSlots[slot].unk30;
+        m.id = sSlots[slot].unk30;
         sSlots[slot].ptr = 0;
         sSlots[slot].id = -1;
         sSlots[slot].stamp = 0;
@@ -881,8 +888,6 @@ int SltRelease(int handle) {
         sSlots[slot].unk2C = -1;
         sSlots[slot].unk30 = 0;
         sSlots[slot].id = -1;
-        SltIdMsg m;
-        m.id = arg;
         sLoadedMask &= ~(1 << slot);
         sSlots[slot].ptr = 0;
         if (target != -1) {
@@ -895,8 +900,8 @@ int SltRelease(int handle) {
 
 // 0x8016BBB0
 void SltDrawEntry(int slot) {
-    u32 handle = sSlots[slot].handle;
-    if (!sGroups || sGroups[(handle >> 12) & 0xF].file == 0) {
+    int group = (sSlots[slot].handle >> 12) & 0xF;
+    if (!sGroups || sGroups[group].file == 0) {
         return;
     }
 
@@ -906,7 +911,7 @@ void SltDrawEntry(int slot) {
     char bufD[0x100];
     char path[0x400];
 
-    LevelLoadNames(sGroups[(handle >> 12) & 0xF].file->name, &unkArg, bufB, bufD, bufC);
+    LevelLoadNames(sGroups[group].file->name, &unkArg, bufB, bufD, bufC);
     sprintf(path, "/%s/%s%s", bufD, bufD, bufC);
     for (int i = 0; i < sSlots[slot].ptr->count; i++) {
         switch (sSlots[slot].ptr->subs[i].type) {
@@ -920,9 +925,10 @@ void SltDrawEntry(int slot) {
 // 0x8016BCC0
 int SltFileHandler(void* fileData, int size, void* out) {
     SltGroup* group = (SltGroup*)out;
+    u8* data = (u8*)fileData;
 
     group->valid = 0;
-    group->file = (size > 0) ? (SltFile*)fileData : 0;
+    group->file = (size > 0) ? (SltFile*)data : 0;
     int extra = size - 0x88;
     fn_800070C0(group->file);
     fn_800070C0(&group->file->count);
@@ -931,7 +937,7 @@ int SltFileHandler(void* fileData, int size, void* out) {
     }
     if (group->file->count > 0) {
         group->entries = (extra > 0 && (u32)group->file->count * 0x34 != 0)
-                             ? (SltEntry*)((u8*)fileData + 0x88)
+                             ? (SltEntry*)(data + 0x88)
                              : 0;
         extra -= group->file->count * 0x34;
         for (int i = 0; i < group->file->count; i++) {
@@ -952,6 +958,8 @@ int SltFileHandler(void* fileData, int size, void* out) {
     group->valid = 1;
     return 1;
 }
+
+SltEffectList sEffects = { 0, 0, 0, 0, 0, 0 }; // 0x803A7C60
 
 // 0x8016BE58
 void SltEffectKillAll(void) {
