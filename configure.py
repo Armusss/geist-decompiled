@@ -614,6 +614,7 @@ config.libs = [
             Object(NonMatching, "game/u_8009DE94.cpp", mw_version="GC/2.0"),  # known; GC/2.0: const-pointer pre-stwu loads in fn_800A089C (STATUS G4)
             Object(NonMatching, "game/u_800A6F18.cpp"),  # guess
             Object(NonMatching, "game/u_800B1834.cpp"),  # guess
+            Object(Matching, "game/u_800BA6FC.cpp"),  # group system front end
             Object(NonMatching, "game/u_800BAA14.cpp"),  # guess
             Object(NonMatching, "game/u_800C5028.cpp"),  # guess
             Object(Matching, "game/Progress.cpp"),  # guess
