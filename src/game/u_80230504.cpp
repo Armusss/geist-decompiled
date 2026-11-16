@@ -159,7 +159,7 @@ inline void ExtraListAdd(ExtraHolder* e) {
     ExtraHolder** end = (ExtraHolder**)((char*)p + lbl_804D5440->size);
     int found = 0;
     for (; p != end; p++) {
-        if (*p == e) {
+        if (e == *p) {
             found = 1;
             break;
         }
@@ -187,7 +187,7 @@ inline void ExtraTrailStop(ExtraHolder* e) {
 // Ages one buffered sample; clears it once it is too old.
 inline void ExtraTrailRecTick(ExtraRecord* r, float dt, int* any) {
     if (r->time >= 0 && r->time < 100) {
-        r->time += (int)dt;
+        r->time += (s16)dt;
         if (r->time > 4) {
             r->time = -1;
         } else {
@@ -345,9 +345,8 @@ void ExtraTrailApply(ExtraHolder* e, ExtraMsg* m) {
 int ExtraTrailUpdate(ExtraHolder* e, float dt) {
     ActorMsg msg;
     ExtraRecord* r;
-    int n;
-    int any;
     int i;
+    int any;
     Mtx34 mtx;
     int anim;
 
@@ -363,9 +362,8 @@ int ExtraTrailUpdate(ExtraHolder* e, float dt) {
         r = e->recs;
         if (r) {
             any = 0;
-            for (i = 0; i < 2; i++) {
-                ExtraTrailRecTick(r++, dt, &any);
-                ExtraTrailRecTick(r++, dt, &any);
+            for (i = 0; i < 4; r++, i++) {
+                ExtraTrailRecTick(r, dt, &any);
             }
             if (!any) {
                 VFree(e->recs);
@@ -379,26 +377,24 @@ int ExtraTrailUpdate(ExtraHolder* e, float dt) {
             ExtraTrailStart(e);
             return 1;
         }
-        return 0;
+    } else if (e->state == 1) {
+        if (!e->name || !e->actor) {
+            return 0;
+        }
+        ActorGetMatrix(&mtx, (Actor*)msg.actor);
+        anim = ModelAnimate(e->model, e->name, 0);
+        fn_801E11C0(e->actor, anim, &mtx, e->name);
+        int a2 = fn_8003A1F0(e->model, e->name, anim);
+        PlacementToMatrix((Mtx34*)msg.actor, (PlaceF*)a2);
+        fn_80039958(e->model, a2, a2, ((Actor*)msg.actor)->f3C, ((Actor*)msg.actor)->f40);
+        if (fn_801E10D8(e->actor)) {
+            ExtraTrailStop(e);
+            e->state = 2;
+            return 0;
+        }
+        return 1;
     }
-    if (e->state != 1) {
-        return 0;
-    }
-    if (!e->name || !msg.actor) {
-        return 0;
-    }
-    ActorGetMatrix(&mtx, (Actor*)msg.actor);
-    anim = ModelAnimate(e->model, e->name, 0);
-    fn_801E11C0(e->actor, anim, &mtx, e->name);
-    anim = fn_8003A1F0(e->model, e->name, anim);
-    PlacementToMatrix(&mtx, (PlaceF*)anim);
-    fn_80039958(e->model, anim, anim, ((Actor*)msg.actor)->f3C, ((Actor*)msg.actor)->f40);
-    if (fn_801E10D8(e->actor)) {
-        ExtraTrailStop(e);
-        e->state = 2;
-        return 0;
-    }
-    return 1;
+    return 0;
 }
 
 void ExtraTrailHide(ExtraHolder* e, int hide) {
