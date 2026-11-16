@@ -101,7 +101,7 @@ void ActorGetMatrix(Mtx34* m, Actor* a);
 void PlacementToMatrix(Mtx34* m, PlaceF* p);
 
 extern "C" {
-void fn_800E1098(float scale, Vec3* out, Vec3* in);              // 0x800E1098
+void fn_800E1098(Vec3* out, const Vec3* in, float length);       // 0x800E1098
 int fn_8003A1F0(int model, char* name, int anim);                // 0x8003A1F0
 void fn_80039958(int model, int a, int b, int c, int d);         // 0x80039958
 void fn_801E0EDC(void* actor, Vec3* a, Vec3* b, int kind, float scale); // 0x801E0EDC
@@ -273,12 +273,10 @@ void ExtraTrailApply(ExtraHolder* e, ExtraMsg* m) {
         vel.z = 0.0f;
     }
     if (m->scale > 1.1920929e-7f) {
-        fn_800E1098(1.0f, &vel, &vel);
-        if (vel.z < m->scale) {
-            vel.z = m->scale;
-        }
+        fn_800E1098(&vel, &vel, 1.0f);
+        vel.z = vel.z > m->scale ? vel.z : m->scale;
     }
-    fn_800E1098(life, &vel, &vel);
+    fn_800E1098(&vel, &vel, life);
     if (e->actor) {
         if (e->state != 1) {
             ExtraTrailStart(e);
@@ -287,8 +285,8 @@ void ExtraTrailApply(ExtraHolder* e, ExtraMsg* m) {
     } else {
         recs = e->recs;
         if (!recs) {
-            recs = (ExtraRecord*)VAlloc(0x70);
-            e->recs = recs;
+            e->recs = (ExtraRecord*)VAlloc(0x70);
+            recs = e->recs;
             if (!recs) {
                 return;
             }
