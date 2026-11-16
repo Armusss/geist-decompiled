@@ -28,7 +28,7 @@ int Fn800816B0(void);                                                   // 0x800
 extern "C" {
 int sprintf(char* dst, const char* format, ...);
 int SendMsg(int to, int msg, void* data);                               // 0x800265D4
-extern char __upper_map[];                                              // 0x803C6B08
+extern unsigned char __upper_map[];                                              // 0x803C6B08
 
 int fn_800059D0(int a);                                                 // 0x800059D0
 void fn_800070C0(void* p);                                              // 0x800070C0
@@ -208,6 +208,23 @@ void SltEffectKillAll(void);
 void SltEffectUpdate(float dt);
 void SltAssetInit(void);
 void SltEffectCleanup(void);
+
+inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
+
+inline u32 StrHash(const char* s) {
+    int i;
+    u32 h;
+
+    if (s == 0) {
+        return 0;
+    }
+    h = 0;
+    for (i = 0; s[i] != 0; i++) {
+        h = h * 31 + (u8)toupper(s[i]);
+    }
+    h %= 0xFFFFFFFF;
+    return h;
+}
 
 // 0x8016A774
 static inline int SltFindEntry(SltGroup* grp, u32 key) {
@@ -740,6 +757,8 @@ int SltLoadIndex(int index, int arg) {
 
 // 0x8016B710
 int SltLoadData(SltEntry* entry, int group, u32 handle, u32 flags) {
+    u32 i;
+    int data = 0;
     int sltId = -1;
 
     if (!sGroups || sGroups[group].file == 0) {
@@ -752,10 +771,9 @@ int SltLoadData(SltEntry* entry, int group, u32 handle, u32 flags) {
     char path[0x400];
     int unkArg;
 
-    LevelLoadNames(sGroups[group].file->name, &unkArg, bufB, bufC, bufD);
-    sprintf(path, "/%s/%s%s", bufC, bufC, bufD);
+    LevelLoadNames(sGroups[group].file->name, &unkArg, bufC, bufB, bufD);
+    sprintf(path, "/%s/%s%s", bufB, bufB, bufD);
 
-    u8 data = 0;
     if (flags & 1) {
         data |= 1;
     }
@@ -765,7 +783,7 @@ int SltLoadData(SltEntry* entry, int group, u32 handle, u32 flags) {
     if (flags & 0x10) {
         data |= 4;
     }
-    u32 mask80 = flags & 0x80;
+    int mask80 = flags & 0x80;
     if (mask80) {
         data |= 8;
     }
@@ -779,33 +797,29 @@ int SltLoadData(SltEntry* entry, int group, u32 handle, u32 flags) {
         return 0;
     }
 
-    int i;
     for (i = 0; i < entry->count; i++) {
         SltSub* sub = &entry->subs[i];
         switch (sub->type) {
+        case 'R':
+            if (mask80 == 0 && fn_80082874(id, handle, entry->key) == 0) {
+                fn_8003C308(id);
+                return 0;
+            }
+            break;
         case 'A':
             if (fn_800E05E0(id, handle, mask80) == 0) {
                 fn_8003C308(id);
                 return 0;
             }
             {
-                u32 hash = 0;
-                for (char* p = "01B_BossIntro"; *p != 0; p++) {
-                    u32 c = ((s8)*p == -1) ? 0xFFFFFFFF : (u8)__upper_map[(u8)*p];
-                    hash = hash * 0x1F + (c & 0xFF);
-                }
                 float f = 0.0f;
-                if (entry->key == hash % 0xFFFFFFFF) {
+                if (entry->key == StrHash("01B_BossIntro")) {
                     f = 500.0f;
                 }
                 fn_800E0554(f);
             }
             break;
-        case 'R':
-            if (mask80 == 0 && fn_80082874(id, handle, entry->key) == 0) {
-                fn_8003C308(id);
-                return 0;
-            }
+        case 'M':
             break;
         }
     }
