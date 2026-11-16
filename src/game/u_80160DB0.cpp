@@ -6,6 +6,7 @@
 #include "game/types.h"
 #include "game/string.h"
 #include "game/msg.h"
+#include "game/owner.h"
 
 typedef unsigned long u32;
 typedef unsigned short u16;
@@ -23,44 +24,6 @@ struct BehData {
     int handle;                                // 0x0C
     float timer1;                              // 0x10
     float timer2;                              // 0x14
-};
-
-struct Beh {
-    char pad0[0x10];
-    int state;                                 // 0x10
-    char pad14[0x14];
-    u16 unk28;                                 // 0x28
-    u16 unk2A;                                 // 0x2A
-    u32 flags;                                 // 0x2C
-    char pad30[0x24];
-    BehData* data;                             // 0x54
-};
-
-struct Owner {
-    char pad0[0x2C];
-    u32 flags2C;                               // 0x2C
-    char pad30[0x8];
-    int handle38;                              // 0x38
-    char pad3C[0x48];
-    float posX;                                // 0x84
-    float posY;                                // 0x88
-    float posZ;                                // 0x8C
-    char pad90[0x3C];
-    int model;                                 // 0xCC
-    char padD0[0x8];
-    int boneId1;                               // 0xD8
-    int boneId2;                               // 0xDC
-    char padE0[0x4];
-    int nodeE4;                                // 0xE4
-    char padE8[0x8];
-    int nodeF0;                                // 0xF0
-    char padF4[0x44];
-    float unk138;                              // 0x138
-    char pad13C[0x134];
-    char cond[0x4];                            // 0x270
-    char pad274[0x678];
-    int unk8EC;                                // 0x8EC
-    int unk8F0;                                // 0x8F0
 };
 
 typedef void (*BehStateFunc)(void* owner, void* beh);

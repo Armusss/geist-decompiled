@@ -7,6 +7,7 @@
 #include "game/types.h"
 #include "game/string.h"
 #include "game/msg.h"
+#include "game/owner.h"
 
 typedef unsigned long u32;
 typedef unsigned short u16;
@@ -24,44 +25,6 @@ struct BehData {
     int handle;                                // 0x0C
     float timer1;                              // 0x10
     float timer2;                              // 0x14
-};
-
-struct Beh {
-    char pad0[0x10];
-    int state;                                 // 0x10
-    char pad14[0x14];
-    u16 unk28;                                 // 0x28
-    u16 unk2A;                                 // 0x2A
-    u32 flags;                                 // 0x2C
-    char pad30[0x24];
-    BehData* data;                             // 0x54
-};
-
-struct Owner {
-    char pad0[0x2C];
-    u32 flags2C;                               // 0x2C
-    char pad30[0x8];
-    int handle38;                              // 0x38
-    char pad3C[0x48];
-    float posX;                                // 0x84
-    float posY;                                // 0x88
-    float posZ;                                // 0x8C
-    char pad90[0x3C];
-    int model;                                 // 0xCC
-    char padD0[0x8];
-    int boneId1;                               // 0xD8
-    int boneId2;                               // 0xDC
-    char padE0[0x4];
-    int nodeE4;                                // 0xE4
-    char padE8[0x8];
-    int nodeF0;                                // 0xF0
-    char padF4[0x44];
-    float unk138;                              // 0x138
-    char pad13C[0x134];
-    char cond[0x4];                            // 0x270
-    char pad274[0x678];
-    int unk8EC;                                // 0x8EC
-    int unk8F0;                                // 0x8F0
 };
 
 typedef void (*BehStateFunc)(void* owner, void* beh);
@@ -128,7 +91,7 @@ extern BehState gHostBehStates[8];
 // 0x80160F40
 void PickupBehState7Update(void* owner, void* beh) {
     if (beh) {
-        BehData* d = ((Beh*)beh)->data;
+        BehData* d = ((BehData*)((Beh*)beh)->data);
         if ((d->flags & 0x20) == 0) {
             return;
         }
@@ -142,7 +105,7 @@ void PickupBehState7Update(void* owner, void* beh) {
 // 0x80160F6C
 void PickupBehState6Update(void* owner, void* beh) {
     if (beh) {
-        BehData* d = ((Beh*)beh)->data;
+        BehData* d = ((BehData*)((Beh*)beh)->data);
         if ((d->flags & 0x20) == 0) {
             return;
         }
@@ -158,7 +121,7 @@ void PickupBehState5Update(void* owner, void* beh) {
     if (beh) {
         Owner* o = (Owner*)owner;
         Beh* b = (Beh*)beh;
-        BehData* d = b->data;
+        BehData* d = ((BehData*)b->data);
         int delay;
         Vec4 col;
         Vec3 pos;
@@ -181,9 +144,9 @@ void PickupBehState5Update(void* owner, void* beh) {
                     pos.y = mtx.m[2][2];
                     pos.z = mtx.m[2][3];
                 } else {
-                    pos.x = o->posX;
-                    pos.y = o->posY;
-                    pos.z = o->posZ;
+                    pos.x = o->pos.x;
+                    pos.y = o->pos.y;
+                    pos.z = o->pos.z;
                 }
                 float t = (float)rand() / 32767.0f;
                 delay = (int)(250.0f * t + 800.0f);
@@ -204,9 +167,9 @@ void PickupBehState5Update(void* owner, void* beh) {
                 }
             }
             if (d->flags & 0x10) {
-                switch (Fn800F7DEC(o->unk8EC, o->unk8F0, (int)0xF829DB93, OwnerId(o), 0)) {
+                switch (Fn800F7DEC(o->beh.unk58, o->beh.unk5C, (int)0xF829DB93, OwnerId(o), 0)) {
                 case (int)0xC0BECF7E: {
-                    int handle = o->handle38;
+                    int handle = o->id;
                     int sent;
                     int ans;
                     {
@@ -241,7 +204,7 @@ void PickupBehState4Update(void* owner, void* beh) {
     if (beh) {
         Owner* o = (Owner*)owner;
         Beh* b = (Beh*)beh;
-        BehData* d = b->data;
+        BehData* d = ((BehData*)b->data);
         int delay;
         Vec4 col;
         Vec3 pos;
@@ -264,9 +227,9 @@ void PickupBehState4Update(void* owner, void* beh) {
                     pos.y = mtx.m[2][2];
                     pos.z = mtx.m[2][3];
                 } else {
-                    pos.x = o->posX;
-                    pos.y = o->posY;
-                    pos.z = o->posZ;
+                    pos.x = o->pos.x;
+                    pos.y = o->pos.y;
+                    pos.z = o->pos.z;
                 }
                 float t = (float)rand() / 32767.0f;
                 delay = (int)(250.0f * t + 800.0f);
@@ -287,9 +250,9 @@ void PickupBehState4Update(void* owner, void* beh) {
                 }
             }
             if (d->flags & 0x10) {
-                switch (Fn800F7DEC(o->unk8EC, o->unk8F0, (int)0x0020EE36, OwnerId(o), 0)) {
+                switch (Fn800F7DEC(o->beh.unk58, o->beh.unk5C, (int)0x0020EE36, OwnerId(o), 0)) {
                 case (int)0xC0BECF7E: {
-                    int handle = o->handle38;
+                    int handle = o->id;
                     int sent;
                     int ans;
                     {
@@ -342,7 +305,7 @@ void PickupBehState6Exit(void* owner, void* beh) {
 // 0x80161694
 void PickupBehState5Exit(void* owner, void* beh) {
     if (beh) {
-        BehData* d = ((Beh*)beh)->data;
+        BehData* d = ((BehData*)((Beh*)beh)->data);
         if (d->handle != -1) {
             fn_80027690(d->handle);
             d->handle = -1;
@@ -353,7 +316,7 @@ void PickupBehState5Exit(void* owner, void* beh) {
 // 0x801616DC
 void PickupBehState4Exit(void* owner, void* beh) {
     if (beh) {
-        BehData* d = ((Beh*)beh)->data;
+        BehData* d = ((BehData*)((Beh*)beh)->data);
         if (d->handle != -1) {
             fn_80027690(d->handle);
             d->handle = -1;
@@ -368,7 +331,7 @@ void PickupBehState0Exit(void* owner, void* beh) {
 // 0x80161728
 void PickupBehState7Enter(void* owner, void* beh) {
     if (beh) {
-        ((Beh*)beh)->data->flags = 0;
+        ((BehData*)((Beh*)beh)->data)->flags = 0;
         BehDone((Beh*)beh);
     }
 }
@@ -376,7 +339,7 @@ void PickupBehState7Enter(void* owner, void* beh) {
 // 0x80161760
 void PickupBehState6Enter(void* owner, void* beh) {
     if (beh) {
-        ((Beh*)beh)->data->flags = 0;
+        ((BehData*)((Beh*)beh)->data)->flags = 0;
         BehDone((Beh*)beh);
     }
 }
@@ -384,7 +347,7 @@ void PickupBehState6Enter(void* owner, void* beh) {
 // 0x80161798
 void PickupBehState5Enter(void* owner, void* beh) {
     if (beh) {
-        ((Beh*)beh)->data->flags = 0;
+        ((BehData*)((Beh*)beh)->data)->flags = 0;
         BehDone((Beh*)beh);
     }
 }
@@ -392,7 +355,7 @@ void PickupBehState5Enter(void* owner, void* beh) {
 // 0x801617D0
 void PickupBehState4Enter(void* owner, void* beh) {
     if (beh) {
-        ((Beh*)beh)->data->flags = 0;
+        ((BehData*)((Beh*)beh)->data)->flags = 0;
         BehDone((Beh*)beh);
     }
 }
@@ -402,9 +365,9 @@ void PickupBehState0Enter(void* owner, void* beh) {
     if (beh) {
         Owner* o = (Owner*)owner;
         Beh* b = (Beh*)beh;
-        b->data->flags = 0;
+        ((BehData*)b->data)->flags = 0;
         BehDone(b);
-        if (Fn800F7DEC(o->unk8EC, o->unk8F0, (int)0xE6B71BCC, OwnerId(o), 0) == 0x4A3E183) {
+        if (Fn800F7DEC(o->beh.unk58, o->beh.unk5C, (int)0xE6B71BCC, OwnerId(o), 0) == 0x4A3E183) {
             b->flags |= 0x10;
         }
     }
@@ -426,7 +389,7 @@ int PickupBehMsg(void* owner, void* beh, int msg) {
     o = (Owner*)owner;
     b = (Beh*)beh;
     {
-        BehData* d = b->data;
+        BehData* d = ((BehData*)b->data);
 
         switch (msg) {
         case 0:
@@ -454,21 +417,21 @@ int PickupBehMsg(void* owner, void* beh, int msg) {
             d->flags |= 0x10;
             break;
         case 0x20EE36:
-            if (Fn800F7DEC(o->unk8EC, o->unk8F0, msg, OwnerId(o), 0) == 0x4A3E183) {
-                if (d->timer1 >= (float)b->unk28) {
+            if (Fn800F7DEC(o->beh.unk58, o->beh.unk5C, msg, OwnerId(o), 0) == 0x4A3E183) {
+                if (d->timer1 >= (float)b->delay) {
                     char buf[0x60];
                     d->flags |= 1;
                     d->timer1 = 0.0f;
                     if (Fn80161FF4(o, buf, 0.0f) == 0) {
                         return 0;
                     }
-                    Fn800F7F5C(o->unk8EC, o->unk8F0, msg, OwnerId(o), buf, o->unk138);
+                    Fn800F7F5C(o->beh.unk58, o->beh.unk5C, msg, OwnerId(o), buf, o->dt);
                     d->flags &= ~0x100;
                 }
             }
             break;
         case (int)0xF829DB93:
-            if (Fn800F7DEC(o->unk8EC, o->unk8F0, msg, OwnerId(o), 0) == 0x4A3E183) {
+            if (Fn800F7DEC(o->beh.unk58, o->beh.unk5C, msg, OwnerId(o), 0) == 0x4A3E183) {
                 if (d->timer2 >= (float)b->unk2A) {
                     char buf[0x60];
                     d->flags |= 1;
@@ -476,7 +439,7 @@ int PickupBehMsg(void* owner, void* beh, int msg) {
                     if (Fn80161FF4(o, buf, 0.0f) == 0) {
                         return 0;
                     }
-                    Fn800F7F5C(o->unk8EC, o->unk8F0, msg, OwnerId(o), buf, o->unk138);
+                    Fn800F7F5C(o->beh.unk58, o->beh.unk5C, msg, OwnerId(o), buf, o->dt);
                     d->flags &= ~0x100;
                 }
             }
@@ -498,7 +461,7 @@ int PickupBehMsg(void* owner, void* beh, int msg) {
         case (int)0x968CBE3D:
             if ((d->flags & 0x20) == 0) {
                 d->flags |= 0x20;
-                Fn800F7F5C(o->unk8EC, o->unk8F0, msg, OwnerId(o), 0, o->unk138);
+                Fn800F7F5C(o->beh.unk58, o->beh.unk5C, msg, OwnerId(o), 0, o->dt);
             }
             break;
         }
@@ -515,12 +478,12 @@ int PickupBehUpdate(void* owner_, void* beh_) {
     if (b == 0) {
         return 0;
     }
-    d = b->data;
+    d = ((BehData*)b->data);
     {
 
-        if (HasCondition(o->cond, 9) != 0 ||
-            HasCondition(o->cond, 10) != 0 ||
-            HasCondition(o->cond, 11) != 0) {
+        if (HasCondition(o->conditions, 9) != 0 ||
+            HasCondition(o->conditions, 10) != 0 ||
+            HasCondition(o->conditions, 11) != 0) {
             if (d->handle != -1) {
                 fn_80027690(d->handle);
                 d->handle = -1;
@@ -530,8 +493,8 @@ int PickupBehUpdate(void* owner_, void* beh_) {
             BehReset(b);
             BehDone(b);
         } else {
-            d->timer1 += (float)(u16)(int)o->unk138;
-            d->timer2 += (float)(u16)(int)o->unk138;
+            d->timer1 += (float)(u16)(int)o->dt;
+            d->timer2 += (float)(u16)(int)o->dt;
             if (gHostBehStates[d->state].update) {
                 gHostBehStates[d->state].update(o, b);
             }
@@ -561,7 +524,7 @@ int PickupBehFree(void* owner_, void* beh_) {
     owner = (Owner*)owner_;
     beh = (Beh*)beh_;
     {
-        BehData* d = beh->data;
+        BehData* d = ((BehData*)beh->data);
         if (d->handle != -1) {
             fn_80027690(d->handle);
             d->handle = -1;

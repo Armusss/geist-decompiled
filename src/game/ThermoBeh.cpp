@@ -6,6 +6,7 @@
 
 #include "game/msg.h"
 #include "game/actor.h"
+#include "game/owner.h"
 
 #pragma auto_inline off
 
@@ -15,7 +16,6 @@ struct Owner;
 struct Beh;
 
 typedef void (*BehStateFunc)(void* owner, void* beh);
-typedef void (*BehCallback)(Owner* o, Beh* b, int arg);
 
 struct BehState {
     BehStateFunc enter;
@@ -29,29 +29,6 @@ struct ThermoState {
     int arg;
     int unkC;
     int sound;
-};
-
-struct Beh {
-    char pad0[0x10];
-    int state;
-    u16 lo1;
-    u16 hi1;
-    u16 lo2;
-    u16 hi2;
-    char pad1C[0x10];
-    unsigned long flags;
-    char pad30[0x1C];
-    BehCallback callback;
-    char pad50[4];
-    ThermoState* data;
-    int unk58;
-    int unk5C;
-};
-
-struct Owner {
-    char pad0[0x270];
-    char conditions[0x894 - 0x270];
-    Beh beh;
 };
 
 struct Actor;
@@ -206,7 +183,7 @@ void ThermoEnter2(void* owner, void* beh) {
     if (beh) {
         Owner* o = (Owner*)owner;
         Beh* b = (Beh*)beh;
-        ThermoState* st = b->data;
+        ThermoState* st = ((ThermoState*)b->data);
         st->next = 0;
         st->unkC = 0;
         BehDone(b);
@@ -217,7 +194,7 @@ void ThermoEnter1(void* owner, void* beh) {
     if (beh) {
         Owner* o = (Owner*)owner;
         Beh* b = (Beh*)beh;
-        ThermoState* st = b->data;
+        ThermoState* st = ((ThermoState*)b->data);
         st->unkC = 0;
         BehDone(b);
     }
@@ -227,7 +204,7 @@ void ThermoEnter0(void* owner, void* beh) {
     if (beh) {
         Owner* o = (Owner*)owner;
         Beh* b = (Beh*)beh;
-        ThermoState* st = b->data;
+        ThermoState* st = ((ThermoState*)b->data);
         st->unkC = 0;
         st->next = 0;
         st->arg = 0;
@@ -254,7 +231,7 @@ int ThermoBehMsg(void* owner, void* beh, int msg) {
     o = (Owner*)owner;
     b = (Beh*)beh;
 
-    st = b->data;
+    st = ((ThermoState*)b->data);
     switch (msg) {
     case 0:
         st->next = 0;
@@ -308,7 +285,7 @@ int ThermoBehUpdate(void* owner, void* beh) {
     o = (Owner*)owner;
     b = (Beh*)beh;
 
-    st = b->data;
+    st = ((ThermoState*)b->data);
     if (HasCondition(o->conditions, 9) || HasCondition(o->conditions, 10) || HasCondition(o->conditions, 11)) {
         st->unkC = 0;
         BehReset(b);
@@ -325,7 +302,7 @@ int ThermoBehDestroy(void* owner, void* beh) {
     if (beh == 0) return 0;
     o = (Owner*)owner;
     b = (Beh*)beh;
-    VFree(b->data);
+    VFree(((ThermoState*)b->data));
     return 1;
 }
 

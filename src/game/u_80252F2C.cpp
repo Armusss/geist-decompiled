@@ -6,6 +6,7 @@
 #include "game/types.h"
 #include "game/string.h"
 #include "game/msg.h"
+#include "game/owner.h"
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
@@ -202,18 +203,6 @@ struct BehState {
     BehStateFunc update;
 };
 
-struct Beh {
-    u8 pad0[0x10];
-    int state;                                       // 0x10
-    u8 pad14[0x30 - 0x14];
-    int targetKind;                                  // 0x30
-    int target;                                      // 0x34
-    u8 pad38[0x4C - 0x38];
-    void (*onState)(void* owner, void* beh, int s);  // 0x4C
-    u8 pad50[4];
-    ImpAttackData* data;                             // 0x54
-};
-
 struct BehMsg {
     u8 pad[0x48];
     Actor* target;  // 0x48
@@ -264,7 +253,7 @@ int fn_80252F2C(void* owner, void* beh) {
 int fn_80252F34(void* owner, void* beh, int msg) {
     Actor* o = (Actor*)owner;
     Beh* b = (Beh*)beh;
-    ImpAttackData* d = b->data;
+    ImpAttackData* d = ((ImpAttackData*)b->data);
 
     switch (msg) {
     case 1:
@@ -347,7 +336,7 @@ int fn_802531B4(void* owner, void* beh) {
     }
     o = (Actor*)owner;
     b = (Beh*)beh;
-    d = b->data;
+    d = ((ImpAttackData*)b->data);
     if (HasCondition(o->st, 9) || HasCondition(o->st, 10) || HasCondition(o->st, 11)) {
         d->flags = 0;
         BehReset(b);
@@ -362,8 +351,8 @@ int fn_802531B4(void* owner, void* beh) {
             }
             d->state = d->next;
             b->state = d->next;
-            if (b->onState) {
-                b->onState(o, b, d->next);
+            if (b->callback) {
+                b->callback(o, b, d->next);
             }
             if (gImpAttackBehStates[d->state].enter) {
                 gImpAttackBehStates[d->state].enter(o, b);
@@ -377,7 +366,7 @@ int fn_80253328(void* owner, void* beh) {
     if (!beh) {
         return 0;
     }
-    VFree(((Beh*)beh)->data);
+    VFree(((ImpAttackData*)((Beh*)beh)->data));
     return 1;
 }
 
@@ -411,7 +400,7 @@ void ImpAttackBehState5Update(void* owner, void* beh) {
     if (beh) {
         Owner* o = (Owner*)owner;
         Beh* b = (Beh*)beh;
-        ImpAttackData* d = b->data;
+        ImpAttackData* d = ((ImpAttackData*)b->data);
 
         BehUpdate(o, b);
         Fn8016295C(o, b);
@@ -425,7 +414,7 @@ void ImpAttackBehState4Update(void* owner, void* beh) {
     if (beh) {
         Owner* o = (Owner*)owner;
         Beh* b = (Beh*)beh;
-        ImpAttackData* d = b->data;
+        ImpAttackData* d = ((ImpAttackData*)b->data);
 
         BehUpdate(o, b);
         Fn8016295C(o, b);
@@ -455,7 +444,7 @@ void ImpAttackBehState5Enter(void* owner, void* beh) {
     if (beh) {
         Beh* b = (Beh*)beh;
 
-        b->data->flags = 0;
+        ((ImpAttackData*)b->data)->flags = 0;
         BehDone(b);
     }
 }
@@ -464,7 +453,7 @@ void ImpAttackBehState4Enter(void* owner, void* beh) {
     if (beh) {
         Beh* b = (Beh*)beh;
 
-        b->data->flags = 0;
+        ((ImpAttackData*)b->data)->flags = 0;
         BehDone(b);
     }
 }
@@ -472,7 +461,7 @@ void ImpAttackBehState4Enter(void* owner, void* beh) {
 void ImpAttackBehState0Enter(void* owner, void* beh) {
     if (beh) {
         Beh* b = (Beh*)beh;
-        ImpAttackData* d = b->data;
+        ImpAttackData* d = ((ImpAttackData*)b->data);
 
         d->flags = 0;
         d->next = 0;
