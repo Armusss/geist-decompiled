@@ -8,6 +8,7 @@
 
 #include "game/string.h"
 #include "game/msg.h"
+#include "game/types.h"
 
 typedef unsigned long u32;
 typedef unsigned char u8;
@@ -21,14 +22,6 @@ extern "C" {
 void* memset(void* dst, int c, unsigned long n);
 int rand(void);
 }
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[12];
-};
 
 // One particle of the spark/debris pools (0x44 bytes).
 struct Particle {
@@ -991,9 +984,9 @@ void CrabAnimate(Actor* a) {
                 b->lean += d * ((lean[1] - b->lean < 0.0f) ? -1.0f : 1.0f);
             }
             fn_8009FAC0(&rot, euler);
-            rot.m[9] = (float)a->x;
-            rot.m[10] = (float)a->y;
-            rot.m[11] = (float)a->z;
+            rot.m[2][1] = (float)a->x;
+            rot.m[2][2] = (float)a->y;
+            rot.m[2][3] = (float)a->z;
             fn_8009EF04(a, &rot);
             fn_8003A66C(a->model, &rot, a->node);
         } else {
@@ -1023,9 +1016,9 @@ void CrabAnimate(Actor* a) {
                 a->vz *= inv;
             }
             fn_8009FAC0(&rot, &a->lean);
-            rot.m[9] = (float)a->x;
-            rot.m[10] = (float)a->y;
-            rot.m[11] = (float)a->z;
+            rot.m[2][1] = (float)a->x;
+            rot.m[2][2] = (float)a->y;
+            rot.m[2][3] = (float)a->z;
             fn_8009EF04(a, &rot);
             a->node->x = 0.0f;
             a->node->y = 0.0f;

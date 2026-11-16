@@ -7,6 +7,7 @@
 
 #include "game/string.h"
 #include "game/msg.h"
+#include "game/types.h"
 
 typedef unsigned long u32;
 typedef unsigned short u16;
@@ -1748,14 +1749,6 @@ inline void SetVar(int target, u32 hash, int value) {
     SendMsg(target, 0x41D, &m);
 }
 
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[12];
-};
-
 struct TargetInfo {
     u8 pad00[0x24];
     int x;                  // 0x24
@@ -1903,12 +1896,12 @@ int AimPacketBuild(float up, Actor* a, AimPacket* p) {
     tzu = (int)((float)tz + 250.0f);
     pose = fn_8003A3F0(a->model, a->pose, fn_8003AA9C(a->model, 0, 0));
     ActorGetMatrix(&m, (void*)(pose + p->bone * 0x30));
-    p->pos2.x = m.m[3];
-    p->pos2.y = m.m[7];
-    p->pos2.z = m.m[11];
-    p->pos.x = m.m[3];
-    p->pos.y = m.m[7];
-    p->pos.z = m.m[11];
+    p->pos2.x = m.m[0][3];
+    p->pos2.y = m.m[1][3];
+    p->pos2.z = m.m[2][3];
+    p->pos.x = m.m[0][3];
+    p->pos.y = m.m[1][3];
+    p->pos.z = m.m[2][3];
     {
         float* bp = (float*)(pose + p->bone * 0x30 + 0x24);
         d.x = (float)(tx - (int)bp[0]);

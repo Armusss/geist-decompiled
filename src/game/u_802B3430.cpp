@@ -3,6 +3,7 @@
 // Function names are descriptive guesses based on what the code does.
 
 #include "game/types.h"
+#include "game/actor.h"
 
 typedef unsigned char u8;
 typedef signed char s8;
@@ -62,24 +63,6 @@ struct ClockWork {
     s32 field_44;
     s32 field_48;
     s32 field_4C;
-};
-
-class Actor {
-public:
-    u8 pad_00[0x38];
-    s32 field_38;  // 0x38
-    u8 pad_3C[0x48];
-    u8* field_84;  // 0x84: per-actor model/FX table
-    u8 pad_88[0x08];
-    s32 field_90;  // 0x90
-    s32 field_94;  // 0x94
-    u8 pad_98[0x04];
-    char* field_9C;    // 0x9C
-    u8 pad_A0[0x04];
-    ClockWork* clock;  // 0xA4
-    u8 pad_A8[0x38];
-    Mtx34 field_E0;  // 0xE0
-    s32 field_110;   // 0x110
 };
 
 // The player object the clock hangs from while it is being carried.
@@ -173,7 +156,7 @@ inline u32 StrHash(const char* s) {
 }
 
 void ClockActorUpdate(Actor* self, float dt) {
-    ClockWork* work = self->clock;
+    ClockWork* work = ((ClockWork*)self->data);
     if (work->field_0C != -1 && work->field_30 == 0) {
         work->field_30 = 1;
     } else if (work->field_0C == -1 && work->field_30 == 1) {
@@ -191,11 +174,11 @@ int ClockActorInit(Actor* self) {
     sGhostlyChimeFx = FxFind("GhostlyChime");
     sClockChimeFx = FxFind("ClockChime");
 
-    if (self->clock == 0) {
+    if (((ClockWork*)self->data) == 0) {
         work = (ClockWork*)VAlloc(0x50);
-        self->clock = work;
+        self->data = work;
     } else {
-        work = self->clock;
+        work = ((ClockWork*)self->data);
     }
 
     if (!PossessableInit(self)) {
@@ -223,7 +206,7 @@ struct ClockMsgData {
 };
 
 static inline int ClockSetParam(ClockMsgData* m) {
-    ClockWork* w = m->target->clock;
+    ClockWork* w = ((ClockWork*)m->target->data);
     switch (m->hash) {
     case 0x4B3F7540:
         w->field_3C = m->value;
@@ -236,7 +219,7 @@ static inline int ClockSetParam(ClockMsgData* m) {
 }
 
 static inline int ClockGetParam(ClockMsgData* m) {
-    ClockWork* w = m->target->clock;
+    ClockWork* w = ((ClockWork*)m->target->data);
     switch (m->hash) {
     case 0x4B3F7540:
         m->value = w->field_34;
@@ -284,7 +267,7 @@ int ClockActorMsg(Actor* self, int msg, void* data, int arg) {
 // the stored hour/minute and attach them to the holder's models.
 void ClockActorUpdateHands(Actor* self) {
     Player* player;
-    ClockWork* work = self->clock;
+    ClockWork* work = ((ClockWork*)self->data);
     u8* hourAnim;
     u8* minAnim;
     Mtx34 mtx;
@@ -315,8 +298,8 @@ void ClockActorUpdateHands(Actor* self) {
             hourAnim[work->field_48] == 0xFF || minAnim[work->field_48] == 0xFF) {
             return;
         }
-        if (fn_80212730(self->field_38) != player->field_38) {
-            fn_80212814(self->field_38, player->field_38, -1, 1, 0, 0);
+        if (fn_80212730(self->handle) != player->field_38) {
+            fn_80212814(self->handle, player->field_38, -1, 1, 0, 0);
         }
         hourAnim = ModelAnimate(player->field_58, player->field_140C, 1);
         AnimApply(player->field_D4, player->field_140C, (int)hourAnim,
@@ -348,13 +331,13 @@ void ClockActorUpdateHands(Actor* self) {
         ModelSetMatrix(player->field_54, &player->field_1450,
                        player->field_1400);
     } else {
-        hourAnim = ModelAnimate(self->field_90, self->field_9C, 1);
-        AnimApply(self->field_110, self->field_9C, (int)hourAnim, self->field_94);
-        PSQUATMultiply(self->field_9C + hourAnim[work->field_44] * 0x1C, &hourBone,
-                       self->field_9C + hourAnim[work->field_44] * 0x1C);
-        PSQUATMultiply(self->field_9C + hourAnim[work->field_48] * 0x1C, &minBone,
-                       self->field_9C + hourAnim[work->field_48] * 0x1C);
-        ModelSetMatrix(self->field_90, &self->field_E0, self->field_9C);
+        hourAnim = ModelAnimate(self->model, ((char*)self->bones), 1);
+        AnimApply(self->anim, ((char*)self->bones), (int)hourAnim, self->boneCount);
+        PSQUATMultiply(((char*)self->bones) + hourAnim[work->field_44] * 0x1C, &hourBone,
+                       ((char*)self->bones) + hourAnim[work->field_44] * 0x1C);
+        PSQUATMultiply(((char*)self->bones) + hourAnim[work->field_48] * 0x1C, &minBone,
+                       ((char*)self->bones) + hourAnim[work->field_48] * 0x1C);
+        ModelSetMatrix(self->model, &self->matrix, ((char*)self->bones));
     }
 }
 
@@ -363,7 +346,7 @@ void ClockActorUpdateHands(Actor* self) {
 // player is already showing that model, in which case the blend is faded out.
 static inline void ClockSpinHands(Actor* self, Player* player, float dt, int hand,
                                   float amount, float base, int fadeWhenEqual) {
-    int target = *(s32*)(self->field_84 + hand);
+    int target = *(s32*)(((u8*)self->info) + hand);
 
     if (player->field_80 == target) {
         float speed = amount / ((45.0f * dt) / 1000.0f);
@@ -401,16 +384,16 @@ static inline void ClockSpinHands(Actor* self, Player* player, float dt, int han
 // Return the clock to its idle state once a hand has completed a full turn.
 static inline void ClockIdleState(Actor* self, ClockWork* work) {
     if (work->field_4C != 0) {
-        ActorPlayAnim(self->field_38, 0xA4DBBCA0, self->field_38);
-        FxStart(*(void**)(self->field_84 + 0xD8), 0, 0);
+        ActorPlayAnim(self->handle, 0xA4DBBCA0, self->handle);
+        FxStart(*(void**)(((u8*)self->info) + 0xD8), 0, 0);
         work->field_30 = 3;
     } else if (work->field_0C != -1) {
-        ActorPlayAnim(self->field_38, 0xA738DF81, self->field_38);
-        FxStart(*(void**)(self->field_84 + 0xDC), 0, 0);
+        ActorPlayAnim(self->handle, 0xA738DF81, self->handle);
+        FxStart(*(void**)(((u8*)self->info) + 0xDC), 0, 0);
         work->field_30 = 1;
     } else {
-        ActorPlayAnim(self->field_38, 0xA738DF81, self->field_38);
-        FxStart(*(void**)(self->field_84 + 0xDC), 0, 0);
+        ActorPlayAnim(self->handle, 0xA738DF81, self->handle);
+        FxStart(*(void**)(((u8*)self->info) + 0xDC), 0, 0);
         work->field_30 = 0;
     }
 }
@@ -426,7 +409,7 @@ void ClockActorTick(Actor* self, float dt) {
         return;
     }
 
-    work = self->clock;
+    work = ((ClockWork*)self->data);
     amount = 0.0f;
     sWindSoundTimer = sWindSoundTimer + dt;
     base = fn_8008E5CC(player->field_7C, 0);
@@ -453,15 +436,15 @@ void ClockActorTick(Actor* self, float dt) {
         if (player->field_31C == 1 && player->field_2740 == 0 &&
             player->field_354 == 0 && player->field_358 == 0 &&
             player->field_35C == 0 && player->field_360 == 0 &&
-            ActorPlayAnim(self->field_38, 0xEBE74F6A, self->field_38) == 0) {
+            ActorPlayAnim(self->handle, 0xEBE74F6A, self->handle) == 0) {
             if (work->field_34 == work->field_3C &&
                 fabsf(work->field_38 - (float)work->field_40) < 1.0f) {
                 work->field_4C = 1;
-                ActorPlayAnim(self->field_38, 0xA4DBBCA0, self->field_38);
+                ActorPlayAnim(self->handle, 0xA4DBBCA0, self->handle);
                 FxStart(sGhostlyChimeFx, 0, 0);
                 work->field_30 = 3;
             } else {
-                ActorPlayAnim(self->field_38, 0xA738DF81, self->field_38);
+                ActorPlayAnim(self->handle, 0xA738DF81, self->handle);
                 FxStart(sClockChimeFx, 0, 0);
                 work->field_4C = 0;
                 work->field_30 = 2;

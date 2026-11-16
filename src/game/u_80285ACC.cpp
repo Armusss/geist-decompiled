@@ -7,6 +7,7 @@
 
 #include <dolphin/types.h>
 #include "game/effect.h"
+#include "game/actor.h"
 
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
@@ -79,11 +80,6 @@ inline void TargetToPos(float* pos, TargetPos* t) {
     pos[1] = (float)t->y;
     pos[2] = (float)t->z;
 }
-
-struct Actor {
-    u8 pad0[0x184];
-    int unk184;
-};
 
 extern "C" {
 int SendMsg(int target, int msg, void* data);                       // 0x800265D4

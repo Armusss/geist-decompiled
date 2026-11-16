@@ -2,20 +2,11 @@
 // Registers its type descriptor, handles a show/hide message and starts its sound/effect when spawned.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/actor.h"
+
 struct Actor;
 
-typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
 typedef int (*ActorFunc)(Actor* actor);
-
-// Actor type descriptor (0x30 bytes), registered in a table of 64 types.
-struct ActorType {
-    int unk0;
-    const char* name;
-    ActorMsgFunc msg;
-    void* unkC;
-    ActorFunc spawn;
-    void* unk14[7];
-};
 
 struct ActorDef {
     char pad[0x1C];
@@ -25,16 +16,6 @@ struct ActorDef {
 struct ActorProps {
     char pad[8];
     int sound;
-};
-
-struct Actor {
-    char pad0[0x80];
-    ActorDef* def;
-    ActorProps* props;
-    char pad88[4];
-    int unk8C;
-    char pad90[0x20];
-    char unkB0[1];
 };
 
 struct SoundMsg {
@@ -76,7 +57,7 @@ int SkyboxMsg(Actor* actor, int msg, void* data, int arg) {
             m.volume = 255.0f;
             SendMsg(0x25000000, 0x5400, &m);
         } else {
-            m.sound = target->def->sound;
+            m.sound = ((ActorDef*)target->def)->sound;
             m.unk4 = 0;
             m.volume = 255.0f;
             SendMsg(0x25000000, 0x5400, &m);
@@ -94,15 +75,15 @@ int SkyboxSpawn(Actor* actor) {
 
     m.unk4 = 0;
     m.volume = 1.0f;
-    if (actor->def->sound != -1) {
-        m.sound = actor->def->sound;
-    } else if (actor->props->sound == -1) {
+    if (((ActorDef*)actor->def)->sound != -1) {
+        m.sound = ((ActorDef*)actor->def)->sound;
+    } else if (((ActorProps*)actor->info)->sound == -1) {
         ok = 0;
     } else {
-        m.sound = actor->props->sound;
+        m.sound = ((ActorProps*)actor->info)->sound;
     }
     SendMsg(0x25000000, 0x5400, &m);
-    ActorFn8002378C(actor, actor->unk8C, 0, 0, 0, 0, 0);
+    ActorFn8002378C(actor, actor->id, 0, 0, 0, 0, 0);
     Fn8007CEA4(actor->unkB0);
     return ok;
 }

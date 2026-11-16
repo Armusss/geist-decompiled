@@ -5,6 +5,7 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include "game/msg.h"
+#include "game/actor.h"
 
 #pragma auto_inline off
 
@@ -55,19 +56,6 @@ struct Owner {
 
 struct Actor;
 
-typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
-
-struct ActorType {
-    int unk0;
-    const char* name;
-    ActorMsgFunc msg;
-    void (*update)(Actor* actor, float dt);
-    int (*init)(Actor* actor);
-    void* unk14;
-    void (*destroy)(Actor* actor);
-    void* unk1C[5];
-};
-
 struct GaugeData {
     char pad0[0x18];
     int unk18;
@@ -80,20 +68,6 @@ struct GaugeData {
 struct ActorInfo {
     char pad0[0x94];
     int sound;
-};
-
-struct Actor {
-    char pad0[0x38];
-    int handle;
-    char pad3C[0x48];
-    ActorInfo* info;
-    ActorType* type;
-    char pad8C[0x18];
-    GaugeData* data;
-    char padA8[4];
-    unsigned long flags;
-    char padB0[0x60];
-    int anim;
 };
 
 struct Player {

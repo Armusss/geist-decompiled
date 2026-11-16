@@ -7,6 +7,7 @@
 
 #include "game/string.h"
 #include "game/msg.h"
+#include "game/types.h"
 
 typedef unsigned long u32;
 typedef unsigned char u8;
@@ -15,14 +16,6 @@ typedef unsigned char u8;
 
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[12];
-};
 
 struct Actor;
 
@@ -1664,9 +1657,9 @@ int AllyStartMove(Actor* a, Actor* target) {
                 yaw[2] = yaw[2] + (k + angle);
                 fn_8016D4EC(&side, yaw);
                 fn_800E1098(1024.0f, &side, &side);
-                side.x += m.m[3];
-                side.y += m.m[7];
-                side.z += m.m[11];
+                side.x += m.m[0][3];
+                side.y += m.m[1][3];
+                side.z += m.m[2][3];
                 if (fn_800BF2D0(&side) == -1) {
                     if (b->unk10 != 0) {
                         fn_800BC56C(a, target);
@@ -1676,9 +1669,9 @@ int AllyStartMove(Actor* a, Actor* target) {
                     yaw[2] = yaw[2] + k;
                     fn_8016D4EC(&side, yaw);
                     fn_800E1098(1024.0f, &side, &side);
-                    side.x += m.m[3];
-                    side.y += m.m[7];
-                    side.z += m.m[11];
+                    side.x += m.m[0][3];
+                    side.y += m.m[1][3];
+                    side.z += m.m[2][3];
                     if (fn_800BF2D0(&side) == -1) {
                         fn_800BC56C(a, target);
                         return 1;

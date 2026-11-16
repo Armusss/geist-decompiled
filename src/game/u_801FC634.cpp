@@ -4,18 +4,11 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <math.h>
+#include "game/types.h"
 
 typedef unsigned long u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[12];
-};
 
 struct Actor;
 struct FearRivet;
@@ -695,7 +688,7 @@ void FearRivetDraw(FearRivet* self, Actor* actor) {
     int alpha;
 
     ActorGetMatrix(&mtx, actor);
-    wp = &mtx.m[9];
+    wp = &mtx.m[2][1];
     fn_800A0100(&mtx);
     fn_800A0094(&p, &pos);
     p.x += wp[0];
@@ -744,7 +737,7 @@ void FearRegionSetup(int unused, Actor* actor) {
     u16* ids;
 
     ActorGetMatrix(&gFearMtx, actor);
-    id = fn_8001A1B4((int*)&gFearMtx.m[9]);
+    id = fn_8001A1B4((int*)&gFearMtx.m[2][1]);
     name = fn_8001A194(id);
     hash = StrHash(name);
     asset = AssetFind(0xD9044CBB, hash);

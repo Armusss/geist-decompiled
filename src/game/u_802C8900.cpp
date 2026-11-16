@@ -1,6 +1,8 @@
 // u_802C8900.cpp: actor FX emitter: update, init, message handler and spawn helpers (0x802C8900-0x802C9818).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 // Actor helpers for the effect-emitter state kept in Actor::field_0xA4.
 // Names are descriptive guesses.
 
@@ -13,9 +15,7 @@ static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
 };
 
-
 class Actor;
-struct Mtx34 { f32 m[12]; };
 
 class Buffer {
 public:
@@ -488,8 +488,6 @@ struct FxRenderInfo {
 
 extern "C" {
 
-
-
     void fn_8009F7A8(void* mtx, f32* v);
     void fn_800E1098(f32* dst, f32* src, f32 scale);
     void fn_8016F120(int fx, void* pos);
@@ -590,9 +588,9 @@ int FxEmitterSpawnFromMsg(int* d)
             pos[2] = (f32)d[14];
 
             fn_8009F7A8(&mtx, pos);
-            mtx.m[9] = x;
-            mtx.m[10] = y;
-            mtx.m[11] = z;
+            mtx.m[2][1] = x;
+            mtx.m[2][2] = y;
+            mtx.m[2][3] = z;
         }
 
         if (*(f32*)((u8*)d + 0x50) > 1.1920929e-07f) {

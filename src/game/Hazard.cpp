@@ -4,23 +4,11 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include "game/types.h"
+#include "game/actor.h"
 
 typedef unsigned long u32;
 
 struct Actor;
-
-typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
-
-struct ActorType {
-    int unk0;
-    const char* name;
-    ActorMsgFunc msg;
-    void (*update)(Actor* actor, float dt);
-    int (*init)(Actor* actor);
-    void* unk14;
-    void (*destroy)(Actor* actor);
-    void* unk1C[5];
-};
 
 struct HazardDef {
     Vec3 pos;
@@ -36,26 +24,6 @@ struct HazardInfo {
     char pad1C[0x14];
     float size;
     float strength;
-};
-
-struct Actor {
-    Placement place;
-    char pad30[8];
-    int handle;
-    char pad3C[0x14];
-    char unk50[0x18];
-    char unk68[0x18];
-    HazardDef* def;
-    HazardInfo* info;
-    char pad88[4];
-    int owner;
-    char pad90[0x10];
-    char unkA0[4];
-    int hazard;
-    int sound;
-    char padAC[4];
-    char unkB0[0x60];
-    int unk110;
 };
 
 struct TriggerMsg {
@@ -103,7 +71,7 @@ int HazardMsg(Actor* a, int msg, void* data, int arg) {
         }
         break;
     case 0xC00:
-        HazardSetActive((*(Actor**)data)->hazard, ((int*)data)[1]);
+        HazardSetActive(((int)(*(Actor**)data)->data), ((int*)data)[1]);
         return ActorDefaultMsg(a, msg, data, arg);
     case 0x413: {
         Actor* t = ((Actor**)data)[0];
@@ -111,7 +79,7 @@ int HazardMsg(Actor* a, int msg, void* data, int arg) {
         pos.x = t->place.pos.x;
         pos.y = t->place.pos.y;
         pos.z = t->place.pos.z;
-        HazardMove(t->hazard, &pos);
+        HazardMove((int)t->data, &pos);
         return 1;
     }
     case 0x411:
@@ -136,25 +104,25 @@ int HazardInit(Actor* a) {
     PlaceF pl;
     Mtx34 m;
 
-    MtxSetEuler((Mtx34*)&pl.rot, &a->def->rot);
-    pl.pos = a->def->pos;
+    MtxSetEuler((Mtx34*)&pl.rot, &((HazardDef*)a->def)->rot);
+    pl.pos = ((HazardDef*)a->def)->pos;
     PlacementToMatrix(&m, &pl);
-    ActorFn8002378C(a, a->owner, (int)&m, (int)ActorCollide, (int)a->unk68, (int)a->unk50, a->def->unk18);
+    ActorFn8002378C(a, a->id, (int)&m, (int)ActorCollide, (int)a->unk68, (int)a->unk50, ((HazardDef*)a->def)->unk18);
     ActorFn800C7B5C(a, a->unkA0);
     if (!ActorFn80022FD8(a)) {
         ActorFn800231A8(a);
     }
-    a->unk110 = -1;
+    a->anim = -1;
     ActorSetPlacement(a, &pl);
-    a->sound = AssetFind(-1, a->def->sound);
+    a->unkA8 = AssetFind(-1, ((HazardDef*)a->def)->sound);
     Fn8007CEA4(a->unkB0);
     pos.x = a->place.pos.x;
     pos.y = a->place.pos.y;
     pos.z = a->place.pos.z;
-    a->hazard = HazardCreate(a, a->handle, &pos, a->info->type, a->sound, a->info->size, a->info->size,
-                             a->info->strength, a->info->strength);
-    HazardSetFlag(a->hazard, 0, 1);
-    HazardSetFlag(a->hazard, 2, 0);
-    HazardSetFlag(a->hazard, 19, 0);
+    a->data = (void*)HazardCreate(a, a->handle, &pos, ((HazardInfo*)a->info)->type, a->unkA8, ((HazardInfo*)a->info)->size, ((HazardInfo*)a->info)->size,
+                             ((HazardInfo*)a->info)->strength, ((HazardInfo*)a->info)->strength);
+    HazardSetFlag((int)a->data, 0, 1);
+    HazardSetFlag((int)a->data, 2, 0);
+    HazardSetFlag((int)a->data, 19, 0);
     return 1;
 }

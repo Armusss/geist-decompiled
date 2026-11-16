@@ -1,20 +1,10 @@
 // u_8020A650.cpp: callback timer, name tables and model building for one actor type (0x8020A650-0x8020B77C).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 typedef unsigned char u8;
 typedef unsigned short u16;
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Quat {
-    float x, y, z, w;
-};
-
-struct Mtx34 {
-    float m[12];
-};
 
 // One 0x1C-byte animation frame: orientation followed by position.
 struct u8020A650Anim {
@@ -466,18 +456,18 @@ int u8020A650BuildModel(u8020A650Owner* owner, int setIndex, u8* slotMap,
                 QuatRotateVecNorm(&v2, &inv.x, &v2);
             }
 
-            attachMtx.m[0] = a->f24;
-            attachMtx.m[1] = a->f28;
-            attachMtx.m[2] = lbl_804D939C;
-            attachMtx.m[3] = 0.0f;
-            attachMtx.m[4] = lbl_804D93A0;
-            attachMtx.m[5] = lbl_804D93A4;
-            attachMtx.m[6] = lbl_804D939C;
-            attachMtx.m[7] = 0.0f;
-            attachMtx.m[8] = a->f30;
-            attachMtx.m[9] = a->f34;
-            attachMtx.m[10] = lbl_804D939C;
-            attachMtx.m[11] = 0.0f;
+            attachMtx.m[0][0] = a->f24;
+            attachMtx.m[0][1] = a->f28;
+            attachMtx.m[0][2] = lbl_804D939C;
+            attachMtx.m[0][3] = 0.0f;
+            attachMtx.m[1][0] = lbl_804D93A0;
+            attachMtx.m[1][1] = lbl_804D93A4;
+            attachMtx.m[1][2] = lbl_804D939C;
+            attachMtx.m[1][3] = 0.0f;
+            attachMtx.m[2][0] = a->f30;
+            attachMtx.m[2][1] = a->f34;
+            attachMtx.m[2][2] = lbl_804D939C;
+            attachMtx.m[2][3] = 0.0f;
             fn_801D4824(owner->ctx, owner->entries[slotA].cb,
                         owner->entries[slotB].cb, &v1, &v2, 3, &attachMtx);
             break;

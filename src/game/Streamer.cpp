@@ -2,20 +2,9 @@
 // A ribbon/trail effect created from the actor's placement data when it spawns.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/actor.h"
+
 struct Actor;
-
-typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
-
-struct ActorType {
-    int unk0;
-    const char* name;
-    ActorMsgFunc msg;
-    void (*update)(Actor* actor, float dt);
-    int (*init)(Actor* actor);
-    void* unk14;
-    void (*destroy)(Actor* actor);
-    void* unk1C[5];
-};
 
 struct StreamerInfo {
     char pad0[0x30];
@@ -26,15 +15,6 @@ struct StreamerInfo {
     float width;
     char pad44[0x3C];
     int texture;
-};
-
-struct Actor {
-    char pad0[0x38];
-    int handle;
-    char pad3C[0x48];
-    StreamerInfo* info;
-    char pad88[0x1C];
-    int trail;
 };
 
 // Trail description passed to TrailCreate (0x40 bytes).
@@ -67,7 +47,7 @@ ActorType gStreamerType = { 0, "Streamer", 0, 0, StreamerInit, 0, StreamerDestro
 
 void StreamerRegister(void) { ActorTypeRegister(&gStreamerType); }
 
-void StreamerDestroy(Actor* a) { TrailDestroy(a->trail); }
+void StreamerDestroy(Actor* a) { TrailDestroy((int)a->data); }
 
 int StreamerInit(Actor* a) {
     TrailDesc d;
@@ -75,17 +55,17 @@ int StreamerInit(Actor* a) {
     ActorInitBase(a);
     d.owner = a->handle;
     d.unk8 = 0;
-    d.segments = a->info->segments;
-    d.width = a->info->width;
-    d.texture = a->info->texture;
-    d.color[0] = a->info->red;
-    d.color[1] = a->info->green;
-    d.color[2] = a->info->blue;
+    d.segments = ((StreamerInfo*)a->info)->segments;
+    d.width = ((StreamerInfo*)a->info)->width;
+    d.texture = ((StreamerInfo*)a->info)->texture;
+    d.color[0] = ((StreamerInfo*)a->info)->red;
+    d.color[1] = ((StreamerInfo*)a->info)->green;
+    d.color[2] = ((StreamerInfo*)a->info)->blue;
     d.unk14 = -4.0f;
     d.unk20 = 0.01f;
     d.unk24 = -5.0f;
     d.unk28 = 31.0f;
     d.unk2C = 0.3f;
-    a->trail = TrailCreate(&d);
+    a->data = (void*)TrailCreate(&d);
     return 1;
 }

@@ -7,6 +7,7 @@
 // through fn_80269A88. The next file's pool (0x8034ADD8) is first used at 0x8026A158.
 
 #include "game/string.h"
+#include "game/actor.h"
 
 typedef unsigned long u32;
 typedef unsigned char u8;
@@ -32,19 +33,6 @@ inline u32 StrHash(const char* s, u32 h) {
 }
 
 struct Actor;
-
-typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
-
-struct ActorType {
-    int unk0;
-    const char* name;
-    ActorMsgFunc msg;
-    void (*update)(Actor* actor, float dt);
-    int (*init)(Actor* actor);
-    void* unk14;
-    void (*destroy)(Actor* actor);
-    void* unk1C[5];
-};
 
 struct RetinalDef {
     char pad0[0x1C];
@@ -77,17 +65,6 @@ struct RetinalData {
     int progress;
     int lastProgress;
     int delta;
-};
-
-struct Actor {
-    char pad0[0x38];
-    int handle;
-    char pad3C[0x44];
-    RetinalDef* def;
-    RetinalInfo* info;
-    char pad88[0x1C];
-    RetinalData* data;
-    int ghost;
 };
 
 struct EffectMsg {
@@ -171,7 +148,7 @@ int RetinalOnStart(u32 event, Actor* a);
 ActorType gRetinalType = { 0, "Retinal Scanner", RetinalMsg, RetinalUpdate, RetinalInit, 0, RetinalDestroy };
 
 void RetinalUpdate(Actor* a, float dt) {
-    RetinalData* d = a->data;
+    RetinalData* d = ((RetinalData*)a->data);
 
     switch (d->state) {
     case 1:
@@ -196,12 +173,12 @@ void RetinalUpdate(Actor* a, float dt) {
             d->state = 3;
             FxStart(FxFind("retpart3"), 0, 0);
             memset(&m, 0, sizeof(m));
-            m.anim = a->info->anim2;
+            m.anim = ((RetinalInfo*)a->info)->anim2;
             m.unkC = 16;
             m.callback = RetinalOnDone;
             m.actor = a;
             SendMsg(a->handle, 0xC12, &m);
-            am.sound = a->info->sound;
+            am.sound = ((RetinalInfo*)a->info)->sound;
             am.anim = 0xF21581DE;
             am.asset = AssetFind(0xC0A77187, 0);
             SendMsg(d->scanner, 0x40B, &am);
@@ -226,14 +203,14 @@ static inline int RetinalGhostQuery(int ghost, int* result) {
 
 static inline int RetinalOnQuery(void* data) {
     Actor* actor = ((Actor**)data)[0];
-    RetinalData* d = actor->data;
+    RetinalData* d = ((RetinalData*)actor->data);
     int ghost;
     int ok;
 
     if (ActorPlayAnim(actor->handle, StrHash("QUERY", ((u32*)data)[2]), ((int*)data)[1])) return 1;
 
-    if (actor->ghost != -1) {
-        ok = RetinalGhostQuery(actor->ghost, &ghost);
+    if (actor->unkA8 != -1) {
+        ok = RetinalGhostQuery(actor->unkA8, &ghost);
         if (ok && ghost == 1) return 1;
     }
 
@@ -241,7 +218,7 @@ static inline int RetinalOnQuery(void* data) {
         AnimMsg am;
         ((u32*)data)[3] = 0xF21581DE;
         am.anim = ((u32*)data)[3];
-        am.sound = actor->info->sound;
+        am.sound = ((RetinalInfo*)actor->info)->sound;
         am.asset = AssetFind(0xC0A77187, 0x0025A645);
         SendMsg(((int*)data)[1], 0x40B, &am);
         d->flags |= 2;
@@ -252,7 +229,7 @@ static inline int RetinalOnQuery(void* data) {
 
 static inline int RetinalOnAnim(void* data) {
     Actor* actor = ((Actor**)data)[0];
-    RetinalData* d = actor->data;
+    RetinalData* d = ((RetinalData*)actor->data);
 
     if (ActorPlayAnim(actor->handle, ((u32*)data)[3], ((int*)data)[2])) return 1;
 
@@ -265,7 +242,7 @@ static inline int RetinalOnAnim(void* data) {
         d->delta = -600;
         FxStart(FxFind("retpart1"), 0, 0);
         memset(&m, 0, sizeof(m));
-        m.anim = actor->info->anim1;
+        m.anim = ((RetinalInfo*)actor->info)->anim1;
         m.unkC = 16;
         m.callback = RetinalOnStart;
         m.actor = actor;
@@ -278,7 +255,7 @@ int RetinalTrigger(void* data);
 int RetinalPrecache(void* data);
 
 static inline int RetinalOnState(void* data) {
-    RetinalData* d = (*(Actor**)data)->data;
+    RetinalData* d = ((RetinalData*)(*(Actor**)data)->data);
 
     switch (((int*)data)[1]) {
     case 0x801EFD79:
@@ -323,16 +300,16 @@ int RetinalMsg(Actor* a, int msg, void* data, int arg) {
 }
 
 void RetinalDestroy(Actor* a) {
-    if (a && a->data) {
-        VFree(a->data);
+    if (a && ((RetinalData*)a->data)) {
+        VFree(((RetinalData*)a->data));
         a->data = 0;
     }
 }
 
 int RetinalInit(Actor* a) {
     if (!ActorInitBase(a)) return 0;
-    if (a->data == 0) a->data = (RetinalData*)VAlloc(sizeof(RetinalData));
-    if (a->data == 0 || a->info == 0) return 0;
+    if (((RetinalData*)a->data) == 0) a->data = (RetinalData*)VAlloc(sizeof(RetinalData));
+    if (((RetinalData*)a->data) == 0 || ((RetinalInfo*)a->info) == 0) return 0;
     return 1;
 }
 
@@ -341,15 +318,15 @@ int RetinalPrecache(void* data) {
     short ids[4];
     int n = 0;
 
-    if (actor->def && actor->def->model >= 0) {
-        ids[0] = actor->def->model;
+    if (((RetinalDef*)actor->def) && ((RetinalDef*)actor->def)->model >= 0) {
+        ids[0] = ((RetinalDef*)actor->def)->model;
         n = 1;
     }
-    if (actor->info) {
+    if (((RetinalInfo*)actor->info)) {
         short* p = &ids[n];
         int k;
         for (k = 0; k < 2; k++) {
-            int id = actor->info->models[k].id;
+            int id = ((RetinalInfo*)actor->info)->models[k].id;
             if (id >= 0) {
                 *p++ = id;
                 n++;
@@ -359,27 +336,27 @@ int RetinalPrecache(void* data) {
 
     if (((int*)data)[1]) {
         ModelLoadIds(ids, n);
-        TextureRef(actor->info->flashTexture);
-        TextureRef(actor->info->scanTexture);
-        TextureRef(actor->info->lineTexture);
-        TextureRef(actor->info->glowTexture);
-        AnimRef(actor->info->anim1);
-        AnimRef(actor->info->anim2);
+        TextureRef(((RetinalInfo*)actor->info)->flashTexture);
+        TextureRef(((RetinalInfo*)actor->info)->scanTexture);
+        TextureRef(((RetinalInfo*)actor->info)->lineTexture);
+        TextureRef(((RetinalInfo*)actor->info)->glowTexture);
+        AnimRef(((RetinalInfo*)actor->info)->anim1);
+        AnimRef(((RetinalInfo*)actor->info)->anim2);
     } else {
         ModelFreeIds(ids, n);
-        TextureUnref(actor->info->flashTexture);
-        TextureUnref(actor->info->scanTexture);
-        TextureUnref(actor->info->lineTexture);
-        TextureUnref(actor->info->glowTexture);
-        AnimUnref(actor->info->anim1);
-        AnimUnref(actor->info->anim2);
+        TextureUnref(((RetinalInfo*)actor->info)->flashTexture);
+        TextureUnref(((RetinalInfo*)actor->info)->scanTexture);
+        TextureUnref(((RetinalInfo*)actor->info)->lineTexture);
+        TextureUnref(((RetinalInfo*)actor->info)->glowTexture);
+        AnimUnref(((RetinalInfo*)actor->info)->anim1);
+        AnimUnref(((RetinalInfo*)actor->info)->anim2);
     }
     return 1;
 }
 
 int RetinalTrigger(void* data) {
     Actor* actor = ((Actor**)data)[0];
-    RetinalData* d = actor->data;
+    RetinalData* d = ((RetinalData*)actor->data);
 
     if (((u32*)data)[3] == 0x640D1F4D) {
         float top, bottom, t;
@@ -388,7 +365,7 @@ int RetinalTrigger(void* data) {
         Draw2DBegin();
         if (d->progress > 160 && d->progress < 320) {
             int alpha = 255 - (int)(3.2f * (d->progress - 240));
-            DrawTexQuad(actor->info->flashTexture, 0.0f, 0.0f, 640.0f, 480.0f, 255, 255, 255,
+            DrawTexQuad(((RetinalInfo*)actor->info)->flashTexture, 0.0f, 0.0f, 640.0f, 480.0f, 255, 255, 255,
                         alpha < 0 ? 0 : (alpha > 255 ? 255 : alpha));
         }
 
@@ -404,7 +381,7 @@ int RetinalTrigger(void* data) {
         top = top < 0.0f ? 0.0f : (top > 480.0f ? 480.0f : top);
         bottom = bottom < 0.0f ? 0.0f : (bottom > 480.0f ? 480.0f : bottom);
 
-        DrawSetTexture(actor->info->scanTexture);
+        DrawSetTexture(((RetinalInfo*)actor->info)->scanTexture);
         DrawVertex(255, 255, 255, 255, 320.0f, 240.0f, 0.0f, 0.5f);
         DrawVertex(255, 255, 255, 255, 320.0f, 240.0f, 0.0f, 0.5f);
         DrawVertex(255, 255, 255, 255, d->progress, top, 1.0f, 0.0f);
@@ -419,7 +396,7 @@ int RetinalTrigger(void* data) {
             if (lo < 320.0f) {
                 int a1 = 255.0f * ((x - lo) / 150.0f);
                 int a2 = 255.0f * (((float)(d->progress - 320) - x) / 150.0f);
-                DrawSetTexture(actor->info->lineTexture);
+                DrawSetTexture(((RetinalInfo*)actor->info)->lineTexture);
                 lo = 330.0f + lo;
                 DrawVertex(a1, a1, a1, 255, lo, -30.0f, 0.0f, 0.99f);
                 x = 330.0f + x;
@@ -445,7 +422,7 @@ int RetinalTrigger(void* data) {
                 u2 = (hi2 + maxX) / (640.0f / gAspectScale);
                 b1 = 255 - (int)(255.0f * ((hi2 - lo2) / 600.0f));
                 b2 = 255 - (int)(255.0f * (((float)(d->progress - 320) - hi2) / 600.0f));
-                DrawSetTexture(actor->info->glowTexture);
+                DrawSetTexture(((RetinalInfo*)actor->info)->glowTexture);
                 lo2 = 320.0f + lo2;
                 DrawVertex(b1, b1, b1, 0, lo2, 0.0f, u1, 1.0f);
                 hi2 = 320.0f + hi2;
@@ -461,7 +438,7 @@ int RetinalTrigger(void* data) {
     } else if (((u32*)data)[3] == 0x05C57E60) {
         if (d->state != 3 && d->state != 0) {
             AnimMsg am;
-            am.sound = actor->info->sound;
+            am.sound = ((RetinalInfo*)actor->info)->sound;
             am.anim = 0xF21581DE;
             am.asset = AssetFind(0xC0A77187, 0);
             SendMsg(d->scanner, 0x40B, &am);
@@ -483,13 +460,13 @@ static inline void RetinalNotify(int ghost, int scanner) {
 
 int RetinalOnDone(u32 event, Actor* a) {
     if (event == 0x1B83833F) {
-        RetinalData* d = a->data;
+        RetinalData* d = ((RetinalData*)a->data);
         MsgResult res;
         if (d->state != 3) return 1;
         SendMsg(d->scanner, 0x40C, &res);
         d->state = 0;
         if (ActorAnimState(a->handle, 0x8B40C0DC) != 1 || ActorPlayAnim(a->handle, 0x8B40C0DC, d->scanner) == 1) {
-            if (a->ghost != -1) RetinalNotify(a->ghost, d->scanner);
+            if (a->unkA8 != -1) RetinalNotify(a->unkA8, d->scanner);
         }
     }
     return 1;
@@ -497,7 +474,7 @@ int RetinalOnDone(u32 event, Actor* a) {
 
 int RetinalOnStart(u32 event, Actor* a) {
     if (event == 0x1B83833F) {
-        RetinalData* d = a->data;
+        RetinalData* d = ((RetinalData*)a->data);
         if (d->state != 1) return 1;
         FxStart(FxFind("retpart2"), 0, 0);
         d->state = 2;
