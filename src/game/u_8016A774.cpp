@@ -594,21 +594,28 @@ int SltLoad(SltLoadMsg* msg) {
     return 1;
 }
 
+static inline u32 SltMakeHandle(int seq, int slot, int group, int index) {
+    return (seq << 20) + (slot << 16) + (group << 12) + index;
+}
+
 // 0x8016B2BC
 int SltCreate(SltCreateMsg* msg, int* index) {
-    int result = 0;
+    int reuse;
+    int slot;
+    int g;
+    u32 result;
 
+    result = 0;
     if (msg == 0) {
         return 0;
     }
 
-    int slot;
     if (index != 0) {
         slot = *index;
     } else {
         if (sCurrentSlot >= 0) {
             if (msg->key == sSlots[sCurrentSlot].unk20 && (msg->flags & 0x80) == 0) {
-                result = 0x100;
+                result |= 0x100;
                 slot = 0;
             } else {
                 fn_8003C308(sSlots[sCurrentSlot].id);
@@ -653,39 +660,35 @@ int SltCreate(SltCreateMsg* msg, int* index) {
         sLBoxOn = 1;
     }
 
-    for (int g = 0; g < 2; g++) {
+    reuse = result & 0x100;
+    for (g = 0; g < 2; g++) {
         if (!sGroups[g].valid) {
             continue;
         }
-        int found = -1;
-        for (int k = 0; k < sGroups[g].file->count; k++) {
-            if (sGroups[g].entries[k].key == msg->key) {
-                found = k;
-                break;
-            }
-        }
+        int found = SltFindEntry(&sGroups[g], msg->key);
         if (found == -1) {
             continue;
         }
 
-        if ((result & 0x100) == 0) {
-            sHandleSeq = (sHandleSeq + 1) & 0xFFF;
+        if (reuse == 0) {
+            sHandleSeq++;
+            sHandleSeq &= 0xFFF;
         }
-        u32 handle = (sHandleSeq << 20) | (slot << 16) | (g << 12) | found;
-        msg->handle = handle;
+        msg->handle = SltMakeHandle(sHandleSeq, slot, g, found);
         sSlots[slot].flags = msg->flags;
-        sSlots[slot].handle = handle;
+        sSlots[slot].handle = msg->handle;
         sSlots[slot].stamp = sHandleSeq;
         sSlots[slot].ptr = &sGroups[g].entries[found];
         if (SltLoadData(sSlots[slot].ptr, g, msg->handle, result) != 0) {
-            if ((result & 0x100) == 0) {
+            int i;
+            SltEntry* entry = sSlots[slot].ptr;
+            if (reuse == 0) {
                 sSlots[slot].unk20 = 0;
                 sSlots[slot].unk24 = 0;
                 sSlots[slot].unk10 = 0;
                 sSlots[slot].unk18 = 0;
                 sSlots[slot].unk1C = 0;
-                SltEntry* entry = sSlots[slot].ptr;
-                for (int i = 0; i < entry->count; i++) {
+                for (i = 0; i < entry->count; i++) {
                     if (entry->subs[i].type == 'R') {
                         sSlots[slot].unk20 = msg->key;
                         sSlots[slot].unk10 = entry->subs[i].unk2;
@@ -706,8 +709,8 @@ int SltCreate(SltCreateMsg* msg, int* index) {
         }
     }
 
+    sLoadedMask &= ~(u32)(1 << slot);
     sSlots[slot].id = -1;
-    sLoadedMask &= ~(1 << slot);
     sSlots[slot].ptr = 0;
     if (msg->notify != -1) {
         SltIdMsg m;
