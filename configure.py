@@ -748,7 +748,7 @@ config.libs = [
             Object(NonMatching, "game/u_80268780.cpp"),  # guess
             Object(Matching, "game/Timer.cpp"),  # per-level timer hooks
             Object(Matching, "game/u_8026A158.cpp"),  # guess
-            Object(NonMatching, "game/u_8026A37C.cpp"),  # guess
+            Object(Matching, "game/u_8026A37C.cpp"),  # guess
             Object(NonMatching, "game/u_8026C200.cpp"),  # guess
             Object(NonMatching, "game/u_802766F0.cpp"),  # guess
             Object(NonMatching, "game/u_80277600.cpp"),  # guess
