@@ -189,7 +189,6 @@ int sAssetB = -1;      // 0x804D2FBC
 
 SltGroup sGroups[2];            // 0x8046E3E8
 SltSlot sSlots[2];              // 0x8046E400
-SltEffectList sEffects = { 0, 0, 0, 0, 0, 0 }; // 0x803A7C60
 
 int SltMsgHandler(int actor, int msg, void* data);
 int SltUpdate(void);
@@ -291,7 +290,7 @@ static inline int SltFadeOut(SltLoadMsg* m) {
             return 0;
         }
         if ((id >> 20) != sSlots[slot].stamp) {
-            DebugPrintf("SLTFadeOut: Warning - invalid timestamp\n");
+            DebugPrintf("SLTFadeOut: Warning - invalid timeStamp\n");
             return 0;
         }
         id = sSlots[slot].id;
@@ -959,6 +958,8 @@ int SltFileHandler(void* fileData, int size, void* out) {
     group->valid = 1;
     return 1;
 }
+
+SltEffectList sEffects = { 0, 0, 0, 0, 0, 0 }; // 0x803A7C60
 
 // 0x8016BE58
 void SltEffectKillAll(void) {
