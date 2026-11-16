@@ -208,7 +208,8 @@ struct Msg41E {
 };
 
 // Mangled C++ callees.
-int OwnerId(void* owner);                        // 0x800A3A40
+struct Owner;
+int OwnerId(Owner* owner);                        // 0x800A3A40
 int ActorPlayAnim(int actor, u32 anim, int arg); // 0x800C5654
 void* VAlloc(int size);                          // 0x8009DA68
 void VFree(void* p);                             // 0x8009DA3C
@@ -229,6 +230,7 @@ int FollowGetTargetPos(void* range, Vec3* out);  // 0x800A794C
 void RangeResetPending(void* range);  // 0x800A7028
 int FollowOffsetUpdate(void* self);  // 0x800A70D0
 float ActorAngleToPos(void* self, Vec3* pos);  // 0x800AA9FC
+extern "C" {
 void fn_800E1098(Vec3* out, Vec3* in, float scale);   // 0x800E1098
 void fn_8016D440(Vec3* out, Vec3* in);           // 0x8016D440
 void fn_80162658(Actor* actor, void* p);         // 0x80162658
@@ -241,6 +243,7 @@ int fn_800C725C(Actor* actor);                   // 0x800C725C
 void fn_800CE96C();                              // 0x800CE96C
 void fn_800CF064();                              // 0x800CF064
 void fn_800CC984();                              // 0x800CC984
+}
 
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
@@ -259,9 +262,11 @@ inline u32 StrHash(const char* s, u32 h) {
     return h;
 }
 
+extern "C" {
 String fn_800225C8(const String& a, const String& b); // 0x800225C8
 void fn_8028C188(Buffer* b, char* data, int len);      // 0x8028C188
 void fn_8028BF80(String* s, const char* format, ...);  // 0x8028BF80
+}
 
 int RideMsg(int msg, void* data);
 int RideUpdate(void* p);
@@ -365,7 +370,7 @@ int RideMsg(int msg, void* data) {
     switch (msg) {
     case 0x400:
         m400 = (Msg400*)data;
-        m400->ownerId = OwnerId(actor);
+        m400->ownerId = OwnerId((Owner*)actor);
         m400->state = (actor->f904 > 0.0f) ? 1 : 0;
         m400->f10 = 1.0f;
         m400->f14 = 1.0f;
@@ -396,11 +401,11 @@ int RideMsg(int msg, void* data) {
     case 0x40A:
         m40A = (Msg40A*)data;
         q.actor = actor;
-        q.ownerId = OwnerId(actor);
+        q.ownerId = OwnerId((Owner*)actor);
         m40A->actor->msgFn(0x400, &q);
         beh = actor->beh;
         hash = StrHash("QUERY", m40A->anim);
-        r = ActorPlayAnim(OwnerId(actor), hash, m40A->id);
+        r = ActorPlayAnim(OwnerId((Owner*)actor), hash, m40A->id);
         if (r != 0) {
             m40A->result = 0;
             return 1;
@@ -416,7 +421,7 @@ int RideMsg(int msg, void* data) {
         return 0;
     case 0x409:
         m409 = (Msg409*)data;
-        r = ActorPlayAnim(OwnerId(actor), m409->arg, m409->anim);
+        r = ActorPlayAnim(OwnerId((Owner*)actor), m409->arg, m409->anim);
         return r != 0;
     case 0x1800:
         return fn_800C725C(actor);
@@ -667,10 +672,10 @@ int RideTick(void* p) {
                 actor->pTarget = 0;
                 st->i18 = 1;
                 st->f3C = actor->data->fF8;
-                ActorPlayAnim(actor->i224, actor->i228, OwnerId(actor));
+                ActorPlayAnim(actor->i224, actor->i228, OwnerId((Owner*)actor));
             } else {
                 actor->i220 = 0;
-                ActorPlayAnim(actor->i224, actor->i228, OwnerId(actor));
+                ActorPlayAnim(actor->i224, actor->i228, OwnerId((Owner*)actor));
             }
         }
     } else if (state == 3) {
@@ -678,7 +683,7 @@ int RideTick(void* p) {
         rot.x = actor->f22C - actor->v24C.x;
         if (IsZero(rot.z) && IsZero(rot.x)) {
             actor->i220 = 0;
-            ActorPlayAnim(actor->i224, actor->i228, OwnerId(actor));
+            ActorPlayAnim(actor->i224, actor->i228, OwnerId((Owner*)actor));
         } else if (!MemFlagIsSet(st, 0x16) || fabsf(st->f40 - actor->f258) < 10.0f) {
             st->i18 = actor->i218;
             Vec3Set(&st->rot, rot.z, rot.x, 0.0f);

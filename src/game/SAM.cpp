@@ -17,13 +17,14 @@ void fn_8016E20C(void);
 void fn_8016E270(void);
 void fn_8016E4C8(void);
 void fn_8016E314(void* left, void* right, int (*fill)(u8*, u8*, int), int rate);
-void fn_8016B998(int arg);
 void fn_8003BA00(int id);
-void fn_80080714(u32 stream);
-void fn_80080D88(u32 stream);
 void fn_80080A34(u32 stream, int count, int (*cb)(u8*, int), int arg);
-u32 fn_80080E24(void* buffer, int size, int count, int arg);
 }
+
+void QueueClear(u32 queue);                                   // u_80080714
+void QueueFree(u32 queue);                                    // u_80080714
+int QueueCreate(u8* buffer, int size, int capacity, u32 flags); // u_80080714
+int SltRelease(int handle);                                   // u_8016A774
 
 extern "C" void* MemAlloc(int size, const char* file, int line);
 
@@ -77,7 +78,7 @@ void SAMPause(void) {
 void SAMNop(short id, u32 arg) {}
 
 void SAMReset(int id) {
-    fn_80080714(sStream);
+    QueueClear(sStream);
     sTrack = -1;
     fn_8016E270();
     sPendingTrack = -1;
@@ -121,7 +122,7 @@ void SAMStop(void) {
     sTrack = -1;
     sPendingTrack = -1;
     if (sStream != 0xFFFFFFFF) {
-        fn_80080D88(sStream);
+        QueueFree(sStream);
         sStream = -1;
     }
 }
@@ -143,7 +144,7 @@ void SAMUpdate(float dt) {
             sTrack = -1;
             fn_8016E270();
             sState = 0;
-            fn_8016B998(sDoneArg);
+            SltRelease(sDoneArg);
         }
     }
 }
@@ -154,7 +155,7 @@ void SAMAllocBuffers(void) {
 }
 
 void SAMInit(void) {
-    sStream = fn_80080E24(sStreamBuffer, 0x800, 4, 1);
+    sStream = QueueCreate(sStreamBuffer, 0x800, 4, 1);
     sTrack = -1;
     sDoneArg = -1;
     sPendingTrack = -1;

@@ -140,6 +140,11 @@ struct Desc {
 extern "C" void* memset(void*, int, unsigned long);
 extern "C" int rand(void);
 
+void Draw3DBeginLine(int mode, void* setup, float value);              // u_8013A3D4
+void DrawLine(float* p0, float* p1, u8 r0, u8 g0, u8 b0, u8 a0,
+              u8 r1, u8 g1, u8 b1, u8 a1);
+void DrawDisableTexOffsets(void);
+
 extern "C" {
 void fn_802A3778(Vec3* pos, int id);
 void fn_800A0100(void* mtx);
@@ -154,10 +159,6 @@ int fn_8001F928(Actor* actor, int* coords, u32 flags,
                 int (*cb)(HitResult*, void*), void* query);
 int fn_80049940(void);
 void fn_80158C3C(Vec3* pos, u32 id, int a, int b, int c, int d, int e);
-void fn_8013B6F8(float f, int tex, int mode);
-void fn_8013B608(Vec3* cur, Vec3* prev, int a, int b, int c, u8 d, int e,
-                 int f, int g, u8 h);
-void fn_8013B5D4(void);
 void fn_8016F120(void* fx, void* pos);
 int fn_80184080(HitResult* result, void* query);
 }
@@ -392,11 +393,11 @@ void GhostGunDraw(Params* p, Actor* a) {
         }
 
         cur = d->trail[j];
-        fn_8013B6F8((float)(9 - i * 2), sTextureB, 0);
-        fn_8013B608(&cur, &prev, 0xB4, 0x50, 0x82,
+        Draw3DBeginLine(sTextureB, 0, (float)(9 - i * 2));
+        DrawLine(&cur.x, &prev.x, 0xB4, 0x50, 0x82,
                     (u8)(0xC8 - 0x28 * (i + 1)), 0xB4, 0x50, 0x82,
                     (u8)(0xC8 - i * 0x28));
-        fn_8013B5D4();
+        DrawDisableTexOffsets();
         prev = cur;
     }
 }
