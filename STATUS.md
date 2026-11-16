@@ -99,6 +99,13 @@ ExtraTrailApply ONLY if the whole unit then matches byte for byte (flip + AUDIT 
 investigate first in scratch (ODE file split, per-file `-inline deferred`, restored linker-removed ODE functions); nothing
 committed, and the flag change needs the user's final yes.
 
+**Register ranking (fable-regrank on Fable 5.1, 2026-11-16):** rule written up in docs/matching-tricks.md ("How GC/1.3.2
+ranks callee-saved registers"; toys in ~/geist-work/ds/fable-regrank-tools/). Small regime (each candidate interferes with
+<10 others), r31 down: un-copied call results (last call first), then inline locals and compiler temps (last declared first),
+then caller locals (first declared first), then parameters (last first). Crowded regime (degree >= 10, temps included): the
+lowest cost/degree value is pushed first and sinks to the bottom registers. SAM, GunHostState13Enter and fn_80286EAC are
+crowded-regime cases (none fixed yet); next step is deriving the cost formula with 10+-local toys.
+
 **Recurring unsolved shapes (fullmatch round 2026-11-15):**
 - `li r4,9` before `addi r3,rX,624` at a HasCondition call: HostRideBUpdate/HostRideTick (2 diffs each), BehParamsUpdate,
   CreatureUpdate, NpcSveUpdateActor, fn_801CAA48, fn_80295634, fn_8004C9C8, CrabUpdate. `#pragma scheduling off` (probe) still
