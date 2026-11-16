@@ -165,7 +165,6 @@ struct SltEffect {
 struct SltEffectIter {
     void* cur;   // 0x00
     void* next;  // 0x04
-    void* prev;  // 0x08
 };
 
 struct SltEffectList {
@@ -226,9 +225,8 @@ static inline void SltUnloadEach(void) {
     SltIdMsg unload;
     int i;
 
-    i = 0;
     unload.unk0 = 0;
-    for (; i < 2; i++) {
+    for (i = 0; i < 2; i++) {
         if (sLoadedMask & (1 << i)) {
             unload.id = sSlots[i].handle;
             SltUnload(&unload);
@@ -360,15 +358,8 @@ int SltUpdate(void) {
     for (i = 0; i < 2; i++) {
         if (sSlots[i].ptr != 0) {
             if (sSlots[i].flags & 0x400) {
-                SltIdMsg unload;
                 sInputLock = 1;
-                unload.unk0 = 0;
-                for (int k = 0; k < 2; k++) {
-                    if (sLoadedMask & (1 << k)) {
-                        unload.id = sSlots[k].handle;
-                        SltUnload(&unload);
-                    }
-                }
+                SltUnloadEach();
                 sSlots[i].flags &= ~0x200;
                 sSlots[i].flags &= ~0x400;
             } else if (result == 0 && (sSlots[i].flags & 0x200)) {
@@ -377,7 +368,7 @@ int SltUpdate(void) {
             } else {
                 for (j = 0; j < sSlots[i].ptr->count; j++) {
                     if (sSlots[i].ptr->subs[j].type == 'R') {
-                        if (Fn800816B0() > sSlots[i].unk14) {
+                        if (Fn800816B0() > (int)sSlots[i].unk14) {
                             u32 a = sSlots[i].unk24;
                             u32 b = sSlots[i].unk2C;
                             u32 c = sSlots[i].unk20;
@@ -526,7 +517,7 @@ int SltUnload(SltIdMsg* msg) {
     }
 
     int target = sSlots[slot].unk2C;
-    int arg = sSlots[slot].unk30;
+    out.id = sSlots[slot].unk30;
     sSlots[slot].ptr = 0;
     sSlots[slot].id = -1;
     sSlots[slot].stamp = 0;
@@ -542,7 +533,6 @@ int SltUnload(SltIdMsg* msg) {
     sSlots[slot].unk2C = -1;
     sSlots[slot].unk30 = 0;
     sSlots[slot].id = -1;
-    out.id = arg;
     sLoadedMask &= ~(1 << slot);
     sSlots[slot].ptr = 0;
     if (target != -1) {
@@ -864,8 +854,9 @@ int SltRelease(int handle) {
             }
         }
 
+        SltIdMsg m;
         int target = sSlots[slot].unk2C;
-        int arg = sSlots[slot].unk30;
+        m.id = sSlots[slot].unk30;
         sSlots[slot].ptr = 0;
         sSlots[slot].id = -1;
         sSlots[slot].stamp = 0;
@@ -881,8 +872,6 @@ int SltRelease(int handle) {
         sSlots[slot].unk2C = -1;
         sSlots[slot].unk30 = 0;
         sSlots[slot].id = -1;
-        SltIdMsg m;
-        m.id = arg;
         sLoadedMask &= ~(1 << slot);
         sSlots[slot].ptr = 0;
         if (target != -1) {
@@ -895,8 +884,8 @@ int SltRelease(int handle) {
 
 // 0x8016BBB0
 void SltDrawEntry(int slot) {
-    u32 handle = sSlots[slot].handle;
-    if (!sGroups || sGroups[(handle >> 12) & 0xF].file == 0) {
+    int group = (sSlots[slot].handle >> 12) & 0xF;
+    if (!sGroups || sGroups[group].file == 0) {
         return;
     }
 
@@ -906,7 +895,7 @@ void SltDrawEntry(int slot) {
     char bufD[0x100];
     char path[0x400];
 
-    LevelLoadNames(sGroups[(handle >> 12) & 0xF].file->name, &unkArg, bufB, bufD, bufC);
+    LevelLoadNames(sGroups[group].file->name, &unkArg, bufB, bufD, bufC);
     sprintf(path, "/%s/%s%s", bufD, bufD, bufC);
     for (int i = 0; i < sSlots[slot].ptr->count; i++) {
         switch (sSlots[slot].ptr->subs[i].type) {
@@ -920,9 +909,10 @@ void SltDrawEntry(int slot) {
 // 0x8016BCC0
 int SltFileHandler(void* fileData, int size, void* out) {
     SltGroup* group = (SltGroup*)out;
+    u8* data = (u8*)fileData;
 
     group->valid = 0;
-    group->file = (size > 0) ? (SltFile*)fileData : 0;
+    group->file = (size > 0) ? (SltFile*)data : 0;
     int extra = size - 0x88;
     fn_800070C0(group->file);
     fn_800070C0(&group->file->count);
@@ -931,7 +921,7 @@ int SltFileHandler(void* fileData, int size, void* out) {
     }
     if (group->file->count > 0) {
         group->entries = (extra > 0 && (u32)group->file->count * 0x34 != 0)
-                             ? (SltEntry*)((u8*)fileData + 0x88)
+                             ? (SltEntry*)(data + 0x88)
                              : 0;
         extra -= group->file->count * 0x34;
         for (int i = 0; i < group->file->count; i++) {
