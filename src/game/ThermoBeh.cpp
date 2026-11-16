@@ -4,16 +4,18 @@
 // (0x804DA0A8-0x804DA0B4 here, 0x804DA0B8.. for the gauge), and this file has no string table.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/msg.h"
+#include "game/actor.h"
+#include "game/owner.h"
+
 #pragma auto_inline off
 
 typedef unsigned short u16;
-
 
 struct Owner;
 struct Beh;
 
 typedef void (*BehStateFunc)(void* owner, void* beh);
-typedef void (*BehCallback)(Owner* o, Beh* b, int arg);
 
 struct BehState {
     BehStateFunc enter;
@@ -29,43 +31,7 @@ struct ThermoState {
     int sound;
 };
 
-struct Beh {
-    char pad0[0x10];
-    int state;
-    u16 lo1;
-    u16 hi1;
-    u16 lo2;
-    u16 hi2;
-    char pad1C[0x10];
-    unsigned long flags;
-    char pad30[0x1C];
-    BehCallback callback;
-    char pad50[4];
-    ThermoState* data;
-    int unk58;
-    int unk5C;
-};
-
-struct Owner {
-    char pad0[0x270];
-    char conditions[0x894 - 0x270];
-    Beh beh;
-};
-
 struct Actor;
-
-typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
-
-struct ActorType {
-    int unk0;
-    const char* name;
-    ActorMsgFunc msg;
-    void (*update)(Actor* actor, float dt);
-    int (*init)(Actor* actor);
-    void* unk14;
-    void (*destroy)(Actor* actor);
-    void* unk1C[5];
-};
 
 struct GaugeData {
     char pad0[0x18];
@@ -81,20 +47,6 @@ struct ActorInfo {
     int sound;
 };
 
-struct Actor {
-    char pad0[0x38];
-    int handle;
-    char pad3C[0x48];
-    ActorInfo* info;
-    ActorType* type;
-    char pad8C[0x18];
-    GaugeData* data;
-    char padA8[4];
-    unsigned long flags;
-    char padB0[0x60];
-    int anim;
-};
-
 struct Player {
     char pad0[0x31C];
     int mode;
@@ -108,11 +60,6 @@ struct ActorMsg {
     int unk10;
     int unk14;
     int unk18;
-};
-
-struct MsgResult {
-    void* p;
-    char pad[0x1C];
 };
 
 struct Buf60 {
@@ -149,7 +96,6 @@ void Fn8006CDE8(Player* p, int a, int b);                // 0x8006CDE8
 void Fn8006CD84(Player* p, int a, float f);              // 0x8006CD84
 void ActorPlayAnim(int handle, unsigned long anim, int handle2); // 0x800C5654
 void Fn80211AA4(Actor* a, float dt);                     // 0x80211AA4
-
 
 void ThermoEnter0(void* owner, void* beh);
 void ThermoExit0(void* owner, void* beh);
@@ -237,7 +183,7 @@ void ThermoEnter2(void* owner, void* beh) {
     if (beh) {
         Owner* o = (Owner*)owner;
         Beh* b = (Beh*)beh;
-        ThermoState* st = b->data;
+        ThermoState* st = ((ThermoState*)b->data);
         st->next = 0;
         st->unkC = 0;
         BehDone(b);
@@ -248,7 +194,7 @@ void ThermoEnter1(void* owner, void* beh) {
     if (beh) {
         Owner* o = (Owner*)owner;
         Beh* b = (Beh*)beh;
-        ThermoState* st = b->data;
+        ThermoState* st = ((ThermoState*)b->data);
         st->unkC = 0;
         BehDone(b);
     }
@@ -258,7 +204,7 @@ void ThermoEnter0(void* owner, void* beh) {
     if (beh) {
         Owner* o = (Owner*)owner;
         Beh* b = (Beh*)beh;
-        ThermoState* st = b->data;
+        ThermoState* st = ((ThermoState*)b->data);
         st->unkC = 0;
         st->next = 0;
         st->arg = 0;
@@ -285,7 +231,7 @@ int ThermoBehMsg(void* owner, void* beh, int msg) {
     o = (Owner*)owner;
     b = (Beh*)beh;
 
-    st = b->data;
+    st = ((ThermoState*)b->data);
     switch (msg) {
     case 0:
         st->next = 0;
@@ -339,7 +285,7 @@ int ThermoBehUpdate(void* owner, void* beh) {
     o = (Owner*)owner;
     b = (Beh*)beh;
 
-    st = b->data;
+    st = ((ThermoState*)b->data);
     if (HasCondition(o->conditions, 9) || HasCondition(o->conditions, 10) || HasCondition(o->conditions, 11)) {
         st->unkC = 0;
         BehReset(b);
@@ -356,7 +302,7 @@ int ThermoBehDestroy(void* owner, void* beh) {
     if (beh == 0) return 0;
     o = (Owner*)owner;
     b = (Beh*)beh;
-    VFree(b->data);
+    VFree(((ThermoState*)b->data));
     return 1;
 }
 

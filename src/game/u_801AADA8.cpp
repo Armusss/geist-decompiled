@@ -1,16 +1,12 @@
 // u_801AADA8.cpp: the "FSHSVE" actor: message handler, update, follow states and visuals (0x801AADA8-0x801AE50C).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned long u32;
 typedef long s32;
-
-struct Vec3 {
-    float x;                     // 0x00
-    float y;                     // 0x04
-    float z;                     // 0x08
-};
 
 struct ZoneList {
     u8 unk00[0x38];              // 0x00
@@ -634,7 +630,6 @@ void FSHSVEBlockInit(Actor* actor)
 
     fn_800C9C68(actor);
 }
-
 
 extern "C" int fn_800B26B8(Actor* actor);
 extern "C" int fn_800B22F8(Actor* actor, int idx);

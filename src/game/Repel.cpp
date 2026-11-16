@@ -3,9 +3,8 @@
 // strength changes. Debug builds draw its two radii and print its strength.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
-struct Vec3 {
-    float x, y, z;
-};
+#include "game/types.h"
+#include "game/actor.h"
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
@@ -13,19 +12,6 @@ static const char* sActionNames[] = {
 };
 
 struct Actor;
-
-typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
-
-struct ActorType {
-    int unk0;
-    const char* name;
-    ActorMsgFunc msg;
-    void (*update)(Actor* actor, float dt);
-    int (*init)(Actor* actor);
-    void* unk14;
-    void (*destroy)(Actor* actor);
-    void* unk1C[5];
-};
 
 struct RepelInfo {
     char pad0[0x30];
@@ -38,19 +24,6 @@ struct RepelInfo {
 
 struct RepelData {
     float strength;
-};
-
-struct Actor {
-    char pad0[0x24];
-    int x;
-    int y;
-    int z;
-    char pad30[8];
-    unsigned long flags;
-    char pad3C[0x48];
-    RepelInfo* info;
-    char pad88[0x1C];
-    RepelData* data;
 };
 
 int ActorDefaultMsg(Actor* actor, int msg, void* data, int arg); // 0x800E4C64
@@ -85,8 +58,8 @@ static float sRepelLast = gRepelStrength;
 static float sRepelRecharge;
 
 void RepelDestroy(Actor* a) {
-    if (a->data) {
-        PoolFree(a->data, sRepelPool, 4, sRepelUsed);
+    if (((RepelData*)a->data)) {
+        PoolFree(((RepelData*)a->data), sRepelPool, 4, sRepelUsed);
     }
     a->data = 0;
     sRepelActive = 0;
@@ -95,7 +68,7 @@ void RepelDestroy(Actor* a) {
 void RepelUpdate(Actor* a, float dt) {
     int i;
     int n;
-    RepelData* d = a->data;
+    RepelData* d = ((RepelData*)a->data);
 
     if (d == 0) return;
 
@@ -109,10 +82,10 @@ void RepelUpdate(Actor* a, float dt) {
         Actor* other = ActorGet(i);
         if (ActorIsActive(a)) {
             int hit;
-            if ((int)(other->flags >> 24) == 2) {
-                RepelInfo* info = a->info;
+            if ((int)(other->handle >> 24) == 2) {
+                RepelInfo* info = ((RepelInfo*)a->info);
                 float s = info->strength;
-                if (a->data->strength > 0.0f && s > 0.0f && s < 1.0f) {
+                if (((RepelData*)a->data)->strength > 0.0f && s > 0.0f && s < 1.0f) {
                     s = 1.0f;
                 }
                 hit = ActorRepel(other, a, s, info->unk34, info->unk38, info->radius1, info->radius2);
@@ -138,14 +111,14 @@ int RepelMsg(Actor* a, int msg, void* data, int arg) {
         Actor* t = *(Actor**)data;
         Vec3 v;
 
-        DebugDrawSphere(255, 0, 0, 64, t->x, t->y, t->z, t->info->radius1);
-        DebugDrawSphere(0, 255, 0, 64, t->x, t->y, t->z, t->info->radius2);
-        v.x = t->x;
-        v.y = t->y;
-        v.z = t->z;
+        DebugDrawSphere(255, 0, 0, 64, t->place.pos.x, t->place.pos.y, t->place.pos.z, ((RepelInfo*)t->info)->radius1);
+        DebugDrawSphere(0, 255, 0, 64, t->place.pos.x, t->place.pos.y, t->place.pos.z, ((RepelInfo*)t->info)->radius2);
+        v.x = t->place.pos.x;
+        v.y = t->place.pos.y;
+        v.z = t->place.pos.z;
         WorldToScreen(&v, &v);
         DebugTextPos(v.x, v.y, 2);
-        DebugText("Strength %f", t->info->strength);
+        DebugText("Strength %f", ((RepelInfo*)t->info)->strength);
     }
     return ActorDefaultMsg(a, msg, data, arg);
 }
@@ -155,7 +128,7 @@ int RepelInit(Actor* a) {
 
     if (!ActorInitBase(a)) return 0;
 
-    if (a->data == 0) {
+    if (((RepelData*)a->data) == 0) {
         d = (RepelData*)PoolAlloc(sRepelPool, 4, sRepelUsed, 64);
         if (d == 0) return 0;
         a->data = d;

@@ -2,6 +2,8 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 // Names are descriptive guesses; structure layouts come from retail offsets.
 
+#include "game/types.h"
+
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef signed short s16;
@@ -53,15 +55,6 @@ int MemFlagIsSet(void* flags, int bit);
 void ActorPlayAnim(int id, u32 anim, int arg);
 void RangeResetFields(void* argp);
 
-// Math/pose helpers (names already exist in symbols.txt).
-struct Mtx34 {
-    f32 m[12];   // 0x00  3x4 row-major matrix
-};
-struct Vec3 {
-    f32 x;       // 0x00
-    f32 y;       // 0x04
-    f32 z;       // 0x08
-};
 struct PlaceF;
 struct Actor;
 

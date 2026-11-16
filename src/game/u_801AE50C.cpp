@@ -2,46 +2,15 @@
 // Only the functions drafted so far have bodies; every other function is declared with a TODO comment.
 // Names are descriptive guesses; unmatched against retail so far.
 
+#include "game/string.h"
+#include "game/msg.h"
+
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned long u32;
 
-
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
-
-// Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    String(const char* s);                     // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-// Query messages: the receiver writes its answer over the first word of the String.
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
 
 extern "C" int SendMsg(int to, int msg, void* data);                 // 0x800265D4
 extern "C" void fn_800872BC(int flags, const char* fmt, ...);        // debug log
@@ -192,7 +161,6 @@ extern "C" void fn_80048BA8(Actor* a, void* b, int c);
 extern "C" void fn_80050EB0(Actor* a);
 extern "C" int fn_800F7994(int a, u32 b);
 extern "C" int FxStart(void* fx, int a, int b);
-
 
 // Animation lookup table: one row per animation kind, one slot per character variant (data of another unit).
 struct AnimRow {

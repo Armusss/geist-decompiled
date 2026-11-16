@@ -2,11 +2,9 @@
 // Loads the grenade sounds and texture, and keeps up to 8 "GRENADE" particle emitters, one per owner.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
-typedef unsigned long u32;
+#include "game/types.h"
 
-struct Vec3 {
-    float x, y, z;
-};
+typedef unsigned long u32;
 
 // Particle emitter description (0xEC bytes) passed to EmitterCreate.
 struct EmitterDesc {

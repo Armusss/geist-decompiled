@@ -1,5 +1,7 @@
 // u_8028703C.cpp: ARAM page transfer helpers (names are descriptive guesses).
 
+#include "game/types.h"
+
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned long u32;
@@ -618,9 +620,6 @@ int AramPageNodeMessageHandler(u32 handle, int msg, int* data)
 
 // Actor / owner interfaces used by the page FX update below.
 struct Actor;
-struct Mtx34 {
-    float m[12];
-};
 
 void ActorRelinkOwners(Actor* actor);
 int OwnerGetInfo(u32 ownerId);
@@ -692,9 +691,9 @@ int AramPageUpdateNodeState(u32 handle, int* data)
             }
 
             fn_800A025C(vec0, &mtx, 1);
-            vec1[0] = vec0[0] * lbl_804DA4A0 + mtx.m[9];
-            vec1[1] = vec0[1] * lbl_804DA4A0 + mtx.m[10];
-            vec1[2] = vec0[2] * lbl_804DA4A0 + mtx.m[11];
+            vec1[0] = vec0[0] * lbl_804DA4A0 + mtx.m[2][1];
+            vec1[1] = vec0[1] * lbl_804DA4A0 + mtx.m[2][2];
+            vec1[2] = vec0[2] * lbl_804DA4A0 + mtx.m[2][3];
 
             fn_800E1098(node->f5C, vec2, vec0);
             vec2[0] = vec2[0] + vec1[0];
@@ -714,16 +713,16 @@ int AramPageUpdateNodeState(u32 handle, int* data)
                 vec2[0] = (float)(int)state.value[12];
                 vec2[1] = (float)(int)state.value[13];
                 vec2[2] = (float)(int)state.value[14];
-                vec1[0] = vec2[0] - mtx.m[0];
-                vec1[1] = vec2[1] - mtx.m[1];
-                vec1[2] = vec2[2] - mtx.m[2];
+                vec1[0] = vec2[0] - mtx.m[0][0];
+                vec1[1] = vec2[1] - mtx.m[0][1];
+                vec1[2] = vec2[2] - mtx.m[0][2];
                 node->f60 = fn_800E1020(vec1);
                 fn_800E1098(node->f60, vec1, vec0);
             } else {
                 fn_800E1098(node->f5C, vec1, vec0);
             }
 
-            fn_8001A30C(node->f64, ownerInfo, &mtx.m[9], vec1, 0x12000000,
+            fn_8001A30C(node->f64, ownerInfo, &mtx.m[2][1], vec1, 0x12000000,
                         (void (*)(void))AramPageSetupFromTransfer, &params);
         }
     }

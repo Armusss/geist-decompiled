@@ -3,17 +3,11 @@
 // with two variants of an initialiser, and drawn as billboards/sprites.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned long u32;
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Vec4 {
-    float x, y, z, w;
-};
 
 struct GhostShot {
     u8 unk000[0x204];

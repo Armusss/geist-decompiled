@@ -1,6 +1,8 @@
 // u_801A28A4.cpp: a Geist possession helper unit: state bits, follow slots and the dog-fetch message check
 // (0x801A28A4-0x801A6094). Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 typedef unsigned char u8;
 typedef unsigned long u32;
 typedef signed int s32;
@@ -27,7 +29,6 @@ inline u32 StrHash(const char* s, u32 h) {
     h %= 0xFFFFFFFF;
     return h;
 }
-
 
 // Runtime state-machine table: 16-byte records.
 struct GeistStateEntry {
@@ -869,7 +870,6 @@ int GeistA28A4State7Leave(int actor)
     return 1;
 }
 
-
 // Fetch range update (0x801A43D4): once the state timer has passed the
 // configured start threshold, refreshes the follow target from the actor's
 // mode slot and reports whether the target's value exceeds the fetch range.
@@ -1121,7 +1121,6 @@ int GeistA28A4FetchSlotClearBits(int actor)
     return 1;
 }
 
-
 // Fetch-range slot check (0x801A4B58): while the state timer is past the start
 // threshold it refreshes the follow target from the actor's mode slot, then
 // reports whether the target is still inside the configured range.
@@ -1190,7 +1189,6 @@ int GeistA28A4DisableStateBits(int actor)
     ConditionUpdateBit((void*)(actor + 0x270), 0xf, 0);
     return 1;
 }
-
 
 // Follow-slot range check (0x801A4D84): while the state timer is past the start
 // threshold it refreshes the follow target from the actor's active mode slot,
@@ -1410,7 +1408,6 @@ void ActorAim(int* out, Actor* actor, int mode);
 extern "C" float fn_800E1020(float* v);
 extern "C" void fn_800E1BD8(int a, int b, int c, int d, int e);
 
-
 // Reply block of the 0x411 "aim at target" query. The message system keeps
 // the query token at +0x4 and writes the target direction at +0x34.
 struct GeistA28A4AimReply {
@@ -1527,12 +1524,6 @@ int GeistA28A4FetchAimCheck(int targetId, int actor)
 }
 
 // ---- Debug spline message handler -----------------------------------------
-
-struct Vec3 {
-    float x;                         // 0x0
-    float y;                         // 0x4
-    float z;                         // 0x8
-};
 
 void SplineHermiteEval(float t, Vec3* a, Vec3* b, Vec3* c, Vec3* d, Vec3* out);
 void Draw3DBeginLine(int mode, void* arg, float v);

@@ -7,23 +7,12 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <math.h>
+#include "game/types.h"
 
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef signed short s16;
 typedef unsigned long u32;
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct IVec3 {
-    int x, y, z;
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
 
 struct Actor {
     char pad0[0x3C];

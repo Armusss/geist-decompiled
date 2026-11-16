@@ -1,20 +1,14 @@
 // u_802AE27C.cpp: actor behaviour-parameter ("BehParams") message handling and
 // per-frame update.  Names and struct layouts are descriptive guesses.
 
+#include "game/types.h"
+
 struct BehSlot {
     float timerEnd;                     // 0x00
     float timer;                        // 0x04
     float unk08;                        // 0x08
     int   flag;                         // 0x0c
     int   emitter;                      // 0x10
-};
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[12];
 };
 
 struct Place {
@@ -943,7 +937,6 @@ int BehParamsGhostRevealState(void* actorPtr)
     }
     return 1;
 }
-
 
 // Emitter creation descriptor; only the fields the game sets are named.  The
 // gaps are left untouched by the original code, so they stay explicit.

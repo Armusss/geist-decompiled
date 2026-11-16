@@ -3,19 +3,14 @@
 // possessing ghost.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+#include "game/actor.h"
+
 typedef unsigned long u32;
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
-};
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[3][4];
 };
 
 struct BoneXform {
@@ -30,19 +25,6 @@ struct BoneOrigin {
 
 struct Actor;
 
-typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
-
-struct ActorType {
-    int unk0;
-    const char* name;
-    ActorMsgFunc msg;
-    void (*update)(Actor* actor, float dt);
-    int (*init)(Actor* actor);
-    void* unk14;
-    void (*destroy)(Actor* actor);
-    void* unk1C[5];
-};
-
 struct MirrorData {
     char pad0[0xC];
     int ghost;
@@ -54,19 +36,6 @@ struct MirrorData {
 struct Bone {
     char pad0[0x10];
     float x, y, z;
-};
-
-struct Actor {
-    char pad0[0x38];
-    int handle;
-    char pad3C[0x54];
-    int model;
-    char pad94[8];
-    Bone* bones;
-    char padA0[4];
-    MirrorData* data;
-    char padA8[4];
-    unsigned long flags;
 };
 
 struct NotifyMsg {
@@ -123,13 +92,13 @@ ActorType gMirrorType = { 0, "Mirror", MirrorMsg, MirrorUpdate, MirrorInit, 0, M
 void MirrorDestroy(Actor* a) { PossessableDestroy(a); }
 
 void MirrorUpdate(Actor* a, float dt) {
-    if (a->data->flags & 0x20000000) {
+    if (((MirrorData*)a->data)->flags & 0x20000000) {
         ActorRender(a);
     }
 }
 
 int MirrorInit(Actor* a) {
-    MirrorData* d = a->data;
+    MirrorData* d = ((MirrorData*)a->data);
     if (d == 0) a->data = d = (MirrorData*)VAlloc(sizeof(MirrorData));
     memset(d, 0, sizeof(MirrorData));
     if (!PossessableInit(a)) {
@@ -178,7 +147,7 @@ void MirrorReflect(Actor* a) {
     MsgResult res;
     MirrorShot shot;
     BoneXform m;
-    MirrorData* d = a->data;
+    MirrorData* d = ((MirrorData*)a->data);
     int bone;
     int node;
 
@@ -189,9 +158,9 @@ void MirrorReflect(Actor* a) {
     shot.range = 1000.0f;
     shot.flags = 0x200;
     shot.bone = 0;
-    shot.pos[0] = a->bones->x;
-    shot.pos[1] = a->bones->y;
-    shot.pos[2] = a->bones->z;
+    shot.pos[0] = ((Bone*)a->bones)->x;
+    shot.pos[1] = ((Bone*)a->bones)->y;
+    shot.pos[2] = ((Bone*)a->bones)->z;
     shot.pos[2] += 200;
     ActorAim(shot.dir, a, 1);
     shot.dir[0] = -shot.dir[0];
@@ -204,7 +173,7 @@ void MirrorReflect(Actor* a) {
         int name = ModelBoneName(a->model, bone);
         node = ModelNodeFind(a->model, name);
         Vec3Copy(&org.pos, ModelBonePositions(a->model) + bone);
-        BoneWorldMatrix(&m.m, a->bones + bone, &a->bones[bone].x);
+        BoneWorldMatrix(&m.m, ((Bone*)a->bones) + bone, &((Bone*)a->bones)[bone].x);
         pos.x = shot.pos[0];
         pos.y = shot.pos[1];
         pos.z = shot.pos[2];

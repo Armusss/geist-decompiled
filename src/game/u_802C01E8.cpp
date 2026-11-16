@@ -3,6 +3,9 @@
 // query, 0x1800 object lookup) and its per-frame state-machine update.
 // Function and field names below are descriptive guesses; offsets are from retail.
 
+#include "game/msg.h"
+#include "game/string.h"
+
 typedef unsigned char u8;
 typedef signed char s8;
 typedef signed short s16;
@@ -11,27 +14,6 @@ typedef unsigned long u32;
 struct Owner;
 struct BehaviorState;
 struct BehaviorDesc;
-
-// Growable character buffer (retail 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;                               // 0x04
-    int mLength;                               // 0x08
-    int mUnk0C;                                // 0x0C
-    int mOwned;                                // 0x10
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    String(const char* s);                     // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
@@ -167,17 +149,6 @@ struct QueryAnswer {
     float unk14;                               // 0x14
     int flags;                                 // 0x18
     int unk1C;                                 // 0x1C
-};
-
-struct QueryResult {
-    String name;                               // 0x00
-};
-
-struct QueryMsg {
-    Owner* owner;                              // 0x00
-    int id;                                    // 0x04
-    u32 hash;                                  // 0x08
-    QueryResult result;                        // 0x0C
 };
 
 extern float lbl_804D39E0;                     // range factor (other unit)

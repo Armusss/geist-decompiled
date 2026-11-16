@@ -5,6 +5,9 @@
 
 #include <dolphin/types.h>
 #include <string.h>
+#include "game/types.h"
+#include "game/string.h"
+#include "game/msg.h"
 
 extern "C" {
 void* fn_800EB21C(int id);
@@ -38,41 +41,10 @@ inline u32 StrHash(const char* s) {
     }
 }
 
-
 // ---------------------------------------------------------------------------------------------------
 // 0x8025643C-0x8025808C: the gun-with-grenade host states (aim, fire, reload, grenade throw) and the
 // per-host-type table callbacks. Its own string pool ("gun_empty"), host table (0x803BF068) and
 // .sdata2 constants (0x804D9E98-0x804D9EBC) suggest it is a file of its own.
-
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
 
 struct Actor;
 
@@ -249,18 +221,6 @@ inline void QueryValue(int target, u32 hash, int value) {
 // flies along its throw, trails two sets of flame particles and burns whatever it touches.
 // Its .data (the ghost action table at 0x803BEE18, the flame tables, the actor type and the asset names),
 // .rodata (0x8034A718-0x8034A978) and .sdata/.sdata2 constants are separate from the host part below.
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct IVec3 {
-    int x, y, z;
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
 
 struct IBox {
     IVec3 min;
@@ -817,7 +777,6 @@ int ImpFireBallHit(void* p, FireActor* a) {
     a->y += a->height;
     return 1;
 }
-
 
 int GunHostCheckGrenade(Actor* a);
 int GunHostCheckGun(Actor* a);

@@ -1,6 +1,9 @@
 // u_80116B28.cpp: owner type-id, ramp and type-name helpers (0x80116B28-0x8011818C).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+#include "game/string.h"
+
 // Names of functions and fields are descriptive guesses; refine while matching.
 
 extern "C" void* memset(void* dst, int val, unsigned long size);
@@ -17,12 +20,6 @@ static const char* sActionNames[] = {
 struct U80116B28Range {
     float value;    // 0x0
     float limit;    // 0x4
-};
-
-struct IVec3 {
-    int x;
-    int y;
-    int z;
 };
 
 struct U80116B28Actor;
@@ -148,26 +145,6 @@ struct U80116B28Owner {
 struct U80116B28Query {
     int id;        // 0x0
     int pad[7];    // 0x4
-};
-
-// Runtime string buffer; the 0x41E/0x41D query messages carry a String slot.
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    ~String() {}
-    virtual void Release(char* p);
 };
 
 struct U80116B28QueryResult {

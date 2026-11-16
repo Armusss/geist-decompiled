@@ -1,6 +1,8 @@
 // u_80210D80.cpp: particle stepping and draw parameters, the white-out effect and a lookup table (0x80210D80-0x802128E0).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/actor.h"
+
 extern "C" void Draw3DBegin(int texture, void* arg);
 extern "C" void DrawWorldQuadFlipped(float alpha, float depth, float* pos,
                                      unsigned char r, unsigned char g,
@@ -11,7 +13,6 @@ extern "C" void DrawLine(float* from, float* to, unsigned char c0, unsigned char
                          unsigned char c2, unsigned char c3, unsigned char c4,
                          unsigned char c5, unsigned char c6, unsigned char c7);
 extern "C" void DrawDisableTexOffsets();
-
 
 extern "C" double fmod(double x, double y);
 
@@ -486,25 +487,6 @@ struct ActorModelInfo {
     int fieldA0;            // overlay effect model id, -1 when absent
 };
 
-struct Actor {
-    char pad00[0x24];
-    int field24;            // position (fixed-point-ish ints)
-    int field28;
-    int field2C;
-    char pad30[0x38 - 0x30];
-    int field38;
-    char pad3C[0x84 - 0x3C];
-    ActorModelInfo* field84;
-    char pad88[0x90 - 0x88];
-    int field90;            // model node handle
-    char pad94[0xA4 - 0x94];
-    GhostState* fieldA4;
-    int fieldA8;
-    unsigned int fieldAC;
-    char padB0[0x11C - 0xB0];
-    int field11C;           // active white-out effect handle
-};
-
 // A ghost actor owned by the game, as handed back by SendMsg.
 struct WhiteOutGhost {
     char pad0000[0x248];
@@ -543,7 +525,7 @@ void PossessableUpdate(Actor* actor, float dt);
 // white-out effect and fades the actor out while it is in front of the camera.
 void Fn80211AA4(Actor* actor, float dt)
 {
-    GhostState* beh = actor->fieldA4;
+    GhostState* beh = ((GhostState*)actor->data);
     unsigned int flags = beh->field18;
 
     if ((flags & 0x80000000) == 0) {
@@ -563,10 +545,10 @@ void Fn80211AA4(Actor* actor, float dt)
                 GhostNotify(ghost->field26E0, 0, 1);
             }
             float pos[3];
-            pos[0] = (float)actor->field24;
-            pos[1] = (float)actor->field28;
-            pos[2] = (float)actor->field2C;
-            fn_800B4C50(201.0f, 8000.0f, pos, actor->field38, 2, 0x12);
+            pos[0] = (float)actor->place.pos.x;
+            pos[1] = (float)actor->place.pos.y;
+            pos[2] = (float)actor->place.pos.z;
+            fn_800B4C50(201.0f, 8000.0f, pos, actor->handle, 2, 0x12);
             beh->field10 = 0.0f;
             WhiteOutEffectStart(actor, id, 1);
         }
@@ -575,9 +557,9 @@ void Fn80211AA4(Actor* actor, float dt)
         float view[3];
         fn_800A025C(view, cam, 1);
         float dir[3];
-        dir[0] = (float)actor->field24;
-        dir[1] = (float)actor->field28;
-        dir[2] = (float)actor->field2C;
+        dir[0] = (float)actor->place.pos.x;
+        dir[1] = (float)actor->place.pos.y;
+        dir[2] = (float)actor->place.pos.z;
         dir[0] = dir[0] - cam->field24;
         dir[1] = dir[1] - cam->field28;
         dir[2] = dir[2] - cam->field2C;
@@ -616,25 +598,25 @@ void ModelNodeSetup(int node, int asset, int a, int b);
 extern "C" void fn_80211E38(Actor* actor)
 {
     int node;
-    GhostState* beh = actor->fieldA4;
+    GhostState* beh = ((GhostState*)actor->data);
     if (beh == 0) {
         beh = (GhostState*)VAlloc(0x3c);
-        actor->fieldA4 = beh;
+        actor->data = beh;
     }
     memset(beh, 0, 0x3c);
 
     int active;
     if (PossessableInit(actor) == 0) {
         active = 0;
-        actor->fieldAC |= 0x1000000;
+        actor->flags |= 0x1000000;
     } else {
-        actor->fieldAC &= 0xdfffffff;
-        if (actor->field84->field4 != 0xa303c34 && actor->field84->field2C != 0) {
+        actor->flags &= 0xdfffffff;
+        if (((ActorModelInfo*)actor->info)->field4 != 0xa303c34 && ((ActorModelInfo*)actor->info)->field2C != 0) {
             node = AssetFind(0xd9044cbb,
-                                 (unsigned long)actor->field84->field2C);
+                                 (unsigned long)((ActorModelInfo*)actor->info)->field2C);
             if (node != -1) {
-                ModelNodeSetupByName(actor->field90, 0, 0, 1);
-                ModelNodeSetup(actor->field90, node, 1, 1);
+                ModelNodeSetupByName(actor->model, 0, 0, 1);
+                ModelNodeSetup(actor->model, node, 1, 1);
             }
         }
         active = 1;
@@ -645,7 +627,7 @@ extern "C" void fn_80211E38(Actor* actor)
     }
 
     if (active) {
-        GhostState* g = actor->fieldA4;
+        GhostState* g = ((GhostState*)actor->data);
         if (g != 0) {
             g->field18 |= 0x30000000;
         }
@@ -657,23 +639,23 @@ extern "C" void fn_80211E38(Actor* actor)
 // became active.
 int Fn80211F78(Actor* actor)
 {
-    GhostState* beh = actor->fieldA4;
+    GhostState* beh = ((GhostState*)actor->data);
     if (beh == 0) {
         beh = (GhostState*)VAlloc(0x3c);
-        actor->fieldA4 = beh;
+        actor->data = beh;
     }
     memset(beh, 0, 0x3c);
 
     if (PossessableInit(actor) == 0) {
-        actor->fieldAC |= 0x1000000;
+        actor->flags |= 0x1000000;
         return 0;
     }
-    actor->fieldAC &= 0xdfffffff;
-    if (actor->field84->field4 != 0xa303c34 && actor->field84->field2C != 0) {
-        int node = AssetFind(0xd9044cbb, (unsigned long)actor->field84->field2C);
+    actor->flags &= 0xdfffffff;
+    if (((ActorModelInfo*)actor->info)->field4 != 0xa303c34 && ((ActorModelInfo*)actor->info)->field2C != 0) {
+        int node = AssetFind(0xd9044cbb, (unsigned long)((ActorModelInfo*)actor->info)->field2C);
         if (node != -1) {
-            ModelNodeSetupByName(actor->field90, 0, 0, 1);
-            ModelNodeSetup(actor->field90, node, 1, 1);
+            ModelNodeSetupByName(actor->model, 0, 0, 1);
+            ModelNodeSetup(actor->model, node, 1, 1);
         }
     }
     beh->field18 |= 0x8000000;
@@ -682,7 +664,6 @@ int Fn80211F78(Actor* actor)
     beh->field38 = 100000.0f;
     return 1;
 }
-
 
 // Info record returned by OwnerGetInfo; only the type hash at 0x128 is used.
 struct OwnerInfo {
@@ -734,7 +715,7 @@ int Fn802120A0(Actor* actor, int msg, void* data, int arg)
     switch (msg) {
     case 0x407: {
         Actor* target = msgData->actor;
-        GhostState* beh = target->fieldA4;
+        GhostState* beh = ((GhostState*)target->data);
         unsigned int type = msgData->modelId >> 24;
 
         if ((beh->field18 & 8) == 0 &&
@@ -765,7 +746,7 @@ int Fn802120A0(Actor* actor, int msg, void* data, int arg)
     }
     case 0xc14: {
         Actor* target = msgData->actor;
-        GhostState* beh = target->fieldA4;
+        GhostState* beh = ((GhostState*)target->data);
 
         switch (msgData->value.flag) {
         case 0x672f35c2:
@@ -792,20 +773,20 @@ int Fn802120A0(Actor* actor, int msg, void* data, int arg)
     }
     case 0x41d: {
         Actor* target = msgData->actor;
-        GhostState* beh = target->fieldA4;
+        GhostState* beh = ((GhostState*)target->data);
 
         switch (msgData->hash) {
         case -0x233c7b3f:
-            WhiteOutEffectStart(target, target->field38, 1);
+            WhiteOutEffectStart(target, target->handle, 1);
             result = 1;
             break;
         case -0x13ff57cf:
-            WhiteOutEffectStart(target, target->field38, 0);
+            WhiteOutEffectStart(target, target->handle, 0);
             result = 1;
             break;
         case -0x120729ad:
             beh->field18 |= 0x10000000;
-            WhiteOutEffectStart(target, target->field38, 1);
+            WhiteOutEffectStart(target, target->handle, 1);
             result = 1;
             break;
         case -0x203a3a46:
@@ -857,7 +838,7 @@ struct WhiteOutEffectMsg {
 // the overlay actor and notifies the effect system.
 void WhiteOutEffectStart(Actor* actor, unsigned int id, int flag)
 {
-    GhostState* beh = actor->fieldA4;
+    GhostState* beh = ((GhostState*)actor->data);
     if ((beh->field18 & 0x80000000) != 0) {
         return;
     }
@@ -865,12 +846,12 @@ void WhiteOutEffectStart(Actor* actor, unsigned int id, int flag)
     beh->field30 = 30000.0f;
 
     float pos[3];
-    pos[0] = (float)actor->field24;
-    pos[1] = (float)actor->field28;
-    pos[2] = (float)actor->field2C;
+    pos[0] = (float)actor->place.pos.x;
+    pos[1] = (float)actor->place.pos.y;
+    pos[2] = (float)actor->place.pos.z;
 
     if ((beh->field18 & 0x10000000) == 0) {
-        ActorModelInfo* info = actor->field84;
+        ActorModelInfo* info = ((ActorModelInfo*)actor->info);
         fn_80158C3C(pos, info->field24, info->field80, info->field84,
                     info->field88, info->field8C, info->field90);
     }
@@ -884,34 +865,34 @@ void WhiteOutEffectStart(Actor* actor, unsigned int id, int flag)
         fn_80122108(0.2f * beh->field34, beh->field34,
                     0.2f * beh->field38, beh->field38,
                     0.75f, 0.0f, 200.0f,
-                    0, target->field38, pos, 0xb9fc42f5, actor->field38);
+                    0, target->handle, pos, 0xb9fc42f5, actor->handle);
     }
 
-    actor->fieldAC |= 0x20000000;
+    actor->flags |= 0x20000000;
 
-    if (actor->field84->fieldA0 == -1) {
+    if (((ActorModelInfo*)actor->info)->fieldA0 == -1) {
         int msg[2];
         msg[1] = 0;
-        SendMsg(actor->field38, 0xc00, msg);
+        SendMsg(actor->handle, 0xc00, msg);
     } else {
         int msg[8];
         memset(msg, 0, 0x20);
-        msg[1] = actor->field84->fieldA0;
+        msg[1] = ((ActorModelInfo*)actor->info)->fieldA0;
         msg[3] = 0x58;
-        SendMsg(actor->field38, 0xc04, msg);
+        SendMsg(actor->handle, 0xc04, msg);
     }
 
-    if (actor->field11C != 0) {
+    if ((int)actor->effect != 0) {
         fn_801D55CC();
-        actor->field11C = 0;
+        actor->effect = 0;
     }
 
-    int model = actor->field84->field18;
+    int model = ((ActorModelInfo*)actor->info)->field18;
     if (model != 0 && model != -1 && model != -0x55aded2f) {
         WhiteOutEffectMsg msg;
-        msg.x = (float)actor->field24;
-        msg.y = (float)actor->field28;
-        msg.z = (float)actor->field2C;
+        msg.x = (float)actor->place.pos.x;
+        msg.y = (float)actor->place.pos.y;
+        msg.z = (float)actor->place.pos.z;
         msg.zero[0] = 0;
         msg.zero[1] = 0;
         msg.zero[2] = 0;
@@ -922,7 +903,7 @@ void WhiteOutEffectStart(Actor* actor, unsigned int id, int flag)
         SendMsg(0x55000000, 0x1502, &msg);
     }
 
-    fn_800C5654(actor->field38, 0x447d7202, id);
+    fn_800C5654(actor->handle, 0x447d7202, id);
 }
 
 // White-out effect query; this variant never reports an active effect.

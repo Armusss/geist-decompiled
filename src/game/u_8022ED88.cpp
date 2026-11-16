@@ -5,17 +5,10 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <math.h>
+#include "game/types.h"
 
 typedef unsigned long u32;
 typedef unsigned char u8;
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
 
 // Growable array (only the fields the swarm touches).
 struct Vector {

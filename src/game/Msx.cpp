@@ -5,17 +5,9 @@
 
 #include <dolphin/os.h>
 #include <musyx/musyx.h>
+#include "game/types.h"
 
 typedef short s16;
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float rot[9];
-    Vec3 pos;
-};
 
 struct Actor;
 

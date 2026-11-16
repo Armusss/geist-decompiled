@@ -2,6 +2,8 @@
 // The gun slot / aim behaviour code that follows is u_80176044.cpp (its own 1000.0f and 0.0f).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 void TrailDestroy(int id);
 
 // Name is a guess: returns 0 when the top byte of an id is 2 (engine-side subtype?
@@ -111,13 +113,6 @@ extern "C" void fn_80175EE4(MuzzleFlash* flash) {
 // Placeholder name kept: called from other units (GunWithGrenade.cpp and others).
 // Empty body in retail, a bare `blr`.
 extern "C" void fn_80175EF8(void) {}
-
-// 3x3 rotation followed by a translation vector; 0x30 bytes. Used for the actor
-// matrix copied into a slot record (field names are guesses).
-struct Mtx34 {
-    float rot[3][3];   // 0x00
-    float trans[3];    // 0x24
-};
 
 // One record per gun/actor slot (names and purposes are guesses, the stride of
 // 0xe8 and every offset come from retail).

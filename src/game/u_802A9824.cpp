@@ -5,6 +5,10 @@
 // variable messages 0x41E (read) / 0x41D (set) and walk, aim or interact with it.
 // Names are descriptive guesses; unmatched against retail so far.
 
+#include "game/string.h"
+#include "game/msg.h"
+#include "game/types.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
@@ -12,46 +16,6 @@ typedef unsigned char u8;
 
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
-
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    String(const char* s);
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-// Variable query/set message: the receiver reads or writes the first word of the string.
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[12];
-};
 
 struct Actor;
 
@@ -1693,9 +1657,9 @@ int AllyStartMove(Actor* a, Actor* target) {
                 yaw[2] = yaw[2] + (k + angle);
                 fn_8016D4EC(&side, yaw);
                 fn_800E1098(1024.0f, &side, &side);
-                side.x += m.m[3];
-                side.y += m.m[7];
-                side.z += m.m[11];
+                side.x += m.m[0][3];
+                side.y += m.m[1][3];
+                side.z += m.m[2][3];
                 if (fn_800BF2D0(&side) == -1) {
                     if (b->unk10 != 0) {
                         fn_800BC56C(a, target);
@@ -1705,9 +1669,9 @@ int AllyStartMove(Actor* a, Actor* target) {
                     yaw[2] = yaw[2] + k;
                     fn_8016D4EC(&side, yaw);
                     fn_800E1098(1024.0f, &side, &side);
-                    side.x += m.m[3];
-                    side.y += m.m[7];
-                    side.z += m.m[11];
+                    side.x += m.m[0][3];
+                    side.y += m.m[1][3];
+                    side.z += m.m[2][3];
                     if (fn_800BF2D0(&side) == -1) {
                         fn_800BC56C(a, target);
                         return 1;
@@ -1726,7 +1690,6 @@ int AllyStartMove(Actor* a, Actor* target) {
     }
     return 1;
 }
-
 
 AllyState gAllyStates[8] = {
     { (int (*)(void*))AllyEnterState0, AllyTrue5, AllyUpdateState1, "" },

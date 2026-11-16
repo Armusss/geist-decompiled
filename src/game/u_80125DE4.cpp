@@ -1,6 +1,10 @@
 // u_80125DE4.cpp: pickup key actor: update, messages and hit probe (0x80125DE4-0x80127D80).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/string.h"
+#include "game/msg.h"
+#include "game/actor.h"
+
 // The pickup "key" actor (0x80125DE4-0x80127D80): reports its position and time left on screen,
 // resets after a timeout, and configures its model/colour when told which asset it represents.
 typedef unsigned long u32;
@@ -15,39 +19,6 @@ void* memset(void* dst, int val, unsigned long n);
 void* FxFind(const char* name);                      // 0x80170834
 int Rand();                                          // 0x8000DDD0
 
-// Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                        // 0x8028BA9C
-    virtual ~Buffer();                               // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                        // 0x8028C500
-    String(const char* s);                           // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-// Query reply: the receiver writes its answer over the first word of the string.
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
-
 inline int KeyQuerySend(int* out, int target, u32 hash) {
     QueryMsg m;
     int sent;
@@ -59,24 +30,6 @@ inline int KeyQuerySend(int* out, int target, u32 hash) {
     *out = *(int*)&m.result;
     return sent;
 }
-
-struct Actor {
-    char pad00[0x24];        // 0x00
-    int posX;                // 0x24
-    int posY;                // 0x28
-    int posZ;                // 0x2c
-    int (*send)(int msg, void* data); // 0x30
-    char pad34[0x4c];        // 0x34
-    float* pos;              // 0x80
-    u8* unk84;               // 0x84
-    char pad88[4];           // 0x88
-    int unk8C;               // 0x8c
-    int model;               // 0x90
-    char pad94[0x10];        // 0x94
-    void* unkA4;             // 0xa4
-    char padA8[4];           // 0xa8
-    u32 flags;               // 0xac
-};
 
 struct KeyData {
     u32 asset;               // 0x0
@@ -185,22 +138,22 @@ void PickupKeyUpdate(Actor* actor, float dt) {
     KeyData* d;
     int answer;
 
-    d = (KeyData*)actor->unkA4;
+    d = (KeyData*)actor->data;
     KeyQuerySend(&answer, 0x4B000000, 0x9A5A9E33);
     if (d != 0) {
         if (ActorIsActive(actor)) {
             d->timer += dt;
             if (d->timer >= 1000.0f * (float)lbl_804D2E34) {
-                if (fn_800FC764(actor->unk8C, 0) == 0) {
-                    float* p = actor->pos;
-                    actor->posX = (int)p[0];
-                    actor->posY = (int)p[1];
-                    actor->posZ = (int)p[2];
+                if (fn_800FC764(actor->id, 0) == 0) {
+                    float* p = ((float*)actor->def);
+                    actor->place.pos.x = (int)p[0];
+                    actor->place.pos.y = (int)p[1];
+                    actor->place.pos.z = (int)p[2];
                 }
                 d->timer = 0.0f;
             }
             if (answer != 0) {
-                ScreenPrintf("Key is at %d %d %d\n", actor->posX, actor->posY, actor->posZ);
+                ScreenPrintf("Key is at %d %d %d\n", actor->place.pos.x, actor->place.pos.y, actor->place.pos.z);
                 ScreenPrintf("Key will reset in %.0f ms\n",
                              1000.0f * (float)lbl_804D2E34 - d->timer);
             }
@@ -213,7 +166,7 @@ void PickupKeyUpdate(Actor* actor, float dt) {
 int PickupKeyMessage(Actor* a, int msg, void* dataPtr, int arg) {
     int* data = (int*)dataPtr;
     Actor* actor = (Actor*)data[0];
-    KeyData* d = (KeyData*)actor->unkA4;
+    KeyData* d = (KeyData*)actor->data;
     KeyConfigMsg m;
     ShowMsg sm;
     int query;
@@ -246,15 +199,15 @@ int PickupKeyMessage(Actor* a, int msg, void* dataPtr, int arg) {
             m.team = lbl_8039F610[PlayerTeam(HandleToPlayer(*(int*)(data[1] + 0x38)))];
         }
         m.one = 1;
-        m.x = (float)actor->posX;
-        m.y = (float)actor->posY;
-        m.z = (float)actor->posZ;
+        m.x = (float)actor->place.pos.x;
+        m.y = (float)actor->place.pos.y;
+        m.z = (float)actor->place.pos.z;
         target = (MsgTarget*)data[1];
         if (target->send(0x1501, &m) == 0) {
             data[4] = 0;
         } else {
             sm.unk4 = 0;
-            SendMsg(actor->unk8C, 0xC00, &sm);
+            SendMsg(actor->id, 0xC00, &sm);
             d->timer = 0.0f;
             d->unk10 = 1;
             q.object = (void*)data[1];
@@ -277,7 +230,7 @@ int PickupKeyMessage(Actor* a, int msg, void* dataPtr, int arg) {
             if (data[1] == 0xB55C799) {
                 lbl_804D2E34 = data[3];
             } else if (data[1] == 0x9BD4EF06) {
-                dd = (KeyData*)actor->unkA4;
+                dd = (KeyData*)actor->data;
                 value = data[3];
                 if (dd != 0) {
                     KeyQuerySend(&query, 0x4B000000, 0x56CF46F2);
@@ -356,18 +309,18 @@ int PickupKeyInit(Actor* actor) {
     d->timer = 0.0f;
     d->unkC = -1;
     d->unk10 = 0;
-    actor->unkA4 = d;
-    if (actor->unk84 == 0) {
+    actor->data = d;
+    if (((u8*)actor->info) == 0) {
         return 0;
     }
     ModelNodeSetup(actor->model, AssetFind(0xD9044CBB, 0x368F6F11), 0, 1);
     ModelNodeSetup(actor->model, AssetFind(0xD9044CBB, 0x7DA1C2DA), 0, 1);
     ModelNodeSetup(actor->model, AssetFind(0xD9044CBB, 0x9BA7670C), 0, 1);
     ModelNodeSetup(actor->model, AssetFind(0xD9044CBB, 0xF748CD6B), 0, 1);
-    if (*(int*)actor->unk84 != (int)0xBA60EF56) {
+    if (*(int*)((u8*)actor->info) != (int)0xBA60EF56) {
         return 0;
     }
-    d2 = (KeyData*)actor->unkA4;
+    d2 = (KeyData*)actor->data;
     if (d2 != 0) {
         KeyQuerySend(&answer, 0x4B000000, 0x56CF46F2);
         if (answer == 0) {
@@ -388,19 +341,19 @@ int PickupKeyInit(Actor* actor) {
     }
     actor->flags |= 0x20000000;
     m1.unk4 = 0x5E5BCE3E;
-    m1.unk8 = actor->unk8C;
+    m1.unk8 = actor->id;
     m1.unkC = (int)0x901EEFA2;
     SendMsg(0x4B000000, 0xC14, &m1);
     m2.unk4 = 0;
-    m2.unk8 = actor->unk8C;
+    m2.unk8 = actor->id;
     m2.unkC = 0x2840341C;
     SendMsg(0x4B000000, 0xC14, &m2);
-    probe[0] = actor->posX;
-    probe[1] = actor->posY;
-    probe[2] = actor->posZ;
-    probe[3] = actor->posX;
-    probe[4] = actor->posY;
-    probe[5] = actor->posZ - 0x7FFF;
+    probe[0] = actor->place.pos.x;
+    probe[1] = actor->place.pos.y;
+    probe[2] = actor->place.pos.z;
+    probe[3] = actor->place.pos.x;
+    probe[4] = actor->place.pos.y;
+    probe[5] = actor->place.pos.z - 0x7FFF;
     if (fn_8001F928(actor, probe, 0x80000000,
                     (void (*)())PickupKeyProbeHit, hit) != 0) {
         hm.actor = actor;
@@ -408,16 +361,16 @@ int PickupKeyInit(Actor* actor) {
         hm.x = hit[0];
         hm.y = hit[1];
         hm.z = hit[2] + 0x190;
-        actor->send(0xC07, &hm);
+        actor->handler(0xC07, &hm);
     }
-    if (*(int*)(actor->unk84 + 0x94) != -1) {
-        fm.id = *(int*)(actor->unk84 + 0x94);
+    if (*(int*)(((u8*)actor->info) + 0x94) != -1) {
+        fm.id = *(int*)(((u8*)actor->info) + 0x94);
         fm.unk8 = 0;
         fm.unkC = 0;
         fm.unk10 = 0x1000;
         fm.unk14 = 0;
         fm.unk18 = 0;
-        SendMsg(actor->unk8C, 0xC04, &fm);
+        SendMsg(actor->id, 0xC04, &fm);
     }
     d->unk14 = 0;
     return 1;
@@ -430,7 +383,7 @@ int PickupKeyQueryMsg(Actor* actor, int* data) {
     KeyData* d;
     int answer;
 
-    d = (KeyData*)actor->unkA4;
+    d = (KeyData*)actor->data;
     switch (data[1]) {
     case (int)0x9BD4EF06:
         data[3] = (int)d;
@@ -490,7 +443,7 @@ int PickupKeyCmdMsg(Actor* actor, int* dataPtr) {
     case 0x6C345908: {
         float* pos = msg->pos;
         int count = fn_800FD3DC();
-        KeyData* d = (KeyData*)actor->unkA4;
+        KeyData* d = (KeyData*)actor->data;
         HitMsg dropHit;
         HitMsg groundHit;
         ShowMsg show;
@@ -511,14 +464,14 @@ int PickupKeyCmdMsg(Actor* actor, int* dataPtr) {
         dropHit.x = (int)pos[0];
         dropHit.y = (int)pos[1];
         dropHit.z = (int)pos[2];
-        actor->send(0xC07, &dropHit);
+        actor->handler(0xC07, &dropHit);
 
-        probe[0] = actor->posX;
-        probe[1] = actor->posY;
-        probe[2] = actor->posZ;
-        probe[3] = actor->posX;
-        probe[4] = actor->posY;
-        probe[5] = actor->posZ - 0x7FFF;
+        probe[0] = actor->place.pos.x;
+        probe[1] = actor->place.pos.y;
+        probe[2] = actor->place.pos.z;
+        probe[3] = actor->place.pos.x;
+        probe[4] = actor->place.pos.y;
+        probe[5] = actor->place.pos.z - 0x7FFF;
         if (fn_8001F928(actor, probe, 0x80000000,
                         (void (*)())PickupKeyProbeHit, hitPos) != 0) {
             groundHit.actor = actor;
@@ -526,26 +479,26 @@ int PickupKeyCmdMsg(Actor* actor, int* dataPtr) {
             groundHit.x = hitPos[0];
             groundHit.y = hitPos[1];
             groundHit.z = hitPos[2] + 0x190;
-            actor->send(0xC07, &groundHit);
+            actor->handler(0xC07, &groundHit);
         }
         show.unk4 = 1;
-        SendMsg(actor->unk8C, 0xC00, &show);
+        SendMsg(actor->id, 0xC00, &show);
         d->unkC = -1;
 
-        probe[0] = actor->posX;
-        probe[1] = actor->posY;
-        probe[2] = actor->posZ;
-        probe[3] = actor->posX;
-        probe[4] = actor->posY;
-        probe[5] = actor->posZ - 0x7FFF;
+        probe[0] = actor->place.pos.x;
+        probe[1] = actor->place.pos.y;
+        probe[2] = actor->place.pos.z;
+        probe[3] = actor->place.pos.x;
+        probe[4] = actor->place.pos.y;
+        probe[5] = actor->place.pos.z - 0x7FFF;
         found = fn_8001F928(actor, probe, 0x40000000,
                             (void (*)())PickupKeySlotProbe, &handle);
         if (found != 0) {
             return 1;
         }
-        if (*(int*)actor->unk84 == (int)0xBA60EF56) {
+        if (*(int*)((u8*)actor->info) == (int)0xBA60EF56) {
             int value = Rand() % count;
-            KeyData* dd = (KeyData*)actor->unkA4;
+            KeyData* dd = (KeyData*)actor->data;
 
             if (dd != 0) {
                 int answer;
@@ -576,7 +529,7 @@ int PickupKeyCmdMsg(Actor* actor, int* dataPtr) {
         return 0;
     }
     case 0x56CF46F2: {
-        KeyData* d = (KeyData*)actor->unkA4;
+        KeyData* d = (KeyData*)actor->data;
 
         if (d != 0) {
             int answer;
@@ -606,7 +559,7 @@ int PickupKeyCmdMsg(Actor* actor, int* dataPtr) {
         break;
     }
     }
-    return ActorDefaultMsg((Actor*)actor->unk8C, 0xC14, msg, 0);
+    return ActorDefaultMsg((Actor*)actor->id, 0xC14, msg, 0);
 }
 
 // Spline-slot owner probe (0x80127164): asks the slot's holder who owns it (message 0x400)
@@ -619,7 +572,7 @@ int PickupKeySlotProbe(int* slot, int* out) {
     owner = (Actor*)*slot;
     if (owner != 0) {
         reply[0] = (int)owner;
-        if (owner->send(0x400, reply) != 0) {
+        if (owner->handler(0x400, reply) != 0) {
             if (KeyQuerySend(&answer, reply[1], 0x5C8F66F9) != 0 && answer == 0x1AF27550) {
                 *out = (int)owner;
                 return 1;

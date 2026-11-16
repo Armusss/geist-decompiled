@@ -5,6 +5,10 @@
 // save/load menu pages built on top of them.  Names are descriptive guesses; unmatched against
 // retail so far.
 
+#include "game/string.h"
+#include "game/msg.h"
+#include "game/types.h"
+
 typedef unsigned long u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
@@ -1735,38 +1739,6 @@ void fn_802E1C48(int* m, int chan, CardSaveDesc* desc, void* workArea) {
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
 
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    String(const char* s);
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-// Variable query/set message: the receiver reads or writes the first word of the string.
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
-
 extern "C" int SendMsg(int to, int msg, void* data);
 
 inline void SetVar(int target, u32 hash, int value) {
@@ -1776,14 +1748,6 @@ inline void SetVar(int target, u32 hash, int value) {
     m.unk8 = 0;
     SendMsg(target, 0x41D, &m);
 }
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[12];
-};
 
 struct TargetInfo {
     u8 pad00[0x24];
@@ -1932,12 +1896,12 @@ int AimPacketBuild(float up, Actor* a, AimPacket* p) {
     tzu = (int)((float)tz + 250.0f);
     pose = fn_8003A3F0(a->model, a->pose, fn_8003AA9C(a->model, 0, 0));
     ActorGetMatrix(&m, (void*)(pose + p->bone * 0x30));
-    p->pos2.x = m.m[3];
-    p->pos2.y = m.m[7];
-    p->pos2.z = m.m[11];
-    p->pos.x = m.m[3];
-    p->pos.y = m.m[7];
-    p->pos.z = m.m[11];
+    p->pos2.x = m.m[0][3];
+    p->pos2.y = m.m[1][3];
+    p->pos2.z = m.m[2][3];
+    p->pos.x = m.m[0][3];
+    p->pos.y = m.m[1][3];
+    p->pos.z = m.m[2][3];
     {
         float* bp = (float*)(pose + p->bone * 0x30 + 0x24);
         d.x = (float)(tx - (int)bp[0]);

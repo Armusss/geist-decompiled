@@ -3,6 +3,9 @@
 // callback that tests whether the aimed-at target is within reach before reporting a hit.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/string.h"
+#include "game/msg.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
@@ -30,37 +33,6 @@ inline u32 StrHash(const char* s, u32 h) {
     }
     return h;
 }
-
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    String(const char* s);
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
 
 struct Animator {
     char pad0[0x38];

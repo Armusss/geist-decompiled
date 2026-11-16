@@ -3,6 +3,9 @@
 // with a value (handles, counts, floats) and setters update it.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/string.h"
+#include "game/msg.h"
+
 typedef unsigned long u32;
 typedef signed long s32;
 typedef unsigned char u8;
@@ -39,38 +42,6 @@ int PlayerGetPossessor(int id);                        // PlayerGetPossessor__Fi
 
 extern float lbl_804D2D8C;  // .sdata, 0x804D2D8C
 extern int lbl_804D4BD8;    // .sbss,  0x804D4BD8
-
-// Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-// Reply block of a 0x41D query: the receiver writes its answer over the first word.
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
 
 // A message addressed to the HUD system: command hash, then an in/out value word.
 struct HudMsg {
@@ -1068,7 +1039,6 @@ int HudNotifyMsg(void* state, int msg, void* data) {
     }
     return 0;
 }
-
 
 // Hashes a key string onto an existing hash value: characters are mapped through the
 // game's case table (0xFF maps to 0xFFFFFFFF) and the result is reduced mod 0xFFFFFFFF.

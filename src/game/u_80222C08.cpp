@@ -8,6 +8,10 @@
 // and a set of small player state callbacks (enter / exit / update for the climb, hang and
 // rivet states).  Names are descriptive guesses; unmatched against retail so far.
 
+#include "game/types.h"
+#include "game/string.h"
+#include "game/msg.h"
+
 typedef unsigned long u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
@@ -16,45 +20,6 @@ typedef unsigned char u8;
 
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
-
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    String(const char* s);
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[12];
-};
 
 float sqrtf(float x);
 extern "C" {
@@ -1284,8 +1249,6 @@ struct Player {
 extern int gHostAnimA[];        // 0x803BD054
 extern int gHostAnimB[];        // 0x803BCFC4
 extern int gHostAnimC[];        // 0x803BCF7C
-
-
 
 // Exit of the hang state: back to the normal movement sub-state.
 void PlayerHangExit(float dt, Player* p) {

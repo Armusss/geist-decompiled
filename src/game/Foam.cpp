@@ -5,6 +5,9 @@
 
 #include <dolphin/types.h>
 #include <string.h>
+#include "game/msg.h"
+#include "game/string.h"
+#include "game/types.h"
 
 extern "C" {
 void* fn_800EB21C(int id);
@@ -65,56 +68,8 @@ inline u32 StrHash(const char* s) {
     }
 }
 
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx33 {
-    float m[3][3];
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
-
 void MtxSetEuler(Mtx34* m, Vec3* rot);
 void Vec3Set(Vec3* v, float x, float y, float z);
-
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
-
-struct MsgResult {
-    void* p;
-    int unk4;
-    u8 pad8[0x18];
-};
 
 struct ItemType {
     const char* name;

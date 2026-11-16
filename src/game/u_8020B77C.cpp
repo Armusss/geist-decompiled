@@ -1,6 +1,9 @@
 // u_8020B77C.cpp: FX actor emitter helpers (text-out, spawn and update) (0x8020B77C-0x8020D47C).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/string.h"
+#include "game/types.h"
+
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
@@ -39,17 +42,6 @@ struct FxCfg {
 };
 
 struct FxActor;
-
-struct Vec3 {
-    float x;
-    float y;
-    float z;
-};
-
-// 3x4 transform matrix.
-struct Mtx34 {
-    float m[12];
-};
 
 // Engine placement block the actor starts with.
 struct PlaceF;
@@ -182,26 +174,6 @@ extern "C" int fn_8020B97C(FxActor* actor)
 {
     return actor->cfg.flags & 1;
 }
-
-// Engine string object (constructor/destructor live in another unit).
-class Buffer {
-public:
-    Buffer();                                        // 0x8028BA9C
-    virtual ~Buffer();                               // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* data;
-    int length;
-    int unk0C;
-    int owned;
-};
-
-class String : public Buffer {
-public:
-    String();                                        // 0x8028C500
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 // Message sent to the owner to ask for the asset name; the name is filled in
 // by the handler through the trailing String.
@@ -872,18 +844,6 @@ void FxTextRectUpdate(short start, int line, int lines, int unused6, int page, i
     }
 }
 
-// ---------------------------------------------------------------------------
-// Aim blending: turns the emitter towards the direction it was placed from and
-// reports a white-out (0) when the blended orientation drifted away from it.
-// (fn_8020CF48)
-// ---------------------------------------------------------------------------
-struct Quat {
-    float x;
-    float y;
-    float z;
-    float w;
-};
-
 extern "C" float fabsf(float value);
 extern "C" float sqrtf(float value);
 extern "C" void Vec3Set(Vec3* out, float x, float y, float z);
@@ -1003,9 +963,9 @@ int FxEmitterAimUpdate(float dt, FxActor* actor)
     actor->unk688.z = source.z;
 
     MtxSetEuler(&mtx, &actor->unk688);
-    mtx.m[9] = (float)actor->unk24;
-    mtx.m[10] = (float)actor->unk28;
-    mtx.m[11] = (float)actor->unk2c;
+    mtx.m[2][1] = (float)actor->unk24;
+    mtx.m[2][2] = (float)actor->unk28;
+    mtx.m[2][3] = (float)actor->unk2c;
     PlacementToMatrix((PlaceF*)actor, &mtx);
 
     if (fabsf(dirQuat.x - blended.x + dirQuat.y - blended.y +

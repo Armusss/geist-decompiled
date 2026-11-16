@@ -3,6 +3,8 @@
 // timed HUD message with the unlocked host's name.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/actor.h"
+
 typedef unsigned long u32;
 
 extern "C" {
@@ -33,32 +35,6 @@ inline u32 StrHash(const char* s, u32 h) {
 struct ActorInfo {
     char pad0[0x94];
     int unlockId;
-};
-
-struct Actor {
-    char pad0[0x38];
-    u32 flags;
-    char pad3C[0x48];
-    ActorInfo* info;
-    char pad88[4];
-    int id;
-    char pad90[0x14];
-    int unkA4;
-    char padA8[4];
-    u32 flagsAC;
-    char padB0[0x7C];
-    float scanRange;
-};
-
-typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
-
-struct ActorType {
-    int unk0;
-    const char* name;
-    ActorMsgFunc msg;
-    void (*update)(Actor* actor, float dt);
-    int (*init)(Actor* actor);
-    void* unk14[7];
 };
 
 struct HostMsg {
@@ -165,16 +141,16 @@ int CollectionHostMsg(Actor* a, int msg, void* data, int arg) {
         m = (HostMsg*)data;
         host = m->host;
         t = m->target;
-        if ((int)(host->flags >> 24) == 2) {
+        if ((int)(host->handle >> 24) == 2) {
             SoundPlay(0x98EC6A3A);
-            um.flags = host->flags;
+            um.flags = host->handle;
             um.key = 0x1C19D386;
             um.unk4 = 1;
             SendMsg(0x20000000, 0xC14, &um);
             ActorPlayAnim(t->id, 0xB94AE51B, t->id);
         }
         FxStart(FxFind("Host_Power"), 0, 0);
-        GameEvent(0x110A6, t->flags);
+        GameEvent(0x110A6, t->handle);
         Fn8028138C();
         TimerAdd(0, CollectionHostShow, t, 500.0f);
         sm.unk4 = 0;
@@ -191,9 +167,9 @@ int CollectionHostInit(Actor* a) {
         return 0;
     }
 
-    a->flagsAC |= 0x20000000;
-    a->unkA4 = 0;
-    id = a->info->unlockId;
+    a->flags |= 0x20000000;
+    a->data = (void*)0;
+    id = ((ActorInfo*)a->info)->unlockId;
     if (id != -1) {
         InitMsg m;
         m.id = id;

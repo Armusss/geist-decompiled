@@ -2,16 +2,10 @@
 // An actor follows a route through a node graph (graph handles at 0x804D2B98/0x804D2B9C, route tables at
 // 0x804499D0). Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct IVec3 {
-    int x, y, z;
-};
 
 struct Actor;
 
@@ -189,7 +183,6 @@ void NavGraphTrack(Actor* actor);
 void NavRouteTrack(Actor* actor);
 // TODO (not drafted yet, 0x5D8 bytes at 0x800BE52C): search cost callback for route following
 float NavRouteCost(int from, int to, int arg, void* ctx, SearchState* state);
-
 
 // NavInit (reset the navigation tuning block)
 extern "C" void fn_800BAA14() {

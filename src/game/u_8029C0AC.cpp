@@ -1,6 +1,8 @@
 // u_8029C0AC.cpp: NPC / path-follow actor ("Sve") message handlers and follow states (0x8029C0AC-0x8029E714).
 // Names are descriptive guesses.
 
+#include "game/types.h"
+
 typedef unsigned char u8;
 typedef unsigned long u32;
 typedef long s32;
@@ -53,12 +55,6 @@ struct SveTypeData {
     u32 anim160;                          // 0x160: animation bank
     u32 anim164;                          // 0x164
     u32 anim168;                          // 0x168
-};
-
-struct Vec3 {
-    float x;
-    float y;
-    float z;
 };
 
 struct Owner {
@@ -620,7 +616,6 @@ struct SveFollowState {
     int unk00[6];
     u32 flags;                            // 0x18
 };
-
 
 extern "C" int fn_800B1ED4(void* owner, int mode);
 extern "C" void fn_800E1098(float scale, Vec3* io, Vec3* in);

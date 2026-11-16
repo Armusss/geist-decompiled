@@ -4,40 +4,15 @@
 // owner and target queries, applies hit damage (with bone based multipliers) and saves/restores
 // the 0x5C byte behaviour block.  Names are descriptive guesses; unmatched against retail so far.
 
+#include "game/types.h"
+#include "game/string.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
 // From a shared header: names of the actor actions (the table itself is unused here).
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
-};
-
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    String(const char* s);
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[12];
 };
 
 extern unsigned char __upper_map[256];

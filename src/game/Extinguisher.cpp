@@ -4,6 +4,8 @@
 
 #include <dolphin/types.h>
 #include <string.h>
+#include "game/effect.h"
+#include "game/string.h"
 
 extern "C" {
 void* fn_800EB21C(int id);
@@ -79,25 +81,6 @@ struct Mtx34 {
 void MtxSetEuler(Mtx34* m, Vec3* rot);
 void Vec3Set(Vec3* v, float x, float y, float z);
 
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    ~String() {}
-    virtual void Release(char* p);
-};
-
 struct QueryResult {
     String name;
 };
@@ -134,26 +117,6 @@ struct SpawnMsg {
 };
 
 // ---- Extinguisher ----
-
-struct EffectObj {
-    int unk0;
-    int unk4;
-    int emitter;
-    void* data;
-};
-
-struct EffectType {
-    const char* name;
-    u32 hash;
-    int unk8[3];
-    void* (*create)(int a, int id);
-    void (*destroy)(EffectObj* obj);
-    int (*msg)(EffectObj* obj, int msg, int arg, void* data, float dt);
-    u32 (*query)(EffectObj* obj, int msg);
-    void (*update)(EffectObj* obj, float dt);
-    void (*reset)(EffectObj* obj);
-    int unk2C;
-};
 
 inline u32 EffectTypeHash(EffectType* type) {
     if (type->hash == 0) {

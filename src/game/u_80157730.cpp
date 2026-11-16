@@ -3,6 +3,10 @@
 // manages the shared per-player HUD/effect pools (small handle arrays in .sbss).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+#include "game/string.h"
+#include "game/msg.h"
+
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned long u32;
@@ -14,7 +18,6 @@ typedef float f32;
 typedef double f64;
 
 struct Actor;
-struct Mtx34 { f32 m[3][4]; };
 struct Vec3;
 
 // From a shared header: names of the ghost actions (the table itself is unused here), and the
@@ -441,38 +444,6 @@ extern ResArray* lbl_804D4EB0;
 extern f32 lbl_804D4EB4;
 
 extern u8 lbl_80346630[16];
-
-// Growable character buffer (0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-struct QueryResult {
-    String name;
-};
-
-// 0x41D "query" payload, answered by the receiving actor.
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
 
 extern "C" {
 

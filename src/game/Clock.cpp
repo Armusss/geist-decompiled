@@ -4,20 +4,13 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <dolphin/os.h>
+#include "game/types.h"
 
 typedef unsigned long u32;
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
-};
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[3][4];
 };
 
 struct Actor;

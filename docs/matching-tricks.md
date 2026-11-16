@@ -274,3 +274,27 @@ fix: only the rank (the order the values are created in) differs. What worked:
   (`block` r29 vs the hoisted `&sRingWrite` r28): 30 more shapes (no `block` local, header pointer local, const,
   parameter reuse, definition after the range check, whole body in one inline, no inline) gave 39 or worse; the
   open question is how a local gets ranked between two hoisted address temporaries.
+
+## Shared engine types (fable-types, 2026-11-16)
+`include/game/` now holds one definition per shared type: `types.h` (Vec3, IVec3, Vec4, Quat, Mtx33, Mtx34, PlaceF,
+Placement), `string.h` (Buffer, String), `msg.h` (QueryMsg, QueryResult, MsgResult, Msg400/409/40A/41D/41E),
+`effect.h` (EffectObj, EffectType), `actor.h` (world-object Actor, ActorType) and `owner.h` (character Owner, Beh).
+151 units include them. New units should include them instead of declaring partial copies. Findings:
+- **String/Buffer are 0x14 bytes with the vptr at 0.** Units that declared a smaller String (an empty class, or a
+  Buffer with only a virtual destructor) had every later stack slot wrong: fixing only the size improved seven
+  functions of u_8006C604, five of u_80208238, SlotOwnerMatches (u_800A6F18) and matched FxListInit (u_800776FC).
+- **How a struct is declared changes copies.** `struct IVec3 { int v[3]; }` (Extinguisher, ExtinguisherHitCopy) and
+  `struct Vec4 { float v[4]; }` (u_80247EB0, GrenadeUpdate) copy word-wise; the named-member forms in types.h do
+  not match there, so these two units keep local types. `Mtx34` as `m[12]` or `m[3][4]` gives the same code.
+- **"Actor" is three retail objects** that share only the first 0x3C bytes: the world object (actor.h), the
+  character (owner.h, called Actor in ~25 units) and the player/host object (~0x27A0 bytes). A unit must use the
+  layout of its own kind; the common prefix is Placement at 0, `handler(msg, data)` at +0x30, handle/id at +0x38.
+- **The handle at actor +0x38 is unsigned** (top byte = object kind): `(int)(handle >> 24) == 2` needs the logical
+  shift; compare with -1 through `(int)handle`.
+- **Per-type pointers are untyped in the shared structs** (`def`, `info`, `data`, `beh.data`): cast at the use
+  (`((HazardInfo*)a->info)->size`). The casts do not change code: 19 converted units have byte-identical objects, and
+  ThermoBeh/Thermostat have identical code (only their symbol tables changed).
+- The owner words at +0x8EC/+0x8F0 are the last two words of the behaviour block at +0x894 (`beh.unk58/unk5C`).
+- Tools (local): ~/geist-work/ds/fable-types-tools/ — `ud.py snap|cmp` (per-function diff counts and object hash
+  for all units in 3 s), `fields.py NAME` (merged offset table of every local definition of a struct),
+  `conv.py` / `sconv.py` (replace local definitions by a header, keep only if no function gets worse).

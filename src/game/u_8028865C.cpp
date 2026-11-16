@@ -4,20 +4,11 @@
 
 #include <math.h>
 #include <string.h>
+#include "game/types.h"
+#include "game/string.h"
 
 typedef unsigned char u8;
 typedef unsigned int u32;
-
-struct Vec3
-{
-    float x, y, z;
-};
-
-// 3x4 transformation matrix.
-struct Mtx34
-{
-    float m[3][4];
-};
 
 struct Actor;
 
@@ -1275,22 +1266,6 @@ public:
 class BufferBase : public BufferBase2 {
 public:
     virtual ~BufferBase() {}
-};
-
-class Buffer : public BufferBase {
-public:
-    virtual void Prepare();
-    virtual int Query();
-    virtual void Fill(int offset, int size);
-    virtual void Unk18(int data, u32 state);
-    virtual int GetSpan();
-    virtual ~Buffer();
-    Buffer();
-
-    char* mStart;
-    int mSize;
-    int unk0C;
-    u32 mState;
 };
 
 // Buffer that releases its payload block when destroyed (vtable 0x803C29B0).

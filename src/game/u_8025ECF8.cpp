@@ -5,31 +5,14 @@
 // word, a voice-effect handle and the timers the update functions advance.
 // Names are descriptive guesses; unmatched against retail so far.
 
+#include "game/types.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
-};
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
-
-struct Mtx33 {
-    float m[3][3];
-};
-
-// Orientation and position. The matrix helpers write a full 3x4 over rot, running into pos;
-// pos is then filled in by the caller.
-struct PlaceF {
-    Mtx33 rot;
-    Vec3 pos;
 };
 
 // Root bone: the translation column of its matrix lives at 0x10.
@@ -296,7 +279,6 @@ extern u32 lbl_804D3764;
 extern u32 lbl_804D3768;
 int ShellCrabMsg(int msg, int* data);
 int ShellCrabUpdate(Actor* a);
-
 
 int ShellRollDustStart(Actor* a, Vec3* euler);
 // TODO (not drafted yet, 0x6DC bytes at 0x802600AC): state machine driver

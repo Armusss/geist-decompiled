@@ -1,5 +1,7 @@
 // u_80080F88.cpp: animation event track system (pool, markers, visibility).
 
+#include "game/types.h"
+
 typedef unsigned long u32;
 
 struct AnimTrackTable;
@@ -140,10 +142,6 @@ struct Actor {
     float posX;        // +0x24
     float posY;        // +0x28
     float posZ;        // +0x2C
-};
-
-struct Mtx34 {
-    float m[3][4];
 };
 
 char* ModelAnimate(int model, char* boneMap, int arg);

@@ -3,15 +3,13 @@
 // per-actor state functions of a large actor class.  Names are descriptive guesses; only the tiny
 // accessors are drafted so far, the rest are placeholders waiting to be drafted.
 
+#include "game/types.h"
+
 typedef unsigned long u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
 
 #define NULL 0
-
-struct Vec3 {
-    float x, y, z;
-};
 
 struct ListLink {
     int value;              // 0x00

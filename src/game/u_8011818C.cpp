@@ -2,6 +2,8 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <math.h>
+#include "game/types.h"
+#include "game/string.h"
 
 #pragma auto_inline off
 
@@ -141,26 +143,6 @@ int IsSameTeamOtherActor(void* slotPtr, void* targetPtr)
     }
     return 0;
 }
-
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    String(const char* s);
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 // The receiver of a 0x41E name query writes its answer over the first word
 // of the string it is handed.
@@ -571,11 +553,6 @@ void FollowSetTargetObj(void* range, void* obj);
 struct ZoneList;
 void ZoneFlagSet(ZoneList* list, int on, int unused);
 
-struct IVec3 {
-    int x;
-    int y;
-    int z;
-};
 void ZoneUpdate(void* zone, IVec3* pos);
 
 // Item state table: 0x10-byte entries, one per item state id.

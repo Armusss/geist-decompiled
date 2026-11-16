@@ -3,6 +3,9 @@
 // (message 0x1502) finds a matching pickup and hands it to the ghost.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+#include "game/actor.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
@@ -42,57 +45,9 @@ inline u32 StrHash(const char* s, u32 h) {
     return h;
 }
 
-struct Vec3 {
-    float x, y, z;
-};
-
-struct IVec3 {
-    int x, y, z;
-};
-
-struct Mtx33 {
-    float m[3][3];
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
-
-struct PlaceF {
-    Mtx33 rot;
-    Vec3 pos;
-};
-
-struct Placement {
-    Mtx33 rot;
-    IVec3 pos;
-};
-
 struct Actor;
 struct HostData;
 struct HostInfo;
-
-typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
-
-struct Actor {
-    Placement place;
-    int (*query)(int msg, void* data);
-    char pad34[4];
-    u32 handle;
-    char pad3C[0x44];
-    HostInfo* def;
-    HostInfo* info;
-    char pad88[4];
-    int id;
-    char pad90[0x14];
-    HostData* data;
-    int unkA8;
-    u32 flags;
-    char padB0[0x60];
-    int unk110;
-    char pad114[4];
-    float unk118;
-};
 
 struct HostInfo {
     char pad0[0x18];
@@ -228,20 +183,6 @@ int PickupMsg(Actor* a, int msg, void* data, int arg);
 int PickupInit(Actor* a);
 void PickupDestroy(Actor* a);
 
-// The actor type descriptor (0x803AA9D8).
-struct ActorType {
-    int unk0;
-    const char* name;
-    ActorMsgFunc msg;
-    void (*update)(Actor* a, float dt);
-    int (*init)(Actor* a);
-    void* unk14;
-    void (*destroy)(Actor* a);
-    void (*save)(HostStream* s);
-    void (*load)(HostStream* s);
-    void* unk24[3];
-};
-
 ActorType gPickupType = { 0, "Pickup", PickupMsg, PickupUpdate, PickupInit, 0, PickupDestroy, PickupSave, PickupLoad };
 
 // 0x801A1D24: unpack the pickup state from a save-game stream.
@@ -274,7 +215,7 @@ void PickupLoad(HostStream* s) {
             }
         }
         if (ok) {
-            d = (HostData*)a->data;
+            d = (HostData*)((HostData*)a->data);
             memcpy(d, s->ptr, 0xC);
             s->count -= 0xC;
             s->ptr += 0xC;
@@ -287,7 +228,7 @@ void PickupLoad(HostStream* s) {
 
 // 0x801A1E8C: pack the pickup state into a save-game stream.
 void PickupSave(HostStream* s) {
-    HostData* d = (HostData*)s->actor->data;
+    HostData* d = (HostData*)((HostData*)s->actor->data);
     u32 hash;
 
     if (d == 0) {
@@ -314,7 +255,7 @@ void PickupSave(HostStream* s) {
 
 // 0x801A2004: per-frame update while the pickup is being carried.
 void PickupUpdate(Actor* a, float dt) {
-    HostData* d = (HostData*)a->data;
+    HostData* d = (HostData*)((HostData*)a->data);
 
     if (d->active) {
         d->timer -= dt;
@@ -367,7 +308,7 @@ int PickupMsg(Actor* a, int msg, void* data, int arg) {
         Actor* host = ((Actor**)data)[1];
         Actor* target = ((Actor**)data)[0];
         if (target && host) {
-            d = target->data;
+            d = ((HostData*)target->data);
             if (d) {
                 q.host = host;
                 q.unk8 = d->unk0;
@@ -379,7 +320,7 @@ int PickupMsg(Actor* a, int msg, void* data, int arg) {
                 q.px = (float)target->place.pos.x;
                 q.py = (float)target->place.pos.y;
                 q.pz = (float)target->place.pos.z;
-                if (host->query(0x1503, &q)) {
+                if (host->handler(0x1503, &q)) {
                     ActorPlayAnim(target->id, 0xB94AE51B, target->id);
                     sm.unk4 = 0;
                     SendMsg(target->id, 0xC00, &sm);
@@ -421,7 +362,7 @@ int PickupMsg(Actor* a, int msg, void* data, int arg) {
     case 0x41D: {
         Actor* target = ((Actor**)data)[0];
         int handled;
-        HostData* d = target->data;
+        HostData* d = ((HostData*)target->data);
         switch (((int*)data)[1]) {
         case (int)0x9D93F3A0:
             d->unk28 = ((int*)data)[3];
@@ -445,7 +386,7 @@ int PickupMsg(Actor* a, int msg, void* data, int arg) {
 static inline int HostSetup(Actor* a) {
     HostData* h;
 
-    if (a->data == 0) {
+    if (((HostData*)a->data) == 0) {
         if (!ActorInitBase(a)) {
             return 0;
         }
@@ -455,21 +396,21 @@ static inline int HostSetup(Actor* a) {
         }
         a->data = h;
     } else {
-        h = (HostData*)a->data;
+        h = (HostData*)((HostData*)a->data);
         ActorFn80022D98(a, 1);
-        fn_800902F0(a->unk110);
+        fn_800902F0(a->anim);
     }
-    h->x = (int)a->info->unk30;
-    h->unk0 = a->info->unk18;
-    h->y = (int)a->info->unk34;
-    h->unk4 = a->info->unk1C;
-    h->z = (int)a->info->unk38;
-    h->unk8 = a->info->unk20;
+    h->x = (int)((HostInfo*)a->info)->unk30;
+    h->unk0 = ((HostInfo*)a->info)->unk18;
+    h->y = (int)((HostInfo*)a->info)->unk34;
+    h->unk4 = ((HostInfo*)a->info)->unk1C;
+    h->z = (int)((HostInfo*)a->info)->unk38;
+    h->unk8 = ((HostInfo*)a->info)->unk20;
     h->unk28 = 0;
     h->handle = a->handle;
-    if (a->info->key == 0x6C345908) {
+    if (((HostInfo*)a->info)->key == 0x6C345908) {
         h->unk18 = 1;
-        h->timerMax = 1000.0f * a->info->unk3C;
+        h->timerMax = 1000.0f * ((HostInfo*)a->info)->unk3C;
     }
     return 1;
 }
@@ -489,7 +430,7 @@ static inline int PickupScan(PickupScanData* m) {
         if (SendMsg(sHostPool[i].handle, 0x400, &find)) {
             target = find.actor;
             if (target != 0) {
-                d = target->data;
+                d = ((HostData*)target->data);
                 if (ActorFn80022FD8(target) && d->unk0 == m->id) {
                     HostSetup(target);
                     {
@@ -521,7 +462,7 @@ int PickupScanMsg(int value, int msg, void* data) {
 
 // 0x801A2710: destroy callback.
 void PickupDestroy(Actor* a) {
-    PoolFree(a->data, sHostPool, 0x30, sHostUsed);
+    PoolFree(((HostData*)a->data), sHostPool, 0x30, sHostUsed);
     a->data = 0;
 }
 
@@ -529,7 +470,7 @@ void PickupDestroy(Actor* a) {
 int PickupInit(Actor* a) {
     HostData* h;
 
-    if (a->data == 0) {
+    if (((HostData*)a->data) == 0) {
         if (!ActorInitBase(a)) {
             return 0;
         }
@@ -539,21 +480,21 @@ int PickupInit(Actor* a) {
         }
         a->data = h;
     } else {
-        h = (HostData*)a->data;
+        h = (HostData*)((HostData*)a->data);
         ActorFn80022D98(a, 1);
-        fn_800902F0(a->unk110);
+        fn_800902F0(a->anim);
     }
-    h->x = (int)a->info->unk30;
-    h->unk0 = a->info->unk18;
-    h->y = (int)a->info->unk34;
-    h->unk4 = a->info->unk1C;
-    h->z = (int)a->info->unk38;
-    h->unk8 = a->info->unk20;
+    h->x = (int)((HostInfo*)a->info)->unk30;
+    h->unk0 = ((HostInfo*)a->info)->unk18;
+    h->y = (int)((HostInfo*)a->info)->unk34;
+    h->unk4 = ((HostInfo*)a->info)->unk1C;
+    h->z = (int)((HostInfo*)a->info)->unk38;
+    h->unk8 = ((HostInfo*)a->info)->unk20;
     h->unk28 = 0;
     h->handle = a->handle;
-    if (a->info->key == 0x6C345908) {
+    if (((HostInfo*)a->info)->key == 0x6C345908) {
         h->unk18 = 1;
-        h->timerMax = 1000.0f * a->info->unk3C;
+        h->timerMax = 1000.0f * ((HostInfo*)a->info)->unk3C;
     }
     return 1;
 }

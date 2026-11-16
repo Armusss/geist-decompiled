@@ -3,16 +3,14 @@
 // stored power-up, "[PWERUP]" is followed by two 12-byte blocks).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+#include "game/string.h"
+#include "game/msg.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
 struct ActorType;
-
-struct Vec3 {
-    float x;
-    float y;
-    float z;
-};
 
 struct ActorInfo {
     char pad0[0x18];
@@ -474,13 +472,6 @@ int ZoneWalkNodes(ZoneList* list, ZoneNodeCallback cb, int param) {
     return 1;
 }
 
-// Integer position used as the centre of a zone search.
-struct IVec3 {
-    int x;
-    int y;
-    int z;
-};
-
 int ZoneHitListAdd(Actor* actor, ZoneList* list, float value);
 int ZoneHitListAddRaw(Actor* actor, ZoneList* list, float value);
 
@@ -675,10 +666,6 @@ int ZoneInit(void* zone, Actor* actor, IVec3* pos, void* buf, int count, float r
     return 1;
 }
 
-struct Mtx34 {
-    float m[3][4];
-};
-
 // Six-word snapshot of the actor's collision source.
 struct ZoneHitBox {
     u32 data[6];
@@ -811,15 +798,6 @@ struct ZoneDash {
     u32 unk68;        // 0x68
     u32 unk6C;        // 0x6C
     ZoneList zone;    // 0x70
-};
-
-struct Mtx33 {
-    float m[3][3];
-};
-
-struct PlaceF {
-    Mtx33 rot;
-    Vec3 pos;
 };
 
 // Matrix produced from a PlaceF; PlacementToMatrix stores fixed-point integers.
@@ -1105,40 +1083,6 @@ void ZoneActorSetup(Actor* actor) {
 }
 
 // --- types used by the dash zone callback (0x800D2290) ---
-
-// Minimal String/Buffer pair from the shared engine headers. The 0x41E query
-// below only reads the first word of the String, but its constructor and
-// destructor calls belong to the message sequence.
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();                    // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                             // 0x8028C500
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-struct QueryResult {
-    String name;
-};
-
-// 0x41E "name registered under this hash" payload.
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
 
 // Asks `target` for the name stored under `hash`; returns SendMsg's result and
 // hands the name back through `out`.

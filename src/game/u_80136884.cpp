@@ -5,6 +5,8 @@
 // motion system. The per-type table callback starts a type's message handler.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/string.h"
+
 typedef unsigned char u8;
 typedef unsigned long u32;
 
@@ -119,27 +121,6 @@ struct MsgQuery {
     int pad08;                    // 0x08
     int handle;                   // 0x0C
     int pad10[4];                 // 0x10
-};
-
-// Runtime string buffer (shared runtime layout, 20 bytes); the receiver of the
-// 0x41E name request writes its answer over the first word.
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    ~String() {}
-    virtual void Release(char* p);
 };
 
 // Payload of the 0x41E name request: the answer String follows the header.

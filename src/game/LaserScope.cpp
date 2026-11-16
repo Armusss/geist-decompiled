@@ -3,6 +3,10 @@
 // zooms smoothly towards it. It reserves and frees a target through "new"/"free" queries.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/string.h"
+#include "game/msg.h"
+#include "game/actor.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
@@ -29,41 +33,7 @@ inline u32 StrHash(const char* s) {
     return h;
 }
 
-// Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    String(const char* s);                     // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
-
 struct Actor;
-
-typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
-
-struct ActorType {
-    int unk0;
-    const char* name;
-    ActorMsgFunc msg;
-    void (*update)(Actor* actor, float dt);
-    int (*init)(Actor* actor);
-    void* unk14;
-    void (*destroy)(Actor* actor);
-    void* unk1C[5];
-};
 
 struct LaserData {
     void* owner;
@@ -77,32 +47,11 @@ struct LaserData {
     float zoom;
 };
 
-struct Actor {
-    char pad0[0x38];
-    int handle;
-    char pad3C[0x68];
-    LaserData* data;
-    char padA8[4];
-    unsigned long flags;
-};
-
 struct Player {
     char pad0[0x184];
     int camera;
     char pad188[0x1C4];
     int zoomPressed;
-};
-
-// "new"/"free" query: the receiver writes its answer over the first word of the string.
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
 };
 
 struct LinkMsg {
@@ -132,7 +81,7 @@ void LaserDestroy(Actor* a);
 ActorType gLaserScopeType = { 0, "Possessable Laser Scope", LaserMsg, LaserUpdate, LaserInit, 0, LaserDestroy };
 
 void LaserDestroy(Actor* a) {
-    LaserData* d = a->data;
+    LaserData* d = ((LaserData*)a->data);
 
     if (d->target) {
         QueryMsg m;
@@ -143,7 +92,7 @@ void LaserDestroy(Actor* a) {
 }
 
 void LaserUpdate(Actor* a, float dt) {
-    LaserData* d = a->data;
+    LaserData* d = ((LaserData*)a->data);
 
     switch (d->state) {
     case 0:
@@ -185,11 +134,11 @@ int LaserInit(Actor* a) {
     QueryMsg m;
     LaserData* d;
 
-    if (a->data == 0) {
+    if (((LaserData*)a->data) == 0) {
         d = (LaserData*)VAlloc(sizeof(LaserData));
         a->data = d;
     } else {
-        d = a->data;
+        d = ((LaserData*)a->data);
     }
     memset(d, 0, sizeof(LaserData));
 
@@ -215,7 +164,7 @@ int LaserInit(Actor* a) {
 }
 
 static inline int LaserOnFree(void* data) {
-    LaserData* d = (*(Actor**)data)->data;
+    LaserData* d = ((LaserData*)(*(Actor**)data)->data);
 
     int ret = 0;
 
@@ -230,7 +179,7 @@ static inline int LaserOnFree(void* data) {
 
 static inline int LaserOnTrigger(void* data) {
     Actor* actor = *(Actor**)data;
-    LaserData* d = actor->data;
+    LaserData* d = ((LaserData*)actor->data);
 
     switch (((int*)data)[3]) {
     case 0x672F35C2: {

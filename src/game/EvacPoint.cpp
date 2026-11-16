@@ -3,50 +3,12 @@
 // stands in it, the level gets a trigger message.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+#include "game/actor.h"
+
 typedef unsigned long u32;
 
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx33 {
-    float m[3][3];
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
-
-struct IVec3 {
-    int x, y, z;
-};
-
-// Orientation and float position, as used to place a new actor.
-struct PlaceF {
-    Mtx33 rot;
-    Vec3 pos;
-};
-
-// Orientation and position, as stored at the start of every actor.
-struct Placement {
-    Mtx33 rot;
-    IVec3 pos;
-};
-
 struct Actor;
-
-typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
-
-struct ActorType {
-    int unk0;
-    const char* name;
-    ActorMsgFunc msg;
-    void (*update)(Actor* actor, float dt);
-    int (*init)(Actor* actor);
-    void* unk14;
-    void (*destroy)(Actor* actor);
-    void* unk1C[5];
-};
 
 struct EvacDef {
     Vec3 pos;
@@ -85,30 +47,6 @@ struct TriggerMsg {
     u32 event;
 };
 
-struct Actor {
-    Placement place;
-    int (*query)(int msg, void* data);
-    char pad34[4];
-    int handle;
-    char pad3C[0x14];
-    char unk50[0x18];
-    char unk68[0x18];
-    EvacDef* def;
-    EvacInfo* info;
-    char pad88[4];
-    int owner;
-    char pad90[4];
-    int unk94;
-    int unk98;
-    char pad9C[4];
-    char unkA0[4];
-    EvacZone* zone;
-    int sound;
-    u32 flags;
-    char padB0[0x60];
-    int unk110;
-};
-
 extern "C" int SendMsg(int target, int msg, void* data);            // 0x800265D4
 int AssetFind(u32 bank, u32 name);                        // 0x8007EB34
 void MtxSetEuler(Mtx34* m, Vec3* rot);                    // 0x8009FAC0
@@ -136,14 +74,14 @@ int EvacEnter(int unused, Actor* o, Actor* a);
 ActorType gEvacPointType = { 0, "Evac Point", 0, EvacUpdate, EvacInit, 0, EvacDestroy };
 
 void EvacDestroy(Actor* a) {
-    if (a && a->zone) {
-        VFree(a->zone);
-        a->zone = 0;
+    if (a && ((EvacZone*)a->data)) {
+        VFree(((EvacZone*)a->data));
+        a->data = 0;
     }
 }
 
 void EvacUpdate(Actor* a, float dt) {
-    ZoneUpdate(a->zone->zone, &a->place.pos);
+    ZoneUpdate(((EvacZone*)a->data)->zone, &a->place.pos);
     ActorUpdate(a, dt);
 }
 
@@ -152,26 +90,26 @@ int EvacInit(Actor* a) {
     Mtx34 m;
     EvacZone* z;
 
-    a->unk94 = 0;
+    a->boneCount = 0;
     a->unk98 = 0;
-    MtxSetEuler((Mtx34*)&pl.rot, &a->def->rot);
-    pl.pos = a->def->pos;
+    MtxSetEuler((Mtx34*)&pl.rot, &((EvacDef*)a->def)->rot);
+    pl.pos = ((EvacDef*)a->def)->pos;
     PlacementToMatrix(&m, &pl);
-    ActorFn8002378C(a, a->owner, (int)&m, (int)ActorCollide, (int)a->unk68, (int)a->unk50, a->def->unk18);
+    ActorFn8002378C(a, a->id, (int)&m, (int)ActorCollide, (int)a->unk68, (int)a->unk50, ((EvacDef*)a->def)->unk18);
     ActorFn800C7B5C(a, a->unkA0);
     if (!ActorFn80022FD8(a)) {
         ActorFn800231A8(a);
     }
-    a->unk110 = -1;
+    a->anim = -1;
     ActorSetPlacement(a, &pl);
-    a->sound = AssetFind(-1, a->def->sound);
+    a->unkA8 = AssetFind(-1, ((EvacDef*)a->def)->sound);
     z = (EvacZone*)VAlloc(sizeof(EvacZone));
     if (!z) {
         return 0;
     }
-    a->zone = z;
+    a->data = z;
     a->flags |= 0x22000000;
-    switch (a->info->type) {
+    switch (((EvacInfo*)a->info)->type) {
     case 0x00013C71:
         z->team = 1;
         break;
@@ -179,7 +117,7 @@ int EvacInit(Actor* a) {
         z->team = 0;
         break;
     }
-    ZoneInit(z->zone, a, &a->place.pos, z->list, 16, a->info->radius);
+    ZoneInit(z->zone, a, &a->place.pos, z->list, 16, ((EvacInfo*)a->info)->radius);
     ZoneSetCallback(z->zone, 0, EvacEnter, 0, a);
     return 1;
 }
@@ -187,16 +125,16 @@ int EvacInit(Actor* a) {
 int EvacEnter(int unused, Actor* o, Actor* a) {
     TriggerMsg m;
     ActorQuery q;
-    EvacZone* z = a->zone;
+    EvacZone* z = ((EvacZone*)a->data);
     int player = HandleToPlayer(o->handle);
 
     if (player != -1) {
         q.actor = o;
-        o->query(0x401, &q);
+        o->handler(0x401, &q);
         if (q.health > 0.0f) {
             int team = PlayerTeam(player);
             if (team == z->team) {
-                m.owner = a->owner;
+                m.owner = a->id;
                 m.team = team;
                 m.event = 0x0020A893;
                 SendMsg(0x4B000000, 0xC14, &m);

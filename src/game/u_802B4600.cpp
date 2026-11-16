@@ -6,6 +6,10 @@
 // and registers the boss with the defer list.  Names are descriptive guesses; unmatched
 // against retail so far.
 
+#include "game/string.h"
+#include "game/msg.h"
+#include "game/types.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
@@ -18,35 +22,6 @@ extern "C" {
 void* memset(void* dst, int c, unsigned long n);
 int rand(void);
 }
-
-// Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    String(const char* s);                     // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[12];
-};
 
 // One particle of the spark/debris pools (0x44 bytes).
 struct Particle {
@@ -166,13 +141,6 @@ struct Msg {
     u32 key;                // 0x04
     int unk08;              // 0x08
     int arg;                // 0x0C
-};
-
-struct Msg41E {
-    Actor* actor;           // 0x00
-    u32 key;                // 0x04
-    int unk08;              // 0x08
-    Buffer result;          // 0x0C
 };
 
 // Hit message (0x407).
@@ -1016,9 +984,9 @@ void CrabAnimate(Actor* a) {
                 b->lean += d * ((lean[1] - b->lean < 0.0f) ? -1.0f : 1.0f);
             }
             fn_8009FAC0(&rot, euler);
-            rot.m[9] = (float)a->x;
-            rot.m[10] = (float)a->y;
-            rot.m[11] = (float)a->z;
+            rot.m[2][1] = (float)a->x;
+            rot.m[2][2] = (float)a->y;
+            rot.m[2][3] = (float)a->z;
             fn_8009EF04(a, &rot);
             fn_8003A66C(a->model, &rot, a->node);
         } else {
@@ -1048,9 +1016,9 @@ void CrabAnimate(Actor* a) {
                 a->vz *= inv;
             }
             fn_8009FAC0(&rot, &a->lean);
-            rot.m[9] = (float)a->x;
-            rot.m[10] = (float)a->y;
-            rot.m[11] = (float)a->z;
+            rot.m[2][1] = (float)a->x;
+            rot.m[2][2] = (float)a->y;
+            rot.m[2][3] = (float)a->z;
             fn_8009EF04(a, &rot);
             a->node->x = 0.0f;
             a->node->y = 0.0f;

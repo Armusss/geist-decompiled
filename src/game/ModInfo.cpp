@@ -3,6 +3,8 @@
 // Names are descriptive guesses; the code is matched against the retail DOL where noted
 // in worker-notes.  Struct layouts are partial and derived from the retail asm.
 
+#include "game/types.h"
+
 #pragma auto_inline off
 
 typedef unsigned char u8;
@@ -12,15 +14,6 @@ typedef signed short s16;
 typedef unsigned long u32;
 typedef signed long s32;
 typedef float f32;
-
-
-struct Vec3 {
-    f32 x, y, z;
-};
-
-struct Mtx34 {
-    f32 m[12];
-};
 
 // Model database (lbl_804D4300) and its 0x48-byte node records; layouts are partial.
 struct ModelNode {
@@ -325,7 +318,6 @@ void IntSwap(int* a, int i, int j) {
     a[j] = t;
 }
 
-
 // 0x8002756C (called from another unit under this placeholder name; ActorDebugDrawAll): debug draw of every flagged actor (sphere + bone box)
 extern "C" void fn_8002756C() {
     int i;
@@ -492,7 +484,6 @@ void LightsClearPending() {
     lbl_804D4290 = 0;
 }
 
-
 void LightsLoad(int type, void* data, int size, void* ctx);
 void LightMsg(int id, int msg, void* data, void* ctx);
 int LightMsgNone(int id, int msg, void* data, void* ctx);
@@ -507,7 +498,6 @@ int LightsInit() {
     lbl_804D4298 = 0;
     return 1;
 }
-
 
 // 0x800289F8: free the light arrays
 void LightsShutdown() {
@@ -528,7 +518,6 @@ void LightsBroadcast() {
         SendMsg((i & 0xFFFFFF) | 0xC000000, 0x800, data);
     }
 }
-
 
 // 0x80028F2C: chunk loader for type 0xF: the light array
 void LightsLoad(int type, void* data, int size, void* ctx) {
@@ -558,7 +547,6 @@ void LightMsg(int id, int msg, void* data, void* ctx) {
     *(Actor**)data = &lbl_804D4280[id];
     fn_80029080(msg, data);
 }
-
 
 // 0x80037B6C (called from other units under this placeholder name)
 extern "C" s16* fn_80037B6C(int model) {
@@ -634,7 +622,6 @@ extern "C" ModelNode* fn_8003A1C0(int model) {
         return (ModelNode*)((u8*)lbl_804D4300->nodes + idx * 0x48);
     return 0;
 }
-
 
 // 0x8002FA34
 bool StreamSlotIdle(int index) {
@@ -869,7 +856,6 @@ static inline void SlotsRelease() {
         }
     }
 }
-
 
 static inline void SlotsFinishAll() {
     int i;

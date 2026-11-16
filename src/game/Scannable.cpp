@@ -2,6 +2,8 @@
 // Answers the ghost's scan: plays the "QUERY" animation and reports back to the scanner.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/actor.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
@@ -26,27 +28,6 @@ inline u32 StrHash(const char* s, u32 h) {
 }
 
 struct Actor;
-
-typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
-
-struct ActorType {
-    int unk0;
-    const char* name;
-    ActorMsgFunc msg;
-    void (*update)(Actor* actor, float dt);
-    int (*init)(Actor* actor);
-    void* unk14;
-    void (*destroy)(Actor* actor);
-    void* unk1C[5];
-};
-
-struct Actor {
-    char pad0[0x38];
-    int handle;
-    char pad3C[0x4C];
-    ActorType* type;
-    int unk8C;
-};
 
 struct ScanMsg {
     Actor* actor;
@@ -104,7 +85,7 @@ int ScannableMsg(Actor* a, int msg, void* data, int arg) {
         int r;
         if (ActorPlayAnim((int)a, m->anim, m->anim2)) return 1;
         r = ActorPlayAnim((int)a, 0xDC35206A, s->handle);
-        if (s->handle != -1) {
+        if ((int)s->handle != -1) {
             ScanReply reply;
             reply.result = r;
             reply.actor = a;
@@ -115,7 +96,7 @@ int ScannableMsg(Actor* a, int msg, void* data, int arg) {
     }
     case 0x400: {
         Actor* t = m->actor;
-        m->scanner = (Actor*)t->unk8C;
+        m->scanner = (Actor*)t->id;
         m->anim = 1;
         m->unk10 = ActorIsActive(t) ? 1.0f : 0.0f;
         m->unk14 = 0.0f;

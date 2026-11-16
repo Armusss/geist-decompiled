@@ -1,5 +1,8 @@
 // u_80153C10.cpp: ghost possession, quick flash and ghost-record bookkeeping.
 
+#include "game/string.h"
+#include "game/types.h"
+
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
@@ -92,7 +95,6 @@ unsigned long GhostPossessCommit(GhostSlot* self, GhostSlot* target, int mode);
 unsigned long GhostPossess(GhostSlot* self, GhostSlot* target, int mode);
 
 struct Actor;
-struct IVec3 { int x; int y; int z; };
 
 int ActorAim(int* out, Actor* actor, int flag);
 void VecToAngles(IVec3* out, const IVec3* in);
@@ -107,26 +109,6 @@ extern "C" void* fn_800886C8(void);
 extern "C" void fn_800886F0(void);
 int GhostFrameUpdate(float dt, void* p);
 int GhostPossessTick(GhostSlot* self);
-
-// Runtime string buffer; the 0x41E query messages receive a String answer.
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 struct QueryResult {
     String name;
@@ -1567,14 +1549,6 @@ void GhostSystemReset(void)
 
 // ---- flash-position helpers used by the possession flash (0x80156B1C) ----
 
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[12];
-};
-
 struct Player;
 struct Place;
 
@@ -1659,7 +1633,7 @@ int GhostFlashNotify(GhostSlot* self, int mode) {
         case 5:
             ActorGetMatrix(&mtx, (Actor*)self->unk00);
             ok = 0;
-            mtx.m[11] = mtx.m[11] - lbl_804D7CD0;
+            mtx.m[2][3] = mtx.m[2][3] - lbl_804D7CD0;
             break;
         default:
             if (GhostFlashFindSpot(&mtx, self, lbl_804D7CCC) == 0) {
@@ -1677,9 +1651,9 @@ int GhostFlashNotify(GhostSlot* self, int mode) {
         if ((int)(self->unk00->id >> 24) == 2) {
             Actor* a = (Actor*)self->unk00;
             MtxSetEuler(&blend, &euler);
-            blend.m[9] = *(float*)((char*)a + 0x1E4);
-            blend.m[10] = *(float*)((char*)a + 0x1E8);
-            blend.m[11] = *(float*)((char*)a + 0x1EC);
+            blend.m[2][1] = *(float*)((char*)a + 0x1E4);
+            blend.m[2][2] = *(float*)((char*)a + 0x1E8);
+            blend.m[2][3] = *(float*)((char*)a + 0x1EC);
             PlayerBeginBlend((Player*)a, (Place*)&blend, lbl_804D2F24);
         }
 
@@ -1687,9 +1661,9 @@ int GhostFlashNotify(GhostSlot* self, int mode) {
         VecSwapXY2(&swapped, &angles);
 
         msg.unk4 = 3;
-        msg.x = (int)mtx.m[9];
-        msg.y = (int)mtx.m[10];
-        msg.z = (int)mtx.m[11];
+        msg.x = (int)mtx.m[2][1];
+        msg.y = (int)mtx.m[2][2];
+        msg.z = (int)mtx.m[2][3];
         SendMsg(self->unk00->id, 0xC07, &msg);
     }
     return 1;
@@ -1723,9 +1697,9 @@ int GhostFlashFindSpot(Mtx34* out, GhostSlot* self, float angle) {
     do {
         if (done) {
             MtxSetEuler(out, &dir);
-            out->m[9] = pos.x;
-            out->m[10] = pos.y;
-            out->m[11] = pos.z;
+            out->m[2][1] = pos.x;
+            out->m[2][2] = pos.y;
+            out->m[2][3] = pos.z;
             return 1;
         }
         if (BitsetFirstClear(&used, 1, lbl_804D2F20) == -1) {
@@ -1761,9 +1735,9 @@ int GhostFlashFindSpot(Mtx34* out, GhostSlot* self, float angle) {
             vec.x = vec.x * lbl_804D2F18;
             vec.y = vec.y * lbl_804D2F18;
             vec.z = vec.z * lbl_804D2F18;
-            pos.x = vec.x + base.m[9];
-            pos.y = vec.y + base.m[10];
-            pos.z = vec.z + base.m[11];
+            pos.x = vec.x + base.m[2][1];
+            pos.y = vec.y + base.m[2][2];
+            pos.z = vec.z + base.m[2][3];
 
             int* bounds = *(int**)((char*)self->unk00 + 0x40);
             float minHW = (float)(bounds[4] - bounds[1]);
@@ -1778,11 +1752,11 @@ int GhostFlashFindSpot(Mtx34* out, GhostSlot* self, float angle) {
             fn_800A025C(&az, &base, 2);
             fn_800E1098(&az, &az, lbl_804D7CDC * (float)(bounds[5] - bounds[2]));
 
-            offset.x = pos.x - base.m[9];
-            offset.y = pos.y - base.m[10];
-            offset.z = pos.z - base.m[11];
+            offset.x = pos.x - base.m[2][1];
+            offset.y = pos.y - base.m[2][2];
+            offset.z = pos.z - base.m[2][3];
 
-            int found = fn_8001ACD4((Actor*)self->unk00, (Vec3*)&base.m[9],
+            int found = fn_8001ACD4((Actor*)self->unk00, (Vec3*)&base.m[2][1],
                                     &ax, &ay, &az, &offset, 0x10000000,
                                     (void*)GhostFlashSpotFilter, self->unk04);
             if (found == 0) {

@@ -6,6 +6,8 @@
 // placeholders (see u_80230504.cpp), so they keep C linkage and their
 // original symbol names.
 
+#include "game/types.h"
+
 typedef unsigned long u32;
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
@@ -32,12 +34,6 @@ void BarrierBehaviourFree(void* actorPtr);
 
 BarrierActorType gGhostBarrierType = {
     0, "Ghost Barrier", BarrierActorMsg, BarrierActorUpdate, BarrierActorInit, 0, BarrierBehaviourFree,
-};
-
-struct Vec3 {
-    float x;
-    float y;
-    float z;
 };
 
 struct ActiveEntry {
@@ -292,10 +288,6 @@ struct BarrierActor {
     u32 fieldAC;              // 0xAC
     char padB0[0x1438];
     float field14E8;          // 0x14E8
-};
-
-struct Mtx34 {
-    float m[12];
 };
 
 // View of an object that answers the "0x400" virtual query (vtable +0x30).

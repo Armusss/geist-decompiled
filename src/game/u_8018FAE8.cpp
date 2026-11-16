@@ -1,10 +1,10 @@
 // u_8018FAE8.cpp: ghost hint and input helpers (0x8018FAE8-0x80191C6C).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 // u_8018FAE8.cpp: ghost hint / tutorial message system.
 // Names are descriptive guesses based on observed behaviour.
-
-struct Vec3 { float x, y, z; };
 
 struct Actor;
 
@@ -22,9 +22,6 @@ struct GhostHintObject {
     int blend;                // 0x50
     int priority;             // 0x54
 };
-
-// 3x4 column-major matrix (4 columns of 3 floats) used by the model code.
-struct Mtx34 { float m[4][3]; };
 
 // One bone transform filled in by ModelAnimate (layout is a guess).
 struct ModelBone {

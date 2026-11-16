@@ -4,6 +4,8 @@
 // the next level name, which is looked up in "00Index.TXT". A debug level-select menu lists the index.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 // Declared before the SDK headers so it keeps C linkage (dolphin/types.h pulls in stdio.h).
 extern "C" int sprintf(char* s, const char* format, ...);
 
@@ -103,10 +105,6 @@ extern ImageInfo lbl_803837E0;
 extern u8 lbl_80383800[];
 extern ImageInfo lbl_80387100;
 extern u8 lbl_80387120[];
-
-struct Vec3 {
-    float x, y, z;
-};
 
 const char* sGameName = "Fear";
 const char* sFirstLevel = "mainmenu";

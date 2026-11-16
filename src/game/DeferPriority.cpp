@@ -3,6 +3,8 @@
 // distance from the eye point; lists are flushed back to front. Nodes come from a pool of 0x2000.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 extern "C" void* MemAlloc(int size, const char* file, int line);
 extern "C" void MemFree(void* p, const char* file, int line);
 void DebugPrintf(const char* format, ...);
@@ -12,10 +14,6 @@ extern "C" {
 void fn_80008AD8(void* state); // save render state
 void fn_8000895C(void* state); // restore render state
 }
-
-struct Vec3 {
-    float x, y, z;
-};
 
 struct DeferNode {
     float dist;

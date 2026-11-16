@@ -1,6 +1,8 @@
 // u_802D8C7C.cpp: owner follow states and conditions (0x802D8C7C-0x802DB9D0).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 // u_802D8C7C.cpp: actor query message handler and per-frame state update.
 // Function, struct and field names are descriptive guesses.
 
@@ -29,12 +31,6 @@ struct StateEntry {
     int (*fn1)(Owner*);     // 0x04
     int (*fn2)(Owner*);     // 0x08
     const char* name;       // 0x0c
-};
-
-struct Vec3 {
-    f32 x;  // 0x00
-    f32 y;  // 0x04
-    f32 z;  // 0x08
 };
 
 struct Owner {

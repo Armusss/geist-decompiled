@@ -4,36 +4,15 @@
 // state-name query, forwards hits to the damage code and stashes one pending 0x1800 message to
 // replay when the state machine ends.  Names are descriptive guesses; unmatched against retail so far.
 
+#include "game/string.h"
+#include "game/types.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
 // From a shared header: names of the actor actions (the table itself is unused here).
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
-};
-
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    String(const char* s);
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-struct Vec3 {
-    float x, y, z;
 };
 
 extern unsigned char __upper_map[256];
@@ -46,10 +25,6 @@ int SendMsg(int to, int msg, void* data);
 }
 
 struct FearBeh;
-
-struct Mtx34 {
-    float m[12];
-};
 
 struct Pose {
     char pad0[0x10];
@@ -1025,9 +1000,9 @@ void FearAdvance(Actor* a) {
                 }
                 fn_800A0168(&mInv, &mPlace);
                 fn_800A0030(d, &mInv, a->pose->pos);
-                a->p84[0] = mPlace.m[3] + d[0];
-                a->p84[1] = mPlace.m[7] + d[1];
-                a->p84[2] = mPlace.m[11] + d[2];
+                a->p84[0] = mPlace.m[0][3] + d[0];
+                a->p84[1] = mPlace.m[1][3] + d[1];
+                a->p84[2] = mPlace.m[2][3] + d[2];
                 if (-999999.0f != b->unk58) {
                     a->p84[2] = b->unk58 + a->pose->pos[2];
                 }

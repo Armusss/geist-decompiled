@@ -3,20 +3,10 @@
 // pass, render one reflection entry (with and without a second actor) and update the camera state.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 typedef unsigned char u8;
 typedef unsigned long u32;
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx33 {
-    float m[3][3];
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
 
 struct Actor {
     int matrix[12];        // 0x00: 3x3 basis (1/4096) then translation

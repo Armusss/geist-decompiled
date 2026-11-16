@@ -3,27 +3,14 @@
 // flash/fade state and a particle-ish sub-state) and a second effect kind (0x64 bytes each) with a
 // large message handler.  Names are descriptive guesses; unmatched against retail so far.
 
+#include "game/types.h"
+#include "game/string.h"
+
 typedef unsigned long u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
 
 #define NULL 0
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct IVec3 {
-    int x, y, z;
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
-
-struct PlaceF {
-    float v[12];
-};
 
 // Fixed point (Q12) 3x4 matrix as 12 ints.
 struct MtxQ12 {
@@ -800,15 +787,6 @@ struct FxInst {
     float f58;              // 0x58
     int h5C;                // 0x5C
     int h60;                // 0x60
-};
-
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    int pad04;
-    int size;               // 0x08
-    int* data;              // 0x0C
 };
 
 class FxList : public Buffer {

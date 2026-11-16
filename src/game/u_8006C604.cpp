@@ -1,6 +1,9 @@
 // u_8006C604.cpp: player actor code (0x8006C604-0x800776FC): gun motion, ghost effects, messages.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+#include "game/string.h"
+
 // Returns 0 when the object stored in *slot is `other` or is of kind 0x13,
 // 1 otherwise (including when the slot is empty). Name is a guess.
 int TargetSlotUsable(int** slot, int* other)
@@ -17,14 +20,6 @@ int TargetSlotUsable(int** slot, int* other)
 
 typedef unsigned long u32;
 typedef unsigned char u8;
-
-class String
-{
-public:
-    String();
-    ~String();
-};
-
 
 extern "C" void fn_80064EE4(void*);
 int PlayerGunVecNonZero(void*);
@@ -82,7 +77,6 @@ void PlayerUpdateStun(float dt, void* owner, void* arg)
     if (*(u32*)(p + 0x7B4) & 0x80000)
         *(float*)(p + 0x64C) = (float)(-*(int*)(p + 0xA14));
 }
-
 
 extern "C" void fn_8008F230(float value, int slots, int index, int flag);
 extern "C" void fn_80090390(int slots, int index);
@@ -778,7 +772,6 @@ void PlayerCallCallback81c(void* owner)
         (*(void (**)(void))((u8*)owner + 0x81C))();
 }
 
-
 extern "C" int lbl_804D2960;
 extern "C" float lbl_804D296C;
 extern "C" float lbl_804D2970;
@@ -927,11 +920,6 @@ void ReleaseHandle8006DB7C(void* owner)
 struct Actor;
 struct PlaceF;
 
-struct Mtx34
-{
-    float m[12];
-};
-
 // Animation/model helpers defined in other units (the names are their C++
 // manglings; the parameter types and meanings are guesses).
 int ModelBoneCount(int model);
@@ -961,7 +949,6 @@ void PlayerCollisionMove(void*, float*);
 void PlayerGunFxUpdate(float, void*);
 extern "C" void fn_80075F94(float, void*, float*);
 extern "C" void fn_80075560(float, void*);
-
 
 // Per-frame motion update of a player holding an item: advances the streamed
 // slot offsets, integrates the drift/random walk of the hand, moves the model
@@ -1454,7 +1441,6 @@ extern "C" void fn_8016F018(int handle, int value);
 extern "C" int lbl_804D452C;
 extern "C" int lbl_804D4530;
 
-
 // Ticks the two effect handles a player carries while holding an item (the
 // charge sparkle at 0x708 and the pick-up glow at 0x710): starts / stops the
 // effects and ramps their intensity toward a speed-dependent cap. Field
@@ -1597,7 +1583,6 @@ extern "C" float lbl_80422c48[];
 extern "C" float lbl_80394a28;
 extern "C" float lbl_80394a2c;
 extern "C" float lbl_80394a30;
-
 
 // Player collision: queries the level collision system with the player's
 // motion, slides the motion along the contact planes (iterating a few times
@@ -2124,7 +2109,6 @@ int PlayerCollisionSlideVector(int obj, float* motion)
 }
 
 // --- collision query callback ---------------------------------------------
-
 
 extern "C" float lbl_80394a34;
 extern "C" float lbl_80394a38;
@@ -3794,7 +3778,6 @@ int PlayerUpdateGunSway(void* owner, int arg, float dt)
 
     return 0;
 }
-
 
 int ActorCount();
 Actor* ActorGet(int index);

@@ -3,6 +3,8 @@
 // drives them. Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <math.h>
+#include "game/string.h"
+#include "game/msg.h"
 
 typedef unsigned long u32;
 typedef unsigned char u8;
@@ -13,27 +15,6 @@ static const char* sActionNames[] = {
 };
 
 struct Actor;
-
-// Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    String(const char* s);                     // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 // Per-actor state block (VAlloc'd, 0x58 bytes). The first word is the index into
 // the host-type table; the three trail handles live at 0x4C.
@@ -137,13 +118,6 @@ struct MsgHdr {
     Actor* actor;   // 0x00
     int cmd;        // 0x04
     int unk08;      // 0x08
-};
-
-struct Msg41E {
-    Actor* actor;   // 0x00
-    int cmd;        // 0x04
-    int unk08;      // 0x08
-    Buffer result;  // 0x0C
 };
 
 struct MsgC14 {

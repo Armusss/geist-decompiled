@@ -3,6 +3,10 @@
 // mode, drives an animation, and explodes past 0.7. The thermostat behaviour is in ThermoBeh.cpp.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/msg.h"
+#include "game/actor.h"
+#include "game/owner.h"
+
 #pragma auto_inline off
 
 typedef unsigned short u16;
@@ -16,7 +20,6 @@ struct Owner;
 struct Beh;
 
 typedef void (*BehStateFunc)(void* owner, void* beh);
-typedef void (*BehCallback)(Owner* o, Beh* b, int arg);
 
 struct BehState {
     BehStateFunc enter;
@@ -32,43 +35,7 @@ struct ThermoState {
     int sound;
 };
 
-struct Beh {
-    char pad0[0x10];
-    int state;
-    u16 lo1;
-    u16 hi1;
-    u16 lo2;
-    u16 hi2;
-    char pad1C[0x10];
-    unsigned long flags;
-    char pad30[0x1C];
-    BehCallback callback;
-    char pad50[4];
-    ThermoState* data;
-    int unk58;
-    int unk5C;
-};
-
-struct Owner {
-    char pad0[0x270];
-    char conditions[0x894 - 0x270];
-    Beh beh;
-};
-
 struct Actor;
-
-typedef int (*ActorMsgFunc)(Actor* actor, int msg, void* data, int arg);
-
-struct ActorType {
-    int unk0;
-    const char* name;
-    ActorMsgFunc msg;
-    void (*update)(Actor* actor, float dt);
-    int (*init)(Actor* actor);
-    void* unk14;
-    void (*destroy)(Actor* actor);
-    void* unk1C[5];
-};
 
 struct GaugeData {
     char pad0[0x18];
@@ -84,20 +51,6 @@ struct ActorInfo {
     int sound;
 };
 
-struct Actor {
-    char pad0[0x38];
-    int handle;
-    char pad3C[0x48];
-    ActorInfo* info;
-    ActorType* type;
-    char pad8C[0x18];
-    GaugeData* data;
-    char padA8[4];
-    unsigned long flags;
-    char padB0[0x60];
-    int anim;
-};
-
 struct Player {
     char pad0[0x31C];
     int mode;
@@ -111,11 +64,6 @@ struct ActorMsg {
     int unk10;
     int unk14;
     int unk18;
-};
-
-struct MsgResult {
-    void* p;
-    char pad[0x1C];
 };
 
 struct Buf60 {
@@ -153,7 +101,6 @@ void Fn8006CD84(Player* p, int a, float f);              // 0x8006CD84
 void ActorPlayAnim(int handle, unsigned long anim, int handle2); // 0x800C5654
 void Fn80211AA4(Actor* a, float dt);                     // 0x80211AA4
 
-
 int GaugeMsg(Actor* a, int msg, void* data, int arg);
 void GaugeUpdate(Actor* a, float dt);
 int GaugeInit(Actor* a);
@@ -163,11 +110,11 @@ ActorType gThermostatType = { 0, "Thermostat Model", GaugeMsg, GaugeUpdate, Gaug
 ActorType gGaugeExplodeType = { 0, "Gauge Explode", GaugeMsg, GaugeUpdate, GaugeInit, 0, GaugeDestroy };
 
 void GaugeDestroy(Actor* a) {
-    if (a->data) {
+    if (((GaugeData*)a->data)) {
         if (a->type == &gGaugeExplodeType) {
             Fn80211A84(a);
         } else {
-            VFree(a->data);
+            VFree(((GaugeData*)a->data));
             a->data = 0;
         }
     }
@@ -176,7 +123,7 @@ void GaugeDestroy(Actor* a) {
 void GaugeTick(Actor* a, float dt);
 
 void GaugeUpdate(Actor* a, float dt) {
-    switch (a->data->state) {
+    switch (((GaugeData*)a->data)->state) {
     case 1:
         GaugeTick(a, dt);
     }
@@ -184,7 +131,7 @@ void GaugeUpdate(Actor* a, float dt) {
 }
 
 int GaugeInit(Actor* a) {
-    GaugeData* d = a->data;
+    GaugeData* d = ((GaugeData*)a->data);
     if (d == 0) a->data = d = (GaugeData*)VAlloc(sizeof(GaugeData));
     memset(d, 0, sizeof(GaugeData));
     if (!Fn80211F78(a)) {
@@ -196,7 +143,7 @@ int GaugeInit(Actor* a) {
 
 static inline int GaugeOnActivate(void* data) {
     Actor* actor = ((Actor**)data)[0];
-    GaugeData* d = actor->data;
+    GaugeData* d = ((GaugeData*)actor->data);
 
     if (actor->type == &gGaugeExplodeType) return 0;
 
@@ -206,7 +153,7 @@ static inline int GaugeOnActivate(void* data) {
         d->level = 0.0f;
         d->anim = 0x3E341EF2;
         m.actor = actor;
-        m.sound = actor->info->sound;
+        m.sound = ((ActorInfo*)actor->info)->sound;
         m.unk8 = 0;
         m.unkC = 0;
         m.unk10 = 0x1000;
@@ -224,7 +171,7 @@ static inline int GaugeOnActivate(void* data) {
 
 static inline int GaugeOnTrigger(void* data) {
     Actor* actor = ((Actor**)data)[0];
-    GaugeData* d = actor->data;
+    GaugeData* d = ((GaugeData*)actor->data);
 
     if (actor->type != &gGaugeExplodeType) return 0;
 
@@ -257,7 +204,7 @@ int GaugeMsg(Actor* a, int msg, void* data, int arg) {
     case 0xC10:
     case 0xC11:
     case 0xC12:
-        ret = (*(Actor**)data)->data->state ? 1 : 0;
+        ret = ((GaugeData*)(*(Actor**)data)->data)->state ? 1 : 0;
         break;
     }
 
@@ -272,7 +219,7 @@ int GaugeMsg(Actor* a, int msg, void* data, int arg) {
 }
 
 void GaugeTick(Actor* a, float dt) {
-    GaugeData* d = a->data;
+    GaugeData* d = ((GaugeData*)a->data);
     Player* p = GetPlayer();
     float lvl;
 
@@ -289,7 +236,7 @@ void GaugeTick(Actor* a, float dt) {
 
     if (a->type == &gGaugeExplodeType) {
         if (d->level > 0.0f) {
-            Fn8006CE5C(GetPlayer(), a->info->sound, 0, 0, 0x1000, 0, 0);
+            Fn8006CE5C(GetPlayer(), ((ActorInfo*)a->info)->sound, 0, 0, 0x1000, 0, 0);
             Fn8006CDE8(GetPlayer(), 0, 0);
         }
         Fn8006CD84(p, 0, d->level);

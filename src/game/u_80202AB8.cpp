@@ -8,17 +8,13 @@
 // and of the expected type, then sets one of the behaviour flag bits.
 
 #include "dolphin/types.h"
+#include "game/types.h"
+#include "game/string.h"
 
 struct Vec3i {
     s32 x;                          // 0x00
     s32 y;                          // 0x04
     s32 z;                          // 0x08
-};
-
-struct Vec3 {
-    f32 x;                          // 0x00
-    f32 y;                          // 0x04
-    f32 z;                          // 0x08
 };
 
 struct ActorModel {
@@ -93,10 +89,6 @@ struct Actor {
     s32 unk2740;
 };
 
-struct Mtx34 {
-    f32 m[12];                      // 0x00
-};
-
 void ActorGetMatrix(Mtx34* out, Actor* actor);
 int ModelBoneHitBox(int a, int b, int c, int d);
 int ModelBoneHitNearest(int a, int b, int handle, int asset, int* out, Vec3* v0, Vec3* v1,
@@ -123,26 +115,6 @@ struct HostQueryAnimMsg {
     s32 unk04;                      // 0x04
     s32 unk08;                      // 0x08
     s32 asset;                      // 0x0c
-};
-
-// Runtime string buffer (shared runtime layout, 20 bytes).
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    s32 mLength;
-    s32 mUnk0C;
-    s32 mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    ~String() {}
-    virtual void Release(char* p);
 };
 
 // Request/reply of the 0x41e query: the answer String follows the header.

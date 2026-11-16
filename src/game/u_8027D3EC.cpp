@@ -1,6 +1,8 @@
 // u_8027D3EC.cpp: possessed-actor effects (create, update, query) and effect helpers (0x8027D3EC-0x8028009C).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 typedef unsigned char u8;
 typedef unsigned long u32;
 typedef int s32;
@@ -237,12 +239,6 @@ void DestroyPossessable(Actor* actor) {
 
 // ---- possession effect helpers ---------------------------------------------
 
-struct Vec3 {
-    f32 x;                   // 0x00
-    f32 y;                   // 0x04
-    f32 z;                   // 0x08
-};
-
 // Bounding box in minimum/maximum corner form.
 struct Bounds {
     f32 minX;                // 0x00
@@ -251,16 +247,6 @@ struct Bounds {
     f32 maxX;                // 0x0c
     f32 maxY;                // 0x10
     f32 maxZ;                // 0x14
-};
-
-// 3x4 transformation matrix.
-struct Mtx34 {
-    f32 m[3][4];             // 0x00
-};
-
-// Placement handed to the actor interface (position + basis, 3x4).
-struct PlaceF {
-    f32 m[3][4];             // 0x00
 };
 
 // Object found through the actor's 0x84 pointer; carries an id at 0xa4.

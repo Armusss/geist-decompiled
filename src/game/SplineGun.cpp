@@ -6,6 +6,9 @@
 
 #include <dolphin/types.h>
 #include <string.h>
+#include "game/string.h"
+#include "game/msg.h"
+#include "game/effect.h"
 
 extern "C" {
 void* fn_800EB21C(int id);
@@ -65,26 +68,6 @@ inline u32 StrHash(const char* s) {
     }
 }
 
-struct EffectObj {
-    int unk0;
-    int unk4;
-    int emitter;
-    void* data;
-};
-
-struct EffectType {
-    const char* name;
-    u32 hash;
-    int unk8[3];
-    void* (*create)(int a, int id);
-    void (*destroy)(EffectObj* obj);
-    int (*msg)(EffectObj* obj, int msg, int arg, void* data, float dt);
-    u32 (*query)(EffectObj* obj, int msg);
-    void (*update)(EffectObj* obj, float dt);
-    void (*reset)(EffectObj* obj);
-    int unk2C;
-};
-
 inline u32 EffectTypeHash(EffectType* type) {
     if (type->hash == 0) {
         const char* name = type->name;
@@ -92,41 +75,6 @@ inline u32 EffectTypeHash(EffectType* type) {
     }
     return type->hash;
 }
-
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
-
-struct MsgResult {
-    void* p;
-    char pad[0x1C];
-};
 
 struct Target {
     u8 pad[0x24];
@@ -200,7 +148,6 @@ EffectType gSplineGunType = {
     "SPLINE GUN", 0, {0, 0, 0}, SplineGunCreate, SplineGunDestroy, SplineGunMsg, SplineGunQuery, SplineGunUpdate,
     SplineGunReset, 0,
 };
-
 
 inline int FxStartAt(void* fx, float* p, int* pos) {
     int h;

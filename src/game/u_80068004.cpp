@@ -3,19 +3,13 @@
 // actor repel push, the weapon/aim target search and the player pad-driven camera nudges.
 // Names are descriptive guesses; unmatched against retail so far.
 
+#include "game/types.h"
+
 typedef unsigned long u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
 
 #define NULL 0
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
 
 struct Actor;
 

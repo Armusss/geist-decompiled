@@ -1,3 +1,4 @@
+#include "game/types.h"
 
 typedef unsigned char u8;
 typedef signed char s8;
@@ -8,17 +9,6 @@ struct EmitterBank;
 struct EmitterDesc;
 typedef EmitterDesc EmitterSub;
 
-// Emitter transform matrix: rows 0-2 are the rotation basis, row 3 holds the
-// translation.
-struct Mtx34 {
-    float m[4][3];
-};
-
-// Placement form of a bone transform (same 4x3 layout as a matrix).
-struct PlaceF {
-    float m[4][3];
-};
-
 // Fixed-point (24.8) cull box of an emitter actor, 0x18 bytes.
 struct CullBox {
     int minX;               // 0x00
@@ -27,12 +17,6 @@ struct CullBox {
     int maxX;               // 0x0C
     int maxY;               // 0x10
     int maxZ;               // 0x14
-};
-
-struct Vec3 {
-    float x;
-    float y;
-    float z;
 };
 
 // Axis-aligned box in world space (0x18 bytes).
@@ -1438,7 +1422,6 @@ extern "C" int EmitterParticleStep(Emitter* em, EmitterParticleState* particle,
     return EmitterParticleAdvance(em, particle, t);
 }
 
-
 // Advances one particle spawn clock by t and samples its spawn offset.
 extern "C" int EmitterParticleAdvance(Emitter* em, EmitterParticleState* particle,
                                       float t)
@@ -1452,7 +1435,6 @@ extern "C" int EmitterParticleAdvance(Emitter* em, EmitterParticleState* particl
     }
     return 0;
 }
-
 
 void EmitterSpawnOffset(float t, EmitterSpawnData* src, Vec3* pos, Vec3* dir,
                         float* scale, Emitter* em, float* out);
@@ -4076,7 +4058,6 @@ void PadChannelUpdate(int channel, float value)
                 : 0;
     }
 }
-
 
 // Bilinear sample of a 0x60-byte emitter curve table: four x knots, four y
 // knots and a 4x4 grid of values. Two of the eight tables mirror the result,
