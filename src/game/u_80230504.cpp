@@ -101,7 +101,7 @@ void ActorGetMatrix(Mtx34* m, Actor* a);
 void PlacementToMatrix(Mtx34* m, PlaceF* p);
 
 extern "C" {
-void fn_800E1098(float scale, Vec3* out, Vec3* in);              // 0x800E1098
+void fn_800E1098(Vec3* out, const Vec3* in, float length);       // 0x800E1098
 int fn_8003A1F0(int model, char* name, int anim);                // 0x8003A1F0
 void fn_80039958(int model, int a, int b, int c, int d);         // 0x80039958
 void fn_801E0EDC(void* actor, Vec3* a, Vec3* b, int kind, float scale); // 0x801E0EDC
@@ -159,7 +159,7 @@ inline void ExtraListAdd(ExtraHolder* e) {
     ExtraHolder** end = (ExtraHolder**)((char*)p + lbl_804D5440->size);
     int found = 0;
     for (; p != end; p++) {
-        if (*p == e) {
+        if (e == *p) {
             found = 1;
             break;
         }
@@ -187,7 +187,7 @@ inline void ExtraTrailStop(ExtraHolder* e) {
 // Ages one buffered sample; clears it once it is too old.
 inline void ExtraTrailRecTick(ExtraRecord* r, float dt, int* any) {
     if (r->time >= 0 && r->time < 100) {
-        r->time += (int)dt;
+        r->time += (s16)dt;
         if (r->time > 4) {
             r->time = -1;
         } else {
@@ -273,12 +273,10 @@ void ExtraTrailApply(ExtraHolder* e, ExtraMsg* m) {
         vel.z = 0.0f;
     }
     if (m->scale > 1.1920929e-7f) {
-        fn_800E1098(1.0f, &vel, &vel);
-        if (vel.z < m->scale) {
-            vel.z = m->scale;
-        }
+        fn_800E1098(&vel, &vel, 1.0f);
+        vel.z = vel.z > m->scale ? vel.z : m->scale;
     }
-    fn_800E1098(life, &vel, &vel);
+    fn_800E1098(&vel, &vel, life);
     if (e->actor) {
         if (e->state != 1) {
             ExtraTrailStart(e);
@@ -287,8 +285,8 @@ void ExtraTrailApply(ExtraHolder* e, ExtraMsg* m) {
     } else {
         recs = e->recs;
         if (!recs) {
-            recs = (ExtraRecord*)VAlloc(0x70);
-            e->recs = recs;
+            e->recs = (ExtraRecord*)VAlloc(0x70);
+            recs = e->recs;
             if (!recs) {
                 return;
             }
@@ -345,9 +343,8 @@ void ExtraTrailApply(ExtraHolder* e, ExtraMsg* m) {
 int ExtraTrailUpdate(ExtraHolder* e, float dt) {
     ActorMsg msg;
     ExtraRecord* r;
-    int n;
-    int any;
     int i;
+    int any;
     Mtx34 mtx;
     int anim;
 
@@ -363,9 +360,8 @@ int ExtraTrailUpdate(ExtraHolder* e, float dt) {
         r = e->recs;
         if (r) {
             any = 0;
-            for (i = 0; i < 2; i++) {
-                ExtraTrailRecTick(r++, dt, &any);
-                ExtraTrailRecTick(r++, dt, &any);
+            for (i = 0; i < 4; r++, i++) {
+                ExtraTrailRecTick(r, dt, &any);
             }
             if (!any) {
                 VFree(e->recs);
@@ -379,26 +375,24 @@ int ExtraTrailUpdate(ExtraHolder* e, float dt) {
             ExtraTrailStart(e);
             return 1;
         }
-        return 0;
+    } else if (e->state == 1) {
+        if (!e->name || !e->actor) {
+            return 0;
+        }
+        ActorGetMatrix(&mtx, (Actor*)msg.actor);
+        anim = ModelAnimate(e->model, e->name, 0);
+        fn_801E11C0(e->actor, anim, &mtx, e->name);
+        int a2 = fn_8003A1F0(e->model, e->name, anim);
+        PlacementToMatrix((Mtx34*)msg.actor, (PlaceF*)a2);
+        fn_80039958(e->model, a2, a2, ((Actor*)msg.actor)->f3C, ((Actor*)msg.actor)->f40);
+        if (fn_801E10D8(e->actor)) {
+            ExtraTrailStop(e);
+            e->state = 2;
+            return 0;
+        }
+        return 1;
     }
-    if (e->state != 1) {
-        return 0;
-    }
-    if (!e->name || !msg.actor) {
-        return 0;
-    }
-    ActorGetMatrix(&mtx, (Actor*)msg.actor);
-    anim = ModelAnimate(e->model, e->name, 0);
-    fn_801E11C0(e->actor, anim, &mtx, e->name);
-    anim = fn_8003A1F0(e->model, e->name, anim);
-    PlacementToMatrix(&mtx, (PlaceF*)anim);
-    fn_80039958(e->model, anim, anim, ((Actor*)msg.actor)->f3C, ((Actor*)msg.actor)->f40);
-    if (fn_801E10D8(e->actor)) {
-        ExtraTrailStop(e);
-        e->state = 2;
-        return 0;
-    }
-    return 1;
+    return 0;
 }
 
 void ExtraTrailHide(ExtraHolder* e, int hide) {
@@ -432,21 +426,23 @@ void ExtraTrailRelease(ExtraHolder* e) {
     e->state = 0;
 }
 
+inline void V3Scale(Vec3* v, float s) { v->x *= s; v->y *= s; v->z *= s; }
+
 void ExtraTrailAttach(ExtraHolder* e) {
     ActorMsg msg;
     Mtx34 mtx;
     int anim;
     Vec3 pos;
     Vec3 vel;
-    int total;
     int i;
     int kind;
     float scale;
+    ExtraRecord* r;
     ExtraHolder** p;
     ExtraHolder** end;
     ExtraHolder* other;
     ExtraHolder** victim;
-    ExtraRecord* r;
+    int total;
     float best;
 
     if (!e) {
@@ -474,7 +470,8 @@ void ExtraTrailAttach(ExtraHolder* e) {
     if (!e->actor) {
         return;
     }
-    if (e->recs) {
+    r = e->recs;
+    if (r) {
         pos.x = 0.0f;
         pos.y = 0.0f;
         pos.z = 0.0f;
@@ -484,7 +481,6 @@ void ExtraTrailAttach(ExtraHolder* e) {
         total = 0;
         kind = lbl_804D5444;
         scale = 18.0f;
-        r = e->recs;
         for (i = 0; i < 4; i++, r++) {
             if (r->time < 0 || r->time >= 100) {
                 continue;
@@ -502,22 +498,23 @@ void ExtraTrailAttach(ExtraHolder* e) {
             }
         }
         if (total > 0) {
-            float inv = 1.0f / (float)total;
-            pos.x *= inv;
-            pos.y *= inv;
-            pos.z *= inv;
+            V3Scale(&pos, 1.0f / (float)total);
             fn_801E0EDC(e->actor, &pos, &vel, kind, scale);
         }
         VFree(e->recs);
         e->recs = 0;
     }
     if ((lbl_804D5440->size >> 2) >= 8) {
+        ExtraHolder** q;
+        ExtraHolder** qe;
         best = -1.0f;
-        end = (ExtraHolder**)((char*)lbl_804D5440->data + lbl_804D5440->size);
-        for (p = (ExtraHolder**)lbl_804D5440->data; p != end; p++) {
-            other = *p;
+        qe = (ExtraHolder**)lbl_804D5440->data;
+        q = qe;
+        qe = (ExtraHolder**)((char*)qe + lbl_804D5440->size);
+        for (; q != qe; q++) {
+            other = *q;
             if (other->life > best) {
-                victim = p;
+                victim = q;
                 best = other->life;
             }
         }
