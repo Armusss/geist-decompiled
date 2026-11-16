@@ -1,6 +1,8 @@
 // u_8020B77C.cpp: FX actor emitter helpers (text-out, spawn and update) (0x8020B77C-0x8020D47C).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/string.h"
+
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
@@ -182,26 +184,6 @@ extern "C" int fn_8020B97C(FxActor* actor)
 {
     return actor->cfg.flags & 1;
 }
-
-// Engine string object (constructor/destructor live in another unit).
-class Buffer {
-public:
-    Buffer();                                        // 0x8028BA9C
-    virtual ~Buffer();                               // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* data;
-    int length;
-    int unk0C;
-    int owned;
-};
-
-class String : public Buffer {
-public:
-    String();                                        // 0x8028C500
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 // Message sent to the owner to ask for the asset name; the name is filled in
 // by the handler through the trailing String.

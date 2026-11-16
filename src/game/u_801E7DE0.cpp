@@ -1,29 +1,10 @@
 // u_801E7DE0.cpp: player weapon, aim and collision-view states (0x801E7DE0-0x801EAACC).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/string.h"
+
 typedef unsigned char u8;
 typedef unsigned long u32;
-
-// Reference-counted byte buffer and the String built on top of it. Both are
-// part of the shared runtime (defined in u_8028A77C.cpp).
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 // Per-local-player view data block (pointed to by Actor::views).
 struct PlayerView {

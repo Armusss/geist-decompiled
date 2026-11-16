@@ -1,6 +1,9 @@
 // u_80125DE4.cpp: pickup key actor: update, messages and hit probe (0x80125DE4-0x80127D80).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/string.h"
+#include "game/msg.h"
+
 // The pickup "key" actor (0x80125DE4-0x80127D80): reports its position and time left on screen,
 // resets after a timeout, and configures its model/colour when told which asset it represents.
 typedef unsigned long u32;
@@ -14,39 +17,6 @@ void* memset(void* dst, int val, unsigned long n);
 
 void* FxFind(const char* name);                      // 0x80170834
 int Rand();                                          // 0x8000DDD0
-
-// Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                        // 0x8028BA9C
-    virtual ~Buffer();                               // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                        // 0x8028C500
-    String(const char* s);                           // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-// Query reply: the receiver writes its answer over the first word of the string.
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
 
 inline int KeyQuerySend(int* out, int target, u32 hash) {
     QueryMsg m;

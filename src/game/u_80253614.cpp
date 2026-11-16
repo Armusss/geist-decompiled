@@ -3,6 +3,9 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <dolphin/types.h>
+#include "game/types.h"
+#include "game/string.h"
+#include "game/msg.h"
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
@@ -26,37 +29,8 @@ inline u32 StrHashSeed(const char* s, u32 h) {
     return h;
 }
 
-// Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    String(const char* s);
-    ~String() {}
-    virtual void Release(char* p);
-};
-
 struct Owner;
 struct Actor;
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
 
 // Six-word snapshot of an actor's collision source.
 struct ZoneHitBox {
@@ -142,19 +116,6 @@ struct ImpStateType {
     const char* name;     // 0xC
 };
 
-
-// Message layouts. The offsets are the same across message types; each case uses its own view.
-struct Msg400 {
-    Actor* actor;   // 0x00
-    int ownerId;    // 0x04
-    int unk08;      // 0x08
-    int state;      // 0x0C
-    float f10;      // 0x10
-    float f14;      // 0x14
-    int flags;      // 0x18
-    int unk1C;      // 0x1C
-};
-
 struct Msg407 {
     Actor* actor;   // 0x00
     int unk04;      // 0x04
@@ -164,34 +125,6 @@ struct Msg407 {
     u32 type;       // 0x14
     u8 pad18[0x44 - 0x18];
     int unk44;      // 0x44
-};
-
-struct Msg409 {
-    Actor* actor;   // 0x00
-    int unk04;      // 0x04
-    int anim;       // 0x08
-    int arg;        // 0x0C
-};
-
-struct Msg40A {
-    Actor* actor;   // 0x00
-    int unk04;      // 0x04
-    u32 anim;       // 0x08
-    int result;     // 0x0C
-};
-
-struct Msg41D {
-    Actor* actor;   // 0x00
-    u32 cmd;        // 0x04
-    int unk08;      // 0x08
-    int arg;        // 0x0C
-};
-
-struct Msg41E {
-    Actor* actor;   // 0x00
-    u32 cmd;        // 0x04
-    int unk08;      // 0x08
-    Buffer result;  // 0x0C
 };
 
 int OwnerId(Owner* o);                              // 0x800A3A40
@@ -252,7 +185,6 @@ extern void* lbl_804D3604;  // "ice_frozenimps" effect
 // ---------------------------------------------------------------------------------------------------
 // The "IMP FIRE" effect type.
 
-
 extern "C" {
 void* fn_800EB21C(int id);
 int fn_800F80DC(int a);
@@ -261,7 +193,6 @@ int fn_800F8A30(int a);
 
 void* VAlloc(int size);
 void Fn800F840C(int emitter, int a, int b);
-
 
 inline u32 StrHash(const char* s) {
     if (s == 0) {
@@ -314,7 +245,6 @@ void VFree(void* p);
 
 struct Player;
 
-
 struct ImpShot {
     u8 pad00[0x30];
     float x, y, z;
@@ -336,11 +266,6 @@ struct ImpShotInfo {
     int unk18;
     int unk1C;
     int unk20;
-};
-
-struct MsgResult {
-    void* p;
-    char pad[0x1C];
 };
 
 struct ImpFireDef {
@@ -400,8 +325,6 @@ void ImpFireAssetsFree(void);
 void ImpFireAssetsLoad(void);
 
 inline float Min(float a, float b) { return a < b ? a : b; }
-
-
 
 // Launch parameters for the fire ball (see ImpFireBallSpawn).
 struct ImpThrow {
@@ -675,7 +598,6 @@ EffectType gImpFireType = {
     "IMP FIRE", 0, {0, 0, 0}, ImpFireCreate, (void*)ImpFireDestroy,
     (void*)ImpFireMsg, (void*)ImpFireQuery, (void*)ImpFireUpdate, (void*)ImpFireReset, 0,
 };
-
 
 // ---------------------------------------------------------------------------------------------------
 // Fire ball asset helpers: entry 0 of the name table is the model, entries 1-8 its textures.

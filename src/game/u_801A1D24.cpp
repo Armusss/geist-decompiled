@@ -3,6 +3,8 @@
 // (message 0x1502) finds a matching pickup and hands it to the ghost.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
@@ -41,32 +43,6 @@ inline u32 StrHash(const char* s, u32 h) {
     h %= 0xFFFFFFFF;
     return h;
 }
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct IVec3 {
-    int x, y, z;
-};
-
-struct Mtx33 {
-    float m[3][3];
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
-
-struct PlaceF {
-    Mtx33 rot;
-    Vec3 pos;
-};
-
-struct Placement {
-    Mtx33 rot;
-    IVec3 pos;
-};
 
 struct Actor;
 struct HostData;

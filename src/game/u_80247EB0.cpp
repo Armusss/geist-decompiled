@@ -3,6 +3,8 @@
 // and drives an explosion emitter plus a HUD "White Out" flash.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/msg.h"
+
 typedef unsigned long u32;
 
 struct Vec3 {
@@ -206,12 +208,6 @@ struct NotifyMsg {
     int unk4;
     int unk8;
     int unkC;
-};
-
-// Out-parameter written by SendMsg for 0x400 (the first word is the target actor).
-struct MsgResult {
-    char* p;
-    char pad[0x1C];
 };
 
 struct GrenadeHitMsg {

@@ -5,6 +5,9 @@
 // actor with swept-collision steps.  The state table at 0x803C2AA8 holds each state's
 // animation key and callbacks.  Names are descriptive guesses; unmatched against retail so far.
 
+#include "game/types.h"
+#include "game/string.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 typedef unsigned short u16;
@@ -14,39 +17,6 @@ void* memcpy(void* dst, const void* src, unsigned long n);
 void* memset(void* dst, int c, unsigned long n);
 int toupper(int c);
 }
-
-// Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    String(const char* s);                     // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct IVec3 {
-    int x, y, z;
-};
-
-struct Mtx34 {
-    float m[12];
-};
 
 struct Place {
     float f[9];

@@ -6,6 +6,8 @@
 // from 0x80268528) and "crapElectricity" are in this file's string pool, and .sdata2 stays contiguous
 // through fn_80269A88. The next file's pool (0x8034ADD8) is first used at 0x8026A158.
 
+#include "game/string.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
@@ -28,26 +30,6 @@ inline u32 StrHash(const char* s, u32 h) {
     }
     return h % 0xFFFFFFFF;
 }
-
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    String(const char* s);                     // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 struct Actor;
 

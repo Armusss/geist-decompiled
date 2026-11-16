@@ -1,5 +1,7 @@
 // u_80153C10.cpp: ghost possession, quick flash and ghost-record bookkeeping.
 
+#include "game/string.h"
+
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
@@ -107,26 +109,6 @@ extern "C" void* fn_800886C8(void);
 extern "C" void fn_800886F0(void);
 int GhostFrameUpdate(float dt, void* p);
 int GhostPossessTick(GhostSlot* self);
-
-// Runtime string buffer; the 0x41E query messages receive a String answer.
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 struct QueryResult {
     String name;

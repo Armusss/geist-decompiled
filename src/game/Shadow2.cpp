@@ -4,6 +4,8 @@
 // Also keeps the shadow light setup.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 typedef unsigned char u8;
 typedef unsigned short u16;
 
@@ -16,18 +18,6 @@ void fn_8003E0FC(struct ShadowMesh* mesh, struct ShadowPrim* prim, void* links, 
 void fn_8003E1C8(struct ShadowPrim* prim, struct Mtx43* mats, struct Vec3* out, int stride);
 void fn_8009FE18(struct Mtx43* out, void* link, struct Mtx34* mtx);
 }
-
-struct Vec3 {
-    float x;
-    float y;
-    float z;
-    Vec3() {}
-    Vec3(const Vec3& v) : x(v.x), y(v.y), z(v.z) {}
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
 
 struct Mtx43 {
     float m[4][3];

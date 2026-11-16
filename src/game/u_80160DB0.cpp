@@ -3,58 +3,12 @@
 // the pickup is u_80160F40.cpp (its own copies of 1.0f/0.3f show it is a separate file).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+#include "game/string.h"
+#include "game/msg.h"
+
 typedef unsigned long u32;
 typedef unsigned short u16;
-
-// Growable character buffer / string (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    String(const char* s);                     // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-// Node query: the receiver overwrites the first word of the string with its answer.
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
-
-struct Vec3 {
-    float x;
-    float y;
-    float z;
-};
-
-struct Vec4 {
-    float x;
-    float y;
-    float z;
-    float w;
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
 
 struct Actor;
 

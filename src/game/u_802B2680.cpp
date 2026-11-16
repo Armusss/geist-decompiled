@@ -6,6 +6,9 @@
 // update that animates the model and rebuilds its placement matrix.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+#include "game/string.h"
+
 typedef unsigned long u32;
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
@@ -13,50 +16,10 @@ static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
 };
 
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
-
-struct Mtx33 {
-    float m[3][3];
-};
-
-// Orientation and position. The matrix helpers write a full 3x4 over rot, running into pos;
-// pos is then filled in by the caller.
-struct PlaceF {
-    Mtx33 rot;
-    Vec3 pos;
-};
-
 // Root bone: the translation column of its matrix lives at 0x10.
 struct Bone {
     char pad0[0x10];
     float x, y, z;
-};
-
-// Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    String(const char* s);                     // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
 };
 
 struct Actor;

@@ -3,6 +3,8 @@
 // then that many 4-float planes. Names are descriptive guesses; the code is matched against the
 // retail DOL.
 
+#include "game/types.h"
+
 #define fabs(x) __fabs(x)
 #define fabsf(x) __fabsf(x)
 
@@ -13,14 +15,6 @@ typedef signed char s8;
 typedef short s16;
 typedef int s32;
 typedef float f32;
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct IVec3 {
-    int x, y, z;
-};
 
 extern "C" {
 double tan(double x);
@@ -503,10 +497,6 @@ void ViewBezierPoint(double t, int* path, Vec3* out) {
 // Model bone queries. The model handle is an index into a global table; the
 // bone data pointers come from the model system in other files.
 // ---------------------------------------------------------------------------
-
-struct Vec4 {
-    float x, y, z, w;
-};
 
 struct AnimBone {
     float q[4];

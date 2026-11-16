@@ -2,16 +2,7 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 // Function and field names are descriptive guesses based on what the code does.
 
-// Small math types used by the shot-firing path.
-struct Vec3 {
-    float x;                           // 0x00
-    float y;                           // 0x04
-    float z;                           // 0x08
-};
-
-struct Mtx34 {
-    float m[12];                       // 0x00
-};
+#include "game/types.h"
 
 struct Bone {
     unsigned char unk0[0x10];          // 0x00

@@ -4,6 +4,10 @@
 // view helpers, the memory checker and the player team / handle lookups.  Names are descriptive
 // guesses; unmatched against retail so far.
 
+#include "game/types.h"
+#include "game/string.h"
+#include "game/msg.h"
+
 typedef unsigned long u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
@@ -59,46 +63,6 @@ extern "C" void fn_800FDA10(void);
 extern "C" void fn_800FDA90(void);
 extern "C" void fn_800FDC48(void);
 extern "C" void fn_800FDC78(void);
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[12];
-};
-
-
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    String(const char* s);
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
 
 extern "C" int SendMsg(int to, int msg, void* data);
 
@@ -2098,8 +2062,6 @@ int MinigameIsArenaMap(void) {
     }
     return 1;
 }
-
-
 
 // Awards a "kill streak" step to the player `handle` when the match counters allow it.
 void MinigameStreakUp(u32 handle) {

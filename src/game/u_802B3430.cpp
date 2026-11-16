@@ -2,6 +2,8 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 // Function names are descriptive guesses based on what the code does.
 
+#include "game/types.h"
+
 typedef unsigned char u8;
 typedef signed char s8;
 typedef unsigned long u32;
@@ -46,18 +48,6 @@ static void* sClockChimeFx = (void*)-1;
 static float sWindSoundTimer;
 
 #include <math.h>
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
-
-struct Quat {
-    float x, y, z, w;
-};
 
 // Allocation owned by the clock actor; layout inferred from the code.
 struct ClockWork {

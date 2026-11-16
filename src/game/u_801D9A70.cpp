@@ -3,19 +3,14 @@
 // attack and approach logic, and the trail create / destroy wrappers.
 // Names are descriptive guesses; unmatched against retail so far.
 
+#include "game/types.h"
+#include "game/string.h"
+
 typedef unsigned long u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
 
 #define NULL 0
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
 
 struct Creature;
 struct TrailDesc;
@@ -94,8 +89,6 @@ void fn_800B261C(Creature* c, int a, void** out);
 int fn_800B22F8(Creature* c, int a);
 }
 
-
-
 extern "C" {
 void fn_800B1F20(Creature* c, int slot);
 void fn_800A78A0(void* set, void* target);
@@ -106,25 +99,6 @@ int SendMsg(int to, int msg, void* data);
 }
 extern float lbl_804D8CD8;
 int CreatureChargeCallback(Creature* c);
-
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    String(const char* s);
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 struct QueryMsg {
     int a;

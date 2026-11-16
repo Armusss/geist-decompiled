@@ -4,6 +4,9 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <dolphin/types.h>
+#include "game/types.h"
+#include "game/string.h"
+#include "game/msg.h"
 
 struct Actor;
 
@@ -46,36 +49,6 @@ inline u32 StrHash(const char* s) {
 
 // Declarations shared with the gun-with-grenade host states (u_8025643C.cpp).
 // .sdata2 constants (0x804D9E98-0x804D9EBC) suggest it is a file of its own.
-
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
 
 struct Actor;
 
@@ -228,8 +201,6 @@ int AssetFind(u32 table, u32 key);
 
 extern int lbl_804A2930[16];  // the host's sounds
 
-
-
 struct EffectType {
     const char* name;
     u32 hash;
@@ -250,9 +221,6 @@ inline u32 EffectTypeHash(EffectType* type) {
     }
     return type->hash;
 }
-struct Vec3 {
-    float x, y, z;
-};
 
 struct Mtx34;
 struct Player;
@@ -333,11 +301,6 @@ struct GunShotInfo {
     int unk18;
     int unk1C;
     int unk20;
-};
-
-struct MsgResult {
-    void* p;
-    char pad[0x1C];
 };
 
 struct Target {
@@ -575,7 +538,6 @@ int GunWithGrenadeMsg(EffectObj* obj, int msg, int arg, void* data, float dt) {
     int busy = Fn80175D60(arg);
     Vec3 rot;
     Vec3 pos;
-
 
     g->arg = arg;
     switch (msg) {
@@ -821,7 +783,6 @@ void* GunWithGrenadeCreate(int a, int id) {
     Fn800F840C(g->emitter, g->def->unk64, g->def->unk68);
     return g;
 }
-
 
 int GunWithGrenadeInit(void) {
     fn_80175EF8();

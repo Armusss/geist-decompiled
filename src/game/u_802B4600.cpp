@@ -6,6 +6,9 @@
 // and registers the boss with the defer list.  Names are descriptive guesses; unmatched
 // against retail so far.
 
+#include "game/string.h"
+#include "game/msg.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
@@ -18,27 +21,6 @@ extern "C" {
 void* memset(void* dst, int c, unsigned long n);
 int rand(void);
 }
-
-// Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    String(const char* s);                     // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 struct Vec3 {
     float x, y, z;
@@ -166,13 +148,6 @@ struct Msg {
     u32 key;                // 0x04
     int unk08;              // 0x08
     int arg;                // 0x0C
-};
-
-struct Msg41E {
-    Actor* actor;           // 0x00
-    u32 key;                // 0x04
-    int unk08;              // 0x08
-    Buffer result;          // 0x0C
 };
 
 // Hit message (0x407).

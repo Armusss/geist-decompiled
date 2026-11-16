@@ -4,10 +4,11 @@
 // (0x804DA0A8-0x804DA0B4 here, 0x804DA0B8.. for the gauge), and this file has no string table.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/msg.h"
+
 #pragma auto_inline off
 
 typedef unsigned short u16;
-
 
 struct Owner;
 struct Beh;
@@ -110,11 +111,6 @@ struct ActorMsg {
     int unk18;
 };
 
-struct MsgResult {
-    void* p;
-    char pad[0x1C];
-};
-
 struct Buf60 {
     char data[0x60];
 };
@@ -149,7 +145,6 @@ void Fn8006CDE8(Player* p, int a, int b);                // 0x8006CDE8
 void Fn8006CD84(Player* p, int a, float f);              // 0x8006CD84
 void ActorPlayAnim(int handle, unsigned long anim, int handle2); // 0x800C5654
 void Fn80211AA4(Actor* a, float dt);                     // 0x80211AA4
-
 
 void ThermoEnter0(void* owner, void* beh);
 void ThermoExit0(void* owner, void* beh);

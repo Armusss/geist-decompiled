@@ -1,6 +1,8 @@
 // u_8023824C.cpp: follow-marker and follow-behaviour states and messages (0x8023824C-0x8023B96C).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 typedef unsigned char u8;
 typedef unsigned int u32;
 typedef int s32;
@@ -1492,12 +1494,6 @@ struct FollowQuery {
     int id;       // 0x04
     int ownerId;  // 0x08
     u32 name;     // 0x0C - lookup hash
-};
-
-struct IVec3 {
-    s32 x;  // 0x00
-    s32 y;  // 0x04
-    s32 z;  // 0x08
 };
 
 extern float lbl_804D99FC;

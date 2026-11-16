@@ -3,24 +3,14 @@
 // slow-motion finish effect, and runs the death sequence (trail particles, screen effect and a
 // model reset).  Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
-};
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct IVec3 {
-    int x, y, z;
-};
-
-struct Mtx34 {
-    float m[3][4];
 };
 
 struct Bone {

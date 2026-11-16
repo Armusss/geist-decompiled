@@ -1,6 +1,8 @@
 // u_8024CAA0.cpp: camera-rail and scannable-beam helpers for an actor and its owner (0x8024CAA0-0x8024E374).
 // Names of structures and functions are descriptive guesses.
 
+#include "game/string.h"
+
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef signed int s32;
@@ -615,27 +617,6 @@ void RailFireloopDestroy(int owner, CamActor* actor) {
         actor->ff0 = 0;
     }
 }
-
-// Runtime string buffer; the 0x41e query message carries a String slot whose
-// first word the receiver overwrites with the answer.
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 struct RailQueryResult {
     String name;

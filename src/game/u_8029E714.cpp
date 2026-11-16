@@ -4,22 +4,11 @@
 // function is declared with a TODO comment.
 // Names are descriptive guesses; unmatched against retail so far.
 
+#include "game/string.h"
+
 typedef unsigned long u32;
 typedef unsigned short u16;
 struct Actor;
-
-// Growable buffer base used by the list classes below (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
 
 void* VAlloc(int size);                                         // 0x8009DA68
 void VFree(void* p);                                            // 0x8009DA3C
@@ -204,7 +193,6 @@ extern "C" float fn_802A2080(void);
 extern "C" void fn_802A209C(int v);
 extern "C" void fn_802A3BEC();
 
-
 int fn_802A1D04() {
     return lbl_804D5728;
 }
@@ -212,7 +200,6 @@ int fn_802A1D04() {
 void fn_802A1D0C(int v) {
     lbl_804D5728 = v;
 }
-
 
 void FrameCounterAdd(float dt) {
     lbl_804D5724++;
@@ -259,11 +246,9 @@ void LevelFlagPop() {
     lbl_804D5734--;
 }
 
-
 char* fn_802A1FA0() {
     return lbl_804A4598;
 }
-
 
 struct Actor;
 Actor* ActorGet(int index) {
@@ -296,7 +281,6 @@ float fn_802A2080() {
 void fn_802A209C(int on) {
     lbl_804D3868 = on;
 }
-
 
 // Empty in retail.
 void fn_802A3BEC() {}

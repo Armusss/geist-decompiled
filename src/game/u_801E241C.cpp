@@ -2,6 +2,7 @@
 // descriptive guesses and the code is matched against the retail DOL.
 
 #include <dolphin/types.h>
+#include "game/effect.h"
 
 extern "C" {
 void* fn_800EB21C(int id);
@@ -31,19 +32,6 @@ inline u32 StrHash(const char* s) {
         return h;
     }
 }
-
-struct EffectType {
-    const char* name;
-    u32 hash;
-    int unk8[3];
-    void* (*create)(int a, int id);
-    void* destroy;
-    void* msg;
-    void* query;
-    void* update;
-    void* reset;
-    int unk2C;
-};
 
 inline u32 EffectTypeHash(EffectType* type) {
     if (type->hash == 0) {

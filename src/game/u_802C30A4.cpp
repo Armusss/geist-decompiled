@@ -2,40 +2,15 @@
 // Message handler, damage handling ("finalboss_hearthit" / "parthit" / "stunhit"), attack states and
 // part animation of the final boss.  Names are descriptive guesses; unmatched against retail so far.
 
+#include "game/types.h"
+#include "game/string.h"
+
 typedef unsigned long u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
 typedef short s16;
 
 #define NULL 0
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
-
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    String(const char* s);                     // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 struct Boss;
 
@@ -173,7 +148,6 @@ int BossSetupHit(BossMsg* m);
 void BossPartInit(Boss* b);
 void BossHitFeedback(BossMsg* m);
 
-
 extern "C" {
 void fn_8009F7A8(Mtx34* out, Vec3* dir);
 void MtxGetEuler(Vec3* out, Mtx34* m);
@@ -304,7 +278,6 @@ static inline void BossPlayStateAnim(Boss* b, int pick, bool randomize) {
     }
 }
 
-
 extern "C" void fn_8028B35C(BossBuf* list, void* where, int n);
 extern float lbl_804D3A0C;
 extern float lbl_804D3A44;
@@ -321,10 +294,6 @@ extern int lbl_804D3A3C;
 extern int lbl_804D3A40;
 extern float lbl_804D3A1C, lbl_804D3A20, lbl_804D3A24, lbl_804D3A28, lbl_804D3A2C, lbl_804D3A30, lbl_804D3A34;
 extern float lbl_804D3A4C, lbl_804D3A50;
-
-struct PlaceF {
-    float v[12];
-};
 
 extern "C" {
 void fn_801BE4B8(Boss* b);

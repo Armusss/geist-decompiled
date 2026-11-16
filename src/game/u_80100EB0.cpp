@@ -1,19 +1,10 @@
 // u_80100EB0.cpp: spline, item-colour and bone-rotation helpers (0x80100EB0-0x80104134).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+#include "game/string.h"
+
 typedef unsigned long u32;
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
-
-struct Quat {
-    float x, y, z, w;
-};
 
 #define fabsf(x) __fabsf(x)
 
@@ -61,28 +52,6 @@ extern SplineState lbl_8045E768;
 
 extern "C" int BitsetFirstClear(u32* bits, int words, int n);
 extern "C" void* memset(void* dst, int c, u32 n);
-
-// Growable character buffer and string (same declarations as Credits.cpp; the code lives at
-// 0x8028B9C0-0x8028C5xx and is shared).
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    String(const char* s);
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 // Query payload: a hash, a spare word and a String whose first word the receiver overwrites
 // with its answer.

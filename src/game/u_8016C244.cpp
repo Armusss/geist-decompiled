@@ -3,20 +3,12 @@
 // name) lives in .data; the action-name string pool is the same header table every actor file carries.
 // Reconstructed from the retail DOL; names are descriptive guesses.
 
+#include "game/types.h"
+#include "game/string.h"
+#include "game/msg.h"
+
 typedef unsigned char u8;
 typedef unsigned long u32;
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct IVec3 {
-    int x, y, z;
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
 
 // Per-actor behaviour state, allocated by CollectInit.
 struct Beh {
@@ -86,27 +78,6 @@ struct Actor {
     float f904;                     // 0x904
 };
 
-// Growable character buffer (support code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    String(const char* s);                     // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
-
 // Message body shared by the collect-point queries: the receiver answers by writing the id of the
 // responding owner back over unk4 and setting unkC.
 struct Msg {
@@ -126,18 +97,6 @@ struct MsgName {
     u32 id;          // 0x04
     int unk8;        // 0x08
     String name;     // 0x0C
-};
-
-// "What are you" query: the receiver overwrites the String with its answer (see Credits.cpp).
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
 };
 
 typedef int (*BehFn)(void*);

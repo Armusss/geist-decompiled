@@ -5,13 +5,7 @@
 // up (STATUS G4).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
-struct Vec3 {
-    float x, y, z;
-};
-
-struct IVec3 {
-    int x, y, z;
-};
+#include "game/types.h"
 
 extern "C" {
 double sqrt(double);

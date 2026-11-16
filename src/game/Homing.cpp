@@ -5,6 +5,9 @@
 
 #include <dolphin/types.h>
 #include <string.h>
+#include "game/types.h"
+#include "game/msg.h"
+#include "game/effect.h"
 
 extern "C" {
 
@@ -43,26 +46,6 @@ inline u32 StrHash(const char* s) {
     return h;
 }
 
-struct EffectObj {
-    int unk0;
-    int unk4;
-    int emitter;
-    void* data;
-};
-
-struct EffectType {
-    const char* name;
-    u32 hash;
-    int unk8[3];
-    void* (*create)(int a, int id);
-    void (*destroy)(EffectObj* obj);
-    int (*msg)(EffectObj* obj, int msg, int arg, void* data, float dt);
-    u32 (*query)(EffectObj* obj, int msg);
-    void (*update)(EffectObj* obj, float dt);
-    void (*reset)(EffectObj* obj);
-    int unk2C;
-};
-
 inline u32 EffectTypeHash(EffectType* type) {
     if (type->hash == 0) {
         const char* name = type->name;
@@ -70,10 +53,6 @@ inline u32 EffectTypeHash(EffectType* type) {
     }
     return type->hash;
 }
-
-struct Vec3 {
-    float x, y, z;
-};
 
 struct HomingShot {
     u8 pad[0x30];
@@ -89,11 +68,6 @@ struct HomingFire {
     int unk8;
     int animA;
     int animB;
-};
-
-struct MsgResult {
-    void* p;
-    char pad[0x1C];
 };
 
 struct HomingInfo {

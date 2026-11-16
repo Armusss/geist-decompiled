@@ -3,11 +3,9 @@
 // and send an object message 0xC00.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
-typedef unsigned char u8;
+#include "game/types.h"
 
-struct Vec3 {
-    float x, y, z;
-};
+typedef unsigned char u8;
 
 extern "C" {
 // Callees in other files, not named yet.

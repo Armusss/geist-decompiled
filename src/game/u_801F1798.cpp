@@ -4,6 +4,9 @@
 // (0x400, 0x407, 0x409, 0x40A, 0x41D, 0x41E); the 0x40A and 0x41D payloads are handled by their
 // own functions.  Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/string.h"
+#include "game/msg.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
@@ -28,27 +31,6 @@ inline u32 StrHash(const char* s, u32 h) {
     h %= 0xFFFFFFFF;
     return h;
 }
-
-// Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    String(const char* s);                     // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 struct Actor;
 struct Owner;
@@ -151,37 +133,11 @@ struct HostRideCType {
     const char* name;       // 0xC
 };
 
-// Message layouts. The offsets are the same across message types; each case uses its own view.
-struct Msg400 {
-    Actor* actor;   // 0x00
-    int ownerId;    // 0x04
-    int unk08;      // 0x08
-    int state;      // 0x0C
-    float f10;      // 0x10
-    float f14;      // 0x14
-    int flags;      // 0x18
-    int unk1C;      // 0x1C
-};
-
 struct Msg407 {
     Actor* actor;   // 0x00
     int unk04;      // 0x04
     int unk08;      // 0x08
     int unk0C;      // 0x0C
-};
-
-struct Msg409 {
-    Actor* actor;   // 0x00
-    int unk04;      // 0x04
-    int anim;       // 0x08
-    int arg;        // 0x0C
-};
-
-struct Msg40A {
-    Actor* actor;   // 0x00
-    int unk04;      // 0x04
-    u32 anim;       // 0x08
-    int result;     // 0x0C
 };
 
 struct Msg40B {
@@ -190,20 +146,6 @@ struct Msg40B {
     u32 anim;       // 0x08
     int arg;        // 0x0C
     int unk10;      // 0x10
-};
-
-struct Msg41D {
-    Actor* actor;   // 0x00
-    u32 cmd;        // 0x04
-    int unk08;      // 0x08
-    int arg;        // 0x0C
-};
-
-struct Msg41E {
-    Actor* actor;   // 0x00
-    u32 cmd;        // 0x04
-    int unk08;      // 0x08
-    Buffer result;  // 0x0C
 };
 
 struct MsgC14 {

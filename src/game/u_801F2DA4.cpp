@@ -4,32 +4,14 @@
 // state-name query, forwards hits to the damage code and stashes one pending 0x1800 message to
 // replay when the state machine ends.  Names are descriptive guesses; unmatched against retail so far.
 
+#include "game/string.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
 // From a shared header: names of the actor actions (the table itself is unused here).
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
-};
-
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    String(const char* s);
-    ~String() {}
-    virtual void Release(char* p);
 };
 
 struct Vec3 {

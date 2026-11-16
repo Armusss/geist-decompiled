@@ -5,6 +5,9 @@
 // variable messages 0x41E (read) / 0x41D (set) and walk, aim or interact with it.
 // Names are descriptive guesses; unmatched against retail so far.
 
+#include "game/string.h"
+#include "game/msg.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
@@ -12,38 +15,6 @@ typedef unsigned char u8;
 
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
-
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    String(const char* s);
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-// Variable query/set message: the receiver reads or writes the first word of the string.
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
 
 struct Vec3 {
     float x, y, z;
@@ -1726,7 +1697,6 @@ int AllyStartMove(Actor* a, Actor* target) {
     }
     return 1;
 }
-
 
 AllyState gAllyStates[8] = {
     { (int (*)(void*))AllyEnterState0, AllyTrue5, AllyUpdateState1, "" },

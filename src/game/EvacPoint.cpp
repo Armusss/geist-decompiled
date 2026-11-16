@@ -3,35 +3,9 @@
 // stands in it, the level gets a trigger message.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 typedef unsigned long u32;
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct Mtx33 {
-    float m[3][3];
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
-
-struct IVec3 {
-    int x, y, z;
-};
-
-// Orientation and float position, as used to place a new actor.
-struct PlaceF {
-    Mtx33 rot;
-    Vec3 pos;
-};
-
-// Orientation and position, as stored at the start of every actor.
-struct Placement {
-    Mtx33 rot;
-    IVec3 pos;
-};
 
 struct Actor;
 

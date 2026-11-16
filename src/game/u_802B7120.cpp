@@ -1,6 +1,8 @@
 // u_802B7120.cpp: actor message handlers. Function names are descriptive guesses:
 // the actor that owns the +0x130 state block has not been identified yet.
 
+#include "game/types.h"
+
 struct Owner;
 
 struct ActorVitals {
@@ -121,12 +123,6 @@ extern "C" void* memcpy(void* dst, const void* src, unsigned long n);
 extern "C" int SendMsg(int to, int msg, void* data);
 int ActorQueryHandler802B79DC(Actor* a, int* data);
 int ActorFindSendSlot802B7EFC(int want0, int want1, void* owner);
-
-struct Vec3 {
-    float x;                    // 0x00
-    float y;                    // 0x04
-    float z;                    // 0x08
-};
 
 // An object whose world position is stored as ints at +0x24.
 struct ObjectPosition {
@@ -688,7 +684,6 @@ extern "C" void fn_8021284C(int id);
 extern "C" void fn_80212814(int id, int other, unsigned long asset,
                             int a, int b, int c);
 
-
 int ActorShouldCollect802B84C8(void* playerArg, void* ownerArg);
 
 // Allocates and initialises the pickup actor's collection state block.
@@ -947,7 +942,6 @@ struct GunModel {
 
 extern const char* lbl_803C49F0;
 extern unsigned long lbl_803C49F4;
-
 
 extern float lbl_804D3960;
 extern float lbl_804D3964;

@@ -5,6 +5,7 @@
 
 #include <dolphin/types.h>
 #include <string.h>
+#include "game/effect.h"
 
 extern "C" {
 
@@ -48,26 +49,6 @@ inline u32 StrHash(const char* s) {
     }
     return h;
 }
-
-struct EffectObj {
-    int unk0;
-    int unk4;
-    int emitter;
-    void* data;
-};
-
-struct EffectType {
-    const char* name;
-    u32 hash;
-    int unk8[3];
-    void* (*create)(int a, int id);
-    void (*destroy)(EffectObj* obj);
-    int (*msg)(EffectObj* obj, int msg, int arg, void* data, float dt);
-    u32 (*query)(EffectObj* obj, int msg);
-    void (*update)(EffectObj* obj, float dt);
-    void (*reset)(EffectObj* obj);
-    int unk2C;
-};
 
 inline u32 EffectTypeHash(EffectType* type) {
     if (type->hash == 0) {

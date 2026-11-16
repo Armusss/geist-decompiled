@@ -5,36 +5,15 @@
 // update function and switches states when it asks for another one.  Names are descriptive
 // guesses; unmatched against retail so far.
 
+#include "game/types.h"
+#include "game/string.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
 // From a shared header: names of the actor actions (the table itself is unused here).
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
-};
-
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    String(const char* s);
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-struct Vec3 {
-    float x, y, z;
 };
 
 extern unsigned char __upper_map[256];
@@ -50,7 +29,6 @@ struct CordBeh;
 struct Actor;
 void CordAdvance(Actor* a);
 void CordPlayAnim(Actor* a, int variant);
-
 
 struct ActorInfo {
     char pad0[8];
@@ -169,9 +147,6 @@ void fn_80090974(float f, int h, int n, int v, int m, int (*cb)(int, Actor*), Ac
 void fn_8008DE4C(int a, int b, int c, int d);
 }
 extern void RangeResetFields(void* p);
-struct Mtx34 {
-    float m[12];
-};
 extern void ActorGetMatrix(Mtx34* m, Actor* a);
 extern void MtxSetEuler(Mtx34* m, Vec3* e);
 extern void MtxGetEuler(Vec3* e, Mtx34* m);

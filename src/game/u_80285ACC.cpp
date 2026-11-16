@@ -6,6 +6,7 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <dolphin/types.h>
+#include "game/effect.h"
 
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
@@ -24,26 +25,6 @@ inline u32 StrHash(const char* s) {
         return h;
     }
 }
-
-struct EffectObj {
-    int unk0;
-    int unk4;
-    int emitter;
-    void* data;
-};
-
-struct EffectType {
-    const char* name;
-    u32 hash;
-    int unk8[3];
-    void* (*create)(int a, int id);
-    void (*destroy)(EffectObj* obj);
-    int (*msg)(EffectObj* obj, int msg, int arg, void* data, float dt);
-    u32 (*query)(EffectObj* obj, int msg);
-    void (*update)(EffectObj* obj, float dt);
-    void (*reset)(EffectObj* obj);
-    int unk2C;
-};
 
 inline float Min(float a, float b) { return a < b ? a : b; }
 inline float Max(float a, float b) { return a > b ? a : b; }

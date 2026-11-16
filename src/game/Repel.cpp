@@ -3,9 +3,7 @@
 // strength changes. Debug builds draw its two radii and print its strength.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
-struct Vec3 {
-    float x, y, z;
-};
+#include "game/types.h"
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {

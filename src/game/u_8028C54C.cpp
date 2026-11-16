@@ -3,6 +3,8 @@
 // holds each state's enter/leave/update callbacks.  Names are descriptive guesses;
 // the code is matched against the retail DOL.
 
+#include "game/string.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 
@@ -42,27 +44,6 @@ inline u32 StrHash(const char* s, u32 h) {
     h %= 0xFFFFFFFF;
     return h;
 }
-
-// Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    String(const char* s);                     // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 struct Actor;
 struct Owner;
@@ -286,7 +267,6 @@ static inline void HostRideBStateName(Buffer* out, const char* s) {
 
     fn_8028C188(out, text.mData, text.mLength);
 }
-
 
 // 0x8028C54C: message handler.
 static inline int HostRideBInfo(void* data) {

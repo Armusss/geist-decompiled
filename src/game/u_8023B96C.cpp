@@ -4,6 +4,7 @@
 // the match phases (countdown, play, results) are driven from RulesUpdate.  Names are
 // descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/string.h"
 
 typedef unsigned long u32;
 typedef unsigned char u8;
@@ -12,27 +13,6 @@ extern "C" {
 void* memcpy(void* dst, const void* src, unsigned long n);
 void* memset(void* dst, int c, unsigned long n);
 }
-
-// Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    String(const char* s);                     // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 // Match rule variables (0x803BE310, defaults copy at 0x803BE354).
 struct RulesVars {

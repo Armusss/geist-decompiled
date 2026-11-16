@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <dolphin/gx.h>
+#include "game/types.h"
 
 // Global stack of active entries: an index into the table below (negative when
 // the stack is empty) and the table itself. Names are descriptive guesses.
@@ -907,13 +908,6 @@ int CopyState17Scaled(unsigned int* dst, unsigned int* src, int* scale)
     return 1;
 }
 
-// Three-float vector as ViewPlaneFromNormal sees it.
-struct Vec3 {
-    float x; // 0x00
-    float y; // 0x04
-    float z; // 0x08
-};
-
 // Builds the plane (normal and distance) a scroll item is projected onto.
 void ViewPlaneFromNormal(float* plane, const Vec3* normal, const Vec3* point);
 
@@ -1641,7 +1635,6 @@ struct FxStripDraw {
 
 void GfxSetVtxDesc(int desc);        // 0x80008DAC
 
-
 // Reads an unaligned big-endian 16-bit index out of the vertex stream.
 static inline u16 FxReadStreamIndex(const u8* p)
 {
@@ -1962,7 +1955,6 @@ void FxAdvanceRingPhases(int* ring, int delta)
 struct FxStripWaveState {
     int unk00; // 0x00
 };
-
 
 // Draws a triangle strip/fan like FxDrawStrip, but drives the vertex colours
 // from a wave: the length of the (x, z) part of each position sets a sine whose

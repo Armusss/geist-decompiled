@@ -1,27 +1,10 @@
 // u_8026A158.cpp: "Ammo Refill" item message handler and two user-geometry helpers (0x8026A158-0x8026A37C).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/string.h"
+#include "game/msg.h"
+
 class Actor;
-
-class Buffer
-{
-public:
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer
-{
-public:
-    String();
-    ~String() {}
-    virtual void Release(char* p);
-};
 
 // Message payload used by the "Ammo Refill" item handler.
 struct AmmoQuery
@@ -30,19 +13,6 @@ struct AmmoQuery
     int anim;               // +0x04
     unsigned long query;    // +0x08: name hash of the requested animation
     int result;             // +0x0c
-};
-
-struct QueryResult
-{
-    String name;
-};
-
-struct QueryMsg
-{
-    int unk0;
-    unsigned long hash;
-    int unk8;
-    QueryResult result;
 };
 
 struct AnimMsg

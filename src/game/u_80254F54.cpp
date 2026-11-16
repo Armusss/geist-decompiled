@@ -5,6 +5,9 @@
 
 #include <dolphin/types.h>
 #include <string.h>
+#include "game/types.h"
+#include "game/string.h"
+#include "game/msg.h"
 
 extern "C" {
 void* fn_800EB21C(int id);
@@ -38,41 +41,10 @@ inline u32 StrHash(const char* s) {
     }
 }
 
-
 // ---------------------------------------------------------------------------------------------------
 // 0x8025643C-0x8025808C: the gun-with-grenade host states (aim, fire, reload, grenade throw) and the
 // per-host-type table callbacks. Its own string pool ("gun_empty"), host table (0x803BF068) and
 // .sdata2 constants (0x804D9E98-0x804D9EBC) suggest it is a file of its own.
-
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
 
 struct Actor;
 
@@ -247,19 +219,6 @@ inline void QueryValue(int target, u32 hash, int value) {
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
-};
-
-// Declarations shared with the imp fire ball (u_802541D4.cpp).
-struct Vec3 {
-    float x, y, z;
-};
-
-struct IVec3 {
-    int x, y, z;
-};
-
-struct Mtx34 {
-    float m[3][4];
 };
 
 struct IBox {
@@ -1249,7 +1208,6 @@ int GunHostMsg(int msg, void* data) {
     }
     return 0;
 }
-
 
 void* GunHostTypeData(Actor* actor) {
     return lbl_803BF068[actor->type].name;

@@ -1,3 +1,5 @@
+#include "game/types.h"
+
 typedef unsigned char u8;
 typedef unsigned long u32;
 
@@ -8,20 +10,8 @@ inline void GhostActionNames() {
     };
 }
 
-struct Vec3 {
-    float x, y, z;
-};
-
 struct Vec3i {
     int x, y, z;
-};
-
-struct Quat {
-    float x, y, z, w;
-};
-
-struct Mtx34 {
-    float m[3][4];
 };
 
 struct Actor;
@@ -217,7 +207,6 @@ int GhostGunUpdate(void* pp, Actor* a, float dt) {
     coords[3] = (int)a->pos.x;
     coords[4] = (int)a->pos.y;
     coords[5] = (int)a->pos.z;
-
 
     fn_800E1098(2000.0f, &spawn, &a->dir);
     spawn.x += a->pos.x;

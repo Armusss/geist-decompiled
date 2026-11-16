@@ -1,6 +1,8 @@
 // u_80208238.cpp: player "Batsqueeks" host mode (per-frame update, setup, mode id tables) and a sound list
 // (0x80208238-0x8020A650). Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/string.h"
+
 typedef unsigned char u8;
 typedef int s32;
 typedef unsigned int u32;
@@ -163,20 +165,6 @@ extern int lbl_8049E0F0[];
 extern "C" int SendMsg(void* target, int msg, void* data);
 
 void PlayerSetHeldSlotIndex(void* player, int index);
-
-// Engine string type; the constructor and destructor live in the runtime unit.
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-};
-
-// String's destructor is compiler-generated here (retail inlines it: it stores
-// __vt__6String and calls __dt__6BufferFv directly).
-class String : public Buffer {
-public:
-    String();
-};
 
 // Query block handed to the peer when the host mode asks which slot it holds.
 struct NameQuery {

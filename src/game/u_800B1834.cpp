@@ -1,6 +1,9 @@
 // u_800B1834.cpp: owner behaviour-slot and animation bookkeeping.
 // Drafted from the retail assembly; type and member names are descriptive guesses.
 
+#include "game/types.h"
+#include "game/string.h"
+
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned long u32;
@@ -61,16 +64,6 @@ extern float lbl_804D6DA4;
 extern float lbl_804D6D90;
 extern float lbl_804D6D94;
 
-class Buffer {
-public:
-    void* vtable;   // 0x00
-    u32   unk04;    // 0x04
-    u32   size;     // 0x08 (bytes used)
-    u8*   data;     // 0x0c
-    Buffer();
-    ~Buffer();
-};
-
 extern "C" void* fn_8028B3BC(Buffer* buf, u8* end, u32 len);
 extern "C" int   rand(void);
 extern "C" void fn_8028B960(void* object);
@@ -123,20 +116,6 @@ struct GroupEntry {
     u32        flags;    // 0x6c
     u32        asset;    // 0x70
     u32        field74;  // 0x74
-};
-
-// Rotation basis shared by the bone helpers (0x24 bytes).
-class PlaceF {
-public:
-    float basis[9];  // 0x00
-};
-
-// Bone transform: rotation basis plus integer cell coordinates (0x30 bytes).
-class Mtx34 : public PlaceF {
-public:
-    s32 cellX;       // 0x24
-    s32 cellY;       // 0x28
-    s32 cellZ;       // 0x2c
 };
 
 class Actor;
@@ -819,8 +798,6 @@ extern "C" int fn_800B26B8(Owner* owner)
     }
     return result;
 }
-
-
 
 // Age the four animation entries: each entry's timer counts down with the
 // owner frame time and, once it expires, the entry's actor reference is
@@ -1636,8 +1613,6 @@ extern "C" int fn_800B42E0(float value, float* pos, int actor, int priority, u32
     }
     return 0;
 }
-
-
 
 // True unless `p` already names `value` (a zero word never matches).
 extern "C" int fn_800B466C(u32* p, u32 value)

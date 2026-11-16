@@ -6,6 +6,9 @@
 // state callbacks of the player that use the host's animation tables.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/string.h"
+#include "game/msg.h"
+
 typedef unsigned char u8;
 typedef unsigned long u32;
 
@@ -81,38 +84,6 @@ struct LinkRequest {
     int mBone;     // 0x0C
     u32 mFlags;    // 0x10
     Place mPlace;  // 0x14
-};
-
-// From a shared header (class bodies are in other files).
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();
-    String(const char* s);
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
 };
 
 // Animation slot of the player (two of them, 0x58 bytes each, from 0x8C).

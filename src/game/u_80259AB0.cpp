@@ -3,12 +3,10 @@
 // Only the smaller state callbacks are drafted so far; every larger function is declared with a TODO.
 // Names are descriptive guesses; unmatched against retail so far.
 
+#include "game/types.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
-
-struct Vec3 {
-    float x, y, z;
-};
 
 // Reply written by SendMsg 0xC14 (state change notification).
 struct StateMsg {
@@ -186,9 +184,6 @@ extern "C" void fn_800CC984();
 extern "C" void fn_80037EC0(int model, int anim, int a, int r, int g, int b, int c);
 extern "C" void* fn_800C7E80(void* info);
 
-struct Mtx34 {
-    float m[3][4];
-};
 void ActorGetMatrix(Mtx34* m, Actor* a);                        // 0x8009ED70
 void MtxGetEuler(Vec3* rot, Mtx34* m);                          // 0x8009FB94
 
@@ -392,7 +387,6 @@ int RicoCheckStun(Rico* a) {
     }
     return 0;
 }
-
 
 // Leaves the attack state: clears the beh, stops notifying the owner.
 int RicoExitAttack(Rico* a) {

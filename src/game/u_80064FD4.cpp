@@ -2,36 +2,12 @@
 // Player update/movement, its pad input handling, the possession and action sub-updates, and the
 // model/bone pose blending. Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 typedef unsigned long u32;
 typedef unsigned char u8;
 typedef signed char s8;
 typedef unsigned short u16;
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct IVec3 {
-    int x, y, z;
-};
-
-struct Quat {
-    float x, y, z, w;
-};
-
-struct Mtx33 {
-    float m[3][3];
-};
-
-struct Mtx34 {
-    float m[3][4];
-};
-
-// Orientation and position. The matrix helpers write a full 3x4 over rot, running into pos.
-struct PlaceF {
-    Mtx33 rot;
-    Vec3 pos;
-};
 
 // A 0x48-byte pose record copied around by fn_80067558.
 struct Pose48 {

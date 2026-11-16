@@ -5,15 +5,9 @@
 // pointers before the stack frame is set up (STATUS G4).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
+
 typedef short s16;
-
-struct Vec3 {
-    float x, y, z;
-};
-
-struct IVec3 {
-    int x, y, z;
-};
 
 struct Box {
     Vec3 min, max;

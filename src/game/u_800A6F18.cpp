@@ -4,6 +4,8 @@
 #include <math.h>
 #include <stddef.h>
 #include <string.h>
+#include "game/types.h"
+#include "game/string.h"
 
 // Range synchronisation helpers, defined later in this file.
 void RangeSyncWords(void* start, void* end);    // fn_800A6FC8
@@ -95,12 +97,7 @@ void RangeResetPending(void* range)
     *(unsigned long*)((char*)range + 0x20) = 0;
 }
 
-struct Vec3 {
-    float x, y, z;
-};
-
 void Vec3Set(Vec3* v, float x, float y, float z);
-
 
 // Reset the vector/colour fields of a range object to the shared default
 // constant.  Returns false for a null object.
@@ -154,10 +151,6 @@ struct FollowTargetObj {
     int  pos[3];
 };
 
-struct Mtx34 {
-    float m[3][4];
-};
-
 struct Actor;
 
 void ActorGetMatrix(Mtx34* mtx, Actor* actor);
@@ -171,7 +164,6 @@ extern "C" void fn_8016D440(Vec3* out, Vec3* in);
 extern "C" void fn_8016D68C(void* dst, void* src);
 extern "C" float fn_800E1020(void* p);
 float ActorAngleToPos(void* self, Vec3* pos);
-
 
 // Query buffer shared by the asset/actor message round trips below.
 struct AssetActorMsg {
@@ -589,7 +581,6 @@ extern "C" void fn_800A0168(Mtx34* mtx, Mtx34* src);
 extern "C" void fn_800A0030(Vec3* out, Mtx34* mtx, Vec3* in);
 extern "C" void fn_800E1098(Vec3* out, Vec3* v, float scale);
 
-
 // Unit forward/right basis vectors, three floats each.
 extern Vec3 lbl_803445A0;
 extern Vec3 lbl_803445AC;
@@ -877,7 +868,6 @@ extern "C" void fn_80039958(int model, Mtx34* mtx, void* pose, void* boxA,
                             void* boxB);
 extern "C" void fn_801D52E0(void* obj, Mtx34* mtx);
 
-
 // Refresh the bone bounding box of an actor: while the animation is running
 // (+0xf0) the box is derived from the pose matrix of the current frame,
 // otherwise it collapses to the default -32..32 box held twice in a row.
@@ -967,7 +957,6 @@ extern "C" void fn_80009170(void* from, void* to, int a, int b, int c);
 extern "C" void fn_800090BC(void* a, void* b, int x, int y, int z);
 int ZoneProbeHitFilter(int self, float* out);
 int SlotOwnerMatches(void** slot, void* owner);
-
 
 // Probe the line between this owner and another actor.  A set "already
 // handled" flag at +0x2f short-circuits to true.  The probe runs through the
@@ -1830,7 +1819,6 @@ float Vec3DistSq(float* a, float* b)
     return dx * dx + dy * dy + dz * dz;
 }
 
-
 // 2D bearing and "corner" distance from an actor's integer position to `pos`.
 // The bearing is taken relative to the heading kept at +0x254 and wrapped into
 // [-pi, pi); the returned distance is the sum of the axis deltas less the
@@ -1859,7 +1847,6 @@ void ActorAimOffset2D(void* self, float* pos, float* outAngle, float* outDist)
     mn = (adx < ady) ? adx : ady;
     *outDist = (adx + ady) - mn * 0.5f;
 }
-
 
 // 3D version of ActorAimOffset2D: the bearing is computed from the XY deltas,
 // wrapped into [0, 2*pi] and then offset, while the distance combines all three
@@ -1968,18 +1955,6 @@ int ZoneProbeHitFilter(int self, float* out)
     }
     return 0;
 }
-
-// Engine string object: owns a heap buffer and is destroyed through its
-// Buffer base.
-class Buffer {
-public:
-    virtual ~Buffer();
-};
-
-class String : public Buffer {
-public:
-    String();
-};
 
 // Answer buffer for the owner query below.  The queried object reports the
 // hash it resolved and the handle of the owner it belongs to.

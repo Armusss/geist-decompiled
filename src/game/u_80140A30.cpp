@@ -2,6 +2,10 @@
 // Split out of the 0x8013xxxx game code; the screen descriptor sits in .data next to the
 // fear-action table. Names are descriptive guesses; code is matched against the retail DOL.
 
+#include "game/types.h"
+#include "game/string.h"
+#include "game/msg.h"
+
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned long u32;
@@ -60,43 +64,6 @@ void fn_801403D0(int a, int b, float c);                      // 0x801403D0
 void fn_801408C8(void);                                       // 0x801408C8
 void fn_80140918(void);                                       // 0x80140918
 void fn_8016D6A8(int a);                                      // 0x8016D6A8
-
-// Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    String(const char* s);                     // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-// "new"/"free" query: the receiver writes its answer over the first word of the string.
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
-
-struct Vec3 {
-    float x, y, z;
-};
 
 struct HudPos {
     float x, y, z;
@@ -818,6 +785,4 @@ u32 HuntBotPickable(u32 handle) {
     }
     return (lbl_804D4D54 & (1 << player)) != 0;
 }
-
-
 

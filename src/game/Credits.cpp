@@ -2,6 +2,9 @@
 // descriptor is named "No Bot". The tip messages are in CreditsTip.cpp and the "No Bot" behaviour in NoBot.cpp
 // (one constant/data pool per file in retail: STATUS G3). Names are descriptive guesses; matched against the DOL.
 
+#include "game/string.h"
+#include "game/msg.h"
+
 typedef unsigned long u32;
 typedef unsigned short u16;
 
@@ -33,39 +36,6 @@ inline u32 StrHashKey(const char* s) {
     h = h % 0xFFFFFFFF;
     return h;
 }
-
-// Growable character buffer (code at 0x8028B1E4-0x8028C5xx).
-class Buffer {
-public:
-    Buffer();                                  // 0x8028BA9C
-    virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-
-    char* mData;
-    int mLength;
-    int mUnk0C;
-    int mOwned;
-};
-
-class String : public Buffer {
-public:
-    String();                                  // 0x8028C500
-    String(const char* s);                     // 0x8028C400
-    ~String() {}
-    virtual void Release(char* p);
-};
-
-// "new"/"free" query: the receiver writes its answer over the first word of the string.
-struct QueryResult {
-    String name;
-};
-
-struct QueryMsg {
-    int unk0;
-    u32 hash;
-    int unk8;
-    QueryResult result;
-};
 
 struct ScreenMsg {
     int unk0;
@@ -115,7 +85,6 @@ void TextDraw(const char* text, u32 len);                 // 0x801EB11C
 void TextSetRect(int x0, int x1, int y0, int y1, int a, int b, int c, int d); // 0x801ED2E4
 void TextSetStyle(int r, int g, int b, int a, int e, int f, int g2, int h, int i, int j, int k, int l); // 0x801ED4E4
 void TextSetFlags(int a, int b);                          // 0x801ED29C
-
 
 CreditsData sCredits;
 
@@ -246,5 +215,4 @@ void CreditsEnter(void) {
 }
 
 void CreditsInit(void) { memset(&sCredits, 0, sizeof(CreditsData)); }
-
 

@@ -2,6 +2,8 @@
 // debug drawing, sphere meshes, CRC32 and allocation pools.
 // Unit u_80022B10 (.text 0x80022B10-0x800265C8).
 
+#include "game/types.h"
+
 #pragma auto_inline off
 
 typedef unsigned char u8;
@@ -373,14 +375,6 @@ void ActorDetachOwnerObjects(Actor* a) {
     a->objIndex = -1;
     a->objIndex2 = -1;
 }
-
-struct Mtx34 {
-    f32 m[12];
-};
-
-struct Vec3 {
-    f32 x, y, z;
-};
 
 extern "C" void memset(void*, int, u32);
 extern "C" void* memcpy(void*, const void*, u32);
