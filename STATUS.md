@@ -102,6 +102,12 @@ flip needs `force_active: [StatGetDebug__Fiii]` in config.yml (unreferenced but 
   is another file (ghost-action state callbacks in lbl_803BC148, no own data). Tools: ~/geist-work/ds/opus-full-A10-tools/.
 - VM.c 3/5 (opus-full-A11): fn_80286EAC 6 and VMAllocPages 5; `intr` (OSDisableInterrupts result) takes a register retail
   gives another variable, and neither function reacts to declaration order (all 120 orders tried).
+- u_8016A774 16/17 (opus-full-A13): SltInit 5 (sSlots address set up before sGroups in retail). Flip blockers: renames
+  SAMPlay__Fsii->SAMPlay__FiUlUl, SAMNop__Fv->SAMNop__FsUl, SAMReset__Fv->SAMReset__Fi (retail call sites; needs user OK);
+  .bss end should be 0x8046E480 (0x18 padding before Msx's 32-aligned bss); .data 4-byte gap at 0x803A7C5C suggests a file
+  boundary at 0x8016BE58 (SltEffect*/SltAsset*, .data 0x803A7C60-78, .sdata 0x804D2FB8-C0, .sdata2 0x804D7FF0-F8).
+- u_80230504 5/7 (opus-full-B12): Update 17 (register numbering), Apply frame wrong (retail normalize: ps_rsqrte/ps_res on
+  registers, &vel stored twice at 8/12(r1)); FastSqrt-style asm question pending with the user.
 - Host-ride update fix that worked: convert to float first, then subtract in place (`dx = (float)t->x; dx -= a->f84;`).
 - Retinal 7/8: RetinalTrigger 33, FPR numbering only, coupled between the line and glow blocks (`?:` vs `if` changes
   conversion-temp slot reuse). Tools: ~/geist-work/ds/opus-full-A4-tools/.
