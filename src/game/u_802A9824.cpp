@@ -221,7 +221,7 @@ void fn_800B2418(float f, Actor* a, int slot);
 void fn_80116E30(Actor* a);
 int fn_8029B3B0(Actor* a, u32 hash);
 void fn_8029B218(Actor* a, u32 hash);
-int fn_801174B0(Actor* a, Actor* target);
+extern "C" int fn_801174B0(Actor* a, Actor* target);
 int fn_800B912C(int a, u32 hash, int b, int c, void* fn, Actor* d);
 void fn_8001EAF8(int* pos, int radius, void* fn, Actor* a, int b);
 void fn_801BDC3C(int a, Actor* b);
