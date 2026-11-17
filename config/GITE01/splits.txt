@@ -623,6 +623,10 @@ zlib/zutil.c:
 
 game/u_8019FDD0.cpp:
 	.text       start:0x8019FDD0 end:0x801A0F2C
+	.bss        start:0x80495CE8 end:0x80496088
+	.sdata      start:0x804D3088 end:0x804D3090
+	.sbss       start:0x804D5148 end:0x804D5168
+	.sdata2     start:0x804D86A8 end:0x804D86D0
 
 game/u_801A0F2C.cpp:
 	.text       start:0x801A0F2C end:0x801A1D24
