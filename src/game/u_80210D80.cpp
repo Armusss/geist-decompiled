@@ -627,15 +627,14 @@ extern "C" int fn_80211E38(Actor* actor)
     return active;
 }
 
-// White-out ghost init: clears the behaviour block, marks the actor
-// possessable and sets up its overlay model node. Returns whether the actor
-// became active.
 int Fn80211F78(Actor* actor)
 {
-    GhostState* beh = ((GhostState*)actor->data);
-    if (beh == 0) {
+    GhostState* beh;
+    if (actor->data == 0) {
         beh = (GhostState*)VAlloc(0x3c);
         actor->data = beh;
+    } else {
+        beh = (GhostState*)actor->data;
     }
     memset(beh, 0, 0x3c);
 
