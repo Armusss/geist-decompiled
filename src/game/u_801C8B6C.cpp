@@ -1,0 +1,97 @@
+// u_801C8B6C.cpp: 0x801C8B6C-0x801C9CE0, 7 functions. The "ASHEAVY" effect type.
+// Split from u_801BF578 (0x801BF578-0x801D9A70). Evidence for the boundaries:
+//   type descriptor 0x803ACAD8 {"ASHEAVY" 0x803487B7, ..., create AsHeavyCreate, destroy fn_801C9B30,
+//   msg fn_801C8FA0, query fn_801C8D24, update fn_801C8BA4, reset fn_801C8B6C}: the reset callback is the
+//   first function; the previous file's last function (fn_801C8934) reads that file's 0.0 at 0x804D8A64
+//   string pool 0x80348770 (POSSESS..SCAN, "ASHEAVY"); .sdata2 0x804D8AD8-0x804D8AE8; .sbss 0x804D5190 (+4 pad)
+// Names are descriptive guesses; the code is matched against the retail DOL.
+
+#include <dolphin/types.h>
+#include "game/effect.h"
+
+extern "C" {
+void* fn_800EB21C(int id);
+int fn_800F80DC(int a);
+int fn_800F8A30(int a);
+int fn_80019A04();
+}
+
+void* VAlloc(int size);
+void Fn800F840C(int emitter, int a, int b);
+extern int lbl_804D5190;
+
+extern unsigned char __upper_map[256];
+inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
+
+inline u32 StrHash(const char* s) {
+    if (s == 0) {
+        return 0;
+    } else {
+        u32 h = 0;
+        int i;
+        for (i = 0; s[i] != 0; i++) {
+            h *= 31;
+            h += (unsigned char)toupper(s[i]);
+        }
+        h %= 0xFFFFFFFF;
+        return h;
+    }
+}
+
+inline u32 EffectTypeHash(EffectType* type) {
+    if (type->hash == 0) {
+        const char* name = type->name;
+        type->hash = StrHash(name);
+    }
+    return type->hash;
+}
+struct AsHeavyDef {
+    u8 pad00[0x4];
+    int unk04;
+    int unk08;
+    u8 pad0C[0x58];
+    int unk64;
+};
+
+struct AsHeavy {
+    int unk00;
+    float unk04;
+    float unk08;
+    int emitter;
+    AsHeavyDef* def;
+    int unk14;
+    int unk18;
+    float unk1C;
+    float unk20;
+    float unk24;
+    u8 pad28[0x68];
+};
+
+extern EffectType lbl_803ACAD8;  // the "ASHEAVY" type descriptor
+
+void* AsHeavyCreate(int a, int id) {
+    EffectType* type = &lbl_803ACAD8;
+    AsHeavy* g;
+
+    EffectTypeHash(type);
+    g = (AsHeavy*)VAlloc(sizeof(AsHeavy));
+    memset(g, 0, sizeof(AsHeavy));
+    if (g == 0) {
+        return 0;
+    }
+    g->def = (AsHeavyDef*)fn_800EB21C(id);
+    g->unk04 = 0.0f;
+    g->unk08 = 0.0f;
+    g->unk18 = -1;
+    g->unk1C = 0.0f;
+    g->unk20 = 0.0f;
+    g->unk24 = 0.0f;
+    g->unk14 = 1;
+    g->unk00 = 0;
+    g->emitter = fn_800F8A30(fn_800F80DC(a));
+    lbl_804D5190 = fn_80019A04();
+    Fn800F840C(g->emitter, g->def->unk04, g->def->unk08);
+    Fn800F840C(g->emitter, g->def->unk64, 1);
+    return g;
+}
+
