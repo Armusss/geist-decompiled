@@ -1,4 +1,4 @@
-// linkObjSys.c: object link system (0x802128E0-0x8021427C).
+// linkObjSys.c: object link system (0x802126C8-0x8021427C).
 // Actors can be linked to a parent actor (or to a bone of it). Links live in a tree of ChildNode records
 // (id of the linked actor, bone, flags, orientation and offset relative to the parent). Requests to link,
 // relink or unlink are queued (0x100 entries of 0x44 bytes) and applied once per frame by the update; the
@@ -253,6 +253,89 @@ u8 LinkNodeCheck(ChildNode* node, void* arg);
 u8 LinkNodeRemove(ChildNode* node, void* arg);
 void LinkQueueFlush(void);
 u8 LinkNodeCheck(ChildNode* node, void* arg);
+
+int LinkQueueAdd(int child, int parent, int bone, Place* place, u8 allowReverse, u8 keepRot, u8 keepPos);
+
+// Marks the linked actor's node as moved; returns 1 when the actor is in the tree, -1 otherwise.
+int MarkLookupEntryFlag(int id)
+{
+    int key[2];
+
+    key[0] = id;
+    if (id == -1) {
+        return -1;
+    }
+    ChildNode* node = fn_80243448(fn_80242BA4(sLinkTree), LinkNodeMatchId, key);
+    if (node != 0) {
+        node->mFlags |= 0x10;
+        return 1;
+    }
+    return -1;
+}
+
+// Returns the id of the actor the given actor is linked to, or -1.
+// Kept under its placeholder name: other units call it.
+extern "C" int fn_80212730(int id)
+{
+    int key[2];
+
+    key[0] = id;
+    if (id == -1) {
+        return -1;
+    }
+    ChildNode* node = fn_80243448(fn_80242BA4(sLinkTree), LinkNodeMatchId, key);
+    if (node != 0 && node->mParent != 0) {
+        int* value = &node->mParent->mRef.id;
+        if (value != 0) {
+            return *value;
+        }
+    }
+    return -1;
+}
+
+// Queues a link with an explicit placement, or with an identity one when none is given.
+// Kept under its placeholder name: other units call it.
+extern "C" void fn_802127A0(int child, int parent, int bone, Place* place, u8 allowReverse, u8 keepRot,
+                            u8 keepPos)
+{
+    if (place == 0) {
+        Place identity;
+        LinkInfoInit(&identity);
+        LinkQueueAdd(child, parent, bone, &identity, allowReverse, keepRot, keepPos);
+    } else {
+        LinkQueueAdd(child, parent, bone, place, allowReverse, keepRot, keepPos);
+    }
+}
+
+// Queues a link that keeps the child's current placement.
+// Kept under its placeholder name: other units call it.
+extern "C" void fn_80212814(int child, int parent, int bone, u8 allowReverse, u8 keepRot, u8 keepPos)
+{
+    LinkQueueAdd(child, parent, bone, 0, allowReverse, keepRot, keepPos);
+}
+
+// Queues an unlink of the given actor; returns 1 when queued.
+// Kept under its placeholder name: other units call it.
+extern "C" int fn_8021284C(int id)
+{
+    int key;
+
+    key = id;
+    if (id != -1) {
+        if (fn_80243448(fn_80242BA4(sLinkTree), LinkNodeMatchId, &key) != 0) {
+            if (sLinkQueueCount < 0x100) {
+                LinkRequest* r = &sLinkQueue[sLinkQueueCount];
+                r->mType = 2;
+                r->mChild = key;
+                r->mParent = -1;
+                r->mBone = -1;
+                sLinkQueueCount++;
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
 
 // Not referenced in Geist (dead-stripped), but its strings open this file's string pool.
 void LinkNodePrint(ChildNode* parent, const char* name, const char* pad)

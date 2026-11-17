@@ -795,10 +795,10 @@ game/u_8020D47C.cpp:
 	.text       start:0x8020D47C end:0x80210D80
 
 game/u_80210D80.cpp:
-	.text       start:0x80210D80 end:0x802128E0
+	.text       start:0x80210D80 end:0x802126C8
 
 game/linkObjSys.c:
-	.text       start:0x802128E0 end:0x8021427C
+	.text       start:0x802126C8 end:0x8021427C
 	.rodata     start:0x80349880 end:0x803498D8
 	.sbss       start:0x804D53A8 end:0x804D53B8
 	.sdata2     start:0x804D94A8 end:0x804D94B8

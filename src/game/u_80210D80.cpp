@@ -1,4 +1,4 @@
-// u_80210D80.cpp: particle stepping and draw parameters, the white-out effect and a lookup table (0x80210D80-0x802128E0).
+// u_80210D80.cpp: particle stepping and draw parameters and the white-out effect (0x80210D80-0x802126C8).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include "game/actor.h"
@@ -241,39 +241,33 @@ extern "C" void fn_802113F0(float* pts, int stride, int count, float delta,
     }
 }
 
-// Advances each particle in the array by `dt`: integrates the position from the
-// velocity, clamps the step to the remaining life, and wraps the spin angle.
-// Returns the number of live particles advanced.
-// fn_80211470
 extern "C" int fn_80211470(float dt, float* particles, int stride, int count) {
     int live = 0;
     if (particles) {
         float zero = 0.0f;
+        float* p = particles;
         for (int i = 0; i < count; i++) {
-            if (particles[1] > zero) {
-                particles[0] = particles[0] + dt;
-                float x = particles[0];
-                if (x > zero) {
-                    float step = dt;
-                    if (x < dt)
-                        step = x;
-                    particles[1] = particles[1] - step;
-                    particles[2] = particles[2] + particles[5] * step;
-                    particles[3] = particles[3] + particles[6] * step;
-                    particles[4] = particles[4] + particles[7] * step;
-                    particles[11] = (float)fmod((double)(particles[12] * step + particles[11]),
-                                                360.0);
+            if (p[1] > zero) {
+                p[0] = p[0] + dt;
+                if (p[0] > zero) {
+                    float step = p[0] < dt ? p[0] : dt;
+                    p[1] = p[1] - step;
+                    float vx = p[5] * step;
+                    float vy = p[6] * step;
+                    float vz = p[7] * step;
+                    p[2] += vx;
+                    p[3] += vy;
+                    p[4] += vz;
+                    p[11] = (float)fmod((double)(p[12] * step + p[11]), 360.0);
                 }
                 live++;
             }
-            particles = (float*)((char*)particles + stride);
+            p = (float*)((char*)p + stride);
         }
     }
     return live;
 }
 
-// Same particle integration as fn_80211470 but without the spin-angle
-// wrap and with a count-down loop. Returns the number of live particles advanced.
 int ParticleStepPlain(float dt, float* particles, int stride, int count) {
     int live = 0;
     if (particles != 0) {
@@ -281,17 +275,15 @@ int ParticleStepPlain(float dt, float* particles, int stride, int count) {
         for (int i = 0; i < count; i++) {
             if (particles[1] > zero) {
                 particles[0] = particles[0] + dt;
-                float x = particles[0];
-                if (x > zero) {
-                    float step = dt;
-                    if (x >= dt) {
-                    } else {
-                        step = x;
-                    }
+                if (particles[0] > zero) {
+                    float step = particles[0] < dt ? particles[0] : dt;
                     particles[1] = particles[1] - step;
-                    particles[2] += particles[5] * step;
-                    particles[3] += particles[6] * step;
-                    particles[4] += particles[7] * step;
+                    float vx = particles[5] * step;
+                    float vy = particles[6] * step;
+                    float vz = particles[7] * step;
+                    particles[2] += vx;
+                    particles[3] += vy;
+                    particles[4] += vz;
                 }
                 live++;
             }
@@ -595,7 +587,7 @@ void ModelNodeSetup(int node, int asset, int a, int b);
 
 // White-out ghost initialisation: allocates and clears the behaviour block,
 // marks the actor possessable and sets up its overlay model node.
-extern "C" void fn_80211E38(Actor* actor)
+extern "C" int fn_80211E38(Actor* actor)
 {
     int node;
     GhostState* beh = ((GhostState*)actor->data);
@@ -632,17 +624,17 @@ extern "C" void fn_80211E38(Actor* actor)
             g->field18 |= 0x30000000;
         }
     }
+    return active;
 }
 
-// White-out ghost init: clears the behaviour block, marks the actor
-// possessable and sets up its overlay model node. Returns whether the actor
-// became active.
 int Fn80211F78(Actor* actor)
 {
-    GhostState* beh = ((GhostState*)actor->data);
-    if (beh == 0) {
+    GhostState* beh;
+    if (actor->data == 0) {
         beh = (GhostState*)VAlloc(0x3c);
         actor->data = beh;
+    } else {
+        beh = (GhostState*)actor->data;
     }
     memset(beh, 0, 0x3c);
 
@@ -909,106 +901,5 @@ void WhiteOutEffectStart(Actor* actor, unsigned int id, int flag)
 // White-out effect query; this variant never reports an active effect.
 int WhiteOutEffectQuery()
 {
-    return 0;
-}
-
-// Lookup helpers shared with the Actor unit (fn_80242BA4 / fn_80243448 /
-// fn_80213970 live outside this split as placeholder-named symbols).
-typedef int (*LookupCallback)(void* key, void* item);
-
-extern "C" unsigned int lbl_804D53A8;
-extern "C" unsigned int fn_80242BA4(unsigned int owner);
-extern "C" int fn_80213970(void* key, void* item);
-extern "C" unsigned int fn_80243448(unsigned int list, LookupCallback cb,
-                                    void* key);
-
-// Marks the table entry for actor id as active; returns 1 on success.
-int MarkLookupEntryFlag(int id)
-{
-    int key[2];
-
-    key[0] = id;
-    if (id == -1) {
-        return -1;
-    }
-    unsigned int entry = fn_80243448(fn_80242BA4(lbl_804D53A8), fn_80213970, key);
-    if (entry != 0) {
-        *(unsigned int*)(entry + 0x1c) |= 0x10;
-        return 1;
-    }
-    return -1;
-}
-
-// Reads the word at offset 0x14 of the holder referenced by the actor's entry.
-// fn_80212730
-extern "C" int fn_80212730(int id)
-{
-    int key[2];
-
-    key[0] = id;
-    if (id == -1) {
-        return -1;
-    }
-    void** entry = (void**)fn_80243448(fn_80242BA4(lbl_804D53A8), fn_80213970, key);
-    if (entry != 0 && *entry != 0) {
-        int* value = (int*)((char*)*entry + 0x14);
-        if (value != 0) {
-            return *value;
-        }
-    }
-    return -1;
-}
-
-extern "C" void fn_80212A58(void* a, void* b, void* c, void* info, void* d,
-                            void* e, void* f);
-void LinkInfoInit(void* info);
-
-// Wrapper around fn_80212A58 that hands it a zeroed LinkInfo when the caller
-// supplied none. Kept under its placeholder name: other units call it.
-extern "C" void fn_802127A0(void* a, void* b, void* c, void* info, void* d,
-                            void* e, void* f)
-{
-    if (info == 0) {
-        char linkInfo[48];
-        LinkInfoInit(linkInfo);
-        fn_80212A58(a, b, c, linkInfo, d, e, f);
-    } else {
-        fn_80212A58(a, b, c, info, d, e, f);
-    }
-}
-
-// Same wrapper, but always using the default zeroed LinkInfo. Kept under its
-// placeholder name: other units call it.
-extern "C" void fn_80212814(void* a, void* b, void* c, void* d, void* e,
-                            void* f)
-{
-    fn_80212A58(a, b, c, 0, d, e, f);
-}
-
-// Pending-lookup table: base pointer, used-slot count.
-extern "C" unsigned int lbl_804D53AC;
-extern "C" int lbl_804D53B0;
-
-// Appends a pending lookup entry (kind 2, actor id, two -1 words) to the
-// 256-slot table and returns 1 on success. Kept under its placeholder name:
-// other units call it as fn_8021284C.
-extern "C" int fn_8021284C(int id)
-{
-    int key;
-
-    key = id;
-    if (id != -1) {
-        if (fn_80243448(fn_80242BA4(lbl_804D53A8), fn_80213970, &key) != 0) {
-            if (lbl_804D53B0 < 0x100) {
-                int* entry = (int*)(lbl_804D53AC + lbl_804D53B0 * 0x44);
-                entry[0] = 2;
-                entry[1] = key;
-                entry[2] = -1;
-                entry[3] = -1;
-                lbl_804D53B0++;
-                return 1;
-            }
-        }
-    }
     return 0;
 }
