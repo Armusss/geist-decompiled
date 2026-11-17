@@ -685,7 +685,7 @@ config.libs = [
             Object(NonMatching, "game/u_801920B8.cpp"),  # known
             Object(Matching, "game/Foam.cpp"),  # "Foam" item type
             Object(Matching, "game/Extinguisher.cpp"),  # "EXTINGUISHER" effect type
-            Object(NonMatching, "game/u_8019FDD0.cpp"),  # rendering after zutil (mirror/reflection)
+            Object(Matching, "game/u_8019FDD0.cpp"),  # rendering after zutil (mirror/reflection)
             Object(NonMatching, "game/u_801A0F2C.cpp"),  # guess
             Object(Matching, "game/u_801A1D24.cpp"),  # guess
             Object(NonMatching, "game/u_801A28A4.cpp"),  # pinned

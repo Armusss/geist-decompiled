@@ -57,18 +57,18 @@ Vec3 lbl_80495D78;
 ReflectEntry lbl_80495D84[8];
 
 extern "C" {
-int lbl_804D5160;
-int lbl_804D514C;
 int lbl_804D5148;
+int lbl_804D514C;
 int lbl_804D5150;
 int lbl_804D5154;
 float lbl_804D5158;
 int lbl_804D515C;
-int lbl_804D308C;
-float lbl_804D3088;
-int lbl_804D4084;
-int lbl_804D2568;
-int lbl_804D256C;
+int lbl_804D5160;
+float lbl_804D3088 = 0.005f;
+int lbl_804D308C = -1;
+extern int lbl_804D4084;
+extern int lbl_804D2568;
+extern int lbl_804D256C;
 extern PlaceF lbl_80449068;
 
 int SendMsg(int to, int msg, void* data);
@@ -92,7 +92,6 @@ void fn_800C6664(int a);
 void fn_800C6834(int a);
 void fn_8009863C(int a, float f, float g);
 void fn_8010F7EC(void);
-void fn_80115F28(int a);
 
 void GXLoadTexMtxImm(Mtx34* mtx, u32 id, u32 type);
 void GXSetNumTexGens(u8 count);
@@ -114,7 +113,8 @@ void PSMTXConcat(Mtx34* a, Mtx34* b, Mtx34* out);
 }
 
 void GfxSetCullMode(int mode);
-void ActorGetMatrix(PlaceF* out, Actor* actor);
+void GfxSetCopyFilter(int mode);
+void ActorGetMatrix(Mtx34* out, Actor* actor);
 
 void ReflectAddTime(float dt) {
     lbl_804D5160 += (int)dt;
@@ -187,7 +187,7 @@ void ReflectEnd(void) {
 
     tex = fn_8000F990(lbl_80495D84[lbl_804D308C].id);
     if (tex) {
-        fn_80115F28(2);
+        GfxSetCopyFilter(2);
         GXSetTexCopySrc(0, 0, 480, 336);
         GXSetTexCopyDst(480, 336, 4, 0);
         GXSetZMode(1, 7, 1);
@@ -306,8 +306,8 @@ int ReflectRender(int index) {
         fn_80009848(-lbl_804D5158, &lbl_80495D84[index].texMtx, &m180);
 
         if (lbl_80495D84[index].actor2 != 0) {
-            ActorGetMatrix(&m1, lbl_80495D84[index].actor);
-            ActorGetMatrix(&m2, lbl_80495D84[index].actor2);
+            ActorGetMatrix((Mtx34*)&m1, lbl_80495D84[index].actor);
+            ActorGetMatrix((Mtx34*)&m2, lbl_80495D84[index].actor2);
 
             d.x = lbl_80495D48.pos.x - m1.pos.x;
             d.y = lbl_80495D48.pos.y - m1.pos.y;
@@ -366,8 +366,8 @@ int ReflectRender(int index) {
         Vec3 up;
         PlaceF* cam;
 
-        ActorGetMatrix(&m1, lbl_80495D84[index].actor);
-        ActorGetMatrix(&m2, lbl_80495D84[index].actor2);
+        ActorGetMatrix((Mtx34*)&m1, lbl_80495D84[index].actor);
+        ActorGetMatrix((Mtx34*)&m2, lbl_80495D84[index].actor2);
         fn_800C5E74(0);
         msg.unk4 = 1;
         SendMsg(lbl_80495D84[index].msgTarget, 0xC00, &msg);
