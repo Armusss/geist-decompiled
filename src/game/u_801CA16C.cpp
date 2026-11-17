@@ -1,4 +1,4 @@
-// u_801CA16C.cpp: 0x801CA16C-0x801CC6D0, 33 functions. Rideable-host behaviour state machine J (8 states).
+// u_801CA16C.cpp: 0x801CA16C-0x801CC6D0, 32 functions. Rideable-host behaviour state machine J (8 states).
 // Split from u_801BF578 (0x801BF578-0x801D9A70). Evidence for the boundaries:
 //   string pool 0x80348818 (POSSESS..SCAN, "", "QUERY", "[FMESVE]", "\n")
 //   state table 0x803ACB38 (8 entries of 0x10 bytes, callbacks HostRideJState5Update-HostRideJState0Enter)
@@ -6,6 +6,8 @@
 //   HostRideJSlotTrue (return 1) is referenced by HostRideJState1Enter, so it stays here
 // Like u_801F1798, the host's per-actor block (VAlloc'd, 0x10 bytes) holds the state index and two timers; the
 // message handler answers the rider's queries and saves/loads that block (0x7102/0x7103, tagged "[FMESVE]").
+// Status: 31/32 functions match. HostRideJTick is the recurring "host-ride li r4" shape (STATUS.md): retail
+// issues `li r4,0xA` before `addi r3,a,0x270` after the `mr.` null test and the +0x130 load; not solved here.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include "game/types.h"
@@ -139,7 +141,7 @@ struct HostRideJType {
 
 struct Msg407 {
     Actor* actor;   // 0x00
-    int unk04;      // 0x04
+    void* unk04;    // 0x04
     int unk08;      // 0x08
     char pad0C[8];
     u32 type;       // 0x14
@@ -150,6 +152,7 @@ struct Msg40B {
     int unk4;       // 0x04
     int unk8;       // 0x08
     int unk0C;      // 0x0C
+    int unk10;      // 0x10
 };
 
 struct MsgC14 {
@@ -275,10 +278,31 @@ HostRideJType gHostRideJTypes[8] = {
     { HostRideJState7Enter, (HostRideJFunc)HostRideJState7Exit, HostRideJState7Update, "" },
 };
 
+// Reads a saved block's tag word and checks it against the hash of the block's name.
+inline int SaveCheckTag(MsgSave* m, const char* name) {
+    if (m->used < 4) {
+        return 0;
+    } else {
+        u32* p = (u32*)m->buf;
+
+        m->used += 4;
+        m->size -= 4;
+        m->buf += 4;
+        if (*p == StrHash(name)) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+}
+
 int HostRideJMsg(int msg, void* data) {
     Actor* a = *(Actor**)data;
     Beh* b = a->beh;
-
+    u32 tag;
+    Msg400 q;
+    MsgC14 c;
+    Msg40B r;
     switch (msg) {
     case 0x400: {
         Msg400* m = (Msg400*)data;
@@ -305,7 +329,6 @@ int HostRideJMsg(int msg, void* data) {
     }
     case 0x40A: {
         Msg40A* m = (Msg40A*)data;
-        Msg400 q;
         u32 h;
         Actor* p;
 
@@ -361,8 +384,6 @@ int HostRideJMsg(int msg, void* data) {
             }
         }
         {
-            Msg40B r;
-
             r.unk4 = 0;
             r.unk0C = -1;
             m->result = 0x272CAC;
@@ -385,14 +406,13 @@ int HostRideJMsg(int msg, void* data) {
                     gHostRideJTypes[b->state].enter(a);
                 }
             } else {
-                MsgC14 c;
-                int r;
+                int res;
                 int id;
 
-                r = ActorPlayAnim(a->id, 0xDC35206A, m->anim);
+                res = ActorPlayAnim(a->id, 0xDC35206A, m->anim);
                 id = a->id;
                 if (m->anim != -1) {
-                    c.unk4 = r;
+                    c.unk4 = res;
                     c.handle = id;
                     c.key = 0xAF699ED0;
                     SendMsg(m->anim, 0xC14, &c);
@@ -401,6 +421,45 @@ int HostRideJMsg(int msg, void* data) {
             return 1;
         }
         return 0;
+    }
+    case 0x7102: {
+        MsgSave* m = (MsgSave*)data;
+
+        if (b != 0) {
+            if (m->size < 0x14) {
+                m->ok = 0;
+                return 1;
+            }
+            tag = StrHash("[FMESVE]");
+            memcpy(m->buf, &tag, 4);
+            m->used += 4;
+            m->size -= 4;
+            m->buf += 4;
+            memcpy(m->buf, b, 0x10);
+            m->used += 0x10;
+            m->size -= 0x10;
+            m->buf += 0x10;
+            return 1;
+        }
+        return 1;
+    }
+    case 0x7103: {
+        MsgSave* m = (MsgSave*)data;
+
+        if (b != 0) {
+            if (m->used < 0x14) {
+                m->ok = 0;
+                return 1;
+            }
+            if (!SaveCheckTag(m, "[FMESVE]")) {
+                return 1;
+            }
+            memcpy(b, m->buf, 0x10);
+            m->used -= 0x10;
+            m->buf += 0x10;
+            return 1;
+        }
+        return 1;
     }
     case 0x41D:
         return fn_80019F88(data, a) ? 1 : 0;
@@ -420,58 +479,7 @@ int HostRideJMsg(int msg, void* data) {
             return 0;
         }
         }
-        return 0;
-    }
-    case 0x7102: {
-        MsgSave* m = (MsgSave*)data;
-
-        if (b != 0) {
-            u32 tag;
-
-            if (m->size < 0x14) {
-                m->ok = 0;
-                return 1;
-            }
-            tag = StrHash("[FMESVE]");
-            memcpy(m->buf, &tag, 4);
-            m->used += 4;
-            m->size -= 4;
-            m->buf += 4;
-            memcpy(m->buf, b, 0x10);
-            m->used += 0x10;
-            m->size -= 0x10;
-            m->buf += 0x10;
-        }
-        return 1;
-    }
-    case 0x7103: {
-        MsgSave* m = (MsgSave*)data;
-
-        if (b != 0) {
-            bool ok;
-
-            if (m->used < 0x14) {
-                m->ok = 0;
-                return 1;
-            }
-            if (m->used < 4) {
-                ok = false;
-            } else {
-                u32* p = (u32*)m->buf;
-
-                m->used += 4;
-                m->size -= 4;
-                m->buf += 4;
-                ok = *p == StrHash("[FMESVE]");
-            }
-            if (!ok) {
-                return 1;
-            }
-            memcpy(b, m->buf, 0x10);
-            m->used -= 0x10;
-            m->buf += 0x10;
-        }
-        return 1;
+        break;
     }
     }
     return 0;
@@ -575,10 +583,21 @@ int HostRideJState5Exit(Actor* a) {
     return 1;
 }
 
+// Sends the host itself message 0x41D (key 0xF9D0235B, argument 1).
+static inline void HostRideJSend41D(Actor* a) {
+    int id = a->id;
+    QueryMsg q;
+
+    q.hash = 0xF9D0235B;
+    *(int*)&q.result = 1;
+    q.unk8 = 0;
+    SendMsg(id, 0x41D, &q);
+}
+
 int HostRideJState5Enter(void* owner) {
     Actor* a;
-    int kind;
     Beh* b;
+    int kind;
     Target* t;
 
     if (owner == 0) {
@@ -606,15 +625,7 @@ int HostRideJState5Enter(void* owner) {
     ConditionUpdateBit(a->st, 4, 1);
     ConditionUpdateBit(a->st, 9, 1);
     FollowSetTargetObj(a->st, t);
-    {
-        int id = a->id;
-        QueryMsg q;
-
-        q.hash = 0xF9D0235B;
-        *(int*)&q.result = 1;
-        q.unk8 = 0;
-        SendMsg(id, 0x41D, &q);
-    }
+    HostRideJSend41D(a);
     OwnerSlotAdd((Owner*)a, kind, (u32)HostRideJSlot7, (u32)t, 0x3C);
     return 1;
 }
