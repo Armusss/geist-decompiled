@@ -241,32 +241,28 @@ extern "C" void fn_802113F0(float* pts, int stride, int count, float delta,
     }
 }
 
-// Advances each particle in the array by `dt`: integrates the position from the
-// velocity, clamps the step to the remaining life, and wraps the spin angle.
-// Returns the number of live particles advanced.
-// fn_80211470
 extern "C" int fn_80211470(float dt, float* particles, int stride, int count) {
     int live = 0;
     if (particles) {
         float zero = 0.0f;
+        float* p = particles;
         for (int i = 0; i < count; i++) {
-            if (particles[1] > zero) {
-                particles[0] = particles[0] + dt;
-                float x = particles[0];
-                if (x > zero) {
-                    float step = dt;
-                    if (x < dt)
-                        step = x;
-                    particles[1] = particles[1] - step;
-                    particles[2] = particles[2] + particles[5] * step;
-                    particles[3] = particles[3] + particles[6] * step;
-                    particles[4] = particles[4] + particles[7] * step;
-                    particles[11] = (float)fmod((double)(particles[12] * step + particles[11]),
-                                                360.0);
+            if (p[1] > zero) {
+                p[0] = p[0] + dt;
+                if (p[0] > zero) {
+                    float step = p[0] < dt ? p[0] : dt;
+                    p[1] = p[1] - step;
+                    float vx = p[5] * step;
+                    float vy = p[6] * step;
+                    float vz = p[7] * step;
+                    p[2] += vx;
+                    p[3] += vy;
+                    p[4] += vz;
+                    p[11] = (float)fmod((double)(p[12] * step + p[11]), 360.0);
                 }
                 live++;
             }
-            particles = (float*)((char*)particles + stride);
+            p = (float*)((char*)p + stride);
         }
     }
     return live;
