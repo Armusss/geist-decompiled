@@ -733,38 +733,21 @@ void ActorGetMatrix(Mtx34* mtx, Actor* actor);
 extern "C" void fn_8016D864(ZoneHitBox* out, void* src);
 int ModelBoneHitBox(int a, int b, int c, int d);
 
-// Records the actor in the zone's hit list with the given value if its model
-// overlaps the zone target and its class bit has not been consumed yet.
-int ZoneHitListAdd(Actor* actor, ZoneList* list, float value) {
-    Mtx34 actorMtx;
-    Mtx34 targetMtx;
-    ZoneHitBox actorBox;
-    ZoneHitBox targetBox;
+inline void ZoneListAdd(ZoneList* list, Actor* actor, float value) {
     ZoneListNode* node;
-    int kind;
+    int kind = actor->unk38 >> 24;
 
-    if (actor == list->actor && list->actor != 0) {
-        return 1;
-    }
-    ActorGetMatrix(&actorMtx, actor);
-    ActorGetMatrix(&targetMtx, list->actor);
-    fn_8016D864(&actorBox, actor->unk40);
-    fn_8016D864(&targetBox, list->actor->unk40);
-    if (ModelBoneHitBox((int)&actorBox, (int)&actorMtx, (int)&targetBox, (int)&targetMtx) == 0) {
-        return 1;
-    }
-    kind = actor->unk38 >> 24;
     if (kind >= 0x1B) {
-        return 1;
+        return;
     }
-    if ((list->mask[kind / 32] & (1 << (kind & 31))) != 0) {
-        return 1;
+    if (((1 << (kind & 31)) & list->mask[kind / 32]) != 0) {
+        return;
     }
     for (node = list->head; node != 0; node = node->next) {
         if (node->key == (u32)actor) {
             node->unk04 = value;
             node->unk08 = 1;
-            return 1;
+            return;
         }
     }
     node = list->free;
@@ -776,37 +759,34 @@ int ZoneHitListAdd(Actor* actor, ZoneList* list, float value) {
         node->next = list->head;
         list->head = node;
     }
+}
+
+// Records the actor in the zone's hit list with the given value if its model
+// overlaps the zone target and its class bit has not been consumed yet.
+int ZoneHitListAdd(Actor* actor, ZoneList* list, float value) {
+    Mtx34 actorMtx;
+    Mtx34 targetMtx;
+    ZoneHitBox actorBox;
+    ZoneHitBox targetBox;
+    Actor* self = (Actor*)(void*)actor;
+
+    if (self != list->actor || list->actor == 0) {
+        ActorGetMatrix(&actorMtx, self);
+        ActorGetMatrix(&targetMtx, list->actor);
+        fn_8016D864(&actorBox, self->unk40);
+        fn_8016D864(&targetBox, list->actor->unk40);
+        if (ModelBoneHitBox((int)&actorBox, (int)&actorMtx, (int)&targetBox, (int)&targetMtx) != 0) {
+            ZoneListAdd(list, self, value);
+        }
+    }
     return 1;
 }
 
 // Adds the actor to the zone's hit list with the given value. Unlike
 // ZoneHitListAdd this does no overlap test; the caller has already done it.
 int ZoneHitListAddRaw(Actor* actor, ZoneList* list, float value) {
-    ZoneListNode* node;
-    int kind;
-
     if (actor != list->actor || list->actor == 0) {
-        kind = actor->unk38 >> 24;
-        if (kind < 0x1B && (list->mask[kind / 32] & (1 << (kind & 31))) == 0) {
-            for (node = list->head; node != 0; node = node->next) {
-                if (node->key == (u32)actor) {
-                    node->unk04 = value;
-                    node->unk08 = 1;
-                    break;
-                }
-            }
-            if (node == 0) {
-                node = list->free;
-                if (node != 0) {
-                    list->free = node->next;
-                    node->key = (u32)actor;
-                    node->unk04 = value;
-                    node->unk08 = 0;
-                    node->next = list->head;
-                    list->head = node;
-                }
-            }
-        }
+        ZoneListAdd(list, actor, value);
     }
     return 1;
 }
