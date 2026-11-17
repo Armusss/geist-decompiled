@@ -12,11 +12,42 @@ typedef unsigned long u32;
 // Handle encoding: bits 0-11 index, bits 12-14 channel, bit 15 sign.
 // Entries live in lbl_8040DF00 (stride 0x114); lbl_804D4324 is the
 // per-index "used" bitmap.
+struct AsyncFile;
+typedef void (*LoadCallback)(int, int);
+
+// One stream of a load group (0x24 bytes).
+struct LoadStream {
+    s32 id;                 // +0x00 descriptor type ('R'/'A') or link id
+    s32 done;               // +0x04
+    s32 progress;           // +0x08
+    s32 total;              // +0x0c
+    s32 block;              // +0x10
+    s32 queue;              // +0x14
+    s32 remaining;          // +0x18
+    LoadCallback callback;  // +0x1c
+    AsyncFile* file;        // +0x20
+};
+
+// A group of up to three streams (0x80 bytes).
+struct LoadGroup {
+    s32 flags;              // +0x00
+    s32 base;               // +0x04
+    s32 limit;              // +0x08
+    s32 count;              // +0x0c
+    s32 unk10;              // +0x10
+    LoadStream streams[3];  // +0x14
+};
+
+// One load slot (0x114 bytes).
 struct HandleEntry {
-    u8 channel;         // low 3 bits compared against the handle's channel
-    u8 pad0[3];
-    s32 value;
-    u8 pad1[0x114 - 8];
+    u8 channel;             // +0x00 low 3 bits: channel of the live handle
+    s8 async;               // +0x01
+    s16 pending;            // +0x02
+    s32 value;              // +0x04
+    s32 handle;             // +0x08
+    s32 completed;          // +0x0c
+    s32 processed;          // +0x10
+    LoadGroup groups[2];    // +0x14
 };
 
 extern HandleEntry lbl_8040DF00[];
@@ -81,142 +112,81 @@ int QueuePush(unsigned long queue, const void* data, int count, unsigned long fl
 // queue.
 int FreeHandleChannel(s16 handle);
 
-struct LoadEntry {
-    s32 done;                       // +0x00
-    s32 progress;                   // +0x04
-    s32 total;                      // +0x08
-    s32 unknown0c;                  // +0x0c
-    u32 queue;                      // +0x10
-    s32 remaining;                  // +0x14
-    void (*doneCallback)(s32, s32); // +0x18
-    AsyncFile* file;                // +0x1c
-    s32 unknown20;                  // +0x20
-};
-
-struct LoadState {
-    u8 channel;      // +0x00
-    s8 async;        // +0x01
-    s16 pending;     // +0x02
-    u8 unknown04[8];
-    s32 completed;   // +0x0c
-    s32 processed;   // +0x10
-    u8 unknown14[8];
-    s32 limit;       // +0x1c
-    s32 count;       // +0x20
-    u8 unknown24[8];
-    LoadEntry entries[1]; // +0x2c
-};
-
-extern double lbl_804D61F0;
-extern double lbl_804D61F8;
-extern double lbl_804D6200;
-
 // fn_8003BAD0 (placeholder name kept: called from other units as fn_8003BAD0).
 // Pumps the loading slots; the argument is the frame time.
 extern "C" void fn_8003BAD0(float dt)
 {
-    LoadState* state = (LoadState*)lbl_8040DF00;
+    HandleEntry* state = lbl_8040DF00;
     u8 buffer[0x800];
     s32 half;
     double fastRate;
     double slowRate;
+    s32 s;
     s32 i;
+    s32 budget;
+    s32 read;
 
     half = (s32)dt / 2;
-    fastRate = lbl_804D61F0 * ((double)half - lbl_804D6200);
-    slowRate = lbl_804D61F8 * ((double)half - lbl_804D6200);
+    fastRate = 0.9 * half;
+    slowRate = 0.1 * half;
+    for (s = 0; s < 1; s++) {
+        if ((lbl_804D4324[s / 32] & (1 << (s & 0x1F))) == 0)
+            continue;
+        if (state->async != 0 && state->pending == 0)
+            continue;
+        if (state->processed >= state->groups[0].limit)
+            continue;
 
-    if ((lbl_804D4324[0] & 1) == 0)
-        return;
-    if (state->async != 0 && state->pending == 0)
-        return;
-    if (state->processed >= state->limit)
-        return;
+        for (i = 0; i < state->groups[0].count; i++) {
+            LoadStream* stream;
 
-    for (i = 0; i < state->count; i++) {
-        LoadEntry* entry = &state->entries[i];
-        s32 budget;
-        s32 read;
+            if (state->async != 0) {
+                if (state->groups[0].streams[i].remaining == 0)
+                    continue;
+                budget = half;
+            } else if (i == 0) {
+                budget = (s32)fastRate;
+            } else {
+                budget = (s32)slowRate > 1 ? (s32)slowRate : 1;
+            }
 
-        if (state->async != 0) {
-            if (entry->remaining == 0)
-                continue;
-            budget = half;
-        } else if (i == 0) {
-            budget = (s32)fastRate;
-        } else {
-            s32 n = (s32)slowRate;
-            budget = n > 1 ? n : 1;
-        }
-
-        read = 1;
-        while (entry->done == 0 && budget != 0 && read != 0) {
-            if (QueueFull(entry->queue))
-                break;
-            read = AsyncRead(entry->file, buffer, 0x800, 1, state->async == 0);
-            if (state->async != 0 && read == 0)
-                continue;
-            if (read != 1) {
-                // End of file: tell every slot and drop the channel.
-                // (The original reuses the outer slot counter here.)
-                for (i = 0; i < state->count; i++) {
-                    if (state->entries[i].doneCallback != 0)
-                        state->entries[i].doneCallback(0, 1);
+            stream = &state->groups[0].streams[i];
+            read = 1;
+            while (stream->done == 0 && budget != 0 && read != 0) {
+                if (QueueFull(stream->queue))
+                    break;
+                read = AsyncRead(stream->file, buffer, 0x800, 1, state->async != 0);
+                if (state->async != 0 && read == 0)
+                    continue;
+                if (read != 1) {
+                    // End of file: tell every stream and drop the channel.
+                    for (i = 0; i < state->groups[0].count; i++) {
+                        if (state->groups[0].streams[i].callback != 0)
+                            state->groups[0].streams[i].callback(0, 1);
+                    }
+                    FreeHandleChannel((s16)((state->channel & 7) << 12));
+                    break;
                 }
-                FreeHandleChannel((s16)((state->channel & 7) << 12));
-                break;
-            }
-            QueuePush(entry->queue, buffer, 1, 0);
-            entry->progress++;
-            state->completed++;
-            if (entry->progress >= entry->total) {
-                entry->done = 1;
-                if (entry->doneCallback != 0)
-                    entry->doneCallback(0, 1);
-            }
-            budget--;
-            state->processed++;
-            if (state->async != 0 && state->pending > 0) {
-                state->pending--;
-                entry->remaining--;
+                QueuePush(stream->queue, buffer, 1, 0);
+                stream->progress++;
+                state->completed++;
+                if (stream->progress >= stream->total) {
+                    stream->done = 1;
+                    if (stream->callback != 0)
+                        stream->callback(0, 1);
+                }
+                budget--;
+                state->processed++;
+                if (state->async != 0 && state->pending > 0) {
+                    state->pending--;
+                    state->groups[0].streams[i].remaining--;
+                }
             }
         }
     }
 }
 
 // ---- Load-manager reset --------------------------------------------------
-// Reset/init view of the load manager at lbl_8040DF00: a small header followed
-// by the per-slot state.  The handle fields hold queue channel handles and are
-// -1 while the slot is free.  (Layout is a guess from the retail offsets.)
-typedef void (*AsyncCallback)(int, int);
-
-struct AsyncSource {            // 0x24 bytes at slot+0x28 + i*0x24
-    s32 id;                     // +0x00
-    s32 field04;                // +0x04
-    s32 field08;                // +0x08
-    s32 field0c;                // +0x0c
-    s32 block;                  // +0x10
-    s32 stream;                 // +0x14
-    s32 mode;                   // +0x18
-    AsyncCallback callback;     // +0x1c
-    AsyncFile* file;            // +0x20
-};
-
-struct LoadManagerView {
-    u8 channel;            // +0x00
-    s8 async;              // +0x01
-    s16 pending;           // +0x02
-    s32 field04;           // +0x04
-    s32 field08;           // +0x08
-    s32 completed;         // +0x0c
-    s32 processed;         // +0x10
-    s32 field14;           // +0x14
-    s32 field18;           // +0x18
-    s32 limit;             // +0x1c
-    s32 count;             // +0x20
-    s32 field24;           // +0x24
-    AsyncSource slots[7]; // +0x28
-};
 
 extern u8 lbl_803F9A00[];
 extern s32 lbl_804D4328;
@@ -228,154 +198,63 @@ static inline int IsHandleSlotUsed(s16 handle)
     return (lbl_804D4324[handle / 32] & (1 << (handle & 0x1F))) != 0;
 }
 
-// fn_8003BDA4: resets the streamed-load manager, releasing the queue's
-// channel handle first when it is still live, then advances the channel.
+// Clears a stream group back to its idle state (no streams, queues -1).
+static inline void LoadGroupReset(LoadGroup* group)
+{
+    s32 i;
+
+    group->flags = 0;
+    group->base = 0;
+    group->limit = 0;
+    group->count = 0;
+    group->unk10 = 0;
+    for (i = 0; i < 3; i++) {
+        group->streams[i].id = -1;
+        group->streams[i].done = 0;
+        group->streams[i].progress = 0;
+        group->streams[i].total = 0;
+        group->streams[i].queue = -1;
+        group->streams[i].remaining = 0;
+    }
+}
+
+// Clears a whole slot back to its idle state.
+static inline void LoadSlotReset(HandleEntry* slot)
+{
+    slot->processed = 0;
+    slot->completed = 0;
+    slot->async = 0;
+    slot->pending = 0;
+    slot->value = 0;
+    LoadGroupReset(&slot->groups[0]);
+    LoadGroupReset(&slot->groups[1]);
+}
+
+// fn_8003BDA4: resets every load slot, releasing its channel handle first
+// when it is still live, then advances the slot's channel.
 void ResetLoadManager(void)
 {
-    LoadManagerView* mgr = (LoadManagerView*)lbl_8040DF00;
     s32 i;
 
     for (i = 0; i < 1; i++) {
         if (IsHandleSlotUsed(i))
-            FreeHandleChannel((s16)((mgr->channel & 7) << 12));
-    }
-
-    mgr->processed = 0;
-    mgr->completed = 0;
-    mgr->async = 0;
-    mgr->pending = 0;
-    mgr->field04 = 0;
-    mgr->field14 = 0;
-    mgr->field18 = 0;
-    mgr->limit = 0;
-    mgr->count = 0;
-    mgr->field24 = 0;
-
-    mgr->slots[0].id = -1;
-    mgr->slots[0].field04 = 0;
-    mgr->slots[0].field08 = 0;
-    mgr->slots[0].field0c = 0;
-    mgr->slots[0].stream = -1;
-    mgr->slots[0].mode = 0;
-
-    mgr->slots[1].id = -1;
-    mgr->slots[1].field04 = 0;
-    mgr->slots[1].field08 = 0;
-    mgr->slots[1].field0c = 0;
-    mgr->slots[1].stream = -1;
-    mgr->slots[1].mode = 0;
-
-    mgr->slots[2].id = -1;
-    mgr->slots[2].field04 = 0;
-    mgr->slots[2].field08 = 0;
-    mgr->slots[2].field0c = 0;
-    mgr->slots[2].stream = -1;
-    mgr->slots[2].mode = 0;
-
-    mgr->slots[3].id = 0;
-    mgr->slots[3].field04 = 0;
-    mgr->slots[3].field08 = 0;
-    mgr->slots[3].field0c = 0;
-    mgr->slots[3].block = 0;
-    mgr->slots[3].stream = -1;
-    mgr->slots[3].mode = 0;
-    mgr->slots[3].callback = 0;
-    mgr->slots[3].file = 0;
-
-    mgr->slots[4].field04 = -1;
-    mgr->slots[4].field08 = 0;
-    mgr->slots[4].stream = -1;
-    mgr->slots[4].mode = 0;
-    mgr->slots[4].callback = 0;
-    mgr->slots[4].file = 0;
-
-    mgr->slots[5].field04 = -1;
-    mgr->slots[5].field08 = 0;
-    mgr->slots[5].stream = -1;
-    mgr->slots[5].mode = 0;
-    mgr->slots[5].callback = 0;
-    mgr->slots[5].file = 0;
-
-    mgr->slots[6].field04 = -1;
-    mgr->slots[6].field08 = 0;
-
-    {
-        u8 c = mgr->channel;
-        mgr->channel = (c + 1) & 7;
+            FreeHandleChannel((s16)((lbl_8040DF00[i].channel & 7) << 12 | i));
+        LoadSlotReset(&lbl_8040DF00[i]);
+        lbl_8040DF00[i].channel = (lbl_8040DF00[i].channel + 1) & 7;
     }
 }
 
 // fn_8003BEF0: initialises the load manager: clears the queue buffer block and
-// the manager state, and forgets the global handle bookkeeping.
+// every slot, and forgets the global handle bookkeeping.
 int InitLoadManager(void)
 {
-    LoadManagerView* mgr;
+    s32 i;
 
     memset(lbl_803F9A00, 0, 0x40C0);
-    mgr = (LoadManagerView*)lbl_8040DF00;
-
-    mgr->processed = 0;
-    mgr->completed = 0;
-    mgr->async = 0;
-    mgr->pending = 0;
-    mgr->field04 = 0;
-    mgr->field14 = 0;
-    mgr->field18 = 0;
-    mgr->limit = 0;
-    mgr->count = 0;
-    mgr->field24 = 0;
-
-    mgr->slots[0].id = -1;
-    mgr->slots[0].field04 = 0;
-    mgr->slots[0].field08 = 0;
-    mgr->slots[0].field0c = 0;
-    mgr->slots[0].stream = -1;
-    mgr->slots[0].mode = 0;
-
-    mgr->slots[1].id = -1;
-    mgr->slots[1].field04 = 0;
-    mgr->slots[1].field08 = 0;
-    mgr->slots[1].field0c = 0;
-    mgr->slots[1].stream = -1;
-    mgr->slots[1].mode = 0;
-
-    mgr->slots[2].id = -1;
-    mgr->slots[2].field04 = 0;
-    mgr->slots[2].field08 = 0;
-    mgr->slots[2].field0c = 0;
-    mgr->slots[2].stream = -1;
-    mgr->slots[2].mode = 0;
-
-    mgr->slots[3].id = 0;
-    mgr->slots[3].field04 = 0;
-    mgr->slots[3].field08 = 0;
-    mgr->slots[3].field0c = 0;
-    mgr->slots[3].block = 0;
-    mgr->slots[3].stream = -1;
-    mgr->slots[3].mode = 0;
-    mgr->slots[3].callback = 0;
-    mgr->slots[3].file = 0;
-
-    mgr->slots[4].field04 = -1;
-    mgr->slots[4].field08 = 0;
-    mgr->slots[4].stream = -1;
-    mgr->slots[4].mode = 0;
-    mgr->slots[4].callback = 0;
-    mgr->slots[4].file = 0;
-
-    mgr->slots[5].field04 = -1;
-    mgr->slots[5].field08 = 0;
-    mgr->slots[5].stream = -1;
-    mgr->slots[5].mode = 0;
-    mgr->slots[5].callback = 0;
-    mgr->slots[5].file = 0;
-
-    mgr->slots[6].field04 = -1;
-    mgr->slots[6].field08 = 0;
-
+    for (i = 0; i < 1; i++)
+        LoadSlotReset(&lbl_8040DF00[i]);
     lbl_804D4328 = 0;
     lbl_804D4324[0] = 0;
-
     return 1;
 }
 
@@ -400,11 +279,12 @@ struct StreamSlot {
     DVDFileInfo file;  // +0x200c
     s32 limit;         // +0x2048
     s32 inUse;         // +0x204c
+    u8 pad2050[0x10];  // +0x2050 (slots are 0x2060 apart)
 };
 
 // A queued block: a small header followed by the payload.
 struct StreamPacket {
-    u32 id;          // +0x0000
+    s32 id;          // +0x0000
     u8 data[0x7FC];  // +0x0004
 };
 
@@ -417,8 +297,10 @@ int FileReadSync(void* file, void* buffer, int length, int offset);
 // Copies `size` bytes from the slot's current position into dest, sliding the
 // 0x2000-byte window forward when the position falls outside it.  Returns 0
 // when the window could not be refilled.
-static inline int StreamRead(StreamSlot* slot, void* dest, s32 size)
+static inline int StreamRead(void* p, void* dest, s32 size)
 {
+    StreamSlot* slot = (StreamSlot*)p;
+
     if (slot->pos < slot->bufStart || slot->pos + size >= slot->bufEnd) {
         slot->bufStart = slot->pos & 0xFFFFFFE0;
         slot->bufEnd = slot->bufStart + 0x2000;
@@ -436,58 +318,66 @@ static inline int StreamRead(StreamSlot* slot, void* dest, s32 size)
     return 1;
 }
 
-// fn_8003C008: opens `name`, skips `block` x 0x800 bytes into it and pushes
-// `count` packets onto the queue; returns 0, or a negative error on failure.
-// fn_8003C008
-extern "C" int fn_8003C008(int queue, int id, const char* name, int block, int count)
+// Opens `name` on the first free stream slot; returns the slot or 0.
+static inline StreamSlot* StreamOpen(const char* name)
 {
     StreamSlot* slots = (StreamSlot*)lbl_803F9A00;
-    StreamSlot* slot;
-    StreamPacket packet;
     s32 i;
 
-    DebugPrintf("Opening Stream: %s", name);
-
-    slot = 0;
     for (i = 0; i < 2; i++) {
         if (slots[i].inUse == 0 && DVDOpen(name, &slots[i].file) != 0) {
-            slot = &slots[i];
+            StreamSlot* slot = &((StreamSlot*)lbl_803F9A00)[i];
             slot->inUse = 1;
             slot->bufStart = 0;
             slot->bufEnd = 0;
             slot->pos = 0;
             slot->limit = slot->file.length;
-            break;
+            return slot;
         }
     }
+    return 0;
+}
+
+static inline void StreamClose(StreamSlot* slot)
+{
+    slot->inUse = 0;
+    DVDClose(&slot->file);
+}
+
+// fn_8003C008: opens `name`, skips `block` x 0x800 bytes into it and pushes
+// `count` packets onto the queue; returns 0, or a negative error on failure.
+extern "C" int fn_8003C008(unsigned long queue, int id, const char* name, int block, int count)
+{
+    StreamSlot* slot;
+    s32 i;
+    StreamPacket packet;
+    StreamPacket* p = &packet;
+
+    DebugPrintf("Opening Stream: \"%s\"\n", name);
+    slot = StreamOpen(name);
     if (slot == 0)
         return -1;
 
     slot->pos = block << 11;
     for (i = 0; i < count; i++) {
-        if (StreamRead(slot, &packet.id, 4) == 0) {
-            slot->inUse = 0;
-            DVDClose(&slot->file);
+        if (StreamRead(slot, &p->id, 4) != 1) {
+            StreamClose(slot);
             return -3;
         }
-        if (packet.id != (u32)id) {
-            slot->inUse = 0;
-            DVDClose(&slot->file);
+        if (packet.id != id) {
+            StreamClose(slot);
             return -4;
         }
-        if (StreamRead(slot, packet.data, 0x7FC) == 0) {
-            slot->inUse = 0;
-            DVDClose(&slot->file);
+        if (StreamRead(slot, packet.data, 0x7FC) != 1) {
+            StreamClose(slot);
             return -5;
         }
         if (QueuePush(queue, &packet, 1, 0) != 1) {
-            slot->inUse = 0;
-            DVDClose(&slot->file);
+            StreamClose(slot);
             return -6;
         }
     }
-    slot->inUse = 0;
-    DVDClose(&slot->file);
+    StreamClose(slot);
     return 0;
 }
 
@@ -505,22 +395,9 @@ extern "C" void fn_8003C308(s16 handle)
 }
 
 // ---- Async stream slot setup ---------------------------------------------
-// The load manager keeps, per slot, a table of links.  fn_8003C38C fills those
-// links for a live channel: each link copies an id out of the slot's source
-// table and looks its value up in a caller-supplied name table.
-// Names and layout are descriptive guesses.
-
-struct StreamSource {          // 0x24 bytes, slot+0x28
-    s32 id;                    // +0x00
-    u8 pad04[0x20];
-};
-
-struct StreamLinkEntry {       // 0x24 bytes, slot+0xa8
-    s32 id;                    // +0x00
-    u8 pad04[8];
-    s32 value;                 // +0x0c
-    u8 pad10[0x14];
-};
+// fn_8003C38C fills the second stream group of a live slot: each link copies
+// the id of the matching first-group stream and looks its value up in a
+// caller-supplied name table.  Names and layout are descriptive guesses.
 
 struct LinkNameEntry {         // 0x0c bytes
     s8 name;                   // +0x0
@@ -529,28 +406,13 @@ struct LinkNameEntry {         // 0x0c bytes
     u8 pad04[8];
 };
 
-struct AsyncSlotView {
-    u8 channel;                // +0x00
-    u8 pad01[0x1f];            // +0x01
-    s32 count;                 // +0x20
-    u8 pad24[4];               // +0x24
-    StreamSource sources[3];   // +0x28
-    s32 field94;               // +0x94
-    s32 argA;                  // +0x98
-    s32 argB;                  // +0x9c
-    s32 linkCount;             // +0xa0
-    s32 fieldA4;               // +0xa4
-    StreamLinkEntry links[3];  // +0xa8
-};
-
 // fn_8003C38C (placeholder name kept: called from other units as
 // fn_8003C38C; descriptive name: LoadSlotSetup).
-// Sets up the link table of the load slot named by `handle`.  The second
+// Sets up the link group of the load slot named by `handle`.  The second
 // parameter is not used by the retail code.
 extern "C" int fn_8003C38C(s16 handle, int unused, int argA, int count,
                            const LinkNameEntry* names, int argB)
 {
-    AsyncSlotView* slot;
     s32 index;
     s32 i;
     s32 j;
@@ -559,16 +421,15 @@ extern "C" int fn_8003C38C(s16 handle, int unused, int argA, int count,
         || ((handle >> 12) & 7) != (lbl_8040DF00[index].channel & 7))
         return -1;
 
-    slot = (AsyncSlotView*)&lbl_8040DF00[index];
-    slot->argA = argA;
-    slot->argB = argB;
-    slot->linkCount = slot->count;
-    for (i = 0; i < slot->linkCount; i++) {
-        slot->links[i].id = slot->sources[i].id;
-        slot->links[i].value = 0;
+    lbl_8040DF00[handle & 0xFFF].groups[1].base = argA;
+    lbl_8040DF00[handle & 0xFFF].groups[1].limit = argB;
+    lbl_8040DF00[handle & 0xFFF].groups[1].count = lbl_8040DF00[handle & 0xFFF].groups[0].count;
+    for (i = 0; i < lbl_8040DF00[handle & 0xFFF].groups[1].count; i++) {
+        lbl_8040DF00[handle & 0xFFF].groups[1].streams[i].id = lbl_8040DF00[handle & 0xFFF].groups[0].streams[i].id;
+        lbl_8040DF00[handle & 0xFFF].groups[1].streams[i].total = 0;
         for (j = 0; j < count; j++) {
-            if (slot->links[i].id == names[j].name) {
-                slot->links[i].value = names[j].value;
+            if (lbl_8040DF00[handle & 0xFFF].groups[1].streams[i].id == names[j].name) {
+                lbl_8040DF00[handle & 0xFFF].groups[1].streams[i].total = names[j].value;
                 break;
             }
         }
@@ -590,7 +451,7 @@ struct StreamDesc {             // 0x0c bytes
 };
 
 extern u8 lbl_803FDAC0[];
-extern u32 lbl_804D2680[];
+extern u32 lbl_804D2680[2];
 extern s32 lbl_804D4320;
 
 int BitsetFirstClear(u32* bits, int start, int limit);
@@ -605,161 +466,110 @@ int AsyncOpen(AsyncFile* file, const char* name, int isR);
 void AsyncSeek(AsyncFile* file, int offset, int origin);
 void AsyncClose(AsyncFile* file);
 
+// Opens `name` on a free async file; returns the file or 0.
+static inline AsyncFile* AsyncFileOpen(const char* name, int isR)
+{
+    s32 fileSlot;
+    AsyncFile* file;
+
+    DebugPrintf("Opening stream async: \"%s\"\n", name);
+    fileSlot = BitsetFirstSet(lbl_804D2680, 1, 2);
+    if (fileSlot != -1) {
+        BitClear(lbl_804D2680, fileSlot);
+        file = (AsyncFile*)(lbl_803FDAC0 + fileSlot * 0x8220);
+        if (AsyncOpen(file, name, isR) != 0)
+            return file;
+    }
+    return 0;
+}
+
 // fn_8003C48C (placeholder name kept: called from other units as
 // fn_8003C48C; descriptive name: OpenStreamAsync).
 // Opens the streams described by `descs` for the first free load slot.
 // `blockBase` is added to each descriptor's block number when seeking.
 extern "C" int fn_8003C48C(const char* name, s32 blockBase, int count,
-                           const StreamDesc* descs, s32 arg2, u32 flags,
+                           StreamDesc* descs, s32 limit, int flags,
                            s16 handle)
 {
-    LoadManagerView* mgr;
     s32 index;
     s32 i;
     int useSam;
-    int stream;
+    int queue;
 
     useSam = 0;
 
-    mgr = (LoadManagerView*)lbl_8040DF00;
-    if ((flags & 0x10) != 0 && (lbl_804D4324[0] & 1) != 0 &&
-        handle == mgr->field08 && mgr->async != 0) {
-        mgr->async = 0;
-        return (s16)mgr->field08;
+    if ((flags & 0x10) != 0) {
+        for (i = 0; i < 1; i++) {
+            if ((lbl_804D4324[0] & (1 << i)) != 0 && handle == lbl_8040DF00[i].handle && lbl_8040DF00[i].async != 0) {
+                lbl_8040DF00[i].async = 0;
+                return (s16)lbl_8040DF00[i].handle;
+            }
+        }
     }
 
-    if (lbl_804D4328 != 0)
+    if ((u32)lbl_804D4328 >= 1)
         return -1;
 
     index = BitsetFirstClear(lbl_804D4324, 1, 1);
     if (index == -1)
         return -1;
 
-    mgr = (LoadManagerView*)&lbl_8040DF00[index];
-
-    mgr->processed = 0;
-    mgr->completed = 0;
-    mgr->pending = 0;
-    mgr->field04 = 0;
-    mgr->field14 = 0;
-    mgr->field18 = 0;
-    mgr->limit = 0;
-    mgr->count = 0;
-    mgr->field24 = 0;
-
-    mgr->slots[0].id = -1;
-    mgr->slots[0].field04 = 0;
-    mgr->slots[0].field08 = 0;
-    mgr->slots[0].field0c = 0;
-    mgr->slots[0].stream = -1;
-    mgr->slots[0].mode = 0;
-
-    mgr->slots[1].id = -1;
-    mgr->slots[1].field04 = 0;
-    mgr->slots[1].field08 = 0;
-    mgr->slots[1].field0c = 0;
-    mgr->slots[1].stream = -1;
-    mgr->slots[1].mode = 0;
-
-    mgr->slots[2].id = -1;
-    mgr->slots[2].field04 = 0;
-    mgr->slots[2].field08 = 0;
-    mgr->slots[2].field0c = 0;
-    mgr->slots[2].stream = -1;
-    mgr->slots[2].mode = 0;
-
-    mgr->slots[3].id = 0;
-    mgr->slots[3].field04 = 0;
-    mgr->slots[3].field08 = 0;
-    mgr->slots[3].field0c = 0;
-    mgr->slots[3].block = 0;
-    mgr->slots[3].stream = -1;
-    mgr->slots[3].mode = 0;
-    mgr->slots[3].callback = 0;
-    mgr->slots[3].file = 0;
-
-    mgr->slots[4].field04 = -1;
-    mgr->slots[4].field08 = 0;
-    mgr->slots[4].stream = -1;
-    mgr->slots[4].mode = 0;
-    mgr->slots[4].callback = 0;
-    mgr->slots[4].file = 0;
-
-    mgr->slots[5].field04 = -1;
-    mgr->slots[5].field08 = 0;
-    mgr->slots[5].stream = -1;
-    mgr->slots[5].mode = 0;
-    mgr->slots[5].callback = 0;
-    mgr->slots[5].file = 0;
-
-    mgr->slots[6].field04 = -1;
-    mgr->slots[6].field08 = 0;
+    LoadSlotReset(&lbl_8040DF00[index]);
 
     if ((flags & 8) != 0) {
-        mgr->async = 1;
-        mgr->pending = 0x20;
+        lbl_8040DF00[index].async = 1;
+        lbl_8040DF00[index].pending = 0x20;
     }
 
     for (i = 0; i < count; i++) {
-        AsyncSource* src = &mgr->slots[i];
-        const StreamDesc* desc = &descs[i];
-
-        if (desc->type == 'R') {
-            src->callback = (AsyncCallback)Fn80080F90;
-            stream = Fn80080F88();
-        } else if (desc->type == 'A') {
+        switch (descs[i].type) {
+        case 'A':
             if ((flags & 8) != 0)
-                src->mode = 0x20;
+                lbl_8040DF00[index].groups[0].streams[i].remaining = 0x20;
             useSam = 1;
-            src->callback = (AsyncCallback)SAMStreamEvent;
-            stream = SAMGetStream();
-        } else {
+            lbl_8040DF00[index].groups[0].streams[i].callback = (LoadCallback)SAMStreamEvent;
+            queue = SAMGetStream();
+            break;
+        case 'R':
+            lbl_8040DF00[index].groups[0].streams[i].callback = (LoadCallback)Fn80080F90;
+            queue = Fn80080F88();
+            break;
+        default:
             return -1;
         }
-        src->id = desc->type;
-        src->field0c = desc->field02;
-        src->stream = stream;
-        src->block = desc->block;
-        QueueClear(stream);
+        lbl_8040DF00[index].groups[0].streams[i].id = descs[i].type;
+        lbl_8040DF00[index].groups[0].streams[i].total = descs[i].field02;
+        lbl_8040DF00[index].groups[0].streams[i].queue = queue;
+        lbl_8040DF00[index].groups[0].streams[i].block = descs[i].block;
+        QueueClear(queue);
     }
     if (!useSam)
-        mgr->field04 = 1;
+        lbl_8040DF00[index].value = 1;
 
-    mgr->field18 = blockBase;
-    mgr->limit = arg2;
-    mgr->count = count;
-    mgr->field14 = flags;
+    lbl_8040DF00[index].groups[0].base = blockBase;
+    lbl_8040DF00[index].groups[0].limit = limit;
+    lbl_8040DF00[index].groups[0].count = count;
+    lbl_8040DF00[index].groups[0].flags = flags;
 
     for (i = 0; i < count; i++) {
-        AsyncSource* src = &mgr->slots[i];
-        AsyncFile* file;
-        s32 streamSlot;
         int isR;
 
         isR = 0;
-        if (src->id == 'R')
+        if (lbl_8040DF00[index].groups[0].streams[i].id == 'R')
             isR = 1;
-        DebugPrintf("Opening stream async: %s", name);
-        streamSlot = BitsetFirstSet(lbl_804D2680, 1, 2);
-        file = 0;
-        if (streamSlot != -1) {
-            BitClear(lbl_804D2680, streamSlot);
-            file = (AsyncFile*)(lbl_803FDAC0 + streamSlot * 0x8220);
-            if (AsyncOpen(file, name, isR) == 0)
-                file = 0;
-        }
-        src->file = file;
-        if (src->file != 0)
-            AsyncSeek(src->file, (mgr->field18 + src->block) * 0x800, 0);
+        lbl_8040DF00[index].groups[0].streams[i].file = AsyncFileOpen(name, isR);
+        if (lbl_8040DF00[index].groups[0].streams[i].file != 0)
+            AsyncSeek(lbl_8040DF00[index].groups[0].streams[i].file,
+                      (lbl_8040DF00[index].groups[0].base + lbl_8040DF00[index].groups[0].streams[i].block) * 0x800, 0);
     }
 
+    lbl_804D4324[index / 32] |= 1 << (index & 0x1F);
     lbl_804D4328 = lbl_804D4328 + 1;
-    lbl_804D4324[index / 32] =
-        lbl_804D4324[index / 32] | (1 << (index & 0x1F));
+    LoadGroupReset(&lbl_8040DF00[index].groups[1]);
     lbl_804D4320 = 0;
-    mgr->channel = (mgr->channel + 1) & 7;
-    mgr->field08 = (s16)(index | (mgr->channel << 12));
-    return (s16)mgr->field08;
+    lbl_8040DF00[index].channel = (lbl_8040DF00[index].channel + 1) & 7;
+    lbl_8040DF00[index].handle = (s16)(index | ((lbl_8040DF00[index].channel & 7) << 12));
+    return (s16)(index | ((lbl_8040DF00[index].channel & 7) << 12));
 }
 
 // FreeHandleChannel (fn_8003CA3C): releases the stream queue channel named by
@@ -768,91 +578,31 @@ extern "C" int fn_8003C48C(const char* name, s32 blockBase, int count,
 // and the load-manager state is reset.
 int FreeHandleChannel(s16 handle)
 {
-    LoadManagerView* mgr;
     s32 index;
     s32 i;
 
     if (handle == -1 || (index = handle & 0xFFF) >= 1 || (lbl_804D4324[index / 32] & (1 << (handle & 0x1F))) == 0
-        || ((handle >> 12) & 7) != (lbl_8040DF00[index].channel & 7))
+        || ((handle >> 12) & 7) != (lbl_8040DF00[handle & 0xFFF].channel & 7))
         return 0;
-    mgr = (LoadManagerView*)&lbl_8040DF00[index];
 
-    for (i = 0; i < mgr->count; i++) {
-        AsyncFile* file = mgr->slots[i].file;
+    for (i = 0; i < lbl_8040DF00[index].groups[0].count; i++) {
+        AsyncFile* file = lbl_8040DF00[index].groups[0].streams[i].file;
         if (file != 0) {
-            u32 stream = (u32)((u8*)file - lbl_803FDAC0) / 0x8220;
+            s32 n;
             AsyncClose(file);
-            mgr->slots[i].file = 0;
-            lbl_804D2680[stream / 32] = lbl_804D2680[stream / 32] |
-                                        (1 << (stream & 0x1F));
+            n = ((u32)file - (u32)lbl_803FDAC0) / 0x8220;
+            lbl_8040DF00[index].groups[0].streams[i].file = 0;
+            lbl_804D2680[n / 32] |= 1 << (n & 0x1F);
         }
     }
-    for (i = 0; i < mgr->count; i++) {
-        if ((u32)mgr->slots[i].stream != 0xFFFFFFFF)
-            QueueClear(mgr->slots[i].stream);
+    for (s32 j = 0; j < lbl_8040DF00[index].groups[0].count; j++) {
+        if ((u32)lbl_8040DF00[index].groups[0].streams[j].queue != 0xFFFFFFFF)
+            QueueClear(lbl_8040DF00[index].groups[0].streams[j].queue);
     }
 
-    mgr->processed = 0;
-    mgr->completed = 0;
-    mgr->async = 0;
-    mgr->pending = 0;
-    mgr->field04 = 0;
-    mgr->field14 = 0;
-    mgr->field18 = 0;
-    mgr->limit = 0;
-    mgr->count = 0;
-    mgr->field24 = 0;
-
-    mgr->slots[0].id = -1;
-    mgr->slots[0].field04 = 0;
-    mgr->slots[0].field08 = 0;
-    mgr->slots[0].field0c = 0;
-    mgr->slots[0].stream = -1;
-    mgr->slots[0].mode = 0;
-
-    mgr->slots[1].id = -1;
-    mgr->slots[1].field04 = 0;
-    mgr->slots[1].field08 = 0;
-    mgr->slots[1].field0c = 0;
-    mgr->slots[1].stream = -1;
-    mgr->slots[1].mode = 0;
-
-    mgr->slots[2].id = -1;
-    mgr->slots[2].field04 = 0;
-    mgr->slots[2].field08 = 0;
-    mgr->slots[2].field0c = 0;
-    mgr->slots[2].stream = -1;
-    mgr->slots[2].mode = 0;
-
-    mgr->slots[3].id = 0;
-    mgr->slots[3].field04 = 0;
-    mgr->slots[3].field08 = 0;
-    mgr->slots[3].field0c = 0;
-    mgr->slots[3].block = 0;
-    mgr->slots[3].stream = -1;
-    mgr->slots[3].mode = 0;
-    mgr->slots[3].callback = 0;
-    mgr->slots[3].file = 0;
-
-    mgr->slots[4].field04 = -1;
-    mgr->slots[4].field08 = 0;
-    mgr->slots[4].stream = -1;
-    mgr->slots[4].mode = 0;
-    mgr->slots[4].callback = 0;
-    mgr->slots[4].file = 0;
-
-    mgr->slots[5].field04 = -1;
-    mgr->slots[5].field08 = 0;
-    mgr->slots[5].stream = -1;
-    mgr->slots[5].mode = 0;
-    mgr->slots[5].callback = 0;
-    mgr->slots[5].file = 0;
-
-    mgr->slots[6].field04 = -1;
-    mgr->slots[6].field08 = 0;
-
-    mgr->channel = (mgr->channel + 1) & 7;
-    BitClear(lbl_804D4324, index);
+    LoadSlotReset(&lbl_8040DF00[index]);
+    lbl_8040DF00[index].channel = (lbl_8040DF00[index].channel + 1) & 7;
+    BitClear(lbl_804D4324, handle & 0xFFF);
     lbl_804D4328 = lbl_804D4328 - 1;
     return 1;
 }
