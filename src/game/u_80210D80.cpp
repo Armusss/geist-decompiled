@@ -70,8 +70,6 @@ extern "C" void fn_80210D80(float* pts, int stride, int count, int texture,
     Draw3DEnd();
 }
 
-// Draws a run of colour-ramped textured lines, one line per particle record.
-// Kept under its placeholder name: other units call it as fn_80210FC8.
 extern "C" void fn_80210FC8(float* pts, int stride, int count, int texture,
                             void* arg, float* rampA, float* rampB, float width,
                             float num, float den)
@@ -84,28 +82,20 @@ extern "C" void fn_80210FC8(float* pts, int stride, int count, int texture,
     float scale = -num / den;
     float* p = pts;
     for (int i = 0; i < count; i++) {
-        float y = p[1];
-        if (zero < y) {
-            float x = p[0];
-            if (zero < x) {
+        if (p[1] > zero) {
+            if (p[0] > zero) {
                 float a0;
                 float a1;
                 float a2;
                 float a3;
-                if (x < rampA[0]) {
-                    float t = 1.0f;
-                    if (rampA[0] > 1.1920929e-07f) {
-                        t = x / rampA[0];
-                    }
+                if (p[0] < rampA[0]) {
+                    float t = rampA[0] > 1.1920929e-07f ? p[0] / rampA[0] : 1.0f;
                     a0 = t * (rampA[6] - rampA[2]) + rampA[2];
                     a1 = t * (rampA[7] - rampA[3]) + rampA[3];
                     a2 = t * (rampA[8] - rampA[4]) + rampA[4];
                     a3 = t * (rampA[9] - rampA[5]) + rampA[5];
-                } else if (y < rampA[1]) {
-                    float t = 1.0f;
-                    if (rampA[1] > 1.1920929e-07f) {
-                        t = y / rampA[1];
-                    }
+                } else if (p[1] < rampA[1]) {
+                    float t = rampA[1] > 1.1920929e-07f ? p[1] / rampA[1] : 1.0f;
                     a0 = t * (rampA[6] - rampA[10]) + rampA[10];
                     a1 = t * (rampA[7] - rampA[11]) + rampA[11];
                     a2 = t * (rampA[8] - rampA[12]) + rampA[12];
@@ -120,20 +110,14 @@ extern "C" void fn_80210FC8(float* pts, int stride, int count, int texture,
                 float b1;
                 float b2;
                 float b3;
-                if (x < rampB[0]) {
-                    float t = 1.0f;
-                    if (rampB[0] > 1.1920929e-07f) {
-                        t = x / rampB[0];
-                    }
+                if (p[0] < rampB[0]) {
+                    float t = rampB[0] > 1.1920929e-07f ? p[0] / rampB[0] : 1.0f;
                     b0 = t * (rampB[6] - rampB[2]) + rampB[2];
                     b1 = t * (rampB[7] - rampB[3]) + rampB[3];
                     b2 = t * (rampB[8] - rampB[4]) + rampB[4];
                     b3 = t * (rampB[9] - rampB[5]) + rampB[5];
-                } else if (y < rampB[1]) {
-                    float t = 1.0f;
-                    if (rampB[1] > 1.1920929e-07f) {
-                        t = y / rampB[1];
-                    }
+                } else if (p[1] < rampB[1]) {
+                    float t = rampB[1] > 1.1920929e-07f ? p[1] / rampB[1] : 1.0f;
                     b0 = t * (rampB[6] - rampB[10]) + rampB[10];
                     b1 = t * (rampB[7] - rampB[11]) + rampB[11];
                     b2 = t * (rampB[8] - rampB[12]) + rampB[12];
@@ -148,6 +132,9 @@ extern "C" void fn_80210FC8(float* pts, int stride, int count, int texture,
                 end[0] = p[5] * scale;
                 end[1] = p[6] * scale;
                 end[2] = p[7] * scale;
+                end[0] = p[2] + p[2];
+                end[1] = p[3] + p[3];
+                end[2] = p[4] + p[4];
                 float s = 255.0f;
                 DrawLine(p + 2, end,
                          (unsigned char)(int)(s * a0),
