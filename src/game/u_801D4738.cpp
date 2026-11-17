@@ -583,30 +583,33 @@ void fn_801D556C(PhysObj* o) {
 }
 
 // 0x801D55CC: destroys the object.
+static inline void GeomListRemove(Geom* g) {
+    Geom** p;
+    Geom** end;
+    for (p = (Geom**)sGeoms->mUnk0C, end = (Geom**)((char*)p + sGeoms->mLength); p != end; p++) {
+        if (*p == g) {
+            fn_8028B35C(sGeoms, p, 4);
+            break;
+        }
+    }
+}
+static inline void ForcesForget(Geom* g, Force* f) {
+    int n = sForceCount;
+    int i;
+    for (i = 0; i < n; i++, f++) {
+        if (f->geom == g) {
+            f->type = 8;
+        }
+    }
+}
 void fn_801D55CC(PhysObj* o) {
     if (o != 0) {
         if (o->body != 0) {
             fn_802789D0(o->body);
         }
         if (o->geom != 0) {
-            Geom** p;
-            Geom** end;
-            for (p = (Geom**)sGeoms->mUnk0C, end = (Geom**)((char*)p + sGeoms->mLength); p != end; p++) {
-                if (*p == o->geom) {
-                    fn_8028B35C(sGeoms, p, 4);
-                    break;
-                }
-            }
-            {
-                Force* f = gForces;
-                Geom* g = o->geom;
-                int i;
-                for (i = 0; i < sForceCount; i++, f++) {
-                    if (f->geom == g) {
-                        f->type = 8;
-                    }
-                }
-            }
+            GeomListRemove(o->geom);
+            ForcesForget(o->geom, gForces);
             GeomDestroyGeom(o->geom);
         }
         VFree(o);
