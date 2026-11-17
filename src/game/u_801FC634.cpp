@@ -5,6 +5,7 @@
 
 #include <math.h>
 #include "game/types.h"
+#include "game/effect.h"
 
 typedef unsigned long u32;
 typedef unsigned short u16;
@@ -168,10 +169,6 @@ struct FearRivetHitMsg {
     int result;      // 0x58
 };
 
-struct AssetType {
-    const char* name;  // 0x00
-    u32 nameHash;      // 0x04
-};
 
 // Own type descriptor (referenced by the asset table).
 struct FearOffset {
@@ -204,7 +201,6 @@ struct FearObjEntry {
 // External data.
 
 extern unsigned char __upper_map[256];
-extern AssetType lbl_803B9E58;
 extern u32 lbl_803B9FB8[];
 extern int lbl_8049D2B0[4];
 extern int lbl_804D3044;
@@ -218,8 +214,6 @@ extern u16* lbl_804D531C;
 extern int lbl_804D5400;
 
 Mtx34 gFearMtx;
-extern const Vec3 sFearRivetOffset;
-const Vec3 sFearRivetOffset = {0.0f, 2048.0f, 0.0f};
 
 // ---------------------------------------------------------------------------------------------
 // External functions.
@@ -280,18 +274,27 @@ unsigned long Fn80175D60(unsigned long id);
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
 
 inline u32 StrHash(const char* s) {
-    const char* p;
     u32 h;
-
     if (s == 0) {
-        return 0;
+        h = 0;
+    } else {
+        int i;
+        h = 0;
+        for (i = 0; s[i] != 0; i++) {
+            h *= 31;
+            h += (unsigned char)toupper(s[i]);
+        }
+        h %= 0xFFFFFFFF;
     }
-    h = 0;
-    for (p = s; *p != 0; p++) {
-        h = h * 31 + (unsigned char)toupper(*p);
-    }
-    h = h % 0xFFFFFFFF;
     return h;
+}
+
+inline u32 EffectTypeHash(EffectType* type) {
+    if (type->hash == 0) {
+        const char* name = type->name;
+        type->hash = StrHash(name);
+    }
+    return type->hash;
 }
 
 inline int VecNonZero(Vec3* v) {
@@ -325,7 +328,24 @@ inline float VecNormalize(Vec3* v) {
     return __fres(len);
 }
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
+void FearRivetNoop(void);
+int FearRivetGetConst(void);
+int FearRivetMsg(FearRivet* self, u32 msg, u32 id, SpawnInfo* info);
 void FearRivetSpawn(u32 id, int mode, SpawnInfo* info, int arg);
+
+// Effect type descriptor of the rivet.
+EffectType gRivetEffectType = {
+    "Rivet", 0, {0, 0, 0}, 0, 0,
+    (int (*)(EffectObj*, int, int, void*, float))FearRivetMsg,
+    (unsigned long (*)(EffectObj*, int))FearRivetGetConst,
+    (void (*)(EffectObj*, float))FearRivetNoop,
+    0, 0,
+};
 
 // ---------------------------------------------------------------------------------------------
 // 0x801FC634
@@ -362,10 +382,8 @@ void FearRivetSpawn(u32 id, int mode, SpawnInfo* info, int arg) {
     float a1;
     float a2;
 
-    AssetType* at = &lbl_803B9E58;
-    if (at->nameHash == 0) {
-        at->nameHash = StrHash(at->name);
-    }
+    EffectType* type = &gRivetEffectType;
+    EffectTypeHash(type);
 
     memset(&desc, 0, sizeof(desc));
     fn_800E1098(&desc.offset, &actor->vec3C, info->time);
@@ -384,12 +402,15 @@ void FearRivetSpawn(u32 id, int mode, SpawnInfo* info, int arg) {
         t = q.actor;
         vel = PlayerGetGunVec(t);
         {
-            float sx = vel->x * 1000.0f;
-            float sy = vel->y * 1000.0f;
-            float sz = vel->z * 1000.0f;
-            desc.offset.x += sx;
-            desc.offset.y += sy;
-            desc.offset.z += sz;
+            float x = vel->x;
+            float y = vel->y;
+            float z = vel->z;
+            x *= 1000.0f;
+            y *= 1000.0f;
+            z *= 1000.0f;
+            desc.offset.x += x;
+            desc.offset.y += y;
+            desc.offset.z += z;
         }
         if (t->unk1C6C == 0) {
             fn_800C5E00(t->unk248, 1, info->unk0C, info->unk10, 0);
@@ -681,7 +702,7 @@ int FearRivetUpdate(FearRivet* self, Actor* actor) {
 // 0x801FD5E8
 
 void FearRivetDraw(FearRivet* self, Actor* actor) {
-    Vec3 pos = sFearRivetOffset;
+    Vec3 pos = {0.0f, 2048.0f, 0.0f};
     Vec3 p;
     Mtx34 mtx;
     float* wp;
