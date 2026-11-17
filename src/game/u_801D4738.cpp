@@ -163,7 +163,7 @@ int sprintf(char* s, const char* fmt, ...);
 int vsprintf(char* s, const char* fmt, void* ap);
 u32 strlen(const char* s);
 void fn_800090BC(Vec3* a, Vec3* b, int r, int g, int bl);       // 0x800090BC: debug line
-void fn_800A0030(Vec3* out, void* m, Vec3* in);                 // 0x800A0030: transform
+void fn_800A0030(Vec3* out, const void* m, const Vec3* in);                 // 0x800A0030: transform
 void fn_800A0168(Mtx34* out, void* in);                         // 0x800A0168
 float fn_800A1394(float a);                                     // 0x800A1394: sin (degrees)
 float fn_800A1418(float a);                                     // 0x800A1418: cos (degrees)
@@ -486,10 +486,10 @@ void fn_801D5298(PhysObj* o, Vec3* v) {
 }
 
 // 0x801D52E0: moves the object to a world matrix.
-void fn_801D52E0(PhysObj* o, Mtx34* m) {
+void fn_801D52E0(PhysObj* o, const Mtx34* m) {
     Vec3 v;
     float r[12];
-    float* f = (float*)m;
+    const float* f = (const float*)m;
 
     fn_800A0030(&v, m, &o->offset);
     v.x += f[9];
