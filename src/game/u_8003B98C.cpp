@@ -112,104 +112,75 @@ int QueuePush(unsigned long queue, const void* data, int count, unsigned long fl
 // queue.
 int FreeHandleChannel(s16 handle);
 
-struct LoadEntry {
-    s32 done;                       // +0x00
-    s32 progress;                   // +0x04
-    s32 total;                      // +0x08
-    s32 unknown0c;                  // +0x0c
-    u32 queue;                      // +0x10
-    s32 remaining;                  // +0x14
-    void (*doneCallback)(s32, s32); // +0x18
-    AsyncFile* file;                // +0x1c
-    s32 unknown20;                  // +0x20
-};
-
-struct LoadState {
-    u8 channel;      // +0x00
-    s8 async;        // +0x01
-    s16 pending;     // +0x02
-    u8 unknown04[8];
-    s32 completed;   // +0x0c
-    s32 processed;   // +0x10
-    u8 unknown14[8];
-    s32 limit;       // +0x1c
-    s32 count;       // +0x20
-    u8 unknown24[8];
-    LoadEntry entries[1]; // +0x2c
-};
-
-extern double lbl_804D61F0;
-extern double lbl_804D61F8;
-extern double lbl_804D6200;
-
 // fn_8003BAD0 (placeholder name kept: called from other units as fn_8003BAD0).
 // Pumps the loading slots; the argument is the frame time.
 extern "C" void fn_8003BAD0(float dt)
 {
-    LoadState* state = (LoadState*)lbl_8040DF00;
+    HandleEntry* state = lbl_8040DF00;
     u8 buffer[0x800];
     s32 half;
     double fastRate;
     double slowRate;
+    s32 s;
     s32 i;
+    s32 budget;
+    s32 read;
 
     half = (s32)dt / 2;
-    fastRate = lbl_804D61F0 * ((double)half - lbl_804D6200);
-    slowRate = lbl_804D61F8 * ((double)half - lbl_804D6200);
+    fastRate = 0.9 * half;
+    slowRate = 0.1 * half;
+    for (s = 0; s < 1; s++) {
+        if ((lbl_804D4324[s / 32] & (1 << (s & 0x1F))) == 0)
+            continue;
+        if (state->async != 0 && state->pending == 0)
+            continue;
+        if (state->processed >= state->groups[0].limit)
+            continue;
 
-    if ((lbl_804D4324[0] & 1) == 0)
-        return;
-    if (state->async != 0 && state->pending == 0)
-        return;
-    if (state->processed >= state->limit)
-        return;
+        for (i = 0; i < state->groups[0].count; i++) {
+            LoadStream* stream;
 
-    for (i = 0; i < state->count; i++) {
-        LoadEntry* entry = &state->entries[i];
-        s32 budget;
-        s32 read;
+            if (state->async != 0) {
+                if (state->groups[0].streams[i].remaining == 0)
+                    continue;
+                budget = half;
+            } else if (i == 0) {
+                budget = (s32)fastRate;
+            } else {
+                budget = (s32)slowRate > 1 ? (s32)slowRate : 1;
+            }
 
-        if (state->async != 0) {
-            if (entry->remaining == 0)
-                continue;
-            budget = half;
-        } else if (i == 0) {
-            budget = (s32)fastRate;
-        } else {
-            s32 n = (s32)slowRate;
-            budget = n > 1 ? n : 1;
-        }
-
-        read = 1;
-        while (entry->done == 0 && budget != 0 && read != 0) {
-            if (QueueFull(entry->queue))
-                break;
-            read = AsyncRead(entry->file, buffer, 0x800, 1, state->async == 0);
-            if (state->async != 0 && read == 0)
-                continue;
-            if (read != 1) {
-                // End of file: tell every slot and drop the channel.
-                // (The original reuses the outer slot counter here.)
-                for (i = 0; i < state->count; i++) {
-                    if (state->entries[i].doneCallback != 0)
-                        state->entries[i].doneCallback(0, 1);
+            stream = &state->groups[0].streams[i];
+            read = 1;
+            while (stream->done == 0 && budget != 0 && read != 0) {
+                if (QueueFull(stream->queue))
+                    break;
+                read = AsyncRead(stream->file, buffer, 0x800, 1, state->async != 0);
+                if (state->async != 0 && read == 0)
+                    continue;
+                if (read != 1) {
+                    // End of file: tell every stream and drop the channel.
+                    for (i = 0; i < state->groups[0].count; i++) {
+                        if (state->groups[0].streams[i].callback != 0)
+                            state->groups[0].streams[i].callback(0, 1);
+                    }
+                    FreeHandleChannel((s16)((state->channel & 7) << 12));
+                    break;
                 }
-                FreeHandleChannel((s16)((state->channel & 7) << 12));
-                break;
-            }
-            QueuePush(entry->queue, buffer, 1, 0);
-            entry->progress++;
-            state->completed++;
-            if (entry->progress >= entry->total) {
-                entry->done = 1;
-                if (entry->doneCallback != 0)
-                    entry->doneCallback(0, 1);
-            }
-            budget--;
-            state->processed++;
-            if (state->async != 0 && state->pending > 0) {
-                state->pending--;
-                entry->remaining--;
+                QueuePush(stream->queue, buffer, 1, 0);
+                stream->progress++;
+                state->completed++;
+                if (stream->progress >= stream->total) {
+                    stream->done = 1;
+                    if (stream->callback != 0)
+                        stream->callback(0, 1);
+                }
+                budget--;
+                state->processed++;
+                if (state->async != 0 && state->pending > 0) {
+                    state->pending--;
+                    state->groups[0].streams[i].remaining--;
+                }
             }
         }
     }
