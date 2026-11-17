@@ -611,26 +611,26 @@ int FreeHandleChannel(s16 handle)
     s32 i;
 
     if (handle == -1 || (index = handle & 0xFFF) >= 1 || (lbl_804D4324[index / 32] & (1 << (handle & 0x1F))) == 0
-        || ((handle >> 12) & 7) != (lbl_8040DF00[index].channel & 7))
+        || ((handle >> 12) & 7) != (lbl_8040DF00[handle & 0xFFF].channel & 7))
         return 0;
 
-    for (i = 0; i < lbl_8040DF00[handle & 0xFFF].groups[0].count; i++) {
-        AsyncFile* file = lbl_8040DF00[handle & 0xFFF].groups[0].streams[i].file;
+    for (i = 0; i < lbl_8040DF00[index].groups[0].count; i++) {
+        AsyncFile* file = lbl_8040DF00[index].groups[0].streams[i].file;
         if (file != 0) {
             s32 n;
             AsyncClose(file);
             n = ((u32)file - (u32)lbl_803FDAC0) / 0x8220;
-            lbl_8040DF00[handle & 0xFFF].groups[0].streams[i].file = 0;
+            lbl_8040DF00[index].groups[0].streams[i].file = 0;
             lbl_804D2680[n / 32] |= 1 << (n & 0x1F);
         }
     }
-    for (s32 j = 0; j < lbl_8040DF00[handle & 0xFFF].groups[0].count; j++) {
-        if ((u32)lbl_8040DF00[handle & 0xFFF].groups[0].streams[j].queue != 0xFFFFFFFF)
-            QueueClear(lbl_8040DF00[handle & 0xFFF].groups[0].streams[j].queue);
+    for (s32 j = 0; j < lbl_8040DF00[index].groups[0].count; j++) {
+        if ((u32)lbl_8040DF00[index].groups[0].streams[j].queue != 0xFFFFFFFF)
+            QueueClear(lbl_8040DF00[index].groups[0].streams[j].queue);
     }
 
     LoadSlotReset(&lbl_8040DF00[index]);
-    lbl_8040DF00[handle & 0xFFF].channel = (lbl_8040DF00[handle & 0xFFF].channel + 1) & 7;
+    lbl_8040DF00[index].channel = (lbl_8040DF00[index].channel + 1) & 7;
     BitClear(lbl_804D4324, handle & 0xFFF);
     lbl_804D4328 = lbl_804D4328 - 1;
     return 1;
