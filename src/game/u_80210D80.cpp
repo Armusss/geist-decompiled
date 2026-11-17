@@ -744,7 +744,7 @@ extern "C" void fn_80158C3C(float* pos, int a, int b, int c, int d, int e,
 extern "C" void fn_80122108(float a, float b, float c, float d, float e,
                             float f, float g, int h, int i, float* pos,
                             unsigned int hash, int j);
-extern "C" void fn_801D55CC();
+extern "C" void fn_801D55CC(void* effect);
 extern "C" void fn_800C5654(int handle, unsigned int hash, int id);
 extern "C" void* memset(void* dest, int value, unsigned long count);
 
@@ -757,12 +757,8 @@ struct WhiteOutEffectMsg {
     float x;                // 0x20
     float y;                // 0x24
     float z;                // 0x28
-    int unk2C;              // 0x2c
 };
 
-// Starts the white-out effect for a ghost that carries one: marks the
-// behaviour as triggered, snaps its effect model to the actor position, spawns
-// the overlay actor and notifies the effect system.
 void WhiteOutEffectStart(Actor* actor, unsigned int id, int flag)
 {
     GhostState* beh = ((GhostState*)actor->data);
@@ -784,10 +780,12 @@ void WhiteOutEffectStart(Actor* actor, unsigned int id, int flag)
     }
 
     if (flag != 0 && (beh->field18 & 0x20000000) == 0) {
-        int msg[8];
-        Actor* target = actor;
+        Actor* msg[8];
+        Actor* target;
         if (SendMsg(id, 0x400, msg) != 0 && msg[0] != 0) {
-            target = (Actor*)msg[0];
+            target = msg[0];
+        } else {
+            target = actor;
         }
         fn_80122108(0.2f * beh->field34, beh->field34,
                     0.2f * beh->field38, beh->field38,
@@ -797,36 +795,36 @@ void WhiteOutEffectStart(Actor* actor, unsigned int id, int flag)
 
     actor->flags |= 0x20000000;
 
-    if (((ActorModelInfo*)actor->info)->fieldA0 == -1) {
-        int msg[2];
-        msg[1] = 0;
-        SendMsg(actor->handle, 0xc00, msg);
-    } else {
+    if (((ActorModelInfo*)actor->info)->fieldA0 != -1) {
         int msg[8];
         memset(msg, 0, 0x20);
         msg[1] = ((ActorModelInfo*)actor->info)->fieldA0;
         msg[3] = 0x58;
         SendMsg(actor->handle, 0xc04, msg);
+    } else {
+        int msg[4];
+        msg[1] = 0;
+        SendMsg(actor->handle, 0xc00, msg);
     }
 
-    if ((int)actor->effect != 0) {
-        fn_801D55CC();
+    if (actor->effect != 0) {
+        fn_801D55CC(actor->effect);
         actor->effect = 0;
     }
 
-    int model = ((ActorModelInfo*)actor->info)->field18;
-    if (model != 0 && model != -1 && model != -0x55aded2f) {
+    unsigned int model = ((ActorModelInfo*)actor->info)->field18;
+    if (model != 0 && model != (unsigned int)-1 && model != 0xaa5212d1) {
         WhiteOutEffectMsg msg;
+        msg.model = model;
         msg.x = (float)actor->place.pos.x;
         msg.y = (float)actor->place.pos.y;
         msg.z = (float)actor->place.pos.z;
         msg.zero[0] = 0;
-        msg.zero[1] = 0;
-        msg.zero[2] = 0;
         msg.zero[3] = 0;
+        msg.zero[1] = 0;
         msg.zero[4] = 0;
+        msg.zero[2] = 0;
         msg.zero[5] = 0;
-        msg.model = model;
         SendMsg(0x55000000, 0x1502, &msg);
     }
 
