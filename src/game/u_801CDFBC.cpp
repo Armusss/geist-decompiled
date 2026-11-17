@@ -112,8 +112,8 @@ void RatBehState5Update(void* owner, void* beh) {
         Beh* b = (Beh*)beh;
         RatBehData* d = ((RatBehData*)b->data);
         int delay;
-        Vec3 pos;
         Vec4 col;
+        Vec3 pos;
 
         Fn8016295C(o, b);
         if (d->handle != -1) {
@@ -165,8 +165,8 @@ void RatBehState4Update(void* owner, void* beh) {
         Beh* b = (Beh*)beh;
         RatBehData* d = ((RatBehData*)b->data);
         int delay;
-        Vec3 pos;
         Vec4 col;
+        Vec3 pos;
 
         Fn8016295C(o, b);
         if (d->handle != -1) {
@@ -213,11 +213,14 @@ void RatBehState4Update(void* owner, void* beh) {
 
 // 0x801CE4A4
 void RatBehState1Update(void* owner, void* beh) {
+    Owner* o;
+    Beh* b;
+    RatBehData* d;
     int done = 0;
     if (beh) {
-        Owner* o = (Owner*)owner;
-        Beh* b = (Beh*)beh;
-        RatBehData* d = ((RatBehData*)b->data);
+        o = (Owner*)owner;
+        b = (Beh*)beh;
+        d = ((RatBehData*)b->data);
         char buf[0x60];
 
         Fn8016295C(o, b);
@@ -243,34 +246,36 @@ void RatBehState1Update(void* owner, void* beh) {
 // 0x801CE5D4
 void RatBehState0Update(void* owner, void* beh) {
     if (beh) {
-        Owner* o = (Owner*)owner;
         Beh* b = (Beh*)beh;
         Owner* t;
 
         BehDone(b);
         BehReset(b);
-        Fn8016295C(o, b);
-        t = (Owner*)FollowGetTargetObj(o->conditions);
+        Fn8016295C((Owner*)owner, b);
+        t = (Owner*)FollowGetTargetObj(((Owner*)owner)->conditions);
         if (t) {
-            Vec3 dir;
             Vec3 fwd;
+            Vec3 dir;
             Mtx34 m;
 
             b->targetKind = 2;
+            b->target = t->id;
             fwd.x = 0.0f;
             fwd.y = 1.0f;
             fwd.z = 0.0f;
-            b->target = t->id;
-            dir.x = (float)t->place.pos.x - (float)o->place.pos.x;
-            dir.y = (float)t->place.pos.y - (float)o->place.pos.y;
-            dir.z = (float)o->place.pos.z - (float)o->place.pos.z;
-            ActorGetMatrix(&m, (Actor*)o);
+            float ty = (float)t->place.pos.y;
+            float oy = (float)((Owner*)owner)->place.pos.y;
+            float z = (float)((Owner*)owner)->place.pos.z;
+            float tx = (float)t->place.pos.x;
+            float ox = (float)((Owner*)owner)->place.pos.x;
+            dir.x = tx - ox; dir.y = ty - oy; dir.z = z - z;
+            ActorGetMatrix(&m, (Actor*)owner);
             fn_800A0168(&m, &m);
             fn_800A0030(&fwd, &m, &fwd);
             VecNormalize(&fwd, &fwd);
             VecNormalize(&dir, &dir);
             if (fwd.x * dir.x + fwd.y * dir.y + fwd.z * dir.z > 0.5f) {
-                float v = OwnerValue(o, t);
+                float v = OwnerValue((Owner*)owner, t);
                 if (v <= b->hi1 && v >= b->lo1) {
                     b->flags |= 1;
                     b->flags |= 4;
@@ -344,14 +349,14 @@ void RatBehState6Enter(void* owner, void* beh) {
 // Starts the rat's light at its head bone (or its position) when both the rat and the player can see it.
 static inline void RatLightStart(Owner* o, RatBehData* d) {
     if (fn_800BA7FC(0x29) == 0 && d->handle == -1) {
-        Msg400 self;
         Msg400 player;
+        Msg400 self;
 
         self.actor = (Actor*)o;
         player.actor = (Actor*)GetPlayer();
         ((Owner*)self.actor)->handler(0x400, &self);
         ((Owner*)player.actor)->handler(0x400, &player);
-        if (player.flags & self.flags) {
+        if (self.flags & player.flags) {
             Vec3 pos;
             Vec4 col;
             int bone = ModelFindBone(o->model, o->boneId1);
@@ -445,13 +450,13 @@ void RatBehState0Enter(void* owner, void* beh) {
     }
 }
 
-// 0x801CF100
-int RatBehQuery(void* owner, void* beh) {
+// 0x801CF100 (the five behaviour type callbacks keep their placeholder names: gBehTypes in u_80161F40 uses them)
+extern "C" int fn_801CF100(void* owner, void* beh) {
     return 0;
 }
 
 // 0x801CF108: behaviour message handler.
-int RatBehMsg(void* owner, void* beh, int msg) {
+extern "C" int fn_801CF108(void* owner, void* beh, int msg) {
     Owner* o;
     Beh* b;
 
@@ -504,12 +509,12 @@ int RatBehMsg(void* owner, void* beh, int msg) {
         case (int)0xF829DB93: {
             char buf[0x60];
             if ((d->flags & 0x40) == 0 &&
-                Fn800F7DEC(o->beh.unk58, o->beh.unk5C, msg, OwnerId(o), 0) == 0x4A3E183) {
+                Fn800F7DEC(o->beh.unk58, o->beh.unk5C, (int)0xF829DB93, OwnerId(o), 0) == 0x4A3E183) {
                 d->flags |= 0x40;
                 if (Fn80161FF4(o, buf, 300.0f) == 0) {
                     return 0;
                 }
-                Fn800F7F5C(o->beh.unk58, o->beh.unk5C, msg, OwnerId(o), buf, o->dt);
+                Fn800F7F5C(o->beh.unk58, o->beh.unk5C, (int)0xF829DB93, OwnerId(o), buf, o->dt);
             }
             break;
         }
@@ -526,7 +531,7 @@ int RatBehMsg(void* owner, void* beh, int msg) {
 }
 
 // 0x801CF3A4
-int RatBehUpdate(void* owner_, void* beh_) {
+extern "C" int fn_801CF3A4(void* owner_, void* beh_) {
     Beh* b = (Beh*)beh_;
     RatBehData* d;
     Owner* o = (Owner*)owner_;
@@ -567,7 +572,7 @@ int RatBehUpdate(void* owner_, void* beh_) {
 }
 
 // 0x801CF520
-int RatBehFree(void* owner_, void* beh_) {
+extern "C" int fn_801CF520(void* owner_, void* beh_) {
     Owner* owner;
     Beh* beh;
 
@@ -588,7 +593,7 @@ int RatBehFree(void* owner_, void* beh_) {
 }
 
 // 0x801CF57C
-int RatBehInit(void* owner_, void* beh_) {
+extern "C" int fn_801CF57C(void* owner_, void* beh_) {
     Beh* beh;
 
     if (beh_ == 0) {
@@ -784,9 +789,9 @@ static inline void RatLandCheck(Player* player)
     case (int)0xA3FFBC64:
     case 0x001F8BC6:
     case 0x52A6F4D8:
-        if (player->flags328 != 0 && (player->flags7B4 & 0x100000) == 0)
+        if ((s32)player->flags328 != 0 && (player->flags7B4 & 0x100000) == 0)
             player->flags7B4 |= 0x200000;
-        else if (player->flags328 == 0)
+        else if ((s32)player->flags328 == 0)
             player->flags7B4 &= ~0x200000;
         break;
     case 0x04624485:
