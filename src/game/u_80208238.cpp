@@ -1233,20 +1233,24 @@ struct BatsqueekOwnerBoneSet {
 extern BatsqueekOwnerBoneSet lbl_803BAAF4[];
 
 // The owner object is built and owned by another unit; only the two virtual
-// slots this file calls and the fields the setup writes are modelled here.
-struct u8020A650Owner;
-struct u8020A650OwnerVtable {
-    u8 pad00[0x24];
-    void (*stop)(u8020A650Owner* owner);                    // 0x24
-    void (*activate)(u8020A650Owner* owner, int flag);      // 0x28
-};
-
+// slots this file calls and the fields the setup writes are modelled here
+// (vtable slots +0x24 and +0x28).
 struct u8020A650Anim {
     u8 pad00[0x04];
 };
 
-struct u8020A650Owner {
-    u8020A650OwnerVtable* vtable;   // 0x00
+class u8020A650Owner {
+public:
+    virtual ~u8020A650Owner();
+    virtual void Virtual0C();
+    virtual void Virtual10();
+    virtual void Virtual14();
+    virtual void Virtual18();
+    virtual void Virtual1C();
+    virtual void Virtual20();
+    virtual void Stop();                    // 0x24
+    virtual void Activate(int flag);        // 0x28
+
     u16 field04;                    // 0x04: model index
     u16 boneCount;                  // 0x06
     s32 mode;                       // 0x08
@@ -1273,17 +1277,14 @@ int BatsqueekOwnerSetup(u8020A650Owner* owner, int model, u32 modeHash, u8* data
         return 0;
 
     if (owner->entries != 0)
-        owner->vtable->stop(owner);
+        owner->Stop();
 
     int mode;
-    if (modeHash == lbl_803BAAC4[0].hash)
-        mode = 0;
-    else if (modeHash == lbl_803BAAC4[1].hash)
-        mode = 1;
-    else if (modeHash == lbl_803BAAC4[2].hash)
-        mode = 2;
-    else
-        mode = 3;
+    for (mode = 0; mode < 3; mode++)
+    {
+        if (modeHash == lbl_803BAAC4[mode].hash)
+            break;
+    }
 
     if (mode == 3)
         return 0;
@@ -1307,7 +1308,7 @@ int BatsqueekOwnerSetup(u8020A650Owner* owner, int model, u32 modeHash, u8* data
     memset(owner->buffer, 0, lbl_803BAAC4[mode].bufferSize);
     owner->field04 = (u16)model;
     owner->boneSets = (u8*)&lbl_803BAAF4[lbl_803BAAC4[mode].boneSetIndex];
-    owner->timer = lbl_804D937C;
+    owner->timer = 10000.0f;
 
     if (u8020A650BuildModel(owner, mode, data, anim, mtx) == 0)
     {
@@ -1318,7 +1319,7 @@ int BatsqueekOwnerSetup(u8020A650Owner* owner, int model, u32 modeHash, u8* data
         return 0;
     }
 
-    owner->vtable->activate(owner, 0);
+    owner->Activate(0);
     return 1;
 }
 
