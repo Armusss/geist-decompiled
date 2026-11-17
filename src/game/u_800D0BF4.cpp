@@ -693,16 +693,15 @@ int ZoneFlagSet(ZoneList* list, int flag, int on) {
 // Clears the node pool and threads every node onto the free list, newest
 // block first. The used list starts empty.
 int ZoneListInit(ZoneList* list) {
-    ZoneListNode* node;
+    int off;
     int i;
 
     memset(list->buf, 0, list->count << 4);
     list->head = 0;
     list->free = 0;
-    for (i = 0; i < list->count; i++) {
-        node = (ZoneListNode*)(list->buf + i * 0x10);
-        node->next = list->free;
-        list->free = node;
+    for (i = 0, off = 0; i < list->count; i++, off += 0x10) {
+        ((ZoneListNode*)(list->buf + off))->next = list->free;
+        list->free = (ZoneListNode*)(list->buf + off);
     }
     return 1;
 }
@@ -712,28 +711,17 @@ int ZoneListInit(ZoneList* list) {
 // every node onto the free list.
 int ZoneInit(void* zone, Actor* actor, IVec3* pos, void* buf, int count, float radius) {
     Zone* z = (Zone*)zone;
-    int i;
-    int off;
 
     memset(z, 0, 0x3C);
     z->actor = actor;
-    z->mode = 2;
     z->radius = radius;
+    z->mode = 2;
     z->buf = (u8*)buf;
     z->count = count;
     z->target.x = pos->x;
     z->target.y = pos->y;
     z->target.z = pos->z;
-    memset(z->buf, 0, z->count << 4);
-    z->head = z->free = 0;
-    i = 0;
-    off = 0;
-    for (; i < z->count; i++) {
-        *(ZoneListNode**)(z->buf + off + 12) = z->free;
-        z->free = (ZoneListNode*)(z->buf + off);
-        off += 16;
-    }
-    return 1;
+    return ZoneListInit((ZoneList*)z);
 }
 
 // Six-word snapshot of the actor's collision source.
