@@ -27,17 +27,21 @@ struct ReflectEntry {
     u8 pad48[0x18];        // 0x48
 };
 
-struct ReflectState {
-    Mtx34 view;            // 0x00
-    Mtx34 proj;            // 0x30
-    Mtx34 cam;             // 0x60
-    Vec3 target;           // 0x90
-    ReflectEntry entries[8]; // 0x9C
-};
-
+// Copy of the current view's camera object (fn_800C5DD8), 0x60 bytes.
 struct Camera {
     Mtx34 view;            // 0x00
-    Mtx34 proj;            // 0x30
+    int unk30;             // 0x30
+    float fov;             // 0x34
+    float f38;             // 0x38
+    float f3C;             // 0x3C
+    float f40;             // 0x40
+    float f44;             // 0x44
+    float f48;             // 0x48
+    int unk4C;             // 0x4C
+    int unk50;             // 0x50
+    int unk54;             // 0x54
+    int unk58;             // 0x58
+    int unk5C;             // 0x5C
 };
 
 struct NotifyMsg {
@@ -46,6 +50,11 @@ struct NotifyMsg {
     int unk8;
     int unkC;
 };
+
+Camera lbl_80495CE8;
+PlaceF lbl_80495D48;
+Vec3 lbl_80495D78;
+ReflectEntry lbl_80495D84[8];
 
 extern "C" {
 int lbl_804D5160;
@@ -60,9 +69,6 @@ float lbl_804D3088;
 int lbl_804D4084;
 int lbl_804D2568;
 int lbl_804D256C;
-extern ReflectState lbl_80495CE8;
-extern ReflectEntry lbl_80495D84[8];
-extern Vec3 lbl_80495D78;
 Mtx34 lbl_80449068;
 
 int SendMsg(int to, int msg, void* data);
@@ -77,11 +83,11 @@ void fn_800A0094(Vec3* out, Vec3* in);
 void fn_800A0100(Mtx34* mtx);
 void fn_800A0168(Mtx34* out, Mtx34* in);
 void* fn_8000F990(int id);
-void* fn_800C5DD8(void);
+Camera* fn_800C5DD8(void);
 int fn_800C5E74(int a);
 void fn_800C5E9C(int a);
 void fn_800C6200(void* buf);
-void* fn_800C6448(void);
+PlaceF* fn_800C6448(void);
 void fn_800C6664(int a);
 void fn_800C6834(int a);
 void fn_8009863C(int a, float f, float g);
@@ -212,7 +218,7 @@ int ReflectRender(int index) {
     ReflectEntry* entry;
     void* tex;
 
-    entry = &lbl_80495CE8.entries[index];
+    entry = &lbl_80495D84[index];
     tex = fn_8000F990(entry->id);
     if (!entry->active || tex == 0) {
         lbl_804D308C = -1;
@@ -233,12 +239,12 @@ int ReflectRender(int index) {
         Vec3 n;
 
         GfxSetCullMode(1);
-        fn_8004320C(&lbl_80495CE8.cam, &m180);
+        fn_8004320C((Mtx34*)&lbl_80495D48, &m180);
 
         pos.x = entry->actor->matrix[9];
         pos.y = entry->actor->matrix[10];
         pos.z = entry->actor->matrix[11];
-        lbl_80495CE8.target = pos;
+        lbl_80495D78 = pos;
         n.x = entry->actor->matrix[0] * 0.000244140625f;
         n.y = entry->actor->matrix[1] * 0.000244140625f;
         n.z = entry->actor->matrix[2] * 0.000244140625f;
@@ -287,12 +293,12 @@ int ReflectRender(int index) {
             ActorGetMatrix(&m1, entry->actor);
             ActorGetMatrix(&m2, entry->actor2);
 
-            d.x = lbl_80495CE8.cam.m[2][1] - m1.m[2][1];
-            d.y = lbl_80495CE8.cam.m[2][2] - m1.m[2][2];
-            d.z = lbl_80495CE8.cam.m[2][3] - m1.m[2][3];
+            d.x = lbl_80495D48.pos.x - m1.m[2][1];
+            d.y = lbl_80495D48.pos.y - m1.m[2][2];
+            d.z = lbl_80495D48.pos.z - m1.m[2][3];
             lbl_80449068 = m1;
             fn_800A0094(&d, &d);
-            fn_800A0094(&up, (Vec3*)&lbl_80495CE8.cam.m[0][3]);
+            fn_800A0094(&up, (Vec3*)&lbl_80495D48.rot.m[1][0]);
             fn_800A0100(&m2);
             fn_800A0094(&d, &d);
             fn_800A0094(&up, &up);
@@ -305,7 +311,7 @@ int ReflectRender(int index) {
             pos.x = entry->actor2->matrix[9];
             pos.y = entry->actor2->matrix[10];
             pos.z = entry->actor2->matrix[11];
-            lbl_80495CE8.target = pos;
+            lbl_80495D78 = pos;
             n.x = entry->actor2->matrix[0] * 0.000244140625f;
             n.y = entry->actor2->matrix[1] * 0.000244140625f;
             n.z = entry->actor2->matrix[2] * 0.000244140625f;
@@ -327,9 +333,9 @@ int ReflectRender(int index) {
             fn_800A0168(&lbl_80495CE8.view, &lbl_80495CE8.view);
             fn_800C5E9C(0);
 
-            lbl_80495CE8.target.x = entry->actor2->matrix[9];
-            lbl_80495CE8.target.y = entry->actor2->matrix[10];
-            lbl_80495CE8.target.z = entry->actor2->matrix[11];
+            lbl_80495D78.x = entry->actor2->matrix[9];
+            lbl_80495D78.y = entry->actor2->matrix[10];
+            lbl_80495D78.z = entry->actor2->matrix[11];
         }
     } else {
         Mtx34 m1;
@@ -337,7 +343,7 @@ int ReflectRender(int index) {
         NotifyMsg msg;
         Vec3 d;
         Vec3 up;
-        Mtx34* cam;
+        PlaceF* cam;
 
         ActorGetMatrix(&m1, entry->actor);
         ActorGetMatrix(&m2, entry->actor2);
@@ -345,16 +351,16 @@ int ReflectRender(int index) {
         msg.unk4 = 1;
         SendMsg(entry->msgTarget, 0xC00, &msg);
 
-        cam = (Mtx34*)fn_800C6448();
-        d.x = cam->m[2][1] - m1.m[2][1];
-        d.y = cam->m[2][2] - m1.m[2][2];
-        d.z = cam->m[2][3] - m1.m[2][3];
+        cam = fn_800C6448();
+        d.x = cam->pos.x - m1.m[2][1];
+        d.y = cam->pos.y - m1.m[2][2];
+        d.z = cam->pos.z - m1.m[2][3];
         d.x *= 0.1f;
         d.y *= 0.1f;
         d.z *= 0.1f;
         lbl_80449068 = m2;
         fn_800A0094(&d, &d);
-        fn_800A0094(&up, (Vec3*)&cam->m[0][3]);
+        fn_800A0094(&up, (Vec3*)&cam->rot.m[1][0]);
         fn_800A0100(&m1);
         fn_800A0094(&d, &d);
         fn_800A0094(&up, &up);
@@ -387,9 +393,9 @@ int ReflectRender(int index) {
         SendMsg(entry->msgTarget, 0xC00, &msg);
         fn_800C5E9C(0);
 
-        lbl_80495CE8.target.x = entry->actor2->matrix[9];
-        lbl_80495CE8.target.y = entry->actor2->matrix[10];
-        lbl_80495CE8.target.z = entry->actor2->matrix[11];
+        lbl_80495D78.x = entry->actor2->matrix[9];
+        lbl_80495D78.y = entry->actor2->matrix[10];
+        lbl_80495D78.z = entry->actor2->matrix[11];
     }
 
     lbl_804D308C = index;
@@ -397,29 +403,25 @@ int ReflectRender(int index) {
 }
 
 int ReflectUpdateCamera(void) {
-    ReflectState* state = &lbl_80495CE8;
-    Camera* cam;
     int changed;
     int i;
     char buf[0x70];
 
     if (lbl_804D514C != 0) {
         changed = 0;
-        cam = (Camera*)fn_800C5DD8();
-        state->view = cam->view;
-        state->proj = cam->proj;
-        state->proj.m[0][1] += lbl_804D5158;
+        lbl_80495CE8 = *fn_800C5DD8();
+        lbl_80495CE8.fov += lbl_804D5158;
         fn_800C5E9C(0);
         fn_800C6200(buf);
-        state->cam = *(Mtx34*)fn_800C6448();
+        lbl_80495D48 = *fn_800C6448();
 
         for (i = 0; i < lbl_804D514C; i++) {
-            if (state->entries[i].lastValue != state->entries[i].actor->unk48) {
-                state->entries[i].lastValue = state->entries[i].actor->unk48;
+            if (lbl_80495D84[i].lastValue != lbl_80495D84[i].actor->unk48) {
+                lbl_80495D84[i].lastValue = lbl_80495D84[i].actor->unk48;
                 changed = 1;
-                state->entries[i].active = 1;
+                lbl_80495D84[i].active = 1;
             } else {
-                state->entries[i].active = 0;
+                lbl_80495D84[i].active = 0;
             }
         }
         if (!changed) {
