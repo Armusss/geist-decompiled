@@ -864,6 +864,29 @@ struct Vec3 {
     float z;
 };
 
+// Quaternion of a bone transform.
+struct Quat {
+    float x;
+    float y;
+    float z;
+    float w;
+};
+
+// Affine transform stored as a quaternion followed by a translation.
+struct Mtx34 {
+    Quat q;                     // 0x00: rotation
+    Vec3 t;                     // 0x10: translation
+};
+
+// One 0x28-byte entry of a sound-source list: the source's rest transform and the
+// index of the parent transform it hangs off.
+struct SoundSourceEntry {
+    s32 index;                  // 0x00: parent transform index in the output array
+    u32 nameHash;               // 0x04
+    Mtx34 matrix;               // 0x08: rest transform
+    void* source;               // 0x24: live source, 0 for an unused entry
+};
+
 // List of per-mode effect sources. The entry stride is 0x28 and entry 0 is
 // skipped; each entry keeps the name hash it was registered under at +0x04 and
 // the source object at +0x24.
@@ -1004,23 +1027,18 @@ void BatsqueekTriggerModeSounds(SoundList* list, float seek, Vec3* pos, Vec3* ve
 // source object to the trigger routine; if nothing matches, restarts the delay.
 void SoundListTriggerEntry(SoundList* list, u32 hash, void* param)
 {
-    int off;
-    int i;
+    SoundSourceEntry* entries = (SoundSourceEntry*)list->entries;
 
-    if (list->entries != 0)
+    if (entries != 0)
     {
-        i = 1;
-        off = 0x28;
-        for (; i < list->count; i++)
+        for (int i = 1; i < list->count; i++)
         {
-            u8* entry = list->entries + off;
-
-            if (*(void**)(entry + 0x24) != 0 && hash == *(u32*)(entry + 4))
+            if (((SoundSourceEntry*)list->entries)[i].source != 0 &&
+                hash == ((SoundSourceEntry*)list->entries)[i].nameHash)
             {
-                fn_801D5010(*(void**)(list->entries + i * 0x28 + 0x24), param);
+                fn_801D5010(entries[i].source, param);
                 return;
             }
-            off += 0x28;
         }
         list->timer = lbl_804D937C;
     }
@@ -1100,33 +1118,13 @@ extern "C" void fn_801D53D4(void* source);
 extern "C" void fn_801D5448(void* source);
 extern "C" void fn_801D550C(void* source);
 
-// Quaternion of a bone transform.
-struct Quat {
-    float x;
-    float y;
-    float z;
-    float w;
-};
 
-// Affine transform stored as a quaternion followed by a translation.
-struct Mtx34 {
-    Quat q;                     // 0x00: rotation
-    Vec3 t;                     // 0x10: translation
-};
 
 void BoneSetMatrix(void* bone, Mtx34* matrix);
 void Mtx34GetTranslation(Vec3* out, Mtx34* matrix);
 void QuatRotateVec(Vec3* out, float* quat, Vec3* vec);
 extern "C" void PSQUATMultiply(void* out, void* a, void* b);
 
-// One 0x28-byte entry of a sound-source list: the source's rest transform and the
-// index of the parent transform it hangs off.
-struct SoundSourceEntry {
-    s32 index;                  // 0x00: parent transform index in the output array
-    u32 nameHash;               // 0x04
-    Mtx34 matrix;               // 0x08: rest transform
-    void* source;               // 0x24: live source, 0 for an unused entry
-};
 
 // Updates every live source of the list: when 'mode' is non-zero the sources are
 // paused, otherwise they are resumed and re-registered with their source object.
