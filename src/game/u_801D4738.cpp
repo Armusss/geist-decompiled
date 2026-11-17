@@ -376,7 +376,7 @@ void fn_801D4C5C(int* box, short room) {
 }
 
 // Queues a force on an object's body (woken first).
-static inline void ForceAdd(PhysObj* o, int type, Vec3* a, Vec3* b) {
+static inline void ForceAdd(PhysObj* o, int type, const Vec3* a, const Vec3* b) {
     if (sForceCount != 64 && o != 0 && o->body != 0) {
         Force* f = &gForces[sForceCount++];
         f->type = type;
@@ -388,24 +388,18 @@ static inline void ForceAdd(PhysObj* o, int type, Vec3* a, Vec3* b) {
         f->geom = o->geom;
         f->unk08 = 0;
         if (a != 0) {
-            float x = a->x;
-            float y = a->y;
-            float z = a->z;
-            f->a.x = x;
-            f->a.y = y;
-            f->a.z = z;
+            f->a.x = a->x;
+            f->a.y = a->y;
+            f->a.z = a->z;
         } else {
             f->a.x = 0.0f;
             f->a.y = 0.0f;
             f->a.z = 0.0f;
         }
         if (b != 0) {
-            float x = b->x;
-            float y = b->y;
-            float z = b->z;
-            f->b.x = x;
-            f->b.y = y;
-            f->b.z = z;
+            f->b.x = b->x;
+            f->b.y = b->y;
+            f->b.z = b->z;
         } else {
             f->b.x = 0.0f;
             f->b.y = 0.0f;
@@ -442,7 +436,7 @@ void fn_801D5110(PhysObj* o, int pinned) {
 }
 
 // ODE rotation (3x4, rows) to the game's matrix layout.
-static inline void RotToMtx(float* out, float* in) {
+static inline void RotToMtx(float* out, const float* in) {
     out[0] = in[0];
     out[1] = in[1];
     out[2] = in[2];
@@ -1451,7 +1445,7 @@ void* fn_801D7F34(u32 size) {
 }
 
 // 0x801D7F54: a point (w = 1).
-void fn_801D7F54(float* out, Vec3* in) {
+void fn_801D7F54(float* out, const Vec3* in) {
     out[0] = in->x;
     out[1] = in->y;
     out[2] = in->z;
@@ -1459,7 +1453,7 @@ void fn_801D7F54(float* out, Vec3* in) {
 }
 
 // 0x801D7F78
-void fn_801D7F78(float* out, float* in) {
+void fn_801D7F78(float* out, const float* in) {
     RotToMtx(out, in);
 }
 
