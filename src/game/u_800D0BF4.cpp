@@ -10,6 +10,11 @@
 typedef unsigned long u32;
 typedef unsigned char u8;
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
 struct ActorType;
 
 struct ActorInfo {
@@ -166,6 +171,21 @@ struct ZoneStream {
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
 
+inline u32 StrHash(const char* s) {
+    int i;
+    u32 h;
+
+    if (s == 0) {
+        return 0;
+    }
+    h = 0;
+    for (i = 0; s[i] != 0; i++) {
+        h = h * 31 + (u8)toupper(s[i]);
+    }
+    h %= 0xFFFFFFFF;
+    return h;
+}
+
 inline u32 StrHash(const char* s, u32 h) {
     int i;
 
@@ -175,7 +195,8 @@ inline u32 StrHash(const char* s, u32 h) {
     for (i = 0; s[i] != 0; i++) {
         h = h * 31 + (unsigned char)toupper(s[i]);
     }
-    return h % 0xFFFFFFFF;
+    h %= 0xFFFFFFFF;
+    return h;
 }
 
 extern "C" void fn_80026660(int id, void (*handler)(), int arg);
@@ -187,32 +208,74 @@ void* VAlloc(int size);
 int ActorInitBase(Actor* actor);
 int ActorTypeRegister(ActorType* type);
 bool ZoneSpawnActorMsg(Actor* actor, int msg, void* data);
-extern ActorType lbl_8039B9F0;
+
+// Actor type descriptor (same layout as the other actor files' types).
+struct ActorType {
+    int unk0;                                              // 0x00
+    const char* name;                                      // 0x04
+    int (*msg)(Actor* actor, int msg, void* data, int arg);  // 0x08
+    void (*update)(Actor* actor, float dt);                // 0x0C
+    int (*init)(Actor* actor);                             // 0x10
+    void* unk14;                                           // 0x14
+    void (*destroy)(Actor* actor);                         // 0x18
+    void (*save)(ZoneStream* s);                           // 0x1C
+    void (*load)(ZoneStream* s);                           // 0x20
+    void* unk24[3];                                        // 0x24
+};
+
+int ZonePowerUpMsg(Actor* actor, int msg, void* data, int arg);
+void ZonePowerUpUpdate(Actor* actor, float dt);
+int ZoneRefreshPowerUp(Actor* actor);
+void ZoneFreePowerUp(Actor* actor);
+void ZoneWritePowerUp(ZoneStream* s);
+void ZoneReadPowerUp(ZoneStream* s);
+
+ActorType gPowerupType = { 0, "Powerup", ZonePowerUpMsg, ZonePowerUpUpdate, ZoneRefreshPowerUp, 0, ZoneFreePowerUp,
+                           ZoneWritePowerUp, ZoneReadPowerUp };
 
 void ZoneRegisterActor(void) {
     fn_80026660(0x28, (void (*)())ZoneSpawnActorMsg, 0);
-    ActorTypeRegister(&lbl_8039B9F0);
+    ActorTypeRegister(&gPowerupType);
+}
+
+// Takes n bytes off the front of a load stream and returns where they were.
+inline void* StreamTake(ZoneStream* s, int n) {
+    void* p = s->ptr;
+    s->avail += n;
+    s->size -= n;
+    s->ptr += n;
+    return p;
 }
 
 void ZoneReadPowerUp(ZoneStream* s) {
+    u32* tag;
+    u32 hash;
+    int ok;
     Actor* a = s->actor;
 
     if (s->avail >= 4) {
-        u32* tag = (u32*)s->ptr;
-
-        s->avail += 4;
-        s->size -= 4;
-        s->ptr += 4;
-        if (*tag == StrHash("[PWRUPX]", 0)) {
+        tag = (u32*)StreamTake(s, 4);
+        hash = StrHash("[PWRUPX]");
+        if (*tag == hash) {
+            ok = 1;
+        } else {
+            ok = 0;
+        }
+        if (ok) {
             VFree(a->powerUp);
             a->powerUp = 0;
-        } else if (*tag == StrHash("[PWERUP]", 0) && s->avail >= 0x18) {
-            memcpy(a->powerUp, s->ptr, 0xC);
-            s->avail -= 0xC;
-            s->ptr += 0xC;
-            memcpy(a->powerUp + 0xC, s->ptr, 0xC);
-            s->avail -= 0xC;
-            s->ptr += 0xC;
+        } else {
+            hash = StrHash("[PWERUP]");
+            if (*tag == hash && s->avail >= 0x18) {
+                u8* d = a->powerUp;
+
+                memcpy(d, s->ptr, 0xC);
+                s->avail -= 0xC;
+                s->ptr += 0xC;
+                memcpy(d + 0xC, s->ptr, 0xC);
+                s->avail -= 0xC;
+                s->ptr += 0xC;
+            }
         }
     }
 }
@@ -224,7 +287,7 @@ void ZoneWritePowerUp(ZoneStream* s) {
         if (s->size < 4) {
             s->status = 0;
         } else {
-            u32 tag = StrHash("[PWRUPX]", 0);
+            u32 tag = StrHash("[PWRUPX]");
 
             memcpy(s->ptr, &tag, 4);
             s->avail += 4;
@@ -234,7 +297,7 @@ void ZoneWritePowerUp(ZoneStream* s) {
     } else if (s->size < 0x1C) {
         s->status = 0;
     } else {
-        u32 tag = StrHash("[PWERUP]", 0);
+        u32 tag = StrHash("[PWERUP]");
 
         memcpy(s->ptr, &tag, 4);
         s->avail += 4;
@@ -269,6 +332,15 @@ struct ZoneSaveMsg {
     float unk14;   // 0x14
     int unk18;     // 0x18
     Actor* self;   // 0x1C
+};
+
+// Payload of the 0x40B animation message (as in the Pickup actor).
+struct ZoneAnimMsg {
+    int unk0;    // 0x00
+    int unk4;    // 0x04
+    u32 key;     // 0x08
+    int asset;   // 0x0C
+    int unk10;   // 0x10
 };
 
 // Argument block handed to the linked object's 0x1501 handler.
@@ -321,32 +393,31 @@ int ZonePowerUpMsg(Actor* actor, int msg, void* data, int arg) {
     switch (msg) {
     case 0x40A:
         if (m->unk08 == 0x7C44EC3D) {
-            int buf[4];
+            ZoneAnimMsg am;
 
-            buf[1] = 0;
-            buf[3] = -1;
-            m->unk0C = -0xDEA7E22;
-            buf[2] = m->unk0C;
-            buf[3] = AssetFind(0xC0A77187, 0x7EC7F65C);
-            SendMsg(m->target, 0x40B, buf);
+            am.unk4 = 0;
+            am.asset = -1;
+            m->unk0C = 0xF21581DE;
+            am.key = m->unk0C;
+            am.asset = AssetFind(0xC0A77187, 0x7EC7F65C);
+            SendMsg(m->target, 0x40B, &am);
         }
         return 1;
     case 0x409: {
         Actor* a = m->actor;
         ZoneMsgTarget* target = (ZoneMsgTarget*)m->target;
+        ZonePowerUp* p;
+        ZoneParamInfo info;
 
-        if (a == 0 || target == 0 || a->powerUp == 0) {
+        if (a == 0 || target == 0 || (p = (ZonePowerUp*)a->powerUp) == 0) {
             return 0;
-        } else {
-            ZonePowerUp* p = (ZonePowerUp*)a->powerUp;
-            ZoneParamInfo info;
-
+        }
             info.target = target;
             info.data[0] = p->data[0];
-            info.data[1] = p->data[1];
-            info.data[2] = p->data[2];
             info.data[3] = p->data[3];
+            info.data[1] = p->data[1];
             info.data[4] = p->data[4];
+            info.data[2] = p->data[2];
             info.data[5] = p->data[5];
             info.pos[0] = (float)a->x;
             info.pos[1] = (float)a->y;
@@ -355,8 +426,7 @@ int ZonePowerUpMsg(Actor* actor, int msg, void* data, int arg) {
                 fn_8016F120(a->info->field_AC, &a->x);
                 ActorRender(a);
             }
-            return 1;
-        }
+        return 1;
     }
     case 0x400: {
         Actor* a = m->actor;
@@ -390,7 +460,7 @@ bool ZoneSpawnActorMsg(Actor* actor, int msg, void* data) {
         desc.param = (void*)d[1];
         spawned = fn_800C7E80(&desc);
         if (spawned != 0) {
-            spawned->type = &lbl_8039B9F0;
+            spawned->type = &gPowerupType;
             ok = true;
         } else {
             ok = false;
@@ -623,16 +693,15 @@ int ZoneFlagSet(ZoneList* list, int flag, int on) {
 // Clears the node pool and threads every node onto the free list, newest
 // block first. The used list starts empty.
 int ZoneListInit(ZoneList* list) {
-    ZoneListNode* node;
+    int off;
     int i;
 
     memset(list->buf, 0, list->count << 4);
     list->head = 0;
     list->free = 0;
-    for (i = 0; i < list->count; i++) {
-        node = (ZoneListNode*)(list->buf + i * 0x10);
-        node->next = list->free;
-        list->free = node;
+    for (i = 0, off = 0; i < list->count; i++, off += 0x10) {
+        ((ZoneListNode*)(list->buf + off))->next = list->free;
+        list->free = (ZoneListNode*)(list->buf + off);
     }
     return 1;
 }
@@ -642,28 +711,17 @@ int ZoneListInit(ZoneList* list) {
 // every node onto the free list.
 int ZoneInit(void* zone, Actor* actor, IVec3* pos, void* buf, int count, float radius) {
     Zone* z = (Zone*)zone;
-    int i;
-    int off;
 
     memset(z, 0, 0x3C);
     z->actor = actor;
-    z->mode = 2;
     z->radius = radius;
+    z->mode = 2;
     z->buf = (u8*)buf;
     z->count = count;
     z->target.x = pos->x;
     z->target.y = pos->y;
     z->target.z = pos->z;
-    memset(z->buf, 0, z->count << 4);
-    z->head = z->free = 0;
-    i = 0;
-    off = 0;
-    for (; i < z->count; i++) {
-        *(ZoneListNode**)(z->buf + off + 12) = z->free;
-        z->free = (ZoneListNode*)(z->buf + off);
-        off += 16;
-    }
-    return 1;
+    return ZoneListInit((ZoneList*)z);
 }
 
 // Six-word snapshot of the actor's collision source.
@@ -675,38 +733,21 @@ void ActorGetMatrix(Mtx34* mtx, Actor* actor);
 extern "C" void fn_8016D864(ZoneHitBox* out, void* src);
 int ModelBoneHitBox(int a, int b, int c, int d);
 
-// Records the actor in the zone's hit list with the given value if its model
-// overlaps the zone target and its class bit has not been consumed yet.
-int ZoneHitListAdd(Actor* actor, ZoneList* list, float value) {
-    Mtx34 actorMtx;
-    Mtx34 targetMtx;
-    ZoneHitBox actorBox;
-    ZoneHitBox targetBox;
+inline void ZoneListAdd(ZoneList* list, Actor* actor, float value) {
     ZoneListNode* node;
-    int kind;
+    int kind = actor->unk38 >> 24;
 
-    if (actor == list->actor && list->actor != 0) {
-        return 1;
-    }
-    ActorGetMatrix(&actorMtx, actor);
-    ActorGetMatrix(&targetMtx, list->actor);
-    fn_8016D864(&actorBox, actor->unk40);
-    fn_8016D864(&targetBox, list->actor->unk40);
-    if (ModelBoneHitBox((int)&actorBox, (int)&actorMtx, (int)&targetBox, (int)&targetMtx) == 0) {
-        return 1;
-    }
-    kind = actor->unk38 >> 24;
     if (kind >= 0x1B) {
-        return 1;
+        return;
     }
-    if ((list->mask[kind / 32] & (1 << (kind & 31))) != 0) {
-        return 1;
+    if (((1 << (kind & 31)) & list->mask[kind / 32]) != 0) {
+        return;
     }
     for (node = list->head; node != 0; node = node->next) {
         if (node->key == (u32)actor) {
             node->unk04 = value;
             node->unk08 = 1;
-            return 1;
+            return;
         }
     }
     node = list->free;
@@ -718,37 +759,34 @@ int ZoneHitListAdd(Actor* actor, ZoneList* list, float value) {
         node->next = list->head;
         list->head = node;
     }
+}
+
+// Records the actor in the zone's hit list with the given value if its model
+// overlaps the zone target and its class bit has not been consumed yet.
+int ZoneHitListAdd(Actor* actor, ZoneList* list, float value) {
+    Mtx34 actorMtx;
+    Mtx34 targetMtx;
+    ZoneHitBox actorBox;
+    ZoneHitBox targetBox;
+    Actor* self = (Actor*)(void*)actor;
+
+    if (self != list->actor || list->actor == 0) {
+        ActorGetMatrix(&actorMtx, self);
+        ActorGetMatrix(&targetMtx, list->actor);
+        fn_8016D864(&actorBox, self->unk40);
+        fn_8016D864(&targetBox, list->actor->unk40);
+        if (ModelBoneHitBox((int)&actorBox, (int)&actorMtx, (int)&targetBox, (int)&targetMtx) != 0) {
+            ZoneListAdd(list, self, value);
+        }
+    }
     return 1;
 }
 
 // Adds the actor to the zone's hit list with the given value. Unlike
 // ZoneHitListAdd this does no overlap test; the caller has already done it.
 int ZoneHitListAddRaw(Actor* actor, ZoneList* list, float value) {
-    ZoneListNode* node;
-    int kind;
-
     if (actor != list->actor || list->actor == 0) {
-        kind = actor->unk38 >> 24;
-        if (kind < 0x1B && (list->mask[kind / 32] & (1 << (kind & 31))) == 0) {
-            for (node = list->head; node != 0; node = node->next) {
-                if (node->key == (u32)actor) {
-                    node->unk04 = value;
-                    node->unk08 = 1;
-                    break;
-                }
-            }
-            if (node == 0) {
-                node = list->free;
-                if (node != 0) {
-                    list->free = node->next;
-                    node->key = (u32)actor;
-                    node->unk04 = value;
-                    node->unk08 = 0;
-                    node->next = list->head;
-                    list->head = node;
-                }
-            }
-        }
+        ZoneListAdd(list, actor, value);
     }
     return 1;
 }
@@ -1023,7 +1061,7 @@ void ZoneDashUpdate(ZoneDash* dash, Actor* actor) {
             }
         }
         if (linked != 0 && linked->unk38 != -1) {
-            int buf[4];
+            int buf[5];
 
             buf[1] = 0;
             buf[2] = actor->unk38;
@@ -1079,7 +1117,7 @@ void ZoneLoadAsset(void) {
 void ZoneActorSetup(Actor* actor) {
     actor->unk1DA8 = 0;
     actor->unk1DB8 = -1;
-    ZoneInit(&actor->zoneList, actor, (IVec3*)&actor->x, actor->zoneBuf, 0x80, lbl_804D7030);
+    ZoneInit(&actor->zoneList, actor, (IVec3*)&actor->x, actor->zoneBuf, 0x80, 8000.0f);
 }
 
 // --- types used by the dash zone callback (0x800D2290) ---
@@ -1594,7 +1632,7 @@ struct ZoneLineReply {
     int unk0C;          // 0x0C
     u32 unk10;          // 0x10
     u32 unk14;          // 0x14
-    u32 mask;           // 0x18
+    int mask;           // 0x18
     u32 unk1C;          // 0x1C
 };
 
@@ -1610,24 +1648,33 @@ static inline int ZoneBoneFlagged(int model, unsigned short* bones, int count) {
     return 0;
 }
 
+inline void ZoneHitSetPos(ZoneLineHit* hit, float x, float y, float z) {
+    hit->x = x;
+    hit->y = y;
+    hit->z = z;
+}
+
 // Line-of-sight filter of the zone queries: rejects candidates the owner cannot
 // see, then keeps the closest one whose segment reaches the tracked bone.
 int ZoneLineFilter(ZoneLineEntry* entry, ZoneLineQuery* query) {
     ZoneLineReply actorReply;
     ZoneLineReply ownerReply;
     ZoneLineReply reply;
-    Actor* actor;
     unsigned short* bones;
     int count;
     int bone;
     int found;
-    int i;
     int model;
+    Actor* owner;
+    Actor* actor;
+    int i;
+    float dist;
+    float x;
+    float y;
+    float z;
     float dy;
     float dx;
     float dz;
-    float dist;
-    Actor* owner;
 
     owner = query->owner;
     if (PlayerInHost(owner)) {
@@ -1641,7 +1688,7 @@ int ZoneLineFilter(ZoneLineEntry* entry, ZoneLineQuery* query) {
             if (actor != 0) {
                 if ((int)(actor->unk38 >> 24) == 1) {
                     if (actor->info != 0) {
-                        if (actor->info->unk1C != 0x6BD564F0) {
+                        if (actor->info->unk1C != 0x942B64F0) {
                             return 0;
                         }
                     }
@@ -1656,14 +1703,17 @@ int ZoneLineFilter(ZoneLineEntry* entry, ZoneLineQuery* query) {
     }
     actor = entry->actor;
     if (actor != 0) {
-    dy = (float)entry->y - query->y;
-    dx = (float)entry->x - query->x;
-    dz = (float)entry->z - query->z;
-    dist = dy * dy + dx * dx + dz * dz;
+    x = (float)entry->x;
+    dx = x - query->x;
+    y = (float)entry->y;
+    dy = y - query->y;
+    z = (float)entry->z;
+    dz = z - query->z;
+    dist = dx * dx + dy * dy + dz * dz;
     actorReply.actor = actor;
     actor->handle(0x400, &actorReply);
-    ownerReply.actor = owner;
-    owner->handle(0x400, &ownerReply);
+    ownerReply.actor = query->owner;
+    query->owner->handle(0x400, &ownerReply);
     if (entry->actor == ownerReply.actor->unk2794 ||
         entry->actor == ownerReply.actor->unk26E4) {
         return 0;
@@ -1682,9 +1732,7 @@ int ZoneLineFilter(ZoneLineEntry* entry, ZoneLineQuery* query) {
                 *(Actor**)lbl_804D4948 = entry->actor;
                 query->hit->model = entry->model;
                 query->hit->bone = ModelBoneName(entry->model, entry->bone);
-                query->hit->x = dx;
-                query->hit->y = dy;
-                query->hit->z = dz;
+                ZoneHitSetPos(query->hit, x, y, z);
                 query->hit->dist = dist;
                 if ((int)(actorReply.id >> 24) == 0x13 ||
                     (int)(actorReply.id >> 24) == 2) {
