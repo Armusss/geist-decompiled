@@ -195,16 +195,18 @@ inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned c
 
 inline u32 StrHash(const char* s) {
     int i;
-    u32 h = 0;
+    u32 h;
 
     if (s == 0) {
         return 0;
     }
+    h = 0;
     for (i = 0; s[i] != 0; i++) {
         h *= 31;
         h += (unsigned char)toupper(s[i]);
     }
-    return h % 0xFFFFFFFF;
+    h %= 0xFFFFFFFF;
+    return h;
 }
 
 void SpinDestroy(Actor* a);
