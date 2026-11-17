@@ -6,13 +6,7 @@ typedef unsigned char u8;
 typedef unsigned long u32;
 typedef float f32;
 
-struct IVec3 {
-    int x, y, z;
-};
-
-struct Vec3 {
-    f32 x, y, z;
-};
+#include "game/vecnorm.h"
 
 // One entry of the type-0x62 actor's path: a world position plus three
 // per-segment scalars (remaining length, random angle, random offset).
@@ -21,12 +15,6 @@ struct PathSeg {
     f32 f;      // 0xD4
     f32 g;      // 0xD8
     f32 h;      // 0xDC
-};
-
-// The 0x30-byte matrix the actor code works with: a 3x3 basis plus translation.
-struct Mtx34 {
-    f32 m[3][3];                 // 0x00
-    Vec3 t;                      // 0x24
 };
 
 // The 0x30-byte block at the start of an actor; message 0x411 copies it out.
@@ -69,15 +57,17 @@ struct Actor {
 typedef u32 (*Actor62Handler)(u32 id, int msg, int* data, int param);
 
 extern "C" {
-extern Actor* lbl_804D5768;      // head of the actor list
-extern u32    lbl_804D576C;      // last actor id handed out
-extern f32    lbl_804D5760;
-extern f32    lbl_804D5764;
-extern f32    lbl_804D5770;
-extern f32    lbl_804D3890;
-extern f32    lbl_804D3894;
-extern f32    lbl_804D3898;
-extern f32    lbl_804D389C;
+// Path length / time scales: one pair for each fn_802A1D04() mode.
+f32    lbl_804D3890 = 5000.0f;
+f32    lbl_804D3894 = 1000.0f;
+f32    lbl_804D3898 = 2660.0f;
+f32    lbl_804D389C = 1000.0f;
+
+f32    lbl_804D5760 = lbl_804D3890;  // current path length scale
+f32    lbl_804D5764 = lbl_804D389C;  // current path time scale
+Actor* lbl_804D5768;                 // head of the actor list
+u32    lbl_804D576C;                 // last actor id handed out
+f32    lbl_804D5770;                 // last update's time step
 
 extern void* memset(void*, int, u32);
 extern void* memcpy(void*, const void*, u32);
@@ -97,7 +87,7 @@ void* AssetFind(u32, u32);
 void Actor62DrawPathTrail(void*);
 void Draw3DBegin(int, void*);
 void Draw3DEnd(void);
-void DrawWorldQuadFlipped(f32, f32, Vec3*, u8, u8, u8, u8);
+void DrawWorldQuadFlipped(f32, f32, f32*, u8, u8, u8, u8);
 void* VAlloc(int);
 void VFree(void*);
 void ActorUnlinkOwnerObjects(Actor*);
@@ -109,7 +99,7 @@ u32 Actor62Msg(u32 id, int msg, int* data, int param);
 u32 Actor62SpawnMsg(u32 id, int* data);
 u32 Actor62UpdatePath(u32 id, int* data, int owner);
 
-// Fills a 3x3+translation matrix from an actor.
+// Fills a 3x3 rotation + translation block (PlaceF layout) from an actor.
 void ActorGetMatrix(Mtx34*, Actor*);
 // Per-actor handler trampoline and the msg 0x413 transform update.
 void Actor62Dispatch(int msg, int* data);
@@ -396,12 +386,12 @@ u32 Actor62SetupTransform(u32 id, int* data)
             int* src = (int*)data[1];
             a->hdr = *(ActorHdr*)src;
 
-            Mtx34 mtx;
-            ActorGetMatrix(&mtx, a);
+            PlaceF mtx;
+            ActorGetMatrix((Mtx34*)&mtx, a);
 
-            a->field_80 = mtx.t;
+            a->field_80 = mtx.pos;
             fn_800A025C(&a->field_B0, &mtx, 1);
-            f32 scale = lbl_804D5760 * 0.5f;
+            f32 scale = lbl_804D5760 / 2.0f;
             a->field_B0.x *= scale;
             a->field_B0.y *= scale;
             a->field_B0.z *= scale;
@@ -463,198 +453,36 @@ struct PathQuery {
 };
 
 extern "C" {
-int   fn_800201E4(int handle, Vec3* start, int flags,
+int   fn_800201E4(int handle, Vec3* seg, u32 flags,
                   u32 (*copy)(Actor62State*, Actor62State*), PathQuery* out);
-void  fn_8009F7A8(void* out, Vec3* dir);
+void  fn_8009F7A8(Mtx34* out, const Vec3* dir);
 f32   fn_800E1020(Vec3* v);
-void  fn_800E1098(Vec3* v, f32 amount);
-void  fn_80122108(int, int, Vec3*, u32, f32, f32, f32, f32, f32, f32, f32);
+void  fn_800E1098(Vec3* out, Vec3* in, f32 length);
+void  fn_80122108(int, int, Vec3*, u32, int, f32, f32, f32, f32, f32, f32, f32);
 void  SendMsg(int to, int msg, void* data);
 int   rand(void);
-float fabsf(float);
-float sqrtf(float);
 }
 
 void ViewBezierPoint(double t, int* curve, Vec3* out);
 
-u32 Actor62UpdatePath(u32 id, int* data, int owner)
+// x if it is positive, else 0.
+static inline f32 PosOrZero(f32 x)
 {
-    id &= 0xFFFFFF;
-    Actor* a = FindActor62(id);
-    if (a == 0) {
-        return 0;
-    }
+    return x > 0.0f ? x : 0.0f;
+}
 
-    int handle = 0;
-    SendMsg(owner, 0x400, &handle);
+// v = v * keep + to * take, per axis.
+static inline void Vec3Blend(Vec3* v, const Vec3* to, f32 keep, f32 take)
+{
+    v->x = v->x * keep + to->x * take;
+    v->y = v->y * keep + to->y * take;
+    v->z = v->z * keep + to->z * take;
+}
 
-    f32 dt = *(f32*)(data + 1);
-    lbl_804D5770 = dt;
-
-    a->field_8C.x = a->field_8C.x * 0.8f + a->field_B0.x * 0.2f;
-    a->field_8C.y = a->field_8C.y * 0.8f + a->field_B0.y * 0.2f;
-    a->field_8C.z = a->field_8C.z * 0.8f + a->field_B0.z * 0.2f;
-    a->field_98.x = a->field_98.x * 0.9f + a->field_BC.x * 0.1f;
-    a->field_98.y = a->field_98.y * 0.9f + a->field_BC.y * 0.1f;
-    a->field_98.z = a->field_98.z * 0.9f + a->field_BC.z * 0.1f;
-
-    if (a->state == 1) {
-        f32 slip = lbl_804D5760 / lbl_804D5764;
-        f32 rate = 158.0f / lbl_804D5764;
-        f32 rem;
-        int n;
-        int i;
-
-        a->field_F98 += dt;
-        n = (int)(a->field_F98 * rate);
-        rem = (f32)n / rate;
-        a->field_F98 -= rem;
-        i = 0;
-        while (i < 0x9E && n != 0) {
-            if (a->path[i].f == 0.0f) {
-                n--;
-                a->path[i].f = lbl_804D5760 - slip * (rem / (f32)n);
-                a->path[i].g = (f32)(rand() % 360);
-                a->path[i].h = 1.0f - (f32)(rand() % 50 - 25) / 100.0f;
-            }
-            i++;
-        }
-    }
-
-    int moved = 0;
-    for (int i = 0; i < 0x4F; i++) {
-        f32 v;
-
-        v = a->path[i * 2].f - dt * (lbl_804D5760 / lbl_804D5764);
-        if (v > 0.0f) {
-            a->path[i * 2].f = v;
-        } else {
-            a->path[i * 2].f = 0.0f;
-        }
-        if (a->path[i * 2].f > 0.0f) {
-            moved = 1;
-        }
-
-        v = a->path[i * 2 + 1].f - dt * (lbl_804D5760 / lbl_804D5764);
-        if (v > 0.0f) {
-            a->path[i * 2 + 1].f = v;
-        } else {
-            a->path[i * 2 + 1].f = 0.0f;
-        }
-        if (a->path[i * 2 + 1].f > 0.0f) {
-            moved = 1;
-        }
-    }
-
-    PathPoint pts[32];
-    pts[0].p.x = a->field_80.x;
-    pts[0].p.y = a->field_80.y;
-    pts[0].p.z = a->field_80.z;
-    pts[0].w = 0.0f;
-
-    f32 step = 0.03125f;
-    f32 t = step;
-    for (int i = 1; i < 32; i++) {
-        Vec3 d;
-
-        ViewBezierPoint(t, (int*)a->field_70, &pts[i].p);
-        d.x = pts[i].p.x - pts[i - 1].p.x;
-        d.y = pts[i].p.y - pts[i - 1].p.y;
-        d.z = pts[i].p.z - pts[i - 1].p.z;
-        pts[i].w = pts[i - 1].w + fn_800E1020(&d);
-        t += step;
-    }
-
-    Vec3 origin;
-    origin.x = pts[0].p.x;
-    origin.y = pts[0].p.y;
-    origin.z = pts[0].p.z;
-
-    PathQuery q;
-    if (fn_800201E4(handle, &origin, 0x1000, Actor62CopyState, &q) != 0) {
-        Mtx34 basis;
-        Vec3 dir;
-        Vec3 delta;
-        f32 range;
-
-        dir.x = (f32)q.dirX;
-        dir.y = (f32)q.dirY;
-        dir.z = (f32)q.dirZ;
-        if (fabsf(dir.x) <= 1.1920929e-7f && fabsf(dir.y) <= 1.1920929e-7f &&
-            fabsf(dir.z) <= 1.1920929e-7f) {
-            dir.x = 0.0f;
-            dir.y = 0.0f;
-            dir.z = 0.0f;
-        } else {
-            f32 inv = 1.0f / sqrtf(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
-
-            dir.x *= inv;
-            dir.y *= inv;
-            dir.z *= inv;
-        }
-        fn_8009F7A8(&basis, &dir);
-
-        delta.x = (f32)q.startX - pts[0].p.x;
-        delta.y = (f32)q.startY - pts[0].p.y;
-        delta.z = (f32)q.startZ - pts[0].p.z;
-        range = fn_800E1020(&delta) - 32.0f;
-        if (range < 0.0f) {
-            range = 0.0f;
-        }
-        if (range == 0.0f) {
-            for (int i = 1; i < 32; i++) {
-                pts[i].p = pts[0].p;
-            }
-        } else {
-            for (int i = 1; i < 32; i++) {
-                if (pts[i].w >= range) {
-                    pts[i].w = 0.0f;
-                }
-            }
-        }
-    }
-
-    for (int i = 0; i < 0x9E; i++) {
-        f32 f = a->path[i].f;
-
-        if (f > 0.0f) {
-            f32 want = lbl_804D5760 - f;
-            for (int j = 1; j < 32; j++) {
-                if (pts[j].w >= want) {
-                    Vec3 d;
-
-                    d.x = pts[j].p.x - pts[j - 1].p.x;
-                    d.y = pts[j].p.y - pts[j - 1].p.y;
-                    d.z = pts[j].p.z - pts[j - 1].p.z;
-                    fn_800E1098(&d, want - pts[j].w);
-                    a->path[i].pos.x = d.x + pts[j - 1].p.x;
-                    a->path[i].pos.y = d.y + pts[j - 1].p.y;
-                    a->path[i].pos.z = d.z + pts[j - 1].p.z;
-                    break;
-                }
-            }
-        }
-    }
-
-    for (int i = 0; i < 0x9E; i++) {
-        if (a->path[i].f > 0.0f && i % 40 == 0) {
-            f32 k = 1.0f - a->path[i].f / lbl_804D5760;
-            f32 s = 0.75f * (560.0f * k + 40.0f);
-
-            if (fn_802A1D04() == 0) {
-                fn_80122108(handle, owner, &a->path[i].pos, 0xC8769B80,
-                            1.0f, s, 400.0f, 400.0f,
-                            0.75f, 0.4f, 1.0f);
-            } else {
-                fn_80122108(handle, owner, &a->path[i].pos, 0xC8769B80,
-                            1.0f, s, 500.0f, 500.0f,
-                            0.75f, 0.4f, 1.0f);
-            }
-        }
-    }
-
-    ActorRelinkOwners(a);
-    if (moved == 0 && a->state == 2) {
+// Take a type-0x62 actor out of the list and free it.
+static inline void Actor62Destroy(Actor* a)
+{
+    if (a != 0) {
         AssetFind(0xF2E2BEB8, 0xF6298F9);
         fn_8000F60C();
         ActorUnlinkOwnerObjects(a);
@@ -668,9 +496,167 @@ u32 Actor62UpdatePath(u32 id, int* data, int owner)
             lbl_804D5768 = a->next;
         }
         VFree(a);
-        return 0;
     }
-    return 1;
+}
+
+u32 Actor62UpdatePath(u32 id, int* data, int owner)
+{
+    int i;
+    int moved;
+    f32 dt;
+    id &= 0xFFFFFF;
+    Actor* a = FindActor62(id);
+    if (a != 0) {
+        int info[8];
+        info[0] = 0;
+        SendMsg(owner, 0x400, info);
+
+        lbl_804D5770 = *(f32*)(data + 1);
+        dt = lbl_804D5770;
+
+        Vec3Blend(&a->field_8C, &a->field_B0, 0.8f, 0.2f);
+        Vec3Blend(&a->field_98, &a->field_BC, 0.9f, 0.1f);
+
+        if (a->state == 1) {
+            int i;
+            int n;
+            f32 rate;
+            f32 slip;
+            f32 rem;
+
+            a->field_F98 += dt;
+            rate = 158.0f / lbl_804D5764;
+            slip = lbl_804D5760 / lbl_804D5764;
+            int count = (int)(a->field_F98 * rate);
+            rem = (f32)count / rate;
+            a->field_F98 -= rem;
+            n = count;
+            for (i = 0; i < 0x9E && n != 0; i++) {
+                if (0.0f == a->path[i].f) {
+                    n--;
+                    a->path[i].f = lbl_804D5760 - slip * (rem / (f32)n);
+                    a->path[i].g = (f32)(rand() % 360);
+                    a->path[i].h = 1.0f - (f32)(rand() % 50 - 25) / 100.0f;
+                }
+            }
+        }
+
+        moved = 0;
+        for (i = 0; i < 0x9E; i++) {
+            f32 v = a->path[i].f - dt * (lbl_804D5760 / lbl_804D5764);
+
+            a->path[i].f = v > 0.0f ? v : 0.0f;
+            if (a->path[i].f > 0.0f) {
+                moved = 1;
+            }
+        }
+
+        PathPoint pts[32];
+        pts[0].p.x = a->field_80.x;
+        pts[0].p.y = a->field_80.y;
+        pts[0].p.z = a->field_80.z;
+        pts[0].w = 0.0f;
+
+        f32 step = 0.03125f;
+        f32 t = step;
+        for (int i = 1; i < 32; i++) {
+            Vec3 d;
+
+            ViewBezierPoint(t, (int*)&a->field_70, &pts[i].p);
+            d.x = pts[i].p.x - pts[i - 1].p.x;
+            d.y = pts[i].p.y - pts[i - 1].p.y;
+            d.z = pts[i].p.z - pts[i - 1].p.z;
+            pts[i].w = pts[i - 1].w + fn_800E1020(&d);
+            t += step;
+        }
+
+        Vec3 seg[2];
+        seg[0].x = pts[0].p.x;
+        seg[0].y = pts[0].p.y;
+        seg[0].z = pts[0].p.z;
+        seg[1].x = pts[31].p.x;
+        seg[1].y = pts[31].p.y;
+        seg[1].z = pts[31].p.z;
+
+        PathQuery q;
+        if (fn_800201E4(info[0], seg, 0x10000000, Actor62CopyState, &q) != 0) {
+            Mtx34 basis;
+            Vec3 dir;
+            Vec3 delta;
+            f32 range;
+            f32 start = 0.0f;
+
+            dir.x = (f32)q.dirX;
+            dir.y = (f32)q.dirY;
+            dir.z = (f32)q.dirZ;
+            VecNormalize(&dir, &dir);
+            fn_8009F7A8(&basis, &dir);
+
+            delta.x = (f32)q.startX - seg[0].x;
+            delta.y = (f32)q.startY - seg[0].y;
+            delta.z = (f32)q.startZ - seg[0].z;
+            range = PosOrZero(fn_800E1020(&delta) - 32.0f);
+            if (start == range) {
+                for (int i = 1; i < 32; i++) {
+                    pts[i].p.x = pts[0].p.x;
+                    pts[i].p.y = pts[0].p.y;
+                    pts[i].p.z = pts[0].p.z;
+                }
+            } else {
+                for (int i = 1; i < 32; i++) {
+                    if (pts[i].w >= start + range) {
+                        pts[i].w = 0.0f;
+                    }
+                }
+            }
+        }
+
+        for (i = 0; i < 0x9E; i++) {
+            if (a->path[i].f > 0.0f) {
+                f32 want = lbl_804D5760 - a->path[i].f;
+                for (int j = 1; j < 32; j++) {
+                    if (pts[j].w >= want) {
+                        Vec3 d;
+
+                        want -= pts[j - 1].w;
+                        d.x = pts[j].p.x - pts[j - 1].p.x;
+                        d.y = pts[j].p.y - pts[j - 1].p.y;
+                        d.z = pts[j].p.z - pts[j - 1].p.z;
+                        fn_800E1098(&d, &d, want);
+                        a->path[i].pos.x = d.x + pts[j - 1].p.x;
+                        a->path[i].pos.y = d.y + pts[j - 1].p.y;
+                        a->path[i].pos.z = d.z + pts[j - 1].p.z;
+                        break;
+                    }
+                }
+            }
+        }
+
+        PathSeg* ps;
+        for (int i = 0; i < 0x9E; i++) {
+            ps = &a->path[i];
+
+            if (ps->f > 0.0f && i % 40 == 0) {
+                if (fn_802A1D04() == 0) {
+                    fn_80122108(info[0], owner, &ps->pos, 0xC8759B80, 0,
+                                1.0f, 0.75f * (560.0f * (1.0f - ps->f / lbl_804D5760) + 40.0f),
+                                400.0f, 400.0f, 0.75f, 0.4f, 1.0f);
+                } else {
+                    fn_80122108(info[0], owner, &ps->pos, 0xC8759B80, 0,
+                                1.0f, 0.75f * (560.0f * (1.0f - ps->f / lbl_804D5760) + 40.0f),
+                                500.0f, 500.0f, 0.75f, 0.4f, 1.0f);
+                }
+            }
+        }
+
+        ActorRelinkOwners(a);
+        if (moved == 0 && a->state == 2) {
+            Actor62Destroy(a);
+            return 0;
+        }
+        return 1;
+    }
+    return 0;
 }
 
 // Copy one actor state snapshot over another. Returns 1.
@@ -699,17 +685,10 @@ void Actor62DrawPathTrail(void* p)
                 f32 size = 560.0f * k + 40.0f;
 
                 size *= seg->h;
-                DrawWorldQuadFlipped(size, seg->g, &seg->pos, 0xff, 0xff, 0xff,
+                DrawWorldQuadFlipped(size, seg->g, &seg->pos.x, 0xff, 0xff, 0xff,
                                      (int)alpha & 0xff);
             }
         }
         Draw3DEnd();
     }
-}
-
-// Reset the type-0x62 path scales to their default values.
-void Actor62InitPathScale(void)
-{
-    lbl_804D5760 = lbl_804D3890;
-    lbl_804D5764 = lbl_804D389C;
 }
