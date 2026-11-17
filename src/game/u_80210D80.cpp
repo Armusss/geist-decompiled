@@ -16,8 +16,6 @@ extern "C" void DrawDisableTexOffsets();
 
 extern "C" double fmod(double x, double y);
 
-// Draws a run of alpha-blended, colour-ramped quads (particle billboards).
-// Kept under its placeholder name: other units call it as fn_80210D80.
 extern "C" void fn_80210D80(float* pts, int stride, int count, int texture,
                             void* arg, float* alphaRamp, float* colorRamp)
 {
@@ -28,28 +26,18 @@ extern "C" void fn_80210D80(float* pts, int stride, int count, int texture,
     float zero = 0.0f;
     float* p = pts;
     for (int i = 0; i < count; i++) {
-        float y = p[1];
-        if (zero < y) {
-            float x = p[0];
-            if (zero < x) {
-                float c0;
-                float c1;
-                float c2;
-                float c3;
-                if (x < colorRamp[0]) {
-                    float t = 1.0f;
-                    if (colorRamp[0] > 1.1920929e-07f) {
-                        t = x / colorRamp[0];
-                    }
+        if (p[1] > zero) {
+            if (p[0] > zero) {
+                float c0, c1, c2, c3;
+                float alpha;
+                if (p[0] < colorRamp[0]) {
+                    float t = colorRamp[0] > 1.1920929e-07f ? p[0] / colorRamp[0] : 1.0f;
                     c0 = t * (colorRamp[6] - colorRamp[2]) + colorRamp[2];
                     c1 = t * (colorRamp[7] - colorRamp[3]) + colorRamp[3];
                     c2 = t * (colorRamp[8] - colorRamp[4]) + colorRamp[4];
                     c3 = t * (colorRamp[9] - colorRamp[5]) + colorRamp[5];
-                } else if (y < colorRamp[1]) {
-                    float t = 1.0f;
-                    if (colorRamp[1] > 1.1920929e-07f) {
-                        t = y / colorRamp[1];
-                    }
+                } else if (p[1] < colorRamp[1]) {
+                    float t = colorRamp[1] > 1.1920929e-07f ? p[1] / colorRamp[1] : 1.0f;
                     c0 = t * (colorRamp[6] - colorRamp[10]) + colorRamp[10];
                     c1 = t * (colorRamp[7] - colorRamp[11]) + colorRamp[11];
                     c2 = t * (colorRamp[8] - colorRamp[12]) + colorRamp[12];
@@ -60,18 +48,11 @@ extern "C" void fn_80210D80(float* pts, int stride, int count, int texture,
                     c2 = colorRamp[8];
                     c3 = colorRamp[9];
                 }
-                float alpha;
-                if (x < alphaRamp[0]) {
-                    float t = 1.0f;
-                    if (alphaRamp[0] > 1.1920929e-07f) {
-                        t = x / alphaRamp[0];
-                    }
+                if (p[0] < alphaRamp[0]) {
+                    float t = alphaRamp[0] > 1.1920929e-07f ? p[0] / alphaRamp[0] : 1.0f;
                     alpha = t * (alphaRamp[3] - alphaRamp[2]) + alphaRamp[2];
-                } else if (y < alphaRamp[1]) {
-                    float t = 1.0f;
-                    if (alphaRamp[1] > 1.1920929e-07f) {
-                        t = y / alphaRamp[1];
-                    }
+                } else if (p[1] < alphaRamp[1]) {
+                    float t = alphaRamp[1] > 1.1920929e-07f ? p[1] / alphaRamp[1] : 1.0f;
                     alpha = t * (alphaRamp[3] - alphaRamp[4]) + alphaRamp[4];
                 } else {
                     alpha = alphaRamp[3];
