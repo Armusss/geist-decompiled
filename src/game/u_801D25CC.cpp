@@ -111,10 +111,10 @@ extern "C" void* fn_801D2634(int pass) {
     switch (pass) {
     case 0:
         return (void*)RoomGeomSphereCollide;
-    case 5:
-        return (void*)RoomGeomNoCollide;
     case 1:
         return (void*)RoomGeomBoxCollide;
+    case 5:
+        return (void*)RoomGeomNoCollide;
     case 2:
         return (void*)RoomGeomCapsuleCollide;
     }
@@ -645,21 +645,20 @@ int RoomGeomBoxCollide(Geom* o1, Geom* o2, int flags, ContactGeom* contacts, int
 
 // Draws the debug triangles (blue) and contact normals (red), then empties both lists.
 void RoomGeomDebugDraw() {
-    Vec3* t;
-    int k;
     int i;
+    int k;
 
-    t = gRoomGeomDebugTris;
-    for (i = 0, k = 0; i < gRoomGeomDebugTriCount; i++, k += 3) {
-        fn_800090BC(t, &gRoomGeomDebugTris[k + 1], 0, 0xFF, 0);
+    k = 0;
+    for (i = 0; i < gRoomGeomDebugTriCount; i++) {
+        fn_800090BC(&gRoomGeomDebugTris[k], &gRoomGeomDebugTris[k + 1], 0, 0xFF, 0);
         fn_800090BC(&gRoomGeomDebugTris[k + 1], &gRoomGeomDebugTris[k + 2], 0, 0xFF, 0);
-        fn_800090BC(&gRoomGeomDebugTris[k + 2], t, 0, 0xFF, 0);
-        t += 3;
+        fn_800090BC(&gRoomGeomDebugTris[k + 2], &gRoomGeomDebugTris[k], 0, 0xFF, 0);
+        k += 3;
     }
-    t = gRoomGeomDebugNormals;
-    for (i = 0, k = 0; i < gRoomGeomDebugNormalCount; i++, k += 2) {
-        fn_800090BC(t, &gRoomGeomDebugNormals[k + 1], 0xFF, 0, 0);
-        t += 2;
+    k = 0;
+    for (i = 0; i < gRoomGeomDebugNormalCount; i++) {
+        fn_800090BC(&gRoomGeomDebugNormals[k], &gRoomGeomDebugNormals[k + 1], 0xFF, 0, 0);
+        k += 2;
     }
     gRoomGeomDebugNormalCount = 0;
     gRoomGeomDebugTriCount = 0;
