@@ -704,7 +704,7 @@ config.libs = [
             Object(NonMatching, "game/u_801D4738.cpp"),  # own consts 0x804D8C20.., materials 0x803ADB90
             Object(NonMatching, "game/u_801D8134.cpp"),  # app-system hooks, sbss 0x804D51D0 block
             Object(NonMatching, "game/u_801D8768.cpp"),  # LCCopy, sbss 0x804D51E0 block
-            Object(NonMatching, "game/u_801D8994.cpp"),  # Gfx state, sbss 0x804D51F0 block
+            Object(Matching, "game/u_801D8994.cpp"),  # Gfx state, sbss 0x804D51F0 block
             Object(NonMatching, "game/u_801D8FD4.cpp"),  # msg 0x74xx helpers, own consts 0x804D8C80..
             Object(NonMatching, "game/u_801D9A70.cpp"),  # guess
             Object(NonMatching, "game/u_801E0EDC.cpp"),  # guess
