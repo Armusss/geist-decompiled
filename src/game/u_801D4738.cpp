@@ -232,6 +232,7 @@ void* fn_801D7F2C(void* p, u32 a, u32 b);
 void* fn_801D7F34(u32 size);
 }
 
+
 // Material table at 0x803ADB90.
 Material gMaterials[3] = {
     { "RED OAK", 0, 6.73f },
@@ -261,25 +262,25 @@ extern "C" {
 int fn_801D4738(PhysObj* o, Vec3* p, float r) {
     float depth;
     float margin;
+    int type;
 
     if (o->body == 0) {
         return 0;
     }
-    margin = r * 0.0023818598f;
-    switch (GeomGetType(o->geom)) {
-    case 1:
-        depth = BoxPointDepth(0.0023818598f * p->x, 0.0023818598f * p->y, 0.0023818598f * p->z, o->geom);
-        break;
-    case 2:
-        depth = fn_80271714(0.0023818598f * p->x, 0.0023818598f * p->y, 0.0023818598f * p->z, o->geom);
-        break;
-    default:
+    r *= 0.0023818598f;
+    margin = r;
+    type = GeomGetType(o->geom);
+    if (type == 1) {
+        depth = -BoxPointDepth(0.0023818598f * p->x, 0.0023818598f * p->y, 0.0023818598f * p->z, o->geom);
+    } else if (type == 2) {
+        depth = -fn_80271714(0.0023818598f * p->x, 0.0023818598f * p->y, 0.0023818598f * p->z, o->geom);
+    } else {
         return 0;
     }
-    if (margin <= -depth) {
-        return 0;
+    if (depth < margin) {
+        return 1;
     }
-    return 1;
+    return 0;
 }
 
 // 0x801D4824: universal-style joint between two objects with optional angle limits.
@@ -319,8 +320,11 @@ void fn_801D4824(void* group, PhysObj* a, PhysObj* b, Vec3* axis1, Vec3* axis2, 
 // 0x801D4A70: hinge joint.
 void fn_801D4A70(void* group, PhysObj* a, PhysObj* b, Vec3* anchor, Vec3* axis, float* limits) {
     void* j = fn_802780CC(sWorld, group);
-    fn_80277804(j, a == 0 ? 0 : a->body, b == 0 ? 0 : b->body);
-    fn_80275218(anchor->x * 0.0023818598f, anchor->y * 0.0023818598f, anchor->z * 0.0023818598f, j);
+    SceneNode* ba = a == 0 ? 0 : a->body;
+    SceneNode* bb = b == 0 ? 0 : b->body;
+    fn_80277804(j, ba, bb);
+    float s = 0.0023818598f;
+    fn_80275218(anchor->x * s, anchor->y * s, anchor->z * s, j);
     fn_80274FF8(axis->x, axis->y, axis->z, j);
     if (limits != 0) {
         fn_80274F40(0.017453292f * limits[0], j, 0);
@@ -331,8 +335,11 @@ void fn_801D4A70(void* group, PhysObj* a, PhysObj* b, Vec3* anchor, Vec3* axis, 
 // 0x801D4B5C: ball joint.
 void fn_801D4B5C(void* group, PhysObj* a, PhysObj* b, Vec3* anchor) {
     void* j = fn_80278214(sWorld, group);
-    fn_80277804(j, a == 0 ? 0 : a->body, b == 0 ? 0 : b->body);
-    fn_802759B8(anchor->x * 0.0023818598f, anchor->y * 0.0023818598f, anchor->z * 0.0023818598f, j);
+    SceneNode* ba = a == 0 ? 0 : a->body;
+    SceneNode* bb = b == 0 ? 0 : b->body;
+    fn_80277804(j, ba, bb);
+    float s = 0.0023818598f;
+    fn_802759B8(anchor->x * s, anchor->y * s, anchor->z * s, j);
 }
 
 // 0x801D4C0C
@@ -370,34 +377,39 @@ void fn_801D4C5C(int* box, short room) {
 
 // Queues a force on an object's body (woken first).
 static inline void ForceAdd(PhysObj* o, int type, Vec3* a, Vec3* b) {
-    int i = sForceCount;
     if (sForceCount != 64 && o != 0 && o->body != 0) {
-        sForceCount++;
-        gForces[i].type = type;
+        Force* f = &gForces[sForceCount++];
+        f->type = type;
         if (o->body != 0 && SceneNodeNotLocked(o->body) == 0) {
             o->idle = 0.0f;
             SceneNodeSnapPrev(o->body);
         }
-        gForces[i].body = o->body;
-        gForces[i].geom = o->geom;
-        gForces[i].unk08 = 0;
-        if (a == 0) {
-            gForces[i].a.x = 0.0f;
-            gForces[i].a.y = 0.0f;
-            gForces[i].a.z = 0.0f;
+        f->body = o->body;
+        f->geom = o->geom;
+        f->unk08 = 0;
+        if (a != 0) {
+            float x = a->x;
+            float y = a->y;
+            float z = a->z;
+            f->a.x = x;
+            f->a.y = y;
+            f->a.z = z;
         } else {
-            gForces[i].a.x = a->x;
-            gForces[i].a.y = a->y;
-            gForces[i].a.z = a->z;
+            f->a.x = 0.0f;
+            f->a.y = 0.0f;
+            f->a.z = 0.0f;
         }
-        if (b == 0) {
-            gForces[i].b.x = 0.0f;
-            gForces[i].b.y = 0.0f;
-            gForces[i].b.z = 0.0f;
+        if (b != 0) {
+            float x = b->x;
+            float y = b->y;
+            float z = b->z;
+            f->b.x = x;
+            f->b.y = y;
+            f->b.z = z;
         } else {
-            gForces[i].b.x = b->x;
-            gForces[i].b.y = b->y;
-            gForces[i].b.z = b->z;
+            f->b.x = 0.0f;
+            f->b.y = 0.0f;
+            f->b.z = 0.0f;
         }
     }
 }
@@ -410,9 +422,10 @@ void fn_801D4DC4(PhysObj* o, Vec3* v) {
 // 0x801D4EC4
 void fn_801D4EC4(PhysObj* o, Vec3* v, Vec3* at) {
     Vec3 p;
-    p.x = at->x * 0.0023818598f;
-    p.y = at->y * 0.0023818598f;
-    p.z = at->z * 0.0023818598f;
+    float s = 0.0023818598f;
+    p.x = at->x * s;
+    p.y = at->y * s;
+    p.z = at->z * s;
     ForceAdd(o, 2, v, &p);
 }
 
@@ -447,9 +460,15 @@ static inline void RotToMtx(float* out, float* in) {
 // 0x801D513C: the object's world matrix.
 void fn_801D513C(PhysObj* o, Mtx34* m) {
     float* pos = GeomGetPosition(o->geom);
-    float x = pos[0] * 419.84f;
-    float y = pos[1] * 419.84f;
-    float z = pos[2] * 419.84f;
+    float x;
+    float y;
+    float z;
+    x = pos[0];
+    y = pos[1];
+    z = pos[2];
+    x *= 419.84f;
+    y *= 419.84f;
+    z *= 419.84f;
     Vec3 v;
     RotToMtx((float*)m, GeomGetRotation(o->geom));
     fn_800A0030(&v, m, &o->offset);
@@ -624,9 +643,9 @@ PhysObj* fn_801D5694(float radius, float length, int owner, int mat, int materia
                      Vec3* offset, int noBody) {
     Mass m;
     fn_8027649C(&m);
-    float r = 0.0023818598f * radius;
-    float l = 0.0023818598f * length;
-    Geom* g = CapsuleCreate(r, l, sSpace);
+    radius = 0.0023818598f * radius;
+    length = 0.0023818598f * length;
+    Geom* g = CapsuleCreate(radius, length, sSpace);
     if (noBody != 0) {
         *(u32*)((char*)g + 4) |= 0x10;
     }
@@ -634,7 +653,7 @@ PhysObj* fn_801D5694(float radius, float length, int owner, int mat, int materia
     if (material == (int)0xBF4C00C0) {
         fn_80276090(1.0f, 1.0f, 1.0f, 1.0f, &m);
     } else {
-        fn_80276170(gMaterials[MaterialIndex(material)].density, r, l, &m, dir + 1);
+        fn_80276170(gMaterials[MaterialIndex(material)].density, radius, length, &m, dir + 1);
     }
     return fn_801D59A4(owner, mat, g, &m, cat, offset, noBody);
 }
@@ -644,10 +663,10 @@ PhysObj* fn_801D5810(float x, float y, float z, int owner, int mat, int material
                      int noBody) {
     Mass m;
     fn_8027649C(&m);
-    float lx = 0.0023818598f * x;
-    float ly = 0.0023818598f * y;
-    float lz = 0.0023818598f * z;
-    Geom* g = BoxCreate(lx, ly, lz, sSpace);
+    x = 0.0023818598f * x;
+    y = 0.0023818598f * y;
+    z = 0.0023818598f * z;
+    Geom* g = BoxCreate(x, y, z, sSpace);
     if (noBody != 0) {
         *(u32*)((char*)g + 4) |= 0x10;
     }
@@ -655,7 +674,7 @@ PhysObj* fn_801D5810(float x, float y, float z, int owner, int mat, int material
     if (material == (int)0xBF4C00C0) {
         fn_80276090(1.0f, 1.0f, 1.0f, 1.0f, &m);
     } else {
-        fn_80276090(gMaterials[MaterialIndex(material)].density, lx, ly, lz, &m);
+        fn_80276090(gMaterials[MaterialIndex(material)].density, x, y, z, &m);
     }
     return fn_801D59A4(owner, mat, g, &m, cat, offset, noBody);
 }
@@ -686,22 +705,22 @@ PhysObj* fn_801D59A4(int owner, int mat, Geom* g, Mass* m, int cat, Vec3* offset
         body = fn_80278B70(sWorld);
     }
     GeomSetBody(g, (Body*)body);
-    if (body == 0) {
-        GeomSetCollideBits(g, -1);
-    } else {
+    if (body != 0) {
         fn_80278850(body, m);
         SceneNodeLock(body);
         GeomSetCollideBits(g, 0);
+    } else {
+        GeomSetCollideBits(g, -1);
     }
     GeomSetCategoryBits(g, cat);
-    if (offset == 0) {
-        o->offset.x = 0.0f;
-        o->offset.y = 0.0f;
-        o->offset.z = 0.0f;
-    } else {
+    if (offset != 0) {
         o->offset.x = offset->x;
         o->offset.y = offset->y;
         o->offset.z = offset->z;
+    } else {
+        o->offset.x = 0.0f;
+        o->offset.y = 0.0f;
+        o->offset.z = 0.0f;
     }
     o->owner = owner;
     o->material = mat;
