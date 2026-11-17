@@ -107,16 +107,15 @@ struct Player {
 };
 
 // Per-action-mode table (0x48 bytes per row): three hooks, then one motion id per character variant.
+typedef void (*BatsqueekHook)(Player* player);
+typedef void (*BatsqueekHook04)(Player* player, int arg);
 struct AnimRow {
-    void (*hook00)(Player* player);             // 0x00
-    void (*hook04)(Player* player, int arg);    // 0x04
-    void (*callback)(Player* player);           // 0x08
+    BatsqueekHook hook00;                       // 0x00
+    BatsqueekHook04 hook04;                     // 0x04
+    BatsqueekHook callback;                     // 0x08
     s32 byVariant[15];                          // 0x0C
 };
-extern AnimRow lbl_803BA2B0[];
-extern float lbl_804D9360;      // sdata2 zero float shared by the player code
-extern float lbl_804D9364;      // sdata2 scale for the random motion variant pick
-extern float lbl_804D9368;      // sdata2 threshold for the random motion variant pick
+extern AnimRow gBatsqueekModeTable[];
 extern "C" double fabs(double);
 extern "C" int rand(void);
 
@@ -149,7 +148,7 @@ extern "C" void fn_80050EB0(void* p);
 extern "C" void fn_8008E824(void* obj, int flag);
 int ModelBoneName(int obj, int index);
 int ModelBoneNodeChain(int obj, int name, int* chain, int count);
-extern int lbl_8049E0F0[];
+int gBatsqueekAssets[16];       // asset handles loaded by fn_80209A14
 extern "C" int SendMsg(void* target, int msg, void* data);
 
 void PlayerSetHeldSlotIndex(void* player, int index);
@@ -200,13 +199,13 @@ void PlayerBatsqueekSetup(Player* player)
 
     player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14,
                                    player->slots26C4[slot]->field18,
-                                   lbl_803BA2B0[23].byVariant[idx], 0, 0);
+                                   gBatsqueekModeTable[23].byVariant[idx], 0, 0);
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 1;
 
     player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14,
                                    player->slots26C4[slot]->field1C,
-                                   lbl_803BA2B0[23].byVariant[idx], 0, 0);
+                                   gBatsqueekModeTable[23].byVariant[idx], 0, 0);
     player->field0FC = 1;
     player->field7D0 = 0;
     if (player->field7D0 != 0)
@@ -286,12 +285,12 @@ void PlayerBatsqueekHostSetup(Player* player)
     idx = player->field73C;
 
     player->field098 = fn_800A1BC8(state->field14, state->field18,
-                                   lbl_803BA2B0[21].byVariant[idx], used, 0);
+                                   gBatsqueekModeTable[21].byVariant[idx], used, 0);
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 0x19;
 
     player->field0F0 = fn_800A1BC8(state->field14, state->field1C,
-                                   lbl_803BA2B0[21].byVariant[idx], used, 0);
+                                   gBatsqueekModeTable[21].byVariant[idx], used, 0);
     player->field0FC = 0x19;
 
     PlayerSetValue4(&player->field7A4, 0x15);
@@ -335,11 +334,11 @@ void PlayerBatsqueekGunSetup(Player* player)
     player->field78 = 0;
     player->field50 &= ~0x20000u;
     player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field18,
-                                   lbl_803BA2B0[20].byVariant[idx], 0, 0);
+                                   gBatsqueekModeTable[20].byVariant[idx], 0, 0);
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 1;
     player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field1C,
-                                   lbl_803BA2B0[20].byVariant[idx], 0, 0);
+                                   gBatsqueekModeTable[20].byVariant[idx], 0, 0);
     player->field0FC = 1;
 
     QueryMsg query;
@@ -396,11 +395,11 @@ void PlayerBatsqueekHostSlotSetup(Player* player)
     }
     slot = PlayerInHost((Actor*)player);
     idx = player->field73C;
-    player->field098 = fn_800A1BC8(state->field14, state->field18, lbl_803BA2B0[19].byVariant[idx], used, 0);
+    player->field098 = fn_800A1BC8(state->field14, state->field18, gBatsqueekModeTable[19].byVariant[idx], used, 0);
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 0x19;
     player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field1C,
-                                   lbl_803BA2B0[19].byVariant[idx], 0, 0);
+                                   gBatsqueekModeTable[19].byVariant[idx], 0, 0);
     player->field0FC = 0x19;
 
     QueryMsg query;
@@ -446,11 +445,11 @@ void PlayerBatsqueekCarryStateSetup(Player* player)
         if (HasCondition(anim->field270, 0xb) != 0)
             used = 1;
     }
-    player->field098 = fn_800A1BC8(state->field14, state->field18, lbl_803BA2B0[18].byVariant[idx], used, 0);
+    player->field098 = fn_800A1BC8(state->field14, state->field18, gBatsqueekModeTable[18].byVariant[idx], used, 0);
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 0x59;
     HostSlot* host = player->slots26C4[slot];
-    player->field0F0 = fn_800A1BC8(host->field14, host->field1C, lbl_803BA2B0[18].byVariant[idx], 0, 0);
+    player->field0F0 = fn_800A1BC8(host->field14, host->field1C, gBatsqueekModeTable[18].byVariant[idx], 0, 0);
     player->field0FC = 0x59;
 
     QueryMsg query;
@@ -494,7 +493,7 @@ void PlayerBatsqueekWeaponMotionSetup(Player* player)
 
     player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14,
                                    player->slots26C4[slot]->field18,
-                                   lbl_803BA2B0[13].byVariant[index], 0, 0);
+                                   gBatsqueekModeTable[13].byVariant[index], 0, 0);
     player->field0A4 = 0x50;
 
     if (player->field26B0 == -1)
@@ -505,14 +504,14 @@ void PlayerBatsqueekWeaponMotionSetup(Player* player)
     {
         bone = ModelBoneNodeChain(player->field58,
                                   ModelBoneName(player->field58, player->field26B0),
-                                  lbl_8049E0F0, 0x10);
+                                  gBatsqueekAssets, 0x10);
         if (bone == -1)
             bone = 8;
     }
 
     player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14,
                                    player->slots26C4[slot]->field1C,
-                                   lbl_803BA2B0[13].byVariant[index], bone << 1, 0);
+                                   gBatsqueekModeTable[13].byVariant[index], bone << 1, 0);
     player->field0E4 = (void*)PlayerBatsqueekModeCallback;
     player->field0FC = 0x50;
 }
@@ -610,7 +609,7 @@ void PlayerBatsqueekSlotHandleSetup(Player* player)
     while ((s32)player->field098 == -1)
     {
         player->field098 = fn_800A1BC8(player->slots26C4[host]->field14, player->slots26C4[host]->field18,
-                                       lbl_803BA2B0[3].byVariant[index], used, 0);
+                                       gBatsqueekModeTable[3].byVariant[index], used, 0);
         player->field08C = (void*)PlayerBatsqueekModeCallback;
         player->field0A4 = 1;
         if ((s32)player->field098 == -1 && used)
@@ -618,7 +617,7 @@ void PlayerBatsqueekSlotHandleSetup(Player* player)
     }
 
     HostSlot* slot = player->slots26C4[host];
-    player->field0F0 = fn_800A1BC8(slot->field14, slot->field1C, lbl_803BA2B0[3].byVariant[index], 0, 0);
+    player->field0F0 = fn_800A1BC8(slot->field14, slot->field1C, gBatsqueekModeTable[3].byVariant[index], 0, 0);
     player->field0FC = 1;
 }
 
@@ -664,12 +663,12 @@ void PlayerBatsqueekSlotMotionSetup(Player* player)
     int index = player->field73C;
 
     player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field18,
-                                   lbl_803BA2B0[1].byVariant[index], 0, 0);
+                                   gBatsqueekModeTable[1].byVariant[index], 0, 0);
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 1;
 
     player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field1C,
-                                   lbl_803BA2B0[1].byVariant[index], 0, 0);
+                                   gBatsqueekModeTable[1].byVariant[index], 0, 0);
     player->field0FC = 1;
     player->field7D0 = 0;
 }
@@ -733,23 +732,23 @@ void PlayerBatsqueekSlotModeSetup(Player* player)
     int slot = PlayerInHost((Actor*)player);
 
     player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field18,
-                                   lbl_803BA2B0[0].byVariant[0], player->field7D4, 0);
+                                   gBatsqueekModeTable[0].byVariant[0], player->field7D4, 0);
     if ((s32)player->field098 == -1)
     {
         player->field7D4 = 0;
         player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field18,
-                                       lbl_803BA2B0[0].byVariant[0], player->field7D4, 0);
+                                       gBatsqueekModeTable[0].byVariant[0], player->field7D4, 0);
     }
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 1;
 
     player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field1C,
-                                   lbl_803BA2B0[0].byVariant[0], player->field7D4, 0);
+                                   gBatsqueekModeTable[0].byVariant[0], player->field7D4, 0);
     if ((s32)player->field0F0 == -1)
     {
         player->field7D4 = 0;
         player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field1C,
-                                       lbl_803BA2B0[0].byVariant[0], player->field7D4, 0);
+                                       gBatsqueekModeTable[0].byVariant[0], player->field7D4, 0);
     }
     player->field0E4 = (void*)PlayerBatsqueekModeCallback;
     player->field0FC = 1;
@@ -788,7 +787,68 @@ int PlayerBatsqueekModeCallback(int msg, void* p)
     return 0;
 }
 
-// One entry of the per-action-mode table overlaid on lbl_803BA2B0 (0x48 bytes each).
+struct Actor;
+struct LargeActor;
+void PlayerDashStart(Actor* actor);
+void PlayerDashCheck(Actor* actor);
+void LargeActorResetFlags(LargeActor* actor);
+
+// The per-action-mode table: setup and update hooks, an optional callback and
+// the motion ids of each character variant, one row per action mode.
+AnimRow gBatsqueekModeTable[25] = {
+    { (BatsqueekHook)PlayerBatsqueekSlotModeSetup, (BatsqueekHook04)PlayerBatsqueekExitHost, (BatsqueekHook)PlayerBatsqueekResetGunTimer,
+      { 0x2237d4, 0x2237d4, 0x2237d4, 0x2237d4, 0x2237d4, 0x2237d4, 0x2237d4, 0x2237d4, 0x2237d4, 0x2237d4, 0x2237d4, 0x2237d4, 0x2237d4, 0x2237d4, 0 } },
+    { (BatsqueekHook)PlayerBatsqueekSlotMotionSetup, (BatsqueekHook04)PlayerBatsqueekExitMotionUpdate, 0,
+      { 0xa8be217b, 0x744b56b9, 0x90a41c8e, 0x29d70f30, 0xa81c49f3, 0xa798111, 0x35fc8e1c, 0xa9d72f66, 0x8254aa67, 0xd3193f08, 0x81548f05, 0x40ec2f58, 0xb1bec6a3, 0x11042941, 0 } },
+    { 0, 0, 0,
+      { 0x34cd59aa, 0xd84584ac, 0x23823037, 0x30b56155, 0x454c4232, 0x58fcaf54, 0x83ae54e9, 0xb0b5625f, 0x230c033e, 0x9101d67d, 0x4c4e12e0, 0xffe79c2d, 0x140f6f82, 0x1f644124, 0 } },
+    { (BatsqueekHook)PlayerBatsqueekSlotHandleSetup, (BatsqueekHook04)PlayerBatsqueekQueryUpdate, 0,
+      { 0x2a1a099, 0xc5d70d57, 0x3be1446c, 0x5514778e, 0xd9df8711, 0xc1bbedaf, 0xe424c17a, 0x2feb2d44, 0x3bdd7485, 0xdc50bd66, 0x1c29e8a3, 0x5bc381b6, 0x1a596fc1, 0xa32e1df, 0 } },
+    { 0, 0, 0,
+      { 0x6db3b0e5, 0x3940e623, 0x5599abf8, 0xeecc9e9a, 0x6d11d95d, 0xcf6f107b, 0xfaf21d86, 0x6eccbed0, 0x474a39d1, 0x980ece72, 0x464a1e6f, 0x5e1bec2, 0x76b4560d, 0xd5f9b8ab, 0 } },
+    { 0, 0, 0,
+      { 0xce83f460, 0x50aef7e2, 0xf9a70a2d, 0x5d8feacb, 0xcd335ee8, 0x1f00ac8a, 0xf98b35f, 0x2ad0a655, 0x7dc7f2f4, 0xcd4789f3, 0x2a2d8316, 0x4d42fba3, 0xb681a038, 0xcec2725a, 0 } },
+    { 0, 0, 0,
+      { 0x48c2836e, 0xeedbf5f0, 0x5d9beabb, 0xeac74c59, 0x352969f6, 0x1e731698, 0x6351aaed, 0x6acb32e3, 0xa1fd1802, 0x69cb1781, 0x82f9c724, 0xb6563131, 0x5fd68346, 0xe93d7468, 0 } },
+    { 0, 0, 0,
+      { 0x21820da8, 0xa708e7aa, 0x659ed5b5, 0x557847d3, 0x8fc97230, 0x4d5a7e52, 0xd4e55167, 0xe41cb3dd, 0x1669cd3c, 0x22b5e8fb, 0xaaf73bde, 0x78e156ab, 0xc3957780, 0x8f04a822, 0 } },
+    { 0, 0, 0,
+      { 0x48c24dc9, 0xeedbc04b, 0x5d9bb516, 0xeac716b4, 0x35293451, 0x1e72e0f3, 0x63517548, 0x6acafd3e, 0xa1fce25d, 0x69cae1dc, 0x82f9917f, 0xb655fb8c, 0x5fd64da1, 0xe93d3ec3, 0 } },
+    { 0, 0, 0,
+      { 0x64ddf349, 0x306b2887, 0x4cc3ee5c, 0xe5f6e0fe, 0x643c1bc1, 0xc69952df, 0xf21c5fea, 0x65f70134, 0x3e747c35, 0x8f3910d6, 0x3d7460d3, 0xfd0c0126, 0x6dde9871, 0xcd23fb0f, 0 } },
+    { 0, 0, 0,
+      { 0x51979943, 0xf50fc445, 0x404c6fd0, 0x4d7fa0ee, 0x621681cb, 0x75c6eeed, 0xa0789482, 0xcd7fa1f8, 0x3fd642d7, 0xadcc1616, 0x69185279, 0x1cb1dbc6, 0x30d9af1b, 0x3c2e80bd, 0 } },
+    { 0, 0, 0,
+      { 0x1de2c92c, 0xa369a32e, 0x61ff9139, 0x51d90357, 0x8c2a2db4, 0x49bb39d6, 0xd1460ceb, 0xe07d6f61, 0x12ca88c0, 0x1f16a47f, 0xa757f762, 0x7542122f, 0xbff63304, 0x8b6563a6, 0 } },
+    { (BatsqueekHook)PlayerDashStart, (BatsqueekHook04)PlayerDashCheck, (BatsqueekHook)LargeActorResetFlags,
+      { 0x72c27236, 0x72c27236, 0x72c27236, 0x72c27236, 0x72c27236, 0x72c27236, 0x72c27236, 0x72c27236, 0x72c27236, 0x72c27236, 0x72c27236, 0x72c27236, 0x72c27236, 0x72c27236, 0 } },
+    { (BatsqueekHook)PlayerBatsqueekWeaponMotionSetup, (BatsqueekHook04)PlayerBatsqueekSeekUpdate, (BatsqueekHook)PlayerBatsqueekClearCarryBit,
+      { 0x1f6f94f6, 0x1f6f94f6, 0x1f6f94f6, 0x1f6f94f6, 0x1f6f94f6, 0x1f6f94f6, 0x1f6f94f6, 0x1f6f94f6, 0x1f6f94f6, 0x1f6f94f6, 0x1f6f94f6, 0x1f6f94f6, 0x1f6f94f6, 0x1f6f94f6, 0 } },
+    { 0, 0, 0,
+      { 0xf8b4bd22, 0x15c99ae0, 0x7f083f75, 0x97491197, 0x992aa79a, 0xd9168f38, 0x300a8583, 0x17c1fc4d, 0xc6ccbb0e, 0xf8beab6f, 0x565f02c, 0x3d96c7bf, 0xc420b84a, 0x6797eb68, 0 } },
+    { 0, 0, 0,
+      { 0x1de2fed1, 0xa369d8d3, 0x61ffc6de, 0x51d938fc, 0x8c2a6359, 0x49bb6f7b, 0xd1464290, 0xe07da506, 0x12cabe65, 0x1f16da24, 0xa7582d07, 0x754247d4, 0xbff668a9, 0x8b65994b, 0 } },
+    { 0, 0, 0,
+      { 0x3fe4c227, 0x5cf99fe5, 0xc638447a, 0xde79169c, 0xe05aac9f, 0x2046943d, 0x773a8a88, 0x5ef20152, 0xdfcc013, 0x3feeb074, 0x4c95f531, 0x84c6ccc4, 0xb50bd4f, 0xaec7f06d, 0 } },
+    { 0, 0, 0,
+      { 0x38243a5e, 0xdb9c6560, 0x26d910eb, 0x340c4209, 0x48a322e6, 0x5c539008, 0x8705359d, 0xb40c4313, 0x2662e3f2, 0x9458b731, 0x4fa4f394, 0x33e7ce1, 0x17665036, 0x22bb21d8, 0 } },
+    { (BatsqueekHook)PlayerBatsqueekCarryStateSetup, (BatsqueekHook04)BatsqueekHostEnterGunMode, (BatsqueekHook)BatsqueekHostAnimStart,
+      { 0x672f359c, 0x672f359c, 0x672f359c, 0x672f359c, 0x672f359c, 0x672f359c, 0x672f359c, 0x672f359c, 0x672f359c, 0x672f359c, 0x672f359c, 0x672f359c, 0x672f359c, 0x672f359c, 0 } },
+    { (BatsqueekHook)PlayerBatsqueekHostSlotSetup, (BatsqueekHook04)PlayerBatsqueekResetGunState, 0,
+      { 0x1379c466, 0x1379c466, 0x1379c466, 0x1379c466, 0x1379c466, 0x1379c466, 0x1379c466, 0x1379c466, 0x1379c466, 0x1379c466, 0x1379c466, 0x1379c466, 0x1379c466, 0x1379c466, 0 } },
+    { (BatsqueekHook)PlayerBatsqueekGunSetup, (BatsqueekHook04)PlayerBatsqueekFrameUpdate, 0,
+      { 0x1c1a4b85, 0x1c1a4b85, 0x1c1a4b85, 0x1c1a4b85, 0x1c1a4b85, 0x1c1a4b85, 0x1c1a4b85, 0x1c1a4b85, 0x1c1a4b85, 0x1c1a4b85, 0x1c1a4b85, 0x1c1a4b85, 0x1c1a4b85, 0x1c1a4b85, 0 } },
+    { (BatsqueekHook)PlayerBatsqueekHostSetup, (BatsqueekHook04)PlayerBatsqueekResetMode, 0,
+      { 0x672f1d89, 0x672f1d89, 0x672f1d89, 0x672f1d89, 0x672f1d89, 0x672f1d89, 0x672f1d89, 0x672f1d89, 0x672f1d89, 0x672f1d89, 0x672f1d89, 0x672f1d89, 0x672f1d89, 0x672f1d89, 0 } },
+    { (BatsqueekHook)PlayerBatsqueekTeardown, (BatsqueekHook04)PlayerBatsqueekExitUpdate, 0,
+      { 0x2a1a099, 0xc5d70d57, 0x3be1446c, 0x5514778e, 0xd9df8711, 0xc1bbedaf, 0xe424c17a, 0x2feb2d44, 0x3bdd7485, 0xdc50bd66, 0x1c29e8a3, 0x5bc381b6, 0x1a596fc1, 0xa32e1df, 0 } },
+    { (BatsqueekHook)PlayerBatsqueekSetup, (BatsqueekHook04)PlayerBatsqueekUpdate, 0,
+      { 0xd9df8711, 0xd9df8711, 0xd9df8711, 0xd9df8711, 0xd9df8711, 0xd9df8711, 0xd9df8711, 0xd9df8711, 0xd9df8711, 0xd9df8711, 0xd9df8711, 0xd9df8711, 0xd9df8711, 0xd9df8711, 0 } },
+    { 0, 0, 0,
+      { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
+};
+
+// One entry of the per-action-mode table overlaid on gBatsqueekModeTable (0x48 bytes each).
 struct BatsqueekModeEntry {
     u8 pad000[0x08];
     void (*callback)(Player* player);   // 0x08: per-mode callback
@@ -798,13 +858,13 @@ struct BatsqueekModeEntry {
 
 // Return the motion id registered for the player's current action mode.
 s32 BatsqueekGetModeMotionId(Player* player) {
-    BatsqueekModeEntry* table = (BatsqueekModeEntry*)lbl_803BA2B0;
+    BatsqueekModeEntry* table = (BatsqueekModeEntry*)gBatsqueekModeTable;
     return table[player->field7A4].motionId;
 }
 
 // Run the per-action-mode callback for the player's current mode, if one is set.
 void BatsqueekRunModeCallback(Player* player) {
-    BatsqueekModeEntry* table = (BatsqueekModeEntry*)lbl_803BA2B0;
+    BatsqueekModeEntry* table = (BatsqueekModeEntry*)gBatsqueekModeTable;
     if (table[player->field7A4].callback != 0) {
         table[player->field7A4].callback(player);
     }
@@ -819,7 +879,7 @@ struct BatsqueekModeHooks {
 
 // Run the per-action-mode function pointer stored at table entry offset 0x04, if set.
 void BatsqueekRunModeHook04(Player* player, int arg) {
-    BatsqueekModeHooks* table = (BatsqueekModeHooks*)lbl_803BA2B0;
+    BatsqueekModeHooks* table = (BatsqueekModeHooks*)gBatsqueekModeTable;
     void (*fn)(Player*, int) = table[player->field7A4].hook04;
     if (fn != 0) {
         fn(player, arg);
@@ -828,7 +888,7 @@ void BatsqueekRunModeHook04(Player* player, int arg) {
 
 // Run the per-action-mode function pointer stored at table entry offset 0x00, if set.
 void BatsqueekRunModeHook00(Player* player) {
-    BatsqueekModeHooks* entry = &((BatsqueekModeHooks*)lbl_803BA2B0)[player->field7A4];
+    BatsqueekModeHooks* entry = &((BatsqueekModeHooks*)gBatsqueekModeTable)[player->field7A4];
     if (entry->hook00 != 0) {
         entry->hook00(player);
     }
@@ -841,20 +901,20 @@ unsigned long AssetFind(unsigned long id, unsigned long hash);
 // Still called as fn_80209A14 from u_8006C604, so the placeholder name stays.
 extern "C" void fn_80209A14(void)
 {
-    lbl_8049E0F0[0] = AssetFind(0xf1754bf2, 0x21c5e0);
-    lbl_8049E0F0[1] = AssetFind(0xf1754bf2, 0x24805f);
-    lbl_8049E0F0[2] = AssetFind(0xf1754bf2, 0x101844cc);
-    lbl_8049E0F0[3] = AssetFind(0xf1754bf2, 0x48874f6e);
-    lbl_8049E0F0[4] = AssetFind(0xf1754bf2, 0x4a53fc1);
-    lbl_8049E0F0[5] = AssetFind(0xf1754bf2, 0x967daac6);
-    lbl_8049E0F0[6] = AssetFind(0xf1754bf2, 0xd9404234);
-    lbl_8049E0F0[7] = AssetFind(0xf1754bf2, 0x450b2bb);
-    lbl_8049E0F0[8] = AssetFind(0xf1754bf2, 0x922bf04e);
-    lbl_8049E0F0[9] = AssetFind(0xf1754bf2, 0x8c73dfa9);
-    lbl_8049E0F0[10] = AssetFind(0xf1754bf2, 0x90aeeee4);
-    lbl_8049E0F0[11] = AssetFind(0xf1754bf2, 0x4a2f9aa);
-    lbl_8049E0F0[12] = AssetFind(0xf1754bf2, 0x4a48bc0);
-    lbl_8049E0F0[13] = AssetFind(0xf1754bf2, 0x8671db2a);
-    lbl_8049E0F0[14] = AssetFind(0xf1754bf2, 0x44e6ca4);
-    lbl_8049E0F0[15] = AssetFind(0xf1754bf2, 0x44ffeba);
+    gBatsqueekAssets[0] = AssetFind(0xf1754bf2, 0x21c5e0);
+    gBatsqueekAssets[1] = AssetFind(0xf1754bf2, 0x24805f);
+    gBatsqueekAssets[2] = AssetFind(0xf1754bf2, 0x101844cc);
+    gBatsqueekAssets[3] = AssetFind(0xf1754bf2, 0x48874f6e);
+    gBatsqueekAssets[4] = AssetFind(0xf1754bf2, 0x4a53fc1);
+    gBatsqueekAssets[5] = AssetFind(0xf1754bf2, 0x967daac6);
+    gBatsqueekAssets[6] = AssetFind(0xf1754bf2, 0xd9404234);
+    gBatsqueekAssets[7] = AssetFind(0xf1754bf2, 0x450b2bb);
+    gBatsqueekAssets[8] = AssetFind(0xf1754bf2, 0x922bf04e);
+    gBatsqueekAssets[9] = AssetFind(0xf1754bf2, 0x8c73dfa9);
+    gBatsqueekAssets[10] = AssetFind(0xf1754bf2, 0x90aeeee4);
+    gBatsqueekAssets[11] = AssetFind(0xf1754bf2, 0x4a2f9aa);
+    gBatsqueekAssets[12] = AssetFind(0xf1754bf2, 0x4a48bc0);
+    gBatsqueekAssets[13] = AssetFind(0xf1754bf2, 0x8671db2a);
+    gBatsqueekAssets[14] = AssetFind(0xf1754bf2, 0x44e6ca4);
+    gBatsqueekAssets[15] = AssetFind(0xf1754bf2, 0x44ffeba);
 }

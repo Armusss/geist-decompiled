@@ -721,7 +721,7 @@ config.libs = [
             Object(NonMatching, "game/FearMap2.c"),  # guess
             Object(NonMatching, "game/u_80202AB8.cpp"),  # guess
             Object(NonMatching, "game/u_802052B4.cpp"),  # guess
-            Object(NonMatching, "game/u_80208238.cpp"),  # pinned
+            Object(Matching, "game/u_80208238.cpp"),  # pinned
             Object(NonMatching, "game/u_8020A650.cpp"),  # guess
             Object(NonMatching, "game/u_8020B77C.cpp"),  # pinned
             Object(NonMatching, "game/u_8020D47C.cpp"),  # pinned

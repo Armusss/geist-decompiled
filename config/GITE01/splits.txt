@@ -761,6 +761,10 @@ game/u_802052B4.cpp:
 
 game/u_80208238.cpp:
 	.text       start:0x80208238 end:0x80209C30
+	.rodata     start:0x803495A8 end:0x80349608
+	.data       start:0x803BA2B0 end:0x803BA9B8
+	.bss        start:0x8049E0F0 end:0x8049E130
+	.sdata2     start:0x804D9360 end:0x804D9378
 
 game/u_8020A650.cpp:
 	.text       start:0x80209C30 end:0x8020B77C
