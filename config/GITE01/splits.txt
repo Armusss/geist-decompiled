@@ -660,6 +660,10 @@ game/u_801C8B6C.cpp:
 
 game/u_801C9CE0.cpp:
 	.text       start:0x801C9CE0 end:0x801CA16C
+	.rodata     start:0x803487C0 end:0x80348818
+	.data       start:0x803ACB08 end:0x803ACB38
+	.bss        start:0x80496D58 end:0x80496D98
+	.sdata2     start:0x804D8AF0 end:0x804D8B00
 
 game/u_801CA16C.cpp:
 	.text       start:0x801CA16C end:0x801CC6D0

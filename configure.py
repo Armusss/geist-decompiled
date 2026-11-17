@@ -695,7 +695,7 @@ config.libs = [
             Object(NonMatching, "game/u_801BF578.cpp"),  # own POSSESS pool 0x803486C8, state table 0x803ABBA8
             Object(NonMatching, "game/u_801C02FC.cpp"),  # own pool 0x80348718, 161-entry state table 0x803ABBC0, own 0.0/1.0 consts
             Object(NonMatching, "game/u_801C8B6C.cpp"),  # ASHEAVY effect type 0x803ACAD8 (reset cb is first fn)
-            Object(NonMatching, "game/u_801C9CE0.cpp"),  # AshBullet effect type 0x803ACB08 (destroy cb is first fn) + asset preload
+            Object(Matching, "game/u_801C9CE0.cpp"),  # AshBullet effect type 0x803ACB08 (destroy cb is first fn) + asset preload
             Object(NonMatching, "game/u_801CA16C.cpp"),  # own pool 0x80348818, state table 0x803ACB38
             Object(NonMatching, "game/u_801CC6D0.cpp"),  # Script Move actor type 0x803ACBB8, register fn first
             Object(NonMatching, "game/u_801CDFBC.cpp"),  # fn table 0x803ACC08, rat_jump pool 0x80348888
