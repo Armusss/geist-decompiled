@@ -741,9 +741,9 @@ int Fn802120A0(Actor* actor, int msg, void* data, int arg)
 
 extern "C" void fn_80158C3C(float* pos, int a, int b, int c, int d, int e,
                             int f);
-extern "C" void fn_80122108(float a, float b, float c, float d, float e,
-                            float f, float g, int h, int i, float* pos,
-                            unsigned int hash, int j);
+extern "C" void fn_80122108(int a, int owner, float* pos, unsigned int type, float f1,
+                            float f2, float f3, float f4, float f5, float f6, float f7,
+                            int handle);
 extern "C" void fn_801D55CC(void* effect);
 extern "C" void fn_800C5654(int handle, unsigned int hash, int id);
 extern "C" void* memset(void* dest, int value, unsigned long count);
@@ -787,10 +787,8 @@ void WhiteOutEffectStart(Actor* actor, unsigned int id, int flag)
         } else {
             target = actor;
         }
-        fn_80122108(0.2f * beh->field34, beh->field34,
-                    0.2f * beh->field38, beh->field38,
-                    0.75f, 0.0f, 200.0f,
-                    0, target->handle, pos, 0xb9fc42f5, actor->handle);
+        fn_80122108(0, target->handle, pos, 0xb9fc42f5, 0.2f * beh->field34, beh->field34,
+                    0.2f * beh->field38, beh->field38, 0.75f, 0.0f, 200.0f, actor->handle);
     }
 
     actor->flags |= 0x20000000;
