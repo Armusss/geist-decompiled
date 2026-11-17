@@ -10,6 +10,11 @@
 typedef unsigned long u32;
 typedef unsigned char u8;
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
 struct ActorType;
 
 struct ActorInfo {
@@ -166,6 +171,21 @@ struct ZoneStream {
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
 
+inline u32 StrHash(const char* s) {
+    int i;
+    u32 h;
+
+    if (s == 0) {
+        return 0;
+    }
+    h = 0;
+    for (i = 0; s[i] != 0; i++) {
+        h = h * 31 + (u8)toupper(s[i]);
+    }
+    h %= 0xFFFFFFFF;
+    return h;
+}
+
 inline u32 StrHash(const char* s, u32 h) {
     int i;
 
@@ -175,7 +195,8 @@ inline u32 StrHash(const char* s, u32 h) {
     for (i = 0; s[i] != 0; i++) {
         h = h * 31 + (unsigned char)toupper(s[i]);
     }
-    return h % 0xFFFFFFFF;
+    h %= 0xFFFFFFFF;
+    return h;
 }
 
 extern "C" void fn_80026660(int id, void (*handler)(), int arg);
@@ -187,32 +208,74 @@ void* VAlloc(int size);
 int ActorInitBase(Actor* actor);
 int ActorTypeRegister(ActorType* type);
 bool ZoneSpawnActorMsg(Actor* actor, int msg, void* data);
-extern ActorType lbl_8039B9F0;
+
+// Actor type descriptor (same layout as the other actor files' types).
+struct ActorType {
+    int unk0;                                              // 0x00
+    const char* name;                                      // 0x04
+    int (*msg)(Actor* actor, int msg, void* data, int arg);  // 0x08
+    void (*update)(Actor* actor, float dt);                // 0x0C
+    int (*init)(Actor* actor);                             // 0x10
+    void* unk14;                                           // 0x14
+    void (*destroy)(Actor* actor);                         // 0x18
+    void (*save)(ZoneStream* s);                           // 0x1C
+    void (*load)(ZoneStream* s);                           // 0x20
+    void* unk24[3];                                        // 0x24
+};
+
+int ZonePowerUpMsg(Actor* actor, int msg, void* data, int arg);
+void ZonePowerUpUpdate(Actor* actor, float dt);
+int ZoneRefreshPowerUp(Actor* actor);
+void ZoneFreePowerUp(Actor* actor);
+void ZoneWritePowerUp(ZoneStream* s);
+void ZoneReadPowerUp(ZoneStream* s);
+
+ActorType gPowerupType = { 0, "Powerup", ZonePowerUpMsg, ZonePowerUpUpdate, ZoneRefreshPowerUp, 0, ZoneFreePowerUp,
+                           ZoneWritePowerUp, ZoneReadPowerUp };
 
 void ZoneRegisterActor(void) {
     fn_80026660(0x28, (void (*)())ZoneSpawnActorMsg, 0);
-    ActorTypeRegister(&lbl_8039B9F0);
+    ActorTypeRegister(&gPowerupType);
+}
+
+// Takes n bytes off the front of a load stream and returns where they were.
+inline void* StreamTake(ZoneStream* s, int n) {
+    void* p = s->ptr;
+    s->avail += n;
+    s->size -= n;
+    s->ptr += n;
+    return p;
 }
 
 void ZoneReadPowerUp(ZoneStream* s) {
+    u32* tag;
+    u32 hash;
+    int ok;
     Actor* a = s->actor;
 
     if (s->avail >= 4) {
-        u32* tag = (u32*)s->ptr;
-
-        s->avail += 4;
-        s->size -= 4;
-        s->ptr += 4;
-        if (*tag == StrHash("[PWRUPX]", 0)) {
+        tag = (u32*)StreamTake(s, 4);
+        hash = StrHash("[PWRUPX]");
+        if (*tag == hash) {
+            ok = 1;
+        } else {
+            ok = 0;
+        }
+        if (ok) {
             VFree(a->powerUp);
             a->powerUp = 0;
-        } else if (*tag == StrHash("[PWERUP]", 0) && s->avail >= 0x18) {
-            memcpy(a->powerUp, s->ptr, 0xC);
-            s->avail -= 0xC;
-            s->ptr += 0xC;
-            memcpy(a->powerUp + 0xC, s->ptr, 0xC);
-            s->avail -= 0xC;
-            s->ptr += 0xC;
+        } else {
+            hash = StrHash("[PWERUP]");
+            if (*tag == hash && s->avail >= 0x18) {
+                u8* d = a->powerUp;
+
+                memcpy(d, s->ptr, 0xC);
+                s->avail -= 0xC;
+                s->ptr += 0xC;
+                memcpy(d + 0xC, s->ptr, 0xC);
+                s->avail -= 0xC;
+                s->ptr += 0xC;
+            }
         }
     }
 }
@@ -224,7 +287,7 @@ void ZoneWritePowerUp(ZoneStream* s) {
         if (s->size < 4) {
             s->status = 0;
         } else {
-            u32 tag = StrHash("[PWRUPX]", 0);
+            u32 tag = StrHash("[PWRUPX]");
 
             memcpy(s->ptr, &tag, 4);
             s->avail += 4;
@@ -234,7 +297,7 @@ void ZoneWritePowerUp(ZoneStream* s) {
     } else if (s->size < 0x1C) {
         s->status = 0;
     } else {
-        u32 tag = StrHash("[PWERUP]", 0);
+        u32 tag = StrHash("[PWERUP]");
 
         memcpy(s->ptr, &tag, 4);
         s->avail += 4;
@@ -269,6 +332,15 @@ struct ZoneSaveMsg {
     float unk14;   // 0x14
     int unk18;     // 0x18
     Actor* self;   // 0x1C
+};
+
+// Payload of the 0x40B animation message (as in the Pickup actor).
+struct ZoneAnimMsg {
+    int unk0;    // 0x00
+    int unk4;    // 0x04
+    u32 key;     // 0x08
+    int asset;   // 0x0C
+    int unk10;   // 0x10
 };
 
 // Argument block handed to the linked object's 0x1501 handler.
@@ -321,32 +393,31 @@ int ZonePowerUpMsg(Actor* actor, int msg, void* data, int arg) {
     switch (msg) {
     case 0x40A:
         if (m->unk08 == 0x7C44EC3D) {
-            int buf[4];
+            ZoneAnimMsg am;
 
-            buf[1] = 0;
-            buf[3] = -1;
-            m->unk0C = -0xDEA7E22;
-            buf[2] = m->unk0C;
-            buf[3] = AssetFind(0xC0A77187, 0x7EC7F65C);
-            SendMsg(m->target, 0x40B, buf);
+            am.unk4 = 0;
+            am.asset = -1;
+            m->unk0C = 0xF21581DE;
+            am.key = m->unk0C;
+            am.asset = AssetFind(0xC0A77187, 0x7EC7F65C);
+            SendMsg(m->target, 0x40B, &am);
         }
         return 1;
     case 0x409: {
         Actor* a = m->actor;
         ZoneMsgTarget* target = (ZoneMsgTarget*)m->target;
+        ZonePowerUp* p;
+        ZoneParamInfo info;
 
-        if (a == 0 || target == 0 || a->powerUp == 0) {
+        if (a == 0 || target == 0 || (p = (ZonePowerUp*)a->powerUp) == 0) {
             return 0;
-        } else {
-            ZonePowerUp* p = (ZonePowerUp*)a->powerUp;
-            ZoneParamInfo info;
-
+        }
             info.target = target;
             info.data[0] = p->data[0];
-            info.data[1] = p->data[1];
-            info.data[2] = p->data[2];
             info.data[3] = p->data[3];
+            info.data[1] = p->data[1];
             info.data[4] = p->data[4];
+            info.data[2] = p->data[2];
             info.data[5] = p->data[5];
             info.pos[0] = (float)a->x;
             info.pos[1] = (float)a->y;
@@ -355,8 +426,7 @@ int ZonePowerUpMsg(Actor* actor, int msg, void* data, int arg) {
                 fn_8016F120(a->info->field_AC, &a->x);
                 ActorRender(a);
             }
-            return 1;
-        }
+        return 1;
     }
     case 0x400: {
         Actor* a = m->actor;
@@ -390,7 +460,7 @@ bool ZoneSpawnActorMsg(Actor* actor, int msg, void* data) {
         desc.param = (void*)d[1];
         spawned = fn_800C7E80(&desc);
         if (spawned != 0) {
-            spawned->type = &lbl_8039B9F0;
+            spawned->type = &gPowerupType;
             ok = true;
         } else {
             ok = false;
@@ -1023,7 +1093,7 @@ void ZoneDashUpdate(ZoneDash* dash, Actor* actor) {
             }
         }
         if (linked != 0 && linked->unk38 != -1) {
-            int buf[4];
+            int buf[5];
 
             buf[1] = 0;
             buf[2] = actor->unk38;
