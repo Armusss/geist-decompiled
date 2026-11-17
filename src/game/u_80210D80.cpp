@@ -448,6 +448,20 @@ int fn_8007EF48(int a, int b, const char* text, int c, int d, int e, int f,
                 int g, int h, int i);
 void PossessableUpdate(Actor* actor, float dt);
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
+int Fn802120A0(Actor* actor, int msg, void* data, int arg);
+void Fn80211AA4(Actor* actor, float dt);
+int Fn80211F78(Actor* actor);
+extern "C" int fn_80211E38(Actor* actor);
+
+// The two white-out actor types: same handlers, different init.
+ActorType gWhiteOutExplodeType = { 0, "Explode", Fn802120A0, Fn80211AA4, Fn80211F78, 0, Fn80211A84 };
+ActorType gWhiteOutCrateType = { 0, "Crate", Fn802120A0, Fn80211AA4, fn_80211E38, 0, Fn80211A84 };
+
 // White-out ghost update: spawns the "White Out" overlay ghost, launches the
 // white-out effect and fades the actor out while it is in front of the camera.
 void Fn80211AA4(Actor* actor, float dt)
@@ -458,10 +472,10 @@ void Fn80211AA4(Actor* actor, float dt)
     if ((flags & 0x80000000) == 0) {
         if (flags & 0x40000000) {
             unsigned int id = beh->field0C;
-            if ((id >> 24) == 2) {
-                int msg[8];
+            if ((int)(id >> 24) == 2) {
+                WhiteOutGhost* msg[8];
                 SendMsg(id, 0x400, msg);
-                WhiteOutGhost* ghost = (WhiteOutGhost*)msg[0];
+                WhiteOutGhost* ghost = msg[0];
                 if (ghost->field14CC != -1) {
                     FontRelease(ghost->field14CC);
                     ghost->field14CC = -1;
@@ -479,35 +493,37 @@ void Fn80211AA4(Actor* actor, float dt)
             beh->field10 = 0.0f;
             WhiteOutEffectStart(actor, id, 1);
         }
-    } else if (beh->field30 == 0.0f) {
+    } else if (beh->field30 != 0.0f) {
+        if ((flags & 0x8000000) != 0) {
+            beh->field30 = beh->field30 - dt;
+            if (beh->field30 < 0.0f) {
+                beh->field30 = 0.0f;
+            }
+        }
+    } else {
         CameraInfo* cam = fn_800C5DD8();
         float view[3];
         fn_800A025C(view, cam, 1);
-        float dir[3];
-        dir[0] = (float)actor->place.pos.x;
-        dir[1] = (float)actor->place.pos.y;
-        dir[2] = (float)actor->place.pos.z;
-        dir[0] = dir[0] - cam->field24;
-        dir[1] = dir[1] - cam->field28;
-        dir[2] = dir[2] - cam->field2C;
-        float len2 = dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2];
-        if ((fabsf(dir[0]) > 1.1920929e-07f) + (fabsf(dir[1]) > 1.1920929e-07f) +
-                (fabsf(dir[2]) > 1.1920929e-07f) == 0) {
-            dir[0] = 0.0f;
-            dir[1] = 0.0f;
-            dir[2] = 0.0f;
+        Vec3 dir;
+        dir.x = (float)actor->place.pos.x;
+        dir.y = (float)actor->place.pos.y;
+        dir.z = (float)actor->place.pos.z;
+        dir.x = dir.x - cam->field24;
+        dir.y = dir.y - cam->field28;
+        dir.z = dir.z - cam->field2C;
+        float len2 = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
+        // Retail normalizes with the shared paired-single helper (game/vecnorm.h); kept in C until the unit can flip.
+        if ((fabsf(dir.x) > 1.1920929e-07f) + (fabsf(dir.y) > 1.1920929e-07f) +
+                (fabsf(dir.z) > 1.1920929e-07f) == 0) {
+            dir.x = 0.0f;
+            dir.y = 0.0f;
+            dir.z = 0.0f;
         } else {
-            NormalizeVector3(dir);
+            NormalizeVector3(&dir.x);
         }
-        float dot = dir[0] * view[0] + dir[1] * view[1] + dir[2] * view[2];
-        if ((dot < 0.5f && len2 > lbl_804D3410) ||
-                fn_802A1D04() != 0) {
+        float dot = dir.x * view[0] + dir.y * view[1] + dir.z * view[2];
+        if ((dot < 0.5f && len2 > lbl_804D3410) || fn_802A1D04() != 0) {
             fn_800C7B78(actor);
-        }
-    } else if ((flags & 0x8000000) != 0) {
-        beh->field30 = beh->field30 - dt;
-        if (beh->field30 < 0.0f) {
-            beh->field30 = 0.0f;
         }
     }
     PossessableUpdate(actor, dt);
