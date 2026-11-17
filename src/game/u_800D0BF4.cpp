@@ -1117,7 +1117,7 @@ void ZoneLoadAsset(void) {
 void ZoneActorSetup(Actor* actor) {
     actor->unk1DA8 = 0;
     actor->unk1DB8 = -1;
-    ZoneInit(&actor->zoneList, actor, (IVec3*)&actor->x, actor->zoneBuf, 0x80, lbl_804D7030);
+    ZoneInit(&actor->zoneList, actor, (IVec3*)&actor->x, actor->zoneBuf, 0x80, 8000.0f);
 }
 
 // --- types used by the dash zone callback (0x800D2290) ---
@@ -1632,7 +1632,7 @@ struct ZoneLineReply {
     int unk0C;          // 0x0C
     u32 unk10;          // 0x10
     u32 unk14;          // 0x14
-    u32 mask;           // 0x18
+    int mask;           // 0x18
     u32 unk1C;          // 0x1C
 };
 
@@ -1648,6 +1648,12 @@ static inline int ZoneBoneFlagged(int model, unsigned short* bones, int count) {
     return 0;
 }
 
+inline void ZoneHitSetPos(ZoneLineHit* hit, float x, float y, float z) {
+    hit->x = x;
+    hit->y = y;
+    hit->z = z;
+}
+
 // Line-of-sight filter of the zone queries: rejects candidates the owner cannot
 // see, then keeps the closest one whose segment reaches the tracked bone.
 int ZoneLineFilter(ZoneLineEntry* entry, ZoneLineQuery* query) {
@@ -1658,14 +1664,17 @@ int ZoneLineFilter(ZoneLineEntry* entry, ZoneLineQuery* query) {
     unsigned short* bones;
     int count;
     int bone;
-    int found;
     int i;
     int model;
+    int found;
+    Actor* owner;
+    float dist;
+    float x;
+    float y;
+    float z;
     float dy;
     float dx;
     float dz;
-    float dist;
-    Actor* owner;
 
     owner = query->owner;
     if (PlayerInHost(owner)) {
@@ -1679,7 +1688,7 @@ int ZoneLineFilter(ZoneLineEntry* entry, ZoneLineQuery* query) {
             if (actor != 0) {
                 if ((int)(actor->unk38 >> 24) == 1) {
                     if (actor->info != 0) {
-                        if (actor->info->unk1C != 0x6BD564F0) {
+                        if (actor->info->unk1C != 0x942B64F0) {
                             return 0;
                         }
                     }
@@ -1694,14 +1703,17 @@ int ZoneLineFilter(ZoneLineEntry* entry, ZoneLineQuery* query) {
     }
     actor = entry->actor;
     if (actor != 0) {
-    dy = (float)entry->y - query->y;
-    dx = (float)entry->x - query->x;
-    dz = (float)entry->z - query->z;
+    y = (float)entry->y;
+    dy = y - query->y;
+    x = (float)entry->x;
+    dx = x - query->x;
+    z = (float)entry->z;
+    dz = z - query->z;
     dist = dy * dy + dx * dx + dz * dz;
     actorReply.actor = actor;
     actor->handle(0x400, &actorReply);
-    ownerReply.actor = owner;
-    owner->handle(0x400, &ownerReply);
+    ownerReply.actor = query->owner;
+    query->owner->handle(0x400, &ownerReply);
     if (entry->actor == ownerReply.actor->unk2794 ||
         entry->actor == ownerReply.actor->unk26E4) {
         return 0;
@@ -1720,9 +1732,7 @@ int ZoneLineFilter(ZoneLineEntry* entry, ZoneLineQuery* query) {
                 *(Actor**)lbl_804D4948 = entry->actor;
                 query->hit->model = entry->model;
                 query->hit->bone = ModelBoneName(entry->model, entry->bone);
-                query->hit->x = dx;
-                query->hit->y = dy;
-                query->hit->z = dz;
+                ZoneHitSetPos(query->hit, x, y, z);
                 query->hit->dist = dist;
                 if ((int)(actorReply.id >> 24) == 0x13 ||
                     (int)(actorReply.id >> 24) == 2) {
