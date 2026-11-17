@@ -409,12 +409,12 @@ static inline void ForceAdd(PhysObj* o, int type, const Vec3* a, const Vec3* b) 
 }
 
 // 0x801D4DC4
-void fn_801D4DC4(PhysObj* o, Vec3* v) {
+void fn_801D4DC4(PhysObj* o, const Vec3* v) {
     ForceAdd(o, 6, v, 0);
 }
 
 // 0x801D4EC4
-void fn_801D4EC4(PhysObj* o, Vec3* v, Vec3* at) {
+void fn_801D4EC4(PhysObj* o, const Vec3* v, const Vec3* at) {
     Vec3 p;
     float s = 0.0023818598f;
     p.x = at->x * s;
@@ -424,7 +424,7 @@ void fn_801D4EC4(PhysObj* o, Vec3* v, Vec3* at) {
 }
 
 // 0x801D5010
-void fn_801D5010(PhysObj* o, Vec3* v) {
+void fn_801D5010(PhysObj* o, const Vec3* v) {
     ForceAdd(o, 0, v, 0);
 }
 
