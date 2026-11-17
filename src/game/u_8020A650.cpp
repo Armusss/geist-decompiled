@@ -628,9 +628,8 @@ void u8020A650InitNameTables(void)
     u8020A650AttachName* a;
     int i;
 
-    m = t->models;
-    for (i = 0; i < 3; i++, m++) {
-        m->hash = HashName(m->name);
+    for (i = 0; i < 3; i++) {
+        t->models[i].hash = StrHash(t->models[i].name);
     }
     p = t->parts;
     for (i = 0; i < 0x26; i++, p++) {
@@ -656,7 +655,7 @@ extern float lbl_804D9398;
 extern float lbl_804D939C;
 extern float lbl_804D93A0;
 extern float lbl_804D93A4;
-extern int lbl_804D33B8;
+extern int lbl_804D4B18;
 
 extern "C" float fabsf(float);
 extern "C" float sqrtf(float);
@@ -741,7 +740,7 @@ int u8020A650BuildModel(u8020A650Owner* owner, int setIndex, u8* slotMap,
                     unsigned long hash;
                     void* handle;
 
-                    if (lbl_804D33B8 == 0) {
+                    if (lbl_804D4B18 == 0) {
                         hash = HashName("RED OAK");
                     } else {
                         hash = 0xBF4C00C0;
