@@ -272,8 +272,6 @@ extern "C" int fn_80211470(float dt, float* particles, int stride, int count) {
     return live;
 }
 
-// Same particle integration as fn_80211470 but without the spin-angle
-// wrap and with a count-down loop. Returns the number of live particles advanced.
 int ParticleStepPlain(float dt, float* particles, int stride, int count) {
     int live = 0;
     if (particles != 0) {
@@ -281,17 +279,15 @@ int ParticleStepPlain(float dt, float* particles, int stride, int count) {
         for (int i = 0; i < count; i++) {
             if (particles[1] > zero) {
                 particles[0] = particles[0] + dt;
-                float x = particles[0];
-                if (x > zero) {
-                    float step = dt;
-                    if (x >= dt) {
-                    } else {
-                        step = x;
-                    }
+                if (particles[0] > zero) {
+                    float step = particles[0] < dt ? particles[0] : dt;
                     particles[1] = particles[1] - step;
-                    particles[2] += particles[5] * step;
-                    particles[3] += particles[6] * step;
-                    particles[4] += particles[7] * step;
+                    float vx = particles[5] * step;
+                    float vy = particles[6] * step;
+                    float vz = particles[7] * step;
+                    particles[2] += vx;
+                    particles[3] += vy;
+                    particles[4] += vz;
                 }
                 live++;
             }
