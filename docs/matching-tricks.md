@@ -328,3 +328,52 @@ fn_8004B378, fn_800C9D3C, AnimApply and three neighbours, u_80277600, fn_8029AC6
 Side finds in u_800F73C8: a vector clear is `erase(first, last)` on typed pointers
 (`fn(v, first, (last - first) * sizeof(T))` gives `add; subf; srawi; addze; slwi`), and `delete v` on a class with a
 virtual destructor in a vptr-only base gives the `lwz r12,0(r3); li r4,1; lwz r12,8(r12)` call.
+
+## Instruction scheduling: argument order at calls (fable-sched, 2026-11-16)
+Toys: ~/geist-work/ds/fable-sched-tools/s1-s9.cpp (compile with fable-regrank-tools/tc.py; `first.py SRC N` prints the
+N instructions before each function's first call; predictions and results in pred.txt: 52 of 62 hit). Tools there:
+`scan2.py TARGET` / `scan3.py` (retail call sites with `li r4` before `addi r3`), `pair.py` (a block before and after
+scheduling, probe only), `sim.py` (a first model of the scheduler; reproduces 278 of 292 toy blocks, not finished).
+What is established:
+- **Without the scheduler the arguments are set up in order** (`addi r3,rA,624` then `li r4,9`); every reversed pair
+  in retail is the scheduler's work, not the argument expression. 22 ways of writing the arguments (constant in a
+  local, enum, `static const`, inline returning the constant, inline wrappers in both parameter orders, member
+  function, casts, comma, pointer in a local) all give addi first (s1, s2).
+- **The scheduler works per basic block and keeps an instruction away from the one that produces its operand.** If
+  the base register of the `addi` is written in the same block (`mr r30,r3`), the independent `li r4,N` is issued
+  first: `mr r30,r3 | li r4,5 | addi r3,r30,624`. Retail has 28 such two-argument sites (scan3.py). Sources:
+  - null test on the raw parameter, typed copy afterwards: `if (p == 0) return 0; a = (Actor*)p;` gives
+    `cmplwi r3,0 ... bne | mr r30,r3 | li r4,5 | addi r3,r30,624` (s3 A, exactly fn_801CC3A4 and fn_8029E058);
+    `Actor* a = (Actor*)p; if (a == 0)` gives `mr. r30,r3` in the test block and addi first.
+  - no null test at all: the parameter copy is in the entry block, so the first call of the function is reversed
+    (FollowLineCheckActorDist, CrabUpdate; s5 A/C/E/F). Nothing special is needed in the source.
+  - an inline whose body starts with `Actor* a = (Actor*)p;` called after the caller's own null test (s6 I/J).
+- Ties: `mr r4,rX` is issued before `addi r3,rA,K`, while `li r4,N` stays after it (s1 F, s9 D-F). Two `mr`, or
+  `mr r3` + `addi r4`, keep their order.
+- **Pass order.** `mr rA,r3` + `cmplwi rA,0` is merged to `mr.` before scheduling (the `mr.` is then hoisted between
+  the prologue stores). Copy forwarding (`mr r31,r3 | lwz r30,304(r31)` becoming `lwz r30,304(r3)`) happens after
+  scheduling: the load is scheduled as depending on the copy (s3 B, peephole-off probe).
+- In the entry block the scheduler mixes the prologue with the body: a free `li r4,N` moves up to just after `mflr`,
+  `li rS,K` moves to just after `stw rS`, stores keep their order, and in the epilogue `lwz r0` (feeding `mtlr`)
+  comes first (s5). `#pragma peephole off` (probe) also stops this mixing, so it cannot be used to see the
+  scheduler's input for entry blocks.
+- **Still open: `mr.` in the test block and `lwz rB,304(rA) | li r4,N | addi r3,rA,624` after it** (HostRideBUpdate,
+  HostRideTick, CreatureUpdate, NpcSveUpdateActor, fn_801CAA48, BehParamsUpdate, fn_80295634, fn_801DCA38,
+  fn_801DD61C, FoeUpdateChase, UpdateActorState). The block is instruction-for-instruction the one of the small state
+  callbacks that have addi first (fn_801B9814, fn_802969A8), so something the scheduler saw is no longer visible.
+  Facts for the next attempt: all 11 load the actor's pointer at **+0x130** (9 of them) or +0x134 before the call,
+  and no retail function with a +0x130 load before the call has addi first; the actor ranks above the loaded pointer
+  (it is a typed local, not the parameter); only the first call of the function is affected. Ruled out by toys: every
+  argument form above, a second typed local (`o = a`, coalesced before scheduling: s4 A/B/H), inline-made actor or
+  behaviour pointer (s6), a sub-struct pointer at +0x130 shared by the load and the condition pointer (s8), the
+  constant in a variable set before the test (s9 A-C). A loop counter (`for (c = 9; ...)`) gives `mr r4,r29 | addi r3`
+  but keeps the counter register (s9 D-F).
+- **A compiler temp initialised on the wrong side of a call is an explicit variable in the source.** VM.c fn_80286EAC:
+  retail has `li r29,0 | li r31,0 | bl OSDisableInterrupts`, the strength-reduced `i*2` of `refs[i]` gave
+  `li r29,0 | bl | li r31,0` (the scheduler never moves anything across a call). Written as its own variable, set
+  before the call and stepped in the loop test, it matches: `i = 0; off = 0; OSDisableInterrupts();
+  while (off += 2, i++ <= count) { if (*(s16*)((u8*)refs + off) != 0) continue; ...`, with `off` declared first
+  (r31). VM.c is now Matching.
+- Tried without effect: SltInit (address of sSlots before sGroups: pointer locals for either table, `sGroups + 1`,
+  9 variants in fable-sched-tools/slt_var.py, all 5); GhostGunUpdate message block (31 statement orders and temp
+  choices in gg_var.py: 24-27, the committed form stays at 9).

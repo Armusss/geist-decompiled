@@ -157,6 +157,7 @@ extern "C" void fn_80286E14(void) {
 // VMFlushOnePage (placeholder name kept: Cube.cpp calls fn_80286EAC with C linkage).
 extern "C" int fn_80286EAC(void) {
     static u32 sNext = 0;
+    u32 off;
     BOOL level;
     u16 intr;
     void* page;
@@ -164,9 +165,10 @@ extern "C" int fn_80286EAC(void) {
     void* slot;
 
     i = 0;
+    off = 0;
     OSDisableInterrupts();
-    while (i++ <= lbl_804D5664) {
-        if (lbl_804D5690[i] != 0) {
+    while (off += 2, i++ <= lbl_804D5664) {
+        if (*(s16*)((u8*)lbl_804D5690 + off) != 0) {
             continue;
         }
         slot = fn_803407D8(sNext++);
