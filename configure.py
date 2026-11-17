@@ -768,7 +768,7 @@ config.libs = [
             Object(Matching, "game/u_80285014.cpp"),  # known
             Object(Matching, "game/Mirror.cpp"),  # (helper-game-b)
             Object(Matching, "game/u_80285ACC.cpp"),  # split from u_80285014
-            Object(NonMatching, "game/VM.c"),  # guess
+            Object(Matching, "game/VM.c"),
             Object(NonMatching, "game/u_8028703C.cpp"),  # guess
             Object(Matching, "game/Clock.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_8028865C.cpp"),  # split from u_8028703C
