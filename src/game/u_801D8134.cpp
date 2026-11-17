@@ -44,7 +44,7 @@ struct PropObj {
 struct PropMsg {
     PropObj* obj;                              // 0x00
     int arg;                                   // 0x04
-    u8 pad08[0x14];                            // 0x08
+    int pad08;                                 // 0x08: the 0x800 notify frame needs 0x0C-0x14 bytes
 };
 
 extern "C" {
@@ -84,18 +84,39 @@ extern "C" int fn_801D8160(void) {
 
 extern "C" void fn_801D8168(void) {  // PropsNotify: 0x800, or 0x803 while saving
     PropMsg m;
-    int msg;
     int i;
+    int msg;
 
-    msg = 0x800;
     if (SaveIsBusy() != 0) {
         msg = 0x803;
+    } else {
+        msg = 0x800;
     }
     for (i = 0; i < sCount; i++) {
         PropObj* o = &sObjs[i];
         m.obj = o;
         o->handler(msg, &m);
     }
+}
+
+static inline void PropSpawn(int i) {
+    PropObj* o = &sObjs[i];
+    PropRec* r = &sRecs[i];
+    int handler = (int)fn_801D85F8;
+    o->visible = 1;
+    MtxSetEuler((Mtx34*)&o->local, &r->euler);
+    o->local.pos.x = r->offB.x + r->offA.x;
+    o->local.pos.y = r->offB.y + r->offA.y;
+    o->local.pos.z = r->offB.z + r->offA.z;
+    o->local.pos.x *= 3.0517578125e-05f;
+    o->local.pos.y *= 3.0517578125e-05f;
+    o->local.pos.z *= 3.0517578125e-05f;
+    PlacementToMatrix((Mtx34*)o, &o->local);
+    o->place.pos.x = (int)r->pos.x;
+    o->place.pos.y = (int)r->pos.y;
+    o->place.pos.z = (int)r->pos.z;
+    ActorFn8002378C((Actor*)o, (i & 0xFFFFFF) | 0x8000000, (int)o, handler, 0, 0, 0);
+    ActorFn80022D98((Actor*)o, 0);
 }
 
 extern "C" int fn_801D81F4(void) {  // PropsSpawn
@@ -105,22 +126,7 @@ extern "C" int fn_801D81F4(void) {  // PropsSpawn
         sObjs = (PropObj*)VAlloc(sCount * sizeof(PropObj));
     }
     for (i = 0; i < sCount; i++) {
-        PropObj* o = &sObjs[i];
-        PropRec* r = &sRecs[i];
-        o->visible = 1;
-        MtxSetEuler((Mtx34*)&o->local, &r->euler);
-        o->local.pos.x = r->offB.x + r->offA.x;
-        o->local.pos.y = r->offB.y + r->offA.y;
-        o->local.pos.z = r->offB.z + r->offA.z;
-        o->local.pos.x *= 3.0517578125e-05f;
-        o->local.pos.y *= 3.0517578125e-05f;
-        o->local.pos.z *= 3.0517578125e-05f;
-        PlacementToMatrix((Mtx34*)o, &o->local);
-        o->place.pos.x = (int)r->pos.x;
-        o->place.pos.y = (int)r->pos.y;
-        o->place.pos.z = (int)r->pos.z;
-        ActorFn8002378C((Actor*)o, (i & 0xFFFFFF) | 0x8000000, (int)o, (int)fn_801D85F8, 0, 0, 0);
-        ActorFn80022D98((Actor*)o, 0);
+        PropSpawn(i);
     }
     return 1;
 }
