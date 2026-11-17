@@ -29,7 +29,7 @@ struct ReflectEntry {
 
 // Copy of the current view's camera object (fn_800C5DD8), 0x60 bytes.
 struct Camera {
-    Mtx34 view;            // 0x00
+    PlaceF view;           // 0x00
     int unk30;             // 0x30
     float fov;             // 0x34
     float f38;             // 0x38
@@ -69,7 +69,7 @@ float lbl_804D3088;
 int lbl_804D4084;
 int lbl_804D2568;
 int lbl_804D256C;
-Mtx34 lbl_80449068;
+extern PlaceF lbl_80449068;
 
 int SendMsg(int to, int msg, void* data);
 
@@ -77,11 +77,11 @@ void fn_80009170(int* pos, int* end, int r, int g, int b);
 void fn_800091D4(Mtx34* a, Mtx34* b, Mtx33* out, int count);
 void fn_80009848(float fov, Mtx34* texMtx, Mtx34* mtx);
 void fn_80009E44(int a, int b);
-void fn_8004320C(Mtx34* src, Mtx34* dst);
-void fn_8009F7A8(Mtx34* mtx, Vec3* up);
+void fn_8004320C(PlaceF* src, Mtx34* dst);
+void fn_8009F7A8(PlaceF* mtx, Vec3* up);
 void fn_800A0094(Vec3* out, Vec3* in);
-void fn_800A0100(Mtx34* mtx);
-void fn_800A0168(Mtx34* out, Mtx34* in);
+void fn_800A0100(PlaceF* mtx);
+void fn_800A0168(PlaceF* out, PlaceF* in);
 void* fn_8000F990(int id);
 Camera* fn_800C5DD8(void);
 int fn_800C5E74(int a);
@@ -114,7 +114,7 @@ void PSMTXConcat(Mtx34* a, Mtx34* b, Mtx34* out);
 }
 
 void GfxSetCullMode(int mode);
-void ActorGetMatrix(Mtx34* out, Actor* actor);
+void ActorGetMatrix(PlaceF* out, Actor* actor);
 
 void ReflectAddTime(float dt) {
     lbl_804D5160 += (int)dt;
@@ -215,15 +215,10 @@ int ReflectRender(int index) {
     Mtx33 tmp;
     Mtx34 m180;
     Mtx34 refl;
-    ReflectEntry* entry;
     void* tex;
 
-    entry = &lbl_80495D84[index];
-    tex = fn_8000F990(entry->id);
-    if (!entry->active || tex == 0) {
-        lbl_804D308C = -1;
-        return 0;
-    }
+    tex = fn_8000F990(lbl_80495D84[index].id);
+    if (lbl_80495D84[index].active && tex != 0) {
 
     lbl_804D4084 = 1;
     GXSetViewport(0.0f, 0.0f, 480.0f, 336.0f, 0.0f, 1.0f);
@@ -234,68 +229,89 @@ int ReflectRender(int index) {
     lbl_804D2568 = 480;
     lbl_804D256C = 336;
 
-    if (entry->msgTarget == -1) {
+    if (lbl_80495D84[index].msgTarget == -1) {
         Vec3 pos;
         Vec3 n;
+        Vec3 d;
+        Vec3 up;
+        PlaceF m1;
+        PlaceF m2;
+        PlaceF basis;
 
         GfxSetCullMode(1);
-        fn_8004320C((Mtx34*)&lbl_80495D48, &m180);
+        fn_8004320C(&lbl_80495D48, &m180);
 
-        pos.x = entry->actor->matrix[9];
-        pos.y = entry->actor->matrix[10];
-        pos.z = entry->actor->matrix[11];
-        lbl_80495D78 = pos;
-        n.x = entry->actor->matrix[0] * 0.000244140625f;
-        n.y = entry->actor->matrix[1] * 0.000244140625f;
-        n.z = entry->actor->matrix[2] * 0.000244140625f;
+        pos.x = lbl_80495D84[index].actor->matrix[9];
+        pos.y = lbl_80495D84[index].actor->matrix[10];
+        pos.z = lbl_80495D84[index].actor->matrix[11];
+        lbl_80495D78.x = pos.x;
+        lbl_80495D78.y = pos.y;
+        lbl_80495D78.z = pos.z;
+        n.x = lbl_80495D84[index].actor->matrix[3];
+        n.y = lbl_80495D84[index].actor->matrix[4];
+        n.z = lbl_80495D84[index].actor->matrix[5];
+        n.x *= 0.000244140625f;
+        n.y *= 0.000244140625f;
+        n.z *= 0.000244140625f;
         PSMTXReflect(&refl, &pos, &n);
         PSMTXConcat(&refl, &m180, &m180);
 
-        lbl_80495CE8.view.m[0][0] = m180.m[0][0];
-        lbl_80495CE8.view.m[0][1] = m180.m[0][1];
-        lbl_80495CE8.view.m[0][2] = m180.m[0][2];
-        lbl_80495CE8.view.m[1][0] = m180.m[1][0];
-        lbl_80495CE8.view.m[1][1] = m180.m[1][1];
-        lbl_80495CE8.view.m[1][2] = m180.m[1][2];
-        lbl_80495CE8.view.m[2][0] = m180.m[2][0];
-        lbl_80495CE8.view.m[2][1] = m180.m[2][1];
-        lbl_80495CE8.view.m[2][2] = m180.m[2][2];
-        lbl_80495CE8.view.m[0][3] = m180.m[0][3];
-        lbl_80495CE8.view.m[1][3] = m180.m[1][3];
-        lbl_80495CE8.view.m[2][3] = m180.m[2][3];
+        lbl_80495CE8.view.rot.m[0][0] = m180.m[0][0];
+        lbl_80495CE8.view.rot.m[0][1] = m180.m[0][1];
+        lbl_80495CE8.view.rot.m[0][2] = m180.m[0][2];
+        lbl_80495CE8.view.rot.m[1][0] = m180.m[1][0];
+        lbl_80495CE8.view.rot.m[1][1] = m180.m[1][1];
+        lbl_80495CE8.view.rot.m[1][2] = m180.m[1][2];
+        lbl_80495CE8.view.rot.m[2][0] = m180.m[2][0];
+        lbl_80495CE8.view.rot.m[2][1] = m180.m[2][1];
+        lbl_80495CE8.view.rot.m[2][2] = m180.m[2][2];
+        lbl_80495CE8.view.pos.x = m180.m[0][3];
+        lbl_80495CE8.view.pos.y = m180.m[1][3];
+        lbl_80495CE8.view.pos.z = m180.m[2][3];
         fn_800A0168(&lbl_80495CE8.view, &lbl_80495CE8.view);
         fn_800C5E74(0);
         fn_800C6834(lbl_804D5148);
         fn_800C5E9C(0);
 
-        m180.m[0][0] = entry->actor->matrix[0] * 0.000244140625f * -1.0f;
-        m180.m[0][1] = entry->actor->matrix[3] * 0.000244140625f * -1.0f;
-        m180.m[0][2] = entry->actor->matrix[6] * 0.000244140625f * -1.0f;
-        m180.m[0][3] = entry->actor->matrix[9];
-        m180.m[1][0] = entry->actor->matrix[1] * 0.000244140625f;
-        m180.m[1][1] = entry->actor->matrix[4] * 0.000244140625f;
-        m180.m[1][2] = entry->actor->matrix[7] * 0.000244140625f;
-        m180.m[1][3] = entry->actor->matrix[10];
-        m180.m[2][0] = entry->actor->matrix[2] * 0.000244140625f;
-        m180.m[2][1] = entry->actor->matrix[5] * 0.000244140625f;
-        m180.m[2][2] = entry->actor->matrix[8] * 0.000244140625f;
-        m180.m[2][3] = entry->actor->matrix[11];
+        {
+            Actor* a = lbl_80495D84[index].actor;
+            float r00, r01, r02, r10, r11, r12, r20, r21, r22;
+            float px, py, pz;
+            r00 = a->matrix[0] * 0.000244140625f;
+            r01 = a->matrix[3] * 0.000244140625f;
+            r02 = a->matrix[6] * 0.000244140625f;
+            r10 = a->matrix[1] * 0.000244140625f;
+            r11 = a->matrix[4] * 0.000244140625f;
+            r12 = a->matrix[7] * 0.000244140625f;
+            r20 = a->matrix[2] * 0.000244140625f;
+            r21 = a->matrix[5] * 0.000244140625f;
+            r22 = a->matrix[8] * 0.000244140625f;
+            px = a->matrix[9];
+            py = a->matrix[10];
+            pz = a->matrix[11];
+            m180.m[0][0] = r00;
+            m180.m[0][1] = r01;
+            m180.m[0][2] = r02;
+            m180.m[0][3] = px;
+            m180.m[1][0] = r10;
+            m180.m[1][1] = r11;
+            m180.m[1][2] = r12;
+            m180.m[1][3] = py;
+            m180.m[2][0] = r20;
+            m180.m[2][1] = r21;
+            m180.m[2][2] = r22;
+            m180.m[2][3] = pz;
+        }
         fn_800091D4(&m180, &m180, &tmp, 1);
-        fn_80009848(-lbl_804D5158, &entry->texMtx, &m180);
+        fn_80009848(-lbl_804D5158, &lbl_80495D84[index].texMtx, &m180);
 
-        if (entry->actor2 != 0) {
-            Mtx34 m1;
-            Mtx34 m2;
-            Mtx34 basis;
-            Vec3 d;
-            Vec3 up;
+        if (lbl_80495D84[index].actor2 != 0) {
+            ActorGetMatrix(&m1, lbl_80495D84[index].actor);
+            ActorGetMatrix(&m2, lbl_80495D84[index].actor2);
 
-            ActorGetMatrix(&m1, entry->actor);
-            ActorGetMatrix(&m2, entry->actor2);
-
-            d.x = lbl_80495D48.pos.x - m1.m[2][1];
-            d.y = lbl_80495D48.pos.y - m1.m[2][2];
-            d.z = lbl_80495D48.pos.z - m1.m[2][3];
+            d.x = lbl_80495D48.pos.x - m1.pos.x;
+            d.y = lbl_80495D48.pos.y - m1.pos.y;
+            d.z = lbl_80495D48.pos.z - m1.pos.z;
             lbl_80449068 = m1;
             fn_800A0094(&d, &d);
             fn_800A0094(&up, (Vec3*)&lbl_80495D48.rot.m[1][0]);
@@ -303,58 +319,63 @@ int ReflectRender(int index) {
             fn_800A0094(&d, &d);
             fn_800A0094(&up, &up);
             fn_8009F7A8(&basis, &up);
-            basis.m[2][1] = m2.m[2][1] + d.x;
-            basis.m[2][2] = m2.m[2][2] + d.y;
-            basis.m[2][3] = m2.m[2][3] + d.z;
+            basis.pos.x = m2.pos.x + d.x;
+            basis.pos.y = m2.pos.y + d.y;
+            basis.pos.z = m2.pos.z + d.z;
             fn_8004320C(&basis, &m180);
 
-            pos.x = entry->actor2->matrix[9];
-            pos.y = entry->actor2->matrix[10];
-            pos.z = entry->actor2->matrix[11];
-            lbl_80495D78 = pos;
-            n.x = entry->actor2->matrix[0] * 0.000244140625f;
-            n.y = entry->actor2->matrix[1] * 0.000244140625f;
-            n.z = entry->actor2->matrix[2] * 0.000244140625f;
+            pos.x = lbl_80495D84[index].actor2->matrix[9];
+            pos.y = lbl_80495D84[index].actor2->matrix[10];
+            pos.z = lbl_80495D84[index].actor2->matrix[11];
+            lbl_80495D78.x = pos.x;
+            lbl_80495D78.y = pos.y;
+            lbl_80495D78.z = pos.z;
+            n.x = lbl_80495D84[index].actor2->matrix[3];
+            n.y = lbl_80495D84[index].actor2->matrix[4];
+            n.z = lbl_80495D84[index].actor2->matrix[5];
+            n.x *= 0.000244140625f;
+            n.y *= 0.000244140625f;
+            n.z *= 0.000244140625f;
             PSMTXReflect(&refl, &pos, &n);
             PSMTXConcat(&refl, &m180, &m180);
 
-            lbl_80495CE8.view.m[0][0] = m180.m[0][0];
-            lbl_80495CE8.view.m[0][1] = m180.m[0][1];
-            lbl_80495CE8.view.m[0][2] = m180.m[0][2];
-            lbl_80495CE8.view.m[1][0] = m180.m[1][0];
-            lbl_80495CE8.view.m[1][1] = m180.m[1][1];
-            lbl_80495CE8.view.m[1][2] = m180.m[1][2];
-            lbl_80495CE8.view.m[2][0] = m180.m[2][0];
-            lbl_80495CE8.view.m[2][1] = m180.m[2][1];
-            lbl_80495CE8.view.m[2][2] = m180.m[2][2];
-            lbl_80495CE8.view.m[0][3] = m180.m[0][3];
-            lbl_80495CE8.view.m[1][3] = m180.m[1][3];
-            lbl_80495CE8.view.m[2][3] = m180.m[2][3];
+            lbl_80495CE8.view.rot.m[0][0] = m180.m[0][0];
+            lbl_80495CE8.view.rot.m[0][1] = m180.m[0][1];
+            lbl_80495CE8.view.rot.m[0][2] = m180.m[0][2];
+            lbl_80495CE8.view.rot.m[1][0] = m180.m[1][0];
+            lbl_80495CE8.view.rot.m[1][1] = m180.m[1][1];
+            lbl_80495CE8.view.rot.m[1][2] = m180.m[1][2];
+            lbl_80495CE8.view.rot.m[2][0] = m180.m[2][0];
+            lbl_80495CE8.view.rot.m[2][1] = m180.m[2][1];
+            lbl_80495CE8.view.rot.m[2][2] = m180.m[2][2];
+            lbl_80495CE8.view.pos.x = m180.m[0][3];
+            lbl_80495CE8.view.pos.y = m180.m[1][3];
+            lbl_80495CE8.view.pos.z = m180.m[2][3];
             fn_800A0168(&lbl_80495CE8.view, &lbl_80495CE8.view);
             fn_800C5E9C(0);
 
-            lbl_80495D78.x = entry->actor2->matrix[9];
-            lbl_80495D78.y = entry->actor2->matrix[10];
-            lbl_80495D78.z = entry->actor2->matrix[11];
+            lbl_80495D78.x = lbl_80495D84[index].actor2->matrix[9];
+            lbl_80495D78.y = lbl_80495D84[index].actor2->matrix[10];
+            lbl_80495D78.z = lbl_80495D84[index].actor2->matrix[11];
         }
     } else {
-        Mtx34 m1;
-        Mtx34 m2;
+        PlaceF m1;
+        PlaceF m2;
         NotifyMsg msg;
         Vec3 d;
         Vec3 up;
         PlaceF* cam;
 
-        ActorGetMatrix(&m1, entry->actor);
-        ActorGetMatrix(&m2, entry->actor2);
+        ActorGetMatrix(&m1, lbl_80495D84[index].actor);
+        ActorGetMatrix(&m2, lbl_80495D84[index].actor2);
         fn_800C5E74(0);
         msg.unk4 = 1;
-        SendMsg(entry->msgTarget, 0xC00, &msg);
+        SendMsg(lbl_80495D84[index].msgTarget, 0xC00, &msg);
 
         cam = fn_800C6448();
-        d.x = cam->pos.x - m1.m[2][1];
-        d.y = cam->pos.y - m1.m[2][2];
-        d.z = cam->pos.z - m1.m[2][3];
+        d.x = cam->pos.x - m1.pos.x;
+        d.y = cam->pos.y - m1.pos.y;
+        d.z = cam->pos.z - m1.pos.z;
         d.x *= 0.1f;
         d.y *= 0.1f;
         d.z *= 0.1f;
@@ -365,41 +386,64 @@ int ReflectRender(int index) {
         fn_800A0094(&d, &d);
         fn_800A0094(&up, &up);
         fn_8009F7A8(&lbl_80495CE8.view, &up);
-        lbl_80495CE8.view.m[2][1] = m1.m[2][1] + d.x;
-        lbl_80495CE8.view.m[2][2] = m1.m[2][2] + d.y;
-        lbl_80495CE8.view.m[2][3] = m1.m[2][3] + d.z;
+        lbl_80495CE8.view.pos.x = m1.pos.x + d.x;
+        lbl_80495CE8.view.pos.y = m1.pos.y + d.y;
+        lbl_80495CE8.view.pos.z = m1.pos.z + d.z;
 
         msg.unk4 = 0;
-        SendMsg(entry->msgTarget, 0xC00, &msg);
+        SendMsg(lbl_80495D84[index].msgTarget, 0xC00, &msg);
         fn_800C6834(lbl_804D5148);
         fn_800C5E9C(0);
 
-        m180.m[0][0] = entry->actor->matrix[0] * 0.000244140625f * -1.0f;
-        m180.m[0][1] = entry->actor->matrix[3] * 0.000244140625f * -1.0f;
-        m180.m[0][2] = entry->actor->matrix[6] * 0.000244140625f * -1.0f;
-        m180.m[0][3] = entry->actor->matrix[9];
-        m180.m[1][0] = entry->actor->matrix[1] * 0.000244140625f;
-        m180.m[1][1] = entry->actor->matrix[4] * 0.000244140625f;
-        m180.m[1][2] = entry->actor->matrix[7] * 0.000244140625f;
-        m180.m[1][3] = entry->actor->matrix[10];
-        m180.m[2][0] = entry->actor->matrix[2] * 0.000244140625f;
-        m180.m[2][1] = entry->actor->matrix[5] * 0.000244140625f;
-        m180.m[2][2] = entry->actor->matrix[8] * 0.000244140625f;
-        m180.m[2][3] = entry->actor->matrix[11];
+        {
+            Actor* a = lbl_80495D84[index].actor;
+            float r00, r01, r02, r10, r11, r12, r20, r21, r22;
+            float px, py, pz;
+            r00 = a->matrix[0] * 0.000244140625f;
+            r01 = a->matrix[3] * 0.000244140625f;
+            r02 = a->matrix[6] * 0.000244140625f;
+            r10 = a->matrix[1] * 0.000244140625f;
+            r11 = a->matrix[4] * 0.000244140625f;
+            r12 = a->matrix[7] * 0.000244140625f;
+            r20 = a->matrix[2] * 0.000244140625f;
+            r21 = a->matrix[5] * 0.000244140625f;
+            r22 = a->matrix[8] * 0.000244140625f;
+            px = a->matrix[9];
+            py = a->matrix[10];
+            pz = a->matrix[11];
+            m180.m[0][0] = r00;
+            m180.m[0][1] = r01;
+            m180.m[0][2] = r02;
+            m180.m[0][3] = px;
+            m180.m[1][0] = r10;
+            m180.m[1][1] = r11;
+            m180.m[1][2] = r12;
+            m180.m[1][3] = py;
+            m180.m[2][0] = r20;
+            m180.m[2][1] = r21;
+            m180.m[2][2] = r22;
+            m180.m[2][3] = pz;
+            m180.m[0][0] *= -1.0f;
+            m180.m[0][1] *= -1.0f;
+            m180.m[0][2] *= -1.0f;
+        }
         fn_800091D4(&m180, &m180, &tmp, 1);
-        fn_80009848(-lbl_804D5158, &entry->texMtx, &m180);
+        fn_80009848(-lbl_804D5158, &lbl_80495D84[index].texMtx, &m180);
 
         msg.unk4 = 1;
-        SendMsg(entry->msgTarget, 0xC00, &msg);
+        SendMsg(lbl_80495D84[index].msgTarget, 0xC00, &msg);
         fn_800C5E9C(0);
 
-        lbl_80495D78.x = entry->actor2->matrix[9];
-        lbl_80495D78.y = entry->actor2->matrix[10];
-        lbl_80495D78.z = entry->actor2->matrix[11];
+        lbl_80495D78.x = lbl_80495D84[index].actor2->matrix[9];
+        lbl_80495D78.y = lbl_80495D84[index].actor2->matrix[10];
+        lbl_80495D78.z = lbl_80495D84[index].actor2->matrix[11];
     }
 
     lbl_804D308C = index;
     return 1;
+    }
+    lbl_804D308C = -1;
+    return 0;
 }
 
 int ReflectUpdateCamera(void) {
