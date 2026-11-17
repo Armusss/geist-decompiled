@@ -668,12 +668,13 @@ void Actor62DrawPathTrail(void* p)
         Draw3DBegin((int)AssetFind(0xF2E2BEB8, 0xF6298F9), 0);
         for (i = 0; i < 0x9E; i++) {
             PathSeg* seg = &a->path[i];
-            if (a->path[i].f > 0.0f) {
-                f32 k = 1.0f - a->path[i].f / lbl_804D5760;
+            if (seg->f > 0.0f) {
+                f32 k = 1.0f - seg->f / lbl_804D5760;
                 f32 alpha = 255.0f * (1.0f - k);
+                f32 size = 560.0f * k + 40.0f;
 
-                DrawWorldQuadFlipped((560.0f * k + 40.0f) * seg->h,
-                                     seg->g, &seg->pos, 0xff, 0xff, 0xff,
+                size *= seg->h;
+                DrawWorldQuadFlipped(size, seg->g, &seg->pos, 0xff, 0xff, 0xff,
                                      (int)alpha & 0xff);
             }
         }
