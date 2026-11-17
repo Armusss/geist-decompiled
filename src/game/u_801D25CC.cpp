@@ -379,19 +379,29 @@ int RoomGeomSphereCollide(Geom* o1, Geom* o2, int flags, ContactGeom* contacts, 
 }
 
 // Is the point (on the triangle's plane) inside the triangle? The three edge tests must agree in sign.
+// n . (a x b)
+inline float TripleDot(Plane* n, Vec3* a, Vec3* b) {
+    return n->x * (a->y * b->z - a->z * b->y) + n->y * (a->z * b->x - a->x * b->z) + n->z * (a->x * b->y - a->y * b->x);
+}
+
 int RoomGeomPointInTri(Vec3* p, Plane* n, Tri* t) {
-    float ax = p->x - t->v[0].x;
-    float ay = p->y - t->v[0].y;
-    float az = p->z - t->v[0].z;
-    float bx = p->x - t->v[1].x;
-    float by = p->y - t->v[1].y;
-    float bz = p->z - t->v[1].z;
-    float cx = p->x - t->v[2].x;
-    float cy = p->y - t->v[2].y;
-    float cz = p->z - t->v[2].z;
-    float d0 = n->z * (ax * by - ay * bx) + n->x * (ay * bz - az * by) + n->y * (az * bx - ax * bz);
-    float d1 = n->z * (bx * cy - by * cx) + n->x * (by * cz - bz * cy) + n->y * (bz * cx - bx * cz);
-    float d2 = n->z * (cx * ay - cy * ax) + n->x * (cy * az - cz * ay) + n->y * (cz * ax - cx * az);
+    Vec3 a;
+    Vec3 b;
+    Vec3 c;
+    float d0, d1, d2;
+
+    a.x = p->x - t->v[0].x;
+    a.y = p->y - t->v[0].y;
+    a.z = p->z - t->v[0].z;
+    b.x = p->x - t->v[1].x;
+    b.y = p->y - t->v[1].y;
+    b.z = p->z - t->v[1].z;
+    c.x = p->x - t->v[2].x;
+    c.y = p->y - t->v[2].y;
+    c.z = p->z - t->v[2].z;
+    d0 = TripleDot(n, &a, &b);
+    d1 = TripleDot(n, &b, &c);
+    d2 = TripleDot(n, &c, &a);
 
     if ((d0 >= 0.0f && d1 >= 0.0f && d2 >= 0.0f) || (d0 <= 0.0f && d1 <= 0.0f && d2 <= 0.0f)) {
         return 1;
