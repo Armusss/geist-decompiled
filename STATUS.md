@@ -106,6 +106,15 @@ then caller locals (first declared first), then parameters (last first). Crowded
 lowest cost/degree value is pushed first and sinks to the bottom registers. SAM, GunHostState13Enter and fn_80286EAC are
 crowded-regime cases (none fixed yet); next step is deriving the cost formula with 10+-local toys.
 
+**Fable round (2026-11-16/17, Fable 5.1 then 5.2 via headless CLI):** register ranking (small regime fixed order; crowded
+regime = 18-neighbour threshold), shared engine headers (include/game, 151 units), loop step-order rule (second induction
+variable), scheduling rules (per-block, `mr` in the call's block reverses argument setup). Store.c and VM.c fully matched;
+VMAllocPages, EffectEmitterShutdown matched. All in docs/matching-tricks.md; summary added to the Opus brief
+(~/geist-work/ds/fullmatch.task.md). Still open: HostRide `li r4` case (block-identical to addi-first callbacks; 9 of 11 load
+actor+0x130), RideBehavior switch, HostDie, HostRideMsg, SltInit, GhostGunUpdate. Decisions pending with the user: "Actor"
+names three objects (renaming P5Actor symbols), BitsetAllocIndices parameter swap, SAM renames for u_8016A774's flip.
+96/233 files Matching, 2,984 functions.
+
 **Recurring unsolved shapes (fullmatch round 2026-11-15):**
 - `li r4,9` before `addi r3,rX,624` at a HasCondition call: HostRideBUpdate/HostRideTick (2 diffs each), BehParamsUpdate,
   CreatureUpdate, NpcSveUpdateActor, fn_801CAA48, fn_80295634, fn_8004C9C8, CrabUpdate. `#pragma scheduling off` (probe) still
