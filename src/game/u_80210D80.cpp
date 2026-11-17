@@ -620,120 +620,116 @@ struct GhostMsgData {
     int animHash;               // 0x14
 };
 
-// True when the owner behind `modelId` carries the white-out type hash, or the
-// shared white-out check accepts it.
-static inline bool IsWhiteOutOwner(unsigned int modelId)
+static inline int WhiteOutHitMsg(GhostMsgData* msgData)
 {
-    OwnerInfo* info = OwnerGetInfo(modelId);
-    if (info == 0) {
-        return false;
+    Actor* target = msgData->actor;
+    GhostState* beh = ((GhostState*)target->data);
+    if ((beh->field18 & 8) != 0) {
+        return 1;
     }
-    return info->field128 == 0x2c3fd46c || fn_80049940(info->field128) != 0;
+    int type = msgData->modelId >> 24;
+    if (type != 2 && type != 1 && type != 0x13) {
+        return 1;
+    }
+    if (type == 0x13) {
+        OwnerInfo* info = OwnerGetInfo(msgData->modelId);
+        if (info == 0 || (info->field128 != 0x2c3fd46c && fn_80049940(info->field128) == 0)) {
+            return 1;
+        }
+    }
+    switch (msgData->animHash) {
+    case 0x1ba3ee4a:
+    case -0x4603bd0b:
+        beh->field10 = 0.0f;
+        break;
+    case 0x11a6b:
+    case 0x403548d0:
+        break;
+    default:
+        beh->field10 = beh->field10 - msgData->value.amount;
+        break;
+    }
+    if (beh->field10 > 0.0f) {
+        beh->field14 = 0.0f;
+    }
+    if ((beh->field18 & 0x80000000) == 0 && beh->field10 <= 0.0f) {
+        WhiteOutEffectStart(target, msgData->modelId, 1);
+    }
+    return 1;
 }
 
-// White-out ghost message handler: drives the fade/visibility state and the
-// HUD white-out notification; anything it does not own goes to the shared
-// possessable message handler.
+static inline int WhiteOutEventMsg(GhostMsgData* msgData)
+{
+    Actor* target = msgData->actor;
+    GhostState* beh = ((GhostState*)target->data);
+    switch (msgData->value.flag) {
+    case 0x672f35c2:
+        if (fn_802A1D04() != 0) {
+            int player = HandleToPlayer(msgData->modelId);
+            if (player >= 0) {
+                unsigned long key;
+                const char* text = StrFindKey(0x2df0c512, &key);
+                HudMessageN(player, text, key, 1.0f, 1.0f, 1.0f, 32.0f);
+            }
+        }
+        break;
+    case -0x30fe9b1e:
+        beh->field18 |= 0x40000000;
+        return 1;
+    case 0x6c345908:
+        fn_800C7B78(target);
+        return 1;
+    }
+    return 0;
+}
+
+static inline int WhiteOutScriptMsg(GhostMsgData* msgData)
+{
+    Actor* target = msgData->actor;
+    GhostState* beh = ((GhostState*)target->data);
+    switch (msgData->hash) {
+    case -0x233c7b3f:
+        WhiteOutEffectStart(target, target->handle, 1);
+        return 1;
+    case -0x13ff57cf:
+        WhiteOutEffectStart(target, target->handle, 0);
+        return 1;
+    case -0x120729ad:
+        beh->field18 |= 0x10000000;
+        WhiteOutEffectStart(target, target->handle, 1);
+        return 1;
+    case -0x203a3a46:
+        if (msgData->value.flag != 0) {
+            beh->field18 |= 0x8000000;
+        } else {
+            beh->field18 &= 0xf7ffffff;
+        }
+        break;
+    }
+    return 0;
+}
+
 int Fn802120A0(Actor* actor, int msg, void* data, int arg)
 {
-    GhostMsgData* msgData = (GhostMsgData*)data;
     int result = 0;
-
     switch (msg) {
-    case 0x407: {
-        Actor* target = msgData->actor;
-        GhostState* beh = ((GhostState*)target->data);
-        unsigned int type = msgData->modelId >> 24;
-
-        if ((beh->field18 & 8) == 0 &&
-                (type == 1 || type == 2 || type == 0x13) &&
-                (type != 0x13 || IsWhiteOutOwner(msgData->modelId))) {
-            switch (msgData->animHash) {
-            case 0x1ba3ee4a:
-            case -0x4603bd0b:
-                beh->field10 = 0.0f;
-                break;
-            case 0x11a6b:
-            case 0x403548d0:
-                break;
-            default:
-                beh->field10 = beh->field10 - msgData->value.amount;
-                break;
-            }
-            if (beh->field10 > 0.0f) {
-                beh->field14 = 0.0f;
-            }
-            if ((beh->field18 & 0x80000000) == 0 &&
-                    beh->field10 <= 0.0f) {
-                WhiteOutEffectStart(target, msgData->modelId, 1);
-            }
-        }
-        result = 1;
+    case 0x407:
+        result = WhiteOutHitMsg((GhostMsgData*)data);
+        break;
+    case 0xc14:
+        result = WhiteOutEventMsg((GhostMsgData*)data);
+        break;
+    case 0x41d:
+        result = WhiteOutScriptMsg((GhostMsgData*)data);
         break;
     }
-    case 0xc14: {
-        Actor* target = msgData->actor;
-        GhostState* beh = ((GhostState*)target->data);
-
-        switch (msgData->value.flag) {
-        case 0x672f35c2:
-            if (fn_802A1D04() != 0) {
-                int player = HandleToPlayer(msgData->modelId);
-                if (player >= 0) {
-                    unsigned long key;
-                    const char* text = StrFindKey(0x2df0c512, &key);
-                    HudMessageN(player, text, key, 1.0f,
-                                1.0f, 1.0f, 32.0f);
-                }
-            }
-            break;
-        case -0x30fe9b1e:
-            beh->field18 |= 0x40000000;
-            result = 1;
-            break;
-        case 0x6c345908:
-            fn_800C7B78(target);
-            result = 1;
-            break;
-        }
-        break;
-    }
-    case 0x41d: {
-        Actor* target = msgData->actor;
-        GhostState* beh = ((GhostState*)target->data);
-
-        switch (msgData->hash) {
-        case -0x233c7b3f:
-            WhiteOutEffectStart(target, target->handle, 1);
-            result = 1;
-            break;
-        case -0x13ff57cf:
-            WhiteOutEffectStart(target, target->handle, 0);
-            result = 1;
-            break;
-        case -0x120729ad:
-            beh->field18 |= 0x10000000;
-            WhiteOutEffectStart(target, target->handle, 1);
-            result = 1;
-            break;
-        case -0x203a3a46:
-            if (msgData->value.flag != 0) {
-                beh->field18 |= 0x8000000;
-            } else {
-                beh->field18 &= 0xf7ffffff;
-            }
-            break;
-        }
-        break;
-    }
-    }
-
     if (result == -999999) {
-        result = 0;
-    } else if (result == 0) {
-        result = PossessableMsg(actor, msg, data, arg);
+        return 0;
     }
-    return result;
+    if (result != 0) {
+        return result;
+    }
+    return PossessableMsg(actor, msg, data, arg);
 }
 
 // ---------------------------------------------------------------------------
