@@ -595,7 +595,7 @@ void ModelNodeSetup(int node, int asset, int a, int b);
 
 // White-out ghost initialisation: allocates and clears the behaviour block,
 // marks the actor possessable and sets up its overlay model node.
-extern "C" void fn_80211E38(Actor* actor)
+extern "C" int fn_80211E38(Actor* actor)
 {
     int node;
     GhostState* beh = ((GhostState*)actor->data);
@@ -632,6 +632,7 @@ extern "C" void fn_80211E38(Actor* actor)
             g->field18 |= 0x30000000;
         }
     }
+    return active;
 }
 
 // White-out ghost init: clears the behaviour block, marks the actor
