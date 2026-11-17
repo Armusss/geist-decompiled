@@ -473,9 +473,9 @@ void Fn80211AA4(Actor* actor, float dt)
         if (flags & 0x40000000) {
             unsigned int id = beh->field0C;
             if ((int)(id >> 24) == 2) {
-                WhiteOutGhost* msg[8];
+                int msg[8];
                 SendMsg(id, 0x400, msg);
-                WhiteOutGhost* ghost = msg[0];
+                WhiteOutGhost* ghost = (WhiteOutGhost*)msg[0];
                 if (ghost->field14CC != -1) {
                     FontRelease(ghost->field14CC);
                     ghost->field14CC = -1;
@@ -493,7 +493,7 @@ void Fn80211AA4(Actor* actor, float dt)
             beh->field10 = 0.0f;
             WhiteOutEffectStart(actor, id, 1);
         }
-    } else if (beh->field30 != 0.0f) {
+    } else if (beh->field30) {
         if ((flags & 0x8000000) != 0) {
             beh->field30 = beh->field30 - dt;
             if (beh->field30 < 0.0f) {
