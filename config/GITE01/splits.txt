@@ -75,6 +75,10 @@ game/u_800448D0.cpp:
 
 game/Store.c:
 	.text       start:0x800451D8 end:0x80045EBC
+	.rodata     start:0x803427F8 end:0x80342860
+	.bss        start:0x80410620 end:0x8041FFD8
+	.sdata      start:0x804D26E0 end:0x804D26E8
+	.sbss       start:0x804D43A0 end:0x804D43B8
 
 game/FearActor.c:
 	.text       start:0x80045EBC end:0x80064FD4

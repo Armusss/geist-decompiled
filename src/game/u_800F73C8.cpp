@@ -281,8 +281,12 @@ struct EffectRow {
     u32 index;              // 0x0C
 };
 
-struct Vector {
-    u8 pad00[8];
+struct VectorBase {
+    virtual ~VectorBase();
+};
+
+struct Vector : VectorBase {
+    int unk4;
     u32 bytes;              // 0x08
     char* data;             // 0x0C
 };
@@ -727,6 +731,39 @@ extern "C" void fn_8028B35C(Vector* v, void* it, int bytes);
 void EffectEmitterShutdown(void);
 void fn_800F86A0(u32 handle);
 
+// Calls one handler (by offset in the kind record) of every effect kind. The byte offset is a second
+// induction variable in the source: retail steps the counter before the offset, which the compiler's own
+// strength reduction never does.
+static inline void EffectKindsCall(int handler) {
+    u32 k;
+    int off;
+    for (k = 0, off = 0; k < gEffectKinds->bytes >> 2; k++, off += 4) {
+        EffectKind* kind = *(EffectKind**)(gEffectKinds->data + off);
+        if (kind != NULL && *(void (**)(void))((char*)kind + handler) != NULL) {
+            (*(void (**)(void))((char*)kind + handler))();
+        }
+    }
+}
+
+// Vector clear: erase(begin, end) on the typed element range.
+static inline void EffectRowsClear(Vector* v) {
+    u32 bytes = v->bytes;
+    if (bytes >> 4 != 0) {
+        EffectRow* first = (EffectRow*)v->data;
+        EffectRow* last = (EffectRow*)(v->data + bytes);
+        fn_8028B35C(v, first, (last - first) * sizeof(EffectRow));
+    }
+}
+
+static inline void EffectKindsClear(Vector* v) {
+    u32 bytes = v->bytes;
+    if (bytes >> 2 != 0) {
+        EffectKind** first = (EffectKind**)v->data;
+        EffectKind** last = (EffectKind**)(v->data + bytes);
+        fn_8028B35C(v, first, (last - first) * sizeof(EffectKind*));
+    }
+}
+
 void EffectEmitterShutdown(void) {
     u32 i;
     u32 bytes;
@@ -736,31 +773,11 @@ void EffectEmitterShutdown(void) {
         fn_800F86A0(i & 0xFFFFFF | 0x4C000000);
         i++;
     } while ((int)i < 0x100);
-    {
-        u32 k;
-        int off = 0;
-        for (k = 0; k < gEffectKinds->bytes >> 2; k++) {
-            EffectKind* kind = *(EffectKind**)(gEffectKinds->data + off);
-            if (kind != NULL && *(void (**)(void))((char*)kind + 0x10) != NULL) {
-                (*(void (**)(void))((char*)kind + 0x10))();
-            }
-            off += 4;
-        }
-    }
-    bytes = gEffectRows->bytes;
-    if (bytes >> 4 != 0) {
-        fn_8028B35C(gEffectRows, gEffectRows->data, ((int)bytes / 16) * 16);
-    }
-    bytes = gEffectKinds->bytes;
-    if (bytes >> 2 != 0) {
-        fn_8028B35C(gEffectKinds, gEffectKinds->data, ((int)bytes / 4) * 4);
-    }
-    if (gEffectKinds != NULL) {
-        ((void (*)(Vector*, int))(*(void***)gEffectKinds)[2])(gEffectKinds, 1);
-    }
-    if (gEffectRows != NULL) {
-        ((void (*)(Vector*, int))(*(void***)gEffectRows)[2])(gEffectRows, 1);
-    }
+    EffectKindsCall(0x10);
+    EffectRowsClear(gEffectRows);
+    EffectKindsClear(gEffectKinds);
+    delete gEffectKinds;
+    delete gEffectRows;
 }
 
 extern EffectInst gInstances[0x200];    // 0x80458F70
@@ -827,57 +844,50 @@ void fn_800F8ED0(void) {
 // post-load handler.
 int EffectTablesLoad(void) {
     int count = VarGroupObjCount(0x47F42363);
-    int i;
-    u32 k;
     int off;
+    u32 table;
+    EffectKind* kind;
+    u32 k;
+    int i;
     for (i = 0; i < count; i++) {
         int key = VarObjKey(0x47F42363, i);
-        int hash = VarGetHash(0x47F42363, i, 0x3DC50993);
-        EffectKind* kind = NULL;
-        u32 n = gEffectKinds->bytes >> 2;
-        int o = 0;
-        u32 table;
         int index;
+        u32 hash;
+        u32 j;
+        int o;
         int ev;
         EffectRow* row;
-        while (true) {
-            if (n == 0) {
-                kind = NULL;
+        kind = NULL;
+        hash = VarGetHash(0x47F42363, i, 0x3DC50993);
+        for (j = 0; j < gEffectKinds->bytes >> 2; j++) {
+            EffectKind* c = ((EffectKind**)gEffectKinds->data)[j];
+            if (hash == c->hash) {
+                kind = c;
                 break;
             }
-            kind = *(EffectKind**)(gEffectKinds->data + o);
-            if (hash == (int)kind->hash) {
-                break;
-            }
-            o += 4;
-            n--;
         }
         table = VarGetHash(0x47F42363, i, 0x7300AB12);
-        ev = GameEvent(0xC0A77187, Fn800DF3B8(0x47F42363, i, 0x8DD0EEE7));
-        index = Fn800DF814(table, ev);
+        ev = Fn800DF3B8(0x47F42363, i, 0x8DD0EEE7);
+        index = Fn800DF814(table, GameEvent(0xC0A77187, ev));
         row = (EffectRow*)fn_8028B3BC(gEffectRows, gEffectRows->data + gEffectRows->bytes, 0x10);
         row->id = key;
         row->unk04 = (int)kind;
         row->table = table;
         row->index = index;
     }
-    off = 0;
-    for (k = 0; k < gEffectKinds->bytes >> 2; k++) {
+    for (k = 0, off = 0; k < gEffectKinds->bytes >> 2; k++, off += 4) {
         EffectKind* kind = *(EffectKind**)(gEffectKinds->data + off);
         if (kind != NULL && *(void (**)(void))((char*)kind + 0xC) != NULL) {
             (*(void (**)(void))((char*)kind + 0xC))();
         }
-        off += 4;
     }
     return 1;
 }
 
 // Sets up the emitter and instance pools and the effect vectors.
 int EffectEmitterInit(void) {
-    u32 k;
     int i;
     char* p;
-    int off;
     memset(gEmitters, 0, 0x1000);
     memset(gInstances, 0, 0x3800);
     gEmitterPool = 0;
@@ -909,14 +919,7 @@ int EffectEmitterInit(void) {
         gEffectRows = v;
     }
     fn_800EB834();
-    off = 0;
-    for (k = 0; k < gEffectKinds->bytes >> 2; k++) {
-        EffectKind* kind = *(EffectKind**)(gEffectKinds->data + off);
-        if (kind != NULL && *(void (**)(void))((char*)kind + 8) != NULL) {
-            (*(void (**)(void))((char*)kind + 8))();
-        }
-        off += 4;
-    }
+    EffectKindsCall(8);
     return 1;
 }
 

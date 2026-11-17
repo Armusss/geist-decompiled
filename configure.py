@@ -588,7 +588,7 @@ config.libs = [
             Object(NonMatching, "game/u_8003B98C.cpp"),  # guess
             Object(NonMatching, "game/u_8003CC90.cpp"),  # guess
             Object(NonMatching, "game/u_800448D0.cpp"),  # meshes, split from Store.c
-            Object(NonMatching, "game/Store.c"),  # guess
+            Object(Matching, "game/Store.c"),
             Object(NonMatching, "game/FearActor.c"),  # guess
             Object(NonMatching, "game/u_80064FD4.cpp"),  # guess
             Object(Matching, "game/u_80067FF8.cpp"),  # known

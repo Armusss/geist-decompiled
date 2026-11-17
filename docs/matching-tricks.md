@@ -298,3 +298,33 @@ Placement), `string.h` (Buffer, String), `msg.h` (QueryMsg, QueryResult, MsgResu
 - Tools (local): ~/geist-work/ds/fable-types-tools/ — `ud.py snap|cmp` (per-function diff counts and object hash
   for all units in 3 s), `fields.py NAME` (merged offset table of every local definition of a struct),
   `conv.py` / `sconv.py` (replace local definitions by a header, keep only if no function gets worse).
+
+## Loop step order: counter before the offset means a second induction variable in the source (fable-loop, 2026-11-16)
+Retail has for/while loops (entered by a jump to the test) whose latch is `addi rI,rI,1` followed by the offset or
+pointer step (`addi rO,rO,8`). A plain `for (i = 0; i < n; i++) a[i]` never gives that: the offset the compiler
+makes by strength reduction is always stepped **before** the counter. The rule, measured with toys
+(~/geist-work/ds/fable-loop-tools/l1.cpp, l2.cpp; predictions in l1.pred.txt and the head of l2.cpp, 19 of 19 hit):
+- **The compiler's own strength-reduced offset is stepped before the counter**, whatever the index expression:
+  `a[k]`, `*(T*)(base + k * 4)`, `k << 2`, `k * sizeof(T)`, an `int off = k * 4` local in the body, an inline
+  accessor `At(v, k)`, a template `operator[]`, signed or unsigned, in an inline or not (l1 A/C/F/G, l2 all 7).
+- **Two induction variables written in the source keep the source order of their updates**: `k++, off += 4` gives
+  counter first, `off += 4, k++` (or `off += 4;` as the last body statement before the for step) gives offset first
+  (l1 B/B2/H/I). A second index (`i++, j++` with `a[j]`) also keeps the order (l1 E/E2), but its derived offset is a
+  compiler temporary, which ranks below the named locals.
+- So retail's order means the source had an explicit second variable stepped after the counter, usually a byte
+  offset added to a base that is reloaded every iteration: `for (k = 0, off = 0; k < v->bytes >> 2; k++, off += 4)
+  { T* p = *(T**)(v->data + off); ... }`.
+- Registers: inside an inline the two rank like any inline locals (last declared = highest) and the zero
+  initialisers merge (`li k,0; mr off,k`, l1 D/D2); in a plain function they are `li`/`li`. Retail's init pair
+  therefore tells whether the loop sits in an inline (EffectEmitterInit/Shutdown: li/mr; EffectTablesLoad: li/li).
+- The opposite order (offset, counter, pointer: BitsetAllocIndices `addi base,32; addi i,1; addi bits,4`) is a
+  derived value (`idx = i * 32`) plus an explicit `i++, bits++`.
+Matched with it: Store.c StoreSave/StoreInit (the inline StoreLoadBanner: `u8* dst; int i; int off;`,
+`for (dst = icons, i = 1, off = 8; ...; i++, off += 8)`, `tex = *(TPLHeader**)((u8*)pal->descriptorArray + off)`;
+this also gives retail's dst=r27/i=r28/off=r29), EffectEmitterShutdown (inline `EffectKindsCall`), and the loops of
+EffectEmitterInit and EffectTablesLoad (78 -> 9). Scanner for the remaining retail sites:
+~/geist-work/ds/fable-loop-tools/scan.py (25 for-loops; most are in functions not written yet: fn_8003E1C8,
+fn_8004B378, fn_800C9D3C, AnimApply and three neighbours, u_80277600, fn_8029AC60).
+Side finds in u_800F73C8: a vector clear is `erase(first, last)` on typed pointers
+(`fn(v, first, (last - first) * sizeof(T))` gives `add; subf; srawi; addze; slwi`), and `delete v` on a class with a
+virtual destructor in a vptr-only base gives the `lwz r12,0(r3); li r4,1; lwz r12,8(r12)` call.

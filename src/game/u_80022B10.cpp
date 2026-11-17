@@ -944,12 +944,11 @@ void BitsetSetAll(void* bitsv, int nbits) {
 
 void BitsetAllocIndices(u32* bits, int n, s32* out, int count) {
     int words = (n - 1) / 32 + 1;
-    s32 base = 0;
-    for (int i = 0; i < words; i++, bits++, base += 32) {
+    for (int i = 0; i < words; i++, bits++) {
         u32 w = *bits;
         if (w == 0xffffffff)
             continue;
-        s32 idx = base;
+        s32 idx = i * 32;
         for (int j = 0; j < 32; j++) {
             if (!(w & (1u << j))) {
                 *bits |= 1u << j;
