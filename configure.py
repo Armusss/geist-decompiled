@@ -692,7 +692,20 @@ config.libs = [
             Object(NonMatching, "game/u_801AADA8.cpp"),  # pinned
             Object(NonMatching, "game/u_801AE50C.cpp"),  # pinned
             Object(Matching, "game/VMem.cpp"),  # known start; end 0x801BF578 (helper-game-b)
-            Object(NonMatching, "game/u_801BF578.cpp"),  # split from VMem
+            Object(NonMatching, "game/u_801BF578.cpp"),  # own POSSESS pool 0x803486C8, state table 0x803ABBA8
+            Object(NonMatching, "game/u_801C02FC.cpp"),  # own pool 0x80348718, 161-entry state table 0x803ABBC0, own 0.0/1.0 consts
+            Object(NonMatching, "game/u_801C8B6C.cpp"),  # ASHEAVY effect type 0x803ACAD8 (reset cb is first fn)
+            Object(NonMatching, "game/u_801C9CE0.cpp"),  # AshBullet effect type 0x803ACB08 (destroy cb is first fn) + asset preload
+            Object(NonMatching, "game/u_801CA16C.cpp"),  # own pool 0x80348818, state table 0x803ACB38
+            Object(NonMatching, "game/u_801CC6D0.cpp"),  # Script Move actor type 0x803ACBB8, register fn first
+            Object(NonMatching, "game/u_801CDFBC.cpp"),  # fn table 0x803ACC08, rat_jump pool 0x80348888
+            Object(NonMatching, "game/u_801D0C18.cpp"),  # Fire actor type 0x803AD370, own pool 0x803488D8
+            Object(NonMatching, "game/u_801D2694.cpp"),  # own consts 0x804D8BD0.., sbss 0x804D5198
+            Object(NonMatching, "game/u_801D4738.cpp"),  # own consts 0x804D8C20.., materials 0x803ADB90
+            Object(NonMatching, "game/u_801D8134.cpp"),  # app-system hooks, sbss 0x804D51D0 block
+            Object(NonMatching, "game/u_801D8768.cpp"),  # LCCopy, sbss 0x804D51E0 block
+            Object(Matching, "game/u_801D8994.cpp"),  # Gfx state, sbss 0x804D51F0 block
+            Object(NonMatching, "game/u_801D8FD4.cpp"),  # msg 0x74xx helpers, own consts 0x804D8C80..
             Object(NonMatching, "game/u_801D9A70.cpp"),  # guess
             Object(NonMatching, "game/u_801E0EDC.cpp"),  # guess
             Object(NonMatching, "game/u_801E241C.cpp"),  # pinned
