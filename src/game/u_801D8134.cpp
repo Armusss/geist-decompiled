@@ -102,7 +102,6 @@ extern "C" void fn_801D8168(void) {  // PropsNotify: 0x800, or 0x803 while savin
 static inline void PropSpawn(int i) {
     PropObj* o = &sObjs[i];
     PropRec* r = &sRecs[i];
-    int handler = (int)fn_801D85F8;
     o->visible = 1;
     MtxSetEuler((Mtx34*)&o->local, &r->euler);
     o->local.pos.x = r->offB.x + r->offA.x;
@@ -115,7 +114,7 @@ static inline void PropSpawn(int i) {
     o->place.pos.x = (int)r->pos.x;
     o->place.pos.y = (int)r->pos.y;
     o->place.pos.z = (int)r->pos.z;
-    ActorFn8002378C((Actor*)o, (i & 0xFFFFFF) | 0x8000000, (int)o, handler, 0, 0, 0);
+    ActorFn8002378C((Actor*)o, (i & 0xFFFFFF) | 0x8000000, (int)o, (int)fn_801D85F8, 0, 0, 0);
     ActorFn80022D98((Actor*)o, 0);
 }
 
