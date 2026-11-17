@@ -368,3 +368,12 @@ What is established:
   behaviour pointer (s6), a sub-struct pointer at +0x130 shared by the load and the condition pointer (s8), the
   constant in a variable set before the test (s9 A-C). A loop counter (`for (c = 9; ...)`) gives `mr r4,r29 | addi r3`
   but keeps the counter register (s9 D-F).
+- **A compiler temp initialised on the wrong side of a call is an explicit variable in the source.** VM.c fn_80286EAC:
+  retail has `li r29,0 | li r31,0 | bl OSDisableInterrupts`, the strength-reduced `i*2` of `refs[i]` gave
+  `li r29,0 | bl | li r31,0` (the scheduler never moves anything across a call). Written as its own variable, set
+  before the call and stepped in the loop test, it matches: `i = 0; off = 0; OSDisableInterrupts();
+  while (off += 2, i++ <= count) { if (*(s16*)((u8*)refs + off) != 0) continue; ...`, with `off` declared first
+  (r31). VM.c is now Matching.
+- Tried without effect: SltInit (address of sSlots before sGroups: pointer locals for either table, `sGroups + 1`,
+  9 variants in fable-sched-tools/slt_var.py, all 5); GhostGunUpdate message block (31 statement orders and temp
+  choices in gg_var.py: 24-27, the committed form stays at 9).
