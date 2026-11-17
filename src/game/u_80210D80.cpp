@@ -90,67 +90,28 @@ extern "C" void fn_80210FC8(float* pts, int stride, int count, int texture,
     for (int i = 0; i < count; i++) {
         if (p[1] > zero) {
             if (p[0] > zero) {
-                float a0;
-                float a1;
-                float a2;
-                float a3;
-                if (p[0] < rampA[0]) {
-                    float t = rampA[0] > 1.1920929e-07f ? p[0] / rampA[0] : 1.0f;
-                    a0 = t * (rampA[6] - rampA[2]) + rampA[2];
-                    a1 = t * (rampA[7] - rampA[3]) + rampA[3];
-                    a2 = t * (rampA[8] - rampA[4]) + rampA[4];
-                    a3 = t * (rampA[9] - rampA[5]) + rampA[5];
-                } else if (p[1] < rampA[1]) {
-                    float t = rampA[1] > 1.1920929e-07f ? p[1] / rampA[1] : 1.0f;
-                    a0 = t * (rampA[6] - rampA[10]) + rampA[10];
-                    a1 = t * (rampA[7] - rampA[11]) + rampA[11];
-                    a2 = t * (rampA[8] - rampA[12]) + rampA[12];
-                    a3 = t * (rampA[9] - rampA[13]) + rampA[13];
-                } else {
-                    a0 = rampA[6];
-                    a1 = rampA[7];
-                    a2 = rampA[8];
-                    a3 = rampA[9];
-                }
-                float b0;
-                float b1;
-                float b2;
-                float b3;
-                if (p[0] < rampB[0]) {
-                    float t = rampB[0] > 1.1920929e-07f ? p[0] / rampB[0] : 1.0f;
-                    b0 = t * (rampB[6] - rampB[2]) + rampB[2];
-                    b1 = t * (rampB[7] - rampB[3]) + rampB[3];
-                    b2 = t * (rampB[8] - rampB[4]) + rampB[4];
-                    b3 = t * (rampB[9] - rampB[5]) + rampB[5];
-                } else if (p[1] < rampB[1]) {
-                    float t = rampB[1] > 1.1920929e-07f ? p[1] / rampB[1] : 1.0f;
-                    b0 = t * (rampB[6] - rampB[10]) + rampB[10];
-                    b1 = t * (rampB[7] - rampB[11]) + rampB[11];
-                    b2 = t * (rampB[8] - rampB[12]) + rampB[12];
-                    b3 = t * (rampB[9] - rampB[13]) + rampB[13];
-                } else {
-                    b0 = rampB[6];
-                    b1 = rampB[7];
-                    b2 = rampB[8];
-                    b3 = rampB[9];
-                }
+                float a[4];
+                float b[4];
+                RampColor(a, p[0], p[1], rampA);
+                RampColor(b, p[0], p[1], rampB);
                 float end[3];
                 end[0] = p[5] * scale;
                 end[1] = p[6] * scale;
                 end[2] = p[7] * scale;
+                // Retail adds the start point to itself here, overwriting the scaled velocity.
                 end[0] = p[2] + p[2];
                 end[1] = p[3] + p[3];
                 end[2] = p[4] + p[4];
                 float s = 255.0f;
                 DrawLine(p + 2, end,
-                         (unsigned char)(int)(s * a0),
-                         (unsigned char)(int)(s * a1),
-                         (unsigned char)(int)(s * a2),
-                         (unsigned char)(int)(s * a3),
-                         (unsigned char)(int)(s * b0),
-                         (unsigned char)(int)(s * b1),
-                         (unsigned char)(int)(s * b2),
-                         (unsigned char)(int)(s * b3));
+                         (unsigned char)(int)(s * a[0]),
+                         (unsigned char)(int)(s * a[1]),
+                         (unsigned char)(int)(s * a[2]),
+                         (unsigned char)(int)(s * a[3]),
+                         (unsigned char)(int)(s * b[0]),
+                         (unsigned char)(int)(s * b[1]),
+                         (unsigned char)(int)(s * b[2]),
+                         (unsigned char)(int)(s * b[3]));
             }
         }
         p = (float*)((int)p + stride);
