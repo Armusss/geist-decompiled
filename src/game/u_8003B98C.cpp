@@ -332,11 +332,12 @@ struct StreamSlot {
     DVDFileInfo file;  // +0x200c
     s32 limit;         // +0x2048
     s32 inUse;         // +0x204c
+    u8 pad2050[0x10];  // +0x2050 (slots are 0x2060 apart)
 };
 
 // A queued block: a small header followed by the payload.
 struct StreamPacket {
-    u32 id;          // +0x0000
+    s32 id;          // +0x0000
     u8 data[0x7FC];  // +0x0004
 };
 
@@ -349,8 +350,10 @@ int FileReadSync(void* file, void* buffer, int length, int offset);
 // Copies `size` bytes from the slot's current position into dest, sliding the
 // 0x2000-byte window forward when the position falls outside it.  Returns 0
 // when the window could not be refilled.
-static inline int StreamRead(StreamSlot* slot, void* dest, s32 size)
+static inline int StreamRead(void* p, void* dest, s32 size)
 {
+    StreamSlot* slot = (StreamSlot*)p;
+
     if (slot->pos < slot->bufStart || slot->pos + size >= slot->bufEnd) {
         slot->bufStart = slot->pos & 0xFFFFFFE0;
         slot->bufEnd = slot->bufStart + 0x2000;
@@ -368,58 +371,66 @@ static inline int StreamRead(StreamSlot* slot, void* dest, s32 size)
     return 1;
 }
 
-// fn_8003C008: opens `name`, skips `block` x 0x800 bytes into it and pushes
-// `count` packets onto the queue; returns 0, or a negative error on failure.
-// fn_8003C008
-extern "C" int fn_8003C008(int queue, int id, const char* name, int block, int count)
+// Opens `name` on the first free stream slot; returns the slot or 0.
+static inline StreamSlot* StreamOpen(const char* name)
 {
     StreamSlot* slots = (StreamSlot*)lbl_803F9A00;
-    StreamSlot* slot;
-    StreamPacket packet;
     s32 i;
 
-    DebugPrintf("Opening Stream: %s", name);
-
-    slot = 0;
     for (i = 0; i < 2; i++) {
         if (slots[i].inUse == 0 && DVDOpen(name, &slots[i].file) != 0) {
-            slot = &slots[i];
+            StreamSlot* slot = &((StreamSlot*)lbl_803F9A00)[i];
             slot->inUse = 1;
             slot->bufStart = 0;
             slot->bufEnd = 0;
             slot->pos = 0;
             slot->limit = slot->file.length;
-            break;
+            return slot;
         }
     }
+    return 0;
+}
+
+static inline void StreamClose(StreamSlot* slot)
+{
+    slot->inUse = 0;
+    DVDClose(&slot->file);
+}
+
+// fn_8003C008: opens `name`, skips `block` x 0x800 bytes into it and pushes
+// `count` packets onto the queue; returns 0, or a negative error on failure.
+extern "C" int fn_8003C008(unsigned long queue, int id, const char* name, int block, int count)
+{
+    StreamSlot* slot;
+    s32 i;
+    StreamPacket packet;
+    StreamPacket* p = &packet;
+
+    DebugPrintf("Opening Stream: %s", name);
+    slot = StreamOpen(name);
     if (slot == 0)
         return -1;
 
     slot->pos = block << 11;
     for (i = 0; i < count; i++) {
-        if (StreamRead(slot, &packet.id, 4) == 0) {
-            slot->inUse = 0;
-            DVDClose(&slot->file);
+        if (StreamRead(slot, &p->id, 4) != 1) {
+            StreamClose(slot);
             return -3;
         }
-        if (packet.id != (u32)id) {
-            slot->inUse = 0;
-            DVDClose(&slot->file);
+        if (packet.id != id) {
+            StreamClose(slot);
             return -4;
         }
-        if (StreamRead(slot, packet.data, 0x7FC) == 0) {
-            slot->inUse = 0;
-            DVDClose(&slot->file);
+        if (StreamRead(slot, packet.data, 0x7FC) != 1) {
+            StreamClose(slot);
             return -5;
         }
         if (QueuePush(queue, &packet, 1, 0) != 1) {
-            slot->inUse = 0;
-            DVDClose(&slot->file);
+            StreamClose(slot);
             return -6;
         }
     }
-    slot->inUse = 0;
-    DVDClose(&slot->file);
+    StreamClose(slot);
     return 0;
 }
 
