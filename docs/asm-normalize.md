@@ -103,14 +103,15 @@ What each detail produces (all confirmed by scratch compiles with GC/1.3.2 and t
   Actor62UpdatePath, AimPacketBuild, fn_8009F7A8 second call).
 
 FASTSQRT stays the 4-line block already approved (u_800E0CB8, u_8016D170 and u_80253614 match with it). It needs no new helper.
-For the SQRT-reg site, the plausible source is `register float t = 1.0f - x; asm { ps_rsqrte t, t; ps_res t, t }`.
-This is not tested; it is one site.
+For the SQRT-reg site (fn_800A109C, an acos polynomial), the source is `register float t = 1.0f - x; asm { ps_rsqrte t, t; ps_res t, t }`.
+Scratch q2.cpp gives the same 35 instructions with the same opcode sequence, so the structure is reproduced. 14 FPR numbers in the polynomial are
+still different (the order of its constant loads), and this is not tested further.
 
 ## 3. Proofs (scratch, ~/geist-work/ds/opus-asm-tools/)
 
 | function | result | remaining |
 |---|---|---|
-| fn_80184A70 (u_8017D794), v6.bak | **all 49 instructions of the inlined helper (0x80184A70-0x80184B34) byte-identical**, including stack frame, the pointer stores, frsp-forwarding, register numbers, the len slot | 10 diffs, all FPR numbers in the caller's tail (dot/reflect code after the helper) |
+| fn_80184A70 (u_8017D794), v6.bak | **all 49 instructions of the inlined helper (0x80184A70-0x80184B34) byte-identical**, including stack frame, the pointer stores, frsp-forwarding, register numbers, the len slot | 10 diffs, all FPR numbers in the caller's tail (dot/reflect code after the helper). Brute force of all declaration orders of the caller's locals (about 5k variants) does not go below 10 |
 | fn_8009F7A8 (u_8009DE94), b3.cpp, 2 calls (asm-lfs + in-place frsp-fwd) | same instruction count (133/133), every opcode, stack slot and pointer store identical | 62 diffs, all FPR numbers: retail colors sq,t -> f2,f1 and x,y,z -> f5,f4,f3, while ours gives y,z -> f2,f1 and sq,t -> f4,f3 |
 | ExtraTrailApply (u_80230504), Actor62UpdatePath (u_802A815C) | the helper window is opcode-identical, with registers shifted by one | the existing drafts differ elsewhere (frame size, control flow), so they are not a test of the helper |
 
