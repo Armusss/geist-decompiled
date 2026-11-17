@@ -1,4 +1,4 @@
-// u_801D0C18.cpp: 0x801D0C18-0x801D2694, 16 functions. The "Fire" actor type.
+// u_801D0C18.cpp: 0x801D0C18-0x801D25CC, 12 functions. The "Fire" actor type.
 // Split from u_801BF578 (0x801BF578-0x801D9A70). Evidence for the boundaries:
 //   actor type descriptor 0x803AD370 {0, "Fire", fn_801D12D8, fn_801D1054, fn_801D0E10, 0, fn_801D0FCC, ...}
 //   string pool 0x803488D8 (POSSESS..SCAN, "Fire", the firetwo/darksmoke texture paths, "imp_flame")
@@ -100,7 +100,6 @@ int fn_80049888();
 int fn_800201E4(int a, Vec3* seg, int b, int c, int d);
 void fn_8000F550(unsigned short* tex, int count);
 void fn_8000F738(unsigned short* tex, int count);
-void* fn_8026A374();
 }
 void* VAlloc(int size);
 void VFree(void* p);
@@ -615,42 +614,4 @@ int fn_801D2114(Actor* actor, Fire* f) {
         desc++;
     }
     return 1;
-}
-
-// Material callbacks registered by u_801D4738 (fn_801D7CD0); they may belong to the next file.
-extern "C" int fn_801D25CC() { return 1; }
-
-extern "C" void fn_801D25D4() {}
-
-struct Rect6 {
-    float v[6];
-};
-
-extern "C" void fn_801D25D8(int unused, Rect6* out) {
-    Rect6* src = (Rect6*)fn_8026A374();
-    out->v[0] = src->v[0];
-    out->v[1] = src->v[1];
-    out->v[2] = src->v[2];
-    out->v[3] = src->v[3];
-    out->v[4] = src->v[4];
-    out->v[5] = src->v[5];
-}
-
-extern "C" void fn_801D2694();
-extern "C" void fn_801D2F58();
-extern "C" void fn_801D2F60();
-extern "C" void fn_801D3468();
-
-extern "C" void* fn_801D2634(int pass) {
-    switch (pass) {
-    case 0:
-        return (void*)fn_801D2F60;
-    case 5:
-        return (void*)fn_801D2F58;
-    case 1:
-        return (void*)fn_801D3468;
-    case 2:
-        return (void*)fn_801D2694;
-    }
-    return 0;
 }

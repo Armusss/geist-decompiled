@@ -682,10 +682,10 @@ game/u_801CDFBC.cpp:
 	.text       start:0x801CDFBC end:0x801D0C18
 
 game/u_801D0C18.cpp:
-	.text       start:0x801D0C18 end:0x801D2694
+	.text       start:0x801D0C18 end:0x801D25CC
 
-game/u_801D2694.cpp:
-	.text       start:0x801D2694 end:0x801D4738
+game/u_801D25CC.cpp:
+	.text       start:0x801D25CC end:0x801D4738
 
 game/u_801D4738.cpp:
 	.text       start:0x801D4738 end:0x801D8134
