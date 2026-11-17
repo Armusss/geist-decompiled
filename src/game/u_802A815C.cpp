@@ -179,6 +179,13 @@ static inline Actor* FindActor62(int id)
     return 0;
 }
 
+static inline void IVec3Set(IVec3* v, int x, int y, int z)
+{
+    v->x = x;
+    v->y = y;
+    v->z = z;
+}
+
 // Allocate and link a fresh type-0x62 actor. Returns its id, or 0 on failure.
 static inline u32 CreateActor62(void)
 {
@@ -201,12 +208,8 @@ static inline u32 CreateActor62(void)
         n->field_4C = 0x44;
         n->state = 0;
         n->field_6C = 1;
-        n->pos.x = -100;
-        n->pos.y = 0;
-        n->pos.z = -100;
-        n->size.x = 100;
-        n->size.y = (int)lbl_804D5760;
-        n->size.z = 100;
+        IVec3Set(&n->pos, -100, 0, -100);
+        IVec3Set(&n->size, 100, (int)lbl_804D5760, 100);
         n->field_70 = (u8*)&n->field_80;
         n->field_74 = 3;
         AssetFind(0xF2E2BEB8, 0xF6298F9);
@@ -324,22 +327,20 @@ u32 Actor62SpawnMsg(u32 id, int* data)
             break;
         }
         if (data[3] == 0 && obj->state == 1) {
-            int out[8];
+            int out[4];
             u32 newId = CreateActor62();
-            *(f32*)(out + 1) = lbl_804D5770;
-            Actor* n = FindActor62(newId);
+            Actor* n = FindActor62(newId & 0xFFFFFF);
 
             if (n != 0) {
+                *(f32*)(out + 1) = lbl_804D5770;
                 n->state = 2;
                 memcpy(&n->field_80, &obj->field_80, 0x24);
                 memcpy(&n->field_A4, &obj->field_A4, 0x24);
                 memcpy(n->path, obj->path, 0xED0);
                 n->hdr = obj->hdr;
-                int v = fn_80212730(obj->id);
-                fn_80212814(n->id, v, -1, 1, 0, 0);
+                fn_80212814(n->id, fn_80212730(obj->id), -1, 1, 0, 0);
                 ActorFn800231A8(n);
-                v = fn_80212730(obj->id);
-                Actor62UpdatePath(n->id, out, v);
+                Actor62UpdatePath(n->id, out, fn_80212730(obj->id));
             }
             obj->state = 0;
             memset(obj->path, 0, 0xED0);
