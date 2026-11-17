@@ -16,6 +16,38 @@ extern "C" void DrawDisableTexOffsets();
 
 extern "C" double fmod(double x, double y);
 
+static inline float RampValue(float age, float life, float* r)
+{
+    if (age < r[0]) {
+        float t = r[0] > 1.1920929e-07f ? age / r[0] : 1.0f;
+        return t * (r[3] - r[2]) + r[2];
+    } else if (life < r[1]) {
+        float t = r[1] > 1.1920929e-07f ? life / r[1] : 1.0f;
+        return t * (r[3] - r[4]) + r[4];
+    }
+    return r[3];
+}
+static inline void RampColor(float* c, float age, float life, float* r)
+{
+    if (age < r[0]) {
+        float t = r[0] > 1.1920929e-07f ? age / r[0] : 1.0f;
+        c[0] = t * (r[6] - r[2]) + r[2];
+        c[1] = t * (r[7] - r[3]) + r[3];
+        c[2] = t * (r[8] - r[4]) + r[4];
+        c[3] = t * (r[9] - r[5]) + r[5];
+    } else if (life < r[1]) {
+        float t = r[1] > 1.1920929e-07f ? life / r[1] : 1.0f;
+        c[0] = t * (r[6] - r[10]) + r[10];
+        c[1] = t * (r[7] - r[11]) + r[11];
+        c[2] = t * (r[8] - r[12]) + r[12];
+        c[3] = t * (r[9] - r[13]) + r[13];
+    } else {
+        c[0] = r[6];
+        c[1] = r[7];
+        c[2] = r[8];
+        c[3] = r[9];
+    }
+}
 extern "C" void fn_80210D80(float* pts, int stride, int count, int texture,
                             void* arg, float* alphaRamp, float* colorRamp)
 {
@@ -28,41 +60,15 @@ extern "C" void fn_80210D80(float* pts, int stride, int count, int texture,
     for (int i = 0; i < count; i++) {
         if (p[1] > zero) {
             if (p[0] > zero) {
-                float c0, c1, c2, c3;
-                float alpha;
-                if (p[0] < colorRamp[0]) {
-                    float t = colorRamp[0] > 1.1920929e-07f ? p[0] / colorRamp[0] : 1.0f;
-                    c0 = t * (colorRamp[6] - colorRamp[2]) + colorRamp[2];
-                    c1 = t * (colorRamp[7] - colorRamp[3]) + colorRamp[3];
-                    c2 = t * (colorRamp[8] - colorRamp[4]) + colorRamp[4];
-                    c3 = t * (colorRamp[9] - colorRamp[5]) + colorRamp[5];
-                } else if (p[1] < colorRamp[1]) {
-                    float t = colorRamp[1] > 1.1920929e-07f ? p[1] / colorRamp[1] : 1.0f;
-                    c0 = t * (colorRamp[6] - colorRamp[10]) + colorRamp[10];
-                    c1 = t * (colorRamp[7] - colorRamp[11]) + colorRamp[11];
-                    c2 = t * (colorRamp[8] - colorRamp[12]) + colorRamp[12];
-                    c3 = t * (colorRamp[9] - colorRamp[13]) + colorRamp[13];
-                } else {
-                    c0 = colorRamp[6];
-                    c1 = colorRamp[7];
-                    c2 = colorRamp[8];
-                    c3 = colorRamp[9];
-                }
-                if (p[0] < alphaRamp[0]) {
-                    float t = alphaRamp[0] > 1.1920929e-07f ? p[0] / alphaRamp[0] : 1.0f;
-                    alpha = t * (alphaRamp[3] - alphaRamp[2]) + alphaRamp[2];
-                } else if (p[1] < alphaRamp[1]) {
-                    float t = alphaRamp[1] > 1.1920929e-07f ? p[1] / alphaRamp[1] : 1.0f;
-                    alpha = t * (alphaRamp[3] - alphaRamp[4]) + alphaRamp[4];
-                } else {
-                    alpha = alphaRamp[3];
-                }
+                float c[4];
+                RampColor(c, p[0], p[1], colorRamp);
+                float alpha = RampValue(p[0], p[1], alphaRamp);
                 float s = 255.0f;
                 DrawWorldQuadFlipped(alpha, p[11], p + 2,
-                                     (unsigned char)(int)(s * c0),
-                                     (unsigned char)(int)(s * c1),
-                                     (unsigned char)(int)(s * c2),
-                                     (unsigned char)(int)(s * c3));
+                                     (unsigned char)(int)(s * c[0]),
+                                     (unsigned char)(int)(s * c[1]),
+                                     (unsigned char)(int)(s * c[2]),
+                                     (unsigned char)(int)(s * c[3]));
             }
         }
         p = (float*)((int)p + stride);
