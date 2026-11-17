@@ -224,72 +224,96 @@ static inline u32 CreateActor62(void)
     return 0;
 }
 
+// msg 0x400: hand back the actor itself.
+static inline u32 Actor62GetMsg(u32 id, int* data)
+{
+    id &= 0xFFFFFF;
+    Actor* obj = FindActor62(id);
+    if (obj != 0) {
+        data[0] = (int)obj;
+        return 1;
+    }
+    return 0;
+}
+
+// msg 0: queue the trail renderer.
+static inline u32 Actor62DrawMsg(u32 id, int* data)
+{
+    id &= 0xFFFFFF;
+    Actor* obj = FindActor62(id);
+    if (obj != 0) {
+        DeferAdd(1, &obj->field_80, Actor62DrawPathTrail, obj);
+    }
+    return 0;
+}
+
+// msg 0x411: copy the actor's header block out.
+static inline u32 Actor62GetHdrMsg(u32 id, int* data)
+{
+    id &= 0xFFFFFF;
+    Actor* obj = FindActor62(id);
+    if (obj != 0) {
+        *(ActorHdr*)(data + 4) = obj->hdr;
+        return 1;
+    }
+    return 0;
+}
+
+// msg 0x415: attach, detach or stop the actor's owner link.
+static inline u32 Actor62OwnerMsg(u32 id, int* data)
+{
+    id &= 0xFFFFFF;
+    Actor* obj = FindActor62(id);
+    if (obj != 0) {
+        int arg = data[1];
+        if (arg != -1) {
+            if (data[3] != 0) {
+                return fn_802127A0(obj->id, arg, data[2], data + 4, 1, 0, 0);
+            }
+            return fn_80212814(obj->id, arg, data[2], 1, 0, 0);
+        }
+        return fn_8021284C(obj->id);
+    }
+    return 0;
+}
+
+// msg 0x41E: create a new actor.
+static inline u32 Actor62CreateMsg(u32 id, int* data)
+{
+    switch (data[1]) {
+    case 0x12D80:
+        data[3] = (int)CreateActor62();
+        break;
+    default:
+        return 0;
+    }
+    return 1;
+}
+
 // Message handler for the type-0x62 actors: find, query, create and dispatch.
 u32 Actor62Msg(u32 id, int msg, int* data, int param)
 {
     id &= 0xFFFFFF;
-    Actor* obj = FindActor62(id);
-    data[0] = (int)obj;
+    data[0] = (int)FindActor62(id);
     u32 agent = id | 0x62000000;
 
-    if (msg == 0x413) {
+    switch (msg) {
+    case 0x400:
+        return Actor62GetMsg(agent, data);
+    case 0:
+        return Actor62DrawMsg(agent, data);
+    case 0x414:
+        return Actor62UpdatePath(agent, data, fn_80212730(agent));
+    case 0x415:
+        return Actor62OwnerMsg(agent, data);
+    case 0x411:
+        return Actor62GetHdrMsg(agent, data);
+    case 0x413:
         return Actor62SetupTransform(agent, data);
-    }
-
-    if (msg < 0x413) {
-        if (msg == 0x400) {
-            obj = FindActor62(id);
-            if (obj != 0) {
-                data[0] = (int)obj;
-                return 1;
-            }
-            return 0;
-        }
-        if (msg < 0x400) {
-            if (msg == 0) {
-                obj = FindActor62(id);
-                if (obj != 0) {
-                    DeferAdd(1, (Vec3*)&obj->pos, Actor62DrawPathTrail, obj);
-                }
-                return 0;
-            }
-        } else if (msg == 0x411) {
-            obj = FindActor62(id);
-            if (obj != 0) {
-                *(ActorHdr*)(data + 4) = obj->hdr;
-                return 1;
-            }
-            return 0;
-        }
-    } else {
-        if (msg == 0x41D) {
-            return Actor62SpawnMsg(agent, data);
-        }
-        if (msg < 0x41D) {
-            if (msg == 0x415) {
-                obj = FindActor62(id);
-                if (obj == 0) {
-                    return 0;
-                }
-                int arg = data[1];
-                if (arg != -1) {
-                    if (data[3] != 0) {
-                        return fn_802127A0(obj->id, arg, data[2], data + 4, 1, 0, 0);
-                    }
-                    return fn_80212814(obj->id, arg, data[2], 1, 0, 0);
-                }
-                return fn_8021284C(obj->id);
-            }
-            if (msg < 0x415) {
-                return Actor62UpdatePath(agent, data, fn_80212730(agent));
-            }
-        } else if (msg < 0x41F) {
-            if (data[1] != 0x12D80) {
-                return 0;
-            }
-            data[3] = (int)CreateActor62();
-            return 1;
-        }
+    case 0x41D:
+        return Actor62SpawnMsg(agent, data);
+    case 0x41E:
+        return Actor62CreateMsg(agent, data);
     }
     return 0;
 }
