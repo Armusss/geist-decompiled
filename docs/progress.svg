@@ -211,7 +211,7 @@
 <rect x="528" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/MWTrace.c - matching</title></rect>
 <rect x="548" y="336" width="18" height="18" rx="2" fill="#2ea043"><title>TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/gc/MWCriticalSection_gc.c - matching</title></rect>
 <text x="8" y="386" font-family="sans-serif" font-size="16" font-weight="bold" fill="#ffffff">Game code: 97/246 files (39.4%) byte-identical</text>
-<text x="8" y="406" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">139 files partly matched; functions matching: 3,001/7,123 (42.1%) (provisional file boundaries)</text>
+<text x="8" y="406" font-family="sans-serif" font-size="13" font-weight="normal" fill="#8b949e">139 files partly matched; functions matching: 3,007/7,123 (42.2%) (provisional file boundaries)</text>
 <rect x="8" y="412" width="18" height="18" rx="2" fill="#d29922"><title>game/Cube.cpp - partial: 49/112 functions match</title></rect>
 <rect x="28" y="412" width="18" height="18" rx="2" fill="#2ea043"><title>game/main.cpp - matching</title></rect>
 <rect x="48" y="412" width="18" height="18" rx="2" fill="#d29922"><title>game/u_8000F2F0.cpp - partial: 10/38 functions match</title></rect>
@@ -258,7 +258,7 @@
 <rect x="868" y="412" width="18" height="18" rx="2" fill="#d29922"><title>game/u_800BAA14.cpp - partial: 17/60 functions match</title></rect>
 <rect x="888" y="412" width="18" height="18" rx="2" fill="#d29922"><title>game/u_800C5028.cpp - partial: 24/149 functions match</title></rect>
 <rect x="908" y="412" width="18" height="18" rx="2" fill="#2ea043"><title>game/Progress.cpp - matching</title></rect>
-<rect x="928" y="412" width="18" height="18" rx="2" fill="#d29922"><title>game/u_800D0BF4.cpp - partial: 19/31 functions match</title></rect>
+<rect x="928" y="412" width="18" height="18" rx="2" fill="#d29922"><title>game/u_800D0BF4.cpp - partial: 25/31 functions match</title></rect>
 <rect x="948" y="412" width="18" height="18" rx="2" fill="#d29922"><title>game/u_800D32E8.cpp - partial: 20/50 functions match</title></rect>
 <rect x="8" y="432" width="18" height="18" rx="2" fill="#2ea043"><title>game/u_800DD92C.cpp - matching</title></rect>
 <rect x="28" y="432" width="18" height="18" rx="2" fill="#d29922"><title>game/u_800DE0C4.cpp - partial: 15/16 functions match</title></rect>
