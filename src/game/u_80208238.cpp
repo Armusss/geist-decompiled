@@ -1,7 +1,9 @@
 // u_80208238.cpp: player "Batsqueeks" host mode (per-frame update, setup, mode id tables) and a sound list
 // (0x80208238-0x8020A650). Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
 #include "game/string.h"
+#include "game/msg.h"
 
 typedef unsigned char u8;
 typedef int s32;
@@ -104,28 +106,14 @@ struct Player {
     s32 field279C;              // 0x279C
 };
 
-// Shared data blob; the Batsqueeks mode id table starts at +0x684.
-struct BatsqueekIdTable {
-    u8 pad000[0x0C];
-    s32 modeId0C;               // 0x0C: host mode motion id
-    u8 pad010[0x44];
-    s32 ids54[1];               // 0x54: slot motion ids
-    u8 pad058[0x8C];
-    s32 idsE4[1];               // 0xE4: host slot motion ids
-    u8 pad0E8[0x2CC];
-    s32 ids3B4[1];              // 0x3B4: weapon setup motion ids
-    u8 pad3B8[0x164];
-    s32 ids51C[1];              // 0x51C: carried-state motion ids
-    u8 pad520[0x44];
-    s32 ids564[1];              // 0x564: host mode motion ids
-    u8 pad568[0x44];
-    s32 slotIds[1];             // 0x5AC: per-slot weapon ids
-    u8 pad5B0[0x44];
-    s32 ids5F4[1];              // 0x5F4: host motion ids
-    u8 pad5F8[0x8C];
-    s32 ids[1];                 // 0x684: mode id table
+// Per-action-mode table (0x48 bytes per row): three hooks, then one motion id per character variant.
+struct AnimRow {
+    void (*hook00)(Player* player);             // 0x00
+    void (*hook04)(Player* player, int arg);    // 0x04
+    void (*callback)(Player* player);           // 0x08
+    s32 byVariant[15];                          // 0x0C
 };
-extern BatsqueekIdTable lbl_803BA2B0;
+extern AnimRow lbl_803BA2B0[];
 extern float lbl_804D9360;      // sdata2 zero float shared by the player code
 extern float lbl_804D9364;      // sdata2 scale for the random motion variant pick
 extern float lbl_804D9368;      // sdata2 threshold for the random motion variant pick
@@ -166,21 +154,13 @@ extern "C" int SendMsg(void* target, int msg, void* data);
 
 void PlayerSetHeldSlotIndex(void* player, int index);
 
-// Query block handed to the peer when the host mode asks which slot it holds.
-struct NameQuery {
-    s32 result;                 // 0x00
-    u32 hash;                   // 0x04
-    u32 param;                  // 0x08
-    String name;                // 0x0C
-};
-
-// Query block handed to the peer when a host mode asks whether the player already
-// holds a slot; the peer fills the two result words on success.
-struct BatsqueekMsgQuery {
-    s32 result;                 // 0x00
+// Message 0xC06: asks the peer whether it handles the given mode message itself.
+struct NodeQuery {
+    s32 unk0;                   // 0x00
     s32 msg;                    // 0x04
-    u32 param;                  // 0x08
-    void* peer;                 // 0x0C
+    s32 unk8;                   // 0x08
+    void* target;               // 0x0C
+    s32 unk10[4];               // 0x10
 };
 
 // Object hanging off the player at 0x26E4; +0x38 is the message peer.
@@ -220,13 +200,13 @@ void PlayerBatsqueekSetup(Player* player)
 
     player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14,
                                    player->slots26C4[slot]->field18,
-                                   lbl_803BA2B0.ids[idx], 0, 0);
+                                   lbl_803BA2B0[23].byVariant[idx], 0, 0);
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 1;
 
     player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14,
                                    player->slots26C4[slot]->field1C,
-                                   lbl_803BA2B0.ids[idx], 0, 0);
+                                   lbl_803BA2B0[23].byVariant[idx], 0, 0);
     player->field0FC = 1;
     player->field7D0 = 0;
     if (player->field7D0 != 0)
@@ -306,12 +286,12 @@ void PlayerBatsqueekHostSetup(Player* player)
     idx = player->field73C;
 
     player->field098 = fn_800A1BC8(state->field14, state->field18,
-                                   lbl_803BA2B0.ids5F4[idx], used, 0);
+                                   lbl_803BA2B0[21].byVariant[idx], used, 0);
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 0x19;
 
     player->field0F0 = fn_800A1BC8(state->field14, state->field1C,
-                                   lbl_803BA2B0.ids5F4[idx], used, 0);
+                                   lbl_803BA2B0[21].byVariant[idx], used, 0);
     player->field0FC = 0x19;
 
     PlayerSetValue4(&player->field7A4, 0x15);
@@ -350,34 +330,32 @@ void PlayerBatsqueekFrameUpdate(Player* player, float seek)
 void PlayerBatsqueekGunSetup(Player* player)
 {
     int slot = PlayerInHost((Actor*)player);
-    NameQuery query;
+    int idx = player->field73C;
 
     player->field78 = 0;
-    player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14,
-                                   player->slots26C4[slot]->field18,
-                                   lbl_803BA2B0.slotIds[player->field73C], 0, 0);
+    player->field50 &= ~0x20000u;
+    player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field18,
+                                   lbl_803BA2B0[20].byVariant[idx], 0, 0);
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 1;
-
-    player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14,
-                                   player->slots26C4[slot]->field1C,
-                                   lbl_803BA2B0.slotIds[player->field73C], 0, 0);
+    player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field1C,
+                                   lbl_803BA2B0[20].byVariant[idx], 0, 0);
     player->field0FC = 1;
 
+    QueryMsg query;
     query.hash = 0x8783452;
     SendMsg(((PlayerPeer*)player->field26E4)->peer38, 0x41e, &query);
-
-    if (query.result == 0)
-    {
-        PlayerSetHeldSlotIndex(player, 1);
-        if ((s32)player->field098 == -1)
-            PlayerSetActionMode(player, 3);
-    }
-    else
+    if (*(int*)&query.result != 0)
     {
         PlayerSetHeldSlotIndex(player, 0);
         if ((s32)player->field098 == -1)
             PlayerSetActionMode(player, 1);
+    }
+    else
+    {
+        PlayerSetHeldSlotIndex(player, 1);
+        if ((s32)player->field098 == -1)
+            PlayerSetActionMode(player, 3);
     }
 }
 
@@ -398,44 +376,40 @@ void PlayerBatsqueekResetGunState(Player* player)
     }
 }
 
+// The host animation object the player is attached to.
+static inline HostAnim* PlayerHeldAnim(Player* player) { return player->field26E8; }
+
 // Sets up the two motion objects of the Batsqueeks host mode and asks the peer
 // whether the player already holds a host slot.
 void PlayerBatsqueekHostSlotSetup(Player* player)
 {
-    int used = 0;
-    HostAnim* anim = player->field26E8;
-    HostState* state;
     int slot;
-    HostSlot* host;
-
+    HostState* state;
+    int used = 0;
+    int idx;
+    HostAnim* anim = PlayerHeldAnim(player);
     if ((int)(anim->field38 >> 24) == 0x13)
     {
         state = (HostState*)fn_800A384C(anim);
         if (HasCondition(anim->field270, 0xb) != 0)
             used = 1;
     }
-
     slot = PlayerInHost((Actor*)player);
-
-    player->field098 = fn_800A1BC8(state->field14, state->field18,
-                                   lbl_803BA2B0.ids564[player->field73C], used, 0);
+    idx = player->field73C;
+    player->field098 = fn_800A1BC8(state->field14, state->field18, lbl_803BA2B0[19].byVariant[idx], used, 0);
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 0x19;
-
-    host = player->slots26C4[slot];
-    player->field0F0 = fn_800A1BC8(host->field14, host->field1C,
-                                   lbl_803BA2B0.ids564[player->field73C], 0, 0);
+    player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field1C,
+                                   lbl_803BA2B0[19].byVariant[idx], 0, 0);
     player->field0FC = 0x19;
 
-    NameQuery query;
+    QueryMsg query;
     query.hash = 0x8783452;
-    SendMsg((void*)anim->field38, 0x41e, &query);
-
-    // The peer leaves the query's String block cleared while no slot is held.
-    if (*(void**)&query.name == 0)
-        PlayerSetHeldSlotIndex(player, 1);
-    else
+    SendMsg((void*)player->field26E8->field38, 0x41e, &query);
+    if (*(int*)&query.result != 0)
         PlayerSetHeldSlotIndex(player, 0);
+    else
+        PlayerSetHeldSlotIndex(player, 1);
 }
 
 // Restart the host animation object on the player's current state object.
@@ -460,10 +434,10 @@ void BatsqueekHostEnterGunMode(Player* player)
 // the peer whether the player already holds a host slot.
 void PlayerBatsqueekCarryStateSetup(Player* player)
 {
+    HostState* state;
     int slot = PlayerInHost((Actor*)player);
     HostAnim* anim = player->field26E8;
-    HostState* state;
-    int index = player->field73C;
+    int idx = player->field73C;
     int used = 0;
 
     if ((int)(anim->field38 >> 24) == 0x13)
@@ -472,26 +446,20 @@ void PlayerBatsqueekCarryStateSetup(Player* player)
         if (HasCondition(anim->field270, 0xb) != 0)
             used = 1;
     }
-
-    s32* id = &lbl_803BA2B0.ids51C[index];
-
-    player->field098 = fn_800A1BC8(state->field14, state->field18, *id, used, 0);
+    player->field098 = fn_800A1BC8(state->field14, state->field18, lbl_803BA2B0[18].byVariant[idx], used, 0);
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 0x59;
-
-    player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14,
-                                   player->slots26C4[slot]->field1C,
-                                   *id, 0, 0);
+    HostSlot* host = player->slots26C4[slot];
+    player->field0F0 = fn_800A1BC8(host->field14, host->field1C, lbl_803BA2B0[18].byVariant[idx], 0, 0);
     player->field0FC = 0x59;
 
-    NameQuery query;
+    QueryMsg query;
     query.hash = 0x8783452;
-    SendMsg((void*)anim->field38, 0x41e, &query);
-
-    if (*(void**)&query.name == 0)
-        PlayerSetHeldSlotIndex(player, 1);
-    else
+    SendMsg((void*)player->field26E8->field38, 0x41e, &query);
+    if (*(int*)&query.result != 0)
         PlayerSetHeldSlotIndex(player, 0);
+    else
+        PlayerSetHeldSlotIndex(player, 1);
 }
 
 // Clears the host-mode flag (0x40000) in the player state flags.
@@ -526,7 +494,7 @@ void PlayerBatsqueekWeaponMotionSetup(Player* player)
 
     player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14,
                                    player->slots26C4[slot]->field18,
-                                   lbl_803BA2B0.ids3B4[index], 0, 0);
+                                   lbl_803BA2B0[13].byVariant[index], 0, 0);
     player->field0A4 = 0x50;
 
     if (player->field26B0 == -1)
@@ -544,29 +512,32 @@ void PlayerBatsqueekWeaponMotionSetup(Player* player)
 
     player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14,
                                    player->slots26C4[slot]->field1C,
-                                   lbl_803BA2B0.ids3B4[index], bone << 1, 0);
+                                   lbl_803BA2B0[13].byVariant[index], bone << 1, 0);
     player->field0E4 = (void*)PlayerBatsqueekModeCallback;
     player->field0FC = 0x50;
 }
 
 // Asks the player's message peer for a mode handle. The peer answers by writing
 // the handle into the query block's trailing word, which is cleared beforehand.
-static inline s32 BatsqueekQueryPeer(Player* player, u32 hash)
+static inline void QueryGet(s32* out, void* target, u32 hash)
 {
-    NameQuery query;
-    *(s32*)&query.name = 0;
+    QueryMsg query;
     query.hash = hash;
-    query.param = 0;
-    SendMsg(player->field38, 0x41e, &query);
-    return *(s32*)&query.name;
+    *(s32*)&query.result = 0;
+    query.unk8 = 0;
+    SendMsg(target, 0x41e, &query);
+    *out = *(s32*)&query.result;
 }
 
 // Per-frame update used while the player is still picking a host mode: asks the
 // peer for the two mode handles, then drives the motion and the action mode.
 void PlayerBatsqueekQueryUpdate(Player* player, float seek)
 {
-    BatsqueekQueryPeer(player, 0x2da8293c);
-    BatsqueekQueryPeer(player, 0xdff3097a);
+    s32 first;
+    s32 second;
+
+    QueryGet(&first, player->field38, 0x2da8293c);
+    QueryGet(&second, player->field38, 0xdff3097a);
 
     player->field638 = 1;
     player->flags7B4 &= ~1u;
@@ -574,14 +545,17 @@ void PlayerBatsqueekQueryUpdate(Player* player, float seek)
     PlayerUpdateMotionSeek(seek, player);
     player->field7D0 = 1;
 
-    float speed = fabs(player->field394);
-    if (speed < fabs(player->field38C))
-        speed = fabs(player->field38C);
+    float speed;
+    {
+        float x = player->field394;
+        float z = player->field38C;
+        speed = __fabsf(z) > __fabsf(x) ? __fabsf(z) : __fabsf(x);
+    }
 
-    if (lbl_804D9360 != speed)
+    if (0.0f != speed)
         fn_8008E824(player->field7C, 0);
 
-    if (lbl_804D9360 == player->field7D8)
+    if (0.0f == player->field7D8)
     {
         PlayerSetHeldSlotMode(player, 0);
         return;
@@ -617,34 +591,34 @@ void PlayerBatsqueekQueryUpdate(Player* player, float seek)
 // the two mode handles, validates them and builds the slot's motion objects.
 void PlayerBatsqueekSlotHandleSetup(Player* player)
 {
-    s32 first = BatsqueekQueryPeer(player, 0x2da8293c);
-    s32 second = BatsqueekQueryPeer(player, 0xdff3097a);
+    int index;
+    s32 first;
+    s32 second;
+
+    QueryGet(&first, player->field38, 0x2da8293c);
+    QueryGet(&second, player->field38, 0xdff3097a);
 
     int host = PlayerInHost((Actor*)player);
-    int index = player->field73C;
-    int owner = fn_800498D0(player);
-
-    int found = Fn800F7DEC(first, second, 0x20ee36, owner, 0);
+    index = player->field73C;
+    int found = Fn800F7DEC(first, second, 0x20ee36, fn_800498D0(player), 0);
     int used = 0;
+
     if (found == -0x3F413082 || found == 0x11D2C025)
         used = 1;
 
     player->field098 = (void*)-1;
     while ((s32)player->field098 == -1)
     {
-        HostSlot* slot = player->slots26C4[host];
-        player->field098 = fn_800A1BC8(slot->field14, slot->field18,
-                                       lbl_803BA2B0.idsE4[index], used, 0);
+        player->field098 = fn_800A1BC8(player->slots26C4[host]->field14, player->slots26C4[host]->field18,
+                                       lbl_803BA2B0[3].byVariant[index], used, 0);
         player->field08C = (void*)PlayerBatsqueekModeCallback;
         player->field0A4 = 1;
-
-        if ((s32)player->field098 == -1 && used != 0)
+        if ((s32)player->field098 == -1 && used)
             used = 0;
     }
 
     HostSlot* slot = player->slots26C4[host];
-    player->field0F0 = fn_800A1BC8(slot->field14, slot->field1C,
-                                   lbl_803BA2B0.idsE4[index], 0, 0);
+    player->field0F0 = fn_800A1BC8(slot->field14, slot->field1C, lbl_803BA2B0[3].byVariant[index], 0, 0);
     player->field0FC = 1;
 }
 
@@ -690,12 +664,12 @@ void PlayerBatsqueekSlotMotionSetup(Player* player)
     int index = player->field73C;
 
     player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field18,
-                                   lbl_803BA2B0.ids54[index], 0, 0);
+                                   lbl_803BA2B0[1].byVariant[index], 0, 0);
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 1;
 
     player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field1C,
-                                   lbl_803BA2B0.ids54[index], 0, 0);
+                                   lbl_803BA2B0[1].byVariant[index], 0, 0);
     player->field0FC = 1;
     player->field7D0 = 0;
 }
@@ -741,43 +715,41 @@ void PlayerBatsqueekExitHost(Player* player)
 // handles; the peer's answer (or a random draw) picks the motion variant at 0x7D4.
 void PlayerBatsqueekSlotModeSetup(Player* player)
 {
-    s32 first = BatsqueekQueryPeer(player, 0x2da8293c);
-    s32 second = BatsqueekQueryPeer(player, 0xdff3097a);
+    s32 first;
+    s32 second;
 
-    int owner = fn_800498D0(player);
-    int found = Fn800F7DEC(first, second, 0x20ee36, owner, 0);
+    QueryGet(&first, player->field38, 0x2da8293c);
+    QueryGet(&second, player->field38, 0xdff3097a);
+
+    int found = Fn800F7DEC(first, second, 0x20ee36, fn_800498D0(player), 0);
 
     if (found == -0x3F413082 || found == 0x11D2C025)
         player->field7D4 = 2;
-    else if ((float)rand() / lbl_804D9364 < lbl_804D9368)
-        player->field7D4 = 1;
-    else
+    else if ((float)rand() / 32767.0f >= 0.5f)
         player->field7D4 = 0;
+    else
+        player->field7D4 = 1;
 
     int slot = PlayerInHost((Actor*)player);
 
-    player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14,
-                                   player->slots26C4[slot]->field18,
-                                   lbl_803BA2B0.modeId0C, player->field7D4, 0);
+    player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field18,
+                                   lbl_803BA2B0[0].byVariant[0], player->field7D4, 0);
     if ((s32)player->field098 == -1)
     {
         player->field7D4 = 0;
-        player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14,
-                                       player->slots26C4[slot]->field18,
-                                       lbl_803BA2B0.modeId0C, player->field7D4, 0);
+        player->field098 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field18,
+                                       lbl_803BA2B0[0].byVariant[0], player->field7D4, 0);
     }
     player->field08C = (void*)PlayerBatsqueekModeCallback;
     player->field0A4 = 1;
 
-    player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14,
-                                   player->slots26C4[slot]->field1C,
-                                   lbl_803BA2B0.modeId0C, player->field7D4, 0);
+    player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field1C,
+                                   lbl_803BA2B0[0].byVariant[0], player->field7D4, 0);
     if ((s32)player->field0F0 == -1)
     {
         player->field7D4 = 0;
-        player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14,
-                                       player->slots26C4[slot]->field1C,
-                                       lbl_803BA2B0.modeId0C, player->field7D4, 0);
+        player->field0F0 = fn_800A1BC8(player->slots26C4[slot]->field14, player->slots26C4[slot]->field1C,
+                                       lbl_803BA2B0[0].byVariant[0], player->field7D4, 0);
     }
     player->field0E4 = (void*)PlayerBatsqueekModeCallback;
     player->field0FC = 1;
@@ -788,27 +760,29 @@ void PlayerBatsqueekSlotModeSetup(Player* player)
 int PlayerBatsqueekModeCallback(int msg, void* p)
 {
     Player* player = (Player*)p;
+    NodeQuery query;
 
-    BatsqueekMsgQuery query;
+    query.target = player->field38;
     query.msg = msg;
-    query.peer = player->field38;
-
     if (fn_800C5210(player->field38, 0xc06, &query) == 1)
         return 0;
 
-    BatsqueekQueryPeer(player, 0x2da8293c);
-    BatsqueekQueryPeer(player, 0xdff3097a);
+    s32 first;
+    s32 second;
+    QueryGet(&first, player->field38, 0x2da8293c);
+    QueryGet(&second, player->field38, 0xdff3097a);
 
-    if (msg == 0x1b83833f)
+    switch (msg)
     {
+    case 0x1b83833f:
         if (player->field7A4 == 0xd)
             player->flags7B4 |= 0x20000;
         else
             PlayerSetActionMode(player, player->field7A8);
-    }
-    else if (msg == 0x28a80b)
-    {
+        break;
+    case 0x28a80b:
         FxStart(FxFind("Batwing"), 0, 0);
+        break;
     }
 
     return 0;
@@ -824,13 +798,13 @@ struct BatsqueekModeEntry {
 
 // Return the motion id registered for the player's current action mode.
 s32 BatsqueekGetModeMotionId(Player* player) {
-    BatsqueekModeEntry* table = (BatsqueekModeEntry*)&lbl_803BA2B0;
+    BatsqueekModeEntry* table = (BatsqueekModeEntry*)lbl_803BA2B0;
     return table[player->field7A4].motionId;
 }
 
 // Run the per-action-mode callback for the player's current mode, if one is set.
 void BatsqueekRunModeCallback(Player* player) {
-    BatsqueekModeEntry* table = (BatsqueekModeEntry*)&lbl_803BA2B0;
+    BatsqueekModeEntry* table = (BatsqueekModeEntry*)lbl_803BA2B0;
     if (table[player->field7A4].callback != 0) {
         table[player->field7A4].callback(player);
     }
@@ -845,7 +819,7 @@ struct BatsqueekModeHooks {
 
 // Run the per-action-mode function pointer stored at table entry offset 0x04, if set.
 void BatsqueekRunModeHook04(Player* player, int arg) {
-    BatsqueekModeHooks* table = (BatsqueekModeHooks*)&lbl_803BA2B0;
+    BatsqueekModeHooks* table = (BatsqueekModeHooks*)lbl_803BA2B0;
     void (*fn)(Player*, int) = table[player->field7A4].hook04;
     if (fn != 0) {
         fn(player, arg);
@@ -854,7 +828,7 @@ void BatsqueekRunModeHook04(Player* player, int arg) {
 
 // Run the per-action-mode function pointer stored at table entry offset 0x00, if set.
 void BatsqueekRunModeHook00(Player* player) {
-    BatsqueekModeHooks* entry = &((BatsqueekModeHooks*)&lbl_803BA2B0)[player->field7A4];
+    BatsqueekModeHooks* entry = &((BatsqueekModeHooks*)lbl_803BA2B0)[player->field7A4];
     if (entry->hook00 != 0) {
         entry->hook00(player);
     }
@@ -885,10 +859,19 @@ extern "C" void fn_80209A14(void)
     lbl_8049E0F0[15] = AssetFind(0xf1754bf2, 0x44ffeba);
 }
 
-struct Vec3 {
-    float x;
-    float y;
-    float z;
+// One 0x1C-byte bone frame: orientation followed by position.
+struct u8020A650Anim {
+    Quat rot;                   // 0x00
+    Vec3 pos;                   // 0x10
+};
+
+// One 0x28-byte entry of a sound-source list: the source's rest transform and the
+// index of the parent transform it hangs off.
+struct SoundSourceEntry {
+    s32 index;                  // 0x00: parent transform index in the output array
+    u32 nameHash;               // 0x04
+    u8020A650Anim rest;         // 0x08: rest transform
+    void* source;               // 0x24: live source, 0 for an unused entry
 };
 
 // List of per-mode effect sources. The entry stride is 0x28 and entry 0 is
@@ -909,8 +892,29 @@ extern Vec3 lbl_8049E130[];     // 0x14 recent trigger positions
 extern int lbl_804D53A0;        // number of recent trigger positions
 extern float lbl_804D9378;      // trigger range scale
 extern float lbl_804D937C;      // retrigger delay
-extern u8* lbl_803BAA90[];      // per-mode name strings
-extern u8 __upper_map[];        // ASCII upper-case map used by the name hash
+extern const char* lbl_803BAA90[];  // per-mode name strings
+extern unsigned char __upper_map[256];
+inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
+
+inline u32 StrHash(const char* s)
+{
+    if (s == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        u32 h = 0;
+        int i;
+        for (i = 0; s[i] != 0; i++)
+        {
+            h *= 31;
+            h += (unsigned char)toupper(s[i]);
+        }
+        h %= 0xFFFFFFFF;
+        return h;
+    }
+}
 
 extern "C" int fn_801D60A0(int flag);
 extern "C" int fn_801D4738(void* source, Vec3* pos, float seek);
@@ -924,6 +928,13 @@ void VFree(void* p);
 // Triggers the sources of a list around the given position: mode 0 tests each
 // entry for range, mode 1 scales the working vector, and any other mode filters
 // the entries by the hash of that mode's name.
+static inline void Vec3Init(Vec3* v, float x, float y, float z)
+{
+    v->x = x;
+    v->y = y;
+    v->z = z;
+}
+
 void BatsqueekTriggerModeSounds(SoundList* list, float seek, Vec3* pos, Vec3* vec, int mode)
 {
     Vec3 local;
@@ -931,123 +942,88 @@ void BatsqueekTriggerModeSounds(SoundList* list, float seek, Vec3* pos, Vec3* ve
     if (list->entries == 0)
         return;
 
-    local.x = vec->x;
-    local.y = vec->y;
-    local.z = vec->z;
+    Vec3Init(&local, vec->x, vec->y, vec->z);
 
     if (fn_801D60A0(1) != 0 && lbl_804D53A0 < 0x14)
-    {
-        int index = lbl_804D53A0;
-        lbl_804D53A0 = index + 1;
-        lbl_8049E130[index].x = pos->x;
-        lbl_8049E130[index].y = pos->y;
-        lbl_8049E130[index].z = pos->z;
-    }
+        Vec3Init(&lbl_8049E130[lbl_804D53A0++], pos->x, pos->y, pos->z);
 
     if (mode == 0)
     {
         int hits = 0;
-        int off = 0x28;
+        int i;
 
-        for (int i = 1; i < list->count; i++)
+        for (i = 1; i < list->count; i++)
         {
-            void* source = *(void**)(list->entries + off + 0x24);
-
-            if (source != 0 && fn_801D4738(source, pos, seek) != 0)
+            if (((SoundSourceEntry*)list->entries)[i].source != 0 &&
+                fn_801D4738(((SoundSourceEntry*)list->entries)[i].source, pos, seek) != 0)
             {
                 hits++;
-                fn_801D5010(source, &local);
+                fn_801D5010(((SoundSourceEntry*)list->entries)[i].source, &local);
             }
-            off += 0x28;
         }
 
         if (hits == 0)
         {
-            local.x *= lbl_804D9378;
-            local.y *= lbl_804D9378;
-            local.z *= lbl_804D9378;
+            local.x *= 0.03125f;
+            local.y *= 0.03125f;
+            local.z *= 0.03125f;
+            int i;
 
-            off = 0x28;
-            for (int i = 1; i < list->count; i++)
+            for (i = 1; i < list->count; i++)
             {
-                void* source = *(void**)(list->entries + off + 0x24);
-
-                if (source != 0)
-                    fn_801D5010(source, &local);
-                off += 0x28;
-            }
+                if (((SoundSourceEntry*)list->entries)[i].source != 0)
+                    fn_801D5010(((SoundSourceEntry*)list->entries)[i].source, &local);
+                }
         }
     }
     else if (mode == 1)
     {
-        local.x *= lbl_804D9378;
-        local.y *= lbl_804D9378;
-        local.z *= lbl_804D9378;
+        local.x *= 0.03125f;
+        local.y *= 0.03125f;
+        local.z *= 0.03125f;
+        int i;
 
-        int off = 0x28;
-        for (int i = 1; i < list->count; i++)
+        for (i = 1; i < list->count; i++)
         {
-            void* source = *(void**)(list->entries + off + 0x24);
-
-            if (source != 0)
-                fn_801D5010(source, vec);
-            off += 0x28;
+            if (((SoundSourceEntry*)list->entries)[i].source != 0)
+                fn_801D5010(((SoundSourceEntry*)list->entries)[i].source, vec);
         }
     }
     else
     {
-        u8* name = lbl_803BAA90[mode];
-        u32 hash = 0;
+        u32 hash = StrHash(lbl_803BAA90[mode]);
+        int i;
+        int off;
 
-        if (name != 0)
+        for (i = 1, off = 0x28; i < list->count; i++)
         {
-            signed char c;
+            SoundSourceEntry* entry = (SoundSourceEntry*)(list->entries + off);
 
-            while ((c = (signed char)*name) != 0)
-            {
-                u32 v = (c == -1) ? 0xffffffffu : (u32)__upper_map[(u8)c];
-                hash = hash * 31 + (v & 0xff);
-                name++;
-            }
-            hash = hash % 0xffffffffu;
-        }
-
-        int off = 0x28;
-        for (int i = 1; i < list->count; i++)
-        {
-            u8* entry = list->entries + off;
-            void* source = *(void**)(entry + 0x24);
-
-            if (source != 0 && hash == *(u32*)(entry + 4))
-                fn_801D5010(source, vec);
+            if (entry->source != 0 && hash == entry->nameHash)
+                fn_801D5010(entry->source, vec);
             off += 0x28;
         }
     }
 
-    list->timer = lbl_804D937C;
+    list->timer = 10000.0f;
 }
 
 // Finds the sound-list entry registered under the given name hash and hands its
 // source object to the trigger routine; if nothing matches, restarts the delay.
 void SoundListTriggerEntry(SoundList* list, u32 hash, void* param)
 {
-    int off;
-    int i;
+    SoundSourceEntry* entries = (SoundSourceEntry*)list->entries;
 
-    if (list->entries != 0)
+    if (entries != 0)
     {
-        i = 1;
-        off = 0x28;
-        for (; i < list->count; i++)
+        for (int i = 1; i < list->count; i++)
         {
-            u8* entry = list->entries + off;
-
-            if (*(void**)(entry + 0x24) != 0 && hash == *(u32*)(entry + 4))
+            if (((SoundSourceEntry*)list->entries)[i].source != 0 &&
+                hash == ((SoundSourceEntry*)list->entries)[i].nameHash)
             {
-                fn_801D5010(*(void**)(list->entries + i * 0x28 + 0x24), param);
+                fn_801D5010(entries[i].source, param);
                 return;
             }
-            off += 0x28;
         }
         list->timer = lbl_804D937C;
     }
@@ -1127,33 +1103,13 @@ extern "C" void fn_801D53D4(void* source);
 extern "C" void fn_801D5448(void* source);
 extern "C" void fn_801D550C(void* source);
 
-// Quaternion of a bone transform.
-struct Quat {
-    float x;
-    float y;
-    float z;
-    float w;
-};
 
-// Affine transform stored as a quaternion followed by a translation.
-struct Mtx34 {
-    Quat q;                     // 0x00: rotation
-    Vec3 t;                     // 0x10: translation
-};
 
 void BoneSetMatrix(void* bone, Mtx34* matrix);
 void Mtx34GetTranslation(Vec3* out, Mtx34* matrix);
 void QuatRotateVec(Vec3* out, float* quat, Vec3* vec);
 extern "C" void PSQUATMultiply(void* out, void* a, void* b);
 
-// One 0x28-byte entry of a sound-source list: the source's rest transform and the
-// index of the parent transform it hangs off.
-struct SoundSourceEntry {
-    s32 index;                  // 0x00: parent transform index in the output array
-    u32 nameHash;               // 0x04
-    Mtx34 matrix;               // 0x08: rest transform
-    void* source;               // 0x24: live source, 0 for an unused entry
-};
 
 // Updates every live source of the list: when 'mode' is non-zero the sources are
 // paused, otherwise they are resumed and re-registered with their source object.
@@ -1189,58 +1145,65 @@ void SoundListApplySourceMode(SoundList* list, int mode)
 // Builds the per-source transforms of the list into 'out': entry 0 supplies the
 // base transform, every following entry either takes its live bone matrix or is
 // rotated by the transform of the entry its index points at.
+// Conjugate (inverse rotation) of a unit quaternion.
+static inline void QuatConjugate(Quat* out, Quat* q)
+{
+    out->x = -q->x;
+    out->y = -q->y;
+    out->z = -q->z;
+    out->w = q->w;
+}
+
+static inline void Vec3AddTo(Vec3* a, Vec3* b)
+{
+    a->x += b->x;
+    a->y += b->y;
+    a->z += b->z;
+}
+
 void SoundListBuildSourceMatrices(SoundList* list, int arg2, int arg3, Mtx34* out)
 {
+    u8020A650Anim* frames = (u8020A650Anim*)out;
     Quat quat;
     Mtx34 matrix;
 
     if (list->entries == 0)
         return;
 
-    int off = 0x28;
-    Mtx34* cur = out + 1;
+    frames->pos = ((SoundSourceEntry*)list->entries)->rest.pos;
+    frames->rot = ((SoundSourceEntry*)list->entries)->rest.rot;
 
-    out->t = ((SoundSourceEntry*)list->entries)->matrix.t;
-    out->q = ((SoundSourceEntry*)list->entries)->matrix.q;
-
-    for (int i = 1; i < list->count; i++)
+    int off;
+    u8020A650Anim* cur;
+    int i;
+    for (i = 1, off = 0x28, cur = frames + 1; i < list->count; i++)
     {
-        SoundSourceEntry* entry = (SoundSourceEntry*)(list->entries + off);
-
-        if (entry->source != 0)
+        if (((SoundSourceEntry*)(list->entries + off))->source != 0)
         {
-            fn_801D513C(entry->source, &matrix);
+            fn_801D513C(((SoundSourceEntry*)(list->entries + off))->source, &matrix);
             BoneSetMatrix(cur, &matrix);
-            PSQUATMultiply(&cur->q, &entry->matrix.q, &cur->q);
+            PSQUATMultiply(&cur->rot, &((SoundSourceEntry*)(list->entries + off))->rest.rot, &cur->rot);
 
-            cur->q.x = -cur->q.x;
-            cur->q.y = -cur->q.y;
-            cur->q.z = -cur->q.z;
+            cur->rot.x = -cur->rot.x;
+            cur->rot.y = -cur->rot.y;
+            cur->rot.z = -cur->rot.z;
 
-            Mtx34GetTranslation(&cur->t, &matrix);
+            Mtx34GetTranslation(&cur->pos, &matrix);
         }
         else
         {
-            PSQUATMultiply(&entry->matrix.q, &out[entry->index].q, &cur->q);
-
-            quat.x = -out[entry->index].q.x;
-            quat.y = -out[entry->index].q.y;
-            quat.z = -out[entry->index].q.z;
-            quat.w = out[entry->index].q.w;
-
-            QuatRotateVec(&cur->t, (float*)&quat, &entry->matrix.t);
-
-            cur->t.x += out[entry->index].t.x;
-            cur->t.y += out[entry->index].t.y;
-            cur->t.z += out[entry->index].t.z;
+            PSQUATMultiply(&((SoundSourceEntry*)(list->entries + off))->rest.rot, &frames[((SoundSourceEntry*)(list->entries + off))->index].rot, &cur->rot);
+            QuatConjugate(&quat, &frames[((SoundSourceEntry*)(list->entries + off))->index].rot);
+            QuatRotateVec(&cur->pos, (float*)&quat, &((SoundSourceEntry*)(list->entries + off))->rest.pos);
+            Vec3AddTo(&cur->pos, &frames[((SoundSourceEntry*)(list->entries + off))->index].pos);
         }
 
         off += 0x28;
         cur++;
     }
 
-    out->q = out[1].q;
-    out->t = out[1].t;
+    frames->rot = frames[1].rot;
+    frames->pos = frames[1].pos;
 }
 
 typedef unsigned short u16;
@@ -1262,20 +1225,21 @@ struct BatsqueekOwnerBoneSet {
 extern BatsqueekOwnerBoneSet lbl_803BAAF4[];
 
 // The owner object is built and owned by another unit; only the two virtual
-// slots this file calls and the fields the setup writes are modelled here.
-struct u8020A650Owner;
-struct u8020A650OwnerVtable {
-    u8 pad00[0x24];
-    void (*stop)(u8020A650Owner* owner);                    // 0x24
-    void (*activate)(u8020A650Owner* owner, int flag);      // 0x28
-};
+// slots this file calls and the fields the setup writes are modelled here
+// (vtable slots +0x24 and +0x28).
 
-struct u8020A650Anim {
-    u8 pad00[0x04];
-};
+class u8020A650Owner {
+public:
+    virtual ~u8020A650Owner();
+    virtual void Virtual0C();
+    virtual void Virtual10();
+    virtual void Virtual14();
+    virtual void Virtual18();
+    virtual void Virtual1C();
+    virtual void Virtual20();
+    virtual void Stop();                    // 0x24
+    virtual void Activate(int flag);        // 0x28
 
-struct u8020A650Owner {
-    u8020A650OwnerVtable* vtable;   // 0x00
     u16 field04;                    // 0x04: model index
     u16 boneCount;                  // 0x06
     s32 mode;                       // 0x08
@@ -1302,17 +1266,14 @@ int BatsqueekOwnerSetup(u8020A650Owner* owner, int model, u32 modeHash, u8* data
         return 0;
 
     if (owner->entries != 0)
-        owner->vtable->stop(owner);
+        owner->Stop();
 
     int mode;
-    if (modeHash == lbl_803BAAC4[0].hash)
-        mode = 0;
-    else if (modeHash == lbl_803BAAC4[1].hash)
-        mode = 1;
-    else if (modeHash == lbl_803BAAC4[2].hash)
-        mode = 2;
-    else
-        mode = 3;
+    for (mode = 0; mode < 3; mode++)
+    {
+        if (modeHash == lbl_803BAAC4[mode].hash)
+            break;
+    }
 
     if (mode == 3)
         return 0;
@@ -1336,7 +1297,7 @@ int BatsqueekOwnerSetup(u8020A650Owner* owner, int model, u32 modeHash, u8* data
     memset(owner->buffer, 0, lbl_803BAAC4[mode].bufferSize);
     owner->field04 = (u16)model;
     owner->boneSets = (u8*)&lbl_803BAAF4[lbl_803BAAC4[mode].boneSetIndex];
-    owner->timer = lbl_804D937C;
+    owner->timer = 10000.0f;
 
     if (u8020A650BuildModel(owner, mode, data, anim, mtx) == 0)
     {
@@ -1347,14 +1308,14 @@ int BatsqueekOwnerSetup(u8020A650Owner* owner, int model, u32 modeHash, u8* data
         return 0;
     }
 
-    owner->vtable->activate(owner, 0);
+    owner->Activate(0);
     return 1;
 }
 
 // Mtx34 plus context, initialized by the runtime before every debug draw.
 struct BatsqueekDebugLink {
     Mtx34 matrix;               // 0x00: translation of the drawn box
-    u8 pad1C[0x1C];
+    u8 pad30[0x08];
 };
 
 void LinkInfoInit(void* link);
