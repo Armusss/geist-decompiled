@@ -655,6 +655,9 @@ game/VMem.cpp:
 
 game/u_801BF578.cpp:
 	.text       start:0x801BF578 end:0x801C02FC
+	.rodata     start:0x803486C8 end:0x80348718
+	.data       start:0x803ABBA8 end:0x803ABBC0
+	.sdata2     start:0x804D8A20 end:0x804D8A48
 
 game/u_801C02FC.cpp:
 	.text       start:0x801C02FC end:0x801C8B6C
@@ -664,6 +667,10 @@ game/u_801C8B6C.cpp:
 
 game/u_801C9CE0.cpp:
 	.text       start:0x801C9CE0 end:0x801CA16C
+	.rodata     start:0x803487C0 end:0x80348818
+	.data       start:0x803ACB08 end:0x803ACB38
+	.bss        start:0x80496D58 end:0x80496D98
+	.sdata2     start:0x804D8AF0 end:0x804D8B00
 
 game/u_801CA16C.cpp:
 	.text       start:0x801CA16C end:0x801CC6D0
