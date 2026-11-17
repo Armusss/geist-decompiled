@@ -195,16 +195,18 @@ inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned c
 
 inline u32 StrHash(const char* s) {
     int i;
-    u32 h = 0;
+    u32 h;
 
     if (s == 0) {
         return 0;
     }
+    h = 0;
     for (i = 0; s[i] != 0; i++) {
         h *= 31;
         h += (unsigned char)toupper(s[i]);
     }
-    return h % 0xFFFFFFFF;
+    h %= 0xFFFFFFFF;
+    return h;
 }
 
 void SpinDestroy(Actor* a);
@@ -291,6 +293,11 @@ inline float VecNormalize(Vec3* v) {
     return __fres(len);
 }
 
+// Random float in [0, 1].
+inline float RandUnit() {
+    return (float)rand() / 32767.0f;
+}
+
 void SwarmUpdate(Actor* a, float dt) {
     SwarmData* d = (SwarmData*)a->data;
     Actor** p;
@@ -320,7 +327,7 @@ void SwarmUpdate(Actor* a, float dt) {
     a->flags2 |= 0x800000;
     ActorUpdate(a, dt);
 
-    if ((float)rand() / 32767.0f < 0.005f) {
+    if (RandUnit() < 0.005f) {
         int n = rand() % (d->children.size >> 2);
         char* q = d->children.data;
         char* end = d->children.data + d->children.size;
@@ -404,9 +411,9 @@ void SwarmUpdate(Actor* a, float dt) {
         }
 
         if (weights[2] > 0.0f) {
-            float r = (float)rand() / 32767.0f;
+            float r = RandUnit();
 
-            Vec3Set(&euler, 360.0f * ((float)rand() / 32767.0f), 90.0f * r - 45.0f, 0.0f);
+            Vec3Set(&euler, 360.0f * RandUnit(), 90.0f * r - 45.0f, 0.0f);
             fn_8016D4EC(&v[2], &euler);
         }
 
@@ -565,64 +572,67 @@ void SwarmDestroy(Actor* a) {
 }
 
 int SwarmInit(Actor* a) {
-    float px, py, pz;
-    int i;
-    SwarmData* d;
-    Vec3 euler;
-    SpawnDesc spawn;
+    SwarmData* s;
 
     if (!ActorInitBase(a)) {
         return 0;
     }
     a->flags |= 0x20000;
-    d = (SwarmData*)VAlloc(100);
-    a->data = d;
-    memset(d, 0, 100);
-    d->unk34 = 50.0f;
-    d->forceScale = 10000.0f;
-    d->targetSpeed = 2000.0f;
-    d->blendInner = 2000.0f;
-    d->blendOuter = 4000.0f;
-    d->blendNear = 0.6f;
-    d->blendFar = 0.1f;
-    d->weightForward = 1.0f;
-    d->radius = 500.0f;
-    d->weightCenter = 1.0f;
-    d->weightAlign = 0.7f;
-    d->alignBias = 0.0f;
+    s = (SwarmData*)VAlloc(100);
+    a->data = s;
+    memset(s, 0, 100);
+    s->unk34 = 50.0f;
+    s->forceScale = 10000.0f;
+    s->targetSpeed = 2000.0f;
+    s->blendInner = 2000.0f;
+    s->blendOuter = 4000.0f;
+    s->blendNear = 0.6f;
+    s->blendFar = 0.1f;
+    s->weightForward = 1.0f;
+    s->radius = 500.0f;
+    s->weightCenter = 1.0f;
+    s->weightAlign = 0.7f;
+    s->alignBias = 0.0f;
 
-    px = (float)a->x;
-    py = (float)a->y;
-    pz = (float)a->z;
-    d = (SwarmData*)a->data;
-
-    memset(&spawn, 0, sizeof(spawn));
-    spawn.f1C = a->info->fA4;
+    // Spawn the bees around the swarm.
     {
-    Vector* children = &d->children;
-    for (i = 0; i < 10; i++) {
-        float r = (float)rand() / 32767.0f;
+        float px, py, pz;
+        int i;
+        SwarmData* d;
+        Vec3 euler;
+        SpawnDesc spawn;
 
-        Vec3Set(&euler, 360.0f * ((float)rand() / 32767.0f), 20.0f * r - 10.0f, 0.0f);
-        fn_8016D4EC(&spawn.pos, &euler);
-        fn_800E1098(&spawn.pos, &spawn.pos, d->radius);
-        spawn.pos.x += px;
-        spawn.pos.y += py;
-        spawn.pos.z += pz;
-        spawn.hash = StrHash("Ghost Bee");
+        px = (float)a->x;
+        py = (float)a->y;
+        pz = (float)a->z;
+        d = (SwarmData*)a->data;
 
-        {
-            Actor* child = fn_800C7E80(&spawn);
+        memset(&spawn, 0, sizeof(spawn));
+        spawn.f1C = a->info->fA4;
+        for (i = 0; i < 10; i++) {
+            float r = RandUnit();
 
-            if (!child) {
-                break;
+            Vec3Set(&euler, 360.0f * RandUnit(), 20.0f * r - 10.0f, 0.0f);
+            fn_8016D4EC(&spawn.pos, &euler);
+            fn_800E1098(&spawn.pos, &spawn.pos, d->radius);
+            spawn.pos.x += px;
+            spawn.pos.y += py;
+            spawn.pos.z += pz;
+            spawn.hash = StrHash("Ghost Bee");
+
+            {
+                Actor* child = fn_800C7E80(&spawn);
+                Vector* children = &d->children;
+
+                if (!child) {
+                    break;
+                }
+                *(Actor**)fn_8028B3BC(children, children->data + children->size, 4) = child;
             }
-            *(Actor**)fn_8028B3BC(children, children->data + children->size, 4) = child;
         }
+        d->flags |= 1;
+        d->flags &= ~2;
     }
-    }
-    d->flags |= 1;
-    d->flags &= ~2;
     return 1;
 }
 
