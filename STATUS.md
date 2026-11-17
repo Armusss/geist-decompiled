@@ -115,6 +115,11 @@ actor+0x130), RideBehavior switch, HostDie, HostRideMsg, SltInit, GhostGunUpdate
 names three objects (renaming P5Actor symbols), BitsetAllocIndices parameter swap (the SAM renames are already applied; u_8016A774 only needs SltInit).
 96/233 files Matching, 2,984 functions.
 
+**VecNormalize asm helper (user-approved 2026-11-17):** include/game/vecnorm.h, from opus-asm's investigation
+(docs/asm-normalize.md: 336 ps_rsqrte sites in 69 units = 243 normalize sites (57 units) + 92 FastSqrt + 1 acos). Use verbatim,
+and keep it only in a unit that then fully matches (AUDIT OK), the same condition as FastSqrt. Verified: the helper window is
+byte-identical to retail in fn_80184A70 and fn_8009F7A8; callers still need register work around it.
+
 **Recurring unsolved shapes (fullmatch round 2026-11-15):**
 - `li r4,9` before `addi r3,rX,624` at a HasCondition call: HostRideBUpdate/HostRideTick (2 diffs each), BehParamsUpdate,
   CreatureUpdate, NpcSveUpdateActor, fn_801CAA48, fn_80295634, fn_8004C9C8, CrabUpdate. `#pragma scheduling off` (probe) still
