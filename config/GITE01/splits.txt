@@ -1096,6 +1096,9 @@ game/Fuel.cpp:
 game/u_802A815C.cpp:
 	.text       start:0x802A815C end:0x802A9824
 	.ctors      start:0x80341244 end:0x80341248
+	.sdata      start:0x804D3890 end:0x804D38A0
+	.sbss       start:0x804D5760 end:0x804D5778
+	.sdata2     start:0x804DA918 end:0x804DA970
 
 game/u_802A9824.cpp:
 	.text       start:0x802A9824 end:0x802AE27C

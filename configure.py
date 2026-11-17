@@ -796,7 +796,7 @@ config.libs = [
             Object(NonMatching, "game/u_8029E714.cpp"),  # pinned
             Object(Matching, "game/u_802A770C.cpp"),  # host types
             Object(Matching, "game/Fuel.cpp"),  # (helper-game-b)
-            Object(NonMatching, "game/u_802A815C.cpp"),  # split from u_802A770C
+            Object(Matching, "game/u_802A815C.cpp"),  # split from u_802A770C
             Object(NonMatching, "game/u_802A9824.cpp"),  # known
             Object(NonMatching, "game/u_802AE27C.cpp"),  # pinned
             Object(Matching, "game/u_802B2680.cpp"),  # pinned

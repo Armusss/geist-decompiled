@@ -57,15 +57,17 @@ struct Actor {
 typedef u32 (*Actor62Handler)(u32 id, int msg, int* data, int param);
 
 extern "C" {
-extern Actor* lbl_804D5768;      // head of the actor list
-extern u32    lbl_804D576C;      // last actor id handed out
-extern f32    lbl_804D5760;
-extern f32    lbl_804D5764;
-extern f32    lbl_804D5770;
-extern f32    lbl_804D3890;
-extern f32    lbl_804D3894;
-extern f32    lbl_804D3898;
-extern f32    lbl_804D389C;
+// Path length / time scales: one pair for each fn_802A1D04() mode.
+f32    lbl_804D3890 = 5000.0f;
+f32    lbl_804D3894 = 1000.0f;
+f32    lbl_804D3898 = 2660.0f;
+f32    lbl_804D389C = 1000.0f;
+
+f32    lbl_804D5760 = lbl_804D3890;  // current path length scale
+f32    lbl_804D5764 = lbl_804D389C;  // current path time scale
+Actor* lbl_804D5768;                 // head of the actor list
+u32    lbl_804D576C;                 // last actor id handed out
+f32    lbl_804D5770;                 // last update's time step
 
 extern void* memset(void*, int, u32);
 extern void* memcpy(void*, const void*, u32);
@@ -85,7 +87,7 @@ void* AssetFind(u32, u32);
 void Actor62DrawPathTrail(void*);
 void Draw3DBegin(int, void*);
 void Draw3DEnd(void);
-void DrawWorldQuadFlipped(f32, f32, Vec3*, u8, u8, u8, u8);
+void DrawWorldQuadFlipped(f32, f32, f32*, u8, u8, u8, u8);
 void* VAlloc(int);
 void VFree(void*);
 void ActorUnlinkOwnerObjects(Actor*);
@@ -389,7 +391,7 @@ u32 Actor62SetupTransform(u32 id, int* data)
 
             a->field_80 = mtx.pos;
             fn_800A025C(&a->field_B0, &mtx, 1);
-            f32 scale = lbl_804D5760 * 0.5f;
+            f32 scale = lbl_804D5760 / 2.0f;
             a->field_B0.x *= scale;
             a->field_B0.y *= scale;
             a->field_B0.z *= scale;
@@ -683,17 +685,10 @@ void Actor62DrawPathTrail(void* p)
                 f32 size = 560.0f * k + 40.0f;
 
                 size *= seg->h;
-                DrawWorldQuadFlipped(size, seg->g, &seg->pos, 0xff, 0xff, 0xff,
+                DrawWorldQuadFlipped(size, seg->g, &seg->pos.x, 0xff, 0xff, 0xff,
                                      (int)alpha & 0xff);
             }
         }
         Draw3DEnd();
     }
-}
-
-// Reset the type-0x62 path scales to their default values.
-void Actor62InitPathScale(void)
-{
-    lbl_804D5760 = lbl_804D3890;
-    lbl_804D5764 = lbl_804D389C;
 }
