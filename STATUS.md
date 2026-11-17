@@ -112,7 +112,7 @@ variable), scheduling rules (per-block, `mr` in the call's block reverses argume
 VMAllocPages, EffectEmitterShutdown matched. All in docs/matching-tricks.md; summary added to the Opus brief
 (~/geist-work/ds/fullmatch.task.md). Still open: HostRide `li r4` case (block-identical to addi-first callbacks; 9 of 11 load
 actor+0x130), RideBehavior switch, HostDie, HostRideMsg, SltInit, GhostGunUpdate. Decisions pending with the user: "Actor"
-names three objects (renaming P5Actor symbols), BitsetAllocIndices parameter swap, SAM renames for u_8016A774's flip.
+names three objects (renaming P5Actor symbols), BitsetAllocIndices parameter swap (the SAM renames are already applied; u_8016A774 only needs SltInit).
 96/233 files Matching, 2,984 functions.
 
 **Recurring unsolved shapes (fullmatch round 2026-11-15):**
