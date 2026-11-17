@@ -86,8 +86,8 @@ static OSThread sStoreThread;
 static u8 sStoreStack[0x1000];
 static u32 sCrcTable[256];
 
-int sStoreMode = 0;
-int sStoreThreadRun = 0;
+int sStoreMode = 2;
+int sStoreThreadRun = 1;
 
 static int sCardCode;
 static int sCardArg;
