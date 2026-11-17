@@ -1,40 +1,507 @@
-// u_8020A650.cpp: callback timer, name tables and model building for one actor type (0x8020A650-0x8020B77C).
+// u_8020A650.cpp: the body/sound-source owner of one actor type (0x80209C30-0x8020B77C): sound triggers
+// and source lists, mode setup, callback timer, name tables and model building.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include "game/types.h"
 
 typedef unsigned char u8;
 typedef unsigned short u16;
+typedef int s32;
+typedef unsigned int u32;
 
-// One 0x1C-byte animation frame: orientation followed by position.
+// One 0x1C-byte bone frame: orientation followed by position.
 struct u8020A650Anim {
     Quat rot;                   // 0x00
     Vec3 pos;                   // 0x10
 };
 
-// One entry of the callback list owned by u8020A650Owner.
+// One 0x28-byte entry of the owner's per-bone list: the parent bone index, the
+// name hash it was registered under, its rest transform and its live source.
 struct u8020A650Entry {
-    int field00;                // 0x00
-    int field04;                // 0x04
-    Quat quat;                  // 0x08
-    Vec3 pos;                   // 0x18
-    void* cb;                   // 0x24
+    s32 index;                  // 0x00: parent transform index in the output array
+    u32 nameHash;               // 0x04
+    u8020A650Anim rest;         // 0x08: rest transform
+    void* source;               // 0x24: live source, 0 for an unused entry
 };
 
-// Object owning a countdown timer and a list of callback entries.
-struct u8020A650Owner {
-    u8 unk00[0x4];
-    short modelId;              // 0x4
-    u16 count;                  // 0x6
-    int modelIdx;               // 0x8
-    u8020A650Entry* entries;    // 0xC
-    void* ctx;                  // 0x10
-    u8* slotMap;                // 0x14
-    u8 unk18[0x4];
-    float timer;                // 0x1C
+// The owner object: a real virtual class (vptr at 0, Stop at vtable +0x24 and
+// Activate at +0x28) with a countdown timer and one entry per model bone.
+class u8020A650Owner {
+public:
+    virtual ~u8020A650Owner();
+    virtual void Virtual0C();
+    virtual void Virtual10();
+    virtual void Virtual14();
+    virtual void Virtual18();
+    virtual void Virtual1C();
+    virtual void Virtual20();
+    virtual void Stop();                    // 0x24
+    virtual void Activate(int flag);        // 0x28
+
+    short modelId;                  // 0x04
+    u16 count;                      // 0x06: bone/entry count
+    s32 mode;                       // 0x08: index into the model name table
+    u8020A650Entry* entries;        // 0x0C
+    void* ctx;                      // 0x10
+    u8* slotMap;                    // 0x14: per-mode buffer
+    u8* boneSets;                   // 0x18: bone-set record of the mode
+    float timer;                    // 0x1C
 };
 
+// Upper-case table used by the name hashes.
+extern unsigned char __upper_map[256];
+static inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
+
+void* VAlloc(int size);
+void VFree(void* p);
+extern "C" void PSQUATMultiply(Quat* a, Quat* b, Quat* out);
+void Mtx34StoreTranslation(Mtx34* mtx, Vec3* v);
+void QuatRotateVec(Vec3* out, float* q, Vec3* in);
+extern "C" void fn_801D5110(void* cb, int value);
+extern "C" void fn_801D513C(void* cb, void* out);
 extern "C" void fn_801D5448(void* cb);
+int u8020A650BuildModel(u8020A650Owner* owner, int mode, u8* data,
+                        u8020A650Anim* anim, Mtx34* mtx);
+
+// The sound-list view of the same owner object (the functions below keep this
+// name in their signatures): the entry array is walked with a byte offset.
+// The entry stride is 0x28 and entry 0 is
+// skipped; each entry keeps the name hash it was registered under at +0x04 and
+// the source object at +0x24.
+struct SoundList {
+    u8 pad00[0x06];
+    unsigned short count;       // 0x06: entry count
+    u8 pad08[0x04];
+    u8* entries;                // 0x0C: entry array
+    void* field10;              // 0x10: secondary source
+    void* field14;              // 0x14: extra buffer
+    u8 pad18[0x04];
+    float timer;                // 0x1C: retrigger delay written on every trigger
+};
+
+extern Vec3 lbl_8049E130[];     // 0x14 recent trigger positions
+extern int lbl_804D53A0;        // number of recent trigger positions
+extern float lbl_804D9378;      // trigger range scale
+extern float lbl_804D937C;      // retrigger delay
+extern const char* lbl_803BAA90[];  // per-mode name strings
+
+inline u32 StrHash(const char* s)
+{
+    if (s == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        u32 h = 0;
+        int i;
+        for (i = 0; s[i] != 0; i++)
+        {
+            h *= 31;
+            h += (unsigned char)toupper(s[i]);
+        }
+        h %= 0xFFFFFFFF;
+        return h;
+    }
+}
+
+extern "C" int fn_801D60A0(int flag);
+extern "C" int fn_801D4738(void* source, Vec3* pos, float seek);
+extern "C" void fn_801D5010(void* source, void* param);
+extern "C" void fn_801D55CC(void* source);
+extern "C" void fn_801D4C0C(void* source);
+extern "C" int fn_801D549C(void* source);
+
+// Triggers the sources of a list around the given position: mode 0 tests each
+// entry for range, mode 1 scales the working vector, and any other mode filters
+// the entries by the hash of that mode's name.
+static inline void Vec3Init(Vec3* v, float x, float y, float z)
+{
+    v->x = x;
+    v->y = y;
+    v->z = z;
+}
+
+void BatsqueekTriggerModeSounds(SoundList* list, float seek, Vec3* pos, Vec3* vec, int mode)
+{
+    Vec3 local;
+
+    if (list->entries == 0)
+        return;
+
+    Vec3Init(&local, vec->x, vec->y, vec->z);
+
+    if (fn_801D60A0(1) != 0 && lbl_804D53A0 < 0x14)
+        Vec3Init(&lbl_8049E130[lbl_804D53A0++], pos->x, pos->y, pos->z);
+
+    if (mode == 0)
+    {
+        int hits = 0;
+        int i;
+
+        for (i = 1; i < list->count; i++)
+        {
+            if (((u8020A650Entry*)list->entries)[i].source != 0 &&
+                fn_801D4738(((u8020A650Entry*)list->entries)[i].source, pos, seek) != 0)
+            {
+                hits++;
+                fn_801D5010(((u8020A650Entry*)list->entries)[i].source, &local);
+            }
+        }
+
+        if (hits == 0)
+        {
+            local.x *= 0.03125f;
+            local.y *= 0.03125f;
+            local.z *= 0.03125f;
+            int i;
+
+            for (i = 1; i < list->count; i++)
+            {
+                if (((u8020A650Entry*)list->entries)[i].source != 0)
+                    fn_801D5010(((u8020A650Entry*)list->entries)[i].source, &local);
+                }
+        }
+    }
+    else if (mode == 1)
+    {
+        local.x *= 0.03125f;
+        local.y *= 0.03125f;
+        local.z *= 0.03125f;
+        int i;
+
+        for (i = 1; i < list->count; i++)
+        {
+            if (((u8020A650Entry*)list->entries)[i].source != 0)
+                fn_801D5010(((u8020A650Entry*)list->entries)[i].source, vec);
+        }
+    }
+    else
+    {
+        u32 hash = StrHash(lbl_803BAA90[mode]);
+        int i;
+        int off;
+
+        for (i = 1, off = 0x28; i < list->count; i++)
+        {
+            u8020A650Entry* entry = (u8020A650Entry*)(list->entries + off);
+
+            if (entry->source != 0 && hash == entry->nameHash)
+                fn_801D5010(entry->source, vec);
+            off += 0x28;
+        }
+    }
+
+    list->timer = 10000.0f;
+}
+
+// Finds the sound-list entry registered under the given name hash and hands its
+// source object to the trigger routine; if nothing matches, restarts the delay.
+void SoundListTriggerEntry(SoundList* list, u32 hash, void* param)
+{
+    u8020A650Entry* entries = (u8020A650Entry*)list->entries;
+
+    if (entries != 0)
+    {
+        for (int i = 1; i < list->count; i++)
+        {
+            if (((u8020A650Entry*)list->entries)[i].source != 0 &&
+                hash == ((u8020A650Entry*)list->entries)[i].nameHash)
+            {
+                fn_801D5010(entries[i].source, param);
+                return;
+            }
+        }
+        list->timer = lbl_804D937C;
+    }
+}
+
+// Releases every live source held by the list.
+void SoundListStopAll(SoundList* list)
+{
+    if (list->entries != 0)
+    {
+        int off;
+        int i;
+
+        for (i = 1, off = 0x28; i < list->count; i++)
+        {
+            void* source = *(void**)(list->entries + off + 0x24);
+
+            if (source != 0)
+                fn_801D5110(source, 1);
+            off += 0x28;
+        }
+    }
+}
+
+// Releases every live source held by the list, then frees the entry array, the
+// secondary source and the extra buffer, if they exist.
+void SoundListTeardown(SoundList* list)
+{
+    if (list->entries != 0)
+    {
+        int off;
+        int i;
+
+        for (i = 1, off = 0x28; i < list->count; i++)
+        {
+            void* source = *(void**)(list->entries + off + 0x24);
+
+            if (source != 0)
+                fn_801D55CC(source);
+            off += 0x28;
+        }
+
+        VFree(list->entries);
+        fn_801D4C0C(list->field10);
+    }
+
+    if (list->field14 != 0)
+        VFree(list->field14);
+}
+
+// Returns non-zero when none of the live sources of the list is still marked
+// active; a single active source makes the whole list report "not finished".
+int SoundListSourcesFinished(SoundList* list)
+{
+    int off;
+    int i;
+
+    if (list->entries == 0)
+        return 1;
+
+    i = 1;
+    off = 0x28;
+    for (; i < list->count; i++)
+    {
+        void* source = *(void**)(list->entries + off + 0x24);
+
+        if (source != 0 && fn_801D549C(source) != 0)
+            return 0;
+        off += 0x28;
+    }
+
+    return 1;
+}
+
+extern "C" void fn_801D53D4(void* source);
+extern "C" void fn_801D550C(void* source);
+
+
+
+void BoneSetMatrix(void* bone, Mtx34* matrix);
+void Mtx34GetTranslation(Vec3* out, Mtx34* matrix);
+void QuatRotateVec(Vec3* out, float* quat, Vec3* vec);
+
+
+// Updates every live source of the list: when 'mode' is non-zero the sources are
+// paused, otherwise they are resumed and re-registered with their source object.
+void SoundListApplySourceMode(SoundList* list, int mode)
+{
+    if (list->entries == 0)
+        return;
+
+    int off;
+    int i;
+
+    for (i = 1, off = 0x28; i < list->count; i++)
+    {
+        void* source = *(void**)(list->entries + off + 0x24);
+
+        if (source != 0)
+        {
+            if (mode != 0)
+            {
+                fn_801D53D4(source);
+            }
+            else
+            {
+                fn_801D550C(source);
+                fn_801D5448(*(void**)(list->entries + off + 0x24));
+            }
+        }
+
+        off += 0x28;
+    }
+}
+
+// Builds the per-source transforms of the list into 'out': entry 0 supplies the
+// base transform, every following entry either takes its live bone matrix or is
+// rotated by the transform of the entry its index points at.
+// Conjugate (inverse rotation) of a unit quaternion.
+static inline void QuatConjugate(Quat* out, Quat* q)
+{
+    out->x = -q->x;
+    out->y = -q->y;
+    out->z = -q->z;
+    out->w = q->w;
+}
+
+static inline void Vec3AddTo(Vec3* a, Vec3* b)
+{
+    a->x += b->x;
+    a->y += b->y;
+    a->z += b->z;
+}
+
+void SoundListBuildSourceMatrices(SoundList* list, int arg2, int arg3, Mtx34* out)
+{
+    u8020A650Anim* frames = (u8020A650Anim*)out;
+    Quat quat;
+    Mtx34 matrix;
+
+    if (list->entries == 0)
+        return;
+
+    frames->pos = ((u8020A650Entry*)list->entries)->rest.pos;
+    frames->rot = ((u8020A650Entry*)list->entries)->rest.rot;
+
+    int off;
+    u8020A650Anim* cur;
+    int i;
+    for (i = 1, off = 0x28, cur = frames + 1; i < list->count; i++)
+    {
+        if (((u8020A650Entry*)(list->entries + off))->source != 0)
+        {
+            fn_801D513C(((u8020A650Entry*)(list->entries + off))->source, &matrix);
+            BoneSetMatrix(cur, &matrix);
+            PSQUATMultiply(&cur->rot, &((u8020A650Entry*)(list->entries + off))->rest.rot, &cur->rot);
+
+            cur->rot.x = -cur->rot.x;
+            cur->rot.y = -cur->rot.y;
+            cur->rot.z = -cur->rot.z;
+
+            Mtx34GetTranslation(&cur->pos, &matrix);
+        }
+        else
+        {
+            PSQUATMultiply(&((u8020A650Entry*)(list->entries + off))->rest.rot, &frames[((u8020A650Entry*)(list->entries + off))->index].rot, &cur->rot);
+            QuatConjugate(&quat, &frames[((u8020A650Entry*)(list->entries + off))->index].rot);
+            QuatRotateVec(&cur->pos, (float*)&quat, &((u8020A650Entry*)(list->entries + off))->rest.pos);
+            Vec3AddTo(&cur->pos, &frames[((u8020A650Entry*)(list->entries + off))->index].pos);
+        }
+
+        off += 0x28;
+        cur++;
+    }
+
+    frames->rot = frames[1].rot;
+    frames->pos = frames[1].pos;
+}
+
+// Per-mode setup record of the owner: the mode hash the caller passes, the size
+// of the mode buffer and the index of the bone-set table this mode uses.
+struct BatsqueekOwnerMode {
+    u32 hash;                   // 0x00
+    u16 bufferSize;             // 0x04
+    u16 boneSetIndex;           // 0x06
+    u8 pad08[0x08];
+};
+extern BatsqueekOwnerMode lbl_803BAAC4[];   // three records
+
+// 0x24-byte bone-set records referenced by the table above.
+struct BatsqueekOwnerBoneSet {
+    u8 pad00[0x24];
+};
+extern BatsqueekOwnerBoneSet lbl_803BAAF4[];
+
+int ModelBoneCount(int model);
+extern "C" void* memset(void* dest, int value, u32 count);
+
+// Sets up one of the owner's Batsqueeks modes: allocates the per-bone entry array
+// and the mode buffer, then lets the model builder fill them in. Returns 0 when
+// the mode hash is unknown or an allocation or the build fails.
+int BatsqueekOwnerSetup(u8020A650Owner* owner, int model, u32 modeHash, u8* data,
+                        Mtx34* mtx, u8020A650Anim* anim)
+{
+    if (model < -1)
+        return 0;
+
+    if (owner->entries != 0)
+        owner->Stop();
+
+    int mode;
+    for (mode = 0; mode < 3; mode++)
+    {
+        if (modeHash == lbl_803BAAC4[mode].hash)
+            break;
+    }
+
+    if (mode == 3)
+        return 0;
+
+    owner->mode = mode;
+    owner->count = (u16)ModelBoneCount(model);
+    owner->entries = (u8020A650Entry*)VAlloc(owner->count * 0x28);
+    if (owner->entries == 0)
+        return 0;
+
+    memset(owner->entries, 0, owner->count * 0x28);
+
+    owner->slotMap = (u8*)VAlloc(lbl_803BAAC4[mode].bufferSize);
+    if (owner->slotMap == 0)
+    {
+        VFree(owner->entries);
+        owner->entries = 0;
+        return 0;
+    }
+
+    memset(owner->slotMap, 0, lbl_803BAAC4[mode].bufferSize);
+    owner->modelId = (short)model;
+    owner->boneSets = (u8*)&lbl_803BAAF4[lbl_803BAAC4[mode].boneSetIndex];
+    owner->timer = 10000.0f;
+
+    if (u8020A650BuildModel(owner, mode, data, anim, mtx) == 0)
+    {
+        VFree(owner->entries);
+        owner->entries = 0;
+        VFree(owner->slotMap);
+        owner->slotMap = 0;
+        return 0;
+    }
+
+    owner->Activate(0);
+    return 1;
+}
+
+// Mtx34 plus context, initialized by the runtime before every debug draw.
+struct BatsqueekDebugLink {
+    Mtx34 matrix;               // 0x00: translation of the drawn box
+    u8 pad30[0x08];
+};
+
+void LinkInfoInit(void* link);
+void DebugDrawBoneBox(Vec3* box, void* link, int color, int a, int b);
+
+extern float lbl_804D9380;
+extern float lbl_804D9384;
+
+// Draws a debug box at every position currently recorded by the sound trigger
+// list, then clears the recorded position count.
+void BatsqueekDrawTriggerBoxes(void)
+{
+    Vec3 box[2];
+    BatsqueekDebugLink link;
+
+    box[0].x = -24.0f;
+    box[0].y = -24.0f;
+    box[0].z = -24.0f;
+    box[1].x = 24.0f;
+    box[1].y = 24.0f;
+    box[1].z = 24.0f;
+
+    LinkInfoInit(&link);
+
+    for (int i = 0; i < lbl_804D53A0; i++)
+    {
+        Mtx34StoreTranslation(&link.matrix, &lbl_8049E130[i]);
+        DebugDrawBoneBox(box, &link, 0xff, 0, 0);
+    }
+
+    lbl_804D53A0 = 0;
+}
+
 
 // Ticks the timer down; once it runs out, releases every listed entry.
 void TickCallbackTimer(float amount, u8020A650Owner* o)
@@ -43,8 +510,8 @@ void TickCallbackTimer(float amount, u8020A650Owner* o)
         o->timer -= amount;
         if (o->timer <= 0.0f && o->entries != 0) {
             for (int i = 1; i < o->count; i++) {
-                if (o->entries[i].cb != 0) {
-                    fn_801D5448(o->entries[i].cb);
+                if (o->entries[i].source != 0) {
+                    fn_801D5448(o->entries[i].source);
                 }
             }
         }
@@ -55,28 +522,15 @@ void TickCallbackTimer(float amount, u8020A650Owner* o)
 extern char lbl_803BB8CC[];
 extern char lbl_803ADE00[];
 
-void* VAlloc(int size);
-void VFree(void* p);
 
 // Tears the object down (derived vtable, virtual cleanup, base vtable) and
 // optionally frees the storage.
-// Virtual-call view of the object: vptr at 0, cleanup in vtable slot 0x24.
-struct VtObject {
-    virtual void slot08();
-    virtual void slot0C();
-    virtual void slot10();
-    virtual void slot14();
-    virtual void slot18();
-    virtual void slot1C();
-    virtual void slot20();
-    virtual void cleanup();  // 0x24
-};
 
 void* DestroyVtObject(void* p, short flag)
 {
     if (p != 0) {
         *(void**)p = &lbl_803BB8CC;
-        ((VtObject*)p)->cleanup();
+        ((u8020A650Owner*)p)->Stop();
         if (p != 0) {
             *(void**)p = &lbl_803ADE00;
         }
@@ -87,8 +541,6 @@ void* DestroyVtObject(void* p, short flag)
     return p;
 }
 
-// Upper-case table used by the lazy name hash.
-extern unsigned char __upper_map[256];
 
 // One model slot: cached hash of its name plus the name itself, and the
 // ranges of the body-part / attachment tables it uses.
@@ -144,13 +596,11 @@ struct u8020A650NameTables {
 };
 
 extern u8020A650NameTables lbl_803BA9B8;
-extern int lbl_804D53A0;
 
 extern "C" unsigned long AssetFind(unsigned long kind, unsigned long hash);
 
 // Lazy string hash used by every name table: 31x multiply, upper-cased
 // characters, with 0xFF meaning "keep -1".
-static inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
 
 static inline unsigned long HashName(const char* s)
 {
@@ -212,15 +662,12 @@ extern "C" float fabsf(float);
 extern "C" float sqrtf(float);
 
 // SDK vector helpers (plain C linkage in the retail binary).
-extern "C" void PSQUATMultiply(Quat* a, Quat* b, Quat* out);
 extern "C" void PSQUATNormalize(Quat* q, Quat* out);
 
 // Model / skeleton helpers.
 void ModelAnimate(int modelId, char* frameBuf, int mode);
 void ModelSetMatrix(int modelId, Mtx34* mtx, char* bones);
 void BoneGetMatrix(Mtx34* mtx, void* rot);
-void Mtx34StoreTranslation(Mtx34* mtx, Vec3* v);
-void QuatRotateVec(Vec3* out, float* q, Vec3* in);
 void QuatRotateVecNorm(Vec3* out, float* q, Vec3* in);
 
 // Actor-part helpers, still only known by address.
@@ -230,13 +677,11 @@ extern "C" void* fn_801D5B38(float value, int zero, int asset, int id,
 extern "C" void fn_801D52E0(void* cb);
 extern "C" void fn_801D5298(void* cb, Vec3* v);
 extern "C" void fn_801D5260(void* cb, Vec3* v);
-extern "C" void fn_801D5110(void* cb, int value);
 extern "C" void fn_801D556C(void* cb);
 extern "C" void* fn_801D4C34(void);
 extern "C" void fn_801D4B5C(void* ctx, void* cb, Vec3* v);
 extern "C" void fn_801D4824(void* ctx, void* cbA, void* cbB, Vec3* v1,
                              Vec3* v2, int count, Mtx34* mtx);
-extern "C" void fn_801D513C(void* cb, void* out);
 extern "C" void fn_801D4A70(void* ctx, void* a, void* b, void* out, Vec3* v,
                              void* extra);
 extern "C" void fn_800A0168(Mtx34* mtx, Mtx34* out);
@@ -258,11 +703,11 @@ int u8020A650BuildModel(u8020A650Owner* owner, int setIndex, u8* slotMap,
     void* ctx;
     int i;
 
-    owner->entries[0].cb = 0;
-    owner->entries[0].quat = anims[0].rot;
-    owner->entries[0].pos = anims[0].pos;
+    owner->entries[0].source = 0;
+    owner->entries[0].rest.rot = anims[0].rot;
+    owner->entries[0].rest.pos = anims[0].pos;
 
-    numParts = lbl_803BA9B8.models[owner->modelIdx].numParts;
+    numParts = lbl_803BA9B8.models[owner->mode].numParts;
 
     ModelAnimate(owner->modelId, animBuf, 1);
     frames[0].pos.x = 0.0f;
@@ -303,11 +748,11 @@ int u8020A650BuildModel(u8020A650Owner* owner, int setIndex, u8* slotMap,
                     }
                     handle = fn_801D5B38(scale, 0, part->asset, part->id, hash,
                                          ctx, &axis, 0);
-                    owner->entries[slot].cb = handle;
+                    owner->entries[slot].source = handle;
 
-                    if (owner->entries[slot].cb != 0) {
+                    if (owner->entries[slot].source != 0) {
                         u8020A650Entry* e = &owner->entries[slot];
-                        void* cb = e->cb;
+                        void* cb = e->source;
                         Vec3 dir = delta;
                         Quat q;
                         Mtx34 partMtx;
@@ -345,10 +790,10 @@ int u8020A650BuildModel(u8020A650Owner* owner, int setIndex, u8* slotMap,
 
                         BoneGetMatrix(&partMtx, &q);
                         Mtx34StoreTranslation(&partMtx, &frames[slot].pos);
-                        PSQUATMultiply(&frames[slot].rot, &q, &e->quat);
-                        e->quat.x = -e->quat.x;
-                        e->quat.y = -e->quat.y;
-                        e->quat.z = -e->quat.z;
+                        PSQUATMultiply(&frames[slot].rot, &q, &e->rest.rot);
+                        e->rest.rot.x = -e->rest.rot.x;
+                        e->rest.rot.y = -e->rest.rot.y;
+                        e->rest.rot.z = -e->rest.rot.z;
 
                         fn_801D52E0(cb);
                         zero.x = 0.0f;
@@ -359,7 +804,7 @@ int u8020A650BuildModel(u8020A650Owner* owner, int setIndex, u8* slotMap,
                         fn_801D5110(cb, 0);
                         fn_801D556C(cb);
                     }
-                    owner->entries[slot].field04 = part->hash;
+                    owner->entries[slot].nameHash = part->hash;
                 }
             }
         }
@@ -378,7 +823,7 @@ int u8020A650BuildModel(u8020A650Owner* owner, int setIndex, u8* slotMap,
             if (slot == 0xFF) {
                 continue;
             }
-            if (owner->entries[slot].cb != 0) {
+            if (owner->entries[slot].source != 0) {
                 continue;
             }
             slot2 = fn_80037930(owner->modelId);
@@ -386,18 +831,18 @@ int u8020A650BuildModel(u8020A650Owner* owner, int setIndex, u8* slotMap,
                 continue;
             }
             slot2 = slotMap[slot2];
-            owner->entries[slot].field00 = slot2;
+            owner->entries[slot].index = slot2;
             delta.x = frames[slot].pos.x - frames[slot2].pos.x;
             delta.y = frames[slot].pos.y - frames[slot2].pos.y;
             delta.z = frames[slot].pos.z - frames[slot2].pos.z;
-            owner->entries[slot].pos = delta;
-            QuatRotateVec(&owner->entries[slot].pos, &frames[slot2].rot.x,
-                          &owner->entries[slot].pos);
+            owner->entries[slot].rest.pos = delta;
+            QuatRotateVec(&owner->entries[slot].rest.pos, &frames[slot2].rot.x,
+                          &owner->entries[slot].rest.pos);
             inv.x = -frames[slot2].rot.x;
             inv.y = -frames[slot2].rot.y;
             inv.z = -frames[slot2].rot.z;
             inv.w = frames[slot2].rot.w;
-            PSQUATMultiply(&frames[slot].rot, &inv, &owner->entries[slot].quat);
+            PSQUATMultiply(&frames[slot].rot, &inv, &owner->entries[slot].rest.rot);
         }
     }
 
@@ -421,10 +866,10 @@ int u8020A650BuildModel(u8020A650Owner* owner, int setIndex, u8* slotMap,
         if (slotA == 0xFF || slotB == 0xFF) {
             continue;
         }
-        if (owner->entries[slotA].cb == 0) {
+        if (owner->entries[slotA].source == 0) {
             continue;
         }
-        if (owner->entries[slotB].cb == 0) {
+        if (owner->entries[slotB].source == 0) {
             continue;
         }
 
@@ -439,8 +884,8 @@ int u8020A650BuildModel(u8020A650Owner* owner, int setIndex, u8* slotMap,
             v2.y = a->f1C;
             v2.z = a->f20;
 
-            fn_801D4B5C(owner->ctx, owner->entries[slotA].cb, &frames[slotA].pos);
-            if (owner->entries[slotA].cb != 0) {
+            fn_801D4B5C(owner->ctx, owner->entries[slotA].source, &frames[slotA].pos);
+            if (owner->entries[slotA].source != 0) {
                 Mtx34 boneMtx;
 
                 BoneGetMatrix(&boneMtx, &frames[slotA].rot);
@@ -448,10 +893,10 @@ int u8020A650BuildModel(u8020A650Owner* owner, int setIndex, u8* slotMap,
                 fn_800A0030(&v1, &boneMtx, &v1);
                 fn_800A0030(&v2, &boneMtx, &v2);
             } else {
-                inv.x = -owner->entries[slotA].quat.x;
-                inv.y = -owner->entries[slotA].quat.y;
-                inv.z = -owner->entries[slotA].quat.z;
-                inv.w = owner->entries[slotA].quat.w;
+                inv.x = -owner->entries[slotA].rest.rot.x;
+                inv.y = -owner->entries[slotA].rest.rot.y;
+                inv.z = -owner->entries[slotA].rest.rot.z;
+                inv.w = owner->entries[slotA].rest.rot.w;
                 QuatRotateVecNorm(&v1, &inv.x, &v1);
                 QuatRotateVecNorm(&v2, &inv.x, &v2);
             }
@@ -468,8 +913,8 @@ int u8020A650BuildModel(u8020A650Owner* owner, int setIndex, u8* slotMap,
             attachMtx.m[2][1] = a->f34;
             attachMtx.m[2][2] = lbl_804D939C;
             attachMtx.m[2][3] = 0.0f;
-            fn_801D4824(owner->ctx, owner->entries[slotA].cb,
-                        owner->entries[slotB].cb, &v1, &v2, 3, &attachMtx);
+            fn_801D4824(owner->ctx, owner->entries[slotA].source,
+                        owner->entries[slotB].source, &v1, &v2, 3, &attachMtx);
             break;
         }
         case 1: {
@@ -477,27 +922,27 @@ int u8020A650BuildModel(u8020A650Owner* owner, int setIndex, u8* slotMap,
             v1.y = a->f10;
             v1.z = a->f14;
 
-            if (owner->entries[slotA].cb != 0) {
+            if (owner->entries[slotA].source != 0) {
                 Mtx34 boneMtx;
 
                 BoneGetMatrix(&boneMtx, &frames[slotA].rot);
                 fn_800A0168(&boneMtx, &boneMtx);
                 fn_800A0030(&v1, &boneMtx, &v1);
             } else {
-                inv.x = -owner->entries[slotA].quat.x;
-                inv.y = -owner->entries[slotA].quat.y;
-                inv.z = -owner->entries[slotA].quat.z;
-                inv.w = owner->entries[slotA].quat.w;
+                inv.x = -owner->entries[slotA].rest.rot.x;
+                inv.y = -owner->entries[slotA].rest.rot.y;
+                inv.z = -owner->entries[slotA].rest.rot.z;
+                inv.w = owner->entries[slotA].rest.rot.w;
                 QuatRotateVecNorm(&v1, &inv.x, &v1);
             }
 
-            if (owner->entries[slotA].cb != 0) {
-                fn_801D513C(owner->entries[slotA].cb, tmp);
-                fn_801D4A70(owner->ctx, owner->entries[slotA].cb,
-                            owner->entries[slotB].cb, tmp + 0x24, &v1, &a->f24);
+            if (owner->entries[slotA].source != 0) {
+                fn_801D513C(owner->entries[slotA].source, tmp);
+                fn_801D4A70(owner->ctx, owner->entries[slotA].source,
+                            owner->entries[slotB].source, tmp + 0x24, &v1, &a->f24);
             } else {
-                fn_801D4A70(owner->ctx, &inv, owner->entries[slotB].cb,
-                            &owner->entries[slotA].pos, &v1, &a->f24);
+                fn_801D4A70(owner->ctx, &inv, owner->entries[slotB].source,
+                            &owner->entries[slotA].rest.pos, &v1, &a->f24);
             }
             break;
         }
@@ -509,21 +954,21 @@ int u8020A650BuildModel(u8020A650Owner* owner, int setIndex, u8* slotMap,
         Vec3 delta;
         Quat inv;
 
-        if (owner->entries[i].cb != 0) {
+        if (owner->entries[i].source != 0) {
             continue;
         }
-        slot = owner->entries[i].field00;
+        slot = owner->entries[i].index;
         delta.x = anims[i].pos.x - anims[slot].pos.x;
         delta.y = anims[i].pos.y - anims[slot].pos.y;
         delta.z = anims[i].pos.z - anims[slot].pos.z;
-        owner->entries[i].pos = delta;
-        QuatRotateVec(&owner->entries[i].pos, &anims[slot].rot.x,
-                      &owner->entries[i].pos);
+        owner->entries[i].rest.pos = delta;
+        QuatRotateVec(&owner->entries[i].rest.pos, &anims[slot].rot.x,
+                      &owner->entries[i].rest.pos);
         inv.x = -anims[slot].rot.x;
         inv.y = -anims[slot].rot.y;
         inv.z = -anims[slot].rot.z;
         inv.w = anims[slot].rot.w;
-        PSQUATMultiply(&anims[i].rot, &inv, &owner->entries[i].quat);
+        PSQUATMultiply(&anims[i].rot, &inv, &owner->entries[i].rest.rot);
     }
 
     return 1;
