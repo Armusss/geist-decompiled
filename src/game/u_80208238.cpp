@@ -1,6 +1,7 @@
 // u_80208238.cpp: player "Batsqueeks" host mode (per-frame update, setup, mode id tables) and a sound list
 // (0x80208238-0x8020A650). Names are descriptive guesses; the code is matched against the retail DOL.
 
+#include "game/types.h"
 #include "game/string.h"
 #include "game/msg.h"
 
@@ -858,24 +859,10 @@ extern "C" void fn_80209A14(void)
     lbl_8049E0F0[15] = AssetFind(0xf1754bf2, 0x44ffeba);
 }
 
-struct Vec3 {
-    float x;
-    float y;
-    float z;
-};
-
-// Quaternion of a bone transform.
-struct Quat {
-    float x;
-    float y;
-    float z;
-    float w;
-};
-
-// Affine transform stored as a quaternion followed by a translation.
-struct Mtx34 {
-    Quat q;                     // 0x00: rotation
-    Vec3 t;                     // 0x10: translation
+// One 0x1C-byte bone frame: orientation followed by position.
+struct u8020A650Anim {
+    Quat rot;                   // 0x00
+    Vec3 pos;                   // 0x10
 };
 
 // One 0x28-byte entry of a sound-source list: the source's rest transform and the
@@ -883,7 +870,7 @@ struct Mtx34 {
 struct SoundSourceEntry {
     s32 index;                  // 0x00: parent transform index in the output array
     u32 nameHash;               // 0x04
-    Mtx34 matrix;               // 0x08: rest transform
+    u8020A650Anim rest;         // 0x08: rest transform
     void* source;               // 0x24: live source, 0 for an unused entry
 };
 
@@ -1160,58 +1147,65 @@ void SoundListApplySourceMode(SoundList* list, int mode)
 // Builds the per-source transforms of the list into 'out': entry 0 supplies the
 // base transform, every following entry either takes its live bone matrix or is
 // rotated by the transform of the entry its index points at.
+// Conjugate (inverse rotation) of a unit quaternion.
+static inline void QuatConjugate(Quat* out, Quat* q)
+{
+    out->x = -q->x;
+    out->y = -q->y;
+    out->z = -q->z;
+    out->w = q->w;
+}
+
+static inline void Vec3AddTo(Vec3* a, Vec3* b)
+{
+    a->x += b->x;
+    a->y += b->y;
+    a->z += b->z;
+}
+
 void SoundListBuildSourceMatrices(SoundList* list, int arg2, int arg3, Mtx34* out)
 {
+    u8020A650Anim* frames = (u8020A650Anim*)out;
     Quat quat;
     Mtx34 matrix;
 
     if (list->entries == 0)
         return;
 
-    int off = 0x28;
-    Mtx34* cur = out + 1;
+    frames->pos = ((SoundSourceEntry*)list->entries)->rest.pos;
+    frames->rot = ((SoundSourceEntry*)list->entries)->rest.rot;
 
-    out->t = ((SoundSourceEntry*)list->entries)->matrix.t;
-    out->q = ((SoundSourceEntry*)list->entries)->matrix.q;
-
-    for (int i = 1; i < list->count; i++)
+    int off;
+    u8020A650Anim* cur;
+    int i;
+    for (i = 1, off = 0x28, cur = frames + 1; i < list->count; i++)
     {
-        SoundSourceEntry* entry = (SoundSourceEntry*)(list->entries + off);
-
-        if (entry->source != 0)
+        if (((SoundSourceEntry*)(list->entries + off))->source != 0)
         {
-            fn_801D513C(entry->source, &matrix);
+            fn_801D513C(((SoundSourceEntry*)(list->entries + off))->source, &matrix);
             BoneSetMatrix(cur, &matrix);
-            PSQUATMultiply(&cur->q, &entry->matrix.q, &cur->q);
+            PSQUATMultiply(&cur->rot, &((SoundSourceEntry*)(list->entries + off))->rest.rot, &cur->rot);
 
-            cur->q.x = -cur->q.x;
-            cur->q.y = -cur->q.y;
-            cur->q.z = -cur->q.z;
+            cur->rot.x = -cur->rot.x;
+            cur->rot.y = -cur->rot.y;
+            cur->rot.z = -cur->rot.z;
 
-            Mtx34GetTranslation(&cur->t, &matrix);
+            Mtx34GetTranslation(&cur->pos, &matrix);
         }
         else
         {
-            PSQUATMultiply(&entry->matrix.q, &out[entry->index].q, &cur->q);
-
-            quat.x = -out[entry->index].q.x;
-            quat.y = -out[entry->index].q.y;
-            quat.z = -out[entry->index].q.z;
-            quat.w = out[entry->index].q.w;
-
-            QuatRotateVec(&cur->t, (float*)&quat, &entry->matrix.t);
-
-            cur->t.x += out[entry->index].t.x;
-            cur->t.y += out[entry->index].t.y;
-            cur->t.z += out[entry->index].t.z;
+            PSQUATMultiply(&((SoundSourceEntry*)(list->entries + off))->rest.rot, &frames[((SoundSourceEntry*)(list->entries + off))->index].rot, &cur->rot);
+            QuatConjugate(&quat, &frames[((SoundSourceEntry*)(list->entries + off))->index].rot);
+            QuatRotateVec(&cur->pos, (float*)&quat, &((SoundSourceEntry*)(list->entries + off))->rest.pos);
+            Vec3AddTo(&cur->pos, &frames[((SoundSourceEntry*)(list->entries + off))->index].pos);
         }
 
         off += 0x28;
         cur++;
     }
 
-    out->q = out[1].q;
-    out->t = out[1].t;
+    frames->rot = frames[1].rot;
+    frames->pos = frames[1].pos;
 }
 
 typedef unsigned short u16;
@@ -1235,9 +1229,6 @@ extern BatsqueekOwnerBoneSet lbl_803BAAF4[];
 // The owner object is built and owned by another unit; only the two virtual
 // slots this file calls and the fields the setup writes are modelled here
 // (vtable slots +0x24 and +0x28).
-struct u8020A650Anim {
-    u8 pad00[0x04];
-};
 
 class u8020A650Owner {
 public:
@@ -1326,7 +1317,7 @@ int BatsqueekOwnerSetup(u8020A650Owner* owner, int model, u32 modeHash, u8* data
 // Mtx34 plus context, initialized by the runtime before every debug draw.
 struct BatsqueekDebugLink {
     Mtx34 matrix;               // 0x00: translation of the drawn box
-    u8 pad1C[0x1C];
+    u8 pad30[0x08];
 };
 
 void LinkInfoInit(void* link);
