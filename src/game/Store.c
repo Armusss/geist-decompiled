@@ -103,8 +103,9 @@ void* StoreThread(void* arg);
 
 inline void StoreLoadBanner(u8* banner, u8* icons) {
     TPLPalette* pal;
-    int i;
     u8* dst;
+    int i;
+    int off;
     TPLHeader* tex;
 
     if (ImageLoadTPL(&pal, "card.tpl")) {
@@ -117,8 +118,8 @@ inline void StoreLoadBanner(u8* banner, u8* icons) {
             OSPanic("Store.c", 217, "Unsupported banner texture formant.");
             break;
         }
-        for (dst = icons, i = 1; i < pal->numDescriptors && i < 8; i++) {
-            tex = pal->descriptorArray[i].textureHeader;
+        for (dst = icons, i = 1, off = 8; i < pal->numDescriptors && i < 8; i++, off += 8) {
+            tex = *(TPLHeader**)((u8*)pal->descriptorArray + off);
             switch (tex->format) {
             case 5:
                 memcpy(dst, tex->data, 0x800);
@@ -142,8 +143,8 @@ int StoreSave(int mode, const char* name, int size, u32 flags, void* src) {
         result = StoreAramWrite(size, (u8*)src) != 0;
         break;
     case 2: {
-        u8* icons;
         u8* banner;
+        u8* icons;
 
         fn_8000AA14();
         sStoreThreadRun = 1;
