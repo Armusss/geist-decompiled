@@ -226,12 +226,16 @@ game/Progress.cpp:
 	.sdata2     start:0x804D6FF8 end:0x804D7008
 
 game/u_800D0BF4.cpp:
-	.text       start:0x800D0BB8 end:0x800D32E8
+	.text       start:0x800D0BB8 end:0x800D14A8
 	.rodata     start:0x80344C08 end:0x80344C70
 	.data       start:0x8039B9F0 end:0x8039BA20
+	.sdata2     start:0x804D7008 end:0x804D7020
+
+game/u_800D14A8.cpp:
+	.text       start:0x800D14A8 end:0x800D32E8
 	.sdata      start:0x804D2BC0 end:0x804D2BD0
 	.sbss       start:0x804D4948 end:0x804D4950
-	.sdata2     start:0x804D7008 end:0x804D704C
+	.sdata2     start:0x804D7020 end:0x804D704C
 
 game/u_800D32E8.cpp:
 	.text       start:0x800D32E8 end:0x800DD92C

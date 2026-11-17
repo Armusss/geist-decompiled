@@ -620,7 +620,8 @@ config.libs = [
             Object(NonMatching, "game/u_800BAA14.cpp"),  # guess
             Object(NonMatching, "game/u_800C5028.cpp"),  # guess
             Object(Matching, "game/Progress.cpp"),  # guess
-            Object(NonMatching, "game/u_800D0BF4.cpp"),  # guess
+            Object(Matching, "game/u_800D0BF4.cpp"),  # "Powerup" actor
+            Object(NonMatching, "game/u_800D14A8.cpp"),  # zone lists, dash, linked actors
             Object(NonMatching, "game/u_800D32E8.cpp", mw_version="GC/2.0"),  # guess; GC/2.0: EmitterHitParamCompare const void* pre-stwu loads (STATUS G4)
             Object(Matching, "game/u_800DD92C.cpp"),  # NPC talk
             Object(NonMatching, "game/u_800DE0C4.cpp"),  # pinned
