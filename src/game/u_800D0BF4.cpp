@@ -1660,14 +1660,14 @@ int ZoneLineFilter(ZoneLineEntry* entry, ZoneLineQuery* query) {
     ZoneLineReply actorReply;
     ZoneLineReply ownerReply;
     ZoneLineReply reply;
-    Actor* actor;
     unsigned short* bones;
     int count;
     int bone;
-    int i;
-    int model;
     int found;
+    int model;
     Actor* owner;
+    Actor* actor;
+    int i;
     float dist;
     float x;
     float y;
@@ -1703,13 +1703,13 @@ int ZoneLineFilter(ZoneLineEntry* entry, ZoneLineQuery* query) {
     }
     actor = entry->actor;
     if (actor != 0) {
-    y = (float)entry->y;
-    dy = y - query->y;
     x = (float)entry->x;
     dx = x - query->x;
+    y = (float)entry->y;
+    dy = y - query->y;
     z = (float)entry->z;
     dz = z - query->z;
-    dist = dy * dy + dx * dx + dz * dz;
+    dist = dx * dx + dy * dy + dz * dz;
     actorReply.actor = actor;
     actor->handle(0x400, &actorReply);
     ownerReply.actor = query->owner;
