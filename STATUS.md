@@ -149,6 +149,9 @@ byte-identical to retail in fn_80184A70 and fn_8009F7A8; callers still need regi
   boundary at 0x8016BE58 (SltEffect*/SltAsset*, .data 0x803A7C60-78, .sdata 0x804D2FB8-C0, .sdata2 0x804D7FF0-F8).
 - u_80230504 5/7 (opus-full-B12): Update 17 (register numbering), Apply frame wrong (retail normalize: ps_rsqrte/ps_res on
   registers, &vel stored twice at 8/12(r1)); FastSqrt-style asm question pending with the user.
+- u_801A0F2C MirrorObjRegister (11, opus-full-C8 2026-11-17): retail obj r31 / actor r30 / objId r29, ours objId above actor;
+  only moving the .actor store after .model flips it (but breaks store order); ~57k orderings + 60 shapes. Not the Fable
+  small-regime order. Tools: ~/geist-work/ds/opus-full-C8-tools/ (regs.py).
 - Host-ride update fix that worked: convert to float first, then subtract in place (`dx = (float)t->x; dx -= a->f84;`).
 - Retinal 7/8: RetinalTrigger 33, FPR numbering only, coupled between the line and glow blocks (`?:` vs `if` changes
   conversion-temp slot reuse). Tools: ~/geist-work/ds/opus-full-A4-tools/.
