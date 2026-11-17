@@ -744,11 +744,17 @@ game/u_801F7F48.cpp:
 	.ctors      start:0x80341230 end:0x80341234
 
 game/u_801FC634.cpp:
-	.text       start:0x801FC634 end:0x801FD994
+	.text       start:0x801FC634 end:0x801FCA4C
+	.rodata     start:0x80349260 end:0x803492B0
+	.data       start:0x803B9E58 end:0x803B9E88
+	.sdata2     start:0x804D9110 end:0x804D9128
+
+game/u_801FCA4C.cpp:
+	.text       start:0x801FCA4C end:0x801FD994
 	.rodata     start:0x803492B0 end:0x803492C0
 	.data       start:0x803B9E88 end:0x803B9EB0
 	.bss        start:0x8049D280 end:0x8049D2B0
-	.sdata2     start:0x804D9110 end:0x804D9178
+	.sdata2     start:0x804D9128 end:0x804D9178
 
 game/FearMap2.c:
 	.text       start:0x801FD994 end:0x80202AB8

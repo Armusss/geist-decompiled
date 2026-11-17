@@ -717,7 +717,8 @@ config.libs = [
             Object(NonMatching, "game/u_801F2DA4.cpp"),  # pinned
             Object(Matching, "game/u_801F676C.cpp"),  # pinned
             Object(NonMatching, "game/u_801F7F48.cpp"),  # pinned
-            Object(NonMatching, "game/u_801FC634.cpp"),  # known
+            Object(Matching, "game/u_801FC634.cpp"),  # "Rivet" effect type
+            Object(NonMatching, "game/u_801FCA4C.cpp"),  # rivet update/draw, fear regions
             Object(NonMatching, "game/FearMap2.c"),  # guess
             Object(NonMatching, "game/u_80202AB8.cpp"),  # guess
             Object(NonMatching, "game/u_802052B4.cpp"),  # guess
