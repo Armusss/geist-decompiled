@@ -699,7 +699,7 @@ config.libs = [
             Object(Matching, "game/u_801C9CE0.cpp"),  # AshBullet effect type 0x803ACB08 (destroy cb is first fn) + asset preload
             Object(NonMatching, "game/u_801CA16C.cpp"),  # own pool 0x80348818, state table 0x803ACB38
             Object(NonMatching, "game/u_801CC6D0.cpp"),  # Script Move actor type 0x803ACBB8, register fn first
-            Object(NonMatching, "game/u_801CDFBC.cpp"),  # fn table 0x803ACC08, rat_jump pool 0x80348888
+            Object(Matching, "game/u_801CDFBC.cpp"),  # fn table 0x803ACC08, rat_jump pool 0x80348888
             Object(NonMatching, "game/u_801D0C18.cpp"),  # Fire actor type 0x803AD370, own pool 0x803488D8
             Object(NonMatching, "game/u_801D25CC.cpp"),  # room-geom collision class; own consts 0x804D8BD0.., sbss 0x804D5198
             Object(NonMatching, "game/u_801D4738.cpp"),  # own consts 0x804D8C20.., materials 0x803ADB90
