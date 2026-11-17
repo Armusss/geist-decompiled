@@ -892,8 +892,29 @@ extern Vec3 lbl_8049E130[];     // 0x14 recent trigger positions
 extern int lbl_804D53A0;        // number of recent trigger positions
 extern float lbl_804D9378;      // trigger range scale
 extern float lbl_804D937C;      // retrigger delay
-extern u8* lbl_803BAA90[];      // per-mode name strings
-extern u8 __upper_map[];        // ASCII upper-case map used by the name hash
+extern const char* lbl_803BAA90[];  // per-mode name strings
+extern unsigned char __upper_map[256];
+inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
+
+inline u32 StrHash(const char* s)
+{
+    if (s == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        u32 h = 0;
+        int i;
+        for (i = 0; s[i] != 0; i++)
+        {
+            h *= 31;
+            h += (unsigned char)toupper(s[i]);
+        }
+        h %= 0xFFFFFFFF;
+        return h;
+    }
+}
 
 extern "C" int fn_801D60A0(int flag);
 extern "C" int fn_801D4738(void* source, Vec3* pos, float seek);
@@ -907,6 +928,13 @@ void VFree(void* p);
 // Triggers the sources of a list around the given position: mode 0 tests each
 // entry for range, mode 1 scales the working vector, and any other mode filters
 // the entries by the hash of that mode's name.
+static inline void Vec3Init(Vec3* v, float x, float y, float z)
+{
+    v->x = x;
+    v->y = y;
+    v->z = z;
+}
+
 void BatsqueekTriggerModeSounds(SoundList* list, float seek, Vec3* pos, Vec3* vec, int mode)
 {
     Vec3 local;
@@ -914,100 +942,70 @@ void BatsqueekTriggerModeSounds(SoundList* list, float seek, Vec3* pos, Vec3* ve
     if (list->entries == 0)
         return;
 
-    local.x = vec->x;
-    local.y = vec->y;
-    local.z = vec->z;
+    Vec3Init(&local, vec->x, vec->y, vec->z);
 
     if (fn_801D60A0(1) != 0 && lbl_804D53A0 < 0x14)
-    {
-        int index = lbl_804D53A0;
-        lbl_804D53A0 = index + 1;
-        lbl_8049E130[index].x = pos->x;
-        lbl_8049E130[index].y = pos->y;
-        lbl_8049E130[index].z = pos->z;
-    }
+        Vec3Init(&lbl_8049E130[lbl_804D53A0++], pos->x, pos->y, pos->z);
 
     if (mode == 0)
     {
         int hits = 0;
-        int off = 0x28;
+        int i;
 
-        for (int i = 1; i < list->count; i++)
+        for (i = 1; i < list->count; i++)
         {
-            void* source = *(void**)(list->entries + off + 0x24);
-
-            if (source != 0 && fn_801D4738(source, pos, seek) != 0)
+            if (((SoundSourceEntry*)list->entries)[i].source != 0 &&
+                fn_801D4738(((SoundSourceEntry*)list->entries)[i].source, pos, seek) != 0)
             {
                 hits++;
-                fn_801D5010(source, &local);
+                fn_801D5010(((SoundSourceEntry*)list->entries)[i].source, &local);
             }
-            off += 0x28;
         }
 
         if (hits == 0)
         {
-            local.x *= lbl_804D9378;
-            local.y *= lbl_804D9378;
-            local.z *= lbl_804D9378;
+            local.x *= 0.03125f;
+            local.y *= 0.03125f;
+            local.z *= 0.03125f;
+            int i;
 
-            off = 0x28;
-            for (int i = 1; i < list->count; i++)
+            for (i = 1; i < list->count; i++)
             {
-                void* source = *(void**)(list->entries + off + 0x24);
-
-                if (source != 0)
-                    fn_801D5010(source, &local);
-                off += 0x28;
-            }
+                if (((SoundSourceEntry*)list->entries)[i].source != 0)
+                    fn_801D5010(((SoundSourceEntry*)list->entries)[i].source, &local);
+                }
         }
     }
     else if (mode == 1)
     {
-        local.x *= lbl_804D9378;
-        local.y *= lbl_804D9378;
-        local.z *= lbl_804D9378;
+        local.x *= 0.03125f;
+        local.y *= 0.03125f;
+        local.z *= 0.03125f;
+        int i;
 
-        int off = 0x28;
-        for (int i = 1; i < list->count; i++)
+        for (i = 1; i < list->count; i++)
         {
-            void* source = *(void**)(list->entries + off + 0x24);
-
-            if (source != 0)
-                fn_801D5010(source, vec);
-            off += 0x28;
+            if (((SoundSourceEntry*)list->entries)[i].source != 0)
+                fn_801D5010(((SoundSourceEntry*)list->entries)[i].source, vec);
         }
     }
     else
     {
-        u8* name = lbl_803BAA90[mode];
-        u32 hash = 0;
+        u32 hash = StrHash(lbl_803BAA90[mode]);
+        int i;
+        int off;
 
-        if (name != 0)
+        for (i = 1, off = 0x28; i < list->count; i++)
         {
-            signed char c;
+            SoundSourceEntry* entry = (SoundSourceEntry*)(list->entries + off);
 
-            while ((c = (signed char)*name) != 0)
-            {
-                u32 v = (c == -1) ? 0xffffffffu : (u32)__upper_map[(u8)c];
-                hash = hash * 31 + (v & 0xff);
-                name++;
-            }
-            hash = hash % 0xffffffffu;
-        }
-
-        int off = 0x28;
-        for (int i = 1; i < list->count; i++)
-        {
-            u8* entry = list->entries + off;
-            void* source = *(void**)(entry + 0x24);
-
-            if (source != 0 && hash == *(u32*)(entry + 4))
-                fn_801D5010(source, vec);
+            if (entry->source != 0 && hash == entry->nameHash)
+                fn_801D5010(entry->source, vec);
             off += 0x28;
         }
     }
 
-    list->timer = lbl_804D937C;
+    list->timer = 10000.0f;
 }
 
 // Finds the sound-list entry registered under the given name hash and hands its
