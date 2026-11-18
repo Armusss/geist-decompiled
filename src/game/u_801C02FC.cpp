@@ -139,6 +139,7 @@ int AnimBankGetSetCount(int a, int b, u32 anim);                // 0x800A1AC4
 Actor* GetPlayer(void);                                         // 0x80049948
 int ActorAnimState(int owner, u32 anim);                        // 0x800C5028
 int AssetFind(u32 bank, u32 name);                              // 0x8007EB34
+void TextureLoad(short* tex, int a);                            // 0x8000F738
 int HasCondition(void* cond, int which);                        // 0x800A7AC4
 void VFree(void* p);                                            // 0x8009DA3C
 void* VAlloc(int size);                                         // 0x8009DA68
@@ -166,6 +167,9 @@ void fn_8008DE4C(int anim, int a, int b, int c);
 int fn_8000DDD0(void);
 int fn_802A1D04(void);
 int fn_8020B97C(void);
+int fn_801C0E7C(Actor* a);
+int fn_800CDD10();
+void fn_80090634(int anim, int a, int b, int c);
 void fn_8008F4E8(int anim, int a);
 void fn_8008F378(int anim);
 void fn_8008F4EC(int anim, int a);
@@ -175,7 +179,8 @@ void fn_8008F230(int anim, float f, int a, int b);
 void fn_80090974(int anim, int a, int h, float f, int b, ActEvent cb, Actor* owner);
 
 int gHostAssets[16];                                            // 0x80496D18
-float sDeathTime;                                               // 0x804D3218
+float sDeathTime = 3000.0f;                                     // 0x804D3218
+int sHostTexture = -1;                                          // 0x804D321C
 
 // Stops the host: clears its motion and turn state and drops what it holds.
 static inline void HostHalt(Actor* a, Vec3* zero) {
@@ -201,6 +206,64 @@ void fn_801C11B0(Actor* a) {
     a->cb110 = 0;
     VFree(a->beh);
     a->beh = 0;
+}
+
+// 0x801C11F0: sets the behaviour up (also run from PlayerInitGunState).
+void fn_801C11F0(int owner, void* p) {
+    if (p != 0) {
+        HostBeh* b;
+        Actor* a = (Actor*)p;
+        a->cb110 = (void*)fn_801C0E7C;
+        a->cb118 = (void*)fn_800CDD10;
+        b = (HostBeh*)VAlloc(0x54);
+        if (b == 0) {
+            a->beh = 0;
+        } else {
+            b->owner = owner;
+            b->f30 = 30000.0f * ((float)rand() / 32767.0f) + 8500.0f;
+            b->animOverride = 0;
+            b->f38 = 0.0f;
+            b->f52 = 0;
+            a->beh = b;
+            if (HasCondition(a->cond, 0xB)) {
+                b->cur = 8;
+                b->next = 8;
+            } else if (HasCondition(a->cond, 10)) {
+                b->cur = 0x3F;
+                b->next = 0x40;
+            } else if (a->f904 > 0.0f) {
+                b->cur = 0x21;
+                b->next = 0x21;
+            } else {
+                b->cur = 0x3F;
+                b->next = 0x40;
+            }
+            gHostAssets[0] = AssetFind(0xF1754BF2, 0x21C5E0);
+            gHostAssets[1] = AssetFind(0xF1754BF2, 0x24805F);
+            gHostAssets[2] = AssetFind(0xF1754BF2, 0x101844CC);
+            gHostAssets[3] = AssetFind(0xF1754BF2, 0x48874F6E);
+            gHostAssets[4] = AssetFind(0xF1754BF2, 0x4A53FC1);
+            gHostAssets[5] = AssetFind(0xF1754BF2, 0x967DAAC6);
+            gHostAssets[6] = AssetFind(0xF1754BF2, 0xD9404234);
+            gHostAssets[7] = AssetFind(0xF1754BF2, 0x450B2BB);
+            gHostAssets[8] = AssetFind(0xF1754BF2, 0x922BF04E);
+            gHostAssets[9] = AssetFind(0xF1754BF2, 0x8C73DFA9);
+            gHostAssets[10] = AssetFind(0xF1754BF2, 0x90AEEEE4);
+            gHostAssets[11] = AssetFind(0xF1754BF2, 0x4A2F9AA);
+            gHostAssets[12] = AssetFind(0xF1754BF2, 0x4A48BC0);
+            gHostAssets[13] = AssetFind(0xF1754BF2, 0x8671DB2A);
+            gHostAssets[14] = AssetFind(0xF1754BF2, 0x44E6CA4);
+            gHostAssets[15] = AssetFind(0xF1754BF2, 0x44FFEBA);
+            sHostTexture = AssetFind(0xF2E2BEB8, 0x154CDE5C);
+            {
+                short tex = sHostTexture;
+                TextureLoad(&tex, 2);
+            }
+            fn_80090634(a->anim, 0, 0, 0);
+            ConditionSetBit(a->cond, 0xE, 0);
+            gHostActions[b->cur].enter(a);
+        }
+    }
 }
 
 // 0x801C15A8: event handler of most actions.
