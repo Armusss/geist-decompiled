@@ -2854,10 +2854,10 @@ int fn_801C75CC(Actor* a) {
 // the action repeats).
 static inline void HostPickVariant(Actor* a, HostBeh* b, int action) {
     int n = AnimBankGetSetCount(a->data->i14, a->data->i1C, gHostActions[b->cur].anim);
-    if (n < 2) {
-        b->variant = 0;
-    } else if (b->cur == action) {
-        if ((float)rand() / 32767.0f > 0.9f) {
+    if (n > 1) {
+        if (b->cur != action) {
+            b->variant = fn_8000DDD0() % n;
+        } else if ((float)rand() / 32767.0f > 0.9f) {
             int v = fn_8000DDD0() % (n - 1);
             if (v >= b->variant) {
                 v = (v + 1) % n;
@@ -2865,7 +2865,7 @@ static inline void HostPickVariant(Actor* a, HostBeh* b, int action) {
             b->variant = v;
         }
     } else {
-        b->variant = fn_8000DDD0() % n;
+        b->variant = 0;
     }
 }
 
