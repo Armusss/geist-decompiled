@@ -74,7 +74,9 @@ struct Actor {
     float dt;           // 0x138
     char pad13C[0xE4];
     int unk220;         // 0x220
-    char pad224[0x48];
+    char pad224[0x1C];
+    Vec3 v240;          // 0x240
+    char pad24C[0x20];
     int unk26C;         // 0x26C
     char cond[0xC];     // 0x270
     Vec3 v27C;          // 0x27C
@@ -105,6 +107,7 @@ struct HostAction {
 extern HostAction gHostActions[161];
 
 int ConditionSetBit(void* cond, int bit, int set);
+int ConditionUpdateBit(void* cond, int bit, int set);
 int HasCondition(void* cond, int which);                        // 0x800A7AC4
 void VFree(void* p);                                            // 0x8009DA3C
 void* VAlloc(int size);                                         // 0x8009DA68
@@ -117,6 +120,8 @@ void fn_801C7D78(Actor* a);
 void fn_80162610(Actor* a, void* beh, int msg);
 void fn_800CB8BC(Actor* a, HostData* data, int arg, int c);
 int fn_80212730(int id);
+int fn_8016325C(void* beh);
+int rand(void);
 
 // 0x801C11B0
 void fn_801C11B0(Actor* a) {
@@ -152,6 +157,83 @@ int fn_801C15A8(int msg, void* p) {
     return 1;
 }
 
+// 0x801C18C4
+int fn_801C18C4(Actor* a, int next) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    if (next == 0x40 || next == 0x60 || next == 0x80 || next == 0xA0 || next == 8) {
+        return 1;
+    }
+    b->next = next;
+    ConditionSetBit(a->cond, 0, 0);
+    ConditionSetBit(a->cond, 4, 0);
+    ConditionSetBit(a->cond, 0x2C, 0);
+    if (b->cur == 7) {
+        ConditionUpdateBit(a->cond, 0xB, 0);
+    }
+    if ((b->cur == 4 || b->cur == 5) && next == 0x3E) {
+        b->cur = 0x21;
+        return 1;
+    }
+    return 0;
+}
+
+// 0x801C19C0
+int fn_801C19C0(Actor* a, int next) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    if (next == 0x40 || next == 0x60 || next == 0x80 || next == 0xA0 || next == 8) {
+        return 1;
+    }
+    b->next = next;
+    ConditionSetBit(a->cond, 0, 0);
+    ConditionSetBit(a->cond, 0, 0);
+    ConditionSetBit(a->cond, 4, 0);
+    if (b->cur == 7) {
+        ConditionUpdateBit(a->cond, 0xB, 0);
+    }
+    if ((b->cur == 4 || b->cur == 5) && next == 0x3E) {
+        b->cur = 0x21;
+        return 1;
+    }
+    return 0;
+}
+
+// 0x801C1ABC
+int fn_801C1ABC(Actor* a, int next) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->next = next;
+    ConditionSetBit(a->cond, 0, 0);
+    switch (b->cur) {
+    case 8:
+    case 9:
+        if (next != 0x12) {
+            ConditionSetBit(a->cond, 0xB, 0);
+        }
+        break;
+    case 0xD:
+        ConditionUpdateBit(a->cond, 0x12, 0);
+        break;
+    case 0xE:
+        ConditionUpdateBit(a->cond, 0x13, 0);
+        break;
+    case 0xF:
+        ConditionUpdateBit(a->cond, 0x14, 0);
+        break;
+    case 1:
+        ConditionSetBit(a->cond, 0x12, 0);
+        break;
+    }
+    return 1;
+}
+
 // 0x801C1BBC
 int fn_801C1BBC(Actor* a, int next) {
     if (a == 0) {
@@ -160,6 +242,66 @@ int fn_801C1BBC(Actor* a, int next) {
     a->beh->next = next;
     ConditionSetBit(a->cond, 0, 0);
     return 1;
+}
+
+// 0x801C1C04
+int fn_801C1C04(Actor* a, int next) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 0);
+    a->v240.x = 0.0f;
+    a->v240.y = 0.0f;
+    a->v240.z = 0.0f;
+    if ((b->cur - 0x21) % 32 == 0x1D && (next - 0x21) % 32 != 0x1D) {
+        b->next = next;
+    }
+    ConditionSetBit(a->cond, 4, 0);
+    return 1;
+}
+
+// 0x801C1CCC
+int fn_801C1CCC(Actor* a, int next) {
+    if (a != 0) {
+        HostBeh* b = a->beh;
+        ConditionSetBit(a->cond, 0, 0);
+        a->v240.x = 0.0f;
+        a->v240.y = 0.0f;
+        a->v240.z = 0.0f;
+        if ((next - 0x21) % 32 != 0x1D) {
+            b->next = next;
+        }
+        ConditionSetBit(a->cond, 4, 0);
+    }
+    return 0;
+}
+
+// 0x801C1D70
+int fn_801C1D70(Actor* a, int next) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 0);
+    if (fn_8016325C(a->beh894) == 6) {
+        fn_80162610(a, a->beh894, 0xE6B71BCC);
+    } else if (fn_8016325C(a->beh894) == 7) {
+        fn_80162610(a, a->beh894, 0x968CBE3D);
+    }
+    b->next = next;
+    ConditionSetBit(a->cond, 0, 0);
+    return 1;
+}
+
+// 0x801C1E30
+int fn_801C1E30(Actor* a, int next) {
+    if (a != 0) {
+        HostBeh* b = a->beh;
+        b->f30 = 30000.0f * ((float)rand() / 32767.0f) + 8500.0f;
+        ConditionSetBit(a->cond, 0, 0);
+    }
+    return a != 0;
 }
 
 // 0x801C1EBC
