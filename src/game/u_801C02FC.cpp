@@ -211,25 +211,21 @@ int fn_801C1ABC(Actor* a, int next) {
     HostBeh* b = a->beh;
     b->next = next;
     ConditionSetBit(a->cond, 0, 0);
-    switch (b->cur) {
-    case 8:
-    case 9:
-        if (next != 0x12) {
-            ConditionSetBit(a->cond, 0xB, 0);
+    {
+        int cur = b->cur;
+        if (cur == 8 || cur == 9) {
+            if (next != 0x12) {
+                ConditionSetBit(a->cond, 0xB, 0);
+            }
+        } else if (cur == 0xD) {
+            ConditionUpdateBit(a->cond, 0x12, 0);
+        } else if (cur == 0xE) {
+            ConditionUpdateBit(a->cond, 0x13, 0);
+        } else if (cur == 0xF) {
+            ConditionUpdateBit(a->cond, 0x14, 0);
+        } else if (cur == 1) {
+            ConditionSetBit(a->cond, 0x12, 0);
         }
-        break;
-    case 0xD:
-        ConditionUpdateBit(a->cond, 0x12, 0);
-        break;
-    case 0xE:
-        ConditionUpdateBit(a->cond, 0x13, 0);
-        break;
-    case 0xF:
-        ConditionUpdateBit(a->cond, 0x14, 0);
-        break;
-    case 1:
-        ConditionSetBit(a->cond, 0x12, 0);
-        break;
     }
     return 1;
 }
@@ -263,17 +259,18 @@ int fn_801C1C04(Actor* a, int next) {
 
 // 0x801C1CCC
 int fn_801C1CCC(Actor* a, int next) {
-    if (a != 0) {
-        HostBeh* b = a->beh;
-        ConditionSetBit(a->cond, 0, 0);
-        a->v240.x = 0.0f;
-        a->v240.y = 0.0f;
-        a->v240.z = 0.0f;
-        if ((next - 0x21) % 32 != 0x1D) {
-            b->next = next;
-        }
-        ConditionSetBit(a->cond, 4, 0);
+    if (a == 0) {
+        return 0;
     }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 0);
+    a->v240.x = 0.0f;
+    a->v240.y = 0.0f;
+    a->v240.z = 0.0f;
+    if ((next - 0x21) % 32 != 0x1D) {
+        b->next = next;
+    }
+    ConditionSetBit(a->cond, 4, 0);
     return 0;
 }
 
@@ -296,12 +293,13 @@ int fn_801C1D70(Actor* a, int next) {
 
 // 0x801C1E30
 int fn_801C1E30(Actor* a, int next) {
-    if (a != 0) {
-        HostBeh* b = a->beh;
-        b->f30 = 30000.0f * ((float)rand() / 32767.0f) + 8500.0f;
-        ConditionSetBit(a->cond, 0, 0);
+    if (a == 0) {
+        return 0;
     }
-    return a != 0;
+    HostBeh* b = a->beh;
+    b->f30 = 30000.0f * ((float)rand() / 32767.0f) + 8500.0f;
+    ConditionSetBit(a->cond, 0, 0);
+    return 1;
 }
 
 // 0x801C1EBC
