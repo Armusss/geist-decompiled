@@ -12,6 +12,7 @@
 
 #include "game/types.h"
 #include "game/string.h"
+#include "game/msg.h"
 
 typedef unsigned long u32;
 
@@ -48,7 +49,9 @@ struct HostBeh {
 // The host's per-type definition data (at actor+0xC4).
 struct HostData {
     u32 type;           // 0x00
-    char pad4[0x10];
+    char pad4[8];
+    u32 kind;           // 0x0C
+    char pad10[4];
     int i14;            // 0x14
     int i18;            // 0x18
     int i1C;            // 0x1C
@@ -170,6 +173,8 @@ int fn_8020B97C(void);
 int fn_801C0E7C(void* p);
 int fn_8008EA9C(int anim, int a);
 int fn_8008E964(int anim);
+void fn_80090390(int anim, int a);
+void fn_800B35D0(Actor* a);
 int fn_800CDD10();
 void fn_80090634(int anim, int a, int b, int c);
 void fn_8008F4E8(int anim, int a);
@@ -202,6 +207,57 @@ static inline void HostHalt(Actor* a, Vec3* zero) {
     fn_800C6F58(a);
 }
 int rand(void);
+
+// 0x801C0950: message 0x41D (keyed commands) of the host.
+int fn_801C0950(Msg41D* m) {
+    u32 cmd = m->arg;
+    Actor* a = (Actor*)m->actor;
+    HostBeh* b = a->beh;
+    switch (cmd) {
+    case 0x39CB0CB0:
+        ConditionSetBit(a->cond, 0xB, 0);
+        ConditionSetBit(a->cond, 0xD, 0);
+        ConditionSetBit(a->cond, 0xC, 0);
+        if (HasCondition(a->cond, 0xC)) {
+            ConditionSetBit(a->cond, 0xC, 0);
+            fn_80090390(a->anim, 0);
+        }
+        fn_800B35D0(a);
+        if (b->cur != 0x13) {
+            ConditionSetBit(a->cond, 0xE, 1);
+            fn_80090390(a->anim, 0);
+            fn_80090390(a->anim, 1);
+            b->prev = b->cur;
+            gHostActions[b->cur].leave(a, 0x10);
+            gHostActions[0x10].enter(a);
+        }
+        ConditionUpdateBit(a->cond, 5, 0);
+        ConditionUpdateBit(a->cond, 0xB, 0);
+        b->f38 = 5000.0f;
+        return 0;
+    case 0x2EFC66CA: {
+        u32 kind = a->data->kind;
+        if (kind == 0x906E8474 || kind == 0xEA993A8F) {
+            gHostActions[b->cur].leave(a, 0x13);
+            gHostActions[0x13].enter(a);
+        }
+        return 0;
+    }
+    case 0xEE14BF26:
+        b->f34 = -1.0f;
+        return 1;
+    case 0x7DF38296:
+        gHostActions[b->cur].leave(a, 0x29);
+        gHostActions[0x29].enter(a);
+        return 0;
+    case 0x672F35C2:
+        b->prev = b->cur;
+        gHostActions[b->cur].leave(a, 0x11);
+        gHostActions[0x11].enter(a);
+        return 0;
+    }
+    return 0;
+}
 
 // 0x801C0E7C: per-frame update.
 int fn_801C0E7C(void* p) {
