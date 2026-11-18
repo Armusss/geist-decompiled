@@ -30,7 +30,7 @@ struct HostBeh {
     int owner;          // 0x0C
     int anim;           // 0x10
     int animVar;        // 0x14
-    int animOverride;   // 0x18
+    u32 animOverride;   // 0x18
     int f1C;            // 0x1C
     int f20;            // 0x20
     int f24;            // 0x24
@@ -137,6 +137,8 @@ int OwnerId(Owner* o);                                          // 0x800A3A40
 int ActorPlayAnim(int owner, u32 anim, int arg);                // 0x800C5654
 int AnimBankGetSetCount(int a, int b, u32 anim);                // 0x800A1AC4
 Actor* GetPlayer(void);                                         // 0x80049948
+int ActorAnimState(int owner, u32 anim);                        // 0x800C5028
+int AssetFind(u32 bank, u32 name);                              // 0x8007EB34
 int HasCondition(void* cond, int which);                        // 0x800A7AC4
 void VFree(void* p);                                            // 0x8009DA3C
 void* VAlloc(int size);                                         // 0x8009DA68
@@ -164,6 +166,13 @@ void fn_8008DE4C(int anim, int a, int b, int c);
 int fn_8000DDD0(void);
 int fn_802A1D04(void);
 int fn_8020B97C(void);
+void fn_8008F4E8(int anim, int a);
+void fn_8008F378(int anim);
+void fn_8008F4EC(int anim, int a);
+int fn_800A1BC8(int a, int b, u32 anim, int variant, int c);
+int fn_8008E7D0(int h);
+void fn_8008F230(int anim, float f, int a, int b);
+void fn_80090974(int anim, int a, int h, float f, int b, ActEvent cb, Actor* owner);
 
 int gHostAssets[16];                                            // 0x80496D18
 float sDeathTime;                                               // 0x804D3218
@@ -3059,6 +3068,58 @@ int fn_801C7BF4(Actor* a) {
 // 0x801C7CF4
 int fn_801C7CF4(Actor* a) {
     return HostEnterIdle(a);
+}
+
+// 0x801C8934: plays the animation of the current action (variant < 0: a random one).
+void fn_801C8934(Actor* a, int variant) {
+    float zero = 0.0f;
+    if (a != 0) {
+        HostBeh* b = a->beh;
+        u32 anim;
+        int h;
+        b->motion.x = zero;
+        b->motion.y = zero;
+        b->motion.z = zero;
+        if (HasCondition(a->cond, 0xC)) {
+            ConditionSetBit(a->cond, 0xC, 0);
+            ConditionSetBit(a->cond, 0xE, 1);
+            fn_8008F4E8(a->anim, 0);
+            fn_8008F378(a->anim);
+            fn_8008F4EC(a->anim, 0);
+        }
+        if (b->animOverride != 0) {
+            anim = b->animOverride;
+            b->animOverride = 0;
+        } else {
+            anim = gHostActions[b->cur].anim;
+        }
+        if (variant < 0) {
+            int n = AnimBankGetSetCount(a->data->i14, a->data->i1C, anim);
+            if (n == 0) {
+                return;
+            }
+            variant = rand() % n;
+        }
+        h = fn_800A1BC8(a->data->i14, a->data->i1C, anim, variant, 0);
+        if (b->cur == 0x11 && ActorAnimState(a->id, 0x2A371672) > 0) {
+            int r = ActorPlayAnim(a->id, 0x2A371672, a->id);
+            if (r != -1) {
+                h = AssetFind(0x2FA2416F, r);
+            }
+        }
+        if (fn_8008E7D0(h)) {
+            ConditionSetBit(a->cond, 0x1C, 0);
+            if (HasCondition(a->cond, 0xE)) {
+                ConditionSetBit(a->cond, 0xE, 0);
+                fn_8008F230(a->anim, 0.0f, 0, 0);
+            } else {
+                fn_8008F230(a->anim, 150.0f, 0, 1);
+            }
+            fn_80090974(a->anim, 0, h, 1.0f, 9, gHostActions[b->cur].event, a);
+            b->animVar = b->f28;
+            b->anim = h;
+        }
+    }
 }
 
 }  // extern "C"
