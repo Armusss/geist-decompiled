@@ -108,6 +108,8 @@ extern HostAction gHostActions[161];
 
 int ConditionSetBit(void* cond, int bit, int set);
 int ConditionUpdateBit(void* cond, int bit, int set);
+int MemFlagIsSet(void* bits, int index);                        // 0x800A7B78
+int ZoneClassifyDirection(void* self, Vec3* v);                 // 0x800A82D0
 int HasCondition(void* cond, int which);                        // 0x800A7AC4
 void VFree(void* p);                                            // 0x8009DA3C
 void* VAlloc(int size);                                         // 0x8009DA68
@@ -121,6 +123,8 @@ void fn_80162610(Actor* a, void* beh, int msg);
 void fn_800CB8BC(Actor* a, HostData* data, int arg, int c);
 int fn_80212730(int id);
 int fn_8016325C(void* beh);
+void fn_800B42E0(float r, Vec3* pos, int id, int a, int b);
+void fn_801BE5D4(Actor* a);
 int rand(void);
 
 // 0x801C11B0
@@ -340,8 +344,130 @@ int fn_801C1FBC(Actor* a) {
     return b->cur;
 }
 
+// 0x801C2024
+int fn_801C2024(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    Vec3 p;
+    HostBeh* b = a->beh;
+    p.x = (float)a->x;
+    p.y = (float)a->y;
+    p.z = (float)a->z;
+    Vec3Set(&a->v27C, 0.0f, 0.0f, 0.0f);
+    fn_800B42E0(101.0f, &p, a->id, 3, 10);
+    if (a->unk5F0 == 0 || fn_80212730(a->id) != -1) {
+        fn_801C7D78(a);
+        a->pos.x = (float)a->x;
+        a->pos.y = (float)a->y;
+        a->pos.z = (float)a->z;
+    }
+    return b->cur;
+}
+
+// The action's timer ran out: drop condition 4 and run the shared timeout handler.
+static inline void HostTimeout(Actor* a, HostBeh* b) {
+    if (HasCondition(a->cond, 4) && !HasCondition(a->cond, 9) && !HasCondition(a->cond, 10)) {
+        if (b->timer <= 0.0f) {
+            ConditionSetBit(a->cond, 4, 0);
+            fn_801BE5D4(a);
+        }
+    }
+}
+
 // 0x801C2170
 int fn_801C2170(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    fn_801C7D78(a);
+    if (a->unk220 == 4) {
+        return 0x20;
+    }
+    return b->cur;
+}
+
+// 0x801C21CC
+int fn_801C21CC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    HostTimeout(a, b);
+    fn_801C7D78(a);
+    return b->cur;
+}
+
+// 0x801C2280
+int fn_801C2280(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    fn_801C7D78(a);
+    if (a->unk220 == 4) {
+        return 0x20;
+    }
+    HostBeh* b = a->beh;
+    int dir = ZoneClassifyDirection(a, &a->v240);
+    if (MemFlagIsSet(a->cond, 0x17) == 0) {
+        dir = 0;
+    }
+    if (HasCondition(a->cond, 4) && !HasCondition(a->cond, 9) && !HasCondition(a->cond, 10) &&
+        b->timer <= 0.0f) {
+        ConditionSetBit(a->cond, 4, 0);
+        fn_801BE5D4(a);
+    }
+    int stance = a->unk26C;
+    if (b->f28 != stance || b->f24 != dir) {
+        switch (b->cur) {
+        case 0x25:
+        case 0x26:
+        case 0x27:
+        case 0x45:
+        case 0x46:
+        case 0x47:
+        case 0x65:
+        case 0x66:
+        case 0x67:
+        case 0x85:
+        case 0x86:
+        case 0x87:
+            return stance * 32 + dir + 0x29;
+        case 0x35:
+        case 0x36:
+        case 0x37:
+        case 0x55:
+        case 0x56:
+        case 0x57:
+        case 0x75:
+        case 0x76:
+        case 0x77:
+        case 0x95:
+        case 0x96:
+        case 0x97:
+            return stance * 32 + dir + 0x21;
+        }
+    }
+    return b->cur;
+}
+
+// 0x801C2458
+int fn_801C2458(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    fn_801C7D78(a);
+    if (a->unk220 == 4) {
+        return 0x20;
+    }
+    HostTimeout(a, b);
+    return b->cur;
+}
+
+// 0x801C251C
+int fn_801C251C(Actor* a) {
     if (a == 0) {
         return 0;
     }
