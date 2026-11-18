@@ -72,10 +72,15 @@ struct Actor {
     char pad11C[0x18];
     HostBeh* beh;       // 0x134
     float dt;           // 0x138
-    char pad13C[0x130];
+    char pad13C[0xE4];
+    int unk220;         // 0x220
+    char pad224[0x48];
     int unk26C;         // 0x26C
-    char cond[0x18];    // 0x270
-    char pad288[0x60C];
+    char cond[0xC];     // 0x270
+    Vec3 v27C;          // 0x27C
+    char pad288[0x368];
+    int unk5F0;         // 0x5F0
+    char pad5F4[0x2A0];
     char beh894[0x70];  // 0x894
     float f904;         // 0x904
     char pad908[0x14];
@@ -104,8 +109,119 @@ int HasCondition(void* cond, int which);                        // 0x800A7AC4
 void VFree(void* p);                                            // 0x8009DA3C
 void* VAlloc(int size);                                         // 0x8009DA68
 
+void Vec3Set(Vec3* v, float x, float y, float z);              // 0x8016D67C
+
 extern "C" {
 void fn_801C8934(Actor* a, int variant);
+void fn_801C7D78(Actor* a);
+void fn_80162610(Actor* a, void* beh, int msg);
+void fn_800CB8BC(Actor* a, HostData* data, int arg, int c);
+int fn_80212730(int id);
+
+// 0x801C11B0
+void fn_801C11B0(Actor* a) {
+    a->cb110 = 0;
+    VFree(a->beh);
+    a->beh = 0;
+}
+
+// 0x801C15A8: event handler of most actions.
+int fn_801C15A8(int msg, Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    switch (msg) {
+    case 0x1B83833F:
+        b->prev = b->cur;
+        gHostActions[b->cur].leave(a, b->next);
+        gHostActions[b->next].enter(a);
+        break;
+    case (int)0xEAC45581:
+        fn_80162610(a, a->beh894, 0x20EE36);
+        break;
+    case 0x04A5C9FC:
+    case 0x00239807:
+    case 0x46341C3A:
+        fn_800CB8BC(a, a->data, b->f1C, a->unk26C);
+        break;
+    }
+    return 1;
+}
+
+// 0x801C1BBC
+int fn_801C1BBC(Actor* a, int next) {
+    if (a == 0) {
+        return 0;
+    }
+    a->beh->next = next;
+    ConditionSetBit(a->cond, 0, 0);
+    return 1;
+}
+
+// 0x801C1EBC
+int fn_801C1EBC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    fn_801C7D78(a);
+    if (a->unk220 != 4) {
+        b->prev = b->cur;
+        gHostActions[b->cur].leave(a, 0x21);
+        gHostActions[0x21].enter(a);
+        fn_801C7D78(a);
+    }
+    return b->cur;
+}
+
+// 0x801C1F60
+int fn_801C1F60(Actor* a) {
+    HostBeh* b = a->beh;
+    if (a->unk5F0 == 0 || fn_80212730(a->id) != -1) {
+        fn_801C7D78(a);
+    }
+    return b->cur;
+}
+
+// 0x801C1FBC
+int fn_801C1FBC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    Vec3Set(&a->v27C, 0.0f, 0.0f, 0.0f);
+    if (b->f34 < 0.0f) {
+        return 9;
+    }
+    return b->cur;
+}
+
+// 0x801C2170
+int fn_801C2170(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    fn_801C7D78(a);
+    if (a->unk220 == 4) {
+        return 0x20;
+    }
+    return b->cur;
+}
+
+// 0x801C39BC
+int fn_801C39BC(Actor* a) {
+    return 0x12;
+}
+
+// 0x801C39C4
+int fn_801C39C4(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    return a->beh->cur;
+}
 
 // 0x801C4244
 int fn_801C4244(Actor* a) {
@@ -1326,6 +1442,20 @@ int fn_801C64D8(Actor* a) {
     return 1;
 }
 
+// 0x801C6548
+int fn_801C6548(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 11;
+    b->next = 12;
+    b->f24 = 0;
+    b->f34 = 10000.0f;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
 // 0x801C65A4
 int fn_801C65A4(Actor* a) {
     if (a == 0) {
@@ -1349,6 +1479,19 @@ int fn_801C65F8(Actor* a) {
     b->next = 33;
     b->f24 = 0;
     fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C664C
+int fn_801C664C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 8;
+    b->next = 8;
+    b->f24 = 0;
+    b->f34 = 10000.0f;
     return 1;
 }
 
@@ -1716,6 +1859,22 @@ int fn_801C7B78(Actor* a) {
     b->f28 = 0;
     fn_801C8934(a, 0);
     b->f24 = 0;
+    return 1;
+}
+
+// 0x801C7CF4
+int fn_801C7CF4(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 0x21;
+    b->next = 0x21;
+    b->f24 = 0;
+    b->f28 = 0;
+    b->animOverride = 0xA8BE217B;
+    fn_801C8934(a, 0);
     return 1;
 }
 
