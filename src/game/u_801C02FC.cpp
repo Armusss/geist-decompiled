@@ -129,6 +129,7 @@ int fn_8016325C(void* beh);
 void fn_800B42E0(Vec3* pos, int id, int a, int b, float r);
 void fn_801BE5D4(Actor* a);
 int fn_801BE008(Actor* a);
+float fn_802A2080(void);
 int rand(void);
 
 // 0x801C11B0
@@ -838,6 +839,84 @@ int fn_801C33EC(Actor* a) {
         }
     }
     return b->cur;
+}
+
+// 0x801C3608
+int fn_801C3608(Actor* a) {
+    if (a == 0) {
+        return 0x21;
+    }
+    HostBeh* b = a->beh;
+    fn_801C7D78(a);
+    if (a->unk220 == 4) {
+        return 0x20;
+    }
+    HostTimeout(a, b);
+    int dir = ZoneClassifyDirection(a, &a->v240);
+    if (MemFlagIsSet(a->cond, 0x17) == 0) {
+        dir = 0;
+    }
+    if (fn_8016325C(a->beh894) == 4) {
+        return 0x2D + (a->unk288 << 5) + dir;
+    }
+    if (fn_8016325C(a->beh894) == 5) {
+        return 0x31 + (a->unk288 << 5) + dir;
+    }
+    if (fn_8016325C(a->beh894) == 6 || fn_8016325C(a->beh894) == 7) {
+        return 0x39 + (a->unk288 << 5) + dir;
+    }
+    if (MemFlagIsSet(a->cond, 3) == 0) {
+        return 0x35 + (a->unk26C << 5) + dir;
+    }
+    if (HasCondition(a->cond, 0x2A)) {
+        return 0x14;
+    }
+    if (HasCondition(a->cond, 0x2B) && MemFlagIsSet(a->cond, 6)) {
+        int leap = fn_801BE008(a);
+        ConditionSetBit(a->cond, 0x2B, 0);
+        if (leap >= 0) {
+            return leap + 0x1A;
+        }
+        ConditionSetBit(a->cond, 0x2C, 0);
+    }
+    if (a->unk26C != 0) {
+        return 0x29 + (a->unk26C << 5) + dir;
+    }
+    {
+        float turn = a->v27C.z;
+        if (turn < 0.0f) {
+            turn = -turn;
+        }
+        if (turn > 35.0f) {
+            return 0x3D;
+        }
+    }
+    if (b->cur != 0xD && MemFlagIsSet(a->cond, 0x12) != 0) {
+        return 0xD;
+    }
+    if (b->cur != 0xE && MemFlagIsSet(a->cond, 0x13) != 0) {
+        return 0xE;
+    }
+    if (b->cur != 0xF && MemFlagIsSet(a->cond, 0x14) != 0) {
+        return 0xF;
+    }
+    return b->cur;
+}
+
+// 0x801C38E8
+int fn_801C38E8(Actor* a) {
+    float step = a->dt / a->f91C / fn_802A2080();
+    if (a == 0) {
+        return 0x13;
+    }
+    HostBeh* b = a->beh;
+    fn_801C7D78(a);
+    b->f30 -= step;
+    if (b->f30 > 0.0f) {
+        return b->cur;
+    }
+    b->f30 = 30000.0f * ((float)rand() / 32767.0f) + 8500.0f;
+    return 0x21;
 }
 
 // 0x801C39BC
