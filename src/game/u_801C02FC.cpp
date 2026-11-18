@@ -2826,24 +2826,24 @@ int fn_801C75CC(Actor* a) {
     }
     HostBeh* b = a->beh;
     ConditionSetBit(a->cond, 0, 0);
-    if (MemFlagIsSet(a->cond, 3) == 0) {
-        b->next = 0x21;
-    } else {
+    if (MemFlagIsSet(a->cond, 3) != 0) {
         b->next = 0x29;
+    } else {
+        b->next = 0x21;
     }
     b->cur = 0x3D + (a->unk26C << 5);
     b->f24 = 0;
     if (a->v27C.z > 0.0f) {
-        if (MemFlagIsSet(a->cond, 3) == 0) {
-            b->animOverride = 0xFF45A5A5;
-        } else {
+        if (MemFlagIsSet(a->cond, 3) != 0) {
             b->animOverride = 0x22B02743;
+        } else {
+            b->animOverride = 0xFF45A5A5;
         }
     } else {
-        if (MemFlagIsSet(a->cond, 3) == 0) {
-            b->animOverride = 0xDAB4FC08;
-        } else {
+        if (MemFlagIsSet(a->cond, 3) != 0) {
             b->animOverride = 0xA1B7BA66;
+        } else {
+            b->animOverride = 0xDAB4FC08;
         }
     }
     fn_801C8934(a, 0);
@@ -3002,11 +3002,11 @@ int fn_801C7BF4(Actor* a) {
     b->next = 0x21;
     b->f28 = 0;
     ConditionSetBit(a->cond, 0, 1);
-    if (AnimBankGetSetCount(a->data->i14, a->data->i1C, 0x2237D4) == 0) {
-        HostEnterIdle(a);
-    } else {
+    if (AnimBankGetSetCount(a->data->i14, a->data->i1C, 0x2237D4) != 0) {
         b->animOverride = 0x2237D4;
         fn_801C8934(a, -1);
+    } else {
+        HostEnterIdle(a);
     }
     b->f24 = 0;
     return 1;
