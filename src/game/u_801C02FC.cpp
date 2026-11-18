@@ -15,6 +15,8 @@
 
 typedef unsigned long u32;
 
+float __fabsf(float x);
+
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
@@ -79,8 +81,9 @@ struct Actor {
     char pad24C[0x20];
     int unk26C;         // 0x26C
     char cond[0xC];     // 0x270
-    Vec3 v27C;          // 0x27C
-    char pad288[0x368];
+    Vec3 v27C;          // 0x27C: turn (z at 0x284)
+    int unk288;         // 0x288
+    char pad28C[0x364];
     void* unk5F0;       // 0x5F0
     char pad5F4[0x2A0];
     char beh894[0x70];  // 0x894
@@ -125,6 +128,7 @@ int fn_80212730(int id);
 int fn_8016325C(void* beh);
 void fn_800B42E0(Vec3* pos, int id, int a, int b, float r);
 void fn_801BE5D4(Actor* a);
+int fn_801BE008(Actor* a);
 int rand(void);
 
 // 0x801C11B0
@@ -475,6 +479,172 @@ int fn_801C251C(Actor* a) {
     fn_801C7D78(a);
     if (a->unk220 == 4) {
         return 0x20;
+    }
+    return b->cur;
+}
+
+// 0x801C2578
+int fn_801C2578(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    fn_801C7D78(a);
+    if (a->unk220 == 4) {
+        return 0x20;
+    }
+    int dir = ZoneClassifyDirection(a, &a->v240);
+    if (MemFlagIsSet(a->cond, 0x17) == 0) {
+        dir = 0;
+    }
+    HostTimeout(a, b);
+    if (fn_8016325C(a->beh894) == 4) {
+        return 0x2D + (a->unk288 << 5) + dir;
+    }
+    if (fn_8016325C(a->beh894) == 5) {
+        return 0x31 + (a->unk288 << 5) + dir;
+    }
+    if (fn_8016325C(a->beh894) == 6 || fn_8016325C(a->beh894) == 7) {
+        return 0x39 + (a->unk288 << 5) + dir;
+    }
+    if (MemFlagIsSet(a->cond, 3) == 0) {
+        return 0x35 + (a->unk26C << 5) + dir;
+    }
+    if (HasCondition(a->cond, 0x2A)) {
+        return 0x14;
+    }
+    if (HasCondition(a->cond, 0x2B) && MemFlagIsSet(a->cond, 6)) {
+        int leap = fn_801BE008(a);
+        ConditionSetBit(a->cond, 0x2B, 0);
+        if (leap >= 0) {
+            return leap + 0x1A;
+        }
+        ConditionSetBit(a->cond, 0x2C, 0);
+    }
+    {
+        int stance = a->unk26C;
+        if (b->f28 == stance && b->f24 == dir) {
+            return b->cur;
+        }
+        return 0x29 + (stance << 5) + dir;
+    }
+}
+
+// 0x801C27D8
+int fn_801C27D8(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    fn_801C7D78(a);
+    if (a->unk220 == 4) {
+        return 0x20;
+    }
+    int dir = ZoneClassifyDirection(a, &a->v240);
+    if (MemFlagIsSet(a->cond, 0x17) == 0) {
+        dir = 0;
+    }
+    HostTimeout(a, b);
+    if (MemFlagIsSet(a->cond, 3) != 0) {
+        return 0x25 + (a->unk26C << 5) + dir;
+    }
+    if (HasCondition(a->cond, 0x2A)) {
+        return 0x14;
+    }
+    if (HasCondition(a->cond, 0x2B) && MemFlagIsSet(a->cond, 6)) {
+        int leap = fn_801BE008(a);
+        ConditionSetBit(a->cond, 0x2B, 0);
+        if (leap >= 0) {
+            return leap + 0x1A;
+        }
+        ConditionSetBit(a->cond, 0x2C, 0);
+    }
+    {
+        int stance = a->unk26C;
+        if (b->f28 == stance && b->f24 == dir) {
+            return b->cur;
+        }
+        return 0x21 + (stance << 5) + dir;
+    }
+}
+
+// 0x801C29BC
+int fn_801C29BC(Actor* a) {
+    if (a == 0) {
+        return 0x21;
+    }
+    HostBeh* b = a->beh;
+    fn_801C7D78(a);
+    if (a->unk220 == 4) {
+        return 0x20;
+    }
+    HostTimeout(a, b);
+    if (HasCondition(a->cond, 0x1E)) {
+        return 4;
+    }
+    {
+        float turn = a->v27C.z;
+        if (turn < 0.0f) {
+            turn = -turn;
+        }
+        if (turn > 35.0f) {
+            return 0x3D;
+        }
+    }
+    if (HasCondition(a->cond, 0x2A)) {
+        return 0x14;
+    }
+    if (HasCondition(a->cond, 0x2B) && MemFlagIsSet(a->cond, 6)) {
+        int leap = fn_801BE008(a);
+        ConditionSetBit(a->cond, 0x2B, 0);
+        if (leap >= 0) {
+            return leap + 0x1A;
+        }
+        ConditionSetBit(a->cond, 0x2C, 0);
+    }
+    if (a->unk26C != b->f28) {
+        return 0x21 + (a->unk26C << 5);
+    }
+    if (MemFlagIsSet(a->cond, 3) != 0) {
+        return 0x25 + (a->unk26C << 5);
+    }
+    if (MemFlagIsSet(a->cond, 9) != 0) {
+        return b->cur;
+    }
+    return 0x21;
+}
+
+// 0x801C2BA8
+int fn_801C2BA8(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    int dir = ZoneClassifyDirection(a, &a->v240);
+    if (MemFlagIsSet(a->cond, 0x17) == 0) {
+        dir = 0;
+    }
+    fn_801C7D78(a);
+    if (a->unk220 == 4) {
+        return 0x20;
+    }
+    HostTimeout(a, b);
+    if (__fabsf(a->v27C.z) < 1.0f) {
+        return b->next + (a->unk26C << 5) + dir;
+    }
+    if (a->unk288 != 0) {
+        return 0x3D + (a->unk26C << 5);
+    }
+    if (HasCondition(a->cond, 0x2A)) {
+        return 0x14;
+    }
+    if (HasCondition(a->cond, 0x2B) && MemFlagIsSet(a->cond, 6)) {
+        int leap = fn_801BE008(a);
+        ConditionSetBit(a->cond, 0x2B, 0);
+        if (leap >= 0) {
+            return leap + 0x1A;
+        }
+        ConditionSetBit(a->cond, 0x2C, 0);
     }
     return b->cur;
 }
