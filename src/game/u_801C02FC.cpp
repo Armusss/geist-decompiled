@@ -123,7 +123,7 @@ void fn_80162610(Actor* a, void* beh, int msg);
 void fn_800CB8BC(Actor* a, HostData* data, int arg, int c);
 int fn_80212730(int id);
 int fn_8016325C(void* beh);
-void fn_800B42E0(float r, Vec3* pos, int id, int a, int b);
+void fn_800B42E0(Vec3* pos, int id, int a, int b, float r);
 void fn_801BE5D4(Actor* a);
 int rand(void);
 
@@ -355,7 +355,7 @@ int fn_801C2024(Actor* a) {
     p.y = (float)a->y;
     p.z = (float)a->z;
     Vec3Set(&a->v27C, 0.0f, 0.0f, 0.0f);
-    fn_800B42E0(101.0f, &p, a->id, 3, 10);
+    fn_800B42E0(&p, a->id, 3, 10, 101.0f);
     if (a->unk5F0 == 0 || fn_80212730(a->id) != -1) {
         fn_801C7D78(a);
         a->pos.x = (float)a->x;
@@ -418,8 +418,8 @@ int fn_801C2280(Actor* a) {
         ConditionSetBit(a->cond, 4, 0);
         fn_801BE5D4(a);
     }
-    int stance = a->unk26C;
-    if (b->f28 != stance || b->f24 != dir) {
+    if (b->f28 != a->unk26C || b->f24 != dir) {
+        int stance = a->unk26C;
         switch (b->cur) {
         case 0x25:
         case 0x26:
@@ -433,7 +433,7 @@ int fn_801C2280(Actor* a) {
         case 0x85:
         case 0x86:
         case 0x87:
-            return stance * 32 + dir + 0x29;
+            return 0x29 + (stance << 5) + dir;
         case 0x35:
         case 0x36:
         case 0x37:
@@ -446,7 +446,7 @@ int fn_801C2280(Actor* a) {
         case 0x95:
         case 0x96:
         case 0x97:
-            return stance * 32 + dir + 0x21;
+            return 0x21 + (stance << 5) + dir;
         }
     }
     return b->cur;
