@@ -8,6 +8,9 @@
 typedef unsigned char u8;
 typedef unsigned long u32;
 
+#include "game/string.h"
+#include "game/msg.h"
+
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
@@ -42,7 +45,9 @@ struct Actor {
     int mMode;                  // 0x7A4
     u8 mUnk7A8[0x7B4 - 0x7A8];  // 0x7A8
     u32 mState;                 // 0x7B4
-    u8 mUnk7B8[0x14A8 - 0x7B8];  // 0x7B8
+    u8 mUnk7B8[0x908 - 0x7B8];  // 0x7B8
+    u32 mUnk908;                // 0x908 (in hosts of kind 0x13)
+    u8 mUnk90C[0x14A8 - 0x90C];  // 0x90C
     int mHud;                   // 0x14A8
     u8 mUnk14AC[0x14B8 - 0x14AC];  // 0x14AC
     int mUnk14B8;               // 0x14B8
@@ -51,9 +56,16 @@ struct Actor {
     u8 mUnk14C4[0x14CC - 0x14C4];  // 0x14C4
     int mFontC;                 // 0x14CC
     int mFontD;                 // 0x14D0
-    u8 mUnk14D4[0x1DA8 - 0x14D4];  // 0x14D4
+    u8 mUnk14D4[0x1BA0 - 0x14D4];  // 0x14D4
+    Actor* mUnk1BA0;            // 0x1BA0
+    int mUnk1BA4;               // 0x1BA4
+    u8 mUnk1BA8[0x1D6C - 0x1BA8];  // 0x1BA8
+    Actor* mUnk1D6C;            // 0x1D6C
+    u8 mUnk1D70[0x1DA8 - 0x1D70];  // 0x1D70
     int mAnimSet;               // 0x1DA8 currently active animation set
-    u8 mUnk1DAC[0x26C4 - 0x1DAC];  // 0x1DAC
+    u8 mUnk1DAC[0x264C - 0x1DAC];  // 0x1DAC
+    float mUnk264C;             // 0x264C
+    u8 mUnk2650[0x26C4 - 0x2650];  // 0x2650
     PlayerAnimSet* mSet[2];     // 0x26C4
     u8 mUnk26CC[0x26E4 - 0x26CC];  // 0x26CC
     Actor* mHost;               // 0x26E4
@@ -510,6 +522,25 @@ extern "C" void fn_8004FD70(Actor* a)
     }
 }
 
+extern int lbl_804D43F0;
+extern float lbl_804D2718;
+extern float lbl_804D271C;
+
+// 0x800507B4: state enter, shows the "White Out" font
+extern "C" void fn_800507B4(Actor* p)
+{
+    if (p->mFontC != -1) {
+        FontRelease(p->mFontC);
+        p->mFontC = -1;
+    }
+    p->mFontC = fn_8007EF48(p->mBody, 1, "White Out", 0, 0, 0xC, 0xC, 0xC, 0, (int)p);
+    if (lbl_804D43F0 != 0) {
+        p->mUnk264C = lbl_804D271C;
+    } else {
+        p->mUnk264C = lbl_804D2718;
+    }
+}
+
 // 0x80050850: state exit, releases the third font
 extern "C" int fn_80050850(int a, int b, Actor* p)
 {
@@ -618,11 +649,59 @@ extern "C" int fn_80054174(int i, int a, Actor** out)
 extern int lbl_804D4470;
 extern int lbl_804D4474;
 
+int ActorPlayAnim(int actor, u32 anim, int arg);
+void* FxFind(const char* name);
+extern "C" void FxStart(void* fx, int a, int b);
+extern "C" void fn_80283864(int a);
+
+// 0x8005624C: state enter, fades in from the host kind 1
+extern "C" float fn_8005624C(Actor* p)
+{
+    p->mFlags &= ~8;
+    if (p->mUnk1D6C != 0 && (int)(p->mUnk1D6C->mId >> 24) == 1) {
+        fn_80283864(*(int*)((HostObj*)p->mUnk1D6C)->mKind1);
+        FxStart(FxFind("fadein"), 0, 0);
+        ActorPlayAnim(p->mUnk1D6C->mId, 0x8B40C0DC, p->mId);
+    }
+    return 0.0f;
+}
+
 // 0x80059E94
 extern "C" void fn_80059E94(void)
 {
     lbl_804D4470 = 0;
     lbl_804D4474 = 0;
+}
+
+static inline int HostNotKind19(Actor** pp)
+{
+    int r;
+    if (*pp == 0) {
+        r = 1;
+    } else if ((int)((*pp)->mId >> 24) == 0x13) {
+        r = 0;
+    } else {
+        r = 1;
+    }
+    return r;
+}
+
+struct HostPos {
+    Actor* mHost;     // 0x00
+    u8 mUnk04[0x30 - 0x04];
+    int mPos[3];      // 0x30
+};
+
+// 0x8005A420: position of the host as floats (unless it is of kind 0x13)
+extern "C" int fn_8005A420(HostPos* h, float* out)
+{
+    if (HostNotKind19(&h->mHost)) {
+        out[0] = h->mPos[0];
+        out[1] = h->mPos[1];
+        out[2] = h->mPos[2];
+        return 1;
+    }
+    return 0;
 }
 
 // 0x8005A4CC: whether the host in *pp is missing or not of kind 0x13
@@ -645,6 +724,107 @@ extern "C" u32 fn_8005AAF8(Actor* a)
 }
 
 extern int lbl_804D270C;
+
+// A camera setting (0x5C bytes).
+struct CamSetting {
+    int mUnk00;
+    int mUnk04;
+    int mUnk08;
+    float mUnk0C;
+    float mUnk10;
+    int mUnk14;
+    int mUnk18;
+    int mUnk1C;
+    int mUnk20;
+    int mUnk24;
+    int mUnk28;
+    int mUnk2C;
+    int mUnk30;
+    int mUnk34;
+    int mUnk38;
+    int mUnk3C;
+    int mUnk40;
+    int mUnk44;
+    int mUnk48;
+    float mUnk4C;
+    float mUnk50;
+    int mUnk54;
+    int mUnk58;
+};
+
+// 0x8005F590
+extern "C" void fn_8005F590(CamSetting* d, CamSetting s)
+{
+    *d = s;
+}
+
+// 0x8005F64C: sends a keyed command with an integer argument
+extern "C" int fn_8005F64C(int target, u32 hash, int value)
+{
+    QueryMsg q;
+    q.hash = hash;
+    *(int*)&q.result = value;
+    q.unk8 = 0;
+    return SendMsg(target, 0x41D, &q);
+}
+
+// 0x8005F6EC: sends a keyed query and returns its integer reply
+extern "C" int fn_8005F6EC(int target, u32 hash, int* out)
+{
+    QueryMsg q;
+    int r;
+    q.hash = hash;
+    *(int*)&q.result = 0;
+    q.unk8 = 0;
+    r = SendMsg(target, 0x41E, &q);
+    *out = *(int*)&q.result;
+    return r;
+}
+
+extern "C" int fn_800B26B8(Actor* h);
+extern "C" int fn_800B22F8(Actor* h, int a);
+extern "C" void fn_800B20B8(Actor* h, int a);
+
+// 0x8005F794
+extern "C" int fn_8005F794(void* a, int* data)
+{
+    if ((int)(((Actor*)a)->mId >> 24) == 0x13) {
+        Actor* h = (Actor*)a;
+        if (h->mUnk908 == 0x8CD18EE1) {
+            int r = fn_800B26B8(h);
+            if (r == 4 || fn_800B22F8(h, r) > 1) {
+                fn_800B20B8(h, data[2]);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+// Message 0x409 sent to the player's target.
+struct PlayerMsg409 {
+    Actor* mTarget;   // 0x00
+    Actor* mFrom;     // 0x04
+    u32 mFromId;      // 0x08
+    int mArg;         // 0x0C
+    u32 mId;          // 0x10
+    int mUnk14;       // 0x14
+    int mUnk18[2];    // 0x18
+};
+
+// 0x80064418
+extern "C" float fn_80064418(Actor* p)
+{
+    PlayerMsg409 m;
+    m.mTarget = p->mUnk1BA0;
+    m.mArg = p->mUnk1BA4;
+    m.mFrom = p;
+    m.mFromId = fn_800498D0(p);
+    m.mId = m.mFromId;
+    m.mUnk14 = 0;
+    ((int (*)(int, void*))*(int*)((u8*)m.mTarget + 0x30))(0x409, &m);
+    return 0.0f;
+}
 
 // 0x80064EC4
 extern "C" void fn_80064EC4(void)
