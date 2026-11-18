@@ -7,6 +7,7 @@
 // original symbol names.
 
 #include "game/types.h"
+#include "game/msg.h"
 
 typedef unsigned long u32;
 
@@ -19,7 +20,7 @@ static const char* sActionNames[] = {
 struct BarrierActorType {
     int unk0;
     const char* name;
-    u32 (*msg)(void*, int, int*);
+    int (*msg)(Actor*, int, void*, int);
     void (*update)(void*, float);
     u32 (*init)(void*);
     void* unk14;
@@ -27,7 +28,7 @@ struct BarrierActorType {
     void* unk1C[5];
 };
 
-u32 BarrierActorMsg(void* actorPtr, int msg, int* data);
+int BarrierActorMsg(Actor* actor, int msg, void* data, int arg);
 void BarrierActorUpdate(void* actorPtr, float delta);
 u32 BarrierActorInit(void* actorPtr);
 void BarrierBehaviourFree(void* actorPtr);
@@ -46,18 +47,27 @@ extern ActiveEntry* lbl_804D5220;
 extern "C" float fn_802A2080(void);
 void VFree(void* p);
 
-struct ActiveObject {
-    virtual void Release(int flag);                                   // 0x8
-    virtual void Unk0C();
-    virtual void Unk10();
-    virtual void Unk14(int anim, void* mtx, char* name);
-    virtual void Unk18(int flag);
-    virtual u32 Unk1C();
-    virtual void Unk20();
-    virtual void Unk24();
-    virtual void Unk28();
-    virtual void Unk2C();
-    virtual void Apply(Vec3* pos, float scale, Vec3* vel, int kind);  // 0x30
+extern void* VAlloc(int size);
+
+// Base class of the objects held in the active-object registry (vtable 0x803ADE00).
+// Storage comes from the virtual-memory heap.
+class ActiveObject {
+public:
+    static void* operator new(unsigned long size) { return VAlloc(size); }
+    static void operator delete(void* p) { VFree(p); }
+    ActiveObject() {}
+    virtual ~ActiveObject();                                                      // 0x8
+    virtual unsigned char Init(void* a, void* b, void* c, void* d, void* e, void* f) = 0; // 0xC
+    virtual void Feed(float value, int flag) = 0;                                 // 0x10
+    virtual void Animate(int anim, void* mtx, char* name) = 0;                    // 0x14
+    virtual void Cleanup(int flag) = 0;                                           // 0x18
+    virtual u32 Tick() = 0;                                                       // 0x1C
+    virtual void Step() = 0;                                                      // 0x20
+    virtual void Unk24() = 0;
+    virtual void Unk28() = 0;
+    virtual void Unk2C() = 0;
+    virtual void Apply(Vec3* pos, float scale, Vec3* vel, int kind) = 0;          // 0x30
+    virtual void Unk34() = 0;
 };
 
 static inline int ActiveIsRegistered(void* p) {
@@ -68,14 +78,21 @@ static inline int ActiveIsRegistered(void* p) {
     return 0;
 }
 
+// Scales a vector into another.
+static inline void VecScaleTo(Vec3* out, const Vec3* in, float s) {
+    float x = in->x * s;
+    float y = in->y * s;
+    float z = in->z * s;
+    out->z = z;
+    out->y = y;
+    out->x = x;
+}
+
 // Applies a distance-scaled velocity to a registered active object.
 extern "C" void fn_801E0EDC(void* actor, Vec3* a, Vec3* b, int kind, float scale) {
     if (ActiveIsRegistered(actor)) {
-        float s = 1.0f / fn_802A2080();
         Vec3 v;
-        v.x = b->x * s;
-        v.y = b->y * s;
-        v.z = b->z * s;
+        VecScaleTo(&v, b, 1.0f / fn_802A2080());
         ((ActiveObject*)actor)->Apply(a, scale, &v, kind);
     }
 }
@@ -85,9 +102,7 @@ extern "C" void fn_801E0FD0(void** slot) {
     if (slot == 0) return;
     void* obj = *slot;
     if (obj != 0 && ActiveIsRegistered(obj)) {
-        if (obj != 0) {
-            ((ActiveObject*)obj)->Release(1);
-        }
+        delete (ActiveObject*)obj;
         ActiveEntry* cur = lbl_804D5220;
         if (obj == cur->value) {
             lbl_804D5220 = cur->next;
@@ -113,7 +128,7 @@ extern "C" void fn_801E0FD0(void** slot) {
 extern "C" u32 fn_801E10D8(void* obj) {
     u32 result;
     if (ActiveIsRegistered(obj)) {
-        result = ((ActiveObject*)obj)->Unk1C();
+        result = ((ActiveObject*)obj)->Tick();
     } else {
         result = 1;
     }
@@ -123,32 +138,33 @@ extern "C" u32 fn_801E10D8(void* obj) {
 // Runs the cleanup hook of a registered active object.
 extern "C" void fn_801E1150(void* obj, int flag) {
     if (ActiveIsRegistered(obj)) {
-        ((ActiveObject*)obj)->Unk18(flag);
+        ((ActiveObject*)obj)->Cleanup(flag);
     }
 }
 
 // Calls the update hook of a registered active object.
 extern "C" void fn_801E11C0(void* obj, int anim, void* mtx, char* name) {
     if (ActiveIsRegistered(obj)) {
-        ((ActiveObject*)obj)->Unk14(anim, mtx, name);
+        ((ActiveObject*)obj)->Animate(anim, mtx, name);
     }
 }
 
-// Placement new: the factories below allocate raw storage and construct in it.
-inline void* operator new(unsigned long, void* p) { return p; }
-
-// Base of the nodes held in the active-object registry. Its constructor sets
-// the base vtable; the derived constructor then overwrites it.
-struct ActiveNodeBase {
-    ActiveNodeBase() {}
-    virtual void Unk00();
-};
-
-struct ActiveNode : ActiveNodeBase {
+// The registered node type (vtable 0x803BB8CC, defined with u_8020A650).
+class ActiveNode : public ActiveObject {
+public:
     ActiveNode() : m0C(0) {}
-    virtual void Unk04();                                                         // 0x4
-    virtual void Release(int flag);                                                // 0x8
-    virtual unsigned char Init(void* a, void* b, void* c, void* d, void* e, void* f); // 0xC
+    virtual ~ActiveNode();
+    virtual unsigned char Init(void* a, void* b, void* c, void* d, void* e, void* f);
+    virtual void Feed(float value, int flag);
+    virtual void Animate(int anim, void* mtx, char* name);
+    virtual void Cleanup(int flag);
+    virtual u32 Tick();
+    virtual void Step();
+    virtual void Unk24();
+    virtual void Unk28();
+    virtual void Unk2C();
+    virtual void Apply(Vec3* pos, float scale, Vec3* vel, int kind);
+    virtual void Unk34();
     int m04;                                        // 0x4
     int m08;                                        // 0x8
     int m0C;                                        // 0xC
@@ -158,30 +174,20 @@ struct ActiveNode : ActiveNodeBase {
     int m1C;                                        // 0x1C
 };
 
-extern void* VAlloc(int size);
-
 // Creates an active node, initialises it from the six arguments and registers
 // it. Returns 0 (after releasing the half-built node) on any failure.
 extern "C" void* fn_801E1230(void* a, void* b, void* c, void* d, void* e, void* f) {
-    ActiveNode* node = (ActiveNode*)VAlloc(0x20);
-    ActiveEntry* entry;
-    if (node != 0) {
-        new (node) ActiveNode;
-    }
+    ActiveNode* node = new ActiveNode;
     if (node == 0) {
         return 0;
     }
     if (node->Init(a, b, c, d, e, f) == 0) {
-        if (node != 0) {
-            node->Release(1);
-        }
+        delete node;
         return 0;
     }
-    entry = (ActiveEntry*)VAlloc(8);
+    ActiveEntry* entry = (ActiveEntry*)VAlloc(8);
     if (entry == 0) {
-        if (node != 0) {
-            node->Release(1);
-        }
+        delete node;
         return 0;
     }
     entry->value = node;
@@ -193,21 +199,14 @@ extern "C" void* fn_801E1230(void* a, void* b, void* c, void* d, void* e, void* 
 // Calls the per-object tick hook (vtable +0x20) of every registered object.
 extern "C" void fn_801E1354(void) {
     for (ActiveEntry* e = lbl_804D5220; e != 0; e = e->next) {
-        ((ActiveObject*)e->value)->Unk20();
+        ((ActiveObject*)e->value)->Step();
     }
 }
-
-// View of a registered object that exposes the float-feed hook at vtable +0x10.
-struct ActiveAnimObject {
-    virtual void Unk08();
-    virtual void Unk0C();
-    virtual void Unk10(float value, int flag);  // 0x10
-};
 
 // Pushes a value to every registered object; the second argument flags it.
 extern "C" void fn_801E13A0(float value) {
     for (ActiveEntry* e = lbl_804D5220; e != 0; e = e->next) {
-        ((ActiveAnimObject*)e->value)->Unk10(value, 1);
+        ((ActiveObject*)e->value)->Feed(value, 1);
     }
 }
 
@@ -223,9 +222,7 @@ extern "C" void fn_801E1420(void) {
     ActiveEntry* entry = lbl_804D5220;
     while (entry != 0) {
         ActiveEntry* next;
-        if (entry->value != 0) {
-            ((ActiveObject*)entry->value)->Release(1);
-        }
+        delete (ActiveObject*)entry->value;
         next = entry->next;
         VFree(entry);
         entry = next;
@@ -240,13 +237,13 @@ extern "C" void fn_801E1494(void) {
 }
 
 // Vtable installed on released active objects.
-extern char lbl_803ADE00;
+extern char lbl_803ADE00[];
 
 // Resets an active object's vtable and optionally frees its storage.
 // Kept under its fn_ placeholder: several retail vtable blocks reference it.
 extern "C" void* fn_801E14A0(void* object, short freeNow) {
     if (object != 0) {
-        *(void**)object = (void*)&lbl_803ADE00;
+        *(void**)object = (void*)lbl_803ADE00;
         if (freeNow > 0) {
             VFree(object);
         }
@@ -329,7 +326,7 @@ extern "C" int rand(void);
 
 void ActorGetMatrix(Mtx34* out, Actor* actor);
 int ModelBoneHitBox(int a, int b, int c, int d);
-int ActorDefaultMsg(Actor* actor, int msg, void* data);
+int ActorDefaultMsg(Actor* actor, int msg, void* data, int arg);
 int ActorInitBase(Actor* actor);
 void* PoolAlloc(void* pool, int size, void* pool2, int size2);
 extern "C" void fn_80088C10(int fx, const char* name, int a, int b, int c, int d, int e, int f);
@@ -345,175 +342,191 @@ int ModelNodeSetup(int model, int node, int a, int b);
 void ActorUpdate(Actor* actor, float delta);
 
 // The 64 actor-kind hashes the barrier reacts to.
-static inline bool BarrierKindIsValid(u32 kind) {
+static inline int BarrierKindIsValid(int kind) {
     for (int i = 0; i < 64; i++) {
         if (kind == lbl_803ADE38[i]) {
-            return true;
+            return 1;
         }
-    }
-    return false;
-}
-
-// Notifies the object held in the message payload (the player using the
-// barrier) and reports whether the barrier should stay closed.
-static inline int BarrierNotifyTarget(Actor* actor, int msg, int* data, int target) {
-    int result = ActorDefaultMsg(actor, msg, data);
-    if (result == 0) {
-        return 0;
-    }
-    BarrierBeh* beh = ((BarrierActor*)data[0])->behaviour;
-    int valid;
-    if (target != 0 && beh != 0 && beh->field04 != 0) {
-        struct {
-            int target;
-            u32 info;
-        } arg;
-        arg.target = target;
-        valid = ((BarrierMsgSource*)target)->Apply(0x400, &arg);
-        if (valid != 0) {
-            u32 category = arg.info >> 24;
-            if (category == 0x13) {
-                valid = 1;
-            } else if (category < 0x13 && category == 2) {
-                if (PlayerInHost((Actor*)target) == 0) {
-                    valid = 1;
-                } else {
-                    ((BarrierActor*)target)->field14E8 = 1.0f;
-                    valid = 0;
-                }
-            } else {
-                valid = 0;
-            }
-        }
-    } else {
-        valid = 0;
-    }
-    if (valid != 0) {
-        return result;
     }
     return 0;
 }
 
+// The object that walks through the barrier (a player or host): it answers
+// message 0x400 through its handler at +0x30.
+struct BarrierVisitor {
+    char pad00[0x30];
+    int (*handler)(int msg, void* data);  // 0x30
+    char pad34[0x14E8 - 0x34];
+    float field14E8;                      // 0x14E8
+};
+
+// Whether the visitor may pass: a ghost (kind 0x13) always may, a player
+// only when not inside a host (a hosted player is flagged instead).
+static inline int BarrierVisitorPasses(BarrierBeh* beh, BarrierVisitor* target) {
+    if (target != 0 && beh != 0 && beh->field04 != 0) {
+        Msg400 q;
+        q.actor = (Actor*)target;
+        if (target->handler(0x400, &q) != 0) {
+            switch ((int)((u32)q.ownerId >> 24)) {
+            case 2:
+                if (PlayerInHost((Actor*)target) != 0) {
+                    target->field14E8 = 1.0f;
+                    return 0;
+                }
+                return 1;
+            case 0x13:
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+static inline bool BarrierBoneDiffers(BarrierActor* self, int* data) {
+    bool differs = ModelFindBone(self->model, lbl_804D328C) != data[5];
+    return differs;
+}
+
+// Asks the target a keyed question (message 0x41E); returns the first word
+// of the reply.
+static inline int BarrierAsk(int target, u32 hash) {
+    QueryMsg q;
+    q.hash = hash;
+    q.unk8 = 0;
+    *(int*)&q.result = 0;
+    SendMsg(target, 0x41E, &q);
+    return *(int*)&q.result;
+}
+
+static inline int BarrierAnswer41E(int* data) {
+    switch (data[1]) {
+    case (int)0x914B98A8u:
+        data[3] = 1;
+        return 1;
+    }
+    return 0;
+}
 // Message handler of the barrier actor (states, hit tests, effect spawning).
 // Descriptive name: BarrierActorMsg.
-u32 BarrierActorMsg(void* actorPtr, int msg, int* data) {
-    Actor* actor = (Actor*)actorPtr;
-    BarrierActor* self = (BarrierActor*)data[0];
+int BarrierActorMsg(Actor* actor, int msg, void* dataPtr, int arg) {
+    BarrierActor* self = *(BarrierActor**)dataPtr;
+    int* data = (int*)dataPtr;
+    int result;
+    int target;
 
     switch (msg) {
-    case 1: {
-        int result = ActorDefaultMsg(actor, msg, data);
-        if (result != 0) {
-            int bone = ModelFindBone(self->model, lbl_804D328C);
-            if (bone != data[5]) {
-                return result;
-            }
-        }
-        return 0;
-    }
-    case 2:
-        return BarrierNotifyTarget(actor, msg, data, data[3]);
-    case 3:
-        return BarrierNotifyTarget(actor, msg, data, data[4]);
-    case 4:
-        return BarrierNotifyTarget(actor, msg, data, data[7]);
     case 0x405: {
-        BarrierActor* other = (BarrierActor*)data[1];
-        if ((other->field38 >> 24) != 0x13) {
-            return 0;
-        }
-        Mtx34 selfMtx;
-        Mtx34 otherMtx;
-        int selfBox[6];
-        int otherBox[6];
-        ActorGetMatrix(&selfMtx, (Actor*)self);
-        ActorGetMatrix(&otherMtx, (Actor*)other);
-        fn_8016D864(selfBox, self->field40);
-        fn_8016D864(otherBox, other->field40);
-        int hit = ModelBoneHitBox((int)selfBox, (int)&selfMtx, (int)otherBox,
-                                  (int)&otherMtx);
+        int hit;
         int result = 0;
-        if (hit != 0) {
-            result = 1;
-        }
-        data[4] = result;
-        if (result != 0) {
-            fn_8016F120(lbl_804D329C, &self->field24);
+        if ((int)(((BarrierActor*)data[1])->field38 >> 24) == 0x13) {
+            Mtx34 otherMtx;
+            Mtx34 selfMtx;
+            int otherBox[6];
+            int selfBox[6];
+            hit = 0;
+            ActorGetMatrix(&selfMtx, (Actor*)self);
+            ActorGetMatrix(&otherMtx, (Actor*)data[1]);
+            fn_8016D864(selfBox, ((BarrierActor*)data[0])->field40);
+            fn_8016D864(otherBox, ((BarrierActor*)data[1])->field40);
+            if (ModelBoneHitBox((int)selfBox, (int)&selfMtx, (int)otherBox, (int)&otherMtx) != 0) {
+                hit = 1;
+            }
+            if ((data[4] = hit) != 0) {
+                result = hit;
+                fn_8016F120(lbl_804D329C, &self->field24);
+            }
         }
         return result;
-    }
-    case 0x409: {
-        BarrierBeh* beh = self->behaviour;
-        if (beh != 0) {
-            u32 kind = (u32)data[2];
-            if ((kind >> 24) == 2) {
-                kind = (u32)fn_8005AAF8((int)PlayerGetPossessor((int)kind));
-            }
-            if (!BarrierKindIsValid(kind)) {
-                if ((beh->flags & 2) == 0) {
-                    beh->flags |= 2;
-                } else {
-                    beh->flags &= ~2u;
-                }
-            }
-        }
-        return 1;
     }
     case 0x40A: {
         BarrierBeh* beh = self->behaviour;
         if (beh != 0 && (u32)data[2] == 0x7C44EC3D && (beh->flags & 1) != 0) {
-            // Asks the possessor whether the barrier may open; the answer
-            // comes back through the String out-parameter.
-            struct {
-                int unknown;
-                u32 hash;
-                int zero;
-                int string;
-            } nameMsg;
-            nameMsg.hash = 0x947E97;
-            nameMsg.zero = 0;
-            nameMsg.string = 0;
-            SendMsg(data[1], 0x41E, &nameMsg);
-            if (nameMsg.string != 0) {
+            if (BarrierAsk(target = data[1], 0x947E97) != 0) {
                 data[3] = (int)0xF21581DEu;
-                u32 kind = (u32)data[1];
-                if ((kind >> 24) == 2) {
-                    kind = (u32)fn_8005AAF8((int)PlayerGetPossessor((int)kind));
-                }
-                int enabled = 0;
-                if (BarrierKindIsValid(kind)) {
-                    enabled = 0;
-                } else {
-                    enabled = 0;
+                int kind = data[1];
+                if ((int)((u32)kind >> 24) == 2) {
+                    kind = fn_8005AAF8(PlayerGetPossessor(kind));
                 }
                 struct {
-                    int unknown;
-                    int zero;
+                    int unk0;
+                    int enabled;
                     int id;
                     void* asset;
-                } assetMsg;
-                assetMsg.zero = enabled;
-                assetMsg.id = data[3];
-                assetMsg.asset = AssetFind(0xC0A77187u, 0x25A645u);
-                SendMsg(data[1], 0x40B, &assetMsg);
+                    int unk10;
+                } reply;
+                if (BarrierKindIsValid(kind)) {
+                    reply.enabled = 0;
+                } else {
+                    reply.enabled = 0;
+                }
+                reply.id = data[3];
+                reply.asset = AssetFind(0xC0A77187u, 0x25A645u);
+                SendMsg(data[1], 0x40B, &reply);
             }
         }
         return 1;
     }
-    case 0x41D:
-        BarrierKindRegistryMsg(self, data);
+    case 0x409: {
+        BarrierBeh* beh = self->behaviour;
+        if (beh != 0) {
+            int kind = data[2];
+            if ((int)((u32)kind >> 24) == 2) {
+                kind = fn_8005AAF8(PlayerGetPossessor(kind));
+            }
+            if (!BarrierKindIsValid(kind)) {
+                if ((beh->flags & 2) != 0) {
+                    beh->flags &= ~2u;
+                } else {
+                    beh->flags |= 2;
+                }
+            }
+        }
         return 1;
+    }
     case 0x41E:
         if (self->behaviour == 0) {
             return 0;
         }
-        if ((u32)data[1] == 0x914B98A8u) {
-            data[3] = 1;
-            return 1;
+        return BarrierAnswer41E(data);
+    case 0x41D:
+        BarrierKindRegistryMsg(self, data);
+        return 1;
+    case 2:
+        result = ActorDefaultMsg(actor, msg, data, arg);
+        if (result != 0) {
+            target = data[3];
+            if (BarrierVisitorPasses(self->behaviour, (BarrierVisitor*)target)) {
+                return result;
+            }
+        }
+        return 0;
+    case 3:
+        result = ActorDefaultMsg(actor, msg, data, arg);
+        if (result != 0) {
+            target = data[4];
+            if (BarrierVisitorPasses(self->behaviour, (BarrierVisitor*)target)) {
+                return result;
+            }
+        }
+        return 0;
+    case 4:
+        result = ActorDefaultMsg(actor, msg, data, arg);
+        if (result != 0) {
+            target = data[7];
+            if (BarrierVisitorPasses(self->behaviour, (BarrierVisitor*)target)) {
+                return result;
+            }
+        }
+        return 0;
+    case 1: {
+        int result = ActorDefaultMsg(actor, msg, data, arg);
+        if (result != 0 && BarrierBoneDiffers(self, data)) {
+            return result;
         }
         return 0;
     }
-    return ActorDefaultMsg(actor, msg, data);
+    }
+    return ActorDefaultMsg(actor, msg, data, arg);
 }
 
 // Per-frame update of the barrier actor: runs the open/close state machine,
@@ -551,8 +564,7 @@ void BarrierActorUpdate(void* actorPtr, float delta) {
             level = level - 100.0f * beh->timer;
             if (beh->timer <= 0.0f) {
                 beh->state = 2;
-                u32 seed = (u32)rand();
-                beh->timer = 2500.0f * ((float)seed / 32767.0f) + 500.0f;
+                beh->timer = 2500.0f * ((float)rand() / 32767.0f) + 500.0f;
                 beh->fx = fn_8016F120(FxFind("g_barriers"), &actor->field24);
                 fn_8016F120(FxFind("g_barriers_on"), &actor->field24);
             }
@@ -562,8 +574,8 @@ void BarrierActorUpdate(void* actorPtr, float delta) {
             if ((beh->flags & 2) != 0) {
                 if ((beh->flags & 4) != 0) {
                     float speed = fn_80017084(beh->timer);
-                    beh->timer -= delta;
                     level = 0.15f * speed + 0.85f;
+                    beh->timer -= delta;
                     if (beh->timer <= 0.0f) {
                         beh->state = 3;
                         beh->timer = 100.0f;
@@ -593,15 +605,7 @@ void BarrierActorUpdate(void* actorPtr, float delta) {
         }
         }
 
-        float clamped;
-        if (level < 0.0f) {
-            clamped = 0.0f;
-        } else if (level > 1.0f) {
-            clamped = 1.0f;
-        } else {
-            clamped = level;
-        }
-        beh->field04 = (int)((5.0f * delta) * clamped);
+        beh->field04 = (int)((5.0f * delta) * (level < 0.0f ? 0.0f : (level > 1.0f ? 1.0f : level)));
         fn_80037EC0(actor->model, lbl_804D3288, 1, 100, 60, 140,
                     (int)(255.0f * level) & 0xFF);
         if ((beh->flags & 2) != 0) {
