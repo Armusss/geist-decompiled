@@ -2344,22 +2344,22 @@ int fn_801C6684(Actor* a) {
     b->cur = 7;
     b->next = 8;
     b->f24 = 0;
-    zero.x = 0.0f;
-    b->f30 = zero.x;
+    b->f30 = 0.0f;
     a->unk220 = 0;
+    zero.x = 0.0f;
     zero.y = 0.0f;
     zero.z = 0.0f;
     HostHalt(a, &zero);
     fn_801C7D78(a);
-    if (a->extra == 0) {
-        fn_801C8934(a, 0);
-    } else {
+    if (a->extra != 0) {
         fn_800902F0(a->anim);
         ExtraTrailAttach(a->extra);
         if (a->obj5F4 != 0) {
             fn_801D55CC(a->obj5F4);
             a->obj5F4 = 0;
         }
+    } else {
+        fn_801C8934(a, 0);
     }
     ConditionSetBit(a->cond, 0xB, 1);
     return 1;
