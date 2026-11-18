@@ -677,7 +677,20 @@ config.libs = [
             Object(Matching, "game/u_80175D60.cpp"),  # known; live gun effect records and hooks
             Object(NonMatching, "game/u_80176044.cpp"),  # gun slots and aim/fx behaviour states
             Object(Matching, "game/DataStream.cpp"),
-            Object(NonMatching, "game/u_8017D794.cpp"),  # known
+            Object(NonMatching, "game/u_8017D794.cpp"),  # split from u_8017D794 (see file header)
+            Object(NonMatching, "game/u_8017EC24.cpp"),  # split from u_8017D794 (see file header)
+            Object(NonMatching, "game/u_8017F9C0.cpp"),  # split from u_8017D794 (see file header)
+            Object(NonMatching, "game/u_80180868.cpp"),  # split from u_8017D794 (see file header)
+            Object(NonMatching, "game/u_80180F18.cpp"),  # split from u_8017D794 (see file header)
+            Object(NonMatching, "game/u_80181644.cpp"),  # split from u_8017D794 (see file header)
+            Object(NonMatching, "game/u_8018424C.cpp"),  # split from u_8017D794 (see file header)
+            Object(NonMatching, "game/u_80184CD4.cpp"),  # split from u_8017D794 (see file header)
+            Object(NonMatching, "game/u_80184F70.cpp"),  # split from u_8017D794 (see file header)
+            Object(NonMatching, "game/u_8018555C.cpp"),  # split from u_8017D794 (see file header)
+            Object(NonMatching, "game/u_80185A9C.cpp"),  # split from u_8017D794 (see file header)
+            Object(NonMatching, "game/u_80187108.cpp"),  # split from u_8017D794 (see file header)
+            Object(NonMatching, "game/u_80187370.cpp"),  # split from u_8017D794 (see file header)
+            Object(NonMatching, "game/u_8018B31C.cpp"),  # split from u_8017D794 (see file header)
             Object(Matching, "game/SplineGun.cpp"),  # "SplineGun" effect type (starts at SplineGunReset)
             Object(NonMatching, "game/u_8018D2D4.cpp"),  # pinned
             Object(NonMatching, "game/u_8018FAE8.cpp"),  # guess
