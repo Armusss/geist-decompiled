@@ -2402,7 +2402,6 @@ int fn_801C67DC(Actor* a) {
 // 0x801C68CC
 int fn_801C68CC(Actor* a) {
     Vec3 zero;
-    zero.x = 0.0f;
     if (a == 0) {
         return 0;
     }
@@ -2410,6 +2409,7 @@ int fn_801C68CC(Actor* a) {
     b->cur = 0x12;
     b->next = 0x12;
     b->f24 = 0;
+    zero.x = 0.0f;
     zero.y = 0.0f;
     zero.z = 0.0f;
     HostHalt(a, &zero);
@@ -2476,20 +2476,6 @@ int fn_801C6B68(Actor* a) {
     return 1;
 }
 
-// The variant of the knock-back animation that matches the bone the host was hit on.
-static inline int HitVariant(Actor* a) {
-    int v;
-    if (a->hitBone == -1) {
-        v = 8;
-    } else {
-        v = ModelBoneNodeChain(a->model, ModelBoneName(a->model, a->hitBone), gHostAssets, 0x10);
-        if (v == -1) {
-            v = 8;
-        }
-    }
-    return v;
-}
-
 // 0x801C6C34
 int fn_801C6C34(Actor* a) {
     float zero = 0.0f;
@@ -2504,7 +2490,16 @@ int fn_801C6C34(Actor* a) {
     ConditionSetBit(a->cond, 0, 1);
     ConditionSetBit(a->cond, 9, 1);
     if (a->extra == 0 || fn_80212730(a->id) != -1) {
-        fn_801C8934(a, HitVariant(a));
+        int v;
+        if (a->hitBone == -1) {
+            v = 8;
+        } else {
+            v = ModelBoneNodeChain(a->model, ModelBoneName(a->model, a->hitBone), gHostAssets, 0x10);
+            if (v == -1) {
+                v = 8;
+            }
+        }
+        fn_801C8934(a, v);
     }
     return 1;
 }
@@ -2521,7 +2516,18 @@ int fn_801C6D1C(Actor* a) {
     }
     b->timer = 4000.0f;
     ConditionSetBit(a->cond, 0, 1);
-    fn_801C8934(a, HitVariant(a));
+    {
+        int v;
+        if (a->hitBone == -1) {
+            v = 8;
+        } else {
+            v = ModelBoneNodeChain(a->model, ModelBoneName(a->model, a->hitBone), gHostAssets, 0x10);
+            if (v == -1) {
+                v = 8;
+            }
+        }
+        fn_801C8934(a, v);
+    }
     ActorPlayAnim(OwnerId((Owner*)a), 0xA464660E, OwnerId((Owner*)a));
     return 1;
 }
