@@ -20,6 +20,10 @@ void* VAlloc(int size);                                         // 0x8009DA68
 void BehReset(Beh* beh);                                        // 0x801633D4
 int HasCondition(void* owner, int id);                          // 0x800A7AC4
 int AssetFind(u32 group, u32 name);                             // 0x8007EB34
+int OwnerId(Owner* owner);                                      // 0x800A3A40
+int Fn800F7DEC(int a, int b, int msg, int who, void* data);     // 0x800F7DEC
+void Fn800F7F5C(int a, int b, int msg, int who, void* data, float f); // 0x800F7F5C
+int Fn80161FF4(Owner* owner, void* data, float f);              // 0x80161FF4
 
 typedef void (*BehStateFunc)(void* owner, void* beh);
 
@@ -51,6 +55,9 @@ struct ModelNode {
 int ModelAnimate(int model, char* name, int a);                 // 0x8003AA9C
 static int sHydraSpitAssets[2];
 
+// Leave the current state for d->next, telling the owner (arg = d->unk08).
+inline void HydraSpitGoto(Owner* o, HydraSpitData* d);
+
 // The behaviour's own state (Beh::data).
 struct HydraSpitData {
     int state;            // 0x00: index into sHydraSpitStates
@@ -62,6 +69,20 @@ struct HydraSpitData {
     int hitAsset[4];      // 0x18: which spit (asset) hit ...
     int hitHandle[4];     // 0x28: ... which object
 };
+
+inline void HydraSpitGoto(Owner* o, HydraSpitData* d) {
+    if (lbl_803A84A8[d->state].exit) {
+        lbl_803A84A8[d->state].exit(o, &o->beh);
+    }
+    d->state = d->next;
+    o->beh.state = d->next;
+    if (o->beh.callback) {
+        o->beh.callback(o, &o->beh, d->unk08);
+    }
+    if (lbl_803A84A8[d->state].enter) {
+        lbl_803A84A8[d->state].enter(o, &o->beh);
+    }
+}
 
 extern "C" {
 int SendMsg(int to, int msg, void* data);                       // 0x800265D4
@@ -281,6 +302,57 @@ int fn_8017F5DC(Owner* owner, Beh* beh) {
 u32 fn_8017F700() {
     return 0x3DA260F7;
 }
+int fn_8017F188(void* owner, void* beh, int msg) {
+    Owner* o;
+    Beh* b;
+
+    if (beh == 0) {
+        return 0;
+    }
+    o = (Owner*)owner;
+    b = (Beh*)beh;
+    {
+        HydraSpitData* d = (HydraSpitData*)b->data;
+
+        switch (msg) {
+        case 0:
+            d->next = 0;
+            d->unk08 = 0;
+            HydraSpitGoto(o, d);
+            break;
+        case 1:
+            d->next = 4;
+            d->unk08 = 1;
+            if (d->state == 0) {
+                HydraSpitGoto(o, d);
+            }
+            break;
+        case 2:
+            d->next = 5;
+            d->unk08 = 2;
+            if (d->state == 0) {
+                HydraSpitGoto(o, d);
+            }
+            break;
+        case 0x1B83833F:
+            HydraSpitGoto(o, d);
+            break;
+        case 0x20EE36:
+            if (Fn800F7DEC(o->beh.unk58, o->beh.unk5C, 0x20EE36, OwnerId(o), 0) == 0x4A3E183) {
+                char buf[0x60];
+                if (Fn80161FF4(o, buf, 0.0f) == 0) {
+                    return 0;
+                }
+                Fn800F7F5C(o->beh.unk58, o->beh.unk5C, 0x20EE36, OwnerId(o), buf, 0.0f);
+            }
+            break;
+        case (int)0xF829DB93:
+            break;
+        }
+    }
+    return 1;
+}
+
 int fn_8017F504(void* owner_, void* beh_) {
     Beh* b = (Beh*)beh_;
     HydraSpitData* d;
