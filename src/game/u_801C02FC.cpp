@@ -79,7 +79,7 @@ struct Actor {
     char cond[0xC];     // 0x270
     Vec3 v27C;          // 0x27C
     char pad288[0x368];
-    int unk5F0;         // 0x5F0
+    void* unk5F0;       // 0x5F0
     char pad5F4[0x2A0];
     char beh894[0x70];  // 0x894
     float f904;         // 0x904
@@ -126,11 +126,14 @@ void fn_801C11B0(Actor* a) {
 }
 
 // 0x801C15A8: event handler of most actions.
-int fn_801C15A8(int msg, Actor* a) {
-    if (a == 0) {
+int fn_801C15A8(int msg, void* p) {
+    HostBeh* b;
+    Actor* a;
+    if (p == 0) {
         return 0;
     }
-    HostBeh* b = a->beh;
+    a = (Actor*)p;
+    b = a->beh;
     switch (msg) {
     case 0x1B83833F:
         b->prev = b->cur;
@@ -138,12 +141,12 @@ int fn_801C15A8(int msg, Actor* a) {
         gHostActions[b->next].enter(a);
         break;
     case (int)0xEAC45581:
-        fn_80162610(a, a->beh894, 0x20EE36);
+        fn_80162610((Actor*)p, ((Actor*)p)->beh894, 0x20EE36);
         break;
     case 0x04A5C9FC:
     case 0x00239807:
     case 0x46341C3A:
-        fn_800CB8BC(a, a->data, b->f1C, a->unk26C);
+        fn_800CB8BC((Actor*)p, ((Actor*)p)->data, b->f1C, ((Actor*)p)->unk26C);
         break;
     }
     return 1;
