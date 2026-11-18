@@ -34,14 +34,23 @@ struct Actor {
     u32 mFlags;                 // 0x50 0x200000 = inside a host
     int mModel54;               // 0x54 body model
     int mModel58;               // 0x58 weapon model
-    u8 mUnk5C[0x7C - 0x5C];     // 0x5C
+    int mUnk5C;                 // 0x5C
+    u8 mUnk60[0x78 - 0x60];     // 0x60
+    int mUnk78;                 // 0x78
     int mUnk7C;                 // 0x7C
     int mUnk80;                 // 0x80
     int mUnk84;                 // 0x84
     int mUnk88;                 // 0x88
-    u8 mUnk8C[0xD4 - 0x8C];     // 0x8C
+    u8 mUnk8C[0xBC - 0x8C];     // 0x8C
+    int mUnkBC;                 // 0xBC
+    int mUnkC0;                 // 0xC0
+    int mUnkC4;                 // 0xC4
+    int mUnkC8;                 // 0xC8 bone count
+    u8 mUnkCC[0xD4 - 0xCC];     // 0xCC
     int mUnkD4;                 // 0xD4 animation
-    u8 mUnkD8[0x184 - 0xD8];    // 0xD8
+    u8 mUnkD8[0x11C - 0xD8];    // 0xD8
+    int mUnk11C;                // 0x11C
+    u8 mUnk120[0x184 - 0x120];  // 0x120
     int mCamera;                // 0x184
     u8 mUnk188[0x248 - 0x188];  // 0x188
     int mBody;                  // 0x248
@@ -57,12 +66,16 @@ struct Actor {
     int mUnk73C;                // 0x73C
     u8 mUnk740[0x7A4 - 0x740];  // 0x740
     int mMode;                  // 0x7A4
-    u8 mUnk7A8[0x7B4 - 0x7A8];  // 0x7A8
+    int mUnk7A8;                // 0x7A8 next action mode
+    u8 mUnk7AC[0x7B4 - 0x7AC];  // 0x7AC
     u32 mState;                 // 0x7B4
-    u8 mUnk7B8[0x908 - 0x7B8];  // 0x7B8
+    u8 mUnk7B8[0x7D0 - 0x7B8];  // 0x7B8
+    int mUnk7D0;                // 0x7D0
+    u8 mUnk7D4[0x908 - 0x7D4];  // 0x7D4
     u32 mUnk908;                // 0x908 (in hosts of kind 0x13)
     u8 mUnk90C[0xA0C - 0x90C];  // 0x90C
-    u8 mUnkA0C[0x1404 - 0xA0C]; // 0xA0C
+    u8 mUnkA0C[0x1400 - 0xA0C]; // 0xA0C
+    int mUnk1400;               // 0x1400
     char* mBone1404;            // 0x1404
     char* mBone1408;            // 0x1408
     u8 mUnk140C[4];             // 0x140C
@@ -887,6 +900,69 @@ extern "C" float fn_8005624C(Actor* p)
     return 0.0f;
 }
 
+// Message 0xC14 (0x10 bytes).
+struct MsgC14 {
+    int mUnk0;        // 0x00
+    u32 mArg;         // 0x04
+    u32 mFrom;        // 0x08
+    u32 mKey;         // 0x0C
+};
+// Arguments of a host action event (message 0xC06).
+struct PlayerActionArgs {
+    Actor* mPlayer;   // 0x00
+    u32 mHash;        // 0x04
+    int mUnk08;       // 0x08
+    int mTarget;      // 0x0C
+    int mModel;       // 0x10
+};
+extern "C" void fn_800C5210(int target, int msg, void* data);
+
+static inline void SendC14(int target, u32 from, u32 arg, u32 key)
+{
+    if (target != -1) {
+        MsgC14 m;
+        m.mFrom = from;
+        m.mKey = key;
+        m.mArg = arg;
+        SendMsg(target, 0xC14, &m);
+    }
+}
+
+// 0x8005955C
+extern "C" int fn_8005955C(PlayerActionArgs* args)
+{
+    Actor* p = args->mPlayer;
+    if (p->mMode == 0x16) {
+        if (args->mHash == 0x1B83833F) {
+            Msg400 r;
+            if (p->mUnkC4 != -1 || p->mUnk11C != -1) {
+                p->mUnk7A8 = 0x16;
+            } else if (p->mUnk7D0 != 0) {
+                p->mUnk7A8 = 3;
+            } else {
+                p->mUnk7A8 = 1;
+            }
+            if (p->mHost != 0) {
+                SendC14(p->mHost->mId, p->mId, args->mHash, 0x83A2F974);
+            }
+            PlayerSetActionMode(p, p->mUnk7A8);
+            SendMsg(p->mUnkBC, 0x400, &r);
+            args->mUnk08 = p->mUnkC0;
+            args->mPlayer = r.actor;
+            fn_800C5210(p->mUnkBC, 0xC06, args);
+        } else {
+            int inHost = PlayerInHostInline(p);
+            if ((inHost && p->mModel54 == args->mModel) || (!inHost && p->mUnk5C == args->mModel)) {
+                fn_800C5210(args->mTarget, 0xC06, args);
+            } else {
+                return 0;
+            }
+        }
+        return 1;
+    }
+    return 0;
+}
+
 // 0x80059E94
 extern "C" void fn_80059E94(void)
 {
@@ -1117,6 +1193,43 @@ static inline void OptionFov(Actor* p, float* out)
     q.hash = 0x0E4043D9;
     HudMsgDispatch(0, 0x41E, &q, 0);
     *out = sFovTable[*(int*)&q.result];
+}
+
+// Matrix query on the player (bone index first).
+struct PlayerMtxArgs {
+    Actor* mPlayer;   // 0x00
+    short mBone;      // 0x04
+    Placement* mBones;  // 0x08
+    u8 mUnk0C[4];     // 0x0C
+    Placement mMtx;   // 0x10
+};
+extern "C" Placement* fn_8003A3F0(int model, int a, int anim);
+
+// 0x800605C4: matrix of one of the body's bones (the player's own matrix when the bone is out of range)
+extern "C" int fn_800605C4(PlayerMtxArgs* args)
+{
+    Actor* p = args->mPlayer;
+    Placement* m;
+    if (p != 0) {
+        switch (p->mUnk78) {
+        case 0:
+            m = fn_8003A3F0(p->mModel54, p->mUnk1400, ModelAnimate(p->mModel54, 0, 0));
+            break;
+        case 1:
+            m = fn_8003A3F0(p->mModel54, p->mUnk1400, ModelAnimate(p->mModel54, 0, 0));
+            break;
+        default:
+            return 0;
+        }
+        args->mBones = m;
+        if (args->mBone >= 0 && args->mBone < p->mUnkC8) {
+            args->mMtx = m[args->mBone];
+        } else {
+            args->mMtx = *(Placement*)p;
+        }
+        return 1;
+    }
+    return 0;
 }
 
 // 0x80060760
