@@ -1,10 +1,1722 @@
-// u_801C02FC.cpp: 0x801C02FC-0x801C8B6C, 173 functions. A large character behaviour file (161 states).
+// u_801C02FC.cpp: 0x801C02FC-0x801C8B6C, 172 functions. A large character behaviour file (161 actions).
 // Split from u_801BF578 (0x801BF578-0x801D9A70). Evidence for the boundaries:
 //   string pool 0x80348718 (POSSESS..SCAN, "[FASSVE]", "\n")
-//   state table 0x803ABBC0 (0xF18 = 161 entries of 0x18 bytes, every callback is in this range)
+//   action table 0x803ABBC0 (0xF18 = 161 entries of 0x18 bytes, every callback is in this range)
 //   .sdata2 0x804D8A48-0x804D8AD0 (one 0.0 at 0x804D8A64 read from 0x801C0C14 to 0x801C8934),
 //   .bss 0x80496D18 (asset handles filled by fn_801C11F0), .sdata 0x804D3218/0x804D321C
-// Names are descriptive guesses; the code is matched against the retail DOL.
+// The same kind of component as u_801BF578 (SimpleHost: one action) and u_802B2680, with 161 actions: each
+// table entry is {animation hash, enter, leave(next), choose next, event, name}. 113 of the functions are
+// "enter action N" setters of one shape (current/next action, animation variant, ConditionSetBit).
+// Every function keeps its fn_ placeholder name with C linkage.
+// Names in comments are descriptive guesses; the code is matched against the retail DOL.
 
-#include <dolphin/types.h>
+#include "game/types.h"
+#include "game/string.h"
 
+typedef unsigned long u32;
+
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
+// Per-actor action state (VAlloc'd, 0x54 bytes).
+struct HostBeh {
+    int prev;           // 0x00
+    int cur;            // 0x04
+    int next;           // 0x08
+    int owner;          // 0x0C
+    int anim;           // 0x10
+    int animVar;        // 0x14
+    int animOverride;   // 0x18
+    int f1C;            // 0x1C
+    int f20;            // 0x20
+    int f24;            // 0x24
+    int f28;            // 0x28
+    float timer;        // 0x2C
+    float f30;          // 0x30
+    float f34;          // 0x34
+    float f38;          // 0x38
+    Vec3 motion;        // 0x3C
+    char pad48[0xA];    // 0x48
+    short f52;          // 0x52
+};
+
+// The host's per-type definition data (at actor+0xC4).
+struct HostData {
+    u32 type;           // 0x00
+    char pad4[0x10];
+    int i14;            // 0x14
+    int i18;            // 0x18
+    int i1C;            // 0x1C
+};
+
+struct Actor {
+    char pad00[0x24];
+    int x;              // 0x24
+    int y;              // 0x28
+    int z;              // 0x2C
+    int (*msgFn)(int msg, void* data);  // 0x30
+    char pad34[4];
+    int id;             // 0x38
+    char pad3C[0x48];
+    Vec3 pos;           // 0x84
+    char pad90[0x34];
+    HostData* data;     // 0xC4
+    char padC8[0xC];
+    int anim;           // 0xD4
+    char padD8[0x38];
+    void* cb110;        // 0x110
+    char pad114[4];
+    void* cb118;        // 0x118
+    char pad11C[0x18];
+    HostBeh* beh;       // 0x134
+    float dt;           // 0x138
+    char pad13C[0x130];
+    int unk26C;         // 0x26C
+    char cond[0x18];    // 0x270
+    char pad288[0x60C];
+    char beh894[0x70];  // 0x894
+    float f904;         // 0x904
+    char pad908[0x14];
+    float f91C;         // 0x91C
+};
+
+typedef int (*ActEnter)(Actor* a);
+typedef int (*ActLeave)(Actor* a, int next);
+typedef int (*ActNext)(Actor* a);
+typedef int (*ActEvent)(int msg, Actor* a);
+
+// One entry of the action table (0x18 bytes).
+struct HostAction {
+    u32 anim;           // 0x00
+    ActEnter enter;     // 0x04
+    ActLeave leave;     // 0x08
+    ActNext next;       // 0x0C
+    ActEvent event;     // 0x10
+    const char* name;   // 0x14
+};
+
+extern HostAction gHostActions[161];
+
+int ConditionSetBit(void* cond, int bit, int set);
+int HasCondition(void* cond, int which);                        // 0x800A7AC4
+void VFree(void* p);                                            // 0x8009DA3C
+void* VAlloc(int size);                                         // 0x8009DA68
+
+extern "C" {
+void fn_801C8934(Actor* a, int variant);
+
+// 0x801C4244
+int fn_801C4244(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 31;
+    b->next = 41;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, 1);
+    return 1;
+}
+
+// 0x801C42C0
+int fn_801C42C0(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 30;
+    b->next = 41;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C433C
+int fn_801C433C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 29;
+    b->next = 41;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, 1);
+    return 1;
+}
+
+// 0x801C43B8
+int fn_801C43B8(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 28;
+    b->next = 41;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C4434
+int fn_801C4434(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 27;
+    b->next = 41;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, 1);
+    return 1;
+}
+
+// 0x801C44B0
+int fn_801C44B0(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 26;
+    b->next = 41;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C452C
+int fn_801C452C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 25;
+    b->next = 33;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C45A8
+int fn_801C45A8(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 24;
+    b->next = 24;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C4620
+int fn_801C4620(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 23;
+    b->next = 23;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C4698
+int fn_801C4698(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 22;
+    b->next = 22;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C4710
+int fn_801C4710(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 21;
+    b->next = 24;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C478C
+int fn_801C478C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 20;
+    b->next = 24;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C4808
+int fn_801C4808(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 15;
+    b->next = 33;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, -1);
+    return 1;
+}
+
+// 0x801C4860
+int fn_801C4860(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 14;
+    b->next = 41;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C48DC
+int fn_801C48DC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 13;
+    b->next = 33;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C4934
+int fn_801C4934(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 156;
+    b->next = 140;
+    ConditionSetBit(a->cond, 0, 1);
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C49B0
+int fn_801C49B0(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 155;
+    b->next = 139;
+    ConditionSetBit(a->cond, 0, 1);
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C4A30
+int fn_801C4A30(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 154;
+    b->next = 138;
+    ConditionSetBit(a->cond, 0, 1);
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C4AB0
+int fn_801C4AB0(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 124;
+    b->next = 108;
+    ConditionSetBit(a->cond, 0, 1);
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C4B30
+int fn_801C4B30(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 123;
+    b->next = 107;
+    ConditionSetBit(a->cond, 0, 1);
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C4BAC
+int fn_801C4BAC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 122;
+    b->next = 106;
+    ConditionSetBit(a->cond, 0, 1);
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C4C2C
+int fn_801C4C2C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 92;
+    b->next = 76;
+    ConditionSetBit(a->cond, 0, 1);
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C4CAC
+int fn_801C4CAC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 91;
+    b->next = 75;
+    ConditionSetBit(a->cond, 0, 1);
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C4D2C
+int fn_801C4D2C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 90;
+    b->next = 74;
+    ConditionSetBit(a->cond, 0, 1);
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C4DA8
+int fn_801C4DA8(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 140;
+    b->next = 140;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C4E04
+int fn_801C4E04(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 139;
+    b->next = 139;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C4E64
+int fn_801C4E64(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 138;
+    b->next = 138;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C4EC4
+int fn_801C4EC4(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 108;
+    b->next = 108;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C4F24
+int fn_801C4F24(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 107;
+    b->next = 107;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C4F80
+int fn_801C4F80(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 106;
+    b->next = 106;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C4FE0
+int fn_801C4FE0(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 76;
+    b->next = 76;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C5040
+int fn_801C5040(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 75;
+    b->next = 75;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C50A0
+int fn_801C50A0(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 74;
+    b->next = 74;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C50FC
+int fn_801C50FC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 152;
+    b->next = 132;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C515C
+int fn_801C515C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 151;
+    b->next = 131;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C51C0
+int fn_801C51C0(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 150;
+    b->next = 130;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C5224
+int fn_801C5224(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 148;
+    b->next = 148;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C5280
+int fn_801C5280(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 147;
+    b->next = 147;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C52E0
+int fn_801C52E0(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 146;
+    b->next = 146;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C5340
+int fn_801C5340(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 144;
+    b->next = 144;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C539C
+int fn_801C539C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 143;
+    b->next = 143;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C53FC
+int fn_801C53FC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 142;
+    b->next = 142;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C545C
+int fn_801C545C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 136;
+    b->next = 140;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C54BC
+int fn_801C54BC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 135;
+    b->next = 139;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C5520
+int fn_801C5520(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 134;
+    b->next = 138;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C5584
+int fn_801C5584(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 120;
+    b->next = 100;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C55E8
+int fn_801C55E8(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 119;
+    b->next = 99;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C5648
+int fn_801C5648(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 118;
+    b->next = 98;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C56AC
+int fn_801C56AC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 116;
+    b->next = 116;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C570C
+int fn_801C570C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 115;
+    b->next = 115;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C5768
+int fn_801C5768(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 114;
+    b->next = 114;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C57C8
+int fn_801C57C8(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 112;
+    b->next = 112;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C5828
+int fn_801C5828(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 111;
+    b->next = 111;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C5884
+int fn_801C5884(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 110;
+    b->next = 110;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C58E4
+int fn_801C58E4(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 104;
+    b->next = 108;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C5948
+int fn_801C5948(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 103;
+    b->next = 107;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C59A8
+int fn_801C59A8(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 102;
+    b->next = 106;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C5A0C
+int fn_801C5A0C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 88;
+    b->next = 68;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C5A70
+int fn_801C5A70(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 87;
+    b->next = 67;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C5AD4
+int fn_801C5AD4(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 86;
+    b->next = 66;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C5B34
+int fn_801C5B34(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 84;
+    b->next = 84;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C5B94
+int fn_801C5B94(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 83;
+    b->next = 83;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C5BF4
+int fn_801C5BF4(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 82;
+    b->next = 82;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C5C50
+int fn_801C5C50(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 80;
+    b->next = 80;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C5CB0
+int fn_801C5CB0(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 79;
+    b->next = 79;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C5D10
+int fn_801C5D10(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 78;
+    b->next = 78;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C5D6C
+int fn_801C5D6C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 72;
+    b->next = 76;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C5DD0
+int fn_801C5DD0(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 71;
+    b->next = 75;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C5E34
+int fn_801C5E34(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 70;
+    b->next = 74;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C5E94
+int fn_801C5E94(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 132;
+    b->next = 132;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C5EF0
+int fn_801C5EF0(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 131;
+    b->next = 131;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C5F50
+int fn_801C5F50(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 130;
+    b->next = 130;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C5FB0
+int fn_801C5FB0(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 100;
+    b->next = 100;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C6010
+int fn_801C6010(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 99;
+    b->next = 99;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C606C
+int fn_801C606C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 98;
+    b->next = 98;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C60CC
+int fn_801C60CC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 68;
+    b->next = 68;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 3;
+    return 1;
+}
+
+// 0x801C612C
+int fn_801C612C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 67;
+    b->next = 67;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 2;
+    return 1;
+}
+
+// 0x801C618C
+int fn_801C618C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 66;
+    b->next = 66;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 1;
+    return 1;
+}
+
+// 0x801C61E8
+int fn_801C61E8(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 6;
+    b->next = 33;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, -1);
+    return 1;
+}
+
+// 0x801C6264
+int fn_801C6264(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 5;
+    b->next = 5;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, -1);
+    return 1;
+}
+
+// 0x801C62DC
+int fn_801C62DC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 4;
+    b->next = 5;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, -1);
+    return 1;
+}
+
+// 0x801C6358
+int fn_801C6358(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 3;
+    b->next = 3;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, -1);
+    return 1;
+}
+
+// 0x801C63D0
+int fn_801C63D0(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 2;
+    b->next = 3;
+    b->f28 = 0;
+    b->f24 = 0;
+    ConditionSetBit(a->cond, 0, 1);
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C645C
+int fn_801C645C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 1;
+    b->next = 33;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C64D8
+int fn_801C64D8(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 12;
+    b->next = 33;
+    b->f24 = 0;
+    ConditionSetBit(a->cond, 11, 0);
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C65A4
+int fn_801C65A4(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 10;
+    b->next = 11;
+    b->f24 = 0;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C65F8
+int fn_801C65F8(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 9;
+    b->next = 33;
+    b->f24 = 0;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C67AC
+int fn_801C67AC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 32;
+    b->next = 32;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C6E04
+int fn_801C6E04(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 137;
+    b->next = 137;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C6E64
+int fn_801C6E64(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 105;
+    b->next = 105;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C6EC4
+int fn_801C6EC4(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 73;
+    b->next = 73;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C6F24
+int fn_801C6F24(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 129;
+    b->next = 129;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C6F84
+int fn_801C6F84(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 97;
+    b->next = 97;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C6FE4
+int fn_801C6FE4(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 65;
+    b->next = 65;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C7044
+int fn_801C7044(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 149;
+    b->next = 129;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C70A8
+int fn_801C70A8(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 145;
+    b->next = 145;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C7108
+int fn_801C7108(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 141;
+    b->next = 141;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C7168
+int fn_801C7168(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 133;
+    b->next = 137;
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C71CC
+int fn_801C71CC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 117;
+    b->next = 97;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C7230
+int fn_801C7230(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 113;
+    b->next = 113;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C7290
+int fn_801C7290(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 109;
+    b->next = 109;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C72F0
+int fn_801C72F0(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 101;
+    b->next = 105;
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C7354
+int fn_801C7354(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 85;
+    b->next = 65;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C73B8
+int fn_801C73B8(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 81;
+    b->next = 81;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C7418
+int fn_801C7418(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 77;
+    b->next = 77;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C7478
+int fn_801C7478(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 69;
+    b->next = 73;
+    b->f24 = 0;
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    return 1;
+}
+
+// 0x801C74DC
+int fn_801C74DC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 53;
+    b->next = 33;
+    b->f24 = 0;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C7554
+int fn_801C7554(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 37;
+    b->next = 41;
+    b->f24 = 0;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C76E0
+int fn_801C76E0(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 153;
+    b->next = 137;
+    ConditionSetBit(a->cond, 0, 1);
+    fn_801C8934(a, 0);
+    b->f28 = 3;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C7760
+int fn_801C7760(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 121;
+    b->next = 105;
+    ConditionSetBit(a->cond, 0, 1);
+    fn_801C8934(a, 0);
+    b->f28 = 2;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C77E0
+int fn_801C77E0(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 89;
+    b->next = 73;
+    ConditionSetBit(a->cond, 0, 1);
+    fn_801C8934(a, 0);
+    b->f28 = 1;
+    b->f24 = 0;
+    return 1;
+}
+
+// 0x801C7860
+int fn_801C7860(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 57;
+    b->next = 41;
+    b->f28 = 0;
+    ConditionSetBit(a->cond, 0, 1);
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C7B78
+int fn_801C7B78(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 41;
+    b->next = 41;
+    b->f28 = 0;
+    fn_801C8934(a, 0);
+    b->f24 = 0;
+    return 1;
+}
+
+}  // extern "C"
