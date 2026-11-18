@@ -524,7 +524,49 @@ game/DataStream.cpp:
 	.sbss       start:0x804D5058 end:0x804D50A8
 
 game/u_8017D794.cpp:
-	.text       start:0x8017D794 end:0x8018C2F8
+	.text       start:0x8017D794 end:0x8017EC24
+
+game/u_8017EC24.cpp:
+	.text       start:0x8017EC24 end:0x8017F9C0
+
+game/u_8017F9C0.cpp:
+	.text       start:0x8017F9C0 end:0x80180868
+
+game/u_80180868.cpp:
+	.text       start:0x80180868 end:0x80180F18
+
+game/u_80180F18.cpp:
+	.text       start:0x80180F18 end:0x80181644
+
+game/u_80181644.cpp:
+	.text       start:0x80181644 end:0x8018424C
+
+game/u_8018424C.cpp:
+	.text       start:0x8018424C end:0x80184CD4
+
+game/u_80184CD4.cpp:
+	.text       start:0x80184CD4 end:0x80184F70
+	.data       start:0x803A86E8 end:0x803A8710
+	.sdata2     start:0x804D8390 end:0x804D83A8
+
+game/u_80184F70.cpp:
+	.text       start:0x80184F70 end:0x8018555C
+
+game/u_8018555C.cpp:
+	.text       start:0x8018555C end:0x80185A9C
+
+game/u_80185A9C.cpp:
+	.text       start:0x80185A9C end:0x80187108
+
+game/u_80187108.cpp:
+	.text       start:0x80187108 end:0x80187370
+	.sdata2     start:0x804D8408 end:0x804D8418
+
+game/u_80187370.cpp:
+	.text       start:0x80187370 end:0x8018B31C
+
+game/u_8018B31C.cpp:
+	.text       start:0x8018B31C end:0x8018C2F8
 
 game/SplineGun.cpp:
 	.text       start:0x8018C2F8 end:0x8018D2D4
