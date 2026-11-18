@@ -932,6 +932,87 @@ int fn_801C39C4(Actor* a) {
     return a->beh->cur;
 }
 
+// 0x801C3E34
+int fn_801C3E34(Actor* a) {
+    if (a == 0) {
+        return 0x21;
+    }
+    HostBeh* b = a->beh;
+    fn_801C7D78(a);
+    if (a->unk220 == 4) {
+        return 0x20;
+    }
+    if (HasCondition(a->cond, 0x2A) == 0) {
+        return 0x19;
+    }
+    HostTimeout(a, b);
+    ZoneClassifyDirection(a, &a->v240);
+    MemFlagIsSet(a->cond, 0x17);
+    if (fn_8016325C(a->beh894) == 4) {
+        return 0x16;
+    }
+    if (fn_8016325C(a->beh894) == 5) {
+        return 0x17;
+    }
+    if (fn_8016325C(a->beh894) == 6 || fn_8016325C(a->beh894) == 7) {
+        return 0x15;
+    }
+    return b->cur;
+}
+
+// 0x801C3F84
+int fn_801C3F84(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    fn_801C7D78(a);
+    if (a->unk220 == 4) {
+        return 0x20;
+    }
+    ZoneClassifyDirection(a, &a->v240);
+    MemFlagIsSet(a->cond, 0x17);
+    HostTimeout(a, b);
+    if (fn_8016325C(a->beh894) == 6 || fn_8016325C(a->beh894) == 7) {
+        return 0x15;
+    }
+    if (fn_8016325C(a->beh894) != 4) {
+        return 0x18;
+    }
+    if (HasCondition(a->cond, 0x2A) == 0) {
+        return 0x19;
+    }
+    return b->cur;
+}
+
+// 0x801C40BC
+int fn_801C40BC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    fn_801C7D78(a);
+    if (a->unk220 == 4) {
+        return 0x20;
+    }
+    HostBeh* b = a->beh;
+    HostTimeout(a, b);
+    return b->cur;
+}
+
+// 0x801C4180
+int fn_801C4180(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    fn_801C7D78(a);
+    if (a->unk220 == 4) {
+        return 0x20;
+    }
+    HostBeh* b = a->beh;
+    HostTimeout(a, b);
+    return b->cur;
+}
+
 // 0x801C4244
 int fn_801C4244(Actor* a) {
     if (a == 0) {
