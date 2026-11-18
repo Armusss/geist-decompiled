@@ -912,11 +912,11 @@ int fn_801C38E8(Actor* a) {
     HostBeh* b = a->beh;
     fn_801C7D78(a);
     b->f30 -= step;
-    if (b->f30 > 0.0f) {
-        return b->cur;
+    if (b->f30 <= 0.0f) {
+        b->f30 = 30000.0f * ((float)rand() / 32767.0f) + 8500.0f;
+        return 0x21;
     }
-    b->f30 = 30000.0f * ((float)rand() / 32767.0f) + 8500.0f;
-    return 0x21;
+    return b->cur;
 }
 
 // 0x801C39BC
