@@ -168,6 +168,8 @@ int fn_8000DDD0(void);
 int fn_802A1D04(void);
 int fn_8020B97C(void);
 int fn_801C0E7C(Actor* a);
+int fn_8008EA9C(int anim, int a);
+int fn_8008E964(int anim);
 int fn_800CDD10();
 void fn_80090634(int anim, int a, int b, int c);
 void fn_8008F4E8(int anim, int a);
@@ -200,6 +202,55 @@ static inline void HostHalt(Actor* a, Vec3* zero) {
     fn_800C6F58(a);
 }
 int rand(void);
+
+// 0x801C0E7C: per-frame update.
+int fn_801C0E7C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    if (b->timer > 0.0f) {
+        b->timer -= a->dt;
+    }
+    if (a->data->type == 0x8BD84799) {
+        if (a->f91C > 1.5f) {
+            b->f52 = 1500;
+        } else {
+            b->f52 = 0;
+        }
+    }
+    if (HasCondition(a->cond, 9) && b->cur != 0x3F && b->cur != 0x40) {
+        b->prev = b->cur;
+        gHostActions[b->cur].leave(a, 0x3F);
+        gHostActions[0x3F].enter(a);
+    }
+    if (HasCondition(a->cond, 0x1C) || fn_8008EA9C(a->anim, 0) == 0 || fn_8008EA9C(a->anim, 0) == 2) {
+        if (!HasCondition(a->cond, 0xD) && !HasCondition(a->cond, 9) && !HasCondition(a->cond, 10) &&
+            !HasCondition(a->cond, 0xB)) {
+            gHostActions[b->cur].enter(a);
+        }
+        if (HasCondition(a->cond, 0x1C) && fn_8008E964(a->anim)) {
+            ActorPlayAnim(a->id, 0xB2CB0AA4, a->id);
+        }
+        if (HasCondition(a->cond, 0x1C) && HasCondition(a->cond, 0xD) && fn_8008E964(a->anim)) {
+            ActorPlayAnim(a->id, 0xB2CB0AA4, a->id);
+            ConditionSetBit(a->cond, 0x1C, 0);
+            ConditionSetBit(a->cond, 0x1D, 1);
+        }
+    }
+    {
+        int next = gHostActions[b->cur].next(a);
+        if (next != b->cur && gHostActions[b->cur].leave(a, next)) {
+            b->prev = b->cur;
+            gHostActions[next].enter(a);
+        }
+    }
+    if (!HasCondition(a->cond, 0xB) && b->f38 > 0.0f) {
+        b->f38 -= a->dt;
+        fn_800B42E0(&a->pos, a->id, 4, 0x12, 101.0f);
+    }
+    return 1;
+}
 
 // 0x801C11B0
 void fn_801C11B0(Actor* a) {
