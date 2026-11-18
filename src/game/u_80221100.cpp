@@ -62,7 +62,7 @@ struct TrailDesc {
     float f2c;
     u32 hashB;
     u8 r, g, b;
-    u8 pad[1];
+    u8 pad[5];
 };
 
 struct SpawnDesc {
@@ -76,7 +76,16 @@ struct HitDesc {
     int unk0;
     int unk4;
     int unk8;
-    u8 pad[0x5c - 0xc];
+    float amount;
+    int unk10;
+    int unk14;
+    u8 pad[0x5c - 0x18];
+};
+
+// Show/hide message for the bee actors.
+struct ShowMsg {
+    int unk0;
+    int show;
 };
 
 struct IVec3 {
@@ -87,6 +96,9 @@ struct IVec3 {
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
 };
+
+// Names of the five swarm states for the debug overlay (all empty in retail).
+static const char* sStateNames[5] = {"", "", "", "", ""};
 
 struct Actor;
 
@@ -128,7 +140,6 @@ void* fn_800C7E80(void* place);
 int fn_8028B3BC(BeeList* list, int offset, int size);
 void fn_8028B35C(BeeList* list, int data, int size);
 void fn_8028B2D4(BeeList* list);
-int fn_801DE960(void* desc);
 }
 
 int PlayerInHost(Actor* actor);
@@ -141,13 +152,17 @@ void ActorPlayAnim(int handle, u32 anim, int arg);
 void ActorGetMatrix(Mtx34* out, Actor* actor);
 void Vec3Set(Vec3* v, float x, float y, float z);
 int ModelBoneHitSphere(int a, int b, int c, int d, int e, int f);
-void ActorSetPlacement(Actor* actor, void* place);
+struct PlaceF;
+void ActorSetPlacement(Actor* actor, PlaceF* place);
+int TrailCreate(TrailDesc* desc);
 int ActorFn80022FD8(Actor* actor);
 void ActorFn800231A8(Actor* actor);
 u32 AssetFind(u32 table, u32 key);
 
 extern int lbl_804D3460;
 extern u32 lbl_804D3464;
+extern int lbl_804D55F8;  // debug overlay switch
+void ScreenPrintf(const char* format, ...);
 
 // One bee of the swarm (0x38 bytes).
 struct Bee {
@@ -256,8 +271,10 @@ extern "C" float fn_80221100(Actor* actor)  // BeesSpeedScale; called by other u
         float a = s->unk64 * s->unk64;
         float t = (s->sumDist - a) / (s->unk6c * s->unk6c - a);
         float u = Clamp01(t);
-        float v = Clamp01(s->time / (1000.0f * (float)s->unk74));
-        r = (s->unk68 * (1.0f - u) + s->unk70 * u) * (s->unk78 * v + (1.0f - v));
+        float v;
+        r = s->unk68 * (1.0f - u) + s->unk70 * u;
+        v = Clamp01(s->time / (1000.0f * (float)s->unk74));
+        r *= s->unk78 * v + (1.0f - v);
     } else {
         r = 1.0f;
     }
@@ -348,305 +365,307 @@ inline void BeesFreeReset(BeesState* s)
 
 void BeesSpawn(Actor* actor, BeesState* s, int count);
 
+// Tells every bee actor to show or hide itself (message 0xC00) when the swarm's hidden flag changes.
+inline void BeesShow(BeesState* s, int show)
+{
+    if (show != !((s->flags >> 1) & 1)) {
+        if ((s->flags & 1) != 0) {
+            Bee** p;
+            ShowMsg m;
+            m.show = show;
+            for (p = (Bee**)s->bees.data; p != (Bee**)(s->bees.data + s->bees.size); p++) {
+                SendMsg((*p)->actor->handle, 0xC00, &m);
+            }
+        }
+        if (show) {
+            s->flags &= ~2;
+        } else {
+            s->flags |= 2;
+        }
+    }
+}
+
 int BeesUpdate(Actor* a)
 {
     BeesState* s = a->bees;
-    if (s != 0 && fn_80049940() == 0 && (a->flags & 1) == 0 && lbl_804D3460 != 0) {
-        PlaceQuery q;
-        Place place;
-        int hit;
-        float t;
-        s->timer += a->dt;
-        q.hash = lbl_804D3464;
-        hit = SendMsg(a->handle, 0x411, &q);
-        if (hit == 0) {
-            place = *(Place*)a;
-        } else {
-            place = q.place;
-        }
-        if (PlayerInHost(a) != 0 || (t = s->unk38) < 0.0f) {
-            int st = s->state;
-            if (st == 3) {
-                if (s->timer <= s->unk40 || PlayerInHost(a) == 0) {
-                    float cx = (float)place.w[9];
-                    float cy = (float)place.w[10];
-                    float cz = (float)place.w[11];
-                    int ang[3];
-                    Vec3 aim;
-                    Bee** p;
-                    ActorAim(ang, (Actor*)&place, 1);
-                    aim.x = (float)ang[0];
-                    aim.y = (float)ang[1];
-                    aim.z = (float)ang[2];
-                    fn_800E1098(&aim, &aim, 1000.0f);
-                    for (p = (Bee**)s->bees.data; p != (Bee**)(s->bees.data + s->bees.size); p++) {
-                        Bee* b = *p;
-                        b->steer.x = (float)(cx + aim.x) - b->pos.x;
-                        b->steer.y = (float)(cy + aim.y) - b->pos.y;
-                        b->steer.z = (float)(cz + aim.z) - b->pos.z;
-                    }
-                } else {
-                    s->timer = 0.0f;
-                    s->state = 4;
-                }
-            } else if (st < 3) {
-                if (st == 0) {
-                    s->timer = 0.0f;
-                } else if (st >= 0) {
-                    s->timer = 0.0f;
-                    s->state = 3;
-                }
-            } else if (st < 5) {
+    PlaceQuery q;
+    Place place;
+    if (s == 0 || fn_80049940() != 0 || (a->flags & 1) != 0 || lbl_804D3460 == 0) {
+        return 1;
+    }
+    s->timer += a->dt;
+    q.hash = lbl_804D3464;
+    if (SendMsg(a->handle, 0x411, &q) != 0) {
+        place = q.place;
+    } else {
+        place = *(Place*)a;
+    }
+    if (PlayerInHost(a) != 0 || s->unk38 < 0.0f) {
+        switch (s->state) {
+        case 0:
+            s->timer = 0.0f;
+            break;
+        case 1:
+        case 2:
+            s->timer = 0.0f;
+            s->state = 3;
+            break;
+        case 3:
+            if (s->timer > s->unk40 && PlayerInHost(a) != 0) {
+                s->timer = 0.0f;
+                s->state = 4;
+            } else {
                 float cx = (float)place.w[9];
                 float cy = (float)place.w[10];
                 float cz = (float)place.w[11];
+                int ang[3];
+                Vec3 aim;
                 Bee** p;
+                ActorAim(ang, (Actor*)&place, 1);
+                aim.x = (float)ang[0];
+                aim.y = (float)ang[1];
+                aim.z = (float)ang[2];
+                fn_800E1098(&aim, &aim, 1000.0f);
+                cx += aim.x;
+                cy += aim.y;
+                cz += aim.z;
                 for (p = (Bee**)s->bees.data; p != (Bee**)(s->bees.data + s->bees.size); p++) {
                     Bee* b = *p;
-                    b->steer.x = b->pos.x - cx;
-                    b->steer.y = b->pos.y - cy;
-                    b->steer.z = b->pos.z - cz;
-                }
-                if (s->unk44 * s->unk44 < s->minDist) {
-                    BeesFreeAll(s);
-                    s->time = 0.0f;
-                    s->spawnTimer = 0.0f;
-                    s->flags &= ~1;
-                    s->flags &= ~2;
-                    s->state = 0;
+                    b->steer.x = cx - b->pos.x;
+                    b->steer.y = cy - b->pos.y;
+                    b->steer.z = cz - b->pos.z;
                 }
             }
-        } else {
-            int st = s->state;
-            if (st < 3) {
-                if (st == 0) {
-                    if (0.0f <= t && t < s->timer) {
-                        BeesSpawn(a, s, s->spawnCount);
-                        s->state = 1;
-                        ActorPlayAnim(a->handle, 0x6EB086CB, a->handle);
-                    }
-                } else if (st >= 0) {
-                    float cx = (float)place.w[9];
-                    float cy = (float)place.w[10];
-                    float cz = (float)place.w[11];
-                    Bee** p;
-                    for (p = (Bee**)s->bees.data; p != (Bee**)(s->bees.data + s->bees.size); p++) {
-                        Bee* b = *p;
-                        b->steer.x = cx - b->pos.x;
-                        b->steer.y = cy - b->pos.y;
-                        b->steer.z = cz - b->pos.z;
-                    }
-                    if (s->state == 1 && s->minDist < 64000000.0f) {
-                        ActorPlayAnim(a->handle, 0x48E9C4D8, a->handle);
-                        s->state = 2;
-                    }
-                    if (s->unk58 > 0) {
-                        float interval = 60000.0f / (float)s->unk58;
-                        s->spawnTimer += a->dt;
-                        while (interval < s->spawnTimer) {
-                            s->spawnTimer = s->spawnTimer - interval;
-                            BeesSpawn(a, s, 1);
-                        }
-                    }
-                    if ((float)rand() / 32767.0f < s->unka4) {
-                        u32 r = rand();
-                        Bee* pick = 0;
-                        Bee** p2 = (Bee**)s->bees.data;
-                        u32 n = s->bees.size >> 2;
-                        Bee** end = (Bee**)(s->bees.data + s->bees.size);
-                        int k = r - (r / n) * n;
-                        for (; p2 != end; p2++) {
-                            if (k == 0) {
-                                pick = *p2;
-                                break;
-                            }
-                            k--;
-                        }
-                        if (pick != 0) {
-                            pick->speed = s->speed * s->unka8;
-                        }
-                    }
-                }
-            } else if (st < 5) {
-                s->timer = 0.0f;
-                s->state = 2;
-            }
-        }
-        if ((s->flags & 1) != 0) {
-            float scale;
-            float maxF = 3.4028235e38f;
-            float zero = 0.0f;
-            Mtx34 aMtx;
-            Mtx34 bMtx;
-            char camMtx[24];
+            break;
+        case 4: {
+            float cx = (float)place.w[9];
+            float cy = (float)place.w[10];
+            float cz = (float)place.w[11];
             Bee** p;
-            double sx, sy, sz;
-            if (PlayerInHost(a) == 0) {
-                float a2 = s->unk80 * s->unk80;
-                float tt = (s->sumDist - a2) / (s->unk84 * s->unk84 - a2);
-                float u = Clamp01(tt);
-                scale = s->unk88 * (1.0f - u) + s->unk8c * u;
-            } else {
-                scale = s->unk8c;
-            }
-            s->sumDist = 0.0f;
-            s->minDist = maxF;
-            s->maxDist = zero;
-            sx = sy = sz = 0.0;
-            fn_8016D864(camMtx, a->unk40);
-            ActorGetMatrix(&aMtx, a);
             for (p = (Bee**)s->bees.data; p != (Bee**)(s->bees.data + s->bees.size); p++) {
                 Bee* b = *p;
-                Vec3 toBee;
-                Vec3 toCenter;
-                Vec3 force[3];
-                float w[3];
-                Vec3 acc;
-                Vec3 rnd;
-                int i;
-                toBee.x = b->pos.x - aMtx.pos.x;
-                toBee.y = b->pos.y - aMtx.pos.y;
-                toBee.z = b->pos.z - aMtx.pos.z;
-                force[0] = b->steer;
-                w[0] = scale * s->unk90;
-                force[1].x = s->center.x - b->pos.x;
-                toCenter.x = s->center.x - aMtx.pos.x;
-                force[1].y = s->center.y - b->pos.y;
-                toCenter.y = s->center.y - aMtx.pos.y;
-                force[1].z = s->center.z - b->pos.z;
-                toCenter.z = s->center.z - aMtx.pos.z;
-                w[1] = (scale * s->unk98)
-                       * ((force[1].z * force[1].z + force[1].x * force[1].x + force[1].y * force[1].y)
-                          / (s->unk94 * s->unk94));
-                VecNormalize(&toCenter);
-                VecNormalize(&toBee);
-                w[2] = s->unk9c * (1.0f / s->unka0)
-                       * ((toCenter.z * toBee.z + toCenter.x * toBee.x + toCenter.y * toBee.y) - s->unka0);
-                if (w[2] > 0.0f) {
-                    float r1 = (float)rand() / 32767.0f;
-                    float r2 = (float)rand() / 32767.0f;
-                    Vec3Set(&rnd, 360.0f * r2, 90.0f * r1 - 45.0f, 0.0f);
-                    fn_8016D4EC(&force[2], &rnd);
+                b->steer.x = b->pos.x - cx;
+                b->steer.y = b->pos.y - cy;
+                b->steer.z = b->pos.z - cz;
+            }
+            if (s->minDist > s->unk44 * s->unk44) {
+                BeesFreeReset(s);
+                s->state = 0;
+            }
+            break;
+        }
+        }
+    } else {
+        switch (s->state) {
+        case 0:
+            if (s->unk38 >= 0.0f && s->timer > s->unk38) {
+                BeesSpawn(a, s, s->spawnCount);
+                s->state = 1;
+                ActorPlayAnim(a->handle, 0x6EB086CB, a->handle);
+            }
+            break;
+        case 1:
+        case 2: {
+            float cx = (float)place.w[9];
+            float cy = (float)place.w[10];
+            float cz = (float)place.w[11];
+            Bee** p;
+            for (p = (Bee**)s->bees.data; p != (Bee**)(s->bees.data + s->bees.size); p++) {
+                Bee* b = *p;
+                b->steer.x = cx - b->pos.x;
+                b->steer.y = cy - b->pos.y;
+                b->steer.z = cz - b->pos.z;
+            }
+            if (s->state == 1 && s->minDist < 64000000.0f) {
+                ActorPlayAnim(a->handle, 0x48E9C4D8, a->handle);
+                s->state = 2;
+            }
+            if (s->unk58 > 0) {
+                float interval = 60000.0f / (float)s->unk58;
+                s->spawnTimer += a->dt;
+                while (s->spawnTimer > interval) {
+                    s->spawnTimer = s->spawnTimer - interval;
+                    BeesSpawn(a, s, 1);
                 }
-                if (s->time < b->speed) {
-                    w[0] = w[0] * 1.5f;
-                    w[1] = w[1] * 0.4f;
-                    w[2] = w[2] * 0.4f;
-                }
-                acc.x = 0.0f;
-                acc.y = 0.0f;
-                acc.z = 0.0f;
-                for (i = 0; i < 3; i++) {
-                    if (w[i] > 0.0f && VecNonZero(&force[i]) != 0) {
-                        fn_800E1098(&force[i], &force[i], 1.0f);
-                        acc.x += force[i].x;
-                        acc.y += force[i].y;
-                        acc.z += force[i].z;
+            }
+            if ((float)rand() / 32767.0f < s->unka4) {
+                u32 r = rand();
+                Bee* pick = 0;
+                Bee** p2 = (Bee**)s->bees.data;
+                u32 k = r % (s->bees.size >> 2);
+                Bee** end = (Bee**)(s->bees.data + s->bees.size);
+                for (; p2 != end; p2++) {
+                    if (k == 0) {
+                        pick = *p2;
+                        break;
                     }
+                    k--;
                 }
-                if (VecNonZero(&acc) != 0) {
-                    fn_800E1098(&acc, &acc, 0.001f * s->unk50 * a->dt);
+                if (pick != 0) {
+                    pick->speed = s->speed * s->unka8;
                 }
-                b->vel.x = b->vel.x + acc.x;
-                b->vel.y = b->vel.y + acc.y;
-                b->vel.z = b->vel.z + acc.z;
-                if (b->speed < fn_800E1020(&b->vel)) {
-                    fn_800E1098(&b->vel, &b->vel, b->speed);
+            }
+            break;
+        }
+        case 3:
+        case 4:
+            s->timer = 0.0f;
+            s->state = 2;
+            break;
+        }
+    }
+    if ((s->flags & 1) != 0) {
+        float scale;
+        float sx, sy, sz;
+        Mtx34 aMtx;
+        char camMtx[24];
+        Bee** p;
+        if (PlayerInHost(a) == 0) {
+            float a2 = s->unk80 * s->unk80;
+            float u = Clamp01((s->sumDist - a2) / (s->unk84 * s->unk84 - a2));
+            scale = s->unk88 * (1.0f - u) + s->unk8c * u;
+        } else {
+            scale = s->unk8c;
+        }
+        sx = sy = sz = s->sumDist = 0.0f;
+        s->minDist = 3.4028235e38f;
+        s->maxDist = 0.0f;
+        fn_8016D864(camMtx, a->unk40);
+        ActorGetMatrix(&aMtx, a);
+        for (p = (Bee**)s->bees.data; p != (Bee**)(s->bees.data + s->bees.size); p++) {
+            Bee* b = *p;
+            Vec3 oldPos;
+            Vec3 toBee;
+            Vec3 toCenter;
+            Vec3 force[3];
+            float w[3];
+            Vec3 acc;
+            Vec3 rnd;
+            Vec3 hitA, hitB;
+            Mtx34 m;
+            int i;
+            oldPos = b->pos;
+            toBee.x = oldPos.x - aMtx.pos.x;
+            toBee.y = oldPos.y - aMtx.pos.y;
+            toBee.z = oldPos.z - aMtx.pos.z;
+            w[0] = scale * s->unk90;
+            force[0] = b->steer;
+            force[1].x = s->center.x - b->pos.x;
+            toCenter.x = s->center.x - aMtx.pos.x;
+            force[1].y = s->center.y - b->pos.y;
+            toCenter.y = s->center.y - aMtx.pos.y;
+            force[1].z = s->center.z - b->pos.z;
+            toCenter.z = s->center.z - aMtx.pos.z;
+            w[1] = (scale * s->unk98)
+                   * ((force[1].z * force[1].z + (force[1].x * force[1].x + force[1].y * force[1].y))
+                      / (s->unk94 * s->unk94));
+            VecNormalize(&toCenter);
+            VecNormalize(&toBee);
+            w[2] = s->unk9c * ((1.0f / s->unka0)
+                               * ((toCenter.z * toBee.z + (toCenter.x * toBee.x + toCenter.y * toBee.y))
+                                  - s->unka0));
+            if (w[2] > 0.0f) {
+                float r1 = (float)rand() / 32767.0f;
+                float r2 = (float)rand() / 32767.0f;
+                Vec3Set(&rnd, 360.0f * r2, 90.0f * r1 - 45.0f, 0.0f);
+                fn_8016D4EC(&force[2], &rnd);
+            }
+            if (b->speed > s->speed) {
+                w[0] *= 1.5f;
+                w[1] *= 0.4f;
+                w[2] *= 0.4f;
+            }
+            acc.x = 0.0f;
+            acc.y = 0.0f;
+            acc.z = 0.0f;
+            for (i = 0; i < 3; i++) {
+                if (w[i] > 0.0f && VecNonZero(&force[i]) != 0) {
+                    fn_800E1098(&force[i], &force[i], w[i]);
+                    acc.x += force[i].x;
+                    acc.y += force[i].y;
+                    acc.z += force[i].z;
                 }
-                {
-                    float dtk = 0.001f * a->dt;
-                    b->pos.x = b->pos.x + b->vel.x * dtk;
-                    b->pos.y = b->pos.y + b->vel.y * dtk;
-                    b->pos.z = b->pos.z + b->vel.z * dtk;
+            }
+            if (VecNonZero(&acc) != 0) {
+                fn_800E1098(&acc, &acc, 0.001f * (s->unk50 * a->dt));
+            }
+            b->vel.x += acc.x;
+            b->vel.y += acc.y;
+            b->vel.z += acc.z;
+            if (fn_800E1020(&b->vel) > b->speed) {
+                fn_800E1098(&b->vel, &b->vel, b->speed);
+            }
+            {
+                float dtk = 0.001f * a->dt;
+                b->pos.x += b->vel.x * dtk;
+                b->pos.y += b->vel.y * dtk;
+                b->pos.z += b->vel.z * dtk;
+            }
+            if (b->speed > s->speed) {
+                b->speed = b->speed - 0.2f * a->dt;
+                if (b->speed < s->speed) {
+                    b->speed = s->speed;
                 }
+            } else if (b->speed < s->speed) {
+                b->speed = 0.2f * a->dt + b->speed;
                 if (b->speed > s->speed) {
-                    b->speed = -(0.2f * a->dt - b->speed);
-                    if (b->speed < s->speed) {
-                        b->speed = s->speed;
-                    }
-                } else if (b->speed < s->speed) {
-                    b->speed = 0.2f * a->dt + b->speed;
-                    if (s->speed < b->speed) {
-                        b->speed = s->speed;
-                    }
-                }
-                {
-                    float d2 = (b->pos.z - aMtx.pos.z) * (b->pos.z - aMtx.pos.z)
-                               + (b->pos.x - aMtx.pos.x) * (b->pos.x - aMtx.pos.x)
-                               + (b->pos.y - aMtx.pos.y) * (b->pos.y - aMtx.pos.y);
-                    float m1 = d2;
-                    if (s->minDist < d2) {
-                        m1 = s->minDist;
-                    }
-                    s->minDist = m1;
-                    m1 = d2;
-                    if (d2 < s->maxDist) {
-                        m1 = s->maxDist;
-                    }
-                    s->maxDist = m1;
-                    s->sumDist = s->sumDist + d2;
-                }
-                sx = (float)(sx + (double)b->pos.x);
-                sy = (float)(sy + (double)b->pos.y);
-                sz = (float)(sz + (double)b->pos.z);
-                if (a->unk1c68 == 0 && PlayerInHost(a) == 0
-                    && ModelBoneHitSphere((int)&b->pos, (int)&toBee, (int)camMtx, (int)&aMtx, (int)&bMtx, (int)&acc)
-                           != 0) {
-                    HitDesc hd;
-                    float tt;
-                    float u;
-                    memset(&hd, 0, 0x5c);
-                    hd.unk4 = -1;
-                    hd.unk8 = 0x1F0C31;
-                    tt = s->time / (1000.0f * (float)s->unk74);
-                    u = Clamp01(tt);
-                    *(float*)&hd.unk4 = 0.001f * s->unk48 * a->dt * (s->unk78 * u + (1.0f - u));
-                    SendMsg(a->handle, 0x407, &hd);
-                }
-                {
-                    Mtx34 m;
-                    Actor* ba = b->actor;
-                    *(int*)((u8*)ba + 0x24) = (int)b->pos.x;
-                    *(int*)((u8*)ba + 0x28) = (int)b->pos.y;
-                    *(int*)((u8*)ba + 0x2c) = (int)b->pos.z;
-                    *(int*)((u8*)ba + 0x118) = (int)b->pos.z;
-                    *(u32*)((u8*)ba + 0xac) |= 0x800000;
-                    ActorGetMatrix(&m, ba);
-                    ActorSetPlacement(ba, &m);
-                    if (ActorFn80022FD8(ba) == 0) {
-                        ActorFn800231A8(ba);
-                    }
+                    b->speed = s->speed;
                 }
             }
-            s->center.x = (float)(sx * (1.0f / (float)(s->bees.size >> 2)));
-            s->center.y = (float)(sy * (1.0f / (float)(s->bees.size >> 2)));
-            s->center.z = (float)(sz * (1.0f / (float)(s->bees.size >> 2)));
-            s->sumDist = s->sumDist / (float)(s->bees.size >> 2);
-            if (PlayerInHost(a) == 0 || (*(u32*)(a->unk26e4 + 0x38) >> 24) == 1) {
-                if (((s->flags >> 1) & 1) != 0) {
-                    if ((s->flags & 1) != 0) {
-                        Bee** p3;
-                        int off = 1;
-                        for (p3 = (Bee**)s->bees.data; p3 != (Bee**)(s->bees.data + s->bees.size); p3++) {
-                            SendMsg(*(int*)(*(int*)*p3 + 0x38), 0xC00, &off);
-                        }
-                    }
-                    s->flags &= ~2;
-                }
-            } else if (((s->flags >> 1) & 1) != 1) {
-                if ((s->flags & 1) != 0) {
-                    Bee** p3;
-                    int off = 0;
-                    for (p3 = (Bee**)s->bees.data; p3 != (Bee**)(s->bees.data + s->bees.size); p3++) {
-                        SendMsg(*(int*)(*(int*)*p3 + 0x38), 0xC00, &off);
-                    }
-                }
-                s->flags |= 2;
+            {
+                float dx = b->pos.x - aMtx.pos.x;
+                float dy = b->pos.y - aMtx.pos.y;
+                float dz = b->pos.z - aMtx.pos.z;
+                float d2 = dx * dx + dy * dy + dz * dz;
+                s->minDist = s->minDist < d2 ? s->minDist : d2;
+                s->maxDist = s->maxDist > d2 ? s->maxDist : d2;
+                s->sumDist = s->sumDist + d2;
             }
-            if (PlayerInHost(a) == 0) {
-                s->time = s->time + a->dt;
+            sx += b->pos.x;
+            sy += b->pos.y;
+            sz += b->pos.z;
+            if (a->unk1c68 == 0 && PlayerInHost(a) == 0
+                && ModelBoneHitSphere((int)&b->pos, (int)&oldPos, (int)camMtx, (int)&aMtx, (int)&hitA, (int)&hitB)
+                       != 0) {
+                HitDesc hd;
+                float u;
+                memset(&hd, 0, 0x5c);
+                hd.unk8 = -1;
+                hd.unk14 = 0x1F0C31;
+                hd.amount = 0.001f * (s->unk48 * a->dt);
+                u = Clamp01(s->time / (1000.0f * (float)s->unk74));
+                hd.amount *= s->unk78 * u + (1.0f - u);
+                SendMsg(a->handle, 0x407, &hd);
+            }
+            b->actor->pos[0] = (int)b->pos.x;
+            b->actor->pos[1] = (int)b->pos.y;
+            b->actor->pos[2] = (int)b->pos.z;
+            *(float*)((u8*)b->actor + 0x118) = b->pos.z;
+            *(u32*)((u8*)b->actor + 0xac) |= 0x800000;
+            ActorGetMatrix(&m, b->actor);
+            ActorSetPlacement(b->actor, (PlaceF*)&m);
+            if (ActorFn80022FD8(b->actor) == 0) {
+                ActorFn800231A8(b->actor);
             }
         }
+        {
+            float inv = 1.0f / (float)(s->bees.size >> 2);
+            s->center.x = sx * inv;
+            s->center.y = sy * inv;
+            s->center.z = sz * inv;
+        }
+        s->sumDist = s->sumDist / (float)(s->bees.size >> 2);
+        if (PlayerInHost(a) != 0 && (*(u32*)(a->unk26e4 + 0x38) >> 24) != 1) {
+            BeesShow(s, 0);
+        } else {
+            BeesShow(s, 1);
+        }
+        if (PlayerInHost(a) == 0) {
+            s->time = s->time + a->dt;
+        }
+    }
+    if (lbl_804D55F8 != 0) {
+        ScreenPrintf("GhostBees State:  %s\n", sStateNames[s->state]);
     }
     return 1;
 }
@@ -724,25 +743,25 @@ void BeesSpawn(Actor* actor, BeesState* s, int count)
     fa.hash = AssetFind(0xF2E2BEB8, 0x140D0842);
     fa.value = 300;
     SendMsg(0x3F000000, 0x6300, &fa);
-    fb.flag = 1;
     fb.hash = fa.hash;
+    fb.flag = 1;
     SendMsg(0x3F000000, 0x6303, &fb);
     fa.name = "SPIN";
     fa.hash = AssetFind(0xF2E2BEB8, 0xA7263B9F);
     fa.value = -400;
     SendMsg(0x3F000000, 0x6300, &fa);
-    fb.flag = 1;
     fb.hash = fa.hash;
+    fb.flag = 1;
     SendMsg(0x3F000000, 0x6303, &fb);
     td.target = -1;
     td.hashA = 0;
     td.count = 500;
     td.f10 = 20.0f;
     td.f14 = -4.0f;
-    td.f1c = 0.01f;
-    td.f20 = -10.0f;
-    td.f24 = 50.0f;
-    td.f28 = 0.0f;
+    td.f20 = 0.01f;
+    td.f24 = -10.0f;
+    td.f28 = 50.0f;
+    td.f2c = 0.0f;
     td.hashB = AssetFind(0xF2E2BEB8, 0x4BD29352);
     td.r = 0xFA;
     td.g = 0xFA;
@@ -779,21 +798,21 @@ void BeesSpawn(Actor* actor, BeesState* s, int count)
             fn_8028B2D4(&s->bees);
         } else {
             td.target = b->actor->handle;
-            td.f28 = -0.5f;
+            td.f2c = -0.5f;
             td.f10 = 20.0f;
             td.hashB = AssetFind(0xF2E2BEB8, 0x4BD29352);
             td.hashA = AssetFind(0xF1754BF2, 0x934819A5);
-            b->trail[0] = fn_801DE960(&td);
+            b->trail[0] = TrailCreate(&td);
             td.hashB = AssetFind(0xF2E2BEB8, 0x4BD29352);
             td.hashA = AssetFind(0xF1754BF2, 0x934819A4);
-            td.f28 = 0.0f;
+            td.f2c = 0.0f;
             td.f10 = 50.0f;
-            b->trail[1] = fn_801DE960(&td);
+            b->trail[1] = TrailCreate(&td);
             td.hashB = AssetFind(0xF2E2BEB8, 0x4BD29352);
             td.hashA = AssetFind(0xF1754BF2, 0x934819A6);
-            td.f28 = 0.5f;
+            td.f2c = 0.5f;
             td.f10 = 20.0f;
-            b->trail[2] = fn_801DE960(&td);
+            b->trail[2] = TrailCreate(&td);
             b->speed = s->speed;
         }
     }
