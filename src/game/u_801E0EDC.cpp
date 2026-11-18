@@ -411,6 +411,8 @@ static inline int BarrierAnswer41E(int* data) {
 int BarrierActorMsg(Actor* actor, int msg, void* dataPtr, int arg) {
     BarrierActor* self = *(BarrierActor**)dataPtr;
     int* data = (int*)dataPtr;
+    int result;
+    int target;
 
     switch (msg) {
     case 0x405: {
@@ -439,7 +441,7 @@ int BarrierActorMsg(Actor* actor, int msg, void* dataPtr, int arg) {
     case 0x40A: {
         BarrierBeh* beh = self->behaviour;
         if (beh != 0 && (u32)data[2] == 0x7C44EC3D && (beh->flags & 1) != 0) {
-            if (BarrierAsk(data[1], 0x947E97) != 0) {
+            if (BarrierAsk(target = data[1], 0x947E97) != 0) {
                 data[3] = (int)0xF21581DEu;
                 int kind = data[1];
                 if ((int)((u32)kind >> 24) == 2) {
@@ -489,27 +491,33 @@ int BarrierActorMsg(Actor* actor, int msg, void* dataPtr, int arg) {
     case 0x41D:
         BarrierKindRegistryMsg(self, data);
         return 1;
-    case 2: {
-        int result = ActorDefaultMsg(actor, msg, data, arg);
-        if (result != 0 && BarrierVisitorPasses(self->behaviour, (BarrierVisitor*)data[3])) {
-            return result;
+    case 2:
+        result = ActorDefaultMsg(actor, msg, data, arg);
+        if (result != 0) {
+            target = data[3];
+            if (BarrierVisitorPasses(self->behaviour, (BarrierVisitor*)target)) {
+                return result;
+            }
         }
         return 0;
-    }
-    case 3: {
-        int result = ActorDefaultMsg(actor, msg, data, arg);
-        if (result != 0 && BarrierVisitorPasses(self->behaviour, (BarrierVisitor*)data[4])) {
-            return result;
+    case 3:
+        result = ActorDefaultMsg(actor, msg, data, arg);
+        if (result != 0) {
+            target = data[4];
+            if (BarrierVisitorPasses(self->behaviour, (BarrierVisitor*)target)) {
+                return result;
+            }
         }
         return 0;
-    }
-    case 4: {
-        int result = ActorDefaultMsg(actor, msg, data, arg);
-        if (result != 0 && BarrierVisitorPasses(self->behaviour, (BarrierVisitor*)data[7])) {
-            return result;
+    case 4:
+        result = ActorDefaultMsg(actor, msg, data, arg);
+        if (result != 0) {
+            target = data[7];
+            if (BarrierVisitorPasses(self->behaviour, (BarrierVisitor*)target)) {
+                return result;
+            }
         }
         return 0;
-    }
     case 1: {
         int result = ActorDefaultMsg(actor, msg, data, arg);
         if (result != 0 && BarrierBoneDiffers(self, data)) {
