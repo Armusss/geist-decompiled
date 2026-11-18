@@ -19,15 +19,25 @@ extern "C" void fn_800097F0(void);
 extern "C" void* fn_801D89A4(void* state);
 extern "C" void fn_800A0FC4(f32* out, f32* in);
 
-extern "C" void* lbl_804D4D20;
+// Current screen size in pixels.
+extern "C" s32 lbl_804D2568;
+extern "C" s32 lbl_804D256C;
 
-extern "C" f32 lbl_804D4D08;
-extern "C" f32 lbl_804D4D0C;
-extern "C" f32 lbl_804D4D10;
-extern "C" f32 lbl_804D4D14;
-extern "C" f32 lbl_804D4D18;
-extern "C" f32 lbl_804D4D1C;
+// Screen-space scale and clip rectangle, refreshed by Draw3DBegin.
+f32 lbl_804D4D08 = 1.0f / (f32)lbl_804D2568;
+f32 lbl_804D4D0C = 1.0f / (f32)lbl_804D256C;
+f32 lbl_804D4D10;
+f32 lbl_804D4D14;
+f32 lbl_804D4D18 = (f32)lbl_804D2568;
+f32 lbl_804D4D1C = (f32)lbl_804D256C;
 
+// Material state saved by the Begin functions and restored by the End functions.
+void* lbl_804D4D20;
+
+// Colour scale (1/256) and viewport-to-screen ratios.
+f32 lbl_804D2E78 = 1.0f / 256.0f;
+f32 lbl_804D2E7C = 1.0f;
+f32 lbl_804D2E80 = 1.0f;
 
 // Projection, viewport and view matrix captured by Draw3DBegin.
 static f32 sProjection[7];
@@ -218,9 +228,6 @@ extern "C" void fn_80008C78(void* p);
 extern "C" void fn_80008D10(void);
 extern "C" int fn_80010448(int a, int b);
 extern "C" void fn_80010330(int a, int b);
-extern "C" s32 lbl_804D2568;
-extern "C" f32 lbl_804D2E7C;
-extern "C" f32 lbl_804D2E80;
 void GfxSetVtxDesc(int desc);
 void GfxSetMaterial(void* mat);
 void GfxSetCullMode(int mode);
@@ -310,7 +317,6 @@ void DrawTrailStrip(int start, u8 r0, u8 g0, u8 b0, u8 a0,
 
 // Ring buffer of trail vertices: the last `count` entries ending at `end` are
 // drawn as one line strip, with the colour ramping by the stored steps.
-extern "C" f32 lbl_804D2E78;
 
 struct TrailBuffer {
     f32* verts;    // 0x00: xyz vertex ring, 12 bytes per vertex
@@ -502,9 +508,6 @@ void DrawClearTexOffsets(void)
     GXEnableTexOffsets(GX_TEXCOORD0, 0, 0);
 }
 
-extern "C" f32 lbl_804D2E78;
-// Two texture-coordinate rows, selected by the parity of the vertex index
-// (declared as a flat array above; pairs are {x, y}).
 
 struct DrawStripVertex {
     f32 x;
@@ -851,17 +854,4 @@ void DrawTrailBuildDirections(void)
         sDirections[i][1] = 0.0f;
         sDirections[i][2] = fn_800A1394(angle);
     }
-}
-
-// Current viewport dimensions, used to derive the screen-space scales.
-extern "C" s32 lbl_804D2568;
-extern "C" s32 lbl_804D256C;
-
-// Recomputes the screen-space x/y scales from the current viewport size.
-void DrawUpdateScreenScale(void)
-{
-    lbl_804D4D08 = 1.0f / (f32)lbl_804D2568;
-    lbl_804D4D0C = 1.0f / (f32)lbl_804D256C;
-    lbl_804D4D18 = (f32)lbl_804D2568;
-    lbl_804D4D1C = (f32)lbl_804D256C;
 }

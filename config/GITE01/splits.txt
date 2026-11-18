@@ -382,6 +382,11 @@ game/u_80136884.cpp:
 game/u_8013A3D4.cpp:
 	.text       start:0x8013A3D4 end:0x8013CA38
 	.ctors      start:0x80341218 end:0x8034121C
+	.data       start:0x803A0EE0 end:0x803A0EF0
+	.bss        start:0x8046D2B0 end:0x8046D438
+	.sdata      start:0x804D2E78 end:0x804D2E88
+	.sbss       start:0x804D4D08 end:0x804D4D28
+	.sdata2     start:0x804D7A78 end:0x804D7AC0
 
 game/u_8013CA38.cpp:
 	.text       start:0x8013CA38 end:0x80140A30
