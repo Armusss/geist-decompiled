@@ -521,13 +521,13 @@ int fn_801C2578(Actor* a) {
         }
         ConditionSetBit(a->cond, 0x2C, 0);
     }
-    {
-        int stance = a->unk26C;
-        if (b->f28 == stance && b->f24 == dir) {
-            return b->cur;
-        }
-        return 0x29 + (stance << 5) + dir;
+    if (b->f28 != a->unk26C) {
+        return 0x29 + (a->unk26C << 5) + dir;
     }
+    if (b->f24 != dir) {
+        return 0x29 + (a->unk26C << 5) + dir;
+    }
+    return b->cur;
 }
 
 // 0x801C27D8
@@ -559,13 +559,13 @@ int fn_801C27D8(Actor* a) {
         }
         ConditionSetBit(a->cond, 0x2C, 0);
     }
-    {
-        int stance = a->unk26C;
-        if (b->f28 == stance && b->f24 == dir) {
-            return b->cur;
-        }
-        return 0x21 + (stance << 5) + dir;
+    if (b->f28 != a->unk26C) {
+        return 0x21 + (a->unk26C << 5) + dir;
     }
+    if (b->f24 != dir) {
+        return 0x21 + (a->unk26C << 5) + dir;
+    }
+    return b->cur;
 }
 
 // 0x801C29BC
