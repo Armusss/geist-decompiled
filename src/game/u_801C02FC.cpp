@@ -979,10 +979,10 @@ int fn_801C3F84(Actor* a) {
     if (fn_8016325C(a->beh894) != 4) {
         return 0x18;
     }
-    if (HasCondition(a->cond, 0x2A) == 0) {
-        return 0x19;
+    if (HasCondition(a->cond, 0x2A) != 0) {
+        return b->cur;
     }
-    return b->cur;
+    return 0x19;
 }
 
 // 0x801C40BC
