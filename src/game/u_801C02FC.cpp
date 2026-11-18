@@ -136,6 +136,7 @@ int ModelBoneNodeChain(int model, int name, int* chain, int count); // 0x8001881
 int OwnerId(Owner* o);                                          // 0x800A3A40
 int ActorPlayAnim(int owner, u32 anim, int arg);                // 0x800C5654
 int AnimBankGetSetCount(int a, int b, u32 anim);                // 0x800A1AC4
+Actor* GetPlayer(void);                                         // 0x80049948
 int HasCondition(void* cond, int which);                        // 0x800A7AC4
 void VFree(void* p);                                            // 0x8009DA3C
 void* VAlloc(int size);                                         // 0x8009DA68
@@ -161,6 +162,8 @@ void fn_800902F0(int anim);
 void fn_801D55CC(void* obj);
 void fn_8008DE4C(int anim, int a, int b, int c);
 int fn_8000DDD0(void);
+int fn_802A1D04(void);
+int fn_8020B97C(void);
 
 int gHostAssets[16];                                            // 0x80496D18
 float sDeathTime;                                               // 0x804D3218
@@ -213,6 +216,47 @@ int fn_801C15A8(int msg, void* p) {
     case 0x00239807:
     case 0x46341C3A:
         fn_800CB8BC((Actor*)p, ((Actor*)p)->data, b->f1C, ((Actor*)p)->unk26C);
+        break;
+    }
+    return 1;
+}
+
+// 0x801C16D8: event handler of the attack actions.
+int fn_801C16D8(int msg, Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    switch (msg) {
+    case 0x1B83833F:
+        b->prev = b->cur;
+        gHostActions[b->cur].leave(a, b->next);
+        gHostActions[b->next].enter(a);
+        if (fn_8016325C(a->beh894) != 0) {
+            fn_80162610(a, a->beh894, 0x1B83833F);
+        }
+        break;
+    case (int)0xF829DB93:
+    case 0x20EE36:
+        if (fn_802A1D04() == 0) {
+            GetPlayer();
+            if (fn_8020B97C() != 0) {
+                return 1;
+            }
+        }
+        if (fn_8016325C(a->beh894) == 4) {
+            fn_80162610(a, a->beh894, 0x20EE36);
+        } else if (fn_8016325C(a->beh894) == 5) {
+            fn_80162610(a, a->beh894, (int)0xF829DB93);
+        }
+        break;
+    case (int)0xEAC45581:
+        fn_80162610(a, a->beh894, 0x20EE36);
+        break;
+    case 0x04A5C9FC:
+    case 0x00239807:
+    case 0x46341C3A:
+        fn_800CB8BC(a, a->data, b->f1C, a->unk26C);
         break;
     }
     return 1;
