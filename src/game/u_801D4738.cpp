@@ -1380,13 +1380,17 @@ void fn_801D7BC8(void) {
 static inline u32 StrHash(const char* s) {
     u32 h;
     if (s == 0) {
-        return 0;
+        h = 0;
+    } else {
+        int i;
+        h = 0;
+        for (i = 0; s[i] != 0; i++) {
+            h *= 31;
+            h += (unsigned char)toupper(s[i]);
+        }
+        h %= 0xFFFFFFFF;
     }
-    h = 0;
-    for (; *s != 0; s++) {
-        h = h * 31 + (unsigned char)toupper(*s);
-    }
-    return h % 0xFFFFFFFF;
+    return h;
 }
 
 // 0x801D7C24: sets the physics up.
@@ -1403,18 +1407,17 @@ void fn_801D7C24(void) {
     sSpace = HashSpaceCreate(0);
     sContacts = fn_80277D38(0);
     dWorldSetGravity(sWorld, 0.0f, 0.0f, -9.81f);
-    desc.collider = (void*)fn_801D2634;
     desc.bytes = 0x1C;
+    desc.collider = (void*)fn_801D2634;
     desc.aabb = (void*)fn_801D25D8;
     desc.aabbTest = (void*)fn_801D25CC;
     desc.dtor = (void*)fn_801D25D4;
     sRoomClass = GeomRegisterClass((UserGeomClass*)&desc);
     sNextId = 0x10000000;
     {
-        Material* m = gMaterials;
         int i;
-        for (i = 3; i != 0; i--, m++) {
-            m->hash = StrHash(m->name);
+        for (i = 0; i < 3; i++) {
+            gMaterials[i].hash = StrHash(gMaterials[i].name);
         }
     }
     sForceCount = 0;
