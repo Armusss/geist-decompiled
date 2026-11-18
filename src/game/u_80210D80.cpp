@@ -16,8 +16,38 @@ extern "C" void DrawDisableTexOffsets();
 
 extern "C" double fmod(double x, double y);
 
-// Draws a run of alpha-blended, colour-ramped quads (particle billboards).
-// Kept under its placeholder name: other units call it as fn_80210D80.
+static inline float RampValue(float age, float life, float* r)
+{
+    if (age < r[0]) {
+        float t = r[0] > 1.1920929e-07f ? age / r[0] : 1.0f;
+        return t * (r[3] - r[2]) + r[2];
+    } else if (life < r[1]) {
+        float t = r[1] > 1.1920929e-07f ? life / r[1] : 1.0f;
+        return t * (r[3] - r[4]) + r[4];
+    }
+    return r[3];
+}
+static inline void RampColor(float* c, float age, float life, float* r)
+{
+    if (age < r[0]) {
+        float t = r[0] > 1.1920929e-07f ? age / r[0] : 1.0f;
+        c[0] = t * (r[6] - r[2]) + r[2];
+        c[1] = t * (r[7] - r[3]) + r[3];
+        c[2] = t * (r[8] - r[4]) + r[4];
+        c[3] = t * (r[9] - r[5]) + r[5];
+    } else if (life < r[1]) {
+        float t = r[1] > 1.1920929e-07f ? life / r[1] : 1.0f;
+        c[0] = t * (r[6] - r[10]) + r[10];
+        c[1] = t * (r[7] - r[11]) + r[11];
+        c[2] = t * (r[8] - r[12]) + r[12];
+        c[3] = t * (r[9] - r[13]) + r[13];
+    } else {
+        c[0] = r[6];
+        c[1] = r[7];
+        c[2] = r[8];
+        c[3] = r[9];
+    }
+}
 extern "C" void fn_80210D80(float* pts, int stride, int count, int texture,
                             void* arg, float* alphaRamp, float* colorRamp)
 {
@@ -28,60 +58,17 @@ extern "C" void fn_80210D80(float* pts, int stride, int count, int texture,
     float zero = 0.0f;
     float* p = pts;
     for (int i = 0; i < count; i++) {
-        float y = p[1];
-        if (zero < y) {
-            float x = p[0];
-            if (zero < x) {
-                float c0;
-                float c1;
-                float c2;
-                float c3;
-                if (x < colorRamp[0]) {
-                    float t = 1.0f;
-                    if (colorRamp[0] > 1.1920929e-07f) {
-                        t = x / colorRamp[0];
-                    }
-                    c0 = t * (colorRamp[6] - colorRamp[2]) + colorRamp[2];
-                    c1 = t * (colorRamp[7] - colorRamp[3]) + colorRamp[3];
-                    c2 = t * (colorRamp[8] - colorRamp[4]) + colorRamp[4];
-                    c3 = t * (colorRamp[9] - colorRamp[5]) + colorRamp[5];
-                } else if (y < colorRamp[1]) {
-                    float t = 1.0f;
-                    if (colorRamp[1] > 1.1920929e-07f) {
-                        t = y / colorRamp[1];
-                    }
-                    c0 = t * (colorRamp[6] - colorRamp[10]) + colorRamp[10];
-                    c1 = t * (colorRamp[7] - colorRamp[11]) + colorRamp[11];
-                    c2 = t * (colorRamp[8] - colorRamp[12]) + colorRamp[12];
-                    c3 = t * (colorRamp[9] - colorRamp[13]) + colorRamp[13];
-                } else {
-                    c0 = colorRamp[6];
-                    c1 = colorRamp[7];
-                    c2 = colorRamp[8];
-                    c3 = colorRamp[9];
-                }
-                float alpha;
-                if (x < alphaRamp[0]) {
-                    float t = 1.0f;
-                    if (alphaRamp[0] > 1.1920929e-07f) {
-                        t = x / alphaRamp[0];
-                    }
-                    alpha = t * (alphaRamp[3] - alphaRamp[2]) + alphaRamp[2];
-                } else if (y < alphaRamp[1]) {
-                    float t = 1.0f;
-                    if (alphaRamp[1] > 1.1920929e-07f) {
-                        t = y / alphaRamp[1];
-                    }
-                    alpha = t * (alphaRamp[3] - alphaRamp[4]) + alphaRamp[4];
-                } else {
-                    alpha = alphaRamp[3];
-                }
+        if (p[1] > zero) {
+            if (p[0] > zero) {
+                float c[4];
+                RampColor(c, p[0], p[1], colorRamp);
+                float alpha = RampValue(p[0], p[1], alphaRamp);
                 float s = 255.0f;
                 DrawWorldQuadFlipped(alpha, p[11], p + 2,
-                                     (unsigned char)(int)(s * c0),
-                                     (unsigned char)(int)(s * c1),
-                                     (unsigned char)(int)(s * c2),
-                                     (unsigned char)(int)(s * c3));
+                                     (unsigned char)(int)(s * c[0]),
+                                     (unsigned char)(int)(s * c[1]),
+                                     (unsigned char)(int)(s * c[2]),
+                                     (unsigned char)(int)(s * c[3]));
             }
         }
         p = (float*)((int)p + stride);
@@ -89,8 +76,6 @@ extern "C" void fn_80210D80(float* pts, int stride, int count, int texture,
     Draw3DEnd();
 }
 
-// Draws a run of colour-ramped textured lines, one line per particle record.
-// Kept under its placeholder name: other units call it as fn_80210FC8.
 extern "C" void fn_80210FC8(float* pts, int stride, int count, int texture,
                             void* arg, float* rampA, float* rampB, float width,
                             float num, float den)
@@ -103,80 +88,30 @@ extern "C" void fn_80210FC8(float* pts, int stride, int count, int texture,
     float scale = -num / den;
     float* p = pts;
     for (int i = 0; i < count; i++) {
-        float y = p[1];
-        if (zero < y) {
-            float x = p[0];
-            if (zero < x) {
-                float a0;
-                float a1;
-                float a2;
-                float a3;
-                if (x < rampA[0]) {
-                    float t = 1.0f;
-                    if (rampA[0] > 1.1920929e-07f) {
-                        t = x / rampA[0];
-                    }
-                    a0 = t * (rampA[6] - rampA[2]) + rampA[2];
-                    a1 = t * (rampA[7] - rampA[3]) + rampA[3];
-                    a2 = t * (rampA[8] - rampA[4]) + rampA[4];
-                    a3 = t * (rampA[9] - rampA[5]) + rampA[5];
-                } else if (y < rampA[1]) {
-                    float t = 1.0f;
-                    if (rampA[1] > 1.1920929e-07f) {
-                        t = y / rampA[1];
-                    }
-                    a0 = t * (rampA[6] - rampA[10]) + rampA[10];
-                    a1 = t * (rampA[7] - rampA[11]) + rampA[11];
-                    a2 = t * (rampA[8] - rampA[12]) + rampA[12];
-                    a3 = t * (rampA[9] - rampA[13]) + rampA[13];
-                } else {
-                    a0 = rampA[6];
-                    a1 = rampA[7];
-                    a2 = rampA[8];
-                    a3 = rampA[9];
-                }
-                float b0;
-                float b1;
-                float b2;
-                float b3;
-                if (x < rampB[0]) {
-                    float t = 1.0f;
-                    if (rampB[0] > 1.1920929e-07f) {
-                        t = x / rampB[0];
-                    }
-                    b0 = t * (rampB[6] - rampB[2]) + rampB[2];
-                    b1 = t * (rampB[7] - rampB[3]) + rampB[3];
-                    b2 = t * (rampB[8] - rampB[4]) + rampB[4];
-                    b3 = t * (rampB[9] - rampB[5]) + rampB[5];
-                } else if (y < rampB[1]) {
-                    float t = 1.0f;
-                    if (rampB[1] > 1.1920929e-07f) {
-                        t = y / rampB[1];
-                    }
-                    b0 = t * (rampB[6] - rampB[10]) + rampB[10];
-                    b1 = t * (rampB[7] - rampB[11]) + rampB[11];
-                    b2 = t * (rampB[8] - rampB[12]) + rampB[12];
-                    b3 = t * (rampB[9] - rampB[13]) + rampB[13];
-                } else {
-                    b0 = rampB[6];
-                    b1 = rampB[7];
-                    b2 = rampB[8];
-                    b3 = rampB[9];
-                }
+        if (p[1] > zero) {
+            if (p[0] > zero) {
+                float a[4];
+                float b[4];
+                RampColor(a, p[0], p[1], rampA);
+                RampColor(b, p[0], p[1], rampB);
                 float end[3];
                 end[0] = p[5] * scale;
                 end[1] = p[6] * scale;
                 end[2] = p[7] * scale;
+                // Retail adds the start point to itself here, overwriting the scaled velocity.
+                end[0] = p[2] + p[2];
+                end[1] = p[3] + p[3];
+                end[2] = p[4] + p[4];
                 float s = 255.0f;
                 DrawLine(p + 2, end,
-                         (unsigned char)(int)(s * a0),
-                         (unsigned char)(int)(s * a1),
-                         (unsigned char)(int)(s * a2),
-                         (unsigned char)(int)(s * a3),
-                         (unsigned char)(int)(s * b0),
-                         (unsigned char)(int)(s * b1),
-                         (unsigned char)(int)(s * b2),
-                         (unsigned char)(int)(s * b3));
+                         (unsigned char)(int)(s * a[0]),
+                         (unsigned char)(int)(s * a[1]),
+                         (unsigned char)(int)(s * a[2]),
+                         (unsigned char)(int)(s * a[3]),
+                         (unsigned char)(int)(s * b[0]),
+                         (unsigned char)(int)(s * b[1]),
+                         (unsigned char)(int)(s * b[2]),
+                         (unsigned char)(int)(s * b[3]));
             }
         }
         p = (float*)((int)p + stride);
@@ -513,6 +448,20 @@ int fn_8007EF48(int a, int b, const char* text, int c, int d, int e, int f,
                 int g, int h, int i);
 void PossessableUpdate(Actor* actor, float dt);
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
+int Fn802120A0(Actor* actor, int msg, void* data, int arg);
+void Fn80211AA4(Actor* actor, float dt);
+int Fn80211F78(Actor* actor);
+extern "C" int fn_80211E38(Actor* actor);
+
+// The two white-out actor types: same handlers, different init.
+ActorType gWhiteOutExplodeType = { 0, "Explode", Fn802120A0, Fn80211AA4, Fn80211F78, 0, Fn80211A84 };
+ActorType gWhiteOutCrateType = { 0, "Crate", Fn802120A0, Fn80211AA4, fn_80211E38, 0, Fn80211A84 };
+
 // White-out ghost update: spawns the "White Out" overlay ghost, launches the
 // white-out effect and fades the actor out while it is in front of the camera.
 void Fn80211AA4(Actor* actor, float dt)
@@ -523,7 +472,7 @@ void Fn80211AA4(Actor* actor, float dt)
     if ((flags & 0x80000000) == 0) {
         if (flags & 0x40000000) {
             unsigned int id = beh->field0C;
-            if ((id >> 24) == 2) {
+            if ((int)(id >> 24) == 2) {
                 int msg[8];
                 SendMsg(id, 0x400, msg);
                 WhiteOutGhost* ghost = (WhiteOutGhost*)msg[0];
@@ -544,35 +493,37 @@ void Fn80211AA4(Actor* actor, float dt)
             beh->field10 = 0.0f;
             WhiteOutEffectStart(actor, id, 1);
         }
-    } else if (beh->field30 == 0.0f) {
+    } else if (beh->field30) {
+        if ((flags & 0x8000000) != 0) {
+            beh->field30 = beh->field30 - dt;
+            if (beh->field30 < 0.0f) {
+                beh->field30 = 0.0f;
+            }
+        }
+    } else {
         CameraInfo* cam = fn_800C5DD8();
         float view[3];
         fn_800A025C(view, cam, 1);
-        float dir[3];
-        dir[0] = (float)actor->place.pos.x;
-        dir[1] = (float)actor->place.pos.y;
-        dir[2] = (float)actor->place.pos.z;
-        dir[0] = dir[0] - cam->field24;
-        dir[1] = dir[1] - cam->field28;
-        dir[2] = dir[2] - cam->field2C;
-        float len2 = dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2];
-        if ((fabsf(dir[0]) > 1.1920929e-07f) + (fabsf(dir[1]) > 1.1920929e-07f) +
-                (fabsf(dir[2]) > 1.1920929e-07f) == 0) {
-            dir[0] = 0.0f;
-            dir[1] = 0.0f;
-            dir[2] = 0.0f;
+        Vec3 dir;
+        dir.x = (float)actor->place.pos.x;
+        dir.y = (float)actor->place.pos.y;
+        dir.z = (float)actor->place.pos.z;
+        dir.x = dir.x - cam->field24;
+        dir.y = dir.y - cam->field28;
+        dir.z = dir.z - cam->field2C;
+        float len2 = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
+        // Retail normalizes with the shared paired-single helper (game/vecnorm.h); kept in C until the unit can flip.
+        if ((fabsf(dir.x) > 1.1920929e-07f) + (fabsf(dir.y) > 1.1920929e-07f) +
+                (fabsf(dir.z) > 1.1920929e-07f) == 0) {
+            dir.x = 0.0f;
+            dir.y = 0.0f;
+            dir.z = 0.0f;
         } else {
-            NormalizeVector3(dir);
+            NormalizeVector3(&dir.x);
         }
-        float dot = dir[0] * view[0] + dir[1] * view[1] + dir[2] * view[2];
-        if ((dot < 0.5f && len2 > lbl_804D3410) ||
-                fn_802A1D04() != 0) {
+        float dot = dir.x * view[0] + dir.y * view[1] + dir.z * view[2];
+        if ((dot < 0.5f && len2 > lbl_804D3410) || fn_802A1D04() != 0) {
             fn_800C7B78(actor);
-        }
-    } else if ((flags & 0x8000000) != 0) {
-        beh->field30 = beh->field30 - dt;
-        if (beh->field30 < 0.0f) {
-            beh->field30 = 0.0f;
         }
     }
     PossessableUpdate(actor, dt);
@@ -685,120 +636,116 @@ struct GhostMsgData {
     int animHash;               // 0x14
 };
 
-// True when the owner behind `modelId` carries the white-out type hash, or the
-// shared white-out check accepts it.
-static inline bool IsWhiteOutOwner(unsigned int modelId)
+static inline int WhiteOutHitMsg(GhostMsgData* msgData)
 {
-    OwnerInfo* info = OwnerGetInfo(modelId);
-    if (info == 0) {
-        return false;
+    Actor* target = msgData->actor;
+    GhostState* beh = ((GhostState*)target->data);
+    if ((beh->field18 & 8) != 0) {
+        return 1;
     }
-    return info->field128 == 0x2c3fd46c || fn_80049940(info->field128) != 0;
+    int type = msgData->modelId >> 24;
+    if (type != 2 && type != 1 && type != 0x13) {
+        return 1;
+    }
+    if (type == 0x13) {
+        OwnerInfo* info = OwnerGetInfo(msgData->modelId);
+        if (info == 0 || (info->field128 != 0x2c3fd46c && fn_80049940(info->field128) == 0)) {
+            return 1;
+        }
+    }
+    switch (msgData->animHash) {
+    case 0x1ba3ee4a:
+    case -0x4603bd0b:
+        beh->field10 = 0.0f;
+        break;
+    case 0x11a6b:
+    case 0x403548d0:
+        break;
+    default:
+        beh->field10 = beh->field10 - msgData->value.amount;
+        break;
+    }
+    if (beh->field10 > 0.0f) {
+        beh->field14 = 0.0f;
+    }
+    if ((beh->field18 & 0x80000000) == 0 && beh->field10 <= 0.0f) {
+        WhiteOutEffectStart(target, msgData->modelId, 1);
+    }
+    return 1;
 }
 
-// White-out ghost message handler: drives the fade/visibility state and the
-// HUD white-out notification; anything it does not own goes to the shared
-// possessable message handler.
+static inline int WhiteOutEventMsg(GhostMsgData* msgData)
+{
+    Actor* target = msgData->actor;
+    GhostState* beh = ((GhostState*)target->data);
+    switch (msgData->value.flag) {
+    case 0x672f35c2:
+        if (fn_802A1D04() != 0) {
+            int player = HandleToPlayer(msgData->modelId);
+            if (player >= 0) {
+                unsigned long key;
+                const char* text = StrFindKey(0x2df0c512, &key);
+                HudMessageN(player, text, key, 1.0f, 1.0f, 1.0f, 32.0f);
+            }
+        }
+        break;
+    case -0x30fe9b1e:
+        beh->field18 |= 0x40000000;
+        return 1;
+    case 0x6c345908:
+        fn_800C7B78(target);
+        return 1;
+    }
+    return 0;
+}
+
+static inline int WhiteOutScriptMsg(GhostMsgData* msgData)
+{
+    Actor* target = msgData->actor;
+    GhostState* beh = ((GhostState*)target->data);
+    switch (msgData->hash) {
+    case -0x233c7b3f:
+        WhiteOutEffectStart(target, target->handle, 1);
+        return 1;
+    case -0x13ff57cf:
+        WhiteOutEffectStart(target, target->handle, 0);
+        return 1;
+    case -0x120729ad:
+        beh->field18 |= 0x10000000;
+        WhiteOutEffectStart(target, target->handle, 1);
+        return 1;
+    case -0x203a3a46:
+        if (msgData->value.flag != 0) {
+            beh->field18 |= 0x8000000;
+        } else {
+            beh->field18 &= 0xf7ffffff;
+        }
+        break;
+    }
+    return 0;
+}
+
 int Fn802120A0(Actor* actor, int msg, void* data, int arg)
 {
-    GhostMsgData* msgData = (GhostMsgData*)data;
     int result = 0;
-
     switch (msg) {
-    case 0x407: {
-        Actor* target = msgData->actor;
-        GhostState* beh = ((GhostState*)target->data);
-        unsigned int type = msgData->modelId >> 24;
-
-        if ((beh->field18 & 8) == 0 &&
-                (type == 1 || type == 2 || type == 0x13) &&
-                (type != 0x13 || IsWhiteOutOwner(msgData->modelId))) {
-            switch (msgData->animHash) {
-            case 0x1ba3ee4a:
-            case -0x4603bd0b:
-                beh->field10 = 0.0f;
-                break;
-            case 0x11a6b:
-            case 0x403548d0:
-                break;
-            default:
-                beh->field10 = beh->field10 - msgData->value.amount;
-                break;
-            }
-            if (beh->field10 > 0.0f) {
-                beh->field14 = 0.0f;
-            }
-            if ((beh->field18 & 0x80000000) == 0 &&
-                    beh->field10 <= 0.0f) {
-                WhiteOutEffectStart(target, msgData->modelId, 1);
-            }
-        }
-        result = 1;
+    case 0x407:
+        result = WhiteOutHitMsg((GhostMsgData*)data);
+        break;
+    case 0xc14:
+        result = WhiteOutEventMsg((GhostMsgData*)data);
+        break;
+    case 0x41d:
+        result = WhiteOutScriptMsg((GhostMsgData*)data);
         break;
     }
-    case 0xc14: {
-        Actor* target = msgData->actor;
-        GhostState* beh = ((GhostState*)target->data);
-
-        switch (msgData->value.flag) {
-        case 0x672f35c2:
-            if (fn_802A1D04() != 0) {
-                int player = HandleToPlayer(msgData->modelId);
-                if (player >= 0) {
-                    unsigned long key;
-                    const char* text = StrFindKey(0x2df0c512, &key);
-                    HudMessageN(player, text, key, 1.0f,
-                                1.0f, 1.0f, 32.0f);
-                }
-            }
-            break;
-        case -0x30fe9b1e:
-            beh->field18 |= 0x40000000;
-            result = 1;
-            break;
-        case 0x6c345908:
-            fn_800C7B78(target);
-            result = 1;
-            break;
-        }
-        break;
-    }
-    case 0x41d: {
-        Actor* target = msgData->actor;
-        GhostState* beh = ((GhostState*)target->data);
-
-        switch (msgData->hash) {
-        case -0x233c7b3f:
-            WhiteOutEffectStart(target, target->handle, 1);
-            result = 1;
-            break;
-        case -0x13ff57cf:
-            WhiteOutEffectStart(target, target->handle, 0);
-            result = 1;
-            break;
-        case -0x120729ad:
-            beh->field18 |= 0x10000000;
-            WhiteOutEffectStart(target, target->handle, 1);
-            result = 1;
-            break;
-        case -0x203a3a46:
-            if (msgData->value.flag != 0) {
-                beh->field18 |= 0x8000000;
-            } else {
-                beh->field18 &= 0xf7ffffff;
-            }
-            break;
-        }
-        break;
-    }
-    }
-
     if (result == -999999) {
-        result = 0;
-    } else if (result == 0) {
-        result = PossessableMsg(actor, msg, data, arg);
+        return 0;
     }
-    return result;
+    if (result != 0) {
+        return result;
+    }
+    return PossessableMsg(actor, msg, data, arg);
 }
 
 // ---------------------------------------------------------------------------
@@ -806,10 +753,10 @@ int Fn802120A0(Actor* actor, int msg, void* data, int arg)
 
 extern "C" void fn_80158C3C(float* pos, int a, int b, int c, int d, int e,
                             int f);
-extern "C" void fn_80122108(float a, float b, float c, float d, float e,
-                            float f, float g, int h, int i, float* pos,
-                            unsigned int hash, int j);
-extern "C" void fn_801D55CC();
+extern "C" void fn_80122108(int a, int owner, float* pos, unsigned int type, float f1,
+                            float f2, float f3, float f4, float f5, float f6, float f7,
+                            int handle);
+extern "C" void fn_801D55CC(void* effect);
 extern "C" void fn_800C5654(int handle, unsigned int hash, int id);
 extern "C" void* memset(void* dest, int value, unsigned long count);
 
@@ -822,12 +769,8 @@ struct WhiteOutEffectMsg {
     float x;                // 0x20
     float y;                // 0x24
     float z;                // 0x28
-    int unk2C;              // 0x2c
 };
 
-// Starts the white-out effect for a ghost that carries one: marks the
-// behaviour as triggered, snaps its effect model to the actor position, spawns
-// the overlay actor and notifies the effect system.
 void WhiteOutEffectStart(Actor* actor, unsigned int id, int flag)
 {
     GhostState* beh = ((GhostState*)actor->data);
@@ -849,49 +792,49 @@ void WhiteOutEffectStart(Actor* actor, unsigned int id, int flag)
     }
 
     if (flag != 0 && (beh->field18 & 0x20000000) == 0) {
-        int msg[8];
-        Actor* target = actor;
+        Actor* msg[8];
+        Actor* target;
         if (SendMsg(id, 0x400, msg) != 0 && msg[0] != 0) {
-            target = (Actor*)msg[0];
+            target = msg[0];
+        } else {
+            target = actor;
         }
-        fn_80122108(0.2f * beh->field34, beh->field34,
-                    0.2f * beh->field38, beh->field38,
-                    0.75f, 0.0f, 200.0f,
-                    0, target->handle, pos, 0xb9fc42f5, actor->handle);
+        fn_80122108(0, target->handle, pos, 0xb9fc42f5, 0.2f * beh->field34, beh->field34,
+                    0.2f * beh->field38, beh->field38, 0.75f, 0.0f, 200.0f, actor->handle);
     }
 
     actor->flags |= 0x20000000;
 
-    if (((ActorModelInfo*)actor->info)->fieldA0 == -1) {
-        int msg[2];
-        msg[1] = 0;
-        SendMsg(actor->handle, 0xc00, msg);
-    } else {
+    if (((ActorModelInfo*)actor->info)->fieldA0 != -1) {
         int msg[8];
         memset(msg, 0, 0x20);
         msg[1] = ((ActorModelInfo*)actor->info)->fieldA0;
         msg[3] = 0x58;
         SendMsg(actor->handle, 0xc04, msg);
+    } else {
+        int msg[4];
+        msg[1] = 0;
+        SendMsg(actor->handle, 0xc00, msg);
     }
 
-    if ((int)actor->effect != 0) {
-        fn_801D55CC();
+    if (actor->effect != 0) {
+        fn_801D55CC(actor->effect);
         actor->effect = 0;
     }
 
-    int model = ((ActorModelInfo*)actor->info)->field18;
-    if (model != 0 && model != -1 && model != -0x55aded2f) {
+    unsigned int model = ((ActorModelInfo*)actor->info)->field18;
+    if (model != 0 && model != (unsigned int)-1 && model != 0xaa5212d1) {
         WhiteOutEffectMsg msg;
+        msg.model = model;
         msg.x = (float)actor->place.pos.x;
         msg.y = (float)actor->place.pos.y;
         msg.z = (float)actor->place.pos.z;
         msg.zero[0] = 0;
-        msg.zero[1] = 0;
-        msg.zero[2] = 0;
         msg.zero[3] = 0;
+        msg.zero[1] = 0;
         msg.zero[4] = 0;
+        msg.zero[2] = 0;
         msg.zero[5] = 0;
-        msg.model = model;
         SendMsg(0x55000000, 0x1502, &msg);
     }
 
