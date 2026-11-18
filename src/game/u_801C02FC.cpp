@@ -40,7 +40,8 @@ struct HostBeh {
     float f34;          // 0x34
     float f38;          // 0x38
     Vec3 motion;        // 0x3C
-    char pad48[0xA];    // 0x48
+    char pad48[9];      // 0x48
+    unsigned char variant;  // 0x51
     short f52;          // 0x52
 };
 
@@ -134,6 +135,7 @@ int ModelBoneName(int model, int bone);                         // 0x80018B44
 int ModelBoneNodeChain(int model, int name, int* chain, int count); // 0x80018814
 int OwnerId(Owner* o);                                          // 0x800A3A40
 int ActorPlayAnim(int owner, u32 anim, int arg);                // 0x800C5654
+int AnimBankGetSetCount(int a, int b, u32 anim);                // 0x800A1AC4
 int HasCondition(void* cond, int which);                        // 0x800A7AC4
 void VFree(void* p);                                            // 0x8009DA3C
 void* VAlloc(int size);                                         // 0x8009DA68
@@ -158,6 +160,7 @@ void fn_800C6F58(Actor* a);
 void fn_800902F0(int anim);
 void fn_801D55CC(void* obj);
 void fn_8008DE4C(int anim, int a, int b, int c);
+int fn_8000DDD0(void);
 
 int gHostAssets[16];                                            // 0x80496D18
 float sDeathTime;                                               // 0x804D3218
@@ -2816,6 +2819,56 @@ int fn_801C7554(Actor* a) {
     return 1;
 }
 
+// 0x801C75CC
+int fn_801C75CC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 0);
+    if (MemFlagIsSet(a->cond, 3) == 0) {
+        b->next = 0x21;
+    } else {
+        b->next = 0x29;
+    }
+    b->cur = 0x3D + (a->unk26C << 5);
+    b->f24 = 0;
+    if (a->v27C.z > 0.0f) {
+        if (MemFlagIsSet(a->cond, 3) == 0) {
+            b->animOverride = 0xFF45A5A5;
+        } else {
+            b->animOverride = 0x22B02743;
+        }
+    } else {
+        if (MemFlagIsSet(a->cond, 3) == 0) {
+            b->animOverride = 0xDAB4FC08;
+        } else {
+            b->animOverride = 0xA1B7BA66;
+        }
+    }
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// Picks a new random animation variant for a repeated action (never the same one twice in a row when
+// the action repeats).
+static inline void HostPickVariant(Actor* a, HostBeh* b, int action) {
+    int n = AnimBankGetSetCount(a->data->i14, a->data->i1C, gHostActions[b->cur].anim);
+    if (n < 2) {
+        b->variant = 0;
+    } else if (b->cur == action) {
+        if ((float)rand() / 32767.0f > 0.9f) {
+            int v = fn_8000DDD0() % (n - 1);
+            if (v >= b->variant) {
+                v = (v + 1) % n;
+            }
+            b->variant = v;
+        }
+    } else {
+        b->variant = fn_8000DDD0() % n;
+    }
+}
+
 // 0x801C76E0
 int fn_801C76E0(Actor* a) {
     if (a == 0) {
@@ -2876,6 +2929,54 @@ int fn_801C7860(Actor* a) {
     return 1;
 }
 
+// 0x801C78E8
+int fn_801C78E8(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    HostPickVariant(a, b, 0x31);
+    b->cur = 0x31;
+    b->next = 0x31;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, b->variant);
+    return 1;
+}
+
+// 0x801C7A30
+int fn_801C7A30(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    HostPickVariant(a, b, 0x2D);
+    b->cur = 0x2D;
+    b->next = 0x2D;
+    b->f28 = 0;
+    b->f24 = 0;
+    fn_801C8934(a, b->variant);
+    return 1;
+}
+
+// Enters the idle action (0x21).
+static inline int HostEnterIdle(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    ConditionSetBit(a->cond, 0, 1);
+    b->cur = 0x21;
+    b->next = 0x21;
+    b->f24 = 0;
+    b->f28 = 0;
+    b->animOverride = 0xA8BE217B;
+    fn_801C8934(a, 0);
+    return 1;
+}
+
 // 0x801C7B78
 int fn_801C7B78(Actor* a) {
     if (a == 0) {
@@ -2891,20 +2992,29 @@ int fn_801C7B78(Actor* a) {
     return 1;
 }
 
-// 0x801C7CF4
-int fn_801C7CF4(Actor* a) {
+// 0x801C7BF4
+int fn_801C7BF4(Actor* a) {
     if (a == 0) {
         return 0;
     }
     HostBeh* b = a->beh;
-    ConditionSetBit(a->cond, 0, 1);
-    b->cur = 0x21;
+    b->cur = 0;
     b->next = 0x21;
-    b->f24 = 0;
     b->f28 = 0;
-    b->animOverride = 0xA8BE217B;
-    fn_801C8934(a, 0);
+    ConditionSetBit(a->cond, 0, 1);
+    if (AnimBankGetSetCount(a->data->i14, a->data->i1C, 0x2237D4) == 0) {
+        HostEnterIdle(a);
+    } else {
+        b->animOverride = 0x2237D4;
+        fn_801C8934(a, -1);
+    }
+    b->f24 = 0;
     return 1;
+}
+
+// 0x801C7CF4
+int fn_801C7CF4(Actor* a) {
+    return HostEnterIdle(a);
 }
 
 }  // extern "C"
