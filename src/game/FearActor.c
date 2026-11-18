@@ -24,7 +24,9 @@ struct PlayerAnimSet {
 };
 
 struct Actor {
-    u8 mUnk00[0x38];            // 0x00
+    u8 mUnk00[0x30];            // 0x00
+    int (*mHandler)(int msg, void* data);  // 0x30
+    u8 mUnk34[0x38 - 0x34];     // 0x34
     u32 mId;                    // 0x38
     u8 mUnk3C[0x4C - 0x3C];     // 0x3C
     u32 mFlags4C;               // 0x4C 0x400 = skip the update once
@@ -56,7 +58,10 @@ struct Actor {
     u8 mUnk14C4[0x14CC - 0x14C4];  // 0x14C4
     int mFontC;                 // 0x14CC
     int mFontD;                 // 0x14D0
-    u8 mUnk14D4[0x1BA0 - 0x14D4];  // 0x14D4
+    u8 mUnk14D4[0x1500 - 0x14D4];  // 0x14D4
+    float mUnk1500;             // 0x1500
+    float mUnk1504;             // 0x1504
+    u8 mUnk1508[0x1BA0 - 0x1508];  // 0x1508 HUD element
     Actor* mUnk1BA0;            // 0x1BA0
     int mUnk1BA4;               // 0x1BA4
     u8 mUnk1BA8[0x1D6C - 0x1BA8];  // 0x1BA8
@@ -65,16 +70,21 @@ struct Actor {
     int mAnimSet;               // 0x1DA8 currently active animation set
     u8 mUnk1DAC[0x264C - 0x1DAC];  // 0x1DAC
     float mUnk264C;             // 0x264C
-    u8 mUnk2650[0x26C4 - 0x2650];  // 0x2650
+    float mUnk2650;             // 0x2650
+    u8 mUnk2654[0x26C4 - 0x2654];  // 0x2654
     PlayerAnimSet* mSet[2];     // 0x26C4
-    u8 mUnk26CC[0x26E4 - 0x26CC];  // 0x26CC
+    int mUnk26CC;               // 0x26CC
+    u8 mUnk26D0[0x26E0 - 0x26D0];  // 0x26D0
+    int mUnk26E0;               // 0x26E0
     Actor* mHost;               // 0x26E4
     u8 mUnk26E8[0x2740 - 0x26E8];  // 0x26E8
     int mUnk2740;               // 0x2740
     u8 mUnk2744[0x278C - 0x2744];  // 0x2744
     float mFov;                 // 0x278C
     float mFovTarget;           // 0x2790
-    u8 mUnk2794[0x27D8 - 0x2794];  // 0x2794
+    u8 mUnk2794[0x2798 - 0x2794];  // 0x2794
+    int mUnk2798;               // 0x2798
+    u8 mUnk279C[0x27D8 - 0x279C];  // 0x279C
     float mBlurA;               // 0x27D8
     float mBlurB;               // 0x27DC
     float mBlurD;               // 0x27E0
@@ -420,6 +430,41 @@ struct HostObj {
 
 extern const float lbl_804D629C;
 
+// Keyed query with an integer reply (message 0x41E).
+static inline void QueryInt(int target, u32 hash, int* out)
+{
+    QueryMsg q;
+    q.hash = hash;
+    *(int*)&q.result = 0;
+    q.unk8 = 0;
+    SendMsg(target, 0x41E, &q);
+    *out = *(int*)&q.result;
+}
+
+// Keyed command with an integer argument (message 0x41D).
+static inline void SendInt(int target, u32 hash, int value)
+{
+    QueryMsg q;
+    q.hash = hash;
+    *(int*)&q.result = value;
+    q.unk8 = 0;
+    SendMsg(target, 0x41D, &q);
+}
+
+extern "C" void fn_800F7AF0(int a, int b);
+
+// 0x80048428: applies the player's two keyed settings
+extern "C" void fn_80048428(Actor** pp)
+{
+    Actor* a = *pp;
+    int first;
+    int second;
+    QueryInt(a->mId, 0x2DA8293C, &first);
+    QueryInt(a->mId, 0xDFF3097A, &second);
+    fn_800F7AF0(first, second);
+    a->mUnk2650 = 0.0f;
+}
+
 // 0x8004853C: ends the blur/font effects and resets the field of view for the current host
 extern "C" void fn_8004853C(Actor** pp)
 {
@@ -492,9 +537,47 @@ extern "C" int fn_8004A254(float dt)
     return 1;
 }
 
+void PlayerInitGunState(void* p);
+void PlayerSetActionMode(void* p, int mode);
+float Fn802811A4(void);
+struct Hud;
+struct HudElem;
+void HudElemInit(Hud* hud, HudElem* elem);
+extern "C" int fn_802A1D04(void);
+extern "C" void fn_8001BA6C(void* p);
+extern int lbl_804D4478;
+
+// 0x8004B2A8: resets every player for a new level
+extern "C" void fn_8004B2A8(void)
+{
+    Actor* p;
+    int i;
+    for (i = 0; i < lbl_804D43E4; i++) {
+        struct {
+            Actor* mFrom;
+            Actor* mPlayer;
+            int mUnk08[4];
+        } m;
+        p = &lbl_804D43E0[i];
+        PlayerInitGunState(p);
+        PlayerSetActionMode(p, 3);
+        m.mFrom = p;
+        m.mPlayer = p;
+        p->mHandler(0x800, &m);
+        if (fn_802A1D04() == 0) {
+            float v = 6800.0f * (1.0003f * Fn802811A4());
+            p->mUnk1500 = v;
+            p->mUnk1504 = v;
+            HudElemInit((Hud*)p, (HudElem*)&p->mUnk1508);
+        }
+    }
+    fn_8001BA6C((u8*)p + 0x24);
+    lbl_804D4478 = 0;
+}
+
 // 0x8004BD64: starts the player system with no players and registers its two level callbacks
 extern "C" int fn_80054174(int i, int a, Actor** out);
-extern "C" int fn_800519D8(void);
+extern "C" void fn_800519D8(int kind, void* data);
 extern "C" void fn_80026680(int kind, void* fn, int arg);
 extern "C" void fn_80026660(int kind, void* fn, int arg);
 extern "C" int fn_8004BD64(void)
@@ -551,6 +634,62 @@ extern "C" int fn_80050850(int a, int b, Actor* p)
     return 0;
 }
 
+void GhostNotify(void* p, int a, int b);
+extern "C" void fn_800FC764(u32 id, int a);
+
+// Context of a player query: the player first.
+struct PlayerQuery {
+    Actor* mPlayer;   // 0x00
+    u8 mUnk04[0xC - 0x4];
+    int mUnkC;        // 0x0C
+    u8 mUnk10[0x38 - 0x10];
+    int mId;          // 0x38
+};
+
+// 0x80051188
+extern "C" int fn_80051188(PlayerQuery* q, int* out)
+{
+    Actor* p = q->mPlayer;
+    if (p != 0) {
+        Msg400 m;
+        if ((int)fn_800498D0(p) != -1 && !PlayerInHostInline(p)) {
+            return 0;
+        }
+        m.actor = p;
+        q->mPlayer->mHandler(0x400, &m);
+        out[0] = q->mId;
+        out[1] = q->mUnkC;
+        out[2] = m.ownerId;
+        return 1;
+    }
+    out[0] = q->mId;
+    out[1] = q->mUnkC;
+    out[2] = -1;
+    return 1;
+}
+
+// 0x800515DC: state exit, ends the possession effects
+extern "C" int fn_800515DC(int a, int b, Actor* p)
+{
+    if (p->mFontD != -1) {
+        p->mFontD = -1;
+    }
+    if (lbl_804D43F0 != 0) {
+        int host = -1;
+        if (p->mHost != 0 && p->mUnk2798 == -1) {
+            host = p->mHost->mId;
+        }
+        GhostNotify(&p->mUnk26E0, 0, 1);
+        fn_800FC764(p->mId, 0);
+        if (host != -1) {
+            fn_800FC764(host, 0);
+        }
+        SendInt(p->mUnk26CC, 0x7C18FE9E, -1);
+        SendInt(p->mUnk26CC, 0x33032FA9, 0);
+    }
+    return 0;
+}
+
 // 0x80051744: state exit, releases the fourth font
 extern "C" int fn_80051744(int a, int b, Actor* p)
 {
@@ -571,6 +710,56 @@ struct PadOptions {
     int mUnk14;  // 0x14
 };
 extern PadOptions lbl_8041FFD8[4];
+
+// Player start (0x54 bytes) of the level file.
+struct PlayerStart {
+    u8 mUnk00[0xC];   // 0x00
+    int mUnk0C;       // 0x0C
+    int mUnk10;       // 0x10
+    int mUnk14;       // 0x14
+    int mUnk18;       // 0x18
+    int mUnk1C;       // 0x1C
+    u8 mUnk20[0x18];  // 0x20
+    u8 mUnk38[0xC];   // 0x38
+    u8 mUnk44[0xC];   // 0x44
+    u8 mUnk50[4];     // 0x50
+};
+extern PlayerStart* lbl_804D43DC;
+extern int lbl_804D43E8;
+extern int lbl_804D43EC;
+extern "C" void FileFlushBuffer(void* p, int size);
+extern "C" void fn_800070C0(void* p);
+extern "C" void fn_800070E0(void* p, int size);
+
+// 0x800519D8: level-load callback, reads the player starts
+extern "C" void fn_800519D8(int kind, void* data)
+{
+    if (kind == 2) {
+        short* h = (short*)data;
+        fn_800070E0(h, 0x10);
+        if (h[0] == 8) {
+            int n;
+            int i;
+            lbl_804D43DC = (PlayerStart*)((u8*)data + 0x10);
+            n = h[1] > 4 ? 4 : h[1];
+            lbl_804D43E4 = n;
+            lbl_804D43E8 = n;
+            lbl_804D43EC = n;
+            for (i = 0; i < lbl_804D43E4; i++) {
+                PlayerStart* s = &lbl_804D43DC[i];
+                FileFlushBuffer(s, 0xC);
+                fn_800070C0(&s->mUnk10);
+                fn_800070C0(&s->mUnk14);
+                FileFlushBuffer(s->mUnk20, 0x18);
+                FileFlushBuffer(s->mUnk38, 0xC);
+                FileFlushBuffer(s->mUnk44, 0xC);
+                fn_800070C0(&s->mUnk18);
+                fn_800070C0(&s->mUnk1C);
+                fn_800070C0(&s->mUnk0C);
+            }
+        }
+    }
+}
 
 // 0x80053F84
 extern "C" void fn_80053F84(int v)
@@ -751,6 +940,25 @@ struct CamSetting {
     int mUnk54;
     int mUnk58;
 };
+
+void PlayerApplyHeldSlotState(void* p);
+void PlayerSelectHeldState(void* p);
+
+// 0x8005B010
+extern "C" int fn_8005B010(Actor** pp)
+{
+    Actor* a = *pp;
+    int first;
+    int second;
+    a->mFlags4C |= 1;
+    a->mFlags |= 0x20000;
+    PlayerApplyHeldSlotState(a);
+    PlayerSelectHeldState(a);
+    QueryInt(a->mId, 0x2DA8293C, &first);
+    QueryInt(a->mId, 0xDFF3097A, &second);
+    fn_800F7AF0(first, second);
+    return 1;
+}
 
 // 0x8005F590
 extern "C" void fn_8005F590(CamSetting* d, CamSetting s)
