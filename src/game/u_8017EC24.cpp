@@ -30,6 +30,25 @@ struct BehState {
 };
 
 extern BehState lbl_803A84A8[8];
+
+struct HydraSpitData;
+
+// Context for the spit hit sweep (fn_8001ED98 calls fn_8017EC24 for each object near pos).
+struct SpitCtx {
+    Owner* owner;         // 0x00
+    Beh* beh;             // 0x04
+    HydraSpitData* data;  // 0x08
+    int asset;            // 0x0C
+    IVec3 pos;            // 0x10
+};
+
+// A model node (0x1C bytes); the world position is at +0x10.
+struct ModelNode {
+    u8 pad00[0x10];
+    Vec3 pos;             // 0x10
+};
+
+int ModelAnimate(int model, char* name, int a);                 // 0x8003AA9C
 static int sHydraSpitAssets[2];
 
 // The behaviour's own state (Beh::data).
@@ -61,6 +80,47 @@ void fn_8017EFE8(void* owner, void* beh) {
         Beh* b = (Beh*)beh;
         BehUpdate(o, b);
         Fn8016295C(o, b);
+    }
+}
+
+int fn_8017EC24(void* obj, void* ctx);
+void fn_8001ED98(IVec3* pos, int radius, int (*callback)(void*, void*), void* ctx, int flag);
+
+void fn_8017EE10(void* owner, void* beh) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
+        HydraSpitData* d = (HydraSpitData*)b->data;
+        u8* map;
+        SpitCtx ctx;
+
+        BehUpdate(o, b);
+        Fn8016295C(o, b);
+        map = (u8*)ModelAnimate(o->model, 0, 0);
+        ctx.owner = o;
+        ctx.beh = b;
+        ctx.data = d;
+        switch (d->target) {
+        case 0:
+        case 1: {
+            Vec3* n;
+            ctx.asset = sHydraSpitAssets[0];
+            n = &((ModelNode*)o->nodeF0)[map[ctx.asset]].pos;
+            ctx.pos.x = n->x;
+            ctx.pos.y = n->y;
+            ctx.pos.z = n->z;
+            fn_8001ED98(&ctx.pos, 750, fn_8017EC24, &ctx, 0);
+            ctx.asset = sHydraSpitAssets[1];
+            n = &((ModelNode*)o->nodeF0)[map[ctx.asset]].pos;
+            ctx.pos.x = n->x;
+            ctx.pos.y = n->y;
+            ctx.pos.z = n->z;
+            fn_8001ED98(&ctx.pos, 750, fn_8017EC24, &ctx, 0);
+            break;
+        }
+        case 2:
+            break;
+        }
     }
 }
 
