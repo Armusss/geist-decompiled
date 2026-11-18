@@ -167,7 +167,7 @@ void fn_8008DE4C(int anim, int a, int b, int c);
 int fn_8000DDD0(void);
 int fn_802A1D04(void);
 int fn_8020B97C(void);
-int fn_801C0E7C(Actor* a);
+int fn_801C0E7C(void* p);
 int fn_8008EA9C(int anim, int a);
 int fn_8008E964(int anim);
 int fn_800CDD10();
@@ -204,11 +204,14 @@ static inline void HostHalt(Actor* a, Vec3* zero) {
 int rand(void);
 
 // 0x801C0E7C: per-frame update.
-int fn_801C0E7C(Actor* a) {
-    if (a == 0) {
+int fn_801C0E7C(void* p) {
+    Actor* a;
+    HostBeh* b;
+    if (p == 0) {
         return 0;
     }
-    HostBeh* b = a->beh;
+    a = (Actor*)p;
+    b = a->beh;
     if (b->timer > 0.0f) {
         b->timer -= a->dt;
     }
