@@ -219,4 +219,22 @@ bool fn_80185524(void* behp, void* hostp) {
     ((BehHost*)hostp)->trail = GunTrailSpawn8017B060(0);
     return true;
 }
+
+// Behaviour descriptor: {hash, start, update, 0, 0, stop, draw, 0, flags, 0}.
+struct BehDesc {
+    u32 hash;
+    bool (*start)(void* beh, void* host);
+    bool (*update)(void* beh, void* host, float dt);
+    u32 unk0C;
+    u32 unk10;
+    void (*stop)(void* beh, void* host);
+    void (*draw)(void* beh, void* host);
+    u32 unk1C;
+    u32 flags;
+    u32 unk24;
+};
+
+BehDesc lbl_803A8710 = {
+    0x7F5A49DC, fn_80185524, fn_80184F74, 0, 0, fn_80185500, fn_80184F70, 0, 1, 0,
+};
 }

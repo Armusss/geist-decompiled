@@ -10,6 +10,7 @@
 #include "game/string.h"
 #include "game/msg.h"
 #include "game/owner.h"
+#include "game/effect.h"
 
 
 void BehUpdate(Owner* owner, Beh* beh);                         // 0x801632A8
@@ -34,6 +35,65 @@ struct BehState {
 };
 
 extern BehState lbl_803A84A8[8];
+
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
+extern unsigned char __upper_map[256];
+inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
+
+inline u32 StrHash(const char* s) {
+    u32 h;
+    if (s == 0) {
+        h = 0;
+    } else {
+        int i;
+        h = 0;
+        for (i = 0; s[i] != 0; i++) {
+            h *= 31;
+            h += (unsigned char)toupper(s[i]);
+        }
+        h %= 0xFFFFFFFF;
+    }
+    return h;
+}
+
+inline u32 EffectTypeHash(EffectType* type) {
+    if (type->hash == 0) {
+        const char* name = type->name;
+        type->hash = StrHash(name);
+    }
+    return type->hash;
+}
+
+struct SpitShot {
+    u8 pad[0x30];
+    Vec3 pos;             // 0x30
+    Vec3 dir;             // 0x3C
+    int unk48;            // 0x48
+    float unk4C;          // 0x4C
+    float spread;         // 0x50
+};
+
+struct SpitFire {
+    SpitShot* shot;
+    float speed;
+};
+
+// Projectile spawn parameters for fn_80186A88 (0x4C bytes, as in Homing).
+struct SpitInfo {
+    Vec3 pos;             // 0x00
+    Vec3 up;              // 0x0C
+    Vec3 vel;             // 0x18
+    u8 pad24[0x4];
+    float range;          // 0x28
+    u8 pad2C[0x20];
+};
+
+extern EffectType lbl_803A8508;  // the "HydraSpit" type descriptor
+unsigned long Fn80175D60(unsigned long arg);
 
 struct HydraSpitData;
 
@@ -87,24 +147,6 @@ inline void HydraSpitGoto(Owner* o, HydraSpitData* d) {
 extern "C" {
 int SendMsg(int to, int msg, void* data);                       // 0x800265D4
 
-void fn_8017EF9C(void* owner, void* beh) {
-    if (beh) {
-        Owner* o = (Owner*)owner;
-        Beh* b = (Beh*)beh;
-        BehUpdate(o, b);
-        Fn8016295C(o, b);
-    }
-}
-
-void fn_8017EFE8(void* owner, void* beh) {
-    if (beh) {
-        Owner* o = (Owner*)owner;
-        Beh* b = (Beh*)beh;
-        BehUpdate(o, b);
-        Fn8016295C(o, b);
-    }
-}
-
 // An object found by the sweep.
 struct SpitTarget {
     u8 pad00[0x24];
@@ -133,6 +175,18 @@ struct SpitHitMsg {
 };
 
 int fn_800E0DBC(IVec3* v);
+
+void fn_8001ED98(IVec3* pos, int radius, int (*callback)(void*, void*), void* ctx, int flag);
+
+int rand();
+void fn_800E1098(void* out, void* in, float length);
+void fn_8016D440(Vec3* out, Vec3* in);
+void fn_8016D4EC(Vec3* out, Vec3* in);
+void fn_80186A88(int owner, void* info, int arg, int a, int b, float f);
+
+inline int SpitRange(int base, SpitShot* shot) {
+    return base + shot->spread;
+}
 
 int fn_8017EC24(void* obj_, void* ctx_) {
     SpitTarget* obj = (SpitTarget*)obj_;
@@ -190,7 +244,6 @@ int fn_8017EC24(void* obj_, void* ctx_) {
     ctx->data->hitCount++;
     return 1;
 }
-void fn_8001ED98(IVec3* pos, int radius, int (*callback)(void*, void*), void* ctx, int flag);
 
 void fn_8017EE10(void* owner, void* beh) {
     if (beh) {
@@ -230,45 +283,63 @@ void fn_8017EE10(void* owner, void* beh) {
     }
 }
 
-void fn_8017F034(Owner* owner, Beh* beh) {
+void fn_8017EF9C(void* owner, void* beh) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
+        BehUpdate(o, b);
+        Fn8016295C(o, b);
+    }
 }
 
-void fn_8017F038(Owner* owner, Beh* beh) {
+void fn_8017EFE8(void* owner, void* beh) {
+    if (beh) {
+        Owner* o = (Owner*)owner;
+        Beh* b = (Beh*)beh;
+        BehUpdate(o, b);
+        Fn8016295C(o, b);
+    }
 }
 
-void fn_8017F03C(Owner* owner, Beh* beh) {
+void fn_8017F034(void* owner, void* beh) {
 }
 
-void fn_8017F040(Owner* owner, Beh* beh) {
+void fn_8017F038(void* owner, void* beh) {
+}
+
+void fn_8017F03C(void* owner, void* beh) {
+}
+
+void fn_8017F040(void* owner, void* beh) {
     if (beh != 0) {
-        HydraSpitData* d = (HydraSpitData*)beh->data;
+        HydraSpitData* d = (HydraSpitData*)((Beh*)beh)->data;
         d->flags = 0;
         d->next = 0;
         d->unk08 = 0;
-        BehDone(beh);
+        BehDone((Beh*)beh);
         d->hitCount = 0;
         memset(d->hitHandle, 0, sizeof(d->hitHandle));
         memset(d->hitAsset, 0, sizeof(d->hitAsset));
     }
 }
 
-void fn_8017F0B0(Owner* owner, Beh* beh) {
+void fn_8017F0B0(void* owner, void* beh) {
     if (beh != 0) {
-        HydraSpitData* d = (HydraSpitData*)beh->data;
+        HydraSpitData* d = (HydraSpitData*)((Beh*)beh)->data;
         d->flags = 0;
         d->next = 0;
         d->unk08 = 0;
-        BehDone(beh);
+        BehDone((Beh*)beh);
     }
 }
 
-void fn_8017F0F0(Owner* owner, Beh* beh) {
+void fn_8017F0F0(void* owner, void* beh) {
     if (beh != 0) {
-        HydraSpitData* d = (HydraSpitData*)beh->data;
+        HydraSpitData* d = (HydraSpitData*)((Beh*)beh)->data;
         d->flags = 0;
         d->next = 0;
         d->unk08 = 0;
-        BehDone(beh);
+        BehDone((Beh*)beh);
     }
 }
 
@@ -291,17 +362,6 @@ int fn_8017F130(Owner* owner, Beh* beh, int msg, void* data) {
     return 0;
 }
 
-int fn_8017F5DC(Owner* owner, Beh* beh) {
-    if (beh == 0) {
-        return 0;
-    }
-    VFree(beh->data);
-    return 1;
-}
-
-u32 fn_8017F700() {
-    return 0x3DA260F7;
-}
 int fn_8017F188(void* owner, void* beh, int msg) {
     Owner* o;
     Beh* b;
@@ -376,6 +436,14 @@ int fn_8017F504(void* owner_, void* beh_) {
     return 1;
 }
 
+int fn_8017F5DC(Owner* owner, Beh* beh) {
+    if (beh == 0) {
+        return 0;
+    }
+    VFree(beh->data);
+    return 1;
+}
+
 int fn_8017F614(void* owner_, void* beh_) {
     Beh* beh;
 
@@ -404,4 +472,70 @@ int fn_8017F614(void* owner_, void* beh_) {
     }
     return 1;
 }
+
+u32 fn_8017F700(EffectObj* obj, int msg) {
+    return 0x3DA260F7;
+}
+
+int fn_8017F70C(EffectObj* obj, int msg, int arg, void* data, float dt) {
+    int busy = Fn80175D60(arg);
+
+    switch (msg) {
+    case 0x14967: {
+        int range;
+        SpitFire* fire = (SpitFire*)data;
+        SpitShot* shot = fire->shot;
+        EffectType* type = &lbl_803A8508;
+        int owner;
+        float a;
+        float b;
+        SpitInfo info;
+        Vec3 rot;
+        Vec3 up;
+
+        range = SpitRange(10, shot);
+        owner = obj->unk0;
+        EffectTypeHash(type);
+        memset(&info, 0, sizeof(SpitInfo));
+        info.pos = shot->pos;
+        fn_8016D440(&up, &shot->dir);
+        info.up = up;
+        info.range = 5000.0f;
+        fn_8016D440(&rot, &shot->dir);
+        a = 360.0f * (float)(rand() % range) / 4096.0f;
+        b = 360.0f * (float)(rand() % range) / 4096.0f;
+        if (rand() % 2) {
+            rot.z += a;
+        } else {
+            rot.z -= a;
+        }
+        if (rand() % 2) {
+            rot.x += b;
+        } else {
+            rot.x -= b;
+        }
+        fn_8016D4EC(&info.vel, &rot);
+        fn_800E1098(&info.vel, &info.vel, fire->speed);
+        fn_80186A88(owner, &info, arg, shot->unk48, 0, shot->unk4C);
+        return 1;
+    }
+    }
+    return 0;
+}
+
+// State table at 0x803A84A8: enter / exit / update for states 0-7.
+BehState lbl_803A84A8[8] = {
+    { fn_8017F0F0, fn_8017F03C, fn_8017EFE8 },
+    { 0, 0, 0 },
+    { 0, 0, 0 },
+    { fn_8017F0B0, fn_8017F038, fn_8017EF9C },
+    { fn_8017F040, fn_8017F034, fn_8017EE10 },
+    { 0, 0, 0 },
+    { 0, 0, 0 },
+    { 0, 0, 0 },
+};
+
+EffectType lbl_803A8508 = {
+    "HydraSpit", 0, {0, 0, 0}, 0, 0, fn_8017F70C, fn_8017F700, 0, 0, 0,
+};
 }
