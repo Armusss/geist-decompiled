@@ -2494,9 +2494,11 @@ int fn_801C6C34(Actor* a) {
         if (a->hitBone == -1) {
             v = 8;
         } else {
-            v = ModelBoneNodeChain(a->model, ModelBoneName(a->model, a->hitBone), gHostAssets, 0x10);
-            if (v == -1) {
+            int c = ModelBoneNodeChain(a->model, ModelBoneName(a->model, a->hitBone), gHostAssets, 0x10);
+            if (c == -1) {
                 v = 8;
+            } else {
+                v = c;
             }
         }
         fn_801C8934(a, v);
@@ -2521,9 +2523,11 @@ int fn_801C6D1C(Actor* a) {
         if (a->hitBone == -1) {
             v = 8;
         } else {
-            v = ModelBoneNodeChain(a->model, ModelBoneName(a->model, a->hitBone), gHostAssets, 0x10);
-            if (v == -1) {
+            int c = ModelBoneNodeChain(a->model, ModelBoneName(a->model, a->hitBone), gHostAssets, 0x10);
+            if (c == -1) {
                 v = 8;
+            } else {
+                v = c;
             }
         }
         fn_801C8934(a, v);
