@@ -53,6 +53,9 @@ struct HostData {
     int i1C;            // 0x1C
 };
 
+struct ExtraHolder;
+struct Owner;
+
 struct Actor {
     char pad00[0x24];
     int x;              // 0x24
@@ -65,18 +68,25 @@ struct Actor {
     Vec3 pos;           // 0x84
     char pad90[0x34];
     HostData* data;     // 0xC4
-    char padC8[0xC];
+    char padC8[4];
+    int model;          // 0xCC
+    char padD0[4];
     int anim;           // 0xD4
-    char padD8[0x38];
+    char padD8[0x34];
+    void* cb10C;        // 0x10C
     void* cb110;        // 0x110
     char pad114[4];
     void* cb118;        // 0x118
     char pad11C[0x18];
     HostBeh* beh;       // 0x134
     float dt;           // 0x138
-    char pad13C[0xE4];
+    char pad13C[0xD8];
+    int hitBone;        // 0x214
+    char pad218[8];
     int unk220;         // 0x220
-    char pad224[0x1C];
+    char pad224[0x14];
+    u32 handle238;      // 0x238
+    char pad23C[4];
     Vec3 v240;          // 0x240
     char pad24C[0x20];
     int unk26C;         // 0x26C
@@ -84,8 +94,9 @@ struct Actor {
     Vec3 v27C;          // 0x27C: turn (z at 0x284)
     int unk288;         // 0x288
     char pad28C[0x364];
-    void* unk5F0;       // 0x5F0
-    char pad5F4[0x2A0];
+    ExtraHolder* extra; // 0x5F0
+    void* obj5F4;       // 0x5F4
+    char pad5F8[0x29C];
     char beh894[0x70];  // 0x894
     float f904;         // 0x904
     char pad908[0x14];
@@ -113,6 +124,16 @@ int ConditionSetBit(void* cond, int bit, int set);
 int ConditionUpdateBit(void* cond, int bit, int set);
 int MemFlagIsSet(void* bits, int index);                        // 0x800A7B78
 int ZoneClassifyDirection(void* self, Vec3* v);                 // 0x800A82D0
+void MemCopyVec3(float* dst, float* src);                       // 0x800A7BBC
+void RangeResetPending(void* range);                            // 0x800A7028
+void RangeResetFields(void* range);                             // 0x800A7068
+void ExtraTrailAttach(ExtraHolder* h);                          // 0x80230FA8
+int ExtraGetId(ExtraHolder* h);                                 // 0x80230450
+void ExtraTrailRelease(ExtraHolder* h);                         // 0x80230F08
+int ModelBoneName(int model, int bone);                         // 0x80018B44
+int ModelBoneNodeChain(int model, int name, int* chain, int count); // 0x80018814
+int OwnerId(Owner* o);                                          // 0x800A3A40
+int ActorPlayAnim(int owner, u32 anim, int arg);                // 0x800C5654
 int HasCondition(void* cond, int which);                        // 0x800A7AC4
 void VFree(void* p);                                            // 0x8009DA3C
 void* VAlloc(int size);                                         // 0x8009DA68
@@ -130,6 +151,34 @@ void fn_800B42E0(Vec3* pos, int id, int a, int b, float r);
 void fn_801BE5D4(Actor* a);
 int fn_801BE008(Actor* a);
 float fn_802A2080(void);
+void fn_800B5004(Vec3* v, Vec3* to);
+void fn_800BBCA8(Actor* a);
+void fn_800B6EDC(u32 handle, int a);
+void fn_800C6F58(Actor* a);
+void fn_800902F0(int anim);
+void fn_801D55CC(void* obj);
+void fn_8008DE4C(int anim, int a, int b, int c);
+
+int gHostAssets[16];                                            // 0x80496D18
+float sDeathTime;                                               // 0x804D3218
+
+// Stops the host: clears its motion and turn state and drops what it holds.
+static inline void HostHalt(Actor* a, Vec3* zero) {
+    a->unk288 = 0;
+    a->unk26C = 0;
+    fn_800B5004(&a->v240, zero);
+    MemCopyVec3((float*)a->cond, (float*)zero);
+    fn_800BBCA8(a);
+    RangeResetPending(a->cond);
+    {
+        u32 h = a->handle238;
+        if (h != 0xFFFFFFFF && (h >> 24) == 3) {
+            fn_800B6EDC(h, 0);
+            a->handle238 = 0xFFFFFFFF;
+        }
+    }
+    fn_800C6F58(a);
+}
 int rand(void);
 
 // 0x801C11B0
@@ -330,7 +379,7 @@ int fn_801C1EBC(Actor* a) {
 // 0x801C1F60
 int fn_801C1F60(Actor* a) {
     HostBeh* b = a->beh;
-    if (a->unk5F0 == 0 || fn_80212730(a->id) != -1) {
+    if (a->extra == 0 || fn_80212730(a->id) != -1) {
         fn_801C7D78(a);
     }
     return b->cur;
@@ -361,7 +410,7 @@ int fn_801C2024(Actor* a) {
     p.z = (float)a->z;
     Vec3Set(&a->v27C, 0.0f, 0.0f, 0.0f);
     fn_800B42E0(&p, a->id, 3, 10, 101.0f);
-    if (a->unk5F0 == 0 || fn_80212730(a->id) != -1) {
+    if (a->extra == 0 || fn_80212730(a->id) != -1) {
         fn_801C7D78(a);
         a->pos.x = (float)a->x;
         a->pos.y = (float)a->y;
@@ -2285,6 +2334,37 @@ int fn_801C664C(Actor* a) {
     return 1;
 }
 
+// 0x801C6684
+int fn_801C6684(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    Vec3 zero;
+    HostBeh* b = a->beh;
+    b->cur = 7;
+    zero.x = 0.0f;
+    b->next = 8;
+    b->f24 = 0;
+    b->f30 = zero.x;
+    a->unk220 = 0;
+    zero.y = zero.x;
+    zero.z = zero.x;
+    HostHalt(a, &zero);
+    fn_801C7D78(a);
+    if (a->extra == 0) {
+        fn_801C8934(a, 0);
+    } else {
+        fn_800902F0(a->anim);
+        ExtraTrailAttach(a->extra);
+        if (a->obj5F4 != 0) {
+            fn_801D55CC(a->obj5F4);
+            a->obj5F4 = 0;
+        }
+    }
+    ConditionSetBit(a->cond, 0xB, 1);
+    return 1;
+}
+
 // 0x801C67AC
 int fn_801C67AC(Actor* a) {
     if (a == 0) {
@@ -2294,6 +2374,155 @@ int fn_801C67AC(Actor* a) {
     b->cur = 32;
     b->next = 32;
     b->f24 = 0;
+    return 1;
+}
+
+// 0x801C67DC
+int fn_801C67DC(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    Vec3 zero;
+    HostBeh* b = a->beh;
+    if (b->cur != 0x13) {
+        b->f30 = 6000.0f;
+    }
+    b->cur = 0x13;
+    zero.x = 0.0f;
+    b->next = 0x13;
+    b->f24 = 0;
+    zero.y = zero.x;
+    zero.z = zero.x;
+    HostHalt(a, &zero);
+    ConditionSetBit(a->cond, 0xE, 0);
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C68CC
+int fn_801C68CC(Actor* a) {
+    Vec3 zero;
+    zero.x = 0.0f;
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 0x12;
+    b->next = 0x12;
+    b->f24 = 0;
+    zero.y = zero.x;
+    zero.z = zero.x;
+    HostHalt(a, &zero);
+    return 1;
+}
+
+// 0x801C698C
+int fn_801C698C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    Vec3 zero;
+    HostBeh* b = a->beh;
+    b->cur = 0x11;
+    zero.x = 0.0f;
+    b->next = 0x12;
+    b->f24 = 0;
+    zero.y = zero.x;
+    zero.z = zero.x;
+    HostHalt(a, &zero);
+    if (a->extra != 0 && ExtraGetId(a->extra) != 0) {
+        ExtraTrailRelease(a->extra);
+    }
+    fn_801C8934(a, HasCondition(a->cond, 0xB) != 0);
+    fn_801C7D78(a);
+    return 1;
+}
+
+// 0x801C6A98
+int fn_801C6A98(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    Vec3 zero;
+    HostBeh* b = a->beh;
+    b->cur = 0x10;
+    zero.x = 0.0f;
+    b->next = 0x21;
+    b->f24 = 0;
+    zero.y = zero.x;
+    zero.z = zero.x;
+    HostHalt(a, &zero);
+    fn_801C8934(a, 0);
+    return 1;
+}
+
+// 0x801C6B68
+int fn_801C6B68(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    a->cb10C = (void*)RangeResetFields;
+    b->cur = 0x40;
+    b->next = 0x40;
+    b->f30 = sDeathTime;
+    if (a->extra == 0 || fn_80212730(a->id) != -1) {
+        fn_8008DE4C(a->anim, 0, b->anim, 0x18);
+    }
+    if (HasCondition(a->cond, 10) == 0) {
+        ConditionSetBit(a->cond, 10, 1);
+        ActorPlayAnim(a->id, 0xDC04E3D5, a->id);
+    }
+    return 1;
+}
+
+// The variant of the knock-back animation that matches the bone the host was hit on.
+static inline int HitVariant(Actor* a) {
+    int v;
+    if (a->hitBone == -1) {
+        v = 8;
+    } else {
+        v = ModelBoneNodeChain(a->model, ModelBoneName(a->model, a->hitBone), gHostAssets, 0x10);
+        if (v == -1) {
+            v = 8;
+        }
+    }
+    return v;
+}
+
+// 0x801C6C34
+int fn_801C6C34(Actor* a) {
+    float zero = 0.0f;
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    b->cur = 0x3F;
+    b->next = 0x40;
+    b->f30 = zero;
+    a->unk220 = 0;
+    ConditionSetBit(a->cond, 0, 1);
+    ConditionSetBit(a->cond, 9, 1);
+    if (a->extra == 0 || fn_80212730(a->id) != -1) {
+        fn_801C8934(a, HitVariant(a));
+    }
+    return 1;
+}
+
+// 0x801C6D1C
+int fn_801C6D1C(Actor* a) {
+    if (a == 0) {
+        return 0;
+    }
+    HostBeh* b = a->beh;
+    if (b->cur != 0x3E) {
+        b->next = b->cur;
+        b->cur = 0x3E;
+    }
+    b->timer = 4000.0f;
+    ConditionSetBit(a->cond, 0, 1);
+    fn_801C8934(a, HitVariant(a));
+    ActorPlayAnim(OwnerId((Owner*)a), 0xA464660E, OwnerId((Owner*)a));
     return 1;
 }
 
