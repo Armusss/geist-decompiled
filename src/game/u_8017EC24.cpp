@@ -58,12 +58,13 @@ struct HydraSpitData {
     int unk08;            // 0x08
     int flags;            // 0x0C
     int target;           // 0x10: set by message 0x41D 0x2C4F0F0A
-    int unk14;            // 0x14
-    u8 unk18[0x10];       // 0x18
-    u8 unk28[0x10];       // 0x28
+    int hitCount;         // 0x14
+    int hitAsset[4];      // 0x18: which spit (asset) hit ...
+    int hitHandle[4];     // 0x28: ... which object
 };
 
 extern "C" {
+int SendMsg(int to, int msg, void* data);                       // 0x800265D4
 
 void fn_8017EF9C(void* owner, void* beh) {
     if (beh) {
@@ -83,7 +84,91 @@ void fn_8017EFE8(void* owner, void* beh) {
     }
 }
 
-int fn_8017EC24(void* obj, void* ctx);
+// An object found by the sweep.
+struct SpitTarget {
+    u8 pad00[0x24];
+    IVec3 pos;            // 0x24
+    u8 pad30[0x8];
+    int handle;           // 0x38: top byte is the object kind
+};
+
+// Message 0x407 sent to a hit object (0x50 bytes).
+struct SpitHitMsg {
+    SpitTarget* obj;      // 0x00
+    Owner* owner;         // 0x04
+    int ownerId;          // 0x08
+    float damage;         // 0x0C
+    int unk10;            // 0x10
+    u32 hash;             // 0x14
+    IVec3 pos;            // 0x18
+    int unk24[3];         // 0x24
+    IVec3 delta;          // 0x30
+    int unk3C;            // 0x3C
+    int unk40;            // 0x40
+    int unk44;            // 0x44
+    int unk48;            // 0x48
+    float unk4C;          // 0x4C
+    int unk50[3];         // 0x50
+};
+
+int fn_800E0DBC(IVec3* v);
+
+int fn_8017EC24(void* obj_, void* ctx_) {
+    SpitTarget* obj = (SpitTarget*)obj_;
+    SpitCtx* ctx = (SpitCtx*)ctx_;
+    int handle;
+    int i;
+    IVec3 delta;
+    Msg400 q;
+    SpitHitMsg m;
+
+    if (obj == 0) {
+        return 0;
+    }
+    handle = obj->handle;
+    if (handle == ctx->owner->id) {
+        return 0;
+    }
+    if ((int)((u32)handle >> 24) != 2) {
+        return 0;
+    }
+    for (i = 0; i < ctx->data->hitCount; i++) {
+        if (ctx->data->hitAsset[i] == ctx->asset && ctx->data->hitHandle[i] == handle) {
+            return 0;
+        }
+    }
+    SendMsg(handle, 0x400, &q);
+    if (q.state == 0) {
+        return 0;
+    }
+    delta.x = obj->pos.x - ctx->pos.x;
+    delta.y = obj->pos.y - ctx->pos.y;
+    delta.z = obj->pos.z - ctx->pos.z;
+    if (fn_800E0DBC(&delta) > 1500) {
+        return 0;
+    }
+    m.owner = ctx->owner;
+    m.ownerId = ctx->owner->id;
+    m.hash = 0x6D57E804;
+    m.damage = 150.0f;
+    m.unk4C = 1.0f;
+    m.pos.x = obj->pos.x;
+    m.pos.y = obj->pos.y;
+    m.pos.z = obj->pos.z;
+    m.unk48 = 0;
+    m.unk44 = -1;
+    m.unk40 = -1;
+    m.unk3C = -1;
+    m.obj = obj;
+    m.delta.x = delta.x;
+    m.delta.y = delta.y;
+    m.delta.z = delta.z;
+    SendMsg(obj->handle, 0x407, &m);
+    ctx->data->hitHandle[ctx->data->hitCount] = obj->handle;
+    ctx->data->hitAsset[ctx->data->hitCount] = ctx->asset;
+    ctx->data->hitCount++;
+    return 1;
+}
 void fn_8001ED98(IVec3* pos, int radius, int (*callback)(void*, void*), void* ctx, int flag);
 
 void fn_8017EE10(void* owner, void* beh) {
@@ -140,9 +225,9 @@ void fn_8017F040(Owner* owner, Beh* beh) {
         d->next = 0;
         d->unk08 = 0;
         BehDone(beh);
-        d->unk14 = 0;
-        memset(d->unk28, 0, sizeof(d->unk28));
-        memset(d->unk18, 0, sizeof(d->unk18));
+        d->hitCount = 0;
+        memset(d->hitHandle, 0, sizeof(d->hitHandle));
+        memset(d->hitAsset, 0, sizeof(d->hitAsset));
     }
 }
 
