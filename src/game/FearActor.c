@@ -34,7 +34,12 @@ struct Actor {
     u32 mFlags;                 // 0x50 0x200000 = inside a host
     int mModel54;               // 0x54 body model
     int mModel58;               // 0x58 weapon model
-    u8 mUnk5C[0xD4 - 0x5C];     // 0x5C
+    u8 mUnk5C[0x7C - 0x5C];     // 0x5C
+    int mUnk7C;                 // 0x7C
+    int mUnk80;                 // 0x80
+    int mUnk84;                 // 0x84
+    int mUnk88;                 // 0x88
+    u8 mUnk8C[0xD4 - 0x8C];     // 0x8C
     int mUnkD4;                 // 0xD4 animation
     u8 mUnkD8[0x184 - 0xD8];    // 0xD8
     int mCamera;                // 0x184
@@ -48,7 +53,9 @@ struct Actor {
     u32 mFlags584;              // 0x584
     u8 mUnk588[0x58C - 0x588];  // 0x588
     int mUnk58C;                // 0x58C pad/controller number
-    u8 mUnk590[0x7A4 - 0x590];  // 0x590
+    u8 mUnk590[0x73C - 0x590];  // 0x590
+    int mUnk73C;                // 0x73C
+    u8 mUnk740[0x7A4 - 0x740];  // 0x740
     int mMode;                  // 0x7A4
     u8 mUnk7A8[0x7B4 - 0x7A8];  // 0x7A8
     u32 mState;                 // 0x7B4
@@ -89,7 +96,10 @@ struct Actor {
     u8 mUnk26D0[0x26E0 - 0x26D0];  // 0x26D0
     int mUnk26E0;               // 0x26E0
     Actor* mHost;               // 0x26E4
-    u8 mUnk26E8[0x2740 - 0x26E8];  // 0x26E8
+    u8 mUnk26E8[0x2730 - 0x26E8];  // 0x26E8
+    float mUnk2730;             // 0x2730
+    float mUnk2734;             // 0x2734
+    u8 mUnk2738[0x2740 - 0x2738];  // 0x2738
     int mUnk2740;               // 0x2740
     u8 mUnk2744[0x278C - 0x2744];  // 0x2744
     float mFov;                 // 0x278C
@@ -982,6 +992,42 @@ extern "C" int fn_8005B010(Actor** pp)
     return 1;
 }
 
+// Arguments of a player flag change.
+struct PlayerFlagArgs {
+    Actor* mPlayer;   // 0x00
+    int mOn;          // 0x04
+    u32 mBits;        // 0x08
+};
+extern "C" void fn_8006B360(void* pads);
+extern "C" void fn_80090390(int a, int b);
+
+// 0x8005CC5C: sets or clears player flags; setting them resets the held item and the keyed settings
+extern "C" int fn_8005CC5C(PlayerFlagArgs* args)
+{
+    Actor* p = args->mPlayer;
+    if (args->mOn) {
+        int first;
+        int second;
+        fn_8006B360(p->mPadState);
+        p->mFlags |= args->mBits;
+        p->mUnk73C = 0;
+        if (p->mMode != 0x16) {
+            fn_80090390(p->mUnk7C, 0);
+            p->mUnk80 = -1;
+            p->mUnk84 = -1;
+            p->mUnk88 = -1;
+            PlayerApplyHeldSlotState(p);
+            PlayerSelectHeldState(p);
+        }
+        QueryInt(p->mId, 0x2DA8293C, &first);
+        QueryInt(p->mId, 0xDFF3097A, &second);
+        fn_800F7AF0(first, second);
+    } else {
+        p->mFlags &= ~args->mBits;
+    }
+    return 1;
+}
+
 // 0x8005F590
 extern "C" void fn_8005F590(CamSetting* d, CamSetting s)
 {
@@ -1050,6 +1096,49 @@ void ModelSetMatrix(int model, Mtx34* m, char* bone);
 extern "C" int fn_8003A1F0(int model, char* bone, int anim);
 extern "C" void fn_8016D864(Vec3* out, void* in);
 extern "C" int fn_8002B11C(int model, Vec3* pos, int anim, float f, int a, int b, int c, int d);
+
+// Camera parameters of the player for the view.
+struct PlayerViewArgs {
+    Actor* mPlayer;   // 0x00
+    u8 mUnk04[0xC];   // 0x04
+    float mUnk10;     // 0x10
+    float mUnk14;     // 0x14
+    float mUnk18;     // 0x18
+    float mFov;       // 0x1C
+};
+static const float sFovTable[5] = { 4080.0f, 5456.0f, 6800.0f, 8160.0f, 9520.0f };
+void HudMsgDispatch(void* a, int msg, void* data, int b);
+
+// Field of view the player chose in the options (message 0x41E to the HUD).
+static inline void OptionFov(Actor* p, float* out)
+{
+    QueryMsg q;
+    *(int*)&q.result = p->mId;
+    q.hash = 0x0E4043D9;
+    HudMsgDispatch(0, 0x41E, &q, 0);
+    *out = sFovTable[*(int*)&q.result];
+}
+
+// 0x80060760
+extern "C" int fn_80060760(PlayerViewArgs* v)
+{
+    Actor* p = v->mPlayer;
+    v->mUnk10 = p->mUnk2730;
+    v->mUnk14 = p->mUnk2734;
+    v->mUnk18 = p->mUnk1500;
+    if (fn_802A1D04() == 3) {
+        if (p->mUnk2798 != -1) {
+            OptionFov(p, &v->mFov);
+        } else {
+            v->mFov = 6800.0f * (1.0003f * Fn802811A4());
+        }
+    } else if (fn_802A1D04() != 0) {
+        OptionFov(p, &v->mFov);
+    } else {
+        v->mFov = 6800.0f * (1.0003f * Fn802811A4());
+    }
+    return 1;
+}
 
 // 0x80060B7C: draws the player's weapon model at its bone
 extern "C" int fn_80060B7C(PlayerQuery* q)
