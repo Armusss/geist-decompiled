@@ -558,6 +558,7 @@ game/u_80185A9C.cpp:
 
 game/u_80187108.cpp:
 	.text       start:0x80187108 end:0x80187370
+	.sdata2     start:0x804D8408 end:0x804D8418
 
 game/u_80187370.cpp:
 	.text       start:0x80187370 end:0x8018B31C
