@@ -383,7 +383,8 @@ static inline int BarrierVisitorPasses(BarrierBeh* beh, BarrierVisitor* target) 
 }
 
 static inline bool BarrierBoneDiffers(BarrierActor* self, int* data) {
-    return ModelFindBone(self->model, lbl_804D328C) != data[5];
+    bool differs = ModelFindBone(self->model, lbl_804D328C) != data[5];
+    return differs;
 }
 
 // Asks the target a keyed question (message 0x41E); returns the first word
@@ -397,6 +398,14 @@ static inline int BarrierAsk(int target, u32 hash) {
     return *(int*)&q.result;
 }
 
+static inline int BarrierAnswer41E(int* data) {
+    switch (data[1]) {
+    case (int)0x914B98A8u:
+        data[3] = 1;
+        return 1;
+    }
+    return 0;
+}
 // Message handler of the barrier actor (states, hit tests, effect spawning).
 // Descriptive name: BarrierActorMsg.
 int BarrierActorMsg(Actor* actor, int msg, void* dataPtr, int arg) {
@@ -476,11 +485,7 @@ int BarrierActorMsg(Actor* actor, int msg, void* dataPtr, int arg) {
         if (self->behaviour == 0) {
             return 0;
         }
-        switch (data[1]) {
-        case (int)0x914B98A8u:
-            return data[3] = 1;
-        }
-        return 0;
+        return BarrierAnswer41E(data);
     case 0x41D:
         BarrierKindRegistryMsg(self, data);
         return 1;
