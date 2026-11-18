@@ -3,6 +3,7 @@
 #include <dolphin/gx/GXGeometry.h>
 #include <dolphin/gx/GXTransform.h>
 #include <dolphin/gx/GXVert.h>
+#include "game/types.h"
 
 extern "C" f32 PSVECDistance(const f32* a, const f32* b);
 
@@ -27,18 +28,17 @@ extern "C" f32 lbl_804D4D14;
 extern "C" f32 lbl_804D4D18;
 extern "C" f32 lbl_804D4D1C;
 
-extern "C" f32 lbl_804D7A88;
-extern "C" f32 lbl_804D7A8C;
-extern "C" f32 lbl_804D7A90;
-extern "C" f32 lbl_804D7A94;
 
-// Projection / viewport / view-matrix cache filled in by the frame setup.
-struct GXDrawCache {
-    f32 proj[7];
-    f32 vp[6];
-    f32 mtx[3][4];
-};
-extern "C" GXDrawCache lbl_8046D2B0;
+// Projection, viewport and view matrix captured by Draw3DBegin.
+static f32 sProjection[7];
+static f32 sViewport[6];
+static f32 sViewMtx[3][4];
+
+// Unit directions around the Y axis, 15 degrees apart (DrawTrailBuildDirections).
+static f32 sDirections[24][3];
+
+// Texture coordinates for even and odd strip vertices.
+static f32 sTrailTexCoords[2][2] = {{1.0f, 1.0f}, {1.0f, 0.0f}};
 
 // Ends a 3D draw block (identical body to Draw2DEnd).
 void Draw3DEnd(void)
@@ -52,74 +52,77 @@ void Draw3DEnd(void)
 // width is measured along the camera's right axis; angle rotates the quad.
 void DrawWorldQuad(f32 width, f32 angle, f32* pos, u8 r, u8 g, u8 b, u8 a)
 {
-    f32 p0[3];
-    f32 p1[3];
     f32 rot[4];
+    f32 p1[3];
+    f32 p0[3];
     f32 radius;
-    f32 x0, y0, x1, y1;
-    f32 x2, y2, x3, y3;
-    bool visible;
+    Vec3 v0, v1, v2, v3;
+    bool onScreen;
+    int visible;
 
-    GXProject(pos[0], pos[1], pos[2], lbl_8046D2B0.mtx, lbl_8046D2B0.proj,
-              lbl_8046D2B0.vp, &p0[0], &p0[1], &p0[2]);
-    p0[0] -= lbl_8046D2B0.vp[0];
-    p0[1] -= lbl_8046D2B0.vp[1];
+    GXProject(pos[0], pos[1], pos[2], sViewMtx, sProjection, sViewport, &p0[0], &p0[1], &p0[2]);
+    p0[0] -= sViewport[0];
+    p0[1] -= sViewport[1];
 
-    p1[0] = pos[0] + lbl_8046D2B0.mtx[0][0] * width;
-    p1[1] = pos[1] + lbl_8046D2B0.mtx[0][1] * width;
-    p1[2] = pos[2] + lbl_8046D2B0.mtx[0][2] * width;
-    GXProject(p1[0], p1[1], p1[2],
-              lbl_8046D2B0.mtx, lbl_8046D2B0.proj, lbl_8046D2B0.vp,
-              &p1[0], &p1[1], &p1[2]);
-    p1[0] -= lbl_8046D2B0.vp[0];
-    p1[1] -= lbl_8046D2B0.vp[1];
+    p1[0] = sViewMtx[0][0] * width + pos[0];
+    p1[1] = sViewMtx[0][1] * width + pos[1];
+    p1[2] = sViewMtx[0][2] * width + pos[2];
+    GXProject(p1[0], p1[1], p1[2], sViewMtx, sProjection, sViewport, &p1[0], &p1[1], &p1[2]);
+    p1[0] -= sViewport[0];
+    p1[1] -= sViewport[1];
 
     radius = PSVECDistance(p0, p1);
 
-    visible = false;
-    if ((p0[0] + radius > lbl_804D4D10 || p0[0] - radius < lbl_804D4D18) &&
-        (p0[1] + radius > lbl_804D4D14 || p0[1] - radius < lbl_804D4D1C)) {
-        rot[0] = lbl_804D7A88 + angle;
-        rot[1] = lbl_804D7A8C + angle;
+    onScreen = (p0[0] + radius > lbl_804D4D10 || p0[0] - radius < lbl_804D4D18) &&
+               (p0[1] + radius > lbl_804D4D14 || p0[1] - radius < lbl_804D4D1C);
+    if (onScreen) {
+        rot[0] = 135.0f + angle;
+        rot[1] = 225.0f + angle;
         fn_800A0FC4(rot, rot);
-        x0 = radius * rot[2] + p0[0];
-        y0 = radius * rot[0] + p0[1];
-        x1 = radius * rot[3] + p0[0];
-        y1 = radius * rot[1] + p0[1];
+        v0.x = radius * rot[2] + p0[0];
+        v0.y = radius * rot[0] + p0[1];
+        v1.x = radius * rot[3] + p0[0];
+        v1.y = radius * rot[1] + p0[1];
+        v0.z = p0[2];
+        v1.z = p0[2];
 
-        rot[0] = lbl_804D7A90 + angle;
-        rot[1] = lbl_804D7A94 + angle;
+        rot[0] = 315.0f + angle;
+        rot[1] = 45.0f + angle;
         fn_800A0FC4(rot, rot);
-        x2 = radius * rot[2] + p0[0];
-        y2 = radius * rot[0] + p0[1];
-        x3 = radius * rot[3] + p0[0];
-        y3 = radius * rot[1] + p0[1];
-        visible = true;
+        v2.x = radius * rot[2] + p0[0];
+        v2.y = radius * rot[0] + p0[1];
+        v3.x = radius * rot[3] + p0[0];
+        v3.y = radius * rot[1] + p0[1];
+        v2.z = p0[2];
+        v3.z = p0[2];
+        visible = 1;
+    } else {
+        visible = 0;
     }
 
     if (visible) {
-        x0 *= lbl_804D4D08;
-        y0 *= lbl_804D4D0C;
-        x1 *= lbl_804D4D08;
-        y1 *= lbl_804D4D0C;
-        x2 *= lbl_804D4D08;
-        y2 *= lbl_804D4D0C;
-        x3 *= lbl_804D4D08;
-        y3 *= lbl_804D4D0C;
+        v0.x *= lbl_804D4D08;
+        v0.y *= lbl_804D4D0C;
+        v1.x *= lbl_804D4D08;
+        v1.y *= lbl_804D4D0C;
+        v2.x *= lbl_804D4D08;
+        v2.y *= lbl_804D4D0C;
+        v3.x *= lbl_804D4D08;
+        v3.y *= lbl_804D4D0C;
         GXBegin(GX_QUADS, GX_VTXFMT2, 4);
-        GXPosition3f32(x0, y0, p0[2]);
+        GXPosition3f32(v0.x, v0.y, v0.z);
         GXColor4u8(r, g, b, a);
         GXTexCoord2f32(0.0f, 1.0f);
         GXTexCoord2f32(0.0f, 0.0f);
-        GXPosition3f32(x1, y1, p0[2]);
+        GXPosition3f32(v1.x, v1.y, v1.z);
         GXColor4u8(r, g, b, a);
         GXTexCoord2f32(0.0f, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
-        GXPosition3f32(x2, y2, p0[2]);
+        GXPosition3f32(v2.x, v2.y, v2.z);
         GXColor4u8(r, g, b, a);
         GXTexCoord2f32(1.0f, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
-        GXPosition3f32(x3, y3, p0[2]);
+        GXPosition3f32(v3.x, v3.y, v3.z);
         GXColor4u8(r, g, b, a);
         GXTexCoord2f32(1.0f, 1.0f);
         GXTexCoord2f32(0.0f, 0.0f);
@@ -129,65 +132,77 @@ void DrawWorldQuad(f32 width, f32 angle, f32* pos, u8 r, u8 g, u8 b, u8 a)
 // Same as DrawWorldQuad, with the texture coordinates rotated one vertex.
 void DrawWorldQuadFlipped(f32 width, f32 angle, f32* pos, u8 r, u8 g, u8 b, u8 a)
 {
-    f32 p0[3];
-    f32 p1[3];
     f32 rot[4];
+    f32 p1[3];
+    f32 p0[3];
     f32 radius;
-    f32 x0, y0, x1, y1;
-    f32 x2, y2, x3, y3;
-    bool visible;
+    Vec3 v0, v1, v2, v3;
+    bool onScreen;
+    int visible;
 
-    GXProject(pos[0], pos[1], pos[2], lbl_8046D2B0.mtx, lbl_8046D2B0.proj,
-              lbl_8046D2B0.vp, &p0[0], &p0[1], &p0[2]);
-    p0[0] -= lbl_8046D2B0.vp[0];
-    p0[1] -= lbl_8046D2B0.vp[1];
+    GXProject(pos[0], pos[1], pos[2], sViewMtx, sProjection, sViewport, &p0[0], &p0[1], &p0[2]);
+    p0[0] -= sViewport[0];
+    p0[1] -= sViewport[1];
 
-    GXProject(pos[0] + lbl_8046D2B0.mtx[0][0] * width,
-              pos[1] + lbl_8046D2B0.mtx[0][1] * width,
-              pos[2] + lbl_8046D2B0.mtx[0][2] * width,
-              lbl_8046D2B0.mtx, lbl_8046D2B0.proj, lbl_8046D2B0.vp,
-              &p1[0], &p1[1], &p1[2]);
-    p1[0] -= lbl_8046D2B0.vp[0];
-    p1[1] -= lbl_8046D2B0.vp[1];
+    p1[0] = sViewMtx[0][0] * width + pos[0];
+    p1[1] = sViewMtx[0][1] * width + pos[1];
+    p1[2] = sViewMtx[0][2] * width + pos[2];
+    GXProject(p1[0], p1[1], p1[2], sViewMtx, sProjection, sViewport, &p1[0], &p1[1], &p1[2]);
+    p1[0] -= sViewport[0];
+    p1[1] -= sViewport[1];
 
     radius = PSVECDistance(p0, p1);
 
-    visible = false;
-    if ((lbl_804D4D10 < p0[0] + radius || p0[0] - radius < lbl_804D4D18) &&
-        (lbl_804D4D14 < p0[1] + radius || p0[1] - radius < lbl_804D4D1C)) {
-        rot[0] = lbl_804D7A88 + angle;
-        rot[1] = lbl_804D7A8C + angle;
+    onScreen = (p0[0] + radius > lbl_804D4D10 || p0[0] - radius < lbl_804D4D18) &&
+               (p0[1] + radius > lbl_804D4D14 || p0[1] - radius < lbl_804D4D1C);
+    if (onScreen) {
+        rot[0] = 135.0f + angle;
+        rot[1] = 225.0f + angle;
         fn_800A0FC4(rot, rot);
-        x0 = p0[0] + radius * rot[2];
-        y0 = p0[1] + radius * rot[0];
-        x1 = p0[0] + radius * rot[3];
-        y1 = p0[1] + radius * rot[1];
+        v0.x = radius * rot[2] + p0[0];
+        v0.y = radius * rot[0] + p0[1];
+        v1.x = radius * rot[3] + p0[0];
+        v1.y = radius * rot[1] + p0[1];
+        v0.z = p0[2];
+        v1.z = p0[2];
 
-        rot[0] = lbl_804D7A90 + angle;
-        rot[1] = lbl_804D7A94 + angle;
+        rot[0] = 315.0f + angle;
+        rot[1] = 45.0f + angle;
         fn_800A0FC4(rot, rot);
-        x2 = p0[0] + radius * rot[2];
-        y2 = p0[1] + radius * rot[0];
-        x3 = p0[0] + radius * rot[3];
-        y3 = p0[1] + radius * rot[1];
-        visible = true;
+        v2.x = radius * rot[2] + p0[0];
+        v2.y = radius * rot[0] + p0[1];
+        v3.x = radius * rot[3] + p0[0];
+        v3.y = radius * rot[1] + p0[1];
+        v2.z = p0[2];
+        v3.z = p0[2];
+        visible = 1;
+    } else {
+        visible = 0;
     }
 
     if (visible) {
+        v0.x *= lbl_804D4D08;
+        v0.y *= lbl_804D4D0C;
+        v1.x *= lbl_804D4D08;
+        v1.y *= lbl_804D4D0C;
+        v2.x *= lbl_804D4D08;
+        v2.y *= lbl_804D4D0C;
+        v3.x *= lbl_804D4D08;
+        v3.y *= lbl_804D4D0C;
         GXBegin(GX_QUADS, GX_VTXFMT2, 4);
-        GXPosition3f32(x0 * lbl_804D4D08, y0 * lbl_804D4D0C, p0[2]);
+        GXPosition3f32(v0.x, v0.y, v0.z);
         GXColor4u8(r, g, b, a);
         GXTexCoord2f32(0.0f, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
-        GXPosition3f32(x1 * lbl_804D4D08, y1 * lbl_804D4D0C, p0[2]);
+        GXPosition3f32(v1.x, v1.y, v1.z);
         GXColor4u8(r, g, b, a);
         GXTexCoord2f32(0.0f, 1.0f);
         GXTexCoord2f32(0.0f, 0.0f);
-        GXPosition3f32(x2 * lbl_804D4D08, y2 * lbl_804D4D0C, p0[2]);
+        GXPosition3f32(v2.x, v2.y, v2.z);
         GXColor4u8(r, g, b, a);
         GXTexCoord2f32(1.0f, 1.0f);
         GXTexCoord2f32(0.0f, 0.0f);
-        GXPosition3f32(x3 * lbl_804D4D08, y3 * lbl_804D4D0C, p0[2]);
+        GXPosition3f32(v3.x, v3.y, v3.z);
         GXColor4u8(r, g, b, a);
         GXTexCoord2f32(1.0f, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
@@ -213,7 +228,6 @@ void GfxSetCullMode(int mode);
 void Draw3DBegin(int mode, void* setup)
 {
     u8 buf[48];
-    GXDrawCache* const cache = &lbl_8046D2B0;
 
     if (setup != 0) {
         fn_8004320C(setup, buf);
@@ -222,18 +236,18 @@ void Draw3DBegin(int mode, void* setup)
         fn_800092CC();
     }
 
-    GXGetProjectionv(cache->proj);
-    GXGetViewportv(cache->vp);
-    fn_80008C78(cache->mtx);
+    GXGetProjectionv(sProjection);
+    GXGetViewportv(sViewport);
+    fn_80008C78(sViewMtx);
 
-    lbl_804D4D08 = 1.0f / cache->vp[2];
-    lbl_804D4D0C = 1.0f / cache->vp[3];
-    lbl_804D4D10 = cache->vp[0];
-    lbl_804D4D14 = cache->vp[1];
-    lbl_804D4D18 = cache->vp[0] + cache->vp[2];
-    lbl_804D4D1C = cache->vp[1] + cache->vp[3];
-    lbl_804D2E7C = cache->vp[2] / (f32)lbl_804D2568;
-    lbl_804D2E80 = cache->vp[3] / (f32)lbl_804D2568;
+    lbl_804D4D08 = 1.0f / sViewport[2];
+    lbl_804D4D0C = 1.0f / sViewport[3];
+    lbl_804D4D10 = sViewport[0];
+    lbl_804D4D14 = sViewport[1];
+    lbl_804D2E7C = sViewport[2] / (f32)lbl_804D2568;
+    lbl_804D2E80 = sViewport[3] / (f32)lbl_804D2568;
+    lbl_804D4D18 = sViewport[0] + sViewport[2];
+    lbl_804D4D1C = sViewport[1] + sViewport[3];
 
     fn_80008D10();
     GfxSetVtxDesc(2);
@@ -258,43 +272,36 @@ void Draw3DBegin(int mode, void* setup)
 // Draws a textured line strip whose vertices walk along a table of 24
 // directions, interpolating the colour and the offsets across the strip.
 extern "C" int rand(void);
-extern "C" f32 lbl_804D7A98;
-extern "C" f32 lbl_804D7A9C;
-extern "C" f32 lbl_804D7AA0;
-extern "C" f32 lbl_8046D314[];
-extern "C" f32 lbl_803A0EE0[];
 
 void DrawTrailStrip(int start, u8 r0, u8 g0, u8 b0, u8 a0,
                     u8 r1, u8 g1, u8 b1, u8 a1,
                     f32 height, f32 density, f32 x0, f32 x1, f32 jitter)
 {
-    int n = (int)(lbl_804D7A98 * density * height);
+    int n = (int)(24.0f * density * height);
     if (n > 1) {
-        f32 scale = lbl_804D7A9C;
-        f32 denom = scale * (f32)n;
-        f32 dr = (f32)(r0 - r1) / denom;
-        f32 dg = (f32)(g0 - g1) / denom;
-        f32 db = (f32)(b0 - b1) / denom;
-        f32 da = (f32)(a0 - a1) / denom;
-        f32 dy = height / (f32)n;
-        f32 dx = (x1 - x0) / (f32)n;
-        int idx = start % 24;
+        f32 dr, dg, db, da;
+        f32 dy, dx;
+        int idx;
         int i;
+
+        dy = height / (f32)n;
+        dx = (x1 - x0) / (f32)n;
+        idx = start % 24;
+        dr = (f32)(r0 - r1) / (255.0f * (f32)n);
+        dg = (f32)(g0 - g1) / (255.0f * (f32)n);
+        db = (f32)(b0 - b1) / (255.0f * (f32)n);
+        da = (f32)(a0 - a1) / (255.0f * (f32)n);
 
         GXBegin(GX_LINESTRIP, GX_VTXFMT2, n);
         for (i = 0; i < n; i++) {
-            const f32* rec = &lbl_8046D314[idx * 3];
-            const f32* tc = &lbl_803A0EE0[(i & 1) * 2];
-            f32 t = (f32)i;
-            f32 j = jitter * ((f32)rand() / lbl_804D7AA0);
-            f32 w = x0 + t * dx + j;
+            f32 w = x0 + (f32)i * dx + jitter * ((f32)rand() / 32767.0f);
 
-            GXPosition3f32(w * rec[0], t * dy, w * rec[2]);
-            GXColor4u8((u8)(scale * (dr * t) + r0),
-                       (u8)(scale * (dg * t) + g0),
-                       (u8)(scale * (db * t) + b0),
-                       (u8)(scale * (da * t) + a0));
-            GXTexCoord2f32(tc[0], tc[1]);
+            GXPosition3f32(w * sDirections[idx][0], (f32)i * dy, w * sDirections[idx][2]);
+            GXColor4u8((u8)(255.0f * (dr * (f32)i) + r0),
+                       (u8)(255.0f * (dg * (f32)i) + g0),
+                       (u8)(255.0f * (db * (f32)i) + b0),
+                       (u8)(255.0f * (da * (f32)i) + a0));
+            GXTexCoord2f32(sTrailTexCoords[i & 1][0], sTrailTexCoords[i & 1][1]);
             GXTexCoord2f32(0.0f, 0.0f);
             idx = (idx + 1) % 24;
         }
@@ -347,7 +354,7 @@ void DrawTrailRing(TrailBuffer* p, u8 r, u8 g, u8 b, u8 a)
     while (j < p->max && i < count) {
         GXPosition3f32(p->verts[j * 3 + 0], p->verts[j * 3 + 1], p->verts[j * 3 + 2]);
         GXColor4u8((u8)cr, (u8)cg, (u8)cb, (u8)ca);
-        GXTexCoord2f32(lbl_803A0EE0[(j & 1) * 2], lbl_803A0EE0[(j & 1) * 2 + 1]);
+        GXTexCoord2f32(sTrailTexCoords[j & 1][0], sTrailTexCoords[j & 1][1]);
         GXTexCoord2f32(0.0f, 0.0f);
         cr += sr;
         cg += sg;
@@ -361,7 +368,7 @@ void DrawTrailRing(TrailBuffer* p, u8 r, u8 g, u8 b, u8 a)
     while (j <= p->end && i < count) {
         GXPosition3f32(p->verts[j * 3 + 0], p->verts[j * 3 + 1], p->verts[j * 3 + 2]);
         GXColor4u8((u8)cr, (u8)cg, (u8)cb, (u8)ca);
-        GXTexCoord2f32(lbl_803A0EE0[(j & 1) * 2], lbl_803A0EE0[(j & 1) * 2 + 1]);
+        GXTexCoord2f32(sTrailTexCoords[j & 1][0], sTrailTexCoords[j & 1][1]);
         GXTexCoord2f32(0.0f, 0.0f);
         cr += sr;
         cg += sg;
@@ -395,11 +402,9 @@ void DrawLine(f32* p0, f32* p1, u8 r0, u8 g0, u8 b0, u8 a0,
     GXTexCoord2f32(0.0f, 0.0f);
 }
 
-extern "C" f32 lbl_804D7AB0;
-extern "C" f32 lbl_804D7AB4;
 
 // Begins a 3D draw block like Draw3DBegin, with the line width taken from
-// `value` clamped to [0.0f, lbl_804D7AB0].
+// `value` clamped to [0.0f, 42.5f].
 void Draw3DBeginLine(int mode, void* setup, f32 value)
 {
     u8 buf[48];
@@ -412,10 +417,10 @@ void Draw3DBeginLine(int mode, void* setup, f32 value)
         fn_800092CC();
     }
 
-    v = value < 0.0f ? 0.0f : (value > lbl_804D7AB0 ? lbl_804D7AB0 : value);
+    v = value < 0.0f ? 0.0f : (value > 42.5f ? 42.5f : value);
 
     GXEnableTexOffsets(GX_TEXCOORD0, 1, 0);
-    GXSetLineWidth((u8)(int)(lbl_804D7AB4 * v), GX_TO_ONE);
+    GXSetLineWidth((u8)(int)(6.0f * v), GX_TO_ONE);
     GfxSetVtxDesc(2);
     GfxSetMaterial(0);
     lbl_804D4D20 = fn_801D89A4(0);
@@ -454,7 +459,7 @@ void DrawPoint(f32* pos, u8 r, u8 g, u8 b, u8 a)
 }
 
 // Begins a 3D point draw block, with the point size taken from `value`
-// clamped to [0.0f, lbl_804D7AB0].
+// clamped to [0.0f, 42.5f].
 void Draw3DBeginPoint(int mode, void* setup, f32 value)
 {
     u8 buf[48];
@@ -467,10 +472,10 @@ void Draw3DBeginPoint(int mode, void* setup, f32 value)
         fn_800092CC();
     }
 
-    v = value < 0.0f ? 0.0f : (value > lbl_804D7AB0 ? lbl_804D7AB0 : value);
+    v = value < 0.0f ? 0.0f : (value > 42.5f ? 42.5f : value);
 
     GXEnableTexOffsets(GX_TEXCOORD0, 0, 1);
-    GXSetPointSize((u8)(int)(lbl_804D7AB4 * v), GX_TO_ONE);
+    GXSetPointSize((u8)(int)(6.0f * v), GX_TO_ONE);
     GfxSetVtxDesc(2);
     GfxSetMaterial(0);
     lbl_804D4D20 = fn_801D89A4(0);
@@ -550,7 +555,7 @@ void DrawLineStrip(DrawStrip* strip, u8 r, u8 g, u8 b, u8 a)
         while (i < strip->capacity && n < count) {
             GXPosition3f32(strip->verts[i].x, strip->verts[i].y, 0.0f);
             GXColor4u8((u8)cr, (u8)cg, (u8)cb, (u8)ca);
-            GXTexCoord2f32(lbl_803A0EE0[(i & 1) * 2], lbl_803A0EE0[(i & 1) * 2 + 1]);
+            GXTexCoord2f32(sTrailTexCoords[i & 1][0], sTrailTexCoords[i & 1][1]);
             GXTexCoord2f32(0.0f, 0.0f);
             cr += sr;
             cg += sg;
@@ -564,7 +569,7 @@ void DrawLineStrip(DrawStrip* strip, u8 r, u8 g, u8 b, u8 a)
         while (i <= strip->head && n < count) {
             GXPosition3f32(strip->verts[i].x, strip->verts[i].y, 0.0f);
             GXColor4u8((u8)cr, (u8)cg, (u8)cb, (u8)ca);
-            GXTexCoord2f32(lbl_803A0EE0[(i & 1) * 2], lbl_803A0EE0[(i & 1) * 2 + 1]);
+            GXTexCoord2f32(sTrailTexCoords[i & 1][0], sTrailTexCoords[i & 1][1]);
             GXTexCoord2f32(0.0f, 0.0f);
             cr += sr;
             cg += sg;
@@ -593,17 +598,17 @@ void DrawLine2D(f32* p0, f32* p1, u8 r0, u8 g0, u8 b0, u8 a0,
     GXTexCoord2f32(0.0f, 0.0f);
 }
 
-// Clamps `value` to [0.0f, lbl_804D7AB0] and starts a line block with
+// Clamps `value` to [0.0f, 42.5f] and starts a line block with
 // the GX line width scaled from it. Unlike Draw3DBeginLine it does not touch
 // the Gfx vertex/material state.
 void Draw3DBeginLineSimple(f32 value, int mode)
 {
     f32 v;
 
-    v = value < 0.0f ? 0.0f : (value > lbl_804D7AB0 ? lbl_804D7AB0 : value);
+    v = value < 0.0f ? 0.0f : (value > 42.5f ? 42.5f : value);
 
     GXEnableTexOffsets(GX_TEXCOORD0, 0, 1);
-    GXSetLineWidth((u8)(int)(lbl_804D7AB4 * v), GX_TO_ONE);
+    GXSetLineWidth((u8)(int)(6.0f * v), GX_TO_ONE);
 
     switch (fn_80010448(mode, 1)) {
     case 2:
@@ -829,7 +834,6 @@ void TrailBufferInit(TrailBuffer* p, f32* verts, u32 max,
     p->da = scale * (f32)da;
 }
 
-extern "C" f32 lbl_804D7AB8;
 extern "C" f32 fn_800A1418(f32 angle);
 extern "C" f32 fn_800A1394(f32 angle);
 
@@ -843,9 +847,9 @@ void DrawTrailBuildDirections(void)
     for (i = 0; i < 24; i++) {
         angle = (f32)i * step;
 
-        lbl_8046D314[i * 3 + 0] = fn_800A1418(angle);
-        lbl_8046D314[i * 3 + 1] = 0.0f;
-        lbl_8046D314[i * 3 + 2] = fn_800A1394(angle);
+        sDirections[i][0] = fn_800A1418(angle);
+        sDirections[i][1] = 0.0f;
+        sDirections[i][2] = fn_800A1394(angle);
     }
 }
 
