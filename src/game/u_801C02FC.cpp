@@ -214,6 +214,14 @@ int fn_801C0950(Msg41D* m) {
     Actor* a = (Actor*)m->actor;
     HostBeh* b = a->beh;
     switch (cmd) {
+    case 0xEE14BF26:
+        b->f34 = -1.0f;
+        return 1;
+    case 0x672F35C2:
+        b->prev = b->cur;
+        gHostActions[b->cur].leave(a, 0x11);
+        gHostActions[0x11].enter(a);
+        return 0;
     case 0x39CB0CB0:
         ConditionSetBit(a->cond, 0xB, 0);
         ConditionSetBit(a->cond, 0xD, 0);
@@ -235,6 +243,10 @@ int fn_801C0950(Msg41D* m) {
         ConditionUpdateBit(a->cond, 0xB, 0);
         b->f38 = 5000.0f;
         return 0;
+    case 0x7DF38296:
+        gHostActions[b->cur].leave(a, 0x29);
+        gHostActions[0x29].enter(a);
+        return 0;
     case 0x2EFC66CA: {
         u32 kind = a->data->kind;
         if (kind == 0x906E8474 || kind == 0xEA993A8F) {
@@ -243,18 +255,6 @@ int fn_801C0950(Msg41D* m) {
         }
         return 0;
     }
-    case 0xEE14BF26:
-        b->f34 = -1.0f;
-        return 1;
-    case 0x7DF38296:
-        gHostActions[b->cur].leave(a, 0x29);
-        gHostActions[0x29].enter(a);
-        return 0;
-    case 0x672F35C2:
-        b->prev = b->cur;
-        gHostActions[b->cur].leave(a, 0x11);
-        gHostActions[0x11].enter(a);
-        return 0;
     }
     return 0;
 }
