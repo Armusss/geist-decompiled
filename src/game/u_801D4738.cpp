@@ -85,6 +85,9 @@ struct GeomClassDesc {
 class GeomVec : public Buffer {
 public:
     virtual ~GeomVec();
+    virtual int ElemSize();
+    virtual void Construct(void* p, u32 bytes);
+    virtual void Destruct(void* p, u32 bytes);
 };
 
 extern unsigned char __upper_map[256];
@@ -214,6 +217,10 @@ void fn_802789D0(SceneNode* body);
 void* fn_8028B3BC(GeomVec* v, void* at, int size);
 void fn_8028B35C(GeomVec* v, void* at, int size);
 void fn_8028B960(GeomVec* v);
+void fn_8028BC28(GeomVec* v, void* p, u32 bytes);
+void fn_8028BC2C(GeomVec* v, void* p, u32 bytes);
+void fn_801D80F4(Geom** first, Geom** last);
+void fn_801D8114(Geom** first, Geom** last);
 u32 __cvt_fp2unsigned(float f);
 
 int fn_801D4738(PhysObj* o, Vec3* p, float r);
@@ -1472,4 +1479,34 @@ void fn_801D7F78(float* out, const float* in) {
 // 0x801D7FDC
 GeomVec::~GeomVec() {
     fn_8028B960(this);
+}
+
+// 0x801D8044
+void GeomVec::Construct(void* p, u32 bytes) {
+    fn_8028BC2C(this, p, bytes);
+    fn_801D80F4((Geom**)p, (Geom**)((char*)p + (bytes & ~3)));
+}
+
+// 0x801D808C
+void GeomVec::Destruct(void* p, u32 bytes) {
+    Geom** first = (Geom**)p;
+    fn_801D8114(first, (Geom**)((char*)first + (bytes & ~3)));
+    fn_8028BC28(this, p, bytes);
+}
+
+// 0x801D80EC
+int GeomVec::ElemSize() {
+    return 4;
+}
+
+// 0x801D80F4: constructs a range of elements (nothing to do for pointers).
+extern "C" void fn_801D80F4(Geom** first, Geom** last) {
+    for (; first < last; first++) {
+    }
+}
+
+// 0x801D8114: destroys a range of elements (nothing to do for pointers).
+extern "C" void fn_801D8114(Geom** first, Geom** last) {
+    for (; first < last; first++) {
+    }
 }
