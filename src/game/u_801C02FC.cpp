@@ -681,19 +681,19 @@ int fn_801C2D68(Actor* a) {
     if (fn_8016325C(a->beh894) != 5) {
         return 0x29 + (a->unk288 << 5) + dir;
     }
-    if (b->f28 == a->unk26C && b->f24 == dir) {
-        {
-            float turn = a->v27C.z;
-            if (turn < 0.0f) {
-                turn = -turn;
-            }
-            if (turn > 35.0f) {
-                return 0x3D;
-            }
-        }
-        return b->cur;
+    if (b->f28 != a->unk26C || b->f24 != dir) {
+        return 0x31 + (a->unk26C << 5) + dir;
     }
-    return 0x31 + (a->unk26C << 5) + dir;
+    {
+        float turn = a->v27C.z;
+        if (turn < 0.0f) {
+        turn = -turn;
+        }
+        if (turn > 35.0f) {
+        return 0x3D;
+        }
+    }
+    return b->cur;
 }
 
 // 0x801C2F94
@@ -778,19 +778,19 @@ int fn_801C31D0(Actor* a) {
     if (fn_8016325C(a->beh894) != 5) {
         return 0x29 + (a->unk26C << 5) + dir;
     }
-    if (a->unk26C == 0) {
-        {
-            float turn = a->v27C.z;
-            if (turn < 0.0f) {
-                turn = -turn;
-            }
-            if (turn > 35.0f) {
-                return 0x3D;
-            }
-        }
-        return b->cur;
+    if (a->unk26C != 0) {
+        return 0x31 + (a->unk26C << 5) + dir;
     }
-    return 0x31 + (a->unk26C << 5) + dir;
+    {
+        float turn = a->v27C.z;
+        if (turn < 0.0f) {
+            turn = -turn;
+        }
+        if (turn > 35.0f) {
+            return 0x3D;
+        }
+    }
+    return b->cur;
 }
 
 // 0x801C33EC
