@@ -172,7 +172,7 @@ static inline void HostHalt(Actor* a, Vec3* zero) {
     RangeResetPending(a->cond);
     {
         u32 h = a->handle238;
-        if (h != 0xFFFFFFFF && (h >> 24) == 3) {
+        if ((int)h != -1 && (int)(h >> 24) == 3) {
             fn_800B6EDC(h, 0);
             a->handle238 = 0xFFFFFFFF;
         }
@@ -2342,13 +2342,13 @@ int fn_801C6684(Actor* a) {
     Vec3 zero;
     HostBeh* b = a->beh;
     b->cur = 7;
-    zero.x = 0.0f;
     b->next = 8;
     b->f24 = 0;
+    zero.x = 0.0f;
     b->f30 = zero.x;
     a->unk220 = 0;
-    zero.y = zero.x;
-    zero.z = zero.x;
+    zero.y = 0.0f;
+    zero.z = 0.0f;
     HostHalt(a, &zero);
     fn_801C7D78(a);
     if (a->extra == 0) {
@@ -2388,11 +2388,11 @@ int fn_801C67DC(Actor* a) {
         b->f30 = 6000.0f;
     }
     b->cur = 0x13;
-    zero.x = 0.0f;
     b->next = 0x13;
     b->f24 = 0;
-    zero.y = zero.x;
-    zero.z = zero.x;
+    zero.x = 0.0f;
+    zero.y = 0.0f;
+    zero.z = 0.0f;
     HostHalt(a, &zero);
     ConditionSetBit(a->cond, 0xE, 0);
     fn_801C8934(a, 0);
@@ -2410,8 +2410,8 @@ int fn_801C68CC(Actor* a) {
     b->cur = 0x12;
     b->next = 0x12;
     b->f24 = 0;
-    zero.y = zero.x;
-    zero.z = zero.x;
+    zero.y = 0.0f;
+    zero.z = 0.0f;
     HostHalt(a, &zero);
     return 1;
 }
@@ -2424,11 +2424,11 @@ int fn_801C698C(Actor* a) {
     Vec3 zero;
     HostBeh* b = a->beh;
     b->cur = 0x11;
-    zero.x = 0.0f;
     b->next = 0x12;
     b->f24 = 0;
-    zero.y = zero.x;
-    zero.z = zero.x;
+    zero.x = 0.0f;
+    zero.y = 0.0f;
+    zero.z = 0.0f;
     HostHalt(a, &zero);
     if (a->extra != 0 && ExtraGetId(a->extra) != 0) {
         ExtraTrailRelease(a->extra);
@@ -2446,11 +2446,11 @@ int fn_801C6A98(Actor* a) {
     Vec3 zero;
     HostBeh* b = a->beh;
     b->cur = 0x10;
-    zero.x = 0.0f;
     b->next = 0x21;
     b->f24 = 0;
-    zero.y = zero.x;
-    zero.z = zero.x;
+    zero.x = 0.0f;
+    zero.y = 0.0f;
+    zero.z = 0.0f;
     HostHalt(a, &zero);
     fn_801C8934(a, 0);
     return 1;
