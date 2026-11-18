@@ -30,10 +30,14 @@ struct Actor {
     int mCamera;                // 0x184
     u8 mUnk188[0x248 - 0x188];  // 0x188
     int mBody;                  // 0x248
-    u8 mUnk24C[0x2F4 - 0x24C];  // 0x24C
+    u8 mUnk24C[0x254 - 0x24C];  // 0x24C
+    u32 mFlags254;              // 0x254
+    u8 mUnk258[0x2F4 - 0x258];  // 0x258
     int mPadState[4];           // 0x2F4 per pad
-    u8 mUnk304[0x58C - 0x304];  // 0x304
-    int mUnk58C;                // 0x58C
+    u8 mUnk304[0x584 - 0x304];  // 0x304
+    u32 mFlags584;              // 0x584
+    u8 mUnk588[0x58C - 0x588];  // 0x588
+    int mUnk58C;                // 0x58C pad/controller number
     u8 mUnk590[0x7A4 - 0x590];  // 0x590
     int mMode;                  // 0x7A4
     u8 mUnk7A8[0x7B4 - 0x7A8];  // 0x7A8
@@ -44,13 +48,18 @@ struct Actor {
     int mUnk14B8;               // 0x14B8
     int mFontA;                 // 0x14BC
     int mFontB;                 // 0x14C0
-    u8 mUnk14C4[0x1DA8 - 0x14C4];  // 0x14C4
+    u8 mUnk14C4[0x14CC - 0x14C4];  // 0x14C4
+    int mFontC;                 // 0x14CC
+    int mFontD;                 // 0x14D0
+    u8 mUnk14D4[0x1DA8 - 0x14D4];  // 0x14D4
     int mAnimSet;               // 0x1DA8 currently active animation set
     u8 mUnk1DAC[0x26C4 - 0x1DAC];  // 0x1DAC
     PlayerAnimSet* mSet[2];     // 0x26C4
     u8 mUnk26CC[0x26E4 - 0x26CC];  // 0x26CC
     Actor* mHost;               // 0x26E4
-    u8 mUnk26E8[0x278C - 0x26E8];  // 0x26E8
+    u8 mUnk26E8[0x2740 - 0x26E8];  // 0x26E8
+    int mUnk2740;               // 0x2740
+    u8 mUnk2744[0x278C - 0x2744];  // 0x2744
     float mFov;                 // 0x278C
     float mFovTarget;           // 0x2790
     u8 mUnk2794[0x27D8 - 0x2794];  // 0x2794
@@ -60,7 +69,8 @@ struct Actor {
     float mBlurC;               // 0x27E4
     u8 mUnk27E8[0x27F4 - 0x27E8];  // 0x27E8
     int mUnk27F4;               // 0x27F4
-    u8 mUnk27F8[0x2800 - 0x27F8];  // 0x27F8
+    int mUnk27F8;               // 0x27F8
+    u8 mUnk27FC[0x2800 - 0x27FC];  // 0x27FC
 };
 
 extern Actor* lbl_804D43E0;  // array of players (0x2800 bytes each)
@@ -200,21 +210,23 @@ extern "C" int fn_800463F0(void)
 // 0x800463F8: eases the field of view towards its target
 extern "C" void fn_800463F8(float dt, Actor** pp)
 {
-    Actor* a = *pp;
-    float step = lbl_804D6280 * dt;
+    Actor* a;
+    dt = 0.05f * dt;
+    a = *pp;
     if (a->mFov < a->mFovTarget) {
-        a->mFov = a->mFov + step;
+        a->mFov += dt;
         if (a->mFov > a->mFovTarget) {
             a->mFov = a->mFovTarget;
         }
     } else {
-        a->mFov = a->mFov - step;
+        a->mFov -= dt;
         if (a->mFov < a->mFovTarget) {
             a->mFov = a->mFovTarget;
         }
     }
     CameraSetFov(a->mCamera, (float)(int)a->mFov);
 }
+
 
 // Message 0x2400 to the level: where a player stands.
 struct PlayerPosMsg {
@@ -277,17 +289,10 @@ int PadPressed(int a, int b, int c);
 static inline Actor* PlayerWithPad(int pad)
 {
     int j;
-    int n;
-    u8* q;
-    Actor* base;
-    q = (u8*)lbl_804D43E0 + pad * 4;
-    base = lbl_804D43E0;
-    n = lbl_804D43E4;
     for (j = 0; j < lbl_804D43E4; j++) {
-        if (*(int*)(q + 0x2F4) == 1) {
-            return base + j;
+        if (lbl_804D43E0[j].mPadState[pad] == 1) {
+            return &lbl_804D43E0[j];
         }
-        q += sizeof(Actor);
     }
     return 0;
 }
@@ -308,13 +313,10 @@ extern "C" Actor* fn_80049778(int button, int pad)
 extern "C" Actor* fn_80049840(int id)
 {
     int i;
-    Actor* p = lbl_804D43E0;
-    int n = lbl_804D43E4;
     for (i = 0; i < lbl_804D43E4; i++) {
-        if (id == p->mUnk58C) {
+        if (id == lbl_804D43E0[i].mUnk58C) {
             return &lbl_804D43E0[i];
         }
-        p++;
     }
     return 0;
 }
@@ -323,13 +325,10 @@ extern "C" Actor* fn_80049840(int id)
 Actor* PlayerGetPossessor(int id)
 {
     int i;
-    Actor* p = lbl_804D43E0;
-    int n = lbl_804D43E4;
     for (i = 0; i < lbl_804D43E4; i++) {
-        if (id == p->mId) {
+        if (id == (int)lbl_804D43E0[i].mId) {
             return &lbl_804D43E0[i];
         }
-        p++;
     }
     return 0;
 }
@@ -374,18 +373,19 @@ extern "C" int fn_80049940(void)
 Actor* GetPlayer(void)
 {
     int body = fn_800C5E6C();
-    int i = 0;
-    Actor* p = lbl_804D43E0;
-    for (; i < lbl_804D43E4; i++) {
-        if (body == p->mBody) {
-            return lbl_804D43E0 + i;
+    int i;
+    for (i = 0; i < lbl_804D43E4; i++) {
+        if (body == lbl_804D43E0[i].mBody) {
+            return &lbl_804D43E0[i];
         }
-        p++;
     }
-    if (((lbl_804D43E4 <= 0 || (fn_802A1E90() != 7)) && (fn_802A1E90() != 8)) && lbl_804D43E4 != 1) {
-        return 0;
+    if ((lbl_804D43E4 > 0 && fn_802A1E90() == 7) || fn_802A1E90() == 8) {
+        return lbl_804D43E0;
     }
-    return lbl_804D43E0;
+    if (lbl_804D43E4 == 1) {
+        return lbl_804D43E0;
+    }
+    return 0;
 }
 
 // Data the host kinds expose that the player reads (host kind 1 at 0x84, kind 0x13 at 0xC4).
@@ -478,4 +478,236 @@ extern "C" int fn_8004A254(float dt)
         FearRegionSetup(0, lbl_804D43E0);
     }
     return 1;
+}
+
+// 0x8004BD64: starts the player system with no players and registers its two level callbacks
+extern "C" int fn_80054174(int i, int a, Actor** out);
+extern "C" int fn_800519D8(void);
+extern "C" void fn_80026680(int kind, void* fn, int arg);
+extern "C" void fn_80026660(int kind, void* fn, int arg);
+extern "C" int fn_8004BD64(void)
+{
+    lbl_804D43E4 = 0;
+    fn_80026680(2, (void*)fn_800519D8, 0);
+    fn_80026660(2, (void*)fn_80054174, 0);
+    return 1;
+}
+
+// 0x8004FD70: releases the two fonts and the effect of the blur
+extern "C" void fn_8004FD70(Actor* a)
+{
+    if (a->mFontA != -1) {
+        FontRelease(a->mFontA);
+        a->mFontA = -1;
+    }
+    if (a->mFontB != -1) {
+        FontRelease(a->mFontB);
+        a->mFontB = -1;
+    }
+    if (a->mUnk14B8 != -1) {
+        fn_8016EEF4(a->mUnk14B8);
+        a->mUnk14B8 = -1;
+    }
+}
+
+// 0x80050850: state exit, releases the third font
+extern "C" int fn_80050850(int a, int b, Actor* p)
+{
+    if (p->mFontC != -1) {
+        FontRelease(p->mFontC);
+        p->mFontC = -1;
+    }
+    return 0;
+}
+
+// 0x80051744: state exit, releases the fourth font
+extern "C" int fn_80051744(int a, int b, Actor* p)
+{
+    if (p->mFontD != -1) {
+        FontRelease(p->mFontD);
+        p->mFontD = -1;
+    }
+    return 0;
+}
+
+// Per-pad options (0x18 bytes each, one per player).
+struct PadOptions {
+    int mUnk0;   // 0x00
+    int mUnk4;   // 0x04
+    int mUnk8;   // 0x08
+    int mUnkC;   // 0x0C
+    int mUnk10;  // 0x10
+    int mUnk14;  // 0x14
+};
+extern PadOptions lbl_8041FFD8[4];
+
+// 0x80053F84
+extern "C" void fn_80053F84(int v)
+{
+    lbl_8041FFD8[0].mUnk14 = v;
+}
+
+// 0x80053F94
+extern "C" void fn_80053F94(int i, int on)
+{
+    if (on) {
+        lbl_8041FFD8[i].mUnkC = 1;
+    } else {
+        lbl_8041FFD8[i].mUnkC = 0;
+    }
+}
+
+// 0x80053FD4
+extern "C" void fn_80053FD4(int i, int v)
+{
+    lbl_8041FFD8[i].mUnk8 = v;
+}
+
+extern "C" u32 fn_800E1BD0(void);
+extern "C" void fn_800E1B5C(u32 mask);
+
+// 0x80053FEC: turns a player's pad on or off in the active pad mask
+extern "C" void fn_80053FEC(int i, int on)
+{
+    u32 mask = fn_800E1BD0();
+    if (on == 1) {
+        lbl_804D43E0[i].mUnk27F8 = 1;
+        fn_800E1B5C(mask | (1 << lbl_804D43E0[i].mUnk58C));
+    } else if (on == 0) {
+        lbl_804D43E0[i].mUnk27F8 = 0;
+        fn_800E1B5C(mask & ~(1 << lbl_804D43E0[i].mUnk58C));
+    }
+}
+
+// 0x80054094
+extern "C" void fn_80054094(int i, int on)
+{
+    if (on == 1) {
+        lbl_804D43E0[i].mFlags254 |= 1;
+        lbl_8041FFD8[i].mUnk4 = 1;
+    } else {
+        lbl_804D43E0[i].mFlags254 &= ~1;
+        lbl_8041FFD8[i].mUnk4 = 0;
+    }
+}
+
+// 0x80054104
+extern "C" void fn_80054104(int i, int on)
+{
+    if (on == 1) {
+        lbl_804D43E0[i].mFlags584 |= 1;
+        lbl_8041FFD8[i].mUnk10 = 1;
+    } else {
+        lbl_804D43E0[i].mFlags584 &= ~1;
+        lbl_8041FFD8[i].mUnk10 = 0;
+    }
+}
+
+extern "C" int fn_800541C0(int a, Actor** out);
+
+// 0x80054174: level callback, runs the player query for player i
+extern "C" int fn_80054174(int i, int a, Actor** out)
+{
+    if (lbl_804D43E4 > 0) {
+        *out = &lbl_804D43E0[i];
+        return fn_800541C0(a, out);
+    }
+    return 0;
+}
+
+extern int lbl_804D4470;
+extern int lbl_804D4474;
+
+// 0x80059E94
+extern "C" void fn_80059E94(void)
+{
+    lbl_804D4470 = 0;
+    lbl_804D4474 = 0;
+}
+
+// 0x8005A4CC: whether the host in *pp is missing or not of kind 0x13
+extern "C" int fn_8005A4CC(Actor** pp)
+{
+    Actor* h = *pp;
+    if (h == 0) {
+        return 1;
+    }
+    return (int)(h->mId >> 24) != 0x13;
+}
+
+// 0x8005AAF8: id of the player's host (-1 if the player is not inside one)
+extern "C" u32 fn_8005AAF8(Actor* a)
+{
+    if (a != 0 && PlayerInHostInline(a) && a->mUnk2740 == 0) {
+        return a->mHost->mId;
+    }
+    return 0xFFFFFFFF;
+}
+
+extern int lbl_804D270C;
+
+// 0x80064EC4
+extern "C" void fn_80064EC4(void)
+{
+    lbl_804D270C = -1;
+}
+
+// Sound slot set (0x40 bytes).
+struct SoundSlots {
+    int mHandle;      // 0x00
+    int mUnk4[3];     // 0x04
+    int mUnk10[3];    // 0x10
+    int mUnk1C[3];    // 0x1C
+    int mUnk28[3];    // 0x28
+    int mUnk34[3];    // 0x34
+};
+
+// 0x80064ED0
+extern "C" void fn_80064ED0(SoundSlots* s)
+{
+    s->mUnk4[0] = -1;
+    s->mUnk4[1] = -1;
+    s->mUnk4[2] = -1;
+}
+
+static inline void SoundSlotsReset(SoundSlots* s)
+{
+    int i;
+    for (i = 0; i < 3; i++) {
+        s->mUnk1C[i] = -1;
+        s->mUnk28[i] = 0;
+        s->mUnk10[i] = 0;
+        s->mUnk34[i] = 0x1000;
+    }
+}
+
+// 0x80064EE4
+extern "C" void fn_80064EE4(SoundSlots* s)
+{
+    SoundSlotsReset(s);
+}
+
+extern "C" int fn_80090EA4(int a, int b);
+extern "C" void fn_80090DF8(int handle, int b);
+
+// 0x80064F24
+extern "C" void fn_80064F24(SoundSlots* s, int a, int b, int c)
+{
+    if (s->mHandle == -1) {
+        s->mHandle = fn_80090EA4(c, b);
+        SoundSlotsReset(s);
+    } else {
+        fn_80090DF8(s->mHandle, b);
+    }
+}
+
+// 0x80064FB0: message handler, answers 0x1C00 with the handle
+extern "C" int fn_80064FB0(SoundSlots* s, int msg, int* data)
+{
+    switch (msg) {
+    case 0x1C00:
+        data[2] = s->mHandle;
+        return 1;
+    }
+    return 0;
 }
