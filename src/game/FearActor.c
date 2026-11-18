@@ -1253,19 +1253,13 @@ extern "C" int fn_80060760(PlayerViewArgs* v)
     return 1;
 }
 
-// 0x80060B7C: draws the player's weapon model at its bone
-extern "C" int fn_80060B7C(PlayerQuery* q)
+// Animation of the weapon model at its bone; inside a kind-1 host the bone follows the host's matrix.
+static inline int WeaponBoneAnim(Actor* p)
 {
-    Actor* p = q->mPlayer;
-    char* bone;
-    int anim;
     int model;
-    Vec3 pos;
-    int inHost;
-    if (p->mFlags & 0x80) {
-        return 0;
-    }
-    inHost = PlayerInHostInline(p);
+    int anim;
+    char* bone;
+    int inHost = PlayerInHostInline(p);
     model = p->mModel58;
     if (inHost) {
         bone = p->mBone1414;
@@ -1273,17 +1267,63 @@ extern "C" int fn_80060B7C(PlayerQuery* q)
         bone = p->mBone1410;
     }
     if (p->mHost != 0 && (int)(p->mHost->mId >> 24) == 1 && ((HostObj*)p->mHost)->mKind1->mUnk4C == 0.0f) {
-        Mtx34 m;
+        Mtx34 hm;
         anim = ModelAnimate(model, bone, 1);
         AnimApply(p->mUnkD4, bone, anim, ModelBoneCount(p->mModel58));
-        ActorGetMatrix(&m, p->mHost);
-        ModelSetMatrix(model, &m, bone);
+        ActorGetMatrix(&hm, p->mHost);
+        ModelSetMatrix(model, &hm, bone);
         anim = fn_8003A1F0(model, bone, anim);
     } else {
         anim = fn_8003A1F0(model, bone, ModelAnimate(model, 0, 0));
     }
+    return anim;
+}
+
+// 0x80060B7C: draws the player's weapon model at its bone
+extern "C" int fn_80060B7C(PlayerQuery* q)
+{
+    Actor* p = q->mPlayer;
+    int anim;
+    Vec3 pos;
+    if (p->mFlags & 0x80) {
+        return 0;
+    }
+    anim = WeaponBoneAnim(p);
     fn_8016D864(&pos, p->mUnkA0C);
     return fn_8002B11C(p->mModel58, &pos, anim, q->mUnk04->mUnk0C, q->mUnk08, q->mUnkC, q->mUnk14, q->mUnk18);
+}
+
+// Arguments of the weapon-effect draw.
+struct PlayerDrawArgs {
+    Actor* mPlayer;   // 0x00
+    int mUnk04;       // 0x04
+    int mUnk08;       // 0x08
+    int mUnk0C;       // 0x0C
+    int mUnk10;       // 0x10
+    int mUnk14;       // 0x14
+    u32 mFlags;       // 0x18
+    u8 mUnk1C[0x2C - 0x1C];
+    int mUnk2C;       // 0x2C
+    int mUnk30;       // 0x30
+};
+extern "C" int fn_8002D4E0(int model, Vec3* pos, Mtx34* m, int anim, int a, int b, int c, int d, int e, u32 flags,
+                           int f, int g);
+
+// 0x80060CF0: draws an effect at the player's weapon bone
+extern "C" int fn_80060CF0(PlayerDrawArgs* args)
+{
+    Actor* p = args->mPlayer;
+    int anim;
+    Vec3 pos;
+    Mtx34 m;
+    if (p->mFlags & 0x80) {
+        return 0;
+    }
+    anim = WeaponBoneAnim(p);
+    fn_8016D864(&pos, p->mUnkA0C);
+    ActorGetMatrix(&m, p);
+    return fn_8002D4E0(p->mModel58, &pos, &m, anim, args->mUnk04, args->mUnk08, args->mUnk0C, args->mUnk10,
+                       args->mUnk14, (args->mFlags | 0x20000000) & ~0x10000000, args->mUnk2C, args->mUnk30);
 }
 
 // 0x80064418
