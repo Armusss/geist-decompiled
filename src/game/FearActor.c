@@ -8,6 +8,7 @@
 typedef unsigned char u8;
 typedef unsigned long u32;
 
+#include "game/types.h"
 #include "game/string.h"
 #include "game/msg.h"
 
@@ -31,7 +32,11 @@ struct Actor {
     u8 mUnk3C[0x4C - 0x3C];     // 0x3C
     u32 mFlags4C;               // 0x4C 0x400 = skip the update once
     u32 mFlags;                 // 0x50 0x200000 = inside a host
-    u8 mUnk54[0x184 - 0x54];    // 0x54
+    int mModel54;               // 0x54 body model
+    int mModel58;               // 0x58 weapon model
+    u8 mUnk5C[0xD4 - 0x5C];     // 0x5C
+    int mUnkD4;                 // 0xD4 animation
+    u8 mUnkD8[0x184 - 0xD8];    // 0xD8
     int mCamera;                // 0x184
     u8 mUnk188[0x248 - 0x188];  // 0x188
     int mBody;                  // 0x248
@@ -49,7 +54,14 @@ struct Actor {
     u32 mState;                 // 0x7B4
     u8 mUnk7B8[0x908 - 0x7B8];  // 0x7B8
     u32 mUnk908;                // 0x908 (in hosts of kind 0x13)
-    u8 mUnk90C[0x14A8 - 0x90C];  // 0x90C
+    u8 mUnk90C[0xA0C - 0x90C];  // 0x90C
+    u8 mUnkA0C[0x1404 - 0xA0C]; // 0xA0C
+    char* mBone1404;            // 0x1404
+    char* mBone1408;            // 0x1408
+    u8 mUnk140C[4];             // 0x140C
+    char* mBone1410;            // 0x1410
+    char* mBone1414;            // 0x1414
+    u8 mUnk1418[0x14A8 - 0x1418];  // 0x1418
     int mHud;                   // 0x14A8
     u8 mUnk14AC[0x14B8 - 0x14AC];  // 0x14AC
     int mUnk14B8;               // 0x14B8
@@ -413,7 +425,9 @@ Actor* GetPlayer(void)
 // Data the host kinds expose that the player reads (host kind 1 at 0x84, kind 0x13 at 0xC4).
 struct HostKind1 {
     u8 mUnk00[0x44];
-    float mFov;
+    float mFov;       // 0x44
+    u8 mUnk48[4];     // 0x48
+    float mUnk4C;     // 0x4C
 };
 struct HostKind19 {
     u8 mUnk00[0x104];
@@ -638,11 +652,19 @@ void GhostNotify(void* p, int a, int b);
 extern "C" void fn_800FC764(u32 id, int a);
 
 // Context of a player query: the player first.
+struct PlayerQueryArgs {
+    u8 mUnk00[0xC];
+    float mUnk0C;     // 0x0C
+};
 struct PlayerQuery {
     Actor* mPlayer;   // 0x00
-    u8 mUnk04[0xC - 0x4];
+    PlayerQueryArgs* mUnk04;  // 0x04
+    int mUnk08;       // 0x08
     int mUnkC;        // 0x0C
-    u8 mUnk10[0x38 - 0x10];
+    int mUnk10;       // 0x10
+    int mUnk14;       // 0x14
+    int mUnk18;       // 0x18
+    u8 mUnk1C[0x38 - 0x1C];
     int mId;          // 0x38
 };
 
@@ -1020,6 +1042,48 @@ struct PlayerMsg409 {
     int mUnk18[2];    // 0x18
 };
 
+int ModelAnimate(int model, char* bone, int a);
+int ModelBoneCount(int model);
+void AnimApply(int anim, char* bone, int a, int b);
+void ActorGetMatrix(Mtx34* m, Actor* a);
+void ModelSetMatrix(int model, Mtx34* m, char* bone);
+extern "C" int fn_8003A1F0(int model, char* bone, int anim);
+extern "C" void fn_8016D864(Vec3* out, void* in);
+extern "C" int fn_8002B11C(int model, Vec3* pos, int anim, float f, int a, int b, int c, int d);
+
+// 0x80060B7C: draws the player's weapon model at its bone
+extern "C" int fn_80060B7C(PlayerQuery* q)
+{
+    Actor* p = q->mPlayer;
+    char* bone;
+    int anim;
+    int model;
+    Vec3 pos;
+    int inHost;
+    if (p->mFlags & 0x80) {
+        return 0;
+    }
+    inHost = PlayerInHostInline(p);
+    model = p->mModel58;
+    if (inHost) {
+        bone = p->mBone1414;
+    } else {
+        bone = p->mBone1410;
+    }
+    if (p->mHost != 0 && (int)(p->mHost->mId >> 24) == 1 && ((HostObj*)p->mHost)->mKind1->mUnk4C == 0.0f) {
+        Mtx34 m;
+        anim = ModelAnimate(model, bone, 1);
+        AnimApply(p->mUnkD4, bone, anim, ModelBoneCount(p->mModel58));
+        ActorGetMatrix(&m, p->mHost);
+        ModelSetMatrix(model, &m, bone);
+        anim = fn_8003A1F0(model, bone, anim);
+    } else {
+        anim = fn_8003A1F0(model, bone, ModelAnimate(model, 0, 0));
+    }
+    fn_8016D864(&pos, p->mUnkA0C);
+    return fn_8002B11C(p->mModel58, &pos, anim, q->mUnk04->mUnk0C, q->mUnk08, q->mUnkC, q->mUnk14, q->mUnk18);
+}
+
 // 0x80064418
 extern "C" float fn_80064418(Actor* p)
 {
@@ -1032,6 +1096,34 @@ extern "C" float fn_80064418(Actor* p)
     m.mUnk14 = 0;
     ((int (*)(int, void*))*(int*)((u8*)m.mTarget + 0x30))(0x409, &m);
     return 0.0f;
+}
+
+// 0x800644B4: attaches a model to one of the player's bones (0: body, 1: weapon)
+extern "C" void fn_800644B4(Actor* p, int which, int model, int alt)
+{
+    char* bone;
+    int anim;
+    if (which == 0) {
+        if (alt) {
+            bone = p->mBone1408;
+        } else {
+            bone = p->mBone1404;
+        }
+        anim = ModelAnimate(p->mModel54, 0, 0);
+        fn_8003A1F0(model, bone, anim);
+    } else if (which == 1) {
+        bone = alt ? p->mBone1414 : p->mBone1410;
+        if (p->mHost != 0 && (int)(p->mHost->mId >> 24) == 1 && ((HostObj*)p->mHost)->mKind1->mUnk4C == 0.0f) {
+            Mtx34 m;
+            anim = ModelAnimate(p->mModel58, bone, 1);
+            AnimApply(p->mUnkD4, bone, anim, ModelBoneCount(p->mModel58));
+            ActorGetMatrix(&m, p->mHost);
+            ModelSetMatrix(model, &m, bone);
+            fn_8003A1F0(model, bone, anim);
+        } else {
+            fn_8003A1F0(model, bone, ModelAnimate(p->mModel58, 0, 0));
+        }
+    }
 }
 
 // 0x80064EC4
