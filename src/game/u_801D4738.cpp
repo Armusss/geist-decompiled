@@ -284,21 +284,23 @@ int fn_801D4738(PhysObj* o, Vec3* p, float r) {
 }
 
 // 0x801D4824: universal-style joint between two objects with optional angle limits.
-void fn_801D4824(void* group, PhysObj* a, PhysObj* b, Vec3* axis1, Vec3* axis2, int limits, float* angles) {
+void fn_801D4824(void* group, PhysObj* a, PhysObj* b, const Vec3* axis1, const Vec3* axis2, int limits,
+                 const float* angles) {
     void* j = fn_80277D80(sWorld, group);
-    fn_80277804(j, a == 0 ? 0 : a->body, b == 0 ? 0 : b->body);
+    SceneNode* ba = a == 0 ? 0 : a->body;
+    SceneNode* bb = b == 0 ? 0 : b->body;
+    fn_80277804(j, ba, bb);
     fn_80273918(j, 2);
     {
-        float x1 = axis1->x;
-        float y1 = axis1->y;
-        float z1 = axis1->z;
-        float x2 = axis2->x;
+        Vec3 c;
         float y2 = axis2->y;
-        float z2 = axis2->z;
-        float cx = y2 * z1 - z2 * y1;
-        float cy = z2 * x1 - x2 * z1;
-        fn_802737A4(x1, y1, z1, j, 0, 1);
-        fn_802737A4(cx, cy, x2 * y1 - y2 * x1, j, 1, 1);
+        float ay = axis1->y;
+        float x2 = axis2->x;
+        c.x = y2 * axis1->z - axis2->z * ay;
+        c.y = axis2->z * axis1->x - x2 * axis1->z;
+        c.z = x2 * ay - y2 * axis1->x;
+        fn_802737A4(axis1->x, ay, axis1->z, j, 0, 1);
+        fn_802737A4(c.x, c.y, c.z, j, 1, 1);
         fn_802737A4(x2, y2, axis2->z, j, 2, 2);
     }
     if (limits > 0) {
@@ -310,6 +312,8 @@ void fn_801D4824(void* group, PhysObj* a, PhysObj* b, Vec3* axis1, Vec3* axis2, 
         fn_80273688(0.017453292f * angles[4], j, 0x100);
         fn_80273688(0.017453292f * angles[5], j, 0x101);
         fn_80273688(0.01f, j, 4);
+    }
+    if (limits >= 2) {
         fn_80273688(0.017453292f * angles[8], j, 0x200);
         fn_80273688(0.017453292f * angles[9], j, 0x201);
         fn_80273688(0.01f, j, 4);
