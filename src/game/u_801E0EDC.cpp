@@ -386,21 +386,15 @@ static inline bool BarrierBoneDiffers(BarrierActor* self, int* data) {
     return ModelFindBone(self->model, lbl_804D328C) != data[5];
 }
 
-// Whether the bone boxes of the barrier and of the actor in data[1] overlap.
-static inline int BarrierHitTest(BarrierActor* self, int* data) {
-    Mtx34 selfMtx;
-    Mtx34 otherMtx;
-    int selfBox[6];
-    int otherBox[6];
-    int hit = 0;
-    ActorGetMatrix(&selfMtx, (Actor*)self);
-    ActorGetMatrix(&otherMtx, (Actor*)data[1]);
-    fn_8016D864(selfBox, ((BarrierActor*)data[0])->field40);
-    fn_8016D864(otherBox, ((BarrierActor*)data[1])->field40);
-    if (ModelBoneHitBox((int)selfBox, (int)&selfMtx, (int)otherBox, (int)&otherMtx) != 0) {
-        hit = 1;
-    }
-    return hit;
+// Asks the target a keyed question (message 0x41E); returns the first word
+// of the reply.
+static inline int BarrierAsk(int target, u32 hash) {
+    QueryMsg q;
+    q.hash = hash;
+    q.unk8 = 0;
+    *(int*)&q.result = 0;
+    SendMsg(target, 0x41E, &q);
+    return *(int*)&q.result;
 }
 
 // Message handler of the barrier actor (states, hit tests, effect spawning).
@@ -411,10 +405,23 @@ int BarrierActorMsg(Actor* actor, int msg, void* dataPtr, int arg) {
 
     switch (msg) {
     case 0x405: {
+        int hit;
         int result = 0;
         if ((int)(((BarrierActor*)data[1])->field38 >> 24) == 0x13) {
-            result = data[4] = BarrierHitTest(self, data);
-            if (result != 0) {
+            Mtx34 otherMtx;
+            Mtx34 selfMtx;
+            int otherBox[6];
+            int selfBox[6];
+            hit = 0;
+            ActorGetMatrix(&selfMtx, (Actor*)self);
+            ActorGetMatrix(&otherMtx, (Actor*)data[1]);
+            fn_8016D864(selfBox, ((BarrierActor*)data[0])->field40);
+            fn_8016D864(otherBox, ((BarrierActor*)data[1])->field40);
+            if (ModelBoneHitBox((int)selfBox, (int)&selfMtx, (int)otherBox, (int)&otherMtx) != 0) {
+                hit = 1;
+            }
+            if ((data[4] = hit) != 0) {
+                result = hit;
                 fn_8016F120(lbl_804D329C, &self->field24);
             }
         }
@@ -423,16 +430,7 @@ int BarrierActorMsg(Actor* actor, int msg, void* dataPtr, int arg) {
     case 0x40A: {
         BarrierBeh* beh = self->behaviour;
         if (beh != 0 && (u32)data[2] == 0x7C44EC3D && (beh->flags & 1) != 0) {
-            int answer;
-            {
-                QueryMsg q;
-                q.hash = 0x947E97;
-                q.unk8 = 0;
-                *(int*)&q.result = 0;
-                SendMsg(data[1], 0x41E, &q);
-                answer = *(int*)&q.result;
-            }
-            if (answer != 0) {
+            if (BarrierAsk(data[1], 0x947E97) != 0) {
                 data[3] = (int)0xF21581DEu;
                 int kind = data[1];
                 if ((int)((u32)kind >> 24) == 2) {
