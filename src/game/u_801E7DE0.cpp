@@ -2,9 +2,8 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include "game/msg.h"
+#include <dolphin/gx/GXStruct.h>
 
-typedef unsigned char u8;
-typedef unsigned long u32;
 
 // From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
@@ -1217,7 +1216,6 @@ void ResetDebugTextState(void)
 
 extern "C" {
 extern int vsprintf(char* buf, const char* fmt, va_list args);
-extern unsigned long strlen(const char* s);
 extern char* strcat(char* dst, const char* src);
 extern char lbl_803B8284[];
 }
@@ -1230,10 +1228,9 @@ void ScreenPrintf(const char* fmt, ...)
 {
     va_list args;
 
-    va_start(args, fmt);
-
     if (lbl_804D52A4 != 0) {
         char* buf = (char*)ScratchAAlloc(0x40000);
+        va_start(args, fmt);
         int len = vsprintf(buf, fmt, args);
 
         if ((u32)(len + strlen(lbl_803B8284)) < 0x1000) {
