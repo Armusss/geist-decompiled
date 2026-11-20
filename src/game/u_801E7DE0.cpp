@@ -6,6 +6,11 @@
 typedef unsigned char u8;
 typedef unsigned long u32;
 
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
 // Per-local-player view data block (pointed to by Actor::views).
 struct PlayerView {
     u8  unk000[0x14];           // 0x000
