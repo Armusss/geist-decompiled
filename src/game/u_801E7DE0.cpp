@@ -138,7 +138,7 @@ extern float fn_800F95E4(int);
 extern void fn_80165D9C(void*);
 extern void fn_8000F60C(void);
 extern void fn_8000F7E4(int, int);
-extern int fn_800C5210(void*, int, int*);
+extern int fn_800C5210(void*, int, void*);
 extern void fn_80165DA8(void*);
 extern float lbl_804D32F8;
 extern float lbl_804D32FC;
@@ -922,65 +922,77 @@ int PlayerHeldSlotActionCheck(Actor* actor)
 // then dispatches on the message id: either plays the matching animation or
 // switches the held-slot mode (playing the "gun_empty" effect when the weapon
 // has no ammo left).
-int PlayerGunActionMessage(int msg, Actor* actor)
+// Plain 0x20-byte query block handed to fn_800C5210 (no String member).
+struct ActionQuery {
+    int unk00;      // 0x00
+    u32 hash;       // 0x04
+    int unk08;      // 0x08
+    void* result;   // 0x0C
+    int unk10[4];   // 0x10
+};
+
+// The actor goes through a void* copy: retail ranks it as a local (r31) ahead of
+// the two names, the way the void* message handlers do.
+int PlayerGunActionMessage(int msg, Actor* p)
 {
-    int handle;
-    if (fn_800C5210(actor->host38, 0xc06, &handle) == 1) {
+    Actor* actor = (Actor*)(void*)p;
+    ActionQuery q;
+    q.result = actor->host38;
+    q.hash = msg;
+    if (fn_800C5210(actor->host38, 0xc06, &q) == 1) {
         return 0;
     }
 
     int nameA;
-
-    PlayerWeaponQueryName(&nameA, actor->host38, 0x2da8293c);
     int nameB;
+    PlayerWeaponQueryName(&nameA, actor->host38, 0x2da8293c);
     PlayerWeaponQueryName(&nameB, actor->host38, 0xdff3097a);
 
     switch (msg) {
-    case 0x20ee36:
-    case -0x697341c3:   // 0x968cbe3d
-    case -0x1948e434:   // 0xe6b71bcc
-    case -0x69ddb034:   // 0x96224fcc
-    case 0xd19e338: {
-        fn_80048BA8(actor, actor->field1D04, 1);
-        int anim = fn_800498D0(actor);
-        Fn800F7F5C(nameA, nameB, msg, anim, actor->field1D04, actor->field14FC);
-        break;
-    }
-    case 0x1b83833f: {
-        int state = actor->state7A4;
-        if (state == 5) {
-            int anim = fn_800498D0(actor);
-            int result = Fn800F7DEC(nameA, nameB, 0x20ee36, anim, 0);
+    case 0x1b83833f:
+        if (actor->state7A4 == 5) {
+            int result = Fn800F7DEC(nameA, nameB, 0x20ee36, fn_800498D0(actor), 0);
             if (result != 0x4a3e183) {
                 if (result == -0x3f413082 || result == 0x11d2c025) {
                     FxStart(FxFind("gun_empty"), 0, 0);
                 }
                 PlayerSetHeldSlotMode(actor, 3);
-                return 0;
+            } else {
+                PlayerSetActionMode(actor, actor->field7A8);
             }
+        } else if (actor->state7A4 == 8) {
+            int result = Fn800F7DEC(nameA, nameB, 0xf829db93, fn_800498D0(actor), 0);
+            if (result != 0x4a3e183) {
+                if (result == -0x3f413082 || result == 0x11d2c025) {
+                    FxStart(FxFind("gun_empty"), 0, 0);
+                }
+                PlayerSetHeldSlotMode(actor, 3);
+            } else {
+                PlayerSetActionMode(actor, actor->field7A8);
+            }
+        } else if (actor->state7A4 == 0xd) {
+            actor->flags7B4 |= 0x20000;
+        } else {
             PlayerSetActionMode(actor, actor->field7A8);
-            return 0;
         }
-        if (state != 8) {
-            if (state == 0xd) {
-                actor->flags7B4 |= 0x20000;
-                return 0;
-            }
-            PlayerSetActionMode(actor, actor->field7A8);
-            return 0;
-        }
-        int anim = fn_800498D0(actor);
-        int result = Fn800F7DEC(nameA, nameB, 0xf829db93, anim, 0);
-        if (result != 0x4a3e183) {
-            if (result == -0x3f413082 || result == 0x11d2c025) {
-                FxStart(FxFind("gun_empty"), 0, 0);
-            }
-            PlayerSetHeldSlotMode(actor, 3);
-            return 0;
-        }
-        PlayerSetActionMode(actor, actor->field7A8);
-        return 0;
-    }
+        break;
+    case 0x20ee36:
+        fn_80048BA8(actor, actor->field1D04, 1);
+        Fn800F7F5C(nameA, nameB, msg, fn_800498D0(actor), actor->field1D04, actor->field14FC);
+        break;
+    case -0x69ddb034:   // 0x96224fcc
+    case 0xd19e338:
+        fn_80048BA8(actor, actor->field1D04, 1);
+        Fn800F7F5C(nameA, nameB, msg, fn_800498D0(actor), actor->field1D04, actor->field14FC);
+        break;
+    case -0x1948e434:   // 0xe6b71bcc
+        fn_80048BA8(actor, actor->field1D04, 1);
+        Fn800F7F5C(nameA, nameB, msg, fn_800498D0(actor), actor->field1D04, actor->field14FC);
+        break;
+    case -0x697341c3:   // 0x968cbe3d
+        fn_80048BA8(actor, actor->field1D04, 1);
+        Fn800F7F5C(nameA, nameB, msg, fn_800498D0(actor), actor->field1D04, actor->field14FC);
+        break;
     }
     return 0;
 }
