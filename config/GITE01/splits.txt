@@ -61,8 +61,14 @@ game/u_80022B10.cpp:
 	.sdata      start:0x804D2658 end:0x804D2660
 	.sdata2     start:0x804D60E8 end:0x804D6118
 
+game/u_800265C8.cpp:
+	.text       start:0x800265C8 end:0x8002A274
+
+game/u_8002A274.cpp:
+	.text       start:0x8002A274 end:0x80037230
+
 game/ModInfo.cpp:
-	.text       start:0x800265C8 end:0x8003B98C
+	.text       start:0x80037230 end:0x8003B98C
 
 game/u_8003B98C.cpp:
 	.text       start:0x8003B98C end:0x8003CC90
