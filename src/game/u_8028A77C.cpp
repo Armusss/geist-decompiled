@@ -231,64 +231,22 @@ int ScreenEffectMessage(void* p)
     fn_8000706C(0xC, 0);
 
     switch (m->msg) {
-    case 0x43706697: // White Out
-        ScreenEffectStart("White Out", (int)ScreenEffectAnimFinish, duration);
-        ScreenEffectNotify(1);
-        return 1;
-    case 0x195DA922:
-        fn_800F47FC(0.0f);
-        return 1;
-    case (int)0xCAE448F3: // Boost Flash
-        FontLoad(0, "Boost Flash", 0, 0, (int)ScreenEffectAnimFinish, 0);
-        return 1;
-    case (int)0xAF98449C: // White In
-        ScreenEffectStart("White In", (int)ScreenEffectFadeFinish, duration);
-        return 1;
-    case (int)0x9F81801A: // LBox On
-        if (gWideScreen == 0) {
-            FontRelease(lbl_804D37BC);
-            lbl_804D37BC = FontLoad(0, "LBox On", duration, 0,
-                                    (int)ScreenEffectAnimFinish, 0);
-        } else {
-            ScreenEffectReleaseAnim();
-        }
-        ScreenEffectNotify(1);
-        return 1;
     case (int)0xE9BD5149: // Fade In
         ScreenEffectStart("Fade In", (int)ScreenEffectFadeFinish, duration);
         return 1;
-    case 0x2A1BCBAC:
-        fn_800F47FC(1.0f);
-        return 1;
-    case 0x286D828F:
-        for (i = 0; i < 3; i++)
-            fn_800F60E4(0, i, 0x24A738);
-        ScreenEffectReleaseAnim();
-        return 1;
-    case 0x31471315: // Camera Flash
-        FontLoad(0, "Camera Flash", 0, 0, (int)ScreenEffectAnimFinish, 0);
-        return 1;
-    case 0x508F8274: // LBox Off
-        if (gWideScreen == 0) {
-            FontRelease(lbl_804D37BC);
-            lbl_804D37BC = FontLoad(0, "LBox Off", duration, 0,
-                                    (int)ScreenEffectLBoxOffFinish, 0);
-        } else {
-            ScreenEffectReleaseAnim();
-            ScreenEffectNotify(0);
-        }
-        return 1;
-    case 0x4D577A0F:
-        for (i = 0; i < 3; i++)
-            fn_800F60E4(0, i, 0x61BC8CB7);
-        ScreenEffectReleaseAnim();
+    case 0x4DECEF8A: // Fade Out
+        ScreenEffectStart("Fade Out", (int)ScreenEffectAnimFinish, duration);
+        ScreenEffectNotify(1);
         return 1;
     case 0x492EE0E7: // Fade Out
         ScreenEffectStart("Fade Out", (int)ScreenEffectFadeOutFinish, duration);
         ScreenEffectNotify(1);
         return 1;
-    case 0x4DECEF8A: // Fade Out
-        ScreenEffectStart("Fade Out", (int)ScreenEffectAnimFinish, duration);
+    case (int)0xAF98449C: // White In
+        ScreenEffectStart("White In", (int)ScreenEffectFadeFinish, duration);
+        return 1;
+    case 0x43706697: // White Out
+        ScreenEffectStart("White Out", (int)ScreenEffectAnimFinish, duration);
         ScreenEffectNotify(1);
         return 1;
     case 0x746CC9FA: // White Out
@@ -303,6 +261,48 @@ int ScreenEffectMessage(void* p)
     case 0x746D3850: // White Out Blur
         ScreenEffectStart("White Out Blur", (int)ScreenEffectAnimFinish, duration);
         ScreenEffectNotify(1);
+        return 1;
+    case 0x4D577A0F:
+        for (i = 0; i < 3; i++)
+            fn_800F60E4(0, i, 0x61BC8CB7);
+        ScreenEffectReleaseAnim();
+        return 1;
+    case 0x286D828F:
+        for (i = 0; i < 3; i++)
+            fn_800F60E4(0, i, 0x24A738);
+        ScreenEffectReleaseAnim();
+        return 1;
+    case 0x508F8274: // LBox Off
+        if (gWideScreen == 0) {
+            FontRelease(lbl_804D37BC);
+            lbl_804D37BC = FontLoad(0, "LBox Off", duration, 0,
+                                    (int)ScreenEffectLBoxOffFinish, 0);
+        } else {
+            ScreenEffectReleaseAnim();
+            ScreenEffectNotify(0);
+        }
+        return 1;
+    case (int)0x9F80801A: // LBox On
+        if (gWideScreen == 0) {
+            FontRelease(lbl_804D37BC);
+            lbl_804D37BC = FontLoad(0, "LBox On", duration, 0,
+                                    (int)ScreenEffectAnimFinish, 0);
+        } else {
+            ScreenEffectReleaseAnim();
+        }
+        ScreenEffectNotify(1);
+        return 1;
+    case 0x31471315: // Camera Flash
+        FontLoad(0, "Camera Flash", 0, 0, (int)ScreenEffectAnimFinish, 0);
+        return 1;
+    case (int)0xCAE448F3: // Boost Flash
+        FontLoad(0, "Boost Flash", 0, 0, (int)ScreenEffectAnimFinish, 0);
+        return 1;
+    case 0x2A1BCBAC:
+        fn_800F47FC(1.0f);
+        return 1;
+    case 0x195DA922:
+        fn_800F47FC(0.0f);
         return 1;
     }
     return 0;
