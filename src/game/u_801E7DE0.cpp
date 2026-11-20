@@ -1,10 +1,14 @@
 // u_801E7DE0.cpp: player weapon, aim and collision-view states (0x801E7DE0-0x801EAACC).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
-#include "game/string.h"
+#include "game/msg.h"
+#include <dolphin/gx/GXStruct.h>
 
-typedef unsigned char u8;
-typedef unsigned long u32;
+
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
 
 // Per-local-player view data block (pointed to by Actor::views).
 struct PlayerView {
@@ -50,9 +54,9 @@ struct Actor {
     int field314;                 // 0x314
     int field318;                 // 0x318
     int field31C;                 // 0x31C
-    u32 flags320;                 // 0x320
+    int flags320;                 // 0x320
     u32 flags324;                 // 0x324
-    u32 flags328;                 // 0x328
+    int flags328;                 // 0x328
     u8  unk32C[0x38C - 0x32C];    // 0x32C
     float field38C;               // 0x38C
     float field390;               // 0x390
@@ -111,7 +115,6 @@ struct WeaponTable {
 extern "C" {
 extern WeaponTable lbl_803B3B60;
 extern int lbl_8049C1E8[16];
-extern int lbl_803B3B6C;
 extern void fn_80050EB0(void*);
 extern int fn_800A1BC8(int, int, int, int, int);
 extern void SendMsg(void* to, int msg, void* data);
@@ -133,7 +136,7 @@ extern float fn_800F95E4(int);
 extern void fn_80165D9C(void*);
 extern void fn_8000F60C(void);
 extern void fn_8000F7E4(int, int);
-extern int fn_800C5210(void*, int, int*);
+extern int fn_800C5210(void*, int, void*);
 extern void fn_80165DA8(void*);
 extern float lbl_804D32F8;
 extern float lbl_804D32FC;
@@ -163,6 +166,45 @@ extern int Fn800F7DEC(int, int, int, int, void*);
 extern void PlayerSetHeldSlotMode(void*, int);
 extern void PlayerSetActionMode(void*, int);
 extern int ActorPlayAnim(int, u32, int);
+
+// Shared "leave to weapon select" check of the first-person states: zoom-level
+// update when not in a host, otherwise re-enter the weapon-select state when the
+// host asks for it and the player is free. Returns 1 when a state change was made.
+static inline int PlayerWeaponReenter(Actor* actor)
+{
+    if (fn_802A1D04() == 0) {
+        return PlayerZoomLevelUpdate(actor, 0xD, 0x16);
+    }
+    if (actor->flags328 & 1) {
+        if (PlayerInHost(actor) != 0) {
+            if (!(actor->flags7B4 & 0x40000) && !(actor->flags7B4 & 0x80000)) {
+                fn_80073E80(actor);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+// Shared weapon-model toggle of the first-person states: outside a host, flips
+// the weapon model handle between its two variants while the zoom slot is held;
+// inside one, runs the secondary zoom-level update. Returns 1 when it acted.
+static inline int PlayerWeaponToggle(Actor* actor)
+{
+    if (fn_802A1D04() == 0) {
+        if (actor->field318 == 1 || actor->field318 == 3) {
+            if (fn_800F60B8(actor->field248, 1) == 0x24a738) {
+                fn_800F60E4(actor->field248, 1, 0x9b286e6f);
+            } else {
+                fn_800F60E4(actor->field248, 1, 0x24a738);
+            }
+            return 1;
+        }
+    } else {
+        return PlayerZoomLevelUpdate(actor, 9, 0x15);
+    }
+    return 0;
+}
 
 // Player first-person view setup: creates the two weapon handles, installs the
 // per-frame update callback and syncs the camera field of view.
@@ -208,49 +250,44 @@ void PlayerFirstPersonUpdate(Actor* actor, float dt)
     PlayerSelectCollisionUpdate(actor, dt);
 
     if (fn_80049940()) {
-        if (fn_802A1D04() == 0) {
-            PlayerZoomLevelUpdate(actor, 0xD, 0x16);
-        } else if (actor->flags328 & 1) {
-            if (PlayerInHost(actor) != 0) {
-                if (!(actor->flags7B4 & 0x40000) && !(actor->flags7B4 & 0x80000)) {
-                    fn_80073E80(actor);
-                }
-            }
-        }
+        PlayerWeaponReenter(actor);
     }
     PlayerSetValue4(&actor->state7A4, 3);
 }
 
-// Host query block for message 0x41E: the host fills the trailing String with
-// the name handle it resolves for `hash`.
-struct NameQuery {
-    int    unk00;   // 0x00 filled in by the host
-    u32    hash;    // 0x04
-    int    unk08;   // 0x08
-    String name;    // 0x0C
-};
-
 // Asks the actor's host for the name handle selected by `hash`.
 static inline int PlayerWeaponQueryName(void* host, u32 hash)
 {
-    NameQuery query;
+    QueryMsg query;
 
     query.hash = hash;
-    *(int*)&query.name = 0;
-    query.unk08 = 0;
+    *(int*)&query.result = 0;
+    query.unk8 = 0;
     SendMsg(host, 0x41e, &query);
-    return *(int*)&query.name;
+    return *(int*)&query.result;
+}
+
+// Out-parameter form of the same query.
+static inline void PlayerWeaponQueryName(int* out, void* host, u32 hash)
+{
+    QueryMsg query;
+
+    query.hash = hash;
+    *(int*)&query.result = 0;
+    query.unk8 = 0;
+    SendMsg(host, 0x41e, &query);
+    *out = *(int*)&query.result;
 }
 
 // Tells the actor's host to switch to the name handle `value` for `hash`.
-static inline void PlayerWeaponSetName(Actor* actor, u32 hash, int value)
+static inline void PlayerWeaponSetName(void* host, u32 hash, int value)
 {
-    NameQuery query;
+    QueryMsg query;
 
     query.hash = hash;
-    *(int*)&query.name = value;
-    query.unk08 = 0;
-    SendMsg(actor->host38, 0x41d, &query);
+    *(int*)&query.result = value;
+    query.unk8 = 0;
+    SendMsg(host, 0x41d, &query);
 }
 
 // First-person "weapon held" view setup: resolves the model and animation
@@ -260,21 +297,27 @@ void PlayerWeaponFirstPersonInit(Actor* actor)
 {
     actor->field15B4 = 0;
 
-    int modelName = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
-    int animName = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
+    int modelName;
+
+    PlayerWeaponQueryName(&modelName, actor->host38, 0x2da8293c);
+    int animName;
+    PlayerWeaponQueryName(&animName, actor->host38, 0xdff3097a);
 
     fn_80048BA8(actor, actor->field1D04, 1);
     int anim = fn_800498D0(actor);
     Fn800F7F5C(modelName, animName, 0x8fdd7599, anim, actor->field1D04, actor->field14FC);
 
-    PlayerView* view = actor->views[PlayerInHost(actor)];
+    int localPlayer = PlayerInHost(actor);
     int slot = actor->weaponSlot;
 
-    actor->field98 = fn_800A1BC8(view->field14, view->field18, lbl_803B3B60.ids2DC[slot], 0, 0);
+    actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18,
+                                 lbl_803B3B60.ids2DC[slot], 0, 0);
     actor->field8C = fn_801E9F08;
     actor->fieldA4 = 0x11;
-    actor->fieldF0 = fn_800A1BC8(view->field14, view->field1C, lbl_803B3B60.ids2DC[slot], 0, 0);
-    if (actor->fieldF0 == lbl_803B3B60.idsE4[slot]) {
+    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
+                                 lbl_803B3B60.ids2DC[slot], 0, 0);
+    if (actor->fieldF0 == fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
+                                      lbl_803B3B60.idsE4[slot], 0, 0)) {
         actor->fieldFC = 1;
     } else {
         actor->fieldFC = 0x11;
@@ -300,15 +343,7 @@ void PlayerCollisionViewUpdate(Actor* actor, float dt)
     fn_800769A0(actor, dt);
     PlayerSelectCollisionUpdate(actor, dt);
 
-    if (fn_802A1D04() == 0) {
-        PlayerZoomLevelUpdate(actor, 0xD, 0x16);
-    } else if (actor->flags328 & 1) {
-        if (PlayerInHost(actor) != 0) {
-            if (!(actor->flags7B4 & 0x40000) && !(actor->flags7B4 & 0x80000)) {
-                fn_80073E80(actor);
-            }
-        }
-    }
+    PlayerWeaponReenter(actor);
     PlayerSetValue4(&actor->state7A4, 1);
 }
 
@@ -317,16 +352,18 @@ void PlayerCollisionViewUpdate(Actor* actor, float dt)
 // starts the weapon-tied effect.
 void PlayerWeaponViewSetup(Actor* actor)
 {
-    int name = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
+    int name;
+    PlayerWeaponQueryName(&name, actor->host38, 0xdff3097a);
 
     int localPlayer = PlayerInHost(actor);
     int slot = actor->weaponSlot;
-    PlayerView* view = actor->views[localPlayer];
 
-    actor->field98 = fn_800A1BC8(view->field14, view->field18, lbl_803B3B60.ids294[slot], 0, 0);
+    actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18,
+                                 lbl_803B3B60.ids294[slot], 0, 0);
     actor->field8C = fn_801E9F08;
     actor->fieldA4 = 0x10;
-    actor->fieldF0 = fn_800A1BC8(view->field14, view->field1C, lbl_803B3B60.ids294[slot], 0, 0);
+    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
+                                 lbl_803B3B60.ids294[slot], 0, 0);
     actor->fieldFC = 0x10;
 
     lbl_804D330C = fn_800F7994(name, 0x9d1c245c);
@@ -348,27 +385,9 @@ void PlayerWeaponStateUpdate(Actor* actor, float dt)
     PlayerSelectCollisionUpdate(actor, dt);
     PlayerSetValue4(&actor->state7A4, 5);
 
-    if (fn_802A1D04() == 0) {
-        PlayerZoomLevelUpdate(actor, 0xD, 0x16);
-    } else if (actor->flags328 & 1) {
-        if (PlayerInHost(actor) != 0) {
-            if (!(actor->flags7B4 & 0x40000) && !(actor->flags7B4 & 0x80000)) {
-                fn_80073E80(actor);
-            }
-        }
-    }
+    PlayerWeaponReenter(actor);
 
-    if (fn_802A1D04() == 0) {
-        if (actor->field318 == 1 || actor->field318 == 3) {
-            if (fn_800F60B8(actor->field248, 1) == 0x24a738) {
-                fn_800F60E4(actor->field248, 1, 0x9b286e6f);
-            } else {
-                fn_800F60E4(actor->field248, 1, 0x24a738);
-            }
-        }
-    } else {
-        PlayerZoomLevelUpdate(actor, 9, 0x15);
-    }
+    PlayerWeaponToggle(actor);
 
     if (actor->field314 == 0) {
         PlayerSetValue4(&actor->state7A4, 3);
@@ -407,9 +426,11 @@ void PlayerWeaponIdleStateUpdate(Actor* actor, float dt)
     PlayerSelectCollisionUpdate(actor, dt);
     actor->field7D0 = 1;
 
-    float fovAbs = __fabsf(actor->field394);
-    if (fovAbs < __fabsf(actor->field38C)) {
-        fovAbs = __fabsf(actor->field38C);
+    float fovAbs;
+    {
+        float z = actor->field394;
+        float x = actor->field38C;
+        fovAbs = __fabsf(x) > __fabsf(z) ? __fabsf(x) : __fabsf(z);
     }
     if (0.0f != fovAbs) {
         fn_8008E824(actor->field7C, 0);
@@ -417,44 +438,19 @@ void PlayerWeaponIdleStateUpdate(Actor* actor, float dt)
 
     if (0.0f == actor->field7D8) {
         PlayerSetHeldSlotMode(actor, 0);
-    } else if (!(actor->field678 & 0x80)) {
+    } else if (actor->field678 & 0x80) {
+        actor->field678 &= ~0x80;
+        PlayerSetActionMode(actor, 3);
+    } else {
         PlayerSetValue4(&actor->state7A4, 3);
 
-        if (fn_802A1D04() == 0) {
-            if (actor->field318 == 1 || actor->field318 == 3) {
-                if (fn_800F60B8(actor->field248, 1) == 0x24a738) {
-                    fn_800F60E4(actor->field248, 1, 0x9b286e6f);
-                } else {
-                    fn_800F60E4(actor->field248, 1, 0x24a738);
-                }
-            }
-        } else {
-            PlayerZoomLevelUpdate(actor, 9, 0x15);
-        }
+        PlayerWeaponToggle(actor);
 
         if (fn_801E9C30(actor) == 0) {
-            int reentered;
-            if (fn_802A1D04() == 0) {
-                reentered = PlayerZoomLevelUpdate(actor, 0xD, 0x16);
-            } else if (!(actor->flags328 & 1)) {
-                reentered = 0;
-            } else if (PlayerInHost(actor) == 0) {
-                reentered = 0;
-            } else if (actor->flags7B4 & 0x40000) {
-                reentered = 0;
-            } else if (actor->flags7B4 & 0x80000) {
-                reentered = 0;
-            } else {
-                fn_80073E80(actor);
-                reentered = 1;
-            }
-            if (reentered == 0) {
+            if (PlayerWeaponReenter(actor) == 0) {
                 PlayerZoomStateUpdate(actor, dt);
             }
         }
-    } else {
-        actor->field678 &= ~0x80;
-        PlayerSetActionMode(actor, 3);
     }
 }
 
@@ -463,23 +459,26 @@ void PlayerWeaponIdleStateUpdate(Actor* actor, float dt)
 // valid one, and asks for the weapon-select state when the player is able.
 void PlayerWeaponEnterState(Actor* actor)
 {
-    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
+    int localPlayer;
+    int slot;
+    int nameA;
+    int nameB;
+    int result;
+    int matched;
+    PlayerWeaponQueryName(&nameA, actor->host38, 0x2da8293c);
+    PlayerWeaponQueryName(&nameB, actor->host38, 0xdff3097a);
+    localPlayer = PlayerInHost(actor);
+    slot = actor->weaponSlot;
+    result = Fn800F7DEC(nameA, nameB, 0x20ee36, fn_800498D0(actor), 0);
 
-    int localPlayer = PlayerInHost(actor);
-    int slot = actor->weaponSlot;
-    int result = Fn800F7DEC(nameA, nameB, 0x20ee36, fn_800498D0(actor), 0);
-
-    int matched = 0;
+    matched = 0;
     if (result == -0x3f413082 || result == 0x11d2c025) {
         matched = 1;
     }
 
     actor->field98 = -1;
     while (actor->field98 == -1) {
-        PlayerView* view = actor->views[localPlayer];
-        actor->field98 = fn_800A1BC8(view->field14, view->field18,
-                                     lbl_803B3B60.idsE4[slot], matched, 0);
+        actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18, lbl_803B3B60.idsE4[slot], matched, 0);
         actor->field8C = fn_801E9F08;
         actor->fieldA4 = 1;
         if (actor->field98 == -1 && matched != 0) {
@@ -487,20 +486,10 @@ void PlayerWeaponEnterState(Actor* actor)
         }
     }
 
-    PlayerView* view = actor->views[localPlayer];
-    actor->fieldF0 = fn_800A1BC8(view->field14, view->field1C,
-                                 lbl_803B3B60.idsE4[slot], 0, 0);
+    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C, lbl_803B3B60.idsE4[slot], 0, 0);
     actor->fieldFC = 1;
 
-    if (fn_802A1D04() == 0) {
-        PlayerZoomLevelUpdate(actor, 0xD, 0x16);
-    } else if (actor->flags328 & 1) {
-        if (PlayerInHost(actor) != 0) {
-            if (!(actor->flags7B4 & 0x40000) && !(actor->flags7B4 & 0x80000)) {
-                fn_80073E80(actor);
-            }
-        }
-    }
+    PlayerWeaponReenter(actor);
 }
 
 // Plays the weapon idle animation entry of the actor's current loadout.
@@ -518,15 +507,7 @@ void PlayerCollisionViewStateUpdate(Actor* actor, float dt)
     fn_800769A0(actor, dt);
     PlayerSelectCollisionUpdate(actor, dt);
 
-    if (fn_802A1D04() == 0) {
-        PlayerZoomLevelUpdate(actor, 0xD, 0x16);
-    } else if (actor->flags328 & 1) {
-        if (PlayerInHost(actor) != 0) {
-            if (!(actor->flags7B4 & 0x40000) && !(actor->flags7B4 & 0x80000)) {
-                fn_80073E80(actor);
-            }
-        }
-    }
+    PlayerWeaponReenter(actor);
     PlayerSetValue4(&actor->state7A4, 3);
 }
 
@@ -539,16 +520,18 @@ extern int lbl_804D3308;
 // weapon-tied effect and syncs the camera field of view.
 void PlayerWeaponDrawnSetup(Actor* actor)
 {
-    int name = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
+    int name;
+    PlayerWeaponQueryName(&name, actor->host38, 0xdff3097a);
 
     int localPlayer = PlayerInHost(actor);
     int slot = actor->weaponSlot;
-    PlayerView* view = actor->views[localPlayer];
 
-    actor->field98 = fn_800A1BC8(view->field14, view->field18, lbl_803B3B60.ids9C[slot], 0, 0);
-    actor->field8C = fn_801E9F08;
+    actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18,
+                                 lbl_803B3B60.ids9C[slot], 0, 0);
     actor->fieldA4 = 0x10;
-    actor->fieldF0 = fn_800A1BC8(view->field14, view->field1C, lbl_803B3B60.ids9C[slot], 0, 0);
+    actor->field8C = fn_801E9F08;
+    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
+                                 lbl_803B3B60.ids9C[slot], 0, 0);
     actor->fieldFC = 0x10;
 
     lbl_804D3308 = fn_800F7994(name, 0xafef562b);
@@ -576,39 +559,13 @@ void PlayerCollisionViewEnterUpdate(Actor* actor, float dt)
     PlayerSetValue4(&actor->state7A4, 1);
     actor->field7D0 = 0;
 
-    if (fn_802A1D04() == 0) {
-        if (actor->field318 == 1 || actor->field318 == 3) {
-            if (fn_800F60B8(actor->field248, 1) == 0x24a738) {
-                fn_800F60E4(actor->field248, 1, 0x9b286e6f);
-            } else {
-                fn_800F60E4(actor->field248, 1, 0x24a738);
-            }
-        }
-    } else {
-        PlayerZoomLevelUpdate(actor, 9, 0x15);
-    }
+    PlayerWeaponToggle(actor);
 
     if (fn_801E9C30(actor) != 0) {
         return;
     }
 
-    int reentered;
-    if (fn_802A1D04() == 0) {
-        reentered = PlayerZoomLevelUpdate(actor, 0xD, 0x16);
-    } else if (!(actor->flags328 & 1)) {
-        reentered = 0;
-    } else if (PlayerInHost(actor) == 0) {
-        reentered = 0;
-    } else if (actor->flags7B4 & 0x40000) {
-        reentered = 0;
-    } else if (actor->flags7B4 & 0x80000) {
-        reentered = 0;
-    } else {
-        fn_80073E80(actor);
-        reentered = 1;
-    }
-
-    if (reentered == 0 && (actor->flags320 & 1)) {
+    if (PlayerWeaponReenter(actor) == 0 && (actor->flags320 & 1)) {
         if (actor->field7D0 == 0) {
             PlayerSetHeldSlotMode(actor, 2);
         } else {
@@ -651,33 +608,10 @@ void PlayerAimStateUpdate(Actor* actor, float dt)
     actor->field7D0 = 1;
     PlayerSetValue4(&actor->state7A4, 3);
 
-    if (fn_802A1D04() == 0) {
-        PlayerZoomLevelUpdate(actor, 0xD, 0x16);
-    } else if (actor->flags328 & 1) {
-        if (PlayerInHost(actor) != 0) {
-            if (!(actor->flags7B4 & 0x40000) && !(actor->flags7B4 & 0x80000)) {
-                fn_80073E80(actor);
-            }
-        }
-    }
+    PlayerWeaponReenter(actor);
 
     if (fn_801E9C30(actor) == 0) {
-        int reentered;
-        if (fn_802A1D04() == 0) {
-            if (actor->field318 == 1 || actor->field318 == 3) {
-                if (fn_800F60B8(actor->field248, 1) == 0x24a738) {
-                    fn_800F60E4(actor->field248, 1, 0x9b286e6f);
-                } else {
-                    fn_800F60E4(actor->field248, 1, 0x24a738);
-                }
-                reentered = 1;
-            } else {
-                reentered = 0;
-            }
-        } else {
-            reentered = PlayerZoomLevelUpdate(actor, 9, 0x15);
-        }
-        if (reentered == 0) {
+        if (PlayerWeaponToggle(actor) == 0) {
             PlayerZoomStateUpdate(actor, dt);
         }
     }
@@ -697,33 +631,35 @@ void PlayerAimStateUpdate(Actor* actor, float dt)
 // once with the un-matched variant when the host returns no handle.
 void PlayerWeaponTimerEnter(Actor* actor)
 {
-    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
+    int nameA;
+    PlayerWeaponQueryName(&nameA, actor->host38, 0x2da8293c);
+    int nameB;
+    PlayerWeaponQueryName(&nameB, actor->host38, 0xdff3097a);
     int anim = fn_800498D0(actor);
     int result = Fn800F7DEC(nameA, nameB, 0x20ee36, anim, 0);
 
     if (result == -0x3f413082 || result == 0x11d2c025) {
         actor->field7D4 = 2;
-    } else if ((float)rand() / 32767.0f < 0.5f) {
-        actor->field7D4 = 1;
-    } else {
+    } else if ((float)rand() / 32767.0f >= 0.5f) {
         actor->field7D4 = 0;
+    } else {
+        actor->field7D4 = 1;
     }
 
-    PlayerView* view = actor->views[fn_80049750(actor)];
+    int localPlayer = PlayerInHost(actor);
 
-    actor->field98 = fn_800A1BC8(view->field14, view->field18, lbl_803B3B6C, actor->field7D4, 0);
+    actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18, lbl_803B3B60.globalWeaponId, actor->field7D4, 0);
     if (actor->field98 == -1) {
         actor->field7D4 = 0;
-        actor->field98 = fn_800A1BC8(view->field14, view->field18, lbl_803B3B6C, actor->field7D4, 0);
+        actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18, lbl_803B3B60.globalWeaponId, actor->field7D4, 0);
     }
     actor->field8C = fn_801E9F08;
     actor->fieldA4 = 1;
 
-    actor->fieldF0 = fn_800A1BC8(view->field14, view->field1C, lbl_803B3B6C, actor->field7D4, 0);
+    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C, lbl_803B3B60.globalWeaponId, actor->field7D4, 0);
     if (actor->fieldF0 == -1) {
         actor->field7D4 = 0;
-        actor->fieldF0 = fn_800A1BC8(view->field14, view->field1C, lbl_803B3B6C, actor->field7D4, 0);
+        actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C, lbl_803B3B60.globalWeaponId, actor->field7D4, 0);
     }
     actor->updateE4 = fn_801E9F08;
     actor->fieldFC = 1;
@@ -734,8 +670,10 @@ void PlayerWeaponTimerEnter(Actor* actor)
 // advances the hold timer.
 int PlayerZoomStateUpdate(Actor* actor, float dt)
 {
-    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
+    int nameA;
+    PlayerWeaponQueryName(&nameA, actor->host38, 0x2da8293c);
+    int nameB;
+    PlayerWeaponQueryName(&nameB, actor->host38, 0xdff3097a);
 
     if (actor->field588 == 5 || actor->field588 == 4) {
         if (actor->flags320 & 1) {
@@ -765,9 +703,22 @@ int PlayerZoomStateUpdate(Actor* actor, float dt)
                 return 1;
             }
         }
-    } else if (actor->flags320 == 0) {
+    } else if (actor->flags320 != 0) {
+        PlayerResetGunTimer(actor);
+        actor->field5E8 += dt;
+
+        if (fn_800699B8(actor) == 1.0f) {
+            if (actor->field7D0 == 0) {
+                PlayerSetHeldSlotMode(actor, 2);
+            } else {
+                PlayerSetHeldSlotMode(actor, 9);
+            }
+            fn_800699A8(actor->zoomTable);
+            return 1;
+        }
+    } else {
         float level = fn_800699B8(actor);
-        if (-1.0f < level && level < 0.0f) {
+        if (level > -1.0f && level < 0.0f) {
             int anim = fn_800498D0(actor);
             int result = Fn800F7DEC(nameA, nameB, 0xe6b71bcc, anim, 0);
             if (result == 0x4a3e183) {
@@ -785,19 +736,6 @@ int PlayerZoomStateUpdate(Actor* actor, float dt)
             }
         }
         fn_800699A8(actor->zoomTable);
-    } else {
-        PlayerResetGunTimer(actor);
-        actor->field5E8 += dt;
-
-        if (fn_800699B8(actor) == 1.0f) {
-            if (actor->field7D0 == 0) {
-                PlayerSetHeldSlotMode(actor, 2);
-            } else {
-                PlayerSetHeldSlotMode(actor, 9);
-            }
-            fn_800699A8(actor->zoomTable);
-            return 1;
-        }
     }
     return 0;
 }
@@ -927,14 +865,12 @@ int PlayerZoomLevelUpdate(Actor* actor, int slotA, int slotB)
 // a mode change was made.
 int PlayerHeldSlotActionCheck(Actor* actor)
 {
-    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
+    int nameA;
+    PlayerWeaponQueryName(&nameA, actor->host38, 0x2da8293c);
+    int nameB;
+    PlayerWeaponQueryName(&nameB, actor->host38, 0xdff3097a);
 
-    if (actor->field314 < 1) {
-        if (actor->state7A4 == 5) {
-            PlayerSetHeldSlotMode(actor, 3);
-        }
-    } else {
+    if (actor->field314 >= 1) {
         if (actor->state7A4 == 1) {
             PlayerSetHeldSlotMode(actor, 2);
             return 1;
@@ -944,28 +880,36 @@ int PlayerHeldSlotActionCheck(Actor* actor)
         int anim = fn_800498D0(actor);
         int result = Fn800F7DEC(nameA, nameB, 0x20ee36, anim, 0);
 
-        if (result == 0x11d2c025) {
+        switch (result) {
+        case 0x4a3e183:
+            PlayerSetHeldSlotMode(actor, 5);
+            return 1;
+        case -0x3f413082: {
+            int anim2 = fn_800498D0(actor);
+            int second = Fn800F7DEC(nameA, nameB, 0xe6b71bcc, anim2, 0);
+            actor->field15B4 = 0;
+            if (second == 0x4a3e183) {
+                PlayerSetHeldSlotMode(actor, 10);
+                return 1;
+            }
+            break;
+        }
+        case 0x11d2c025:
             if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
-                PlayerWeaponSetName(actor, 0x7ffcfd4f, 0x91a0cef7);
+                PlayerWeaponSetName(actor->host38, 0x7ffcfd4f, 0x91a0cef7);
             }
             if (actor->state7A4 == 5) {
                 PlayerSetHeldSlotMode(actor, 3);
             }
-        } else if (result < 0x11d2c025) {
-            if (result == 0x4a3e183) {
-                PlayerSetHeldSlotMode(actor, 5);
-                return 1;
+            break;
+        case 0x3da260f7:
+            if (actor->state7A4 == 5) {
+                PlayerSetHeldSlotMode(actor, 3);
             }
-            if (result < 0x4a3e183 && result == -0x3f413082) {
-                int anim2 = fn_800498D0(actor);
-                int second = Fn800F7DEC(nameA, nameB, 0xe6b71bcc, anim2, 0);
-                actor->field15B4 = 0;
-                if (second == 0x4a3e183) {
-                    PlayerSetHeldSlotMode(actor, 10);
-                    return 1;
-                }
-            }
-        } else if (result == 0x3da260f7 && actor->state7A4 == 5) {
+            break;
+        }
+    } else {
+        if (actor->state7A4 == 5) {
             PlayerSetHeldSlotMode(actor, 3);
         }
     }
@@ -976,62 +920,77 @@ int PlayerHeldSlotActionCheck(Actor* actor)
 // then dispatches on the message id: either plays the matching animation or
 // switches the held-slot mode (playing the "gun_empty" effect when the weapon
 // has no ammo left).
-int PlayerGunActionMessage(int msg, Actor* actor)
+// Plain 0x20-byte query block handed to fn_800C5210 (no String member).
+struct ActionQuery {
+    int unk00;      // 0x00
+    u32 hash;       // 0x04
+    int unk08;      // 0x08
+    void* result;   // 0x0C
+    int unk10[4];   // 0x10
+};
+
+// The actor goes through a void* copy: retail ranks it as a local (r31) ahead of
+// the two names, the way the void* message handlers do.
+int PlayerGunActionMessage(int msg, Actor* p)
 {
-    int handle;
-    if (fn_800C5210(actor->host38, 0xc06, &handle) == 1) {
+    Actor* actor = (Actor*)(void*)p;
+    ActionQuery q;
+    q.result = actor->host38;
+    q.hash = msg;
+    if (fn_800C5210(actor->host38, 0xc06, &q) == 1) {
         return 0;
     }
 
-    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
+    int nameA;
+    int nameB;
+    PlayerWeaponQueryName(&nameA, actor->host38, 0x2da8293c);
+    PlayerWeaponQueryName(&nameB, actor->host38, 0xdff3097a);
 
     switch (msg) {
-    case 0x20ee36:
-    case -0x697341c3:   // 0x968cbe3d
-    case -0x1948e434:   // 0xe6b71bcc
-    case -0x69ddb034:   // 0x96224fcc
-    case 0xd19e338: {
-        fn_80048BA8(actor, actor->field1D04, 1);
-        int anim = fn_800498D0(actor);
-        Fn800F7F5C(nameA, nameB, msg, anim, actor->field1D04, actor->field14FC);
-        break;
-    }
-    case 0x1b83833f: {
-        int state = actor->state7A4;
-        if (state == 5) {
-            int anim = fn_800498D0(actor);
-            int result = Fn800F7DEC(nameA, nameB, 0x20ee36, anim, 0);
+    case 0x1b83833f:
+        if (actor->state7A4 == 5) {
+            int result = Fn800F7DEC(nameA, nameB, 0x20ee36, fn_800498D0(actor), 0);
             if (result != 0x4a3e183) {
                 if (result == -0x3f413082 || result == 0x11d2c025) {
                     FxStart(FxFind("gun_empty"), 0, 0);
                 }
                 PlayerSetHeldSlotMode(actor, 3);
-                return 0;
+            } else {
+                PlayerSetActionMode(actor, actor->field7A8);
             }
+        } else if (actor->state7A4 == 8) {
+            int result = Fn800F7DEC(nameA, nameB, 0xf829db93, fn_800498D0(actor), 0);
+            if (result != 0x4a3e183) {
+                if (result == -0x3f413082 || result == 0x11d2c025) {
+                    FxStart(FxFind("gun_empty"), 0, 0);
+                }
+                PlayerSetHeldSlotMode(actor, 3);
+            } else {
+                PlayerSetActionMode(actor, actor->field7A8);
+            }
+        } else if (actor->state7A4 == 0xd) {
+            actor->flags7B4 |= 0x20000;
+        } else {
             PlayerSetActionMode(actor, actor->field7A8);
-            return 0;
         }
-        if (state != 8) {
-            if (state == 0xd) {
-                actor->flags7B4 |= 0x20000;
-                return 0;
-            }
-            PlayerSetActionMode(actor, actor->field7A8);
-            return 0;
-        }
-        int anim = fn_800498D0(actor);
-        int result = Fn800F7DEC(nameA, nameB, 0xf829db93, anim, 0);
-        if (result != 0x4a3e183) {
-            if (result == -0x3f413082 || result == 0x11d2c025) {
-                FxStart(FxFind("gun_empty"), 0, 0);
-            }
-            PlayerSetHeldSlotMode(actor, 3);
-            return 0;
-        }
-        PlayerSetActionMode(actor, actor->field7A8);
-        return 0;
-    }
+        break;
+    case 0x20ee36:
+        fn_80048BA8(actor, actor->field1D04, 1);
+        Fn800F7F5C(nameA, nameB, msg, fn_800498D0(actor), actor->field1D04, actor->field14FC);
+        break;
+    case -0x69ddb034:   // 0x96224fcc
+    case 0xd19e338:
+        fn_80048BA8(actor, actor->field1D04, 1);
+        Fn800F7F5C(nameA, nameB, msg, fn_800498D0(actor), actor->field1D04, actor->field14FC);
+        break;
+    case -0x1948e434:   // 0xe6b71bcc
+        fn_80048BA8(actor, actor->field1D04, 1);
+        Fn800F7F5C(nameA, nameB, msg, fn_800498D0(actor), actor->field1D04, actor->field14FC);
+        break;
+    case -0x697341c3:   // 0x968cbe3d
+        fn_80048BA8(actor, actor->field1D04, 1);
+        Fn800F7F5C(nameA, nameB, msg, fn_800498D0(actor), actor->field1D04, actor->field14FC);
+        break;
     }
     return 0;
 }
@@ -1090,7 +1049,6 @@ int PlayerWeaponStateId(Actor* actor)
 extern "C" {
 extern signed char lbl_804D528C;
 extern float lbl_804D5288;
-extern float lbl_804D8F28;
 }
 
 float fn_80017084(float);
@@ -1113,6 +1071,7 @@ void PlayerWeaponStateNotify(Actor* actor)
     }
 }
 
+
 // Shared per-frame effect for the first-person weapon states: advances the
 // global view-bob phase, offsets the view position by the two sine terms and
 // re-arms the gun timer, then runs the state's +0x04 frame callback.
@@ -1126,20 +1085,28 @@ void PlayerWeaponStateFrameUpdate(float dt, Actor* actor, int arg)
     if (actor->state7A4 == 3 || actor->state7A4 == 5) {
         if (actor->field7E0 == 1) {
             lbl_804D5288 = lbl_804D5288 + dt;
-            actor->field1F0 += fn_80017084(0.0003f * lbl_804D5288) * 0.008f;
-            actor->field1F8 += fn_80017084(0.0003f * (5000.0f + lbl_804D5288)) * 0.004f;
+            float x = fn_80017084(0.0003f * lbl_804D5288);
+            x *= 0.008f;
+            actor->field1F0 += x;
+            float y = fn_80017084(0.0003f * (5000.0f + lbl_804D5288));
+            y *= 0.004f;
+            actor->field1F8 += y;
             PlayerResetGunTimer(actor);
         } else if (actor->field7E0 == 2) {
             lbl_804D5288 = lbl_804D5288 + dt;
-            actor->field1F0 += fn_80017084(0.0003f * lbl_804D5288) * 0.004f;
-            actor->field1F8 += fn_80017084(0.0003f * (5000.0f + lbl_804D5288)) * lbl_804D8F28;
+            float x = fn_80017084(0.0003f * lbl_804D5288);
+            x *= 0.004f;
+            actor->field1F0 += x;
+            float y = fn_80017084(0.0003f * (5000.0f + lbl_804D5288));
+            y *= 0.002f;
+            actor->field1F8 += y;
             PlayerResetGunTimer(actor);
         }
     }
 
-    WeaponStateEntry* entry = (WeaponStateEntry*)&lbl_803B3B60 + actor->state7A4;
-    if (entry->update != 0) {
-        entry->update(dt, actor, arg);
+    WeaponStateEntry* table = (WeaponStateEntry*)&lbl_803B3B60;
+    if (table[actor->state7A4].update != 0) {
+        table[actor->state7A4].update(dt, actor, arg);
     }
 }
 
@@ -1198,31 +1165,29 @@ extern u8* lbl_804D3318;
 void TextSetStyle(int, int, int, int, int, int, int, int, int, int, int, int);
 void DebugText(const char* fmt, ...);
 
-extern "C" void fn_801EA880(const char* fmt, u8* color, int x, int y, int w,
+// Debug text packet writers: each stores one field at the write cursor and
+// advances it.
+static inline void DebugPut8(u8 v) { u8* p = lbl_804D3318; *p = v; lbl_804D3318 = p + 1; }
+static inline void DebugPut16(unsigned short v) { u8* p = lbl_804D3318; *(unsigned short*)p = v; lbl_804D3318 = p + 2; }
+
+extern "C" void fn_801EA880(const char* fmt, GXColor color, int x, int y, int w,
                             int h, int flags)
 {
     if ((int)lbl_804D3318 - (int)lbl_803B4284 + 9 < 0x4000) {
-        u8* pos = lbl_804D3318;
-
-        *pos++ = 9;
-        *(unsigned short*)pos = (unsigned short)(x < 0 ? 0 : (x < 0x281 ? x : 0x280));
-        pos += 2;
-        *(unsigned short*)pos = 0x280;
-        pos += 2;
-        *(unsigned short*)pos = 0;
-        pos += 2;
-        *(unsigned short*)pos = (unsigned short)(y < 0 ? 0 : (y < 0x1e1 ? y : 0x1e0));
-        pos += 2;
-        lbl_804D3318 = pos;
-        *pos = 0;
+        DebugPut8(9);
+        DebugPut16(x < 0 ? 0 : (x > 640 ? 640 : x));
+        DebugPut16(640);
+        DebugPut16(0);
+        DebugPut16(y < 0 ? 0 : (y > 480 ? 480 : y));
+        *lbl_804D3318 = 0;
     }
 
-    if (flags == 0) {
-        TextSetStyle(color[0], color[1], color[2], color[3], w, 0, 0, 0,
-                     0, 0, 0, 0);
-    } else {
-        TextSetStyle(color[0], color[1], color[2], color[3], w, 2,
+    if (flags != 0) {
+        TextSetStyle(color.r, color.g, color.b, color.a, w, 2,
                      h / 16 - w, 0, 0, 0, 0, 0);
+    } else {
+        TextSetStyle(color.r, color.g, color.b, color.a, w, 0, 0, 0,
+                     0, 0, 0, 0);
     }
     DebugText(fmt);
 }
@@ -1249,7 +1214,6 @@ void ResetDebugTextState(void)
 
 extern "C" {
 extern int vsprintf(char* buf, const char* fmt, va_list args);
-extern unsigned long strlen(const char* s);
 extern char* strcat(char* dst, const char* src);
 extern char lbl_803B8284[];
 }
@@ -1262,10 +1226,9 @@ void ScreenPrintf(const char* fmt, ...)
 {
     va_list args;
 
-    va_start(args, fmt);
-
     if (lbl_804D52A4 != 0) {
         char* buf = (char*)ScratchAAlloc(0x40000);
+        va_start(args, fmt);
         int len = vsprintf(buf, fmt, args);
 
         if ((u32)(len + strlen(lbl_803B8284)) < 0x1000) {
