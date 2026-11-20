@@ -611,6 +611,7 @@ config.libs = [
             Object(NonMatching, "game/AppMain.c"),  # guess
             Object(NonMatching, "game/u_800886C8.cpp"),  # guess
             Object(NonMatching, "game/u_8008DCDC.cpp"),  # guess
+            Object(NonMatching, "game/u_80093BF0.cpp"),  # split from u_8008DCDC (2D drawing)
             Object(NonMatching, "game/Shadow2.cpp"),  # guess
             Object(Matching, "game/Memory.cpp"),  # guess
             Object(NonMatching, "game/u_8009DE94.cpp", mw_version="GC/2.0"),  # known; GC/2.0: const-pointer pre-stwu loads in fn_800A089C (STATUS G4)
