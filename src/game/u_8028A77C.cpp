@@ -843,7 +843,7 @@ extern "C" int fn_8028BF80(Buffer* self, const char* format, ...)
         if ((u32)self->mState < (u32)(len + self->GetSpan()))
             fn_8028B5FC(self, len, 1);
         self->mSize = len;
-        ((char*)self->unk0C)[len] = 0;
+        self->unk0C[len] = 0;
     }
     return len;
 }
@@ -884,7 +884,7 @@ extern "C" void fn_8028C188(Buffer* self, char* text, int size)
     if ((u32)self->mState < (u32)(pos + self->GetSpan()))
         fn_8028B5FC(self, pos, 1);
     self->mSize = pos;
-    ((char*)self->unk0C)[pos] = 0;
+    self->unk0C[pos] = 0;
     CopyBytes((const u8*)text, (u32)len,
                 (u8*)((char*)(self->unk0C + self->mSize) - len));
 }
@@ -907,7 +907,7 @@ extern "C" void fn_8028C258(Buffer* self, const char* text)
     if ((u32)self->mState < (u32)(pos + self->GetSpan()))
         fn_8028B5FC(self, pos, 1);
     self->mSize = pos;
-    ((char*)self->unk0C)[pos] = 0;
+    self->unk0C[pos] = 0;
     CopyBytes((const u8*)text, len,
                 (u8*)((char*)(self->unk0C + self->mSize) - len));
 }
@@ -927,7 +927,7 @@ extern "C" void fn_8028C338(Buffer* self, const char* text)
     if ((u32)self->mState < (u32)(len + self->GetSpan()))
         fn_8028B5FC(self, len, 1);
     self->mSize = len;
-    ((char*)self->unk0C)[len] = 0;
+    self->unk0C[len] = 0;
     ScreenEffectSlotQueueCopy(self, (u32)self->unk0C, (u32)text, (u32)len);
 }
 
