@@ -584,9 +584,9 @@ config.libs = [
             Object(Matching, "game/File.cpp"),
             Object(NonMatching, "game/DbRoom.c"),  # guess
             Object(NonMatching, "game/u_80022B10.cpp"),  # guess
-            Object(NonMatching, "game/ModInfo.cpp"),  # guess
+            Object(NonMatching, "game/u_800265C8.cpp"),  # split from ModInfo
             Object(NonMatching, "game/u_8002A274.cpp"),  # split from ModInfo
-            Object(NonMatching, "game/u_80037230.cpp"),  # split from ModInfo
+            Object(NonMatching, "game/ModInfo.cpp"),  # its __FILE__ string "ModInfo.cpp" is at 0x80342490
             Object(NonMatching, "game/u_8003B98C.cpp"),  # guess
             Object(NonMatching, "game/u_8003CC90.cpp"),  # guess
             Object(NonMatching, "game/u_800448D0.cpp"),  # meshes, split from Store.c

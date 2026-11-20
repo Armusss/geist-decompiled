@@ -1,4 +1,4 @@
-// u_8002A274.cpp (0x8002A274-0x80037230), split from ModInfo.cpp.
+// u_8002A274.cpp (0x8002A274-0x80037230), split from the old ModInfo.cpp range.
 // Integer-box geometry and the streaming slot table (file type 0x2E), plus large undrafted collision code.
 // Boundaries: its .sdata2 pool 0x804D6170-0x804D61D0 holds its own copies of constants the previous file
 // also has (0.0f 0x804D6178 vs 0x804D6118, 0.5f, 1.0f, the int-to-float doubles 0x804D61B8/0x804D61C0 vs
@@ -6,7 +6,7 @@
 // FLT_MAX (0x804D61D0 vs 0x804D6184 here). Its .sbss 0x804D42A8-0x804D4300 (stream slot table, chunk 6 records,
 // debug option) and .bss 0x803DE5D8-0x803DEA58 are touched only from this range; the model database
 // (.sbss 0x804D4300...) belongs to the next file. fn_800320F4 inlines fn_8002FD68 and StreamSlotsRelease
-// (defined earlier here), so unlike ModInfo.cpp this file is built with automatic inlining.
+// (defined earlier here), so unlike u_800265C8.cpp this file is built with automatic inlining.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include "game/types.h"
