@@ -81,8 +81,41 @@ extern float lbl_804D2A54;
 extern float lbl_804D2A58;
 extern float lbl_804D2A5C;
 
-// TODO (not drafted yet, 0x128 bytes at 0x80093BF0)
-extern "C" void fn_80093BF0();
+//@@80093BF0
+// Fills the whole screen with colour (r, g, b).
+extern "C" void fn_80093BF0(u8 r, u8 g, u8 b);
+void fn_80093BF0(u8 r, u8 g, u8 b) {
+    if (lbl_804D4154 == 0) {
+        GXColor c = {0, 0, 0, 255};
+        float x0 = 0.0f;
+        float y0 = 0.0f;
+        float x1 = 1.0f;
+        float y1 = 1.0f;
+        c.r = r;
+        c.g = g;
+        c.b = b;
+        GfxSetVtxDesc(5);
+        GfxSetMaterial(0);
+        GXSetTevKColor(GX_KCOLOR0, c);
+        fn_8010CF00();
+        fn_80008D10();
+        GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+        GXSetAlphaUpdate(GX_TRUE);
+        GXSetColorUpdate(GX_TRUE);
+        GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+        GfxSetCullMode(0);
+        GfxSetBlendMode(0, 1, 0, 3);
+        GXBegin(GX_QUADS, GX_VTXFMT5, 4);
+        GXPosition3f32(x0, y0, 0.0f);
+        GXPosition3f32(x0, y1, 0.0f);
+        GXPosition3f32(x1, y1, 0.0f);
+        GXPosition3f32(x1, y0, 0.0f);
+        GfxSetCullMode(1);
+        fn_8000FF7C();
+        fn_800097F0();
+    }
+}
+//@@end
 //@@80093D18
 // Sets up the line-drawing state and draws with full alpha.
 extern "C" void fn_80093D18(int a, int b, int c);
