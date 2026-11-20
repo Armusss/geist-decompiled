@@ -42,6 +42,8 @@ extern "C" void* fn_80115850(int a, int b, int c);
 extern "C" void fn_80106AE0(float sx, float sy);
 extern "C" void fn_80107BD8(float sx, float sy);
 extern "C" void fn_80107514(float sx, float sy);
+extern "C" void* fn_80115488(int a, int b, int c);
+extern "C" void fn_8010829C();
 extern float lbl_804D4738;
 extern "C" void* fn_80115A34(int a, int b, short* rect);
 extern "C" int fn_80010448(int id, int alpha);
@@ -321,10 +323,70 @@ void fn_800946C8() {
 //@@end
 // TODO (not drafted yet, 0x2F8 bytes at 0x800947C4)
 extern "C" void fn_800947C4();
-// TODO (not drafted yet, 0x118 bytes at 0x80094ABC)
+//@@80094ABC
+// Blends the current frame-buffer copy with a second copy (dark).
 extern "C" void fn_80094ABC();
-// TODO (not drafted yet, 0x118 bytes at 0x80094BD4)
+void fn_80094ABC() {
+    if (lbl_804D4154 == 0) {
+        GXTexObj* tex;
+        GXTexObj* tex2;
+        GfxFbCommit();
+        GfxSetCopyFilter(2);
+        tex = (GXTexObj*)fn_80115A34(0, 1, 0);
+        if (tex != 0) {
+            GfxSetCopyFilter(0);
+            tex2 = (GXTexObj*)fn_80115488(0, 1, 0);
+            GfxLoadTexObj(tex, 0);
+            GXLoadTexObj(tex2, GX_TEXMAP1);
+            GfxSetVtxDesc(2);
+            fn_80008D10();
+            GfxSetMaterial(0);
+            fn_8010829C();
+            GfxSetBlendMode(1, 4, 2, 3);
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(1);
+            fn_8009C4A4(0, 0x20, 0x20, 0x20, 0xFF);
+            fn_8000FF7C();
+            fn_800097F0();
+        }
+    }
+}
+//@@end
+//@@80094BD4
+// Blends the current frame-buffer copy with a second copy (full).
 extern "C" void fn_80094BD4();
+void fn_80094BD4() {
+    if (lbl_804D4154 == 0) {
+        GXTexObj* tex;
+        GXTexObj* tex2;
+        GfxFbCommit();
+        GfxSetCopyFilter(2);
+        tex = (GXTexObj*)fn_80115850(0, 1, 0);
+        {
+            GfxSetCopyFilter(0);
+            tex2 = (GXTexObj*)fn_80115488(0, 1, 0);
+            GfxLoadTexObj(tex, 0);
+            GXLoadTexObj(tex2, GX_TEXMAP1);
+            GfxSetVtxDesc(2);
+            fn_80008D10();
+            GfxSetMaterial(0);
+            fn_8010829C();
+            GfxSetBlendMode(1, 4, 1, 3);
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(1);
+            fn_8009C4A4(0, 0xFF, 0xFF, 0xFF, 0xFF);
+            fn_8000FF7C();
+            fn_800097F0();
+        }
+    }
+}
+//@@end
 // TODO (not drafted yet, 0x134 bytes at 0x80094CEC)
 extern "C" void fn_80094CEC();
 // TODO (not drafted yet, 0x160 bytes at 0x80094E20)
