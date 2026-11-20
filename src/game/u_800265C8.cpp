@@ -141,15 +141,14 @@ void ModInfoResetCount() {
 
 // 0x800265D4
 extern "C" int SendMsg(int to, int msg, void* data) {
-    int type;
     if (to != -1) {
-        type = (u32)to >> 24;
-        to = to & 0xFFFFFF;
+        int type = (u32)to >> 24;
+        int id = to & 0xFFFFFF;
         if (type >= 0) {
             if (type < 100) {
                 MsgHandler fn = sMsgFn[type];
                 if (fn != 0)
-                    return fn(to, msg, data, sMsgCtx[type]);
+                    return fn(id, msg, data, sMsgCtx[type]);
             }
         }
     }

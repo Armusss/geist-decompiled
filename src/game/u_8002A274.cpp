@@ -316,18 +316,20 @@ extern "C" int fn_80031FAC(void* data, int size, void* ctx) {
 
 // 0x80032014 (called from another unit under this placeholder name; ChunkNodesLoad): file chunk handler (0x48-byte records followed by 0x20-byte records)
 extern "C" int fn_80032014(void* data, int size, void* ctx) {
-    char* h = (size > 0) ? (char*)data : 0;
-    int n = *(int*)(h + 4);
-    char* p;
+    int* h = (size > 0) ? (int*)data : 0;
+    int left;
     int bytes;
     int pad;
-    bytes = n * 0x48;
-    pad = ((bytes + 0x1F) & 0xFFFFFFE0) - bytes;
-    p = (char*)data + 0x20;
-    p += bytes;
-    p += pad;
-    lbl_804D42BC = Fits(size - 0x20 - bytes - pad, *(int*)(h + 8) << 5) ? p : 0;
-    lbl_804D42C0 = *(int*)(h + 8);
+    left = size - 0x20;
+    data = (char*)data + 0x20;
+    bytes = h[1] * 0x48;
+    pad = ((bytes + 0x1F) & ~0x1F) - bytes;
+    left -= bytes;
+    data = (char*)data + bytes;
+    left -= pad;
+    data = (char*)data + pad;
+    lbl_804D42BC = (char*)(Fits(left, h[2] << 5) ? data : 0);
+    lbl_804D42C0 = h[2];
     return 1;
 }
 
