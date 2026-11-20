@@ -68,6 +68,7 @@ extern "C" void fn_8009C4A4(int mode, int a, int b, int c, int d);
 extern "C" void fn_8009B940(float t);
 extern "C" void fn_80099F18(int mode, float t);
 extern "C" void fn_8009925C(int alpha, float a, float b);
+extern "C" void fn_8009ADC8(int mode, float a, float b);
 extern float lbl_804D4728;
 extern float lbl_804D472C;
 extern float lbl_804D2A50;
@@ -645,10 +646,68 @@ extern "C" void fn_8009775C();
 extern "C" void fn_80097CDC();
 // TODO (not drafted yet, 0x128 bytes at 0x80097DD0)
 extern "C" void fn_80097DD0();
-// TODO (not drafted yet, 0xF8 bytes at 0x80097EF8)
-extern "C" void fn_80097EF8();
-// TODO (not drafted yet, 0x108 bytes at 0x80097FF0)
-extern "C" void fn_80097FF0();
+//@@80097EF8
+// Draws texture texArg (or a frame-buffer copy) additively.
+extern "C" void fn_80097EF8(int texArg);
+void fn_80097EF8(int texArg) {
+    GXTexObj* tex;
+    if (lbl_804D4154 == 0) {
+        if (texArg != 0) {
+            tex = (GXTexObj*)texArg;
+        } else {
+            GfxFbCommit();
+            tex = (GXTexObj*)fn_80115850(0, 1, 0);
+        }
+        if (tex != 0) {
+            GfxSetVtxDesc(2);
+            GfxSetMaterial(0);
+            CubeTevOneStageTextured();
+            fn_80008D10();
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(1);
+            GfxSetBlendMode(1, 2, 2, 3);
+            GfxLoadTexObj(tex, 0);
+            fn_8009C4A4(0, 0xFF, 0xFF, 0xFF, 0xFF);
+            fn_8000FF7C();
+            fn_800097F0();
+        }
+    }
+}
+//@@end
+//@@80097FF0
+// Draws texture texArg (or a frame-buffer copy) with colour (r, g, b, a).
+extern "C" void fn_80097FF0(int r, int g, int b, int a, int texArg);
+void fn_80097FF0(int r, int g, int b, int a, int texArg) {
+    GXTexObj* tex;
+    if (lbl_804D4154 == 0) {
+        if (texArg != 0) {
+            tex = (GXTexObj*)texArg;
+        } else {
+            GfxFbCommit();
+            tex = (GXTexObj*)fn_80115850(0, 1, 0);
+        }
+        if (tex != 0) {
+            GfxSetVtxDesc(2);
+            GfxSetMaterial(0);
+            CubeTevOneStageTextured();
+            fn_80008D10();
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(1);
+            GfxSetBlendMode(1, 4, 5, 3);
+            GfxLoadTexObj(tex, 0);
+            fn_8009C4A4(0, r, g, b, a);
+            fn_8000FF7C();
+            fn_800097F0();
+        }
+    }
+}
+//@@end
 // TODO (not drafted yet, 0x14C bytes at 0x800980F8)
 extern "C" void fn_800980F8();
 // TODO (not drafted yet, 0x1B8 bytes at 0x80098244)
@@ -659,10 +718,72 @@ extern "C" void fn_800983FC();
 extern "C" void fn_8009851C();
 // TODO (not drafted yet, 0x140 bytes at 0x8009863C)
 extern "C" void fn_8009863C();
-// TODO (not drafted yet, 0x12C bytes at 0x8009877C)
-extern "C" void fn_8009877C();
-// TODO (not drafted yet, 0x104 bytes at 0x800988A8)
-extern "C" void fn_800988A8();
+//@@8009877C
+// Draws texture texArg (or a frame-buffer copy) through fn_8009ADC8 with point filtering.
+extern "C" void fn_8009877C(int mode, int texArg, float a, float b);
+void fn_8009877C(int mode, int texArg, float a, float b) {
+    GXTexObj* tex;
+    if (lbl_804D4154 == 0) {
+        if (texArg != 0) {
+            tex = (GXTexObj*)texArg;
+        } else {
+            GfxFbCommit();
+            tex = (GXTexObj*)fn_80115A34(0, 1, 0);
+        }
+        if (tex != 0) {
+            GfxSetVtxDesc(2);
+            fn_80008D10();
+            GfxSetMaterial(0);
+            CubeTevOneStageTextured();
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(0);
+            GfxSetBlendMode(1, 4, 5, 3);
+            GXInitTexObjFilter(tex, GX_LINEAR, GX_LINEAR);
+            GfxLoadTexObj(tex, 0);
+            fn_8009ADC8(mode, a, b);
+            fn_8000FF7C();
+            fn_800097F0();
+            GfxSetCullMode(1);
+        }
+    }
+}
+//@@end
+//@@800988A8
+// Draws texture texArg (or a frame-buffer copy) through fn_8009B940 at time t.
+extern "C" void fn_800988A8(int texArg, float t);
+void fn_800988A8(int texArg, float t) {
+    GXTexObj* tex;
+    if (lbl_804D4154 == 0) {
+        if (texArg != 0) {
+            tex = (GXTexObj*)texArg;
+        } else {
+            GfxSetCopyFilter(0);
+            GfxFbCommit();
+            tex = (GXTexObj*)fn_80115A34(0, 1, 0);
+        }
+        if (tex != 0) {
+            GfxSetVtxDesc(2);
+            fn_80008D10();
+            GfxSetMaterial(0);
+            CubeTevOneStageTextured();
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(0);
+            GfxSetBlendMode(1, 4, 5, 3);
+            GfxLoadTexObj(tex, 0);
+            fn_8009B940(t);
+            fn_8000FF7C();
+            fn_800097F0();
+            GfxSetCullMode(1);
+        }
+    }
+}
+//@@end
 // TODO (not drafted yet, 0x280 bytes at 0x800989AC)
 extern "C" void fn_800989AC();
 // TODO (not drafted yet, 0x388 bytes at 0x80098C2C)
@@ -689,7 +810,7 @@ void AnimSetRect(float x0, float y0, float x1, float y1) {
 // TODO (not drafted yet, 0x848 bytes at 0x8009A580)
 extern "C" void fn_8009A580();
 // TODO (not drafted yet, 0xB78 bytes at 0x8009ADC8)
-extern "C" void fn_8009ADC8();
+// (declared above)
 // TODO (not drafted yet, 0xB64 bytes at 0x8009B940)
 // (declared above)
 // TODO (not drafted yet, 0x228 bytes at 0x8009C4A4)
