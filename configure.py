@@ -585,6 +585,8 @@ config.libs = [
             Object(NonMatching, "game/DbRoom.c"),  # guess
             Object(NonMatching, "game/u_80022B10.cpp"),  # guess
             Object(NonMatching, "game/ModInfo.cpp"),  # guess
+            Object(NonMatching, "game/u_8002A274.cpp"),  # split from ModInfo
+            Object(NonMatching, "game/u_80037230.cpp"),  # split from ModInfo
             Object(NonMatching, "game/u_8003B98C.cpp"),  # guess
             Object(NonMatching, "game/u_8003CC90.cpp"),  # guess
             Object(NonMatching, "game/u_800448D0.cpp"),  # meshes, split from Store.c
