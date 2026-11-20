@@ -10,6 +10,22 @@ equivalents are in `tools/matching/`: `mdiff.py`, `udiff.py`, `variants.py` (var
 `linked.py` and `scan_fakes.sh`. "Ghidra pseudocode" means the maintainer's local study copy, which is never
 published; generate your own from your copy of the game if you want it.
 
+## Two-Opus round (2026-11-18..20): pending boundary moves and user decisions
+
+Boundary moves (evidence-backed; Lead applies with the related flip):
+- u_801E0EDC: cut at 0x801E14E8 (1.0f twice in .sdata2, 0x804D8D78 / 0x804D8D80). Registry .text 0x801E0EDC-0x801E14E8; barrier .text 0x801E14E8-0x801E241C (data ranges in bf_agents C11 report). Barrier .sdata 0x804D3288-9C are -1.
+- u_80221100 (Bees): .text ends at 0x80222D60, not 0x80222C08 (BeeBase dtor + virtuals referenced only from the Bees vtables).
+- u_8028A77C: starts at 0x8028A8D4; 0x8028A77C-0x8028A8D4 and .data 0x803C29B0-0x803C29F0 belong to u_8028865C (ClockPageBuffer / BufferOwner).
+
+Needs user approval (non-placeholder names / signatures / invented code):
+- BarrierActorMsg__FPviPi -> __FP5ActoriPvi; BarrierActorUpdate__FPvf -> __FP5Actorf (u_801E0EDC).
+- GunTrailEntryInit8017AFA4__FPvPv needs a float param (caller 0x801854C8 passes dt in f1).
+- GfxMarkPlayerLit__Ff real prototype looks like (u32,int,int,float,float) (FearActor fn_80048A34).
+- u_8013A3D4 is 28/28 but its .sdata2 pool needs a dead-stripped function using 1.0f, 0.0f, int->float before DrawWorldQuad (body unknown = invented code). DrawUpdateScreenScale__Fv is really __sinit_u_8013A3D4_cpp.
+- u_8028A77C vtable renames: ScreenEffectResetState, ScreenEffectQuickFinish, ScreenEffectSlotResetPending, Clear__16ScreenEffectSlotFv -> class virtuals; RotateBytes/ReserveAndCopy param types.
+
+Results: FearActor is one file (15->55/128). u_8017D794 split into 14 units (2 flipped). Bees 7/8, u_8028A77C 39/47, u_801E0EDC 13/17.
+
 ## Team board (Decomp Lead + DeepSeek workers) — game code, from 2026-10-18
 
 | Who | Worktree / branch | Assignment | State |
