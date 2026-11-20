@@ -859,11 +859,12 @@ static const char sEmptyString[] = "";
 int String::Equals(const char* name)
 {
     u32 length;
-    int result = 0;
+    int result;
 
     if (name == 0)
         name = sEmptyString;
     length = strlen(name);
+    result = 0;
     if (length == (u32)mSize && memcmp(mStart, name, (u32)mSize) == 0)
         result = 1;
     return result;
@@ -875,9 +876,10 @@ int String::Equals(const char* name)
 // fourteen other units call it, so the lead relinks them later.
 extern "C" void fn_8028C188(Buffer* self, char* text, int size)
 {
-    int len = size;
     int pos;
+    u32 len;
 
+    len = size;
     while (len != 0 && text[len - 1] == 0)
         len--;
     pos = len + self->mSize;
@@ -885,8 +887,7 @@ extern "C" void fn_8028C188(Buffer* self, char* text, int size)
         fn_8028B5FC(self, pos, 1);
     self->mSize = pos;
     self->unk0C[pos] = 0;
-    CopyBytes((const u8*)text, (u32)len,
-                (u8*)((char*)(self->unk0C + self->mSize) - len));
+    CopyBytes((const u8*)text, len, (u8*)(self->unk0C + self->mSize - len));
 }
 
 // fn_8028C258: append a text (AppendText), ignoring any trailing NULs, and
@@ -908,8 +909,7 @@ extern "C" void fn_8028C258(Buffer* self, const char* text)
         fn_8028B5FC(self, pos, 1);
     self->mSize = pos;
     self->unk0C[pos] = 0;
-    CopyBytes((const u8*)text, len,
-                (u8*)((char*)(self->unk0C + self->mSize) - len));
+    CopyBytes((const u8*)text, len, (u8*)(self->unk0C + self->mSize - len));
 }
 
 // fn_8028C338: replace the buffer's text with a text (SetText), ignoring any
