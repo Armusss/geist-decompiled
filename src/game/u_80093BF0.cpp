@@ -38,6 +38,11 @@ extern "C" void fn_80009E10();
 extern "C" GXTexObj* fn_80115C18(void* copy);
 extern "C" void* fn_80115260(int a, int b, int c);
 extern "C" void* fn_80115374(int a, int b, int c);
+extern "C" void* fn_80115850(int a, int b, int c);
+extern "C" void fn_80106AE0(float sx, float sy);
+extern "C" void fn_80107BD8(float sx, float sy);
+extern "C" void fn_80107514(float sx, float sy);
+extern float lbl_804D4738;
 extern "C" void* fn_80115A34(int a, int b, short* rect);
 extern "C" int fn_80010448(int id, int alpha);
 extern "C" int fn_80010330(int id, int alpha);
@@ -202,14 +207,118 @@ void fn_8009425C() {
 
 // TODO (not drafted yet, 0x170 bytes at 0x8009426C)
 extern "C" void fn_8009426C();
-// TODO (not drafted yet, 0xFC bytes at 0x800943DC)
+//@@800943DC
+// Copies the frame buffer and draws it back through fn_80106AE0 (cell size 160.0f).
 extern "C" void fn_800943DC();
-// TODO (not drafted yet, 0xF4 bytes at 0x800944D8)
+void fn_800943DC() {
+    if (lbl_804D4154 == 0) {
+        GXTexObj* tex;
+        GfxFbCommit();
+        GfxSetCopyFilter(2);
+        tex = (GXTexObj*)fn_80115A34(0, 1, 0);
+        if (tex != 0) {
+            GfxLoadTexObj(tex, 0);
+            GfxSetVtxDesc(2);
+            fn_80008D10();
+            GfxSetMaterial(0);
+            fn_80106AE0(lbl_804D2A50 / (160.0f * lbl_804D4738), lbl_804D2A54 / 160.0f);
+            GfxSetBlendMode(1, 4, 5, 3);
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(1);
+            fn_8009C4A4(0, 0xFF, 0xFF, 0xFF, 0xFF);
+            fn_8000FF7C();
+            fn_800097F0();
+        }
+    }
+}
+//@@end
+//@@800944D8
+// Copies the frame buffer and draws it back through fn_80107BD8 (cell size 120.0f).
 extern "C" void fn_800944D8();
-// TODO (not drafted yet, 0xFC bytes at 0x800945CC)
+void fn_800944D8() {
+    if (lbl_804D4154 == 0) {
+        GXTexObj* tex;
+        GfxFbCommit();
+        GfxSetCopyFilter(2);
+        tex = (GXTexObj*)fn_80115850(0, 1, 0);
+        {
+            GfxLoadTexObj(tex, 0);
+            GfxSetVtxDesc(2);
+            fn_80008D10();
+            GfxSetMaterial(0);
+            fn_80107BD8(lbl_804D2A50 / (120.0f * lbl_804D4738), lbl_804D2A54 / 120.0f);
+            GfxSetBlendMode(3, 4, 5, 3);
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(1);
+            fn_8009C4A4(0, 0xFF, 0xFF, 0xFF, 0xFF);
+            fn_8000FF7C();
+            fn_800097F0();
+        }
+    }
+}
+//@@end
+//@@800945CC
+// Copies the frame buffer and draws it back through fn_80107BD8 (cell size 120.0f).
 extern "C" void fn_800945CC();
-// TODO (not drafted yet, 0xFC bytes at 0x800946C8)
+void fn_800945CC() {
+    if (lbl_804D4154 == 0) {
+        GXTexObj* tex;
+        GfxFbCommit();
+        GfxSetCopyFilter(2);
+        tex = (GXTexObj*)fn_80115A34(0, 1, 0);
+        if (tex != 0) {
+            GfxLoadTexObj(tex, 0);
+            GfxSetVtxDesc(2);
+            fn_80008D10();
+            GfxSetMaterial(0);
+            fn_80107BD8(lbl_804D2A50 / (120.0f * lbl_804D4738), lbl_804D2A54 / 120.0f);
+            GfxSetBlendMode(0, 4, 5, 3);
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(1);
+            fn_8009C4A4(0, 0xFF, 0xFF, 0xFF, 0xFF);
+            fn_8000FF7C();
+            fn_800097F0();
+        }
+    }
+}
+//@@end
+//@@800946C8
+// Copies the frame buffer and draws it back through fn_80107514 (cell size 120.0f).
 extern "C" void fn_800946C8();
+void fn_800946C8() {
+    if (lbl_804D4154 == 0) {
+        GXTexObj* tex;
+        GfxFbCommit();
+        GfxSetCopyFilter(2);
+        tex = (GXTexObj*)fn_80115A34(0, 1, 0);
+        if (tex != 0) {
+            GfxLoadTexObj(tex, 0);
+            GfxSetVtxDesc(2);
+            fn_80008D10();
+            GfxSetMaterial(0);
+            fn_80107514(lbl_804D2A50 / (120.0f * lbl_804D4738), lbl_804D2A54 / 120.0f);
+            GfxSetBlendMode(1, 4, 1, 3);
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(1);
+            fn_8009C4A4(0, 0xFF, 0xFF, 0xFF, 0xFF);
+            fn_8000FF7C();
+            fn_800097F0();
+        }
+    }
+}
+//@@end
 // TODO (not drafted yet, 0x2F8 bytes at 0x800947C4)
 extern "C" void fn_800947C4();
 // TODO (not drafted yet, 0x118 bytes at 0x80094ABC)
