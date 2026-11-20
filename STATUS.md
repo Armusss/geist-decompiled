@@ -284,7 +284,7 @@ u_8011818C 15/49 (ds-2 draft): fn_8011F66C (0x660) and fn_8011FCEC (0x674) not d
   u_80022B10 fn_800234A4/A8 are ActorDetachOwnerObjects' tail; u_8028A77C fn_8028BAE0 weak BufferBase dtor ordering).
 - **Named-units round (2026-11-02): every game unit now has C source, verified with the fixed picker.** 2,503 -> 2,720
   functions. linkObjSys 18/23, AppMain 15/23 (auto_inline off: retail calls ChunkStart/ChunkTableWalk), FearActor 15/128
-  (~110 undrafted), ModInfo 36/133 (auto_inline off: retail calls fn_80026660/80026680 from LightsInit; tables
+  (~110 undrafted), ModInfo (now split, 2026-11-20: u_800265C8 handlers/lights 20, u_8002A274 stream/collision 18, ModInfo.cpp = model DB 0x80037230 15; 53/133) 36/133 (auto_inline off: retail calls fn_80026660/80026680 from LightsInit; tables
   0x803DDB98-0x803DE1D8 and lists 0x803DE1D8/0x803DE3D8 belong to it), Script 9/37 (unmangled C names via an extern "C"
   block; fn_80084540 is called with 3 and 4 args from Audio.c), u_802C9818 8/15, CubeTev 22/73 (TevStageSelect
   unfolded-stage puzzle), FearMap2 8/35 (extern "C" block), Turf 9/22, DbRoom 15/62 (named .c but is C++), Msx 13/93
