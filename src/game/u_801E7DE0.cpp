@@ -116,7 +116,6 @@ struct WeaponTable {
 extern "C" {
 extern WeaponTable lbl_803B3B60;
 extern int lbl_8049C1E8[16];
-extern int lbl_803B3B6C;
 extern void fn_80050EB0(void*);
 extern int fn_800A1BC8(int, int, int, int, int);
 extern void SendMsg(void* to, int msg, void* data);
@@ -1051,7 +1050,6 @@ int PlayerWeaponStateId(Actor* actor)
 extern "C" {
 extern signed char lbl_804D528C;
 extern float lbl_804D5288;
-extern float lbl_804D8F28;
 }
 
 float fn_80017084(float);
@@ -1074,6 +1072,7 @@ void PlayerWeaponStateNotify(Actor* actor)
     }
 }
 
+
 // Shared per-frame effect for the first-person weapon states: advances the
 // global view-bob phase, offsets the view position by the two sine terms and
 // re-arms the gun timer, then runs the state's +0x04 frame callback.
@@ -1087,20 +1086,28 @@ void PlayerWeaponStateFrameUpdate(float dt, Actor* actor, int arg)
     if (actor->state7A4 == 3 || actor->state7A4 == 5) {
         if (actor->field7E0 == 1) {
             lbl_804D5288 = lbl_804D5288 + dt;
-            actor->field1F0 += fn_80017084(0.0003f * lbl_804D5288) * 0.008f;
-            actor->field1F8 += fn_80017084(0.0003f * (5000.0f + lbl_804D5288)) * 0.004f;
+            float x = fn_80017084(0.0003f * lbl_804D5288);
+            x *= 0.008f;
+            actor->field1F0 += x;
+            float y = fn_80017084(0.0003f * (5000.0f + lbl_804D5288));
+            y *= 0.004f;
+            actor->field1F8 += y;
             PlayerResetGunTimer(actor);
         } else if (actor->field7E0 == 2) {
             lbl_804D5288 = lbl_804D5288 + dt;
-            actor->field1F0 += fn_80017084(0.0003f * lbl_804D5288) * 0.004f;
-            actor->field1F8 += fn_80017084(0.0003f * (5000.0f + lbl_804D5288)) * lbl_804D8F28;
+            float x = fn_80017084(0.0003f * lbl_804D5288);
+            x *= 0.004f;
+            actor->field1F0 += x;
+            float y = fn_80017084(0.0003f * (5000.0f + lbl_804D5288));
+            y *= 0.002f;
+            actor->field1F8 += y;
             PlayerResetGunTimer(actor);
         }
     }
 
-    WeaponStateEntry* entry = (WeaponStateEntry*)&lbl_803B3B60 + actor->state7A4;
-    if (entry->update != 0) {
-        entry->update(dt, actor, arg);
+    WeaponStateEntry* table = (WeaponStateEntry*)&lbl_803B3B60;
+    if (table[actor->state7A4].update != 0) {
+        table[actor->state7A4].update(dt, actor, arg);
     }
 }
 
