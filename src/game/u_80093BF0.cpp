@@ -48,6 +48,9 @@ extern "C" void fn_80108528();
 extern "C" void fn_8010883C();
 void CubeTevSetupIndirectTwo();
 void CubeTevOneStageSwapC();
+void CubeTevSetupRingAndBlend(float sx, float sy);
+void CubeTevSetupRingIndirect(float sx, float sy);
+void CubeTevSetupRingBlend15(float sx, float sy);
 extern "C" void fn_8010F7EC();
 extern "C" void fn_8010CDD8();
 extern float lbl_804D4738;
@@ -432,10 +435,64 @@ extern "C" void fn_80094E20();
 extern "C" void fn_80094F80();
 // TODO (not drafted yet, 0x148 bytes at 0x800950C8)
 extern "C" void fn_800950C8();
-// TODO (not drafted yet, 0x134 bytes at 0x80095210)
-extern "C" void fn_80095210();
-// TODO (not drafted yet, 0x14C bytes at 0x80095344)
-extern "C" void fn_80095344();
+//@@80095210
+// Draws a frame-buffer copy through CubeTevSetupRingAndBlend at the given scale with colour (r, g, b, a).
+extern "C" void fn_80095210(int r, int g, int b, int a, float scale);
+void fn_80095210(int r, int g, int b, int a, float scale) {
+    if (lbl_804D4154 == 0) {
+        GXTexObj* tex;
+        GfxFbCommit();
+        tex = (GXTexObj*)fn_80115A34(0, 1, 0);
+        if (tex != 0) {
+            GfxLoadTexObj(tex, 0);
+            GfxSetVtxDesc(2);
+            fn_80008D10();
+            GfxSetMaterial(0);
+            CubeTevSetupRingAndBlend(scale * (lbl_804D2A50 / lbl_804D4738), lbl_804D2A54 * scale);
+            GfxSetBlendMode(1, 4, 5, 3);
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(1);
+            fn_8009C4A4(0, r, g, b, a);
+            fn_8000FF7C();
+            fn_800097F0();
+        }
+    }
+}
+//@@end
+//@@80095344
+// Draws two frame-buffer copies through CubeTevSetupRingIndirect at the given scale with colour (r, g, b, a).
+extern "C" void fn_80095344(int r, int g, int b, int a, float scale);
+void fn_80095344(int r, int g, int b, int a, float scale) {
+    if (lbl_804D4154 == 0) {
+        GXTexObj* tex;
+        GXTexObj* tex2;
+        GfxFbCommit();
+        GfxSetCopyFilter(0);
+        tex = (GXTexObj*)fn_80115A34(0, 1, 0);
+        if (tex != 0) {
+            tex2 = (GXTexObj*)fn_80115488(0, 1, 0);
+            GfxLoadTexObj(tex, 0);
+            GXLoadTexObj(tex2, GX_TEXMAP1);
+            GfxSetVtxDesc(2);
+            fn_80008D10();
+            GfxSetMaterial(0);
+            CubeTevSetupRingIndirect(scale * (lbl_804D2A50 / lbl_804D4738), lbl_804D2A54 * scale);
+            GfxSetBlendMode(1, 4, 5, 3);
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(1);
+            fn_8009C4A4(0, r, g, b, a);
+            fn_8000FF7C();
+            fn_800097F0();
+        }
+    }
+}
+//@@end
 //@@80095490
 // Copies the frame buffer to a texture and draws it back full-screen.
 extern "C" void fn_80095490();
@@ -464,8 +521,33 @@ void fn_80095490() {
     }
 }
 //@@end
-// TODO (not drafted yet, 0x134 bytes at 0x80095570)
-extern "C" void fn_80095570();
+//@@80095570
+// Draws a frame-buffer copy through CubeTevSetupRingBlend15 at the given scale with colour (r, g, b, a).
+extern "C" void fn_80095570(int r, int g, int b, int a, float scale);
+void fn_80095570(int r, int g, int b, int a, float scale) {
+    if (lbl_804D4154 == 0) {
+        GXTexObj* tex;
+        GfxFbCommit();
+        tex = (GXTexObj*)fn_80115A34(0, 1, 0);
+        if (tex != 0) {
+            GfxLoadTexObj(tex, 0);
+            GfxSetVtxDesc(2);
+            fn_80008D10();
+            GfxSetMaterial(0);
+            CubeTevSetupRingBlend15(scale * (lbl_804D2A50 / lbl_804D4738), lbl_804D2A54 * scale);
+            GfxSetBlendMode(1, 4, 5, 3);
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(1);
+            fn_8009C4A4(0, r, g, b, a);
+            fn_8000FF7C();
+            fn_800097F0();
+        }
+    }
+}
+//@@end
 //@@800956A4
 // Draws two frame-buffer copies through the two-stage indirect TEV with colour (r, g, b, a).
 extern "C" void fn_800956A4(int r, int g, int b, int a);
