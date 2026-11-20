@@ -24,6 +24,10 @@ Needs user approval (non-placeholder names / signatures / invented code):
 - u_8013A3D4 is 28/28 but its .sdata2 pool needs a dead-stripped function using 1.0f, 0.0f, int->float before DrawWorldQuad (body unknown = invented code). DrawUpdateScreenScale__Fv is really __sinit_u_8013A3D4_cpp.
 - u_8028A77C vtable renames: ScreenEffectResetState, ScreenEffectQuickFinish, ScreenEffectSlotResetPending, Clear__16ScreenEffectSlotFv -> class virtuals; RotateBytes/ReserveAndCopy param types.
 
+- u_8008DCDC record array is a Buffer-derived template (vtable lbl_80398608; AnimRecordSize__Fv -> member) — needs a class name + rename.
+- G4 evidence: u_8008DCDC fn_80092E88 loads via r3 before stwu (GC/2.0 trait); not tested.
+- ModInfo guessed names in u_800265C8 (ModInfoResetCount/HandlersClear/HandlersInit/Load); GunActionMessage __FiP5Actor -> __FiPv (optional).
+- u_8008DCDC split at 0x80093BF0 (14->57/130); u_801E7DE0 34/35.
 Results: FearActor is one file (15->55/128). u_8017D794 split into 14 units (2 flipped). Bees 7/8, u_8028A77C 39/47, u_801E0EDC 13/17.
 
 ## Team board (Decomp Lead + DeepSeek workers) — game code, from 2026-10-18
