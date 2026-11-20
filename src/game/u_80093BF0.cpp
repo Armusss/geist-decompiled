@@ -312,7 +312,7 @@ void fn_800946C8() {
             GXSetAlphaUpdate(GX_TRUE);
             GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
             GfxSetCullMode(1);
-            fn_8009C4A4(0, 0xFF, 0xFF, 0xFF, 0xFF);
+            fn_8009C4A4(0, 0xFF, 0xFF, 0xFF, 0x7F);
             fn_8000FF7C();
             fn_800097F0();
         }
