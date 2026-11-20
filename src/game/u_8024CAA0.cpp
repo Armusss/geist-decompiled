@@ -420,9 +420,15 @@ bool ScannableRailMove(float scale, CamObj* obj, CamActor* actor) {
 
         fn_8016D6A8(&nrm);
         if ((int)(p->objId >> 24) == 3 && SendMsg(0x02000000, 0x412, &buf)) {
-            delta.x = (float)(buf.x - actor->px);
-            delta.y = (float)(buf.y - actor->py);
-            delta.z = (float)(buf.z - actor->pz);
+            s32 x = buf.x;
+            s32 y = buf.y;
+            s32 z = buf.z;
+            x -= actor->px;
+            y -= actor->py;
+            z -= actor->pz;
+            delta.x = (float)x;
+            delta.y = (float)y;
+            delta.z = (float)z;
             fn_8016D440(&nrm, &delta);
             flag = 1;
             f *= 2.0f;
