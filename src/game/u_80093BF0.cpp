@@ -13,11 +13,31 @@
 // - .ctors 0x80341208 holds fn_8009C6CC, the last function here (this file's static initialiser).
 // Names are descriptive guesses; unmatched against retail unless noted.
 
+#include <dolphin/gx.h>
+
 typedef unsigned char u8;
 typedef unsigned short u16;
 
+// Engine graphics wrappers (Cube.cpp / CubeTev.cpp).
+void GfxSetBlendMode(int type, int src, int dst, int op);
+void GfxSetVtxDesc(int desc);
+void GfxSetMaterial(void* material);
+void GfxSetCullMode(int mode);
+extern "C" void fn_80008D10(void);
+extern "C" void fn_8000FF7C(void);
+extern "C" void fn_800097F0(void);
+extern "C" void fn_8010CF00(void);
+extern "C" void fn_8010D024(void);
+
+extern int lbl_804D4154;
+extern int lbl_804D2568;    // screen width
+extern int lbl_804D256C;    // screen height
+
 extern int lbl_804D475C;
 extern int lbl_804D4760;
+
+extern "C" void fn_80098244(int r, int g, int b);
+extern "C" void fn_80099D74(int a, int b, int c, int alpha);
 extern float lbl_804D4728;
 extern float lbl_804D472C;
 extern float lbl_804D2A50;
@@ -27,8 +47,24 @@ extern float lbl_804D2A5C;
 
 // TODO (not drafted yet, 0x128 bytes at 0x80093BF0)
 extern "C" void fn_80093BF0();
-// TODO (not drafted yet, 0xCC bytes at 0x80093D18)
-extern "C" void fn_80093D18();
+//@@80093D18
+// Sets up the line-drawing state and draws with full alpha.
+extern "C" void fn_80093D18(int a, int b, int c);
+void fn_80093D18(int a, int b, int c) {
+    GfxSetVtxDesc(2);
+    fn_80008D10();
+    GfxSetMaterial(0);
+    GXSetLineWidth(0x18, GX_TO_ONE);
+    fn_8010D024();
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetAlphaUpdate(GX_TRUE);
+    GXSetColorUpdate(GX_TRUE);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+    GfxSetCullMode(0);
+    GfxSetBlendMode(1, 4, 5, 3);
+    fn_80099D74(a, b, c, 0xFF);
+}
+//@@end
 // TODO (not drafted yet, 0x1A4 bytes at 0x80093DE4)
 extern "C" void fn_80093DE4();
 // TODO (not drafted yet, 0xA8 bytes at 0x80093F88)
@@ -105,8 +141,15 @@ extern "C" void fn_800967B8();
 extern "C" void fn_80096B30();
 // TODO (not drafted yet, 0xE8 bytes at 0x80096C74)
 extern "C" void fn_80096C74();
-// TODO (not drafted yet, 0x74 bytes at 0x80096D5C)
-extern "C" void fn_80096D5C();
+//@@80096D5C
+// Sets the colour (144, 255, 160) scaled by f, unless drawing is disabled.
+extern "C" void fn_80096D5C(float f);
+void fn_80096D5C(float f) {
+    if (lbl_804D4154 == 0) {
+        fn_80098244((u8)(144.0f * f), (u8)(255.0f * f), (u8)(160.0f * f));
+    }
+}
+//@@end
 // TODO (not drafted yet, 0x98C bytes at 0x80096DD0)
 extern "C" void fn_80096DD0();
 // TODO (not drafted yet, 0x580 bytes at 0x8009775C)
@@ -122,7 +165,7 @@ extern "C" void fn_80097FF0();
 // TODO (not drafted yet, 0x14C bytes at 0x800980F8)
 extern "C" void fn_800980F8();
 // TODO (not drafted yet, 0x1B8 bytes at 0x80098244)
-extern "C" void fn_80098244();
+// (declared above)
 // TODO (not drafted yet, 0x120 bytes at 0x800983FC)
 extern "C" void fn_800983FC();
 // TODO (not drafted yet, 0x120 bytes at 0x8009851C)
@@ -153,7 +196,7 @@ void AnimSetRect(float x0, float y0, float x1, float y1) {
 // TODO (not drafted yet, 0xB18 bytes at 0x8009925C)
 extern "C" void fn_8009925C();
 // TODO (not drafted yet, 0x1A4 bytes at 0x80099D74)
-extern "C" void fn_80099D74();
+// (declared above)
 // TODO (not drafted yet, 0x668 bytes at 0x80099F18)
 extern "C" void fn_80099F18();
 // TODO (not drafted yet, 0x848 bytes at 0x8009A580)
@@ -164,5 +207,9 @@ extern "C" void fn_8009ADC8();
 extern "C" void fn_8009B940();
 // TODO (not drafted yet, 0x228 bytes at 0x8009C4A4)
 extern "C" void fn_8009C4A4();
-// TODO (not drafted yet, 0x80 bytes at 0x8009C6CC)
-extern "C" void fn_8009C6CC();
+//@@8009C6CC
+// Static initialisers (__sinit_u_80093BF0_cpp, the .ctors entry): reciprocal screen size and aspect ratio.
+float lbl_804D4730 = 1.0f / lbl_804D2568;
+float lbl_804D4734 = 1.0f / lbl_804D256C;
+float lbl_804D4738 = (float)lbl_804D2568 / lbl_804D256C;
+//@@end

@@ -76,7 +76,7 @@ struct AnimItem {
     int unk4C;                // 0x4C
     int unk50;                // 0x50
     int unk54;                // 0x54
-    int unk58;                // 0x58
+    float unk58;              // 0x58
 
     AnimItem() {
         unk10 = 0;
@@ -109,7 +109,8 @@ inline void* operator new(unsigned long, void* p) { return p; }
 // A record set (0x28 bytes); lbl_804D4724 points at 300 of them. +0x14 is a Buffer-derived array of AnimItem.
 struct AnimRecSet {
     int active;               // 0x00
-    u8 pad04[0x10 - 0x04];    // 0x04
+    u8 pad04[0x0C - 0x04];    // 0x04
+    int owner;                // 0x0C
     float unk10;              // 0x10
     void* arrVtbl;            // 0x14
     int arr04;                // 0x18
@@ -264,8 +265,34 @@ void fn_80090D6C(int i) {
     }
 }
 //@@end
-// TODO (not drafted yet, 0xAC bytes at 0x80090DF8)
-extern "C" void fn_80090DF8();
+//@@80090DF8
+static inline void AnimRecSetResetItems(AnimRecSet* r) {
+    AnimItem* it;
+    u32 k;
+    int off;
+    for (k = 0, off = 0; k < r->bytes / sizeof(AnimItem); k++, off += sizeof(AnimItem)) {
+        it = (AnimItem*)((u8*)r->items + off);
+        it->state = 0;
+        it->unk28 = it->unk40 = it->unk10 = it->unk1C = -1;
+        it->unk04.x = it->unk04.y = it->unk04.z = 0.0f;
+        it->unk58 = 1.0f;
+    }
+}
+
+extern "C" int fn_80090DF8(int i, int owner);
+int fn_80090DF8(int i, int owner) {
+    if (i >= 0 && i < 300) {
+        AnimRecSet* r = &lbl_804D4724[i];
+        if (r->active != 0) {
+            AnimRecSetResetItems(r);
+            r->unk10 = 0.0f;
+            r->owner = owner;
+            return i;
+        }
+    }
+    return -1;
+}
+//@@end
 // TODO (not drafted yet, 0x258 bytes at 0x80090EA4)
 extern "C" void fn_80090EA4();
 // TODO (not drafted yet, 0x2F0 bytes at 0x800910FC): already named Fn800910FC__Fiif in symbols.txt; real C++ signature still to be written
