@@ -282,14 +282,14 @@ static inline void PlayerWeaponQueryName(int* out, void* host, u32 hash)
 }
 
 // Tells the actor's host to switch to the name handle `value` for `hash`.
-static inline void PlayerWeaponSetName(Actor* actor, u32 hash, int value)
+static inline void PlayerWeaponSetName(void* host, u32 hash, int value)
 {
     QueryMsg query;
 
     query.hash = hash;
     *(int*)&query.result = value;
     query.unk8 = 0;
-    SendMsg(actor->host38, 0x41d, &query);
+    SendMsg(host, 0x41d, &query);
 }
 
 // First-person "weapon held" view setup: resolves the model and animation
@@ -872,11 +872,7 @@ int PlayerHeldSlotActionCheck(Actor* actor)
     int nameB;
     PlayerWeaponQueryName(&nameB, actor->host38, 0xdff3097a);
 
-    if (actor->field314 < 1) {
-        if (actor->state7A4 == 5) {
-            PlayerSetHeldSlotMode(actor, 3);
-        }
-    } else {
+    if (actor->field314 >= 1) {
         if (actor->state7A4 == 1) {
             PlayerSetHeldSlotMode(actor, 2);
             return 1;
@@ -886,28 +882,36 @@ int PlayerHeldSlotActionCheck(Actor* actor)
         int anim = fn_800498D0(actor);
         int result = Fn800F7DEC(nameA, nameB, 0x20ee36, anim, 0);
 
-        if (result == 0x11d2c025) {
+        switch (result) {
+        case 0x4a3e183:
+            PlayerSetHeldSlotMode(actor, 5);
+            return 1;
+        case -0x3f413082: {
+            int anim2 = fn_800498D0(actor);
+            int second = Fn800F7DEC(nameA, nameB, 0xe6b71bcc, anim2, 0);
+            actor->field15B4 = 0;
+            if (second == 0x4a3e183) {
+                PlayerSetHeldSlotMode(actor, 10);
+                return 1;
+            }
+            break;
+        }
+        case 0x11d2c025:
             if (fn_802A1D04() == 2 || fn_802A1D04() == 1) {
-                PlayerWeaponSetName(actor, 0x7ffcfd4f, 0x91a0cef7);
+                PlayerWeaponSetName(actor->host38, 0x7ffcfd4f, 0x91a0cef7);
             }
             if (actor->state7A4 == 5) {
                 PlayerSetHeldSlotMode(actor, 3);
             }
-        } else if (result < 0x11d2c025) {
-            if (result == 0x4a3e183) {
-                PlayerSetHeldSlotMode(actor, 5);
-                return 1;
+            break;
+        case 0x3da260f7:
+            if (actor->state7A4 == 5) {
+                PlayerSetHeldSlotMode(actor, 3);
             }
-            if (result < 0x4a3e183 && result == -0x3f413082) {
-                int anim2 = fn_800498D0(actor);
-                int second = Fn800F7DEC(nameA, nameB, 0xe6b71bcc, anim2, 0);
-                actor->field15B4 = 0;
-                if (second == 0x4a3e183) {
-                    PlayerSetHeldSlotMode(actor, 10);
-                    return 1;
-                }
-            }
-        } else if (result == 0x3da260f7 && actor->state7A4 == 5) {
+            break;
+        }
+    } else {
+        if (actor->state7A4 == 5) {
             PlayerSetHeldSlotMode(actor, 3);
         }
     }
