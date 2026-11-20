@@ -725,6 +725,7 @@ config.libs = [
             Object(NonMatching, "game/u_801D8FD4.cpp"),  # msg 0x74xx helpers, own consts 0x804D8C80..
             Object(NonMatching, "game/u_801D9A70.cpp"),  # guess
             Object(NonMatching, "game/u_801E0EDC.cpp"),  # guess
+            Object(NonMatching, "game/u_801E14E8.cpp"),  # split from u_801E0EDC
             Object(NonMatching, "game/u_801E241C.cpp"),  # pinned
             Object(NonMatching, "game/u_801E7DE0.cpp"),  # guess
             Object(NonMatching, "game/u_801EAACC.cpp"),  # guess
