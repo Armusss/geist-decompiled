@@ -694,6 +694,7 @@ struct EmitterDesc {
     u8 color1[4];                   // 0xd0
     s32 id4, id8;                   // 0xd4
     s32 i_dc, i_e0, i_e4;           // 0xdc
+    u8 pade8[0x04];                 // 0xe8
 };
 
 // Payload sent with message 0x415 to the fire-loop effect and its emitters.
@@ -745,7 +746,7 @@ int ScannableRailEffectsStart(int owner, CamActor* actor) {
     h->id = -1;
 
     Player* p = actor->owner;
-    if (p && (p->objId >> 24) == 1 && p->f88 && *p->f88 == 0x201bae) {
+    if (p && (int)(p->objId >> 24) == 1 && p->f88 && *p->f88 == 0x201bae) {
         actor->owner = 0;
     }
 
@@ -754,7 +755,7 @@ int ScannableRailEffectsStart(int owner, CamActor* actor) {
     msg.objId = actor->objId;
     msg.index = -1;
 
-    h->obj = fn_80027A8C(lbl_804D9CF8, 1, &actor->vel, &actor->rot,
+    h->obj = fn_80027A8C(180.0f, 1, &actor->vel, &actor->rot,
                          lbl_803BEB48, 0x9c4, 9);
     SendMsg((int)h->obj, 0x415, &msg);
 
@@ -762,43 +763,46 @@ int ScannableRailEffectsStart(int owner, CamActor* actor) {
     Vec3i aimA;
     ActorAim(&aimA.x, (Actor*)actor, 1);
     fn_800E0E9C(&aimA, &aimA, -0x3c);
-    descA.px = (float)(aimA.x + actor->px);
-    descA.py = (float)(aimA.y + actor->py);
-    descA.pz = (float)(aimA.z + actor->pz);
-    descA.f0c = lbl_804D9C94;
-    descA.f10 = lbl_804D9C94;
-    descA.f14 = lbl_804D9C94;
-    descA.f18 = lbl_804D9C9C;
+    aimA.x += actor->px;
+    aimA.y += actor->py;
+    aimA.z += actor->pz;
+    descA.px = (float)aimA.x;
+    descA.py = (float)aimA.y;
+    descA.pz = (float)aimA.z;
+    descA.f0c = 0.0f;
+    descA.f10 = 0.0f;
+    descA.f14 = 0.0f;
+    descA.f18 = 1.0f;
     descA.i1c = 1;
     descA.i20 = 1;
-    descA.f24 = lbl_804D9C9C;
+    descA.f24 = 1.0f;
     descA.i28 = 1;
     descA.asset = AssetFind(0xf2e2beb8, 0x5f678088);
     descA.alpha = 0xff;
-    descA.f6c = lbl_804D9CFC;
-    descA.f70 = lbl_804D9D00;
-    descA.f74 = lbl_804D9D04;
-    descA.f78 = lbl_804D9D08;
+    descA.f6c = 3.231f;
+    descA.f70 = 9.73f;
+    descA.f74 = 1.01f;
+    descA.f78 = 5.0f;
     descA.i7c = 0x2f;
-    descA.f80 = lbl_804D9D0C;
-    descA.f84 = lbl_804D9C9C;
+    descA.f80 = 44.55f;
+    descA.f84 = 1.0f;
     descA.i88 = 0;
-    descA.f8c = lbl_804D9C94;
-    descA.f90 = lbl_804D9D10;
-    descA.f94 = lbl_804D9D14;
+    descA.f8c = 0.0f;
+    descA.f90 = 1.5f;
+    descA.f94 = 12.0f;
     descA.i98 = 1;
     descA.i9c = 0;
     descA.ia0 = 0;
     descA.ia4 = 0;
     descA.ia8 = 0;
-    descA.fac = lbl_804D9C94;
-    descA.fb0 = lbl_804D9D18;
-    descA.fb4 = lbl_804D9D1C;
-    descA.fb8 = lbl_804D9D20;
-    descA.fbc = lbl_804D9C94;
-    descA.fc0 = lbl_804D9C94;
-    descA.fc4 = lbl_804D9D1C;
-    descA.fc8 = lbl_804D9C9C;
+    descA.fac = 0.0f;
+    descA.fb0 = 20.0f;
+    descA.fb4 = 0.167f;
+    descA.fb8 = 0.833f;
+    descA.fbc = 0.0f;
+    descA.fc0 = 0.0f;
+    descA.fc4 = 0.167f;
+    descA.fc8 = 1.0f;
     descA.color0[0] = 0x00;
     descA.color0[1] = 0x59;
     descA.color0[2] = 0x3d;
@@ -820,43 +824,46 @@ int ScannableRailEffectsStart(int owner, CamActor* actor) {
     Vec3i aimB;
     ActorAim(&aimB.x, (Actor*)actor, 1);
     fn_800E0E9C(&aimB, &aimB, -0x69);
-    descB.px = (float)(aimB.x + actor->px);
-    descB.py = (float)(aimB.y + actor->py);
-    descB.pz = (float)(aimB.z + actor->pz);
-    descB.f0c = lbl_804D9C94;
-    descB.f10 = lbl_804D9C94;
-    descB.f14 = lbl_804D9C94;
-    descB.f18 = lbl_804D9C9C;
+    aimB.x += actor->px;
+    aimB.y += actor->py;
+    aimB.z += actor->pz;
+    descB.px = (float)aimB.x;
+    descB.py = (float)aimB.y;
+    descB.pz = (float)aimB.z;
+    descB.f0c = 0.0f;
+    descB.f10 = 0.0f;
+    descB.f14 = 0.0f;
+    descB.f18 = 1.0f;
     descB.i1c = 1;
     descB.i20 = 1;
-    descB.f24 = lbl_804D9C9C;
+    descB.f24 = 1.0f;
     descB.i28 = 1;
     descB.asset = AssetFind(0xf2e2beb8, 0x5f678088);
     descB.alpha = 0xff;
-    descB.f6c = lbl_804D9D24;
-    descB.f70 = lbl_804D9D28;
-    descB.f74 = lbl_804D9D2C;
-    descB.f78 = lbl_804D9D30;
+    descB.f6c = 9.547f;
+    descB.f70 = 7.236f;
+    descB.f74 = 16.565f;
+    descB.f78 = 22.54f;
     descB.i7c = 0x18;
-    descB.f80 = lbl_804D9D34;
-    descB.f84 = lbl_804D9C9C;
+    descB.f80 = 3.925f;
+    descB.f84 = 1.0f;
     descB.i88 = 8;
-    descB.f8c = lbl_804D9C94;
-    descB.f90 = lbl_804D9D38;
-    descB.f94 = lbl_804D9D3C;
+    descB.f8c = 0.0f;
+    descB.f90 = 1.633f;
+    descB.f94 = 3.0f;
     descB.i98 = 1;
     descB.i9c = 0;
     descB.ia0 = 0;
     descB.ia4 = 0;
     descB.ia8 = 0;
-    descB.fac = lbl_804D9C94;
-    descB.fb0 = lbl_804D9CCC;
-    descB.fb4 = lbl_804D9D40;
-    descB.fb8 = lbl_804D9D44;
-    descB.fbc = lbl_804D9C94;
-    descB.fc0 = lbl_804D9C94;
-    descB.fc4 = lbl_804D9C94;
-    descB.fc8 = lbl_804D9CD4;
+    descB.fac = 0.0f;
+    descB.fb0 = 10.0f;
+    descB.fb4 = 0.067f;
+    descB.fb8 = 0.4f;
+    descB.fbc = 0.0f;
+    descB.fc0 = 0.0f;
+    descB.fc4 = 0.0f;
+    descB.fc8 = 0.5f;
     descB.color0[0] = 0x00;
     descB.color0[1] = 0x81;
     descB.color0[2] = 0x83;
