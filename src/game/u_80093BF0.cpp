@@ -44,6 +44,9 @@ extern "C" void fn_80107BD8(float sx, float sy);
 extern "C" void fn_80107514(float sx, float sy);
 extern "C" void* fn_80115488(int a, int b, int c);
 extern "C" void fn_8010829C();
+extern "C" void fn_80108528();
+extern "C" void fn_8010883C();
+void CubeTevSetupIndirectTwo();
 extern float lbl_804D4738;
 extern "C" void* fn_80115A34(int a, int b, short* rect);
 extern "C" int fn_80010448(int id, int alpha);
@@ -387,8 +390,37 @@ void fn_80094BD4() {
     }
 }
 //@@end
-// TODO (not drafted yet, 0x134 bytes at 0x80094CEC)
-extern "C" void fn_80094CEC();
+//@@80094CEC
+// Combines two frame-buffer copies and tints them (r, g, b).
+extern "C" void fn_80094CEC(int r, int g, int b);
+void fn_80094CEC(int r, int g, int b) {
+    if (lbl_804D4154 == 0) {
+        GXTexObj* tex;
+        GXTexObj* tex2;
+        GfxFbCommit();
+        GfxSetCopyFilter(2);
+        tex = (GXTexObj*)fn_80115A34(0, 1, 0);
+        if (tex != 0) {
+            tex2 = (GXTexObj*)fn_80115850(0, 1, 0);
+            GfxLoadTexObj(tex, 0);
+            GXLoadTexObj(tex2, GX_TEXMAP1);
+            GfxSetVtxDesc(2);
+            fn_80008D10();
+            GfxSetMaterial(0);
+            fn_80108528();
+            GfxSetBlendMode(0, 4, 5, 3);
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(1);
+            fn_8009C4A4(0, r, g, b, 0xFF);
+            fn_8000FF7C();
+            fn_800097F0();
+        }
+    }
+}
+//@@end
 // TODO (not drafted yet, 0x160 bytes at 0x80094E20)
 extern "C" void fn_80094E20();
 // TODO (not drafted yet, 0x148 bytes at 0x80094F80)
@@ -429,10 +461,59 @@ void fn_80095490() {
 //@@end
 // TODO (not drafted yet, 0x134 bytes at 0x80095570)
 extern "C" void fn_80095570();
-// TODO (not drafted yet, 0x120 bytes at 0x800956A4)
-extern "C" void fn_800956A4();
-// TODO (not drafted yet, 0x108 bytes at 0x800957C4)
-extern "C" void fn_800957C4();
+//@@800956A4
+// Draws two frame-buffer copies through the two-stage indirect TEV with colour (r, g, b, a).
+extern "C" void fn_800956A4(int r, int g, int b, int a);
+void fn_800956A4(int r, int g, int b, int a) {
+    if (lbl_804D4154 == 0) {
+        GXTexObj* tex;
+        GXTexObj* tex2;
+        GfxFbCommit();
+        GfxSetCopyFilter(0);
+        tex = (GXTexObj*)fn_80115850(0, 1, 0);
+        tex2 = (GXTexObj*)fn_80115488(0, 1, 0);
+        GfxLoadTexObj(tex, 0);
+        GXLoadTexObj(tex2, GX_TEXMAP1);
+        GfxSetVtxDesc(2);
+        fn_80008D10();
+        GfxSetMaterial(0);
+        CubeTevSetupIndirectTwo();
+        GfxSetBlendMode(1, 4, 5, 3);
+        GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+        GXSetColorUpdate(GX_TRUE);
+        GXSetAlphaUpdate(GX_TRUE);
+        GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+        GfxSetCullMode(1);
+        fn_8009C4A4(0, r, g, b, a);
+        fn_8000FF7C();
+        fn_800097F0();
+    }
+}
+//@@end
+//@@800957C4
+// Draws a frame-buffer copy with colour (r, g, b, a).
+extern "C" void fn_800957C4(int r, int g, int b, int a);
+void fn_800957C4(int r, int g, int b, int a) {
+    if (lbl_804D4154 == 0) {
+        GfxFbCommit();
+        GfxSetCopyFilter(0);
+        GfxLoadTexObj((GXTexObj*)fn_80115488(0, 1, 0), 0);
+        GfxSetVtxDesc(2);
+        fn_80008D10();
+        GfxSetMaterial(0);
+        fn_8010883C();
+        GfxSetBlendMode(1, 4, 5, 3);
+        GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+        GXSetColorUpdate(GX_TRUE);
+        GXSetAlphaUpdate(GX_TRUE);
+        GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+        GfxSetCullMode(1);
+        fn_8009C4A4(0, r, g, b, a);
+        fn_8000FF7C();
+        fn_800097F0();
+    }
+}
+//@@end
 // TODO (not drafted yet, 0xFC bytes at 0x800958CC)
 extern "C" void fn_800958CC();
 // TODO (not drafted yet, 0x110 bytes at 0x800959C8)
