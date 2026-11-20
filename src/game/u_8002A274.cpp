@@ -21,10 +21,21 @@ typedef float f32;
 
 // Stream slot table (lbl_804D42E4, count lbl_804D42E8), 0x40 bytes per slot.
 struct StreamEntry;
+// Fix-up record of a loaded stream block (0x14 bytes): offsets with bit 0 clear are relocated.
+struct StreamLink {
+    int a;
+    int b;
+    u8 unk08[0x14 - 0x08];
+};
+
 struct StreamSlot {
-    /*0x00*/ u8 unk00[0x0C - 0x00];
+    /*0x00*/ int count0;
+    /*0x04*/ int count4;
+    /*0x08*/ int linkCount;
     /*0x0C*/ void* buffer;
-    /*0x10*/ u8 unk10[0x30 - 0x10];
+    /*0x10*/ u8 unk10[0x28 - 0x10];
+    /*0x28*/ void* data28;
+    /*0x2C*/ void* data2C;
     /*0x30*/ u16 state;
     /*0x32*/ u8 unk32[0x38 - 0x32];
     /*0x38*/ int size;
@@ -51,6 +62,7 @@ extern int lbl_804D42E0;
 extern int lbl_804D42EC;
 extern int fn_80036688(void*, int, void*);
 void fn_8002FC30(int, void*, void*);
+void fn_800368CC(StreamSlot* s, char* p);
 int fn_800334A4(int a, float* box, void* c);
 int fn_800337B8(int a, float* box, Mtx34* m, void* d);
 void LinkInfoInit(void* m);
@@ -98,6 +110,8 @@ void StreamFree(void* p);
 void GunStateTimerTick8017BAD0(void* p);
 void GunStateStep8017BBBC(void* p);
 void GunStateFinish8017BC5C(void* p);
+int GunBlockClear8017BD20(void* p);
+void GunBlockClear8017BCD0(void* p);
 void FileRemoveHandler(int type, FileHandlerFn fn, void* ctx);
 void FileAddHandler(int type, FileHandlerFn fn, void* ctx);
 
@@ -169,7 +183,58 @@ void StreamSlotsRelease() {
     }
 }
 
-// TODO (not drafted yet, 0x138 bytes at 0x8002FC30): stream slot completion callback (declared above)
+
+inline void LinksRelocate(StreamLink* l, int n, int base) {
+    int i;
+    for (i = 0; i < n; i++) {
+        if (!(l->a & 1))
+            l->a += base;
+        if (!(l->b & 1))
+            l->b += base;
+        l++;
+    }
+}
+
+inline void LinksUnrelocate(StreamLink* l, int n, int base) {
+    int i;
+    for (i = 0; i < n; i++) {
+        if (!(l->a & 1))
+            l->a -= base;
+        if (!(l->b & 1))
+            l->b -= base;
+        l++;
+    }
+}
+
+// 0x8002FC30: stream read callback of a slot: relocate the block on success, retry or drop it on failure
+void fn_8002FC30(int result, void* data, void* arg) {
+    StreamSlot* s = (StreamSlot*)arg;
+    if (result > 0) {
+        if (data != 0) {
+            fn_800368CC(s, (char*)data);
+        } else {
+            char* p = (char*)s->buffer + (s->count0 + 3) / 4 * 4;
+            s->buffer = 0;
+            p += s->count0 * 12;
+            s->data28 = 0;
+            p += s->count4 * 8;
+            s->data2C = 0;
+            LinksUnrelocate((StreamLink*)p, s->linkCount, (int)p);
+        }
+    } else if (result < 0) {
+        int r = GunBlockClear8017BD20(&s->state);
+        if (r == 2 || r == 1) {
+            if (s->buffer == 0)
+                StreamRead(0x2E, (StreamEntry*)&s->state, fn_8002FC30, s);
+            s->state = 1;
+        } else {
+            s->buffer = 0;
+        }
+    } else {
+        GunBlockClear8017BCD0(&s->state);
+        s->buffer = 0;
+    }
+}
 
 // 0x8002FD68 (called from another unit under this placeholder name)
 extern "C" void fn_8002FD68() {
@@ -414,7 +479,6 @@ extern "C" void fn_800362E0();
 // TODO (not drafted yet, 0x3C bytes at 0x8003664C)
 // TODO (not drafted yet, 0x244 bytes at 0x80036688)
 // TODO (not drafted yet, 0x138 bytes at 0x800368CC)
-extern "C" void fn_800368CC();
 // TODO (not drafted yet, 0x1EC bytes at 0x80036A04)
 extern "C" void fn_80036A04();
 // TODO (not drafted yet, 0x1D4 bytes at 0x80036BF0)
@@ -471,4 +535,24 @@ extern "C" void fn_8003664C(int tri, float t, float u, float v) {
         lbl_803DE5D8.t = t;
         lbl_803DE5D8.tri = tri;
     }
+}
+
+// 0x800368CC: point a slot's tables into its loaded block and relocate the links
+extern "C" void fn_800368CC(StreamSlot* s, char* p) {
+    int left = s->size;
+    int bytes = (s->count0 + 3) / 4 * 4;
+    s->buffer = Fits(left, bytes) ? p : 0;
+    left -= bytes;
+    p += bytes;
+    bytes = s->count0 * 12;
+    s->data28 = Fits(left, bytes) ? p : 0;
+    left -= bytes;
+    p += bytes;
+    bytes = s->count4 * 8;
+    s->data2C = Fits(left, bytes) ? p : 0;
+    left -= bytes;
+    p += bytes;
+    bytes = s->linkCount * 0x14;
+    p = Fits(left, bytes) ? p : 0;
+    LinksRelocate((StreamLink*)p, s->linkCount, (int)p);
 }
