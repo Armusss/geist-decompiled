@@ -1170,8 +1170,13 @@ void AnimApply(int anim, char* bone, int a, int b);
 void ActorGetMatrix(Mtx34* m, Actor* a);
 void ModelSetMatrix(int model, Mtx34* m, char* bone);
 extern "C" int fn_8003A1F0(int model, char* bone, int anim);
-extern "C" void fn_8016D864(Vec3* out, void* in);
-extern "C" int fn_8002B11C(int model, Vec3* pos, int anim, float f, int a, int b, int c, int d);
+// Bounding box (min, max).
+struct Box {
+    Vec3 min;
+    Vec3 max;
+};
+extern "C" void fn_8016D864(Box* out, void* in);
+extern "C" int fn_8002B11C(int model, Box* box, int anim, PlayerQueryArgs* args, float f, int a, int b, int c, int d);
 
 // Camera parameters of the player for the view.
 struct PlayerViewArgs {
@@ -1284,13 +1289,13 @@ extern "C" int fn_80060B7C(PlayerQuery* q)
 {
     Actor* p = q->mPlayer;
     int anim;
-    Vec3 pos;
+    Box box;
     if (p->mFlags & 0x80) {
         return 0;
     }
     anim = WeaponBoneAnim(p);
-    fn_8016D864(&pos, p->mUnkA0C);
-    return fn_8002B11C(p->mModel58, &pos, anim, q->mUnk04->mUnk0C, q->mUnk08, q->mUnkC, q->mUnk14, q->mUnk18);
+    fn_8016D864(&box, p->mUnkA0C);
+    return fn_8002B11C(p->mModel58, &box, anim, q->mUnk04, q->mUnk04->mUnk0C, q->mUnk08, q->mUnkC, q->mUnk14, q->mUnk18);
 }
 
 // Arguments of the weapon-effect draw.
@@ -1306,7 +1311,7 @@ struct PlayerDrawArgs {
     int mUnk2C;       // 0x2C
     int mUnk30;       // 0x30
 };
-extern "C" int fn_8002D4E0(int model, Vec3* pos, Mtx34* m, int anim, int a, int b, int c, int d, int e, u32 flags,
+extern "C" int fn_8002D4E0(int model, Box* box, Mtx34* m, int anim, int a, int b, int c, int d, int e, u32 flags,
                            int f, int g);
 
 // 0x80060CF0: draws an effect at the player's weapon bone
@@ -1314,15 +1319,15 @@ extern "C" int fn_80060CF0(PlayerDrawArgs* args)
 {
     Actor* p = args->mPlayer;
     int anim;
-    Vec3 pos;
+    Box box;
     Mtx34 m;
     if (p->mFlags & 0x80) {
         return 0;
     }
     anim = WeaponBoneAnim(p);
-    fn_8016D864(&pos, p->mUnkA0C);
+    fn_8016D864(&box, p->mUnkA0C);
     ActorGetMatrix(&m, p);
-    return fn_8002D4E0(p->mModel58, &pos, &m, anim, args->mUnk04, args->mUnk08, args->mUnk0C, args->mUnk10,
+    return fn_8002D4E0(p->mModel58, &box, &m, anim, args->mUnk04, args->mUnk08, args->mUnk0C, args->mUnk10,
                        args->mUnk14, (args->mFlags | 0x20000000) & ~0x10000000, args->mUnk2C, args->mUnk30);
 }
 
