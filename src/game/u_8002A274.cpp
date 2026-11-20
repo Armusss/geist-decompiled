@@ -58,8 +58,8 @@ extern void* lbl_804D42B0;
 extern int lbl_804D42B4;
 extern int lbl_804D42C4;
 extern int lbl_804D42DC;
-extern int lbl_804D42E0;
-extern int lbl_804D42EC;
+extern int* lbl_804D42E0;
+extern char* lbl_804D42EC;
 extern int fn_80036688(void*, int, void*);
 void fn_8002FC30(int, void*, void*);
 void fn_800368CC(StreamSlot* s, char* p);
@@ -70,7 +70,10 @@ void LinkInfoInit(void* m);
 
 // Hit result shared by the ray tests (0x803DE5D8, 0x5C bytes).
 struct RayHit {
-    /*0x00*/ u8 unk00[0x44 - 0x00];
+    /*0x00*/ Vec3 origin;
+    /*0x0C*/ Vec3 dir;
+    /*0x18*/ u8 unk18[0x40 - 0x18];
+    /*0x40*/ int mask;
     /*0x44*/ f32 u;
     /*0x48*/ f32 v;
     /*0x4C*/ f32 t;
@@ -102,6 +105,19 @@ extern RayHit lbl_803DE5D8;
 extern int lbl_803DE634[];
 extern CollMesh lbl_803DEA34;
 extern int lbl_804D42FC;
+extern Vec3* lbl_804D42F0;
+extern CollTri* lbl_804D42F4;
+int fn_80036A04(Vec3* org, Vec3* dir, Vec3* a, Vec3* b, Vec3* c, float* t, float* u, float* v);
+}
+
+// Keep the nearest hit of the current ray.
+inline void RayHitKeep(int tri, float t, float u, float v) {
+    if (t >= 0.0f && t <= lbl_803DE5D8.t) {
+        lbl_803DE5D8.u = u;
+        lbl_803DE5D8.v = v;
+        lbl_803DE5D8.t = t;
+        lbl_803DE5D8.tri = tri;
+    }
 }
 
 typedef int (*FileHandlerFn)(void*, int, void*);
@@ -473,14 +489,11 @@ extern "C" void fn_80035A84();
 // TODO (not drafted yet, 0x1E0 bytes at 0x80036020)
 extern "C" void fn_80036020();
 // TODO (not drafted yet, 0xE0 bytes at 0x80036200)
-extern "C" void fn_80036200();
 // TODO (not drafted yet, 0x36C bytes at 0x800362E0)
 extern "C" void fn_800362E0();
 // TODO (not drafted yet, 0x3C bytes at 0x8003664C)
-// TODO (not drafted yet, 0x244 bytes at 0x80036688)
 // TODO (not drafted yet, 0x138 bytes at 0x800368CC)
 // TODO (not drafted yet, 0x1EC bytes at 0x80036A04)
-extern "C" void fn_80036A04();
 // TODO (not drafted yet, 0x1D4 bytes at 0x80036BF0)
 extern "C" void fn_80036BF0();
 // TODO (not drafted yet, 0x46C bytes at 0x80036DC4)
@@ -527,14 +540,82 @@ extern "C" int fn_80035330(int index, Vec3* out, int* surface) {
     return 1;
 }
 
+// 0x80036200: test the current ray against one triangle of the mesh at lbl_804D42F4
+extern "C" int fn_80036200(int tri) {
+    CollTri* c = &lbl_804D42F4[tri];
+    float t;
+    float u;
+    float v;
+    if (c->surface & lbl_803DE5D8.mask)
+        return 0;
+    if (fn_80036A04(&lbl_803DE5D8.origin, &lbl_803DE5D8.dir, &lbl_804D42F0[c->v[0]], &lbl_804D42F0[c->v[1]],
+                    &lbl_804D42F0[c->v[2]], &t, &u, &v)) {
+        RayHitKeep(tri, t, u, v);
+    }
+    return 1;
+}
+
 // 0x8003664C: keep the nearest hit
 extern "C" void fn_8003664C(int tri, float t, float u, float v) {
-    if (t >= 0.0f && t <= lbl_803DE5D8.t) {
-        lbl_803DE5D8.u = u;
-        lbl_803DE5D8.v = v;
-        lbl_803DE5D8.t = t;
-        lbl_803DE5D8.tri = tri;
+    RayHitKeep(tri, t, u, v);
+}
+
+// 0x80036688: chunk loader for file type 0x2E: the stream slot table and the blocks resident in the file
+extern "C" int fn_80036688(void* data, int size, void* ctx) {
+    int* h = (size > 0) ? (int*)data : 0;
+    int left;
+    char* p;
+    int bytes;
+    int i;
+    int n;
+    lbl_804D42E0 = h;
+    left = size - 0x10;
+    p = (char*)data + 0x10;
+    if (h[0] != 4)
+        return 0;
+    lbl_804D42DC = h[2];
+    n = h[1];
+    lbl_804D42E8 = n;
+    bytes = n * (int)sizeof(StreamSlot);
+    lbl_804D42E4 = (StreamSlot*)(Fits(left, bytes) ? p : 0);
+    p += bytes;
+    left -= bytes;
+    if (h[2] & 1) {
+        for (i = 0; i < lbl_804D42E8; i++) {
+            lbl_804D42E4[i].buffer = 0;
+            lbl_804D42E4[i].data28 = 0;
+            lbl_804D42E4[i].data2C = 0;
+        }
+        lbl_804D42EC = 0;
+        return 1;
     }
+    lbl_804D42EC = (char*)(lbl_804D42E4 + n);
+    for (i = 0; i < lbl_804D42E8; i++) {
+        StreamSlot* s = &lbl_804D42E4[i];
+        char* base;
+        bytes = (s->count0 + 3) / 4 * 4;
+        left -= bytes;
+        p += bytes;
+        bytes = s->count0 * 12;
+        left -= bytes;
+        p += bytes;
+        bytes = s->count4 * 8;
+        left -= bytes;
+        p += bytes;
+        bytes = s->linkCount * 0x14;
+        base = Fits(left, bytes) ? p : 0;
+        p += bytes;
+        left -= bytes;
+        LinksRelocate((StreamLink*)base, s->linkCount, (int)base);
+    }
+    for (i = 0; i < lbl_804D42E8; i++) {
+        StreamSlot* s = &lbl_804D42E4[i];
+        s->state = 4;
+        s->buffer = lbl_804D42EC + (int)s->buffer;
+        s->data28 = (char*)s->buffer + (s->count0 + 3) / 4 * 4;
+        s->data2C = (char*)s->data28 + s->count0 * 12;
+    }
+    return 1;
 }
 
 // 0x800368CC: point a slot's tables into its loaded block and relocate the links
