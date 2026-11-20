@@ -108,7 +108,7 @@ extern "C" float fn_800E1020(Vec3* v);
 extern "C" void fn_800E1098(Vec3* dst, const Vec3* src, float scale);
 extern "C" int SendMsg(int to, int msg, void* data);
 extern "C" void* memset(void* dst, int val, u32 n);
-extern "C" float fabsf(float f);
+inline float fabsf(float x) { return __fabsf(x); }
 
 float DistPointLineSq(const float* p, const float* a, const float* b, float* t,
                       float* out);
@@ -125,40 +125,47 @@ extern s32 lbl_804D35CC;
 
 // Advances an actor's aim and rotation toward a camera and, when the actor is
 // close enough, reports contact through message 0x407. 0x8024CAA0.
+static inline void VecSub(Vec3* out, const Vec3* a, const Vec3* b) {
+    out->x = a->x - b->x;
+    out->y = a->y - b->y;
+    out->z = a->z - b->z;
+}
+
+static inline float Clamp(float x, float lo, float hi) {
+    return x < lo ? lo : (x > hi ? hi : x);
+}
+
 bool CamRailUpdate(float scale, CamObj* obj, CamActor* actor) {
-    UnkCam* cam = fn_800C6448();
-    Vec3 delta;
+    float t;
+    Vec3 mat;
+    Vec3 rel;
     Vec3 dir;
     Vec3 aim;
-    Vec3 mat;
     Vec3 rot;
+    Vec3 delta;
 
-    delta.x = cam->pos.x - (float)actor->px;
-    delta.y = cam->pos.y - (float)actor->py;
-    delta.z = cam->pos.z - (float)actor->pz;
-    fn_8016D440(&dir, &delta);
+    UnkCam* cam = fn_800C6448();
+    rel.x = (float)actor->px;
+    rel.y = (float)actor->py;
+    rel.z = (float)actor->pz;
+    VecSub(&rel, &cam->pos, &rel);
+    fn_8016D440(&dir, &rel);
     fn_8016D440(&aim, &actor->rot);
     fn_8016D614(&dir, &dir, &aim);
     EulerNormalize(&dir, &dir);
-    if (fabsf(dir.z) > lbl_804D9C90) {
-        dir.z = lbl_804D9C94;
+    if (fabsf(dir.z) > 90.0f) {
+        dir.z = 0.0f;
     }
 
-    float denom = fabsf(dir.z) + fabsf(dir.x);
-    float ky = (lbl_804D9C98 * ((float)lbl_804D35C8 * scale)) / denom;
-    if (ky < lbl_804D9C94) {
-        ky = lbl_804D9C94;
-    } else if (ky > lbl_804D9C9C) {
-        ky = lbl_804D9C9C;
-    }
-    float kx = (lbl_804D9C98 * ((float)lbl_804D35CC * scale)) / denom;
-    if (kx < lbl_804D9C94) {
-        kx = lbl_804D9C94;
-    } else if (kx > lbl_804D9C9C) {
-        kx = lbl_804D9C9C;
-    }
-    aim.z = aim.z + dir.z * ky;
-    aim.x = aim.x + dir.x * kx;
+    float dz = dir.z;
+    float dx = dir.x;
+    float az = fabsf(dz);
+    float ax = fabsf(dx);
+    float denom = az + ax;
+    float ky = Clamp((0.001f * ((float)lbl_804D35C8 * scale)) / denom, 0.0f, 1.0f);
+    float kx = Clamp((0.001f * ((float)lbl_804D35CC * scale)) / denom, 0.0f, 1.0f);
+    aim.z = dz * ky + aim.z;
+    aim.x = dx * kx + aim.x;
     fn_8016D4EC(&mat, &aim);
     fn_800E1098(&actor->rot, &mat, fn_800E1020(&actor->rot));
     fn_8016D440(&rot, &actor->rot);
@@ -168,10 +175,9 @@ bool CamRailUpdate(float scale, CamObj* obj, CamActor* actor) {
     delta.x = actor->end.x - actor->line.x;
     delta.y = actor->end.y - actor->line.y;
     delta.z = actor->end.z - actor->line.z;
-    float t;
     float dist = DistPointLineSq(&cam->pos.x, &actor->line.x, &delta.x, &t, 0);
     float px, py, pz;
-    if (t < lbl_804D9C94) {
+    if (t < 0.0f) {
         px = actor->line.x;
         py = actor->line.y;
         pz = actor->line.z;
@@ -179,7 +185,7 @@ bool CamRailUpdate(float scale, CamObj* obj, CamActor* actor) {
         delta.y = py - cam->pos.y;
         delta.z = pz - cam->pos.z;
         dist = px * px + py * py + pz * pz;
-    } else if (t > lbl_804D9C9C) {
+    } else if (t > 1.0f) {
         px = actor->end.x;
         py = actor->end.y;
         pz = actor->end.z;
@@ -188,28 +194,26 @@ bool CamRailUpdate(float scale, CamObj* obj, CamActor* actor) {
         delta.z = pz - cam->pos.z;
         dist = px * px + py * py + pz * pz;
     }
-    if (dist < lbl_804D9CA0) {
+    if (dist < 90000.0f) {
         Player* player = GetPlayer();
         CamMsg407 msg;
         memset(&msg, 0, 0x5c);
-        msg.actor = actor;
-        msg.unk08 = actor->unkcc;
-        msg.unk14 = obj->i1c;
         msg.speed = (float)obj->id * actor->fe8 * obj->fc;
+        msg.actor = actor;
+        msg.unk14 = obj->i1c;
+        msg.unk08 = actor->unkcc;
         msg.f4c = obj->f18;
         msg.rx = (s32)actor->rot.x;
         msg.ry = (s32)actor->rot.y;
+        msg.rz = (s32)actor->rot.z;
         msg.x = (s32)px;
         msg.y = (s32)py;
         msg.z = (s32)pz;
-        msg.rz = (s32)actor->rot.z;
         msg.dx = msg.x - player->px;
         msg.dy = msg.y - player->py;
-        msg.zero48 = 0;
         msg.dz = msg.z - player->pz;
-        msg.m3c = -1;
-        msg.m40 = -1;
-        msg.m44 = -1;
+        msg.zero48 = 0;
+        msg.m3c = msg.m40 = msg.m44 = -1;
         msg.player = player;
         msg.z58 = 0;
         SendMsg(player->objId, 0x407, &msg);
@@ -224,7 +228,8 @@ bool CamRailUpdate(float scale, CamObj* obj, CamActor* actor) {
 struct Actor;           // shared game class, defined in another unit
 
 struct Mtx34 {
-    u32 m[9];           // 0x00, 0x24 bytes
+    float m[9];         // 0x00
+    Vec3 pos;           // 0x24
 };
 
 struct Vec3i {
@@ -308,7 +313,7 @@ extern "C" int rand(void);
 extern "C" int fn_8001F928(CamActor* actor, CamQuery* q, u32 flags, void* cb,
                            QueryCtx* ctx);
 extern "C" int fn_80049940(void);
-extern "C" void fn_8003F15C(float f, s32 id, Mtx34* mtx, int a, int b, int c);
+extern "C" void fn_8003F15C(s32 id, Mtx34* mtx, float f, int a, int b, int c);
 extern "C" void fn_8009F44C(Vec3i* out, CamActor* actor, Vec3i* in);
 extern "C" void fn_800A0100(Mtx34* mtx);
 extern "C" float fn_800A127C(float f);
@@ -572,34 +577,25 @@ bool ScannableRailMove(float scale, CamObj* obj, CamActor* actor) {
 // based on the actor's timer. 0x8024D8AC.
 void ScannableDrawRail(int mode, CamActor* actor) {
     Mtx34 mtx;
-    Vec3 pos;
+    float* pos;
     float f;
 
     ActorGetMatrix(&mtx, (Actor*)actor);
+    pos = &mtx.pos.x;
     fn_800A0100(&mtx);
 
     if (actor->fc8 != -1) {
-        if ((actor->flags & 0x10) == 0) {
-            f = lbl_804D9C9C - actor->fc4 / lbl_804D9CE8;
-        } else {
-            f = lbl_804D9C9C - actor->fc4 / lbl_804D9CEC;
-        }
-        if (f < lbl_804D9C94) {
-            f = lbl_804D9C94;
-        } else if (f > lbl_804D9C9C) {
-            f = lbl_804D9C9C;
-        }
+        f = (actor->flags & 0x10) ? Clamp(1.0f - actor->fc4 / 800.0f, 0.0f, 1.0f) : Clamp(1.0f - actor->fc4 / 300.0f, 0.0f, 1.0f);
         if ((actor->flags & 8) == 0) {
             ActorGetMatrix(&mtx, (Actor*)actor);
-            fn_8003F15C(lbl_804D9C9C, actor->fc8, &mtx, 1, 0, 0);
+            fn_8003F15C(actor->fc8, &mtx, 1.0f, 1, 0, 0);
         }
-        if (f > lbl_804D9C94) {
-            Draw3DBeginLine(-4, 0, lbl_804D9CC4);
-            DrawLine(&actor->vel.x, &pos.x, 0x14, 0x3c, 100,
-                     (u8)(s32)(lbl_804D9CF4 * f), 0x14, 0x3c, 100,
-                     (u8)(s32)(lbl_804D9CF0 * f));
+        if (f > 0.0f) {
+            Draw3DBeginLine(-4, 0, 8.0f);
+            DrawLine(&actor->vel.x, pos, 0x14, 0x3c, 100, (u8)(s32)(32.0f * f), 0x14, 0x3c, 100,
+                     (u8)(s32)(96.0f * f));
             DrawDisableTexOffsets();
-            actor->ff8 = lbl_804D9C94;
+            actor->ff8 = 0.0f;
         }
     }
 }
@@ -607,8 +603,9 @@ void ScannableDrawRail(int mode, CamActor* actor) {
 // Releases the fire-loop handle kept at 0xf0: its owner object, its two emitters
 // and the effect itself are destroyed, then the handle buffer is freed. 0x8024DA40.
 void RailFireloopDestroy(int owner, CamActor* actor) {
-    ActorHandle* h = actor->ff0;
-    if (actor->ff0) {
+    void* p = actor->ff0;
+    if (p) {
+        ActorHandle* h = (ActorHandle*)p;
         fn_80027690(h->obj);
         EmitterDestroy(h->emitterA);
         EmitterDestroy(h->emitterB);
@@ -958,7 +955,7 @@ int ScannableBeamInit(ScannableBeam* beam) {
     beam->f5d4 = 2000.0f;
     beam->f5dc = 1280.0f;
     beam->f5d8 = 4000.0f;
-    if (VarFindFloat(0x6249ec5a, variant, 0x5ede8673) != 0.0f) {
+    if (VarFindFloat(0x6249ec5a, variant, 0x5ede8673)) {
         ConditionUpdateBit(&beam->cond, 0x26, 1);
     }
     return 1;
