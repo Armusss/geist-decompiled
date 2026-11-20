@@ -180,7 +180,10 @@ game/u_800886C8.cpp:
 	.text       start:0x800886C8 end:0x8008DCDC
 
 game/u_8008DCDC.cpp:
-	.text       start:0x8008DCDC end:0x8009C74C
+	.text       start:0x8008DCDC end:0x80093BF0
+
+game/u_80093BF0.cpp:
+	.text       start:0x80093BF0 end:0x8009C74C
 	.ctors      start:0x80341208 end:0x8034120C
 
 game/Shadow2.cpp:
