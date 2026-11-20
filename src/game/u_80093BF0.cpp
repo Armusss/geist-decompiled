@@ -47,6 +47,9 @@ extern "C" void fn_8010829C();
 extern "C" void fn_80108528();
 extern "C" void fn_8010883C();
 void CubeTevSetupIndirectTwo();
+void CubeTevOneStageSwapC();
+extern "C" void fn_8010F7EC();
+extern "C" void fn_8010CDD8();
 extern float lbl_804D4738;
 extern "C" void* fn_80115A34(int a, int b, short* rect);
 extern "C" int fn_80010448(int id, int alpha);
@@ -64,6 +67,7 @@ extern "C" void fn_80099D74(int a, int b, int c, int alpha);
 extern "C" void fn_8009C4A4(int mode, int a, int b, int c, int d);
 extern "C" void fn_8009B940(float t);
 extern "C" void fn_80099F18(int mode, float t);
+extern "C" void fn_8009925C(int alpha, float a, float b);
 extern float lbl_804D4728;
 extern float lbl_804D472C;
 extern float lbl_804D2A50;
@@ -516,8 +520,32 @@ void fn_800957C4(int r, int g, int b, int a) {
 //@@end
 // TODO (not drafted yet, 0xFC bytes at 0x800958CC)
 extern "C" void fn_800958CC();
-// TODO (not drafted yet, 0x110 bytes at 0x800959C8)
-extern "C" void fn_800959C8();
+//@@800959C8
+// Draws texture tex through fn_8009925C (a, b), then darkens the screen.
+extern "C" void fn_800959C8(GXTexObj* tex, float a, float b);
+void fn_800959C8(GXTexObj* tex, float a, float b) {
+    if (lbl_804D4154 == 0) {
+        fn_8010F7EC();
+        GfxSetVtxDesc(2);
+        GfxSetMaterial(0);
+        GfxResetTev();
+        fn_80008D10();
+        GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+        GXSetAlphaUpdate(GX_FALSE);
+        GXSetColorUpdate(GX_TRUE);
+        GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+        GfxSetCullMode(1);
+        GfxSetBlendMode(1, 4, 5, 3);
+        GfxLoadTexObj(tex, 0);
+        fn_8009925C(0x7F, a, b);
+        fn_8010CDD8();
+        GfxSetBlendMode(1, 6, 7, 3);
+        fn_8009C4A4(0, 0, 0, 0, 0xFF);
+        fn_8000FF7C();
+        fn_800097F0();
+    }
+}
+//@@end
 // TODO (not drafted yet, 0x288 bytes at 0x80095AD8)
 extern "C" void fn_80095AD8();
 //@@80095D60
@@ -544,10 +572,52 @@ void fn_80095D60(GXTexObj* tex, float t) {
 //@@end
 // TODO (not drafted yet, 0x378 bytes at 0x80095E28)
 extern "C" void fn_80095E28();
-// TODO (not drafted yet, 0xF8 bytes at 0x800961A0)
-extern "C" void fn_800961A0();
-// TODO (not drafted yet, 0xF8 bytes at 0x80096298)
-extern "C" void fn_80096298();
+//@@800961A0
+// Draws texture tex masked by alpha > ref with colour (r, g, b) (blend mode 3).
+extern "C" void fn_800961A0(u8 ref, int r, int g, int b, GXTexObj* tex, int mode);
+void fn_800961A0(u8 ref, int r, int g, int b, GXTexObj* tex, int mode) {
+    if (lbl_804D4154 == 0) {
+        GfxSetVtxDesc(2);
+        GfxSetMaterial(0);
+        CubeTevOneStageSwapC();
+        fn_80008D10();
+        GXSetColorUpdate(GX_TRUE);
+        GXSetAlphaUpdate(GX_FALSE);
+        GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+        GfxSetCullMode(1);
+        GXSetAlphaCompare(GX_GREATER, ref, GX_AOP_AND, GX_ALWAYS, 0);
+        GfxLoadTexObj(tex, 0);
+        GfxSetBlendMode(3, 1, 1, 3);
+        fn_8009C4A4(mode, r, g, b, 0xFF);
+        fn_8000FF7C();
+        fn_800097F0();
+        GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    }
+}
+//@@end
+//@@80096298
+// Draws texture tex masked by alpha > ref with colour (r, g, b) (blend mode 1).
+extern "C" void fn_80096298(u8 ref, int r, int g, int b, GXTexObj* tex, int mode);
+void fn_80096298(u8 ref, int r, int g, int b, GXTexObj* tex, int mode) {
+    if (lbl_804D4154 == 0) {
+        GfxSetVtxDesc(2);
+        GfxSetMaterial(0);
+        CubeTevOneStageSwapC();
+        fn_80008D10();
+        GXSetColorUpdate(GX_TRUE);
+        GXSetAlphaUpdate(GX_FALSE);
+        GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+        GfxSetCullMode(1);
+        GXSetAlphaCompare(GX_GREATER, ref, GX_AOP_AND, GX_ALWAYS, 0);
+        GfxLoadTexObj(tex, 0);
+        GfxSetBlendMode(1, 1, 1, 3);
+        fn_8009C4A4(mode, r, g, b, 0xFF);
+        fn_8000FF7C();
+        fn_800097F0();
+        GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    }
+}
+//@@end
 // TODO (not drafted yet, 0x1F4 bytes at 0x80096390)
 extern "C" void fn_80096390();
 // TODO (not drafted yet, 0x234 bytes at 0x80096584)
@@ -611,7 +681,7 @@ void AnimSetRect(float x0, float y0, float x1, float y1) {
 }
 
 // TODO (not drafted yet, 0xB18 bytes at 0x8009925C)
-extern "C" void fn_8009925C();
+// (declared above)
 // TODO (not drafted yet, 0x1A4 bytes at 0x80099D74)
 // (declared above)
 // TODO (not drafted yet, 0x668 bytes at 0x80099F18)
