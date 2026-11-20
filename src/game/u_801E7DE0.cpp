@@ -1,7 +1,7 @@
 // u_801E7DE0.cpp: player weapon, aim and collision-view states (0x801E7DE0-0x801EAACC).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
-#include "game/string.h"
+#include "game/msg.h"
 
 typedef unsigned char u8;
 typedef unsigned long u32;
@@ -221,35 +221,38 @@ void PlayerFirstPersonUpdate(Actor* actor, float dt)
     PlayerSetValue4(&actor->state7A4, 3);
 }
 
-// Host query block for message 0x41E: the host fills the trailing String with
-// the name handle it resolves for `hash`.
-struct NameQuery {
-    int    unk00;   // 0x00 filled in by the host
-    u32    hash;    // 0x04
-    int    unk08;   // 0x08
-    String name;    // 0x0C
-};
-
 // Asks the actor's host for the name handle selected by `hash`.
 static inline int PlayerWeaponQueryName(void* host, u32 hash)
 {
-    NameQuery query;
+    QueryMsg query;
 
     query.hash = hash;
-    *(int*)&query.name = 0;
-    query.unk08 = 0;
+    *(int*)&query.result = 0;
+    query.unk8 = 0;
     SendMsg(host, 0x41e, &query);
-    return *(int*)&query.name;
+    return *(int*)&query.result;
+}
+
+// Out-parameter form of the same query.
+static inline void PlayerWeaponQueryName(int* out, void* host, u32 hash)
+{
+    QueryMsg query;
+
+    query.hash = hash;
+    *(int*)&query.result = 0;
+    query.unk8 = 0;
+    SendMsg(host, 0x41e, &query);
+    *out = *(int*)&query.result;
 }
 
 // Tells the actor's host to switch to the name handle `value` for `hash`.
 static inline void PlayerWeaponSetName(Actor* actor, u32 hash, int value)
 {
-    NameQuery query;
+    QueryMsg query;
 
     query.hash = hash;
-    *(int*)&query.name = value;
-    query.unk08 = 0;
+    *(int*)&query.result = value;
+    query.unk8 = 0;
     SendMsg(actor->host38, 0x41d, &query);
 }
 
@@ -260,8 +263,11 @@ void PlayerWeaponFirstPersonInit(Actor* actor)
 {
     actor->field15B4 = 0;
 
-    int modelName = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
-    int animName = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
+    int modelName;
+
+    PlayerWeaponQueryName(&modelName, actor->host38, 0x2da8293c);
+    int animName;
+    PlayerWeaponQueryName(&animName, actor->host38, 0xdff3097a);
 
     fn_80048BA8(actor, actor->field1D04, 1);
     int anim = fn_800498D0(actor);
@@ -317,16 +323,18 @@ void PlayerCollisionViewUpdate(Actor* actor, float dt)
 // starts the weapon-tied effect.
 void PlayerWeaponViewSetup(Actor* actor)
 {
-    int name = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
+    int name;
+    PlayerWeaponQueryName(&name, actor->host38, 0xdff3097a);
 
     int localPlayer = PlayerInHost(actor);
     int slot = actor->weaponSlot;
-    PlayerView* view = actor->views[localPlayer];
 
-    actor->field98 = fn_800A1BC8(view->field14, view->field18, lbl_803B3B60.ids294[slot], 0, 0);
+    actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18,
+                                 lbl_803B3B60.ids294[slot], 0, 0);
     actor->field8C = fn_801E9F08;
     actor->fieldA4 = 0x10;
-    actor->fieldF0 = fn_800A1BC8(view->field14, view->field1C, lbl_803B3B60.ids294[slot], 0, 0);
+    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
+                                 lbl_803B3B60.ids294[slot], 0, 0);
     actor->fieldFC = 0x10;
 
     lbl_804D330C = fn_800F7994(name, 0x9d1c245c);
@@ -463,23 +471,26 @@ void PlayerWeaponIdleStateUpdate(Actor* actor, float dt)
 // valid one, and asks for the weapon-select state when the player is able.
 void PlayerWeaponEnterState(Actor* actor)
 {
-    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
+    int localPlayer;
+    int slot;
+    int nameA;
+    int nameB;
+    int result;
+    int matched;
+    PlayerWeaponQueryName(&nameA, actor->host38, 0x2da8293c);
+    PlayerWeaponQueryName(&nameB, actor->host38, 0xdff3097a);
+    localPlayer = PlayerInHost(actor);
+    slot = actor->weaponSlot;
+    result = Fn800F7DEC(nameA, nameB, 0x20ee36, fn_800498D0(actor), 0);
 
-    int localPlayer = PlayerInHost(actor);
-    int slot = actor->weaponSlot;
-    int result = Fn800F7DEC(nameA, nameB, 0x20ee36, fn_800498D0(actor), 0);
-
-    int matched = 0;
+    matched = 0;
     if (result == -0x3f413082 || result == 0x11d2c025) {
         matched = 1;
     }
 
     actor->field98 = -1;
     while (actor->field98 == -1) {
-        PlayerView* view = actor->views[localPlayer];
-        actor->field98 = fn_800A1BC8(view->field14, view->field18,
-                                     lbl_803B3B60.idsE4[slot], matched, 0);
+        actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18, lbl_803B3B60.idsE4[slot], matched, 0);
         actor->field8C = fn_801E9F08;
         actor->fieldA4 = 1;
         if (actor->field98 == -1 && matched != 0) {
@@ -487,9 +498,7 @@ void PlayerWeaponEnterState(Actor* actor)
         }
     }
 
-    PlayerView* view = actor->views[localPlayer];
-    actor->fieldF0 = fn_800A1BC8(view->field14, view->field1C,
-                                 lbl_803B3B60.idsE4[slot], 0, 0);
+    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C, lbl_803B3B60.idsE4[slot], 0, 0);
     actor->fieldFC = 1;
 
     if (fn_802A1D04() == 0) {
@@ -539,16 +548,18 @@ extern int lbl_804D3308;
 // weapon-tied effect and syncs the camera field of view.
 void PlayerWeaponDrawnSetup(Actor* actor)
 {
-    int name = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
+    int name;
+    PlayerWeaponQueryName(&name, actor->host38, 0xdff3097a);
 
     int localPlayer = PlayerInHost(actor);
     int slot = actor->weaponSlot;
-    PlayerView* view = actor->views[localPlayer];
 
-    actor->field98 = fn_800A1BC8(view->field14, view->field18, lbl_803B3B60.ids9C[slot], 0, 0);
-    actor->field8C = fn_801E9F08;
+    actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18,
+                                 lbl_803B3B60.ids9C[slot], 0, 0);
     actor->fieldA4 = 0x10;
-    actor->fieldF0 = fn_800A1BC8(view->field14, view->field1C, lbl_803B3B60.ids9C[slot], 0, 0);
+    actor->field8C = fn_801E9F08;
+    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
+                                 lbl_803B3B60.ids9C[slot], 0, 0);
     actor->fieldFC = 0x10;
 
     lbl_804D3308 = fn_800F7994(name, 0xafef562b);
@@ -697,8 +708,10 @@ void PlayerAimStateUpdate(Actor* actor, float dt)
 // once with the un-matched variant when the host returns no handle.
 void PlayerWeaponTimerEnter(Actor* actor)
 {
-    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
+    int nameA;
+    PlayerWeaponQueryName(&nameA, actor->host38, 0x2da8293c);
+    int nameB;
+    PlayerWeaponQueryName(&nameB, actor->host38, 0xdff3097a);
     int anim = fn_800498D0(actor);
     int result = Fn800F7DEC(nameA, nameB, 0x20ee36, anim, 0);
 
@@ -734,8 +747,10 @@ void PlayerWeaponTimerEnter(Actor* actor)
 // advances the hold timer.
 int PlayerZoomStateUpdate(Actor* actor, float dt)
 {
-    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
+    int nameA;
+    PlayerWeaponQueryName(&nameA, actor->host38, 0x2da8293c);
+    int nameB;
+    PlayerWeaponQueryName(&nameB, actor->host38, 0xdff3097a);
 
     if (actor->field588 == 5 || actor->field588 == 4) {
         if (actor->flags320 & 1) {
@@ -927,8 +942,10 @@ int PlayerZoomLevelUpdate(Actor* actor, int slotA, int slotB)
 // a mode change was made.
 int PlayerHeldSlotActionCheck(Actor* actor)
 {
-    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
+    int nameA;
+    PlayerWeaponQueryName(&nameA, actor->host38, 0x2da8293c);
+    int nameB;
+    PlayerWeaponQueryName(&nameB, actor->host38, 0xdff3097a);
 
     if (actor->field314 < 1) {
         if (actor->state7A4 == 5) {
@@ -983,8 +1000,11 @@ int PlayerGunActionMessage(int msg, Actor* actor)
         return 0;
     }
 
-    int nameA = PlayerWeaponQueryName(actor->host38, 0x2da8293c);
-    int nameB = PlayerWeaponQueryName(actor->host38, 0xdff3097a);
+    int nameA;
+
+    PlayerWeaponQueryName(&nameA, actor->host38, 0x2da8293c);
+    int nameB;
+    PlayerWeaponQueryName(&nameB, actor->host38, 0xdff3097a);
 
     switch (msg) {
     case 0x20ee36:
