@@ -1,8 +1,8 @@
 // u_8002A274.cpp (0x8002A274-0x80037230), split from the old ModInfo.cpp range.
 // Integer-box geometry and the streaming slot table (file type 0x2E), plus large undrafted collision code.
 // Boundaries: its .sdata2 pool 0x804D6170-0x804D61D0 holds its own copies of constants the previous file
-// also has (0.0f 0x804D6178 vs 0x804D6118, 0.5f, 1.0f, the int-to-float doubles 0x804D61B8/0x804D61C0 vs
-// 0x804D6128/0x804D6158); fn_8002A274 is the first reader and fn_80036DC4 the last. The next file has its own
+// also has (0.0f 0x804D6178 vs 0x804D6118, 0.5f, 1.0f, the int-to-float doubles 0x804D61B8/0x804D61C0 vs 0x804D6128/0x804D6158);
+// fn_8002A274 is the first reader and fn_80036DC4 the last. The next file has its own
 // FLT_MAX (0x804D61D0 vs 0x804D6184 here). Its .sbss 0x804D42A8-0x804D4300 (stream slot table, chunk 6 records,
 // debug option) and .bss 0x803DE5D8-0x803DEA58 are touched only from this range; the model database
 // (.sbss 0x804D4300...) belongs to the next file. fn_800320F4 inlines fn_8002FD68 and StreamSlotsRelease
@@ -43,7 +43,7 @@ extern char* lbl_804D42BC;
 extern int lbl_804D42C0;
 extern int lbl_804D42A8;
 extern int lbl_804D42AC;
-extern int lbl_804D42B0;
+extern void* lbl_804D42B0;
 extern int lbl_804D42B4;
 extern int lbl_804D42C4;
 extern int lbl_804D42DC;
@@ -51,6 +51,45 @@ extern int lbl_804D42E0;
 extern int lbl_804D42EC;
 extern int fn_80036688(void*, int, void*);
 void fn_8002FC30(int, void*, void*);
+int fn_800334A4(int a, float* box, void* c);
+int fn_800337B8(int a, float* box, Mtx34* m, void* d);
+void LinkInfoInit(void* m);
+}
+
+// Hit result shared by the ray tests (0x803DE5D8, 0x5C bytes).
+struct RayHit {
+    /*0x00*/ u8 unk00[0x44 - 0x00];
+    /*0x44*/ f32 u;
+    /*0x48*/ f32 v;
+    /*0x4C*/ f32 t;
+    /*0x50*/ int tri;
+    /*0x54*/ u8 unk54[0x5C - 0x54];
+};
+
+inline void VecSet(Vec3* v, float x, float y, float z) {
+    v->x = x;
+    v->y = y;
+    v->z = z;
+}
+
+// One triangle of the collision mesh: three vertex indices and a surface value (8 bytes).
+struct CollTri {
+    u16 v[3];
+    u16 surface;
+};
+
+// The collision mesh (0x803DEA34, 0x24 bytes).
+struct CollMesh {
+    /*0x00*/ u8 unk00[0x1C - 0x00];
+    /*0x1C*/ CollTri* tris;
+    /*0x20*/ Vec3* verts;
+};
+
+extern "C" {
+extern RayHit lbl_803DE5D8;
+extern int lbl_803DE634[];
+extern CollMesh lbl_803DEA34;
+extern int lbl_804D42FC;
 }
 
 typedef int (*FileHandlerFn)(void*, int, void*);
@@ -80,15 +119,14 @@ bool StreamSlotIdle(int index) {
 
 // 0x8002FA84 (called from another unit under this placeholder name): total bytes of all slots, and of the slots in state 1 or 4
 extern "C" void fn_8002FA84(int* loaded, int* total) {
-    StreamSlot* s = lbl_804D42E4;
     int a = 0;
     int b = 0;
     int i;
     for (i = 0; i < lbl_804D42E8; i++) {
+        StreamSlot* s = &lbl_804D42E4[i];
         b += s->size;
         if (s->state == 1 || s->state == 4)
             a += s->size;
-        s++;
     }
     if (loaded != 0)
         *loaded = a;
@@ -343,13 +381,9 @@ extern "C" void fn_80032FD4();
 // TODO (not drafted yet, 0x1E8 bytes at 0x800331F8)
 extern "C" void fn_800331F8();
 // TODO (not drafted yet, 0x70 bytes at 0x800333E0)
-extern "C" void fn_800333E0();
 // TODO (not drafted yet, 0x54 bytes at 0x80033450)
-extern "C" void fn_80033450();
 // TODO (not drafted yet, 0x314 bytes at 0x800334A4)
-extern "C" void fn_800334A4();
 // TODO (not drafted yet, 0x328 bytes at 0x800337B8)
-extern "C" void fn_800337B8();
 // TODO (not drafted yet, 0x654 bytes at 0x80033AE0)
 extern "C" void fn_80033AE0();
 // TODO (not drafted yet, 0x488 bytes at 0x80034134)
@@ -365,7 +399,6 @@ extern "C" void fn_80034F74();
 // TODO (not drafted yet, 0x214 bytes at 0x8003511C)
 extern "C" void fn_8003511C();
 // TODO (not drafted yet, 0xC8 bytes at 0x80035330)
-extern "C" void fn_80035330();
 // TODO (not drafted yet, 0x3E8 bytes at 0x800353F8)
 extern "C" void fn_800353F8();
 // TODO (not drafted yet, 0x2A4 bytes at 0x800357E0)
@@ -379,7 +412,6 @@ extern "C" void fn_80036200();
 // TODO (not drafted yet, 0x36C bytes at 0x800362E0)
 extern "C" void fn_800362E0();
 // TODO (not drafted yet, 0x3C bytes at 0x8003664C)
-extern "C" void fn_8003664C();
 // TODO (not drafted yet, 0x244 bytes at 0x80036688)
 // TODO (not drafted yet, 0x138 bytes at 0x800368CC)
 extern "C" void fn_800368CC();
@@ -389,3 +421,54 @@ extern "C" void fn_80036A04();
 extern "C" void fn_80036BF0();
 // TODO (not drafted yet, 0x46C bytes at 0x80036DC4)
 extern "C" void fn_80036DC4();
+
+
+// 0x800333E0: test a box against the node table with an identity matrix
+extern "C" int fn_800333E0(int a, float* box, void* d) {
+    Mtx34 m;
+    LinkInfoInit(&m);
+    if (lbl_804D42BC != 0)
+        return fn_800337B8(a, box, &m, d);
+    return 0;
+}
+
+extern "C" int fn_80033450(int a, float* box, void* c) {
+    int r = 0;
+    if (lbl_804D42BC != 0)
+        r = fn_800337B8(a, box, (Mtx34*)c, 0);
+    else if (lbl_804D42B0 != 0)
+        r = fn_800334A4(a, box, c);
+    return r;
+}
+
+// 0x80035330: the three corners (and optionally the surface value) of a collision triangle
+extern "C" int fn_80035330(int index, Vec3* out, int* surface) {
+    CollTri* t;
+    Vec3* verts;
+    Vec3* a;
+    Vec3* b;
+    Vec3* c;
+    if (index < 0 || index >= lbl_804D42FC)
+        return 0;
+    t = &lbl_803DEA34.tris[lbl_803DE634[index]];
+    verts = lbl_803DEA34.verts;
+    a = &verts[t->v[0]];
+    b = &verts[t->v[1]];
+    c = &verts[t->v[2]];
+    VecSet(&out[0], a->x, a->y, a->z);
+    VecSet(&out[1], b->x, b->y, b->z);
+    VecSet(&out[2], c->x, c->y, c->z);
+    if (surface != 0)
+        *surface = t->surface;
+    return 1;
+}
+
+// 0x8003664C: keep the nearest hit
+extern "C" void fn_8003664C(int tri, float t, float u, float v) {
+    if (t >= 0.0f && t <= lbl_803DE5D8.t) {
+        lbl_803DE5D8.u = u;
+        lbl_803DE5D8.v = v;
+        lbl_803DE5D8.t = t;
+        lbl_803DE5D8.tri = tri;
+    }
+}
