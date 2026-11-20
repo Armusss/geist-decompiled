@@ -2,7 +2,13 @@
 // The player ghost possesses hosts, so this file holds its per-frame update, the host-dependent
 // animation sets (two of them, selected by whether the player is inside a host), blur-hit reactions,
 // camera field of view easing and the state machines for movement and actions.
-// Only the small functions are drafted so far; the rest are listed in the TODO block at the end.
+//
+// One source file (boundary check 2026-11-18): the unit's string pool (.rodata 0x80342880-0x80342C08) is a
+// single pool with one copy of the POSSESS..SCAN header table and the file's own name "FearActor.c"; its
+// .sdata2 pool (0x804D6280-0x804D6428) has no duplicated constant, and the same literals (0x804D6288 int-to-float,
+// 0x804D6298 0.0f) are read from fn_800463F8 through fn_800647AC; the first and last five functions use the
+// unit's own sdata/sbss (lbl_804D43E0/E4, lbl_804D270C). The .data 0x803940A0-0x80394158 and
+// .bss 0x8041FFD8-0x80420038 are touched only from this range. So the range is not split.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 typedef unsigned char u8;
@@ -50,7 +56,8 @@ struct Actor {
     int mUnkD4;                 // 0xD4 animation
     u8 mUnkD8[0x11C - 0xD8];    // 0xD8
     int mUnk11C;                // 0x11C
-    u8 mUnk120[0x184 - 0x120];  // 0x120
+    int mBoneCount120;          // 0x120
+    u8 mUnk124[0x184 - 0x124];  // 0x124
     int mCamera;                // 0x184
     u8 mUnk188[0x248 - 0x188];  // 0x188
     int mBody;                  // 0x248
@@ -73,7 +80,9 @@ struct Actor {
     int mUnk7D0;                // 0x7D0
     u8 mUnk7D4[0x908 - 0x7D4];  // 0x7D4
     u32 mUnk908;                // 0x908 (in hosts of kind 0x13)
-    u8 mUnk90C[0xA0C - 0x90C];  // 0x90C
+    u8 mUnk90C[0x9F0 - 0x90C];  // 0x90C
+    Vec3* mBoneOffsets;         // 0x9F0
+    u8 mUnk9F4[0xA0C - 0x9F4];  // 0x9F4
     u8 mUnkA0C[0x1400 - 0xA0C]; // 0xA0C
     int mUnk1400;               // 0x1400
     char* mBone1404;            // 0x1404
@@ -1329,6 +1338,45 @@ extern "C" int fn_80060CF0(PlayerDrawArgs* args)
     ActorGetMatrix(&m, p);
     return fn_8002D4E0(p->mModel58, &box, &m, anim, args->mUnk04, args->mUnk08, args->mUnk0C, args->mUnk10,
                        args->mUnk14, (args->mFlags | 0x20000000) & ~0x10000000, args->mUnk2C, args->mUnk30);
+}
+
+// Arguments of a hit test against the player's weapon bones.
+struct PlayerHitArgs {
+    Actor* mPlayer;   // 0x00
+    void* mBounds;    // 0x04
+    Actor* mFrame;    // 0x08
+};
+void Vec3Copy(Vec3* d, const Vec3* s);
+int ModelBoneHitBox(int box, int m, int v, int bone);
+
+// 0x80060E94: whether the box hits one of the weapon bones
+extern "C" int fn_80060E94(PlayerHitArgs* args)
+{
+    Actor* p = args->mPlayer;
+    Placement* bones;
+    int i;
+    Vec3 v;
+    Box box;
+    Mtx34 m;
+    if (p->mBoneCount120 >= 0xFE) {
+        return 0;
+    }
+    if (p->mFlags & 0x80) {
+        return 0;
+    }
+    if (p->mBoneCount120 > 1) {
+        bones = (Placement*)WeaponBoneAnim(p);
+        ActorGetMatrix(&m, args->mFrame);
+        fn_8016D864(&box, args->mBounds);
+        for (i = 0; i < p->mBoneCount120; i++) {
+            Vec3Copy(&v, &p->mBoneOffsets[i]);
+            if (ModelBoneHitBox((int)&box, (int)&m, (int)&v, (int)&bones[i])) {
+                return 1;
+            }
+        }
+        return 0;
+    }
+    return 1;
 }
 
 // 0x80064418
