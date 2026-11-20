@@ -87,6 +87,11 @@ inline void VecSet(Vec3* v, float x, float y, float z) {
     v->z = z;
 }
 
+// 0x18-byte record passed with each matrix to fn_800331F8.
+struct Rec18 {
+    u8 data[0x18];
+};
+
 // One triangle of the collision mesh: three vertex indices and a surface value (8 bytes).
 struct CollTri {
     u16 v[3];
@@ -95,7 +100,9 @@ struct CollTri {
 
 // The collision mesh (0x803DEA34, 0x24 bytes).
 struct CollMesh {
-    /*0x00*/ u8 unk00[0x1C - 0x00];
+    /*0x00*/ Vec3 center;
+    /*0x0C*/ Vec3 half;
+    /*0x18*/ int mask;
     /*0x1C*/ CollTri* tris;
     /*0x20*/ Vec3* verts;
 };
@@ -107,6 +114,9 @@ extern CollMesh lbl_803DEA34;
 extern int lbl_804D42FC;
 extern Vec3* lbl_804D42F0;
 extern CollTri* lbl_804D42F4;
+extern StreamSlot* lbl_804D42F8;
+int fn_800331F8(Vec3* org, void* b, void* p18, void* p30, Vec3* pos, Vec3* nrm, float* t);
+void fn_80034F74(void* node);
 int fn_80036A04(Vec3* org, Vec3* dir, Vec3* a, Vec3* b, Vec3* c, float* t, float* u, float* v);
 }
 
@@ -454,13 +464,11 @@ extern "C" void fn_8003226C();
 // TODO (not drafted yet, 0x8B8 bytes at 0x8003247C)
 extern "C" void fn_8003247C();
 // TODO (not drafted yet, 0x120 bytes at 0x80032D34)
-extern "C" void fn_80032D34();
 // TODO (not drafted yet, 0x180 bytes at 0x80032E54)
 extern "C" void fn_80032E54();
 // TODO (not drafted yet, 0x224 bytes at 0x80032FD4)
 extern "C" void fn_80032FD4();
 // TODO (not drafted yet, 0x1E8 bytes at 0x800331F8)
-extern "C" void fn_800331F8();
 // TODO (not drafted yet, 0x70 bytes at 0x800333E0)
 // TODO (not drafted yet, 0x54 bytes at 0x80033450)
 // TODO (not drafted yet, 0x314 bytes at 0x800334A4)
@@ -474,9 +482,7 @@ extern "C" void fn_800345BC();
 // TODO (not drafted yet, 0x6B8 bytes at 0x80034778)
 extern "C" void fn_80034778();
 // TODO (not drafted yet, 0x144 bytes at 0x80034E30)
-extern "C" void fn_80034E30();
 // TODO (not drafted yet, 0x1A8 bytes at 0x80034F74)
-extern "C" void fn_80034F74();
 // TODO (not drafted yet, 0x214 bytes at 0x8003511C)
 extern "C" void fn_8003511C();
 // TODO (not drafted yet, 0xC8 bytes at 0x80035330)
@@ -500,6 +506,40 @@ extern "C" void fn_80036BF0();
 extern "C" void fn_80036DC4();
 
 
+// 0x80032D34: nearest of count hits (records of 0x18 and 0x30 bytes): index, position and normal
+inline float SqDist(Vec3* a, Vec3* b) {
+    float dx = a->x - b->x;
+    float dy = a->y - b->y;
+    float dz = a->z - b->z;
+    float xx = dx * dx;
+    float yy = dy * dy;
+    float zz = dz * dz;
+    return zz + (xx + yy);
+}
+
+extern "C" int fn_80032D34(Vec3* org, void* b, Rec18* p18, Mtx34* p30, int count, int* outIndex, Vec3* outPos,
+                           Vec3* outNormal) {
+    Vec3 pos;
+    Vec3 nrm;
+    float t;
+    float best = 2147483648.0f;
+    int i;
+    int found = 0;
+    for (i = 0; i < count; i++) {
+        if (fn_800331F8(org, b, &p18[i], &p30[i], &pos, &nrm, &t)) {
+            float d = SqDist(&pos, org);
+            if (d < best) {
+                *outIndex = i;
+                best = d;
+                found = 1;
+                *outPos = pos;
+                *outNormal = nrm;
+            }
+        }
+    }
+    return found;
+}
+
 // 0x800333E0: test a box against the node table with an identity matrix
 extern "C" int fn_800333E0(int a, float* box, void* d) {
     Mtx34 m;
@@ -516,6 +556,39 @@ extern "C" int fn_80033450(int a, float* box, void* c) {
     else if (lbl_804D42B0 != 0)
         r = fn_800334A4(a, box, c);
     return r;
+}
+
+// 0x80034E30: collect the triangles of a slot's mesh inside a box; returns their number (0 if over 256)
+extern "C" int fn_80034E30(int index, float* box, int mask) {
+    StreamSlot* s;
+    CollMesh* m;
+    CollTri* tris;
+    Vec3* verts;
+    CollTri* root;
+    if (lbl_804D42E4 == 0 || index < 0 || index >= lbl_804D42E0[1])
+        return 0;
+    s = &lbl_804D42E4[index];
+    lbl_804D42F8 = s;
+    if (s->count0 == 0 || s->linkCount == 0)
+        return 0;
+    if (s->buffer == 0)
+        return 1;
+    m = &lbl_803DEA34;
+    lbl_804D42F0 = verts = (Vec3*)s->data28;
+    lbl_804D42F4 = tris = (CollTri*)s->data2C;
+    root = &tris[s->count4];
+    lbl_804D42FC = 0;
+    m->center.x = 0.5f * (box[0] + box[3]);
+    m->half.x = 0.5f * (box[3] - box[0]);
+    m->center.y = 0.5f * (box[1] + box[4]);
+    m->half.y = 0.5f * (box[4] - box[1]);
+    m->center.z = 0.5f * (box[2] + box[5]);
+    m->half.z = 0.5f * (box[5] - box[2]);
+    m->mask = mask;
+    m->tris = tris;
+    m->verts = verts;
+    fn_80034F74(root);
+    return lbl_804D42FC < 0x100 ? lbl_804D42FC : 0;
 }
 
 // 0x80035330: the three corners (and optionally the surface value) of a collision triangle
