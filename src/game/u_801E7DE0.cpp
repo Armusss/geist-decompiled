@@ -50,7 +50,7 @@ struct Actor {
     int field314;                 // 0x314
     int field318;                 // 0x318
     int field31C;                 // 0x31C
-    u32 flags320;                 // 0x320
+    int flags320;                 // 0x320
     u32 flags324;                 // 0x324
     int flags328;                 // 0x328
     u8  unk32C[0x38C - 0x32C];    // 0x32C
@@ -637,26 +637,26 @@ void PlayerWeaponTimerEnter(Actor* actor)
 
     if (result == -0x3f413082 || result == 0x11d2c025) {
         actor->field7D4 = 2;
-    } else if ((float)rand() / 32767.0f < 0.5f) {
-        actor->field7D4 = 1;
-    } else {
+    } else if ((float)rand() / 32767.0f >= 0.5f) {
         actor->field7D4 = 0;
+    } else {
+        actor->field7D4 = 1;
     }
 
-    PlayerView* view = actor->views[fn_80049750(actor)];
+    int localPlayer = PlayerInHost(actor);
 
-    actor->field98 = fn_800A1BC8(view->field14, view->field18, lbl_803B3B6C, actor->field7D4, 0);
+    actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18, lbl_803B3B60.globalWeaponId, actor->field7D4, 0);
     if (actor->field98 == -1) {
         actor->field7D4 = 0;
-        actor->field98 = fn_800A1BC8(view->field14, view->field18, lbl_803B3B6C, actor->field7D4, 0);
+        actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18, lbl_803B3B60.globalWeaponId, actor->field7D4, 0);
     }
     actor->field8C = fn_801E9F08;
     actor->fieldA4 = 1;
 
-    actor->fieldF0 = fn_800A1BC8(view->field14, view->field1C, lbl_803B3B6C, actor->field7D4, 0);
+    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C, lbl_803B3B60.globalWeaponId, actor->field7D4, 0);
     if (actor->fieldF0 == -1) {
         actor->field7D4 = 0;
-        actor->fieldF0 = fn_800A1BC8(view->field14, view->field1C, lbl_803B3B6C, actor->field7D4, 0);
+        actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C, lbl_803B3B60.globalWeaponId, actor->field7D4, 0);
     }
     actor->updateE4 = fn_801E9F08;
     actor->fieldFC = 1;
@@ -700,9 +700,22 @@ int PlayerZoomStateUpdate(Actor* actor, float dt)
                 return 1;
             }
         }
-    } else if (actor->flags320 == 0) {
+    } else if (actor->flags320 != 0) {
+        PlayerResetGunTimer(actor);
+        actor->field5E8 += dt;
+
+        if (fn_800699B8(actor) == 1.0f) {
+            if (actor->field7D0 == 0) {
+                PlayerSetHeldSlotMode(actor, 2);
+            } else {
+                PlayerSetHeldSlotMode(actor, 9);
+            }
+            fn_800699A8(actor->zoomTable);
+            return 1;
+        }
+    } else {
         float level = fn_800699B8(actor);
-        if (-1.0f < level && level < 0.0f) {
+        if (level > -1.0f && level < 0.0f) {
             int anim = fn_800498D0(actor);
             int result = Fn800F7DEC(nameA, nameB, 0xe6b71bcc, anim, 0);
             if (result == 0x4a3e183) {
@@ -720,19 +733,6 @@ int PlayerZoomStateUpdate(Actor* actor, float dt)
             }
         }
         fn_800699A8(actor->zoomTable);
-    } else {
-        PlayerResetGunTimer(actor);
-        actor->field5E8 += dt;
-
-        if (fn_800699B8(actor) == 1.0f) {
-            if (actor->field7D0 == 0) {
-                PlayerSetHeldSlotMode(actor, 2);
-            } else {
-                PlayerSetHeldSlotMode(actor, 9);
-            }
-            fn_800699A8(actor->zoomTable);
-            return 1;
-        }
     }
     return 0;
 }
