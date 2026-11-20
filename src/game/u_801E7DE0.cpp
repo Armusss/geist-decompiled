@@ -52,7 +52,7 @@ struct Actor {
     int field31C;                 // 0x31C
     u32 flags320;                 // 0x320
     u32 flags324;                 // 0x324
-    u32 flags328;                 // 0x328
+    int flags328;                 // 0x328
     u8  unk32C[0x38C - 0x32C];    // 0x32C
     float field38C;               // 0x38C
     float field390;               // 0x390
@@ -183,6 +183,26 @@ static inline int PlayerWeaponReenter(Actor* actor)
     return 0;
 }
 
+// Shared weapon-model toggle of the first-person states: outside a host, flips
+// the weapon model handle between its two variants while the zoom slot is held;
+// inside one, runs the secondary zoom-level update. Returns 1 when it acted.
+static inline int PlayerWeaponToggle(Actor* actor)
+{
+    if (fn_802A1D04() == 0) {
+        if (actor->field318 == 1 || actor->field318 == 3) {
+            if (fn_800F60B8(actor->field248, 1) == 0x24a738) {
+                fn_800F60E4(actor->field248, 1, 0x9b286e6f);
+            } else {
+                fn_800F60E4(actor->field248, 1, 0x24a738);
+            }
+            return 1;
+        }
+    } else {
+        return PlayerZoomLevelUpdate(actor, 9, 0x15);
+    }
+    return 0;
+}
+
 // Player first-person view setup: creates the two weapon handles, installs the
 // per-frame update callback and syncs the camera field of view.
 void PlayerFirstPersonSetup(Actor* actor)
@@ -227,15 +247,7 @@ void PlayerFirstPersonUpdate(Actor* actor, float dt)
     PlayerSelectCollisionUpdate(actor, dt);
 
     if (fn_80049940()) {
-        if (fn_802A1D04() == 0) {
-            PlayerZoomLevelUpdate(actor, 0xD, 0x16);
-        } else if (actor->flags328 & 1) {
-            if (PlayerInHost(actor) != 0) {
-                if (!(actor->flags7B4 & 0x40000) && !(actor->flags7B4 & 0x80000)) {
-                    fn_80073E80(actor);
-                }
-            }
-        }
+        PlayerWeaponReenter(actor);
     }
     PlayerSetValue4(&actor->state7A4, 3);
 }
@@ -328,15 +340,7 @@ void PlayerCollisionViewUpdate(Actor* actor, float dt)
     fn_800769A0(actor, dt);
     PlayerSelectCollisionUpdate(actor, dt);
 
-    if (fn_802A1D04() == 0) {
-        PlayerZoomLevelUpdate(actor, 0xD, 0x16);
-    } else if (actor->flags328 & 1) {
-        if (PlayerInHost(actor) != 0) {
-            if (!(actor->flags7B4 & 0x40000) && !(actor->flags7B4 & 0x80000)) {
-                fn_80073E80(actor);
-            }
-        }
-    }
+    PlayerWeaponReenter(actor);
     PlayerSetValue4(&actor->state7A4, 1);
 }
 
@@ -378,27 +382,9 @@ void PlayerWeaponStateUpdate(Actor* actor, float dt)
     PlayerSelectCollisionUpdate(actor, dt);
     PlayerSetValue4(&actor->state7A4, 5);
 
-    if (fn_802A1D04() == 0) {
-        PlayerZoomLevelUpdate(actor, 0xD, 0x16);
-    } else if (actor->flags328 & 1) {
-        if (PlayerInHost(actor) != 0) {
-            if (!(actor->flags7B4 & 0x40000) && !(actor->flags7B4 & 0x80000)) {
-                fn_80073E80(actor);
-            }
-        }
-    }
+    PlayerWeaponReenter(actor);
 
-    if (fn_802A1D04() == 0) {
-        if (actor->field318 == 1 || actor->field318 == 3) {
-            if (fn_800F60B8(actor->field248, 1) == 0x24a738) {
-                fn_800F60E4(actor->field248, 1, 0x9b286e6f);
-            } else {
-                fn_800F60E4(actor->field248, 1, 0x24a738);
-            }
-        }
-    } else {
-        PlayerZoomLevelUpdate(actor, 9, 0x15);
-    }
+    PlayerWeaponToggle(actor);
 
     if (actor->field314 == 0) {
         PlayerSetValue4(&actor->state7A4, 3);
@@ -455,17 +441,7 @@ void PlayerWeaponIdleStateUpdate(Actor* actor, float dt)
     } else {
         PlayerSetValue4(&actor->state7A4, 3);
 
-        if (fn_802A1D04() == 0) {
-            if (actor->field318 == 1 || actor->field318 == 3) {
-                if (fn_800F60B8(actor->field248, 1) == 0x24a738) {
-                    fn_800F60E4(actor->field248, 1, 0x9b286e6f);
-                } else {
-                    fn_800F60E4(actor->field248, 1, 0x24a738);
-                }
-            }
-        } else {
-            PlayerZoomLevelUpdate(actor, 9, 0x15);
-        }
+        PlayerWeaponToggle(actor);
 
         if (fn_801E9C30(actor) == 0) {
             if (PlayerWeaponReenter(actor) == 0) {
@@ -510,15 +486,7 @@ void PlayerWeaponEnterState(Actor* actor)
     actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C, lbl_803B3B60.idsE4[slot], 0, 0);
     actor->fieldFC = 1;
 
-    if (fn_802A1D04() == 0) {
-        PlayerZoomLevelUpdate(actor, 0xD, 0x16);
-    } else if (actor->flags328 & 1) {
-        if (PlayerInHost(actor) != 0) {
-            if (!(actor->flags7B4 & 0x40000) && !(actor->flags7B4 & 0x80000)) {
-                fn_80073E80(actor);
-            }
-        }
-    }
+    PlayerWeaponReenter(actor);
 }
 
 // Plays the weapon idle animation entry of the actor's current loadout.
@@ -536,15 +504,7 @@ void PlayerCollisionViewStateUpdate(Actor* actor, float dt)
     fn_800769A0(actor, dt);
     PlayerSelectCollisionUpdate(actor, dt);
 
-    if (fn_802A1D04() == 0) {
-        PlayerZoomLevelUpdate(actor, 0xD, 0x16);
-    } else if (actor->flags328 & 1) {
-        if (PlayerInHost(actor) != 0) {
-            if (!(actor->flags7B4 & 0x40000) && !(actor->flags7B4 & 0x80000)) {
-                fn_80073E80(actor);
-            }
-        }
-    }
+    PlayerWeaponReenter(actor);
     PlayerSetValue4(&actor->state7A4, 3);
 }
 
@@ -596,17 +556,7 @@ void PlayerCollisionViewEnterUpdate(Actor* actor, float dt)
     PlayerSetValue4(&actor->state7A4, 1);
     actor->field7D0 = 0;
 
-    if (fn_802A1D04() == 0) {
-        if (actor->field318 == 1 || actor->field318 == 3) {
-            if (fn_800F60B8(actor->field248, 1) == 0x24a738) {
-                fn_800F60E4(actor->field248, 1, 0x9b286e6f);
-            } else {
-                fn_800F60E4(actor->field248, 1, 0x24a738);
-            }
-        }
-    } else {
-        PlayerZoomLevelUpdate(actor, 9, 0x15);
-    }
+    PlayerWeaponToggle(actor);
 
     if (fn_801E9C30(actor) != 0) {
         return;
@@ -655,33 +605,10 @@ void PlayerAimStateUpdate(Actor* actor, float dt)
     actor->field7D0 = 1;
     PlayerSetValue4(&actor->state7A4, 3);
 
-    if (fn_802A1D04() == 0) {
-        PlayerZoomLevelUpdate(actor, 0xD, 0x16);
-    } else if (actor->flags328 & 1) {
-        if (PlayerInHost(actor) != 0) {
-            if (!(actor->flags7B4 & 0x40000) && !(actor->flags7B4 & 0x80000)) {
-                fn_80073E80(actor);
-            }
-        }
-    }
+    PlayerWeaponReenter(actor);
 
     if (fn_801E9C30(actor) == 0) {
-        int reentered;
-        if (fn_802A1D04() == 0) {
-            if (actor->field318 == 1 || actor->field318 == 3) {
-                if (fn_800F60B8(actor->field248, 1) == 0x24a738) {
-                    fn_800F60E4(actor->field248, 1, 0x9b286e6f);
-                } else {
-                    fn_800F60E4(actor->field248, 1, 0x24a738);
-                }
-                reentered = 1;
-            } else {
-                reentered = 0;
-            }
-        } else {
-            reentered = PlayerZoomLevelUpdate(actor, 9, 0x15);
-        }
-        if (reentered == 0) {
+        if (PlayerWeaponToggle(actor) == 0) {
             PlayerZoomStateUpdate(actor, dt);
         }
     }
