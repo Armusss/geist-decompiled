@@ -28,16 +28,32 @@ extern "C" void fn_8000FF7C(void);
 extern "C" void fn_800097F0(void);
 extern "C" void fn_8010CF00(void);
 extern "C" void fn_8010D024(void);
+void GfxLoadTexObj(GXTexObj* obj, int map);   // 0x8000F944
+void GfxResetTev(void);
+void GfxFbCommit();
+void GfxSetCopyFilter(int mode);
+void CubeTevSetupChannelSwap();
+void CubeTevOneStageTextured();
+extern "C" void fn_80009E10();
+extern "C" GXTexObj* fn_80115C18(void* copy);
+extern "C" void* fn_80115260(int a, int b, int c);
+extern "C" void* fn_80115374(int a, int b, int c);
+extern "C" void* fn_80115A34(int a, int b, short* rect);
+extern "C" int fn_80010448(int id, int alpha);
+extern "C" int fn_80010330(int id, int alpha);
 
 extern int lbl_804D4154;
 extern int lbl_804D2568;    // screen width
 extern int lbl_804D256C;    // screen height
 
-extern int lbl_804D475C;
+extern void* lbl_804D475C;
 extern int lbl_804D4760;
 
 extern "C" void fn_80098244(int r, int g, int b);
 extern "C" void fn_80099D74(int a, int b, int c, int alpha);
+extern "C" void fn_8009C4A4(int mode, int a, int b, int c, int d);
+extern "C" void fn_8009B940(float t);
+extern "C" void fn_80099F18(int mode, float t);
 extern float lbl_804D4728;
 extern float lbl_804D472C;
 extern float lbl_804D2A50;
@@ -65,14 +81,117 @@ void fn_80093D18(int a, int b, int c) {
     fn_80099D74(a, b, c, 0xFF);
 }
 //@@end
-// TODO (not drafted yet, 0x1A4 bytes at 0x80093DE4)
-extern "C" void fn_80093DE4();
-// TODO (not drafted yet, 0xA8 bytes at 0x80093F88)
-extern "C" void fn_80093F88();
-// TODO (not drafted yet, 0x120 bytes at 0x80094030)
+//@@80093DE4
+// Draws texture tex (or, without one, a copy of the cleared frame buffer) with effect mode at time t.
+extern "C" void fn_80093DE4(int mode, int texArg, float t);
+void fn_80093DE4(int mode, int texArg, float t) {
+    GXTexObj* tex;
+    if (lbl_804D4154 == 0) {
+        if (texArg != 0) {
+            tex = (GXTexObj*)texArg;
+        } else {
+            fn_80009E10();
+            fn_80093D18(0, 0, 0);
+            GfxSetCopyFilter(0);
+            GfxFbCommit();
+            tex = (GXTexObj*)fn_80115A34(0, 1, 0);
+        }
+        if (tex != 0) {
+            GfxSetVtxDesc(2);
+            fn_80008D10();
+            GfxSetMaterial(0);
+            CubeTevOneStageTextured();
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(0);
+            GfxSetBlendMode(1, 4, 5, 3);
+            GfxLoadTexObj(tex, 0);
+            fn_80099F18(mode, t);
+            fn_8000FF7C();
+            fn_800097F0();
+            GfxSetCullMode(1);
+        }
+    }
+}
+//@@end
+//@@80093F88
+// Releases image id (when in state 2), sets the flat 2D state and draws with the given colour.
+extern "C" void fn_80093F88(int id, int a, int b, int c, int d);
+void fn_80093F88(int id, int a, int b, int c, int d) {
+    if (fn_80010448(id, 0) == 2) {
+        fn_80010330(id, 0);
+    }
+    GfxSetVtxDesc(2);
+    fn_80008D10();
+    GfxSetMaterial(0);
+    GXSetColorUpdate(GX_TRUE);
+    GXSetAlphaUpdate(GX_TRUE);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+    GfxSetCullMode(0);
+    fn_8009C4A4(0, a, b, c, d);
+}
+//@@end
+//@@80094030
+// Draws the previous frame-buffer copy (if any), then takes a new copy.
 extern "C" void fn_80094030();
-// TODO (not drafted yet, 0x10C bytes at 0x80094150)
-extern "C" void fn_80094150();
+void fn_80094030() {
+    if (lbl_804D4154 == 0) {
+        GfxFbCommit();
+        if (lbl_804D475C != 0) {
+            GXTexObj* tex = fn_80115C18(lbl_804D475C);
+            GfxSetCopyFilter(0);
+            lbl_804D475C = fn_80115260(0, 1, 0);
+            GfxSetVtxDesc(2);
+            fn_80008D10();
+            GfxSetMaterial(0);
+            GfxSetBlendMode(3, 4, 5, 3);
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(1);
+            GfxLoadTexObj(tex, 0);
+            CubeTevOneStageTextured();
+            fn_8009C4A4(0, 0xFF, 0xFF, 0xFF, 0xFF);
+        } else {
+            GfxSetCopyFilter(0);
+            lbl_804D475C = fn_80115260(0, 1, 0);
+        }
+        fn_8000FF7C();
+        fn_800097F0();
+    }
+}
+//@@end
+//@@80094150
+// Draws the frame-buffer copy with the given alpha, then takes a new copy.
+extern "C" void fn_80094150(int alpha);
+void fn_80094150(int alpha) {
+    if (lbl_804D4154 == 0) {
+        if (lbl_804D475C != 0) {
+            GfxSetVtxDesc(2);
+            fn_80008D10();
+            GfxSetMaterial(0);
+            GfxSetBlendMode(1, 4, 5, 3);
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetDstAlpha(GX_TRUE, 0xFF);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(1);
+            GfxLoadTexObj((GXTexObj*)lbl_804D475C, 0);
+            CubeTevOneStageTextured();
+            fn_8009C4A4(0, 0xFF, 0xFF, 0xFF, alpha);
+            GXSetDstAlpha(GX_FALSE, 0);
+        }
+        GfxSetCopyFilter(0);
+        lbl_804D475C = fn_80115374(0, 0, 0);
+        fn_8000FF7C();
+        fn_800097F0();
+    }
+}
+//@@end
 
 // Clears the two cached words.
 extern "C" void fn_8009425C();
@@ -109,8 +228,34 @@ extern "C" void fn_800950C8();
 extern "C" void fn_80095210();
 // TODO (not drafted yet, 0x14C bytes at 0x80095344)
 extern "C" void fn_80095344();
-// TODO (not drafted yet, 0xE0 bytes at 0x80095490)
+//@@80095490
+// Copies the frame buffer to a texture and draws it back full-screen.
 extern "C" void fn_80095490();
+void fn_80095490() {
+    if (lbl_804D4154 == 0) {
+        GXTexObj* tex;
+        GfxFbCommit();
+        GfxSetCopyFilter(0);
+        tex = (GXTexObj*)fn_80115A34(0, 1, 0);
+        if (tex != 0) {
+            GfxLoadTexObj(tex, 0);
+            GfxSetVtxDesc(2);
+            fn_80008D10();
+            GfxSetMaterial(0);
+            CubeTevSetupChannelSwap();
+            GfxSetBlendMode(1, 4, 5, 3);
+            GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+            GXSetColorUpdate(GX_TRUE);
+            GXSetAlphaUpdate(GX_TRUE);
+            GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+            GfxSetCullMode(1);
+            fn_8009C4A4(0, 0xFF, 0xFF, 0xFF, 0xFF);
+            fn_8000FF7C();
+            fn_800097F0();
+        }
+    }
+}
+//@@end
 // TODO (not drafted yet, 0x134 bytes at 0x80095570)
 extern "C" void fn_80095570();
 // TODO (not drafted yet, 0x120 bytes at 0x800956A4)
@@ -123,8 +268,28 @@ extern "C" void fn_800958CC();
 extern "C" void fn_800959C8();
 // TODO (not drafted yet, 0x288 bytes at 0x80095AD8)
 extern "C" void fn_80095AD8();
-// TODO (not drafted yet, 0xC8 bytes at 0x80095D60)
-extern "C" void fn_80095D60();
+//@@80095D60
+// Draws texture tex full-screen with parameter t.
+extern "C" void fn_80095D60(GXTexObj* tex, float t);
+void fn_80095D60(GXTexObj* tex, float t) {
+    if (lbl_804D4154 == 0) {
+        GfxSetVtxDesc(2);
+        GfxSetMaterial(0);
+        GfxResetTev();
+        fn_80008D10();
+        GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+        GXSetAlphaUpdate(GX_FALSE);
+        GXSetColorUpdate(GX_TRUE);
+        GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+        GfxSetCullMode(1);
+        GfxSetBlendMode(1, 6, 7, 3);
+        GfxLoadTexObj(tex, 0);
+        fn_8009B940(t);
+        fn_8000FF7C();
+        fn_800097F0();
+    }
+}
+//@@end
 // TODO (not drafted yet, 0x378 bytes at 0x80095E28)
 extern "C" void fn_80095E28();
 // TODO (not drafted yet, 0xF8 bytes at 0x800961A0)
@@ -198,15 +363,15 @@ extern "C" void fn_8009925C();
 // TODO (not drafted yet, 0x1A4 bytes at 0x80099D74)
 // (declared above)
 // TODO (not drafted yet, 0x668 bytes at 0x80099F18)
-extern "C" void fn_80099F18();
+// (declared above)
 // TODO (not drafted yet, 0x848 bytes at 0x8009A580)
 extern "C" void fn_8009A580();
 // TODO (not drafted yet, 0xB78 bytes at 0x8009ADC8)
 extern "C" void fn_8009ADC8();
 // TODO (not drafted yet, 0xB64 bytes at 0x8009B940)
-extern "C" void fn_8009B940();
+// (declared above)
 // TODO (not drafted yet, 0x228 bytes at 0x8009C4A4)
-extern "C" void fn_8009C4A4();
+// (declared above)
 //@@8009C6CC
 // Static initialisers (__sinit_u_80093BF0_cpp, the .ctors entry): reciprocal screen size and aspect ratio.
 float lbl_804D4730 = 1.0f / lbl_804D2568;
