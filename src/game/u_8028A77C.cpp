@@ -43,7 +43,7 @@ public:
 
     char* mStart; // 0x04
     int mSize;    // 0x08
-    int unk0C;    // 0x0C
+    char* unk0C;  // 0x0C
     u32 mState;   // 0x10
 };
 
@@ -51,7 +51,7 @@ class ScreenEffectBuffer : public ScreenEffectSlot {
 public:
     ScreenEffectBuffer();
     virtual ~ScreenEffectBuffer() {}
-    virtual void Unk18(int data, u32 state); // 0x18: called with the backing store
+    virtual void Unk18(char* data, u32 size); // 0x18: called with the backing store
     virtual int GetSpan();                   // 0x1C: bytes the next reserve needs
 };
 
@@ -415,24 +415,24 @@ void ScreenEffectSlot::Clear()
 // address of the first byte after the erased range.
 static inline char* SlotErase(ScreenEffectSlot* slot, char* pos, int size)
 {
-    int rel = pos - (char*)slot->unk0C;
-    fn_8028BC5C(slot, (int)((char*)slot->unk0C + rel), size);
+    int rel = pos - slot->unk0C;
+    fn_8028BC5C(slot, (int)(slot->unk0C + rel), size);
     slot->mSize -= size;
-    return (char*)slot->unk0C + rel;
+    return slot->unk0C + rel;
 }
 
 extern "C" void fn_8028B2D4(ScreenEffectSlot* slot)
 {
-    SlotErase(slot, (char*)slot->unk0C + slot->mSize - slot->Query(), slot->Query());
+    SlotErase(slot, slot->unk0C + slot->mSize - slot->Query(), slot->Query());
 }
 
 // 0x8028B35C: mark [pos, pos + size) of the current window as written.  The
 // window base is re-read from the object after the write call, as retail does.
 // ScreenEffectSlotConsume
-extern "C" int fn_8028B35C(ScreenEffectSlot* slot, int pos, int size)
+extern "C" char* fn_8028B35C(ScreenEffectSlot* slot, char* pos, int size)
 {
     int rel = pos - slot->unk0C;
-    fn_8028BC5C(slot, slot->unk0C + rel, size);
+    fn_8028BC5C(slot, (int)(slot->unk0C + rel), size);
     slot->mSize -= size;
     return slot->unk0C + rel;
 }
@@ -452,145 +452,95 @@ static inline u32 AlignUp(u32 value, u32 align)
 
     if (align == 4) {
         if (value & 3)
-            value = (value & ~3u) + 4;
+            return (value & ~3u) + 4;
+        return value;
     } else if (align == 2) {
         if (value & 1)
-            value += 1;
+            return value + 1;
+        return value;
     } else if (align == 8) {
         if (value & 7)
-            value = (value & ~7u) + 8;
+            return (value & ~7u) + 8;
+        return value;
     } else if (align == 16) {
         if (value & 15)
-            value = (value & ~15u) + 16;
-    } else {
-        rem = value - (value / align) * align;
-        if (rem != 0)
-            value += align - rem;
+            return (value & ~15u) + 16;
+        return value;
     }
+    rem = value % align;
+    if (rem != 0)
+        return value + (align - rem);
     return value;
 }
 
-// Reserve `size` bytes at absolute position `offset` in the buffer, growing the
-// backing store (and copying the old contents over) when it does not fit, then
-// return the address of the reserved window.  Kept under its placeholder name:
-// five other units call it, so the lead relinks them later.
-extern "C" void* fn_8028B3BC(void* buffer, int offset, int size)
+// Is the buffer still reading its outside text (no store of its own)?
+static inline bool BufferShared(Buffer* self)
 {
-    Buffer* self = (Buffer*)buffer;
-    int oldBase = self->unk0C;
-    int rel = offset - oldBase;
-    int newPos = size + self->mSize;
-    int span = self->GetSpan();
+    bool shared = false;
 
-    if ((u32)self->mState < (u32)(newPos + span)) {
-        u32 want = newPos + self->GetSpan();
-
-        if ((u32)self->mState < want) {
-            bool fresh = false;
-            int oldOffset;
-            int newBlock;
-            u32 block;
-            u32 count;
-
-            if (self->mState == 0 && self->mStart != 0)
-                fresh = true;
-            oldOffset = fresh ? 0 : self->unk0C;
-
-            block = AlignUp(0x40, (u32)self->Query());
-            want = AlignUp(want, block);
-
-            newBlock = (int)VRealloc((void*)oldOffset, (int)want);
-            self->Fill(newBlock + self->mState, (int)(want - (u32)self->mState));
-            if (oldOffset == 0 && self->mStart != 0) {
-                count = want;
-                if ((u32)self->mSize + 1 < want)
-                    count = (u32)self->mSize + 1;
-                CopyBytes((const u8*)self->mStart, count, (u8*)newBlock);
-            }
-            self->Set(newBlock, self->mSize);
-            self->unk0C = newBlock;
-            self->mState = want;
-        }
-    }
-    self->mSize = newPos;
-    fn_8028BC94(self, self->unk0C + rel, size);
-    return (void*)(self->unk0C + rel);
+    if (self->mState == 0 && self->mStart != 0)
+        shared = true;
+    return shared;
 }
 
-// Reserve `size` bytes past the current position without a caller-supplied
-// offset.  A non-zero `raw` skips the block rounding and is used for the
-// unaligned writes of the stream code.  Also kept under its placeholder name.
-extern "C" void fn_8028B5FC(void* buffer, int size, u8 raw)
+// Make the store hold at least `size` bytes plus the span.  The store grows to
+// a whole number of allocation blocks unless `exact` is set; the old contents
+// (or the outside text, terminator included) are copied over.
+static inline void BufferReserve(Buffer* self, u32 size, u8 exact)
 {
-    Buffer* self = (Buffer*)buffer;
-    int newPos = size + self->GetSpan();
+    u32 want = size + self->GetSpan();
 
-    if ((u32)self->mState < (u32)newPos) {
-        bool fresh = false;
-        int oldOffset;
-        int newBlock;
-        u32 want;
-        u32 count;
+    if (self->mState < want) {
+        char* old = BufferShared(self) ? 0 : self->unk0C;
+        char* store;
 
-        if (self->mState == 0 && self->mStart != 0)
-            fresh = true;
-        oldOffset = fresh ? 0 : self->unk0C;
-
-        want = (u32)newPos;
-        if (raw == 0) {
-            u32 block = AlignUp(0x40, (u32)self->Query());
-            want = AlignUp(want, block);
-        }
-
-        newBlock = (int)VRealloc((void*)oldOffset, (int)want);
-        self->Fill(newBlock + self->mState, (int)(want - (u32)self->mState));
-        if (oldOffset == 0 && self->mStart != 0) {
-            count = want;
+        if (!exact)
+            want = AlignUp(want, AlignUp(0x40, (u32)self->Query()));
+        store = (char*)VRealloc(old, (int)want);
+        self->Fill((int)(store + self->mState), (int)(want - self->mState));
+        if (old == 0 && self->mStart != 0) {
+            u32 count = want;
             if ((u32)self->mSize + 1 < want)
                 count = (u32)self->mSize + 1;
-            CopyBytes((const u8*)self->mStart, count, (u8*)newBlock);
+            CopyBytes((const u8*)self->mStart, count, (u8*)store);
         }
-        self->Set(newBlock, self->mSize);
-        self->unk0C = newBlock;
+        self->Set((int)store, self->mSize);
+        self->unk0C = store;
         self->mState = want;
     }
 }
 
-// 0x8028B828: make room for `size` bytes plus the slot's span, then store the
-// new range and hand it to the helper at 0x8028BCCC.  The parameter names and
-// the helper's meaning are guesses.
-void ScreenEffectSlotReserveAndCopy(ScreenEffectSlot* slot, int offset, int size)
+// Insert `size` bytes at `pos` (an address inside the store), growing the
+// store when needed, and return the address of the new window.  Kept under its
+// placeholder name: five other units call it.
+extern "C" char* fn_8028B3BC(Buffer* self, char* pos, int size)
+{
+    int rel = pos - self->unk0C;
+    int newSize = size + self->mSize;
+
+    if (self->mState < newSize + self->GetSpan())
+        BufferReserve(self, newSize, 0);
+    self->mSize = newSize;
+    fn_8028BC94(self, (int)(self->unk0C + rel), size);
+    return self->unk0C + rel;
+}
+
+// Reserve room for `size` bytes; a non-zero `exact` skips the block rounding
+// (the text writers use it).  Also kept under its placeholder name.
+extern "C" void fn_8028B5FC(Buffer* self, int size, u8 exact)
+{
+    BufferReserve(self, size, exact);
+}
+
+// 0x8028B828: replace the contents with `size` bytes copied from `text`.
+void ScreenEffectSlotReserveAndCopy(ScreenEffectSlot* slot, int text, int size)
 {
     Buffer* self = (Buffer*)slot;
-    int newPos = size + self->GetSpan();
 
-    if ((u32)self->mState < (u32)newPos) {
-        u32 want = (u32)size + self->GetSpan();
-
-        if ((u32)self->mState < want) {
-            bool fresh = false;
-            int oldOffset;
-            int newBlock;
-
-            if (self->mState == 0 && self->mStart != 0)
-                fresh = true;
-            oldOffset = fresh ? 0 : self->unk0C;
-
-            newBlock = (int)VRealloc((void*)oldOffset, (int)want);
-            self->Fill(newBlock + self->mState, (int)(want - (u32)self->mState));
-            if (oldOffset == 0 && self->mStart != 0) {
-                u32 count = want;
-                if ((u32)self->mSize + 1 < want)
-                    count = (u32)self->mSize + 1;
-                CopyBytes((const u8*)self->mStart, count, (u8*)newBlock);
-            }
-            self->Set(newBlock, self->mSize);
-            self->unk0C = newBlock;
-            self->mState = (int)want;
-        }
-    }
+    if (self->mState < size + self->GetSpan())
+        BufferReserve(self, size, 1);
     self->mSize = size;
-    ScreenEffectSlotQueueCopy(self, self->unk0C, offset, size);
+    ScreenEffectSlotQueueCopy(self, (u32)self->unk0C, text, size);
 }
 
 // 0x8028B960: release the backing store through VFree when the slot holds
@@ -713,7 +663,7 @@ extern "C" void fn_8028BC5C(void* self, int pos, int size)
 {
     ScreenEffectSlot* s = (ScreenEffectSlot*)self;
 
-    ScreenEffectRotateBytes(pos, pos + size, s->unk0C + s->mSize);
+    ScreenEffectRotateBytes(pos, pos + size, (int)(s->unk0C + s->mSize));
 }
 
 // fn_8028BC94: mark the last `size` bytes before the slot's current write
@@ -721,7 +671,7 @@ extern "C" void fn_8028BC5C(void* self, int pos, int size)
 extern "C" void fn_8028BC94(void* self, int pos, int size)
 {
     ScreenEffectSlot* s = (ScreenEffectSlot*)self;
-    int end = s->unk0C + s->mSize;
+    int end = (int)(s->unk0C + s->mSize);
 
     ScreenEffectRotateBytes(pos, end - size, end);
 }
@@ -978,7 +928,7 @@ extern "C" void fn_8028C338(Buffer* self, const char* text)
         fn_8028B5FC(self, len, 1);
     self->mSize = len;
     ((char*)self->unk0C)[len] = 0;
-    ScreenEffectSlotQueueCopy(self, self->unk0C, (u32)text, (u32)len);
+    ScreenEffectSlotQueueCopy(self, (u32)self->unk0C, (u32)text, (u32)len);
 }
 
 // 0x8028C400: construct a String over an outside character array.  A null
