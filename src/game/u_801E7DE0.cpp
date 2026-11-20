@@ -1165,31 +1165,29 @@ extern u8* lbl_804D3318;
 void TextSetStyle(int, int, int, int, int, int, int, int, int, int, int, int);
 void DebugText(const char* fmt, ...);
 
-extern "C" void fn_801EA880(const char* fmt, u8* color, int x, int y, int w,
+// Debug text packet writers: each stores one field at the write cursor and
+// advances it.
+static inline void DebugPut8(u8 v) { u8* p = lbl_804D3318; *p = v; lbl_804D3318 = p + 1; }
+static inline void DebugPut16(unsigned short v) { u8* p = lbl_804D3318; *(unsigned short*)p = v; lbl_804D3318 = p + 2; }
+
+extern "C" void fn_801EA880(const char* fmt, GXColor color, int x, int y, int w,
                             int h, int flags)
 {
     if ((int)lbl_804D3318 - (int)lbl_803B4284 + 9 < 0x4000) {
-        u8* pos = lbl_804D3318;
-
-        *pos++ = 9;
-        *(unsigned short*)pos = (unsigned short)(x < 0 ? 0 : (x < 0x281 ? x : 0x280));
-        pos += 2;
-        *(unsigned short*)pos = 0x280;
-        pos += 2;
-        *(unsigned short*)pos = 0;
-        pos += 2;
-        *(unsigned short*)pos = (unsigned short)(y < 0 ? 0 : (y < 0x1e1 ? y : 0x1e0));
-        pos += 2;
-        lbl_804D3318 = pos;
-        *pos = 0;
+        DebugPut8(9);
+        DebugPut16(x < 0 ? 0 : (x > 640 ? 640 : x));
+        DebugPut16(640);
+        DebugPut16(0);
+        DebugPut16(y < 0 ? 0 : (y > 480 ? 480 : y));
+        *lbl_804D3318 = 0;
     }
 
-    if (flags == 0) {
-        TextSetStyle(color[0], color[1], color[2], color[3], w, 0, 0, 0,
-                     0, 0, 0, 0);
-    } else {
-        TextSetStyle(color[0], color[1], color[2], color[3], w, 2,
+    if (flags != 0) {
+        TextSetStyle(color.r, color.g, color.b, color.a, w, 2,
                      h / 16 - w, 0, 0, 0, 0, 0);
+    } else {
+        TextSetStyle(color.r, color.g, color.b, color.a, w, 0, 0, 0,
+                     0, 0, 0, 0);
     }
     DebugText(fmt);
 }
