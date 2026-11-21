@@ -140,26 +140,6 @@ struct MsgData {
 };
 
 extern u8 __upper_map[256];
-extern f32 lbl_804DB198;
-extern f32 lbl_804DB19C;
-extern f32 lbl_804DB1A0;
-extern f32 lbl_804DB1A4;
-extern f32 lbl_804DB1A8;
-extern f32 lbl_804DB1B8;
-extern f32 lbl_804DB1BC;
-extern f32 lbl_804DB1C0;
-extern f32 lbl_804DB1C4;
-extern f32 lbl_804DB1C8;
-extern f32 lbl_804DB1CC;
-extern f32 lbl_804DB1D0;
-extern f32 lbl_804DB1D4;
-extern f32 lbl_804DB1D8;
-extern f32 lbl_804DB1DC;
-extern f32 lbl_804DB1E0;
-extern f32 lbl_804DB1E8;
-extern f32 lbl_804DB1EC;
-extern f32 lbl_804DB1F0;
-extern f32 lbl_804DB1F4;
 
 extern "C" {
 void* memcpy(void*, const void*, unsigned long);
@@ -510,7 +490,7 @@ int UpdateActorState(Owner* owner)
     st->unk18 += self->unk138;
 
     if (FollowGetTargetObj(self->unk270) != 0)
-        st->unk1c = lbl_804DB198;
+        st->unk1c = 0.0f;
     else
         st->unk1c += self->unk138;
 
@@ -649,7 +629,7 @@ void ActorStateInit(Owner* self)
     st = (StateData*)self->unk130;
     st->unk00 = FollowStateDecide(self);
     st->unk04 = 0;
-    st->unk14 = st->unk10 = lbl_804DB198;
+    st->unk14 = st->unk10 = 0.0f;
     if (st->unk00 == 7)
         st->unk00 = 0;
 
@@ -697,7 +677,7 @@ int ActorStateCanContinue(Owner* self)
         }
         if (fn_800BAF40(self) == -1 && self->unk21c != 0)
             self->unk288 = 0;
-        if (self->unk140 >= lbl_804DB1B8) {
+        if (self->unk140 >= 500.0f) {
             fn_800BBCA8(self);
             self->unk220 = 0;
             return 1;
@@ -716,7 +696,7 @@ int ActorFollowBegin(Owner* self)
         return 0;
 
     self->unk10c = (void (*)(Owner*))FollowOffsetUpdate;
-    self->unk130->unk14 = lbl_804DB198;
+    self->unk130->unk14 = 0.0f;
     self->unk288 = 0;
     self->unk21c = 0;
     self->unk220 = 0;
@@ -855,7 +835,7 @@ int FollowStateUpdate(Owner* self)
         }
         if (fn_800BAF40(self) == -1 && self->unk21c != 0)
             self->unk288 = 0;
-        if (self->unk140 >= lbl_804DB1B8) {
+        if (self->unk140 >= 500.0f) {
             fn_800BBCA8(self);
             self->unk220 = 0;
             return 1;
@@ -874,7 +854,7 @@ int ActorFollowOffsetReset(Owner* self)
         return 0;
 
     self->unk10c = (void (*)(Owner*))FollowOffsetUpdate;
-    self->unk130->unk14 = lbl_804DB198;
+    self->unk130->unk14 = 0.0f;
     self->unk288 = 0;
     self->unk21c = 0;
     self->unk220 = 0;
@@ -945,7 +925,7 @@ int FollowTargetStateUpdate(Owner* self)
                     target->unk038, 0) == 0)
         return 1;
 
-    if (FollowLineCheckActorDist(self, target, lbl_804DB1BC) == 0 ||
+    if (FollowLineCheckActorDist(self, target, 0.8f) == 0 ||
         fn_8029B3B0(self, 0x73b1e248u) == 0) {
         fn_80162610(self, self->unk894, 0);
         ConditionUpdateBit(self->unk270, 0, 0);
@@ -955,7 +935,7 @@ int FollowTargetStateUpdate(Owner* self)
         ConditionUpdateBit(self->unk270, 4, 1);
         if (fn_80162940(self->unk894, 2) == 0 ||
             fn_80162940(self->unk894, 8) == 0 ||
-            self->unk5b8 <= (f32)rand() / lbl_804DB1C0) {
+            self->unk5b8 <= (f32)rand() / 32767.0f) {
             if (fn_80162940(self->unk894, 1) != 0 &&
                 fn_80162940(self->unk894, 4) != 0)
                 fn_80162610(self, self->unk894, 1);
@@ -975,7 +955,7 @@ int FollowTargetStateUpdate(Owner* self)
         }
         if (fn_800BAF40(self) == -1 && self->unk21c != 0)
             self->unk288 = 0;
-        if (self->unk140 >= lbl_804DB1B8) {
+        if (self->unk140 >= 500.0f) {
             fn_800BBCA8(self);
             self->unk220 = 0;
             return 1;
@@ -995,7 +975,7 @@ int FollowOffsetUpdateBegin(Owner* self)
         return 0;
 
     self->unk10c = (void (*)(Owner*))FollowOffsetUpdate;
-    self->unk130->unk14 = lbl_804DB198;
+    self->unk130->unk14 = 0.0f;
     self->unk288 = 0;
     self->unk21c = 0;
     self->unk220 = 0;
@@ -1060,7 +1040,7 @@ int FollowOffsetStateLeave(Owner* self)
     if (self == 0)
         return 0;
 
-    self->unk130->unk10 = lbl_804DB198;
+    self->unk130->unk10 = 0.0f;
     ConditionUpdateBit(self->unk270, 4, 1);
     fn_80162610(self, self->unk894, 0);
     fn_8029B070(self, 0x73b1e248);
@@ -1082,16 +1062,16 @@ int FollowWaitStateEnter(Owner* self)
     st = self->unk130;
     self->unk288 = 0;
     if (FollowGetTargetObj(self->unk270) != 0) {
-        self->unk240 = lbl_804DB198;
-        self->unk244 = lbl_804DB198;
-        self->unk248 = lbl_804DB198;
+        self->unk240 = 0.0f;
+        self->unk244 = 0.0f;
+        self->unk248 = 0.0f;
         fn_800BBCA8(self);
     }
 
     st->unk00 = 5;
     st->unk00 = 6;
     st->unk08 = 0;
-    st->unk10 = lbl_804DB198;
+    st->unk10 = 0.0f;
 
     ConditionUpdateBit(self->unk270, 4, 0);
     ConditionUpdateBit(self->unk270, 3, 0);
@@ -1105,10 +1085,10 @@ int FollowWaitStateEnter(Owner* self)
     index = fn_800B26B8(self);
     if (index < 4 && fn_800B1EF4(self, index) == 0) {
         fn_800B1F20(self, index);
-        fn_800B1AB8(self, index, lbl_804DB1A8, 1);
+        fn_800B1AB8(self, index, -1.0f, 1);
         fn_800B261C(self, index, target);
         if (target[0] != 0)
-            fn_800C9FC0(self, *(void**)(target[0] + 0x38), lbl_804DB1C4);
+            fn_800C9FC0(self, *(void**)(target[0] + 0x38), 10000.0f);
     }
     return 1;
 }
@@ -1143,27 +1123,27 @@ u32 FollowSearchStateUpdate(Owner* self)
             fn_800B261C(self, index, (int*)&target);
             fn_800B22F8(self, index);
             if (target != 0 && fn_800B22F8(self, index) < 2) {
-                fn_800B2418(lbl_804DB1A0, self, index);
+                fn_800B2418(5000.0f, self, index);
                 fn_800B1F20(self, index);
-                fn_800B1AB8(self, index, lbl_804DB1A8, 1);
+                fn_800B1AB8(self, index, -1.0f, 1);
                 FollowSetTargetObj(self->unk270, target);
-                if (st->unk10 > lbl_804DB1C8)
+                if (st->unk10 > 3000.0f)
                     return 1;
             }
         } else {
-            if (fn_800B2454(self, index) != 0 && st->unk10 > lbl_804DB1C8)
+            if (fn_800B2454(self, index) != 0 && st->unk10 > 3000.0f)
                 return 1;
-            fn_800B2418(lbl_804DB1A0, self, index);
+            fn_800B2418(5000.0f, self, index);
         }
     }
 
     fn_800C9ED0(self);
-    if (FollowLineCheckActorDist(self, target, lbl_804DB1BC) == 0)
-        return lbl_804DB1C8 < st->unk10;
+    if (FollowLineCheckActorDist(self, target, 0.8f) == 0)
+        return 3000.0f < st->unk10;
 
     if (fn_80162940(self->unk894, 2) != 0 &&
         fn_80162940(self->unk894, 8) != 0) {
-        if ((f32)rand() / lbl_804DB1C0 < self->unk5b8) {
+        if ((f32)rand() / 32767.0f < self->unk5b8) {
             fn_80162610(self, self->unk894, 2);
             goto CheckConditionBits;
         }
@@ -1181,7 +1161,7 @@ u32 FollowSearchStateUpdate(Owner* self)
 CheckConditionBits:
     if ((fn_80162940(self->unk894, 0x800) == 0 &&
          fn_80162940(self->unk894, 0x400) == 0) ||
-        st->unk10 <= lbl_804DB1C8)
+        st->unk10 <= 3000.0f)
         return 0;
     return 1;
 }
@@ -1193,7 +1173,7 @@ u32 FollowOffsetTimerReset(Owner* self)
     if (self == 0)
         return 0;
 
-    self->unk130->unk10 = lbl_804DB198;
+    self->unk130->unk10 = 0.0f;
     ConditionUpdateBit(self->unk270, 4, 0);
     ConditionSetBit(self->unk270, 0x2a, 0);
     fn_80162610(self, self->unk894, 0);
@@ -1217,7 +1197,7 @@ u32 FollowSearchTimerArm(Owner* self)
     self->unk288 = 0;
     st->unk00 = 5;
     st->unk08 = 0;
-    st->unk10 = lbl_804DB198;
+    st->unk10 = 0.0f;
     ConditionUpdateBit(self->unk270, 4, 1);
     ConditionUpdateBit(self->unk270, 3, 1);
     ConditionUpdateBit(self->unk270, 0x17, 1);
@@ -1229,10 +1209,10 @@ u32 FollowSearchTimerArm(Owner* self)
     index = fn_800B26B8(self);
     if (index < 4 && fn_800B1EF4(self, index) == 0) {
         fn_800B1F20(self, index);
-        fn_800B1AB8(self, index, lbl_804DB1A8, 1);
+        fn_800B1AB8(self, index, -1.0f, 1);
         fn_800B261C(self, index, (int*)&target);
         if (target != 0)
-            fn_800C9FC0(self, (void*)target->unk38, lbl_804DB1C4);
+            fn_800C9FC0(self, (void*)target->unk38, 10000.0f);
     }
     return 1;
 }
@@ -1261,7 +1241,7 @@ u32 FollowApproachStateUpdate(Owner* self)
         RangeResetPending(self->unk270);
     }
 
-    if (MemFlagIsSet(self->unk270, 0x24) && st->unk18 > lbl_804DB1CC)
+    if (MemFlagIsSet(self->unk270, 0x24) && st->unk18 > 6000.0f)
         return 1;
 
     index = fn_800B26B8(self);
@@ -1270,17 +1250,17 @@ u32 FollowApproachStateUpdate(Owner* self)
             fn_800B261C(self, index, (int*)&target);
             fn_800B22F8(self, index);
             if (target != 0 && fn_800B22F8(self, index) < 2) {
-                fn_800B2418(lbl_804DB1A0, self, index);
+                fn_800B2418(5000.0f, self, index);
                 fn_800B1F20(self, index);
-                fn_800B1AB8(self, index, lbl_804DB1A8, 1);
+                fn_800B1AB8(self, index, -1.0f, 1);
                 FollowSetTargetObj(self->unk270, target);
-                fn_800C9FC0(self, (void*)target->unk38, lbl_804DB1C4);
+                fn_800C9FC0(self, (void*)target->unk38, 10000.0f);
             }
         } else {
             if (fn_800B2454(self, index) != 0) {
                 ConditionUpdateBit(self->unk270, 4, 0);
             } else {
-                fn_800B2418(lbl_804DB1A0, self, index);
+                fn_800B2418(5000.0f, self, index);
                 ConditionUpdateBit(self->unk270, 4, 1);
             }
         }
@@ -1292,14 +1272,14 @@ u32 FollowApproachStateUpdate(Owner* self)
         return 1;
 
     if (target != 0) {
-        inRange = FollowLineCheckActorDist(self, target, lbl_804DB1BC);
+        inRange = FollowLineCheckActorDist(self, target, 0.8f);
         value = OwnerValue(self, target);
         ConditionUpdateBit(self->unk270, 4, inRange != 0);
 
         if (inRange != 0 && fn_8029B3B0(self, 0x73b1e248u) != 0) {
             if (fn_80162940(self->unk894, 2) != 0 &&
                 fn_80162940(self->unk894, 8) != 0 &&
-                self->unk5b8 > (f32)rand() / lbl_804DB1C0) {
+                self->unk5b8 > (f32)rand() / 32767.0f) {
                 fn_80162610(self, self->unk894, 2);
             } else if (fn_80162940(self->unk894, 1) != 0 &&
                        fn_80162940(self->unk894, 4) != 0) {
@@ -1324,7 +1304,7 @@ u32 FollowApproachStateUpdate(Owner* self)
             if (self->unk5e8 == -1)
                 goto check_player;
             info = (OwnerInfo*)OwnerGetInfo(self->unk5e8);
-            if (info == 0 || (inRange != 0 && value <= lbl_804DB1D0))
+            if (info == 0 || (inRange != 0 && value <= 1200.0f))
                 goto check_player;
 
             toPlayer.x = info->unk24 - ((OwnerInfo*)player)->unk24;
@@ -1336,13 +1316,13 @@ u32 FollowApproachStateUpdate(Owner* self)
             distSelf = fn_800E0DBC(&toSelf);
             distPlayer = fn_800E0DBC(&toPlayer);
             if ((f32)distPlayer <
-                lbl_804DB1D4 * (self->unk5d8 * self->unk5b4) + (f32)distSelf) {
+                0.7f * (self->unk5d8 * self->unk5b4) + (f32)distSelf) {
                 fn_800BC56C(self, (int)target);
                 st->unk04 |= 1;
             }
         }
     } else {
-        value = lbl_804DB1D8;
+        value = 3.4028235e38f;
         inRange = 0;
         if (fn_800B7CE0(self->unk038) != -1)
             return 1;
@@ -1357,7 +1337,7 @@ check_player:
                 if (playerValue > self->unk5d8) {
                     fn_800BBCA8(self);
                     st->unk04 &= ~1;
-                } else if (inRange != 0 && value < lbl_804DB1D0) {
+                } else if (inRange != 0 && value < 1200.0f) {
                     fn_800BBCA8(self);
                     st->unk04 &= ~1;
                 } else if (self->unk5e8 != -1) {
@@ -1377,15 +1357,15 @@ check_player:
                         distSelf = fn_800E0DBC(&toSelf);
                         distPlayer = fn_800E0DBC(&toPlayer);
                         if (distPlayer > distSelf &&
-                            playerValue > lbl_804DB1D4 * self->unk5d8) {
+                            playerValue > 0.7f * self->unk5d8) {
                             fn_800BBCA8(self);
                             st->unk04 &= ~1;
                         }
                     }
                 }
             } else {
-                if (playerValue < lbl_804DB1DC * self->unk5d8 &&
-                    playerValue > lbl_804DB1E0 * self->unk5dc) {
+                if (playerValue < 0.9f * self->unk5d8 &&
+                    playerValue > 1.1f * self->unk5dc) {
                     ConditionUpdateBit(self->unk270, 0x1d, 0);
                     fn_800BBCA8(self);
                 }
@@ -1409,7 +1389,7 @@ check_player:
                 v.x = self->unk084.x - v.x;
                 v.y = self->unk084.y - v.y;
                 v.z = self->unk084.z - v.z;
-                v.z = lbl_804DB198;
+                v.z = 0.0f;
                 fn_800E1098(&v);
                 p.x = v.x + self->unk084.x;
                 p.y = v.y + self->unk084.y;
@@ -1418,7 +1398,7 @@ check_player:
                                 &scale, &ia, &ib, self->unk900) != 0) {
                     f32 t = fn_800E1020(&v);
                     fn_800BAFF8(self, &v, ia, ib, &p, scale,
-                                t * (lbl_804DB19C - scale));
+                                t * (1.0f - scale));
                 }
                 if (fn_800BF2D0(&self->unk084) == fn_800BF2D0(&p)) {
                     ConditionUpdateBit(self->unk270, 0x1d, 1);
@@ -1460,7 +1440,7 @@ int FollowIdleStateEnter(Owner* self)
     self->unk288 = 3;
     st->unk00 = 0;
     st->unk08 = 0;
-    st->unk0c = lbl_804DB1B8 * ((f32)(u32)rand() / lbl_804DB1C0) + lbl_804DB1E8;
+    st->unk0c = 500.0f * ((f32)(u32)rand() / 32767.0f) + 300.0f;
     st->unk04 &= ~1;
     ConditionUpdateBit(self->unk270, 4, 1);
     ConditionUpdateBit(self->unk270, 3, 1);
@@ -1471,10 +1451,10 @@ int FollowIdleStateEnter(Owner* self)
     index = fn_800B26B8(self);
     if (index < 4 && fn_800B1EF4(self, index) == 0) {
         fn_800B1F20(self, index);
-        fn_800B1AB8(self, index, lbl_804DB1A8, 1);
+        fn_800B1AB8(self, index, -1.0f, 1);
         fn_800B261C(self, index, target);
         if (target[0] != 0)
-            fn_800C9FC0(self, *(void**)(target[0] + 0x38), lbl_804DB1C4);
+            fn_800C9FC0(self, *(void**)(target[0] + 0x38), 10000.0f);
     }
     return 1;
 }
@@ -1521,23 +1501,23 @@ int FollowStateDecide(Owner* self)
         return 7;
 
     if (pending) {
-        if (st->unk1c > lbl_804DB1F4 || MemFlagIsSet(self->unk270, 5))
+        if (st->unk1c > 60000.0f || MemFlagIsSet(self->unk270, 5))
             return 7;
         if (self->unk5e8 == -1 || st->unk00 == 4)
             return 0;
         return 4;
     }
 
-    if (MemFlagIsSet(self->unk270, 0x24) && st->unk18 > lbl_804DB1CC) {
+    if (MemFlagIsSet(self->unk270, 0x24) && st->unk18 > 6000.0f) {
         ConditionUpdateBit(self->unk270, 0x24, 0);
-        st->unk18 = lbl_804DB198;
+        st->unk18 = 0.0f;
 
-        if ((f32)rand() / lbl_804DB1C0 < self->unk5b4 ||
-            st->unk14 < lbl_804DB1EC ||
+        if ((f32)rand() / 32767.0f < self->unk5b4 ||
+            st->unk14 < 1000.0f ||
             fn_8029B3B0(self, 0x13e6b) == 0 ||
-            self->unk140 >= lbl_804DB1B8) {
-            if ((f32)rand() / lbl_804DB1C0 >= lbl_804DB1F0 ||
-                st->unk10 <= lbl_804DB1C8 ||
+            self->unk140 >= 500.0f) {
+            if ((f32)rand() / 32767.0f >= 0.142857f ||
+                st->unk10 <= 3000.0f ||
                 fn_8029B3B0(self, 0x73b1e248) == 0)
                 return 6;
             return 5;
@@ -1555,10 +1535,10 @@ int FollowStateDecide(Owner* self)
         return 2;
     }
 
-    if (FollowLineCheckActorDist(self, track, lbl_804DB1BC) != 0 &&
+    if (FollowLineCheckActorDist(self, track, 0.8f) != 0 &&
         fn_8029B3B0(self, 0x73b1e248) != 0)
         return 0;
-    if (fn_8029B3B0(self, 0x13e6b) != 0 && self->unk140 < lbl_804DB1B8 &&
+    if (fn_8029B3B0(self, 0x13e6b) != 0 && self->unk140 < 500.0f &&
         fn_800B84E4(self->unk038, ((TargetRef*)track)->unk38, 0) != -1)
         return 1;
     return 0;
