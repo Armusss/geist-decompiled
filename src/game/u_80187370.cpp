@@ -62,7 +62,8 @@ struct Player {
     int unk248;           // 0x248
     u8 pad24C[0xC8];
     int unk314;           // 0x314
-    u8 pad318[0x10];
+    int unk318;           // 0x318
+    u8 pad31C[0xC];
     int unk328;           // 0x328
     u8 pad32C[0x30C];
     int unk638;           // 0x638
@@ -127,6 +128,7 @@ void PlayerSetActionMode(void* p, int mode);
 void PlayerSetHeldSlotIndex(void* p, int i);
 void WeatherSetRainB(float rain);
 int PlayerGetHeldSlotIndex(void* p);
+void PlayerSetHeldSlotMode(void* p, int mode);
 int Fn800F7DEC(int a, int b, int msg, int who, void* data);
 void WeatherSetByTypeId(int id, int a, int type);
 void PlayerApplyFrameOffset(Player* p);
@@ -487,6 +489,34 @@ void fn_80188068(Player* p) {
 }
 
 void fn_801881C4(Player* p) {
+}
+
+void fn_801881C8(Player* p, float dt) {
+    int a;
+    int b;
+    int c;
+    int d;
+    QueryNameOut(&a, p->handle, 0x2DA8293C);
+    QueryNameOut(&b, p->handle, 0xDFF3097A);
+    if (Fn800F7DEC(a, b, 0x6FAB23FE, fn_800498D0(p), 0) != p->unk7DC) {
+        PlayerSetActionMode(p, 0x11);
+    }
+    p->unk638 = 1;
+    p->flags7B4 &= ~1;
+    PlayerMove(p, dt);
+    PlayerGunInput(p);
+    QueryNameOut(&c, p->handle, 0x2DA8293C);
+    QueryNameOut(&d, p->handle, 0xDFF3097A);
+    if (p->unk318 == 0) {
+        PlayerSetValue4(&p->state, 3);
+        if (p->state == 0x11) {
+            fn_80048BA8(p, p->unk1D04, 1);
+            Fn800F7F5C(c, d, 0x9791AF51, fn_800498D0(p), p->unk1D04, p->unk14FC);
+            PlayerSetHeldSlotMode(p, 8);
+        }
+    } else {
+        PlayerResetGunTimer(p);
+    }
 }
 
 void fn_801885AC(Player* p) {
