@@ -579,9 +579,9 @@ static inline int ScanLink(Owner* a, Owner* b, f32 dist) {
     return 1;
 }
 
-int ActorScanTargetCallback(void* p, Owner* other, f32 dist)
+int ActorScanTargetCallback(Owner* owner, Owner* other, f32 dist)
 {
-    Owner* self = (Owner*)p;
+    Owner* self = (Owner*)(void*)owner;
     Msg400 reply;
 
     if (self == 0 || SendMsg(self->unk038, 0x400, &reply) == 0 ||
@@ -690,13 +690,14 @@ int ActorStateCanContinue(Owner* self)
 
 // Arms the follow-offset update: installs the offset hinge updater on the actor,
 // clears the pending follow fields and resets the offset timer.
-int ActorFollowBegin(Owner* self)
+int ActorFollowBegin(Owner* owner)
 {
-    if (self == 0)
+    if (owner == 0)
         return 0;
-
+    Owner* self = (Owner*)(void*)owner;
+    StateData* st = self->unk130;
     self->unk10c = (void (*)(Owner*))FollowOffsetUpdate;
-    self->unk130->unk14 = 0.0f;
+    st->unk14 = 0.0f;
     self->unk288 = 0;
     self->unk21c = 0;
     self->unk220 = 0;
@@ -848,13 +849,14 @@ int FollowStateUpdate(Owner* self)
 
 // Arms the follow-offset update: installs the offset hinge updater on the actor,
 // clears the pending follow fields and re-arms the follow conditions.
-int ActorFollowOffsetReset(Owner* self)
+int ActorFollowOffsetReset(Owner* owner)
 {
-    if (self == 0)
+    if (owner == 0)
         return 0;
-
+    Owner* self = (Owner*)(void*)owner;
+    StateData* st = self->unk130;
     self->unk10c = (void (*)(Owner*))FollowOffsetUpdate;
-    self->unk130->unk14 = 0.0f;
+    st->unk14 = 0.0f;
     self->unk288 = 0;
     self->unk21c = 0;
     self->unk220 = 0;
@@ -966,13 +968,14 @@ int FollowTargetStateUpdate(Owner* self)
 // Entry of the follow-offset state: installs the offset hinge updater on the
 // actor, clears the pending follow fields, resets the offset timer and re-arms
 // the follow conditions.
-int FollowOffsetUpdateBegin(Owner* self)
+int FollowOffsetUpdateBegin(Owner* owner)
 {
-    if (self == 0)
+    if (owner == 0)
         return 0;
-
+    Owner* self = (Owner*)(void*)owner;
+    StateData* st = self->unk130;
     self->unk10c = (void (*)(Owner*))FollowOffsetUpdate;
-    self->unk130->unk14 = 0.0f;
+    st->unk14 = 0.0f;
     self->unk288 = 0;
     self->unk21c = 0;
     self->unk220 = 0;
