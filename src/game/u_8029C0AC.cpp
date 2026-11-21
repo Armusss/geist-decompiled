@@ -2,6 +2,8 @@
 // Names are descriptive guesses.
 
 #include "game/types.h"
+#include "game/string.h"
+#include "game/msg.h"
 
 typedef unsigned char u8;
 typedef unsigned long u32;
@@ -106,20 +108,6 @@ struct Owner {
     int unk908;                           // 0x908: actor id
 };
 
-class Buffer {
-public:
-    virtual ~Buffer();
-    char* data;                           // 0x04
-    int length;                           // 0x08
-    int capacity;                         // 0x0c
-    int flags;                            // 0x10
-};
-
-class String : public Buffer {
-public:
-    String(const char* s);
-    String();
-};
 
 int OwnerId(Owner* owner);
 int ActorPlayAnim(int id, u32 anim, int arg);
@@ -158,7 +146,7 @@ static inline void SveStateName(int* out, const char* name) {
     String part(name);
     String sep(lbl_8034B818 + 0x51);
     String full = fn_800225C8(part, sep);
-    fn_8028C188(out, full.data, full.length);
+    fn_8028C188(out, full.mData, full.mLength);
 }
 
 int NpcSveHandleMsg(int msg, int* p) {
@@ -459,12 +447,13 @@ int NpcSveBeginFollow(Owner* o) {
 // the movement query to report an active follow mode and a running path timer.
 int NpcSveCheckFollowReady(Owner* owner) {
     Owner* o = (Owner*)owner;
+    int mode;
+    PathEvent* ev;
+    void* target;
+
     if (o == 0) {
         return 0;
     }
-    void* target;
-    int mode;
-    PathEvent* ev;
     ev = (PathEvent*)o->evt;
     mode = fn_800B26B8(o);
     if (mode != 4) {
@@ -478,7 +467,10 @@ int NpcSveCheckFollowReady(Owner* owner) {
     } else {
         return 1;
     }
-    return ev->timer > 3000.0f;
+    if (ev->timer > 3000.0f) {
+        return 1;
+    }
+    return 0;
 }
 
 // Clears the follow-condition bits and reports whether the owner was valid;
@@ -536,28 +528,31 @@ int NpcSveStartFollowTarget(Owner* owner) {
 // Second half of the follow state machine: validates the reported follow target,
 // watches the path timer and drives the follow animation / host callback.
 int NpcSveUpdateFollowTarget(Owner* owner) {
-    if (owner == 0) {
+    Owner* o = (Owner*)owner;
+    int mode;
+    PathEvent* ev;
+    void* target;
+
+    if (o == 0) {
         return 0;
     }
-    Owner* o = (Owner*)owner;
-    PathEvent* ev = (PathEvent*)o->evt;
-    int mode = fn_800B26B8(o);
+    ev = (PathEvent*)o->evt;
+    mode = fn_800B26B8(o);
     if (mode != 4) {
         FollowGetTargetObj(o->cond270);
-        void* reported;
-        fn_800B261C(o, mode, &reported);
-        if (reported != 0 && reported != FollowGetTargetObj(o->cond270)) {
+        fn_800B261C(o, mode, &target);
+        if (target != 0 && target != FollowGetTargetObj(o->cond270)) {
             return 1;
         }
         if (fn_800B22F8(o, mode) <= 2) {
             return 1;
         }
     }
-    void* target = FollowGetTargetObj(o->cond270);
+    target = FollowGetTargetObj(o->cond270);
     if (target == 0) {
         return 1;
     }
-    if (OwnerValue(o, 0) < 600.0f || (ev->flags & 1) != 0) {
+    if (OwnerValue(o, target) < 600.0f || (ev->flags & 1) != 0) {
         if (o->unk288 != 0) {
             fn_800BBCA8(o);
             o->unk288 = 0;
@@ -568,17 +563,13 @@ int NpcSveUpdateFollowTarget(Owner* owner) {
             }
             ConditionUpdateBit(o->cond270, 0x14, 1);
             ev->flags |= 1;
-        } else {
-            if (MemFlagIsSet(o->cond270, 0x14) == 0) {
-                return 1;
-            }
+        } else if (MemFlagIsSet(o->cond270, 0x14) == 0) {
+            return 1;
         }
+    } else if (fn_800BAF40(o) == -1) {
+        o->unk288 = 0;
     } else {
-        if (fn_800BAF40(o) == -1) {
-            o->unk288 = 0;
-        } else {
-            o->unk288 = 2;
-        }
+        o->unk288 = 2;
     }
     return 0;
 }
@@ -897,10 +888,12 @@ int NpcSveRefreshFollowTarget(Owner* owner) {
     if (o == 0) {
         return 0;
     }
-    PathEvent* ev = (PathEvent*)o->evt;
-    int mode = fn_800B26B8(o);
+    void* target;
+    int mode;
+    PathEvent* ev;
+    ev = (PathEvent*)o->evt;
+    mode = fn_800B26B8(o);
     if (mode != 4) {
-        void* target;
         if (fn_800B1EF4(o, mode) == 0) {
             fn_800B261C(o, mode, &target);
             fn_800B22F8(o, mode);
@@ -910,11 +903,11 @@ int NpcSveRefreshFollowTarget(Owner* owner) {
             ev->timer = 0.0f;
         }
     }
-    if (ev->timer <= 3000.0f) {
-        return 0;
+    if (ev->timer > 3000.0f) {
+        o->unk268 = 3;
+        return 1;
     }
-    o->unk268 = 3;
-    return 1;
+    return 0;
 }
 
 // Switches the path-follow actor to state 3 and re-arms its follow conditions.
