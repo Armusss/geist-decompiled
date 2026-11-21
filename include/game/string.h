@@ -1,7 +1,7 @@
 #ifndef GAME_STRING_H
 #define GAME_STRING_H
 
-// Buffer and String, the engine's text classes (implemented in u_8028A77C.cpp, 0x8028A77C-0x8028C54C).
+// Buffer and String, the engine's text classes (implemented in u_8028A8D4.cpp, 0x8028A8D4-0x8028C54C; the BufferOwner methods in u_8028865C.cpp).
 // Names are descriptive guesses.
 //
 // Evidence:
@@ -13,7 +13,7 @@
 //     +0x08 destructor, +0x0C 0x8028B2A0, +0x10 0x8028B1CC, +0x14 0x8028BC2C, +0x18 0x8028BC28, +0x1C 0x80023884.
 //   The destructor is slot 0, so the classes are declared with `virtual ~Buffer()` first. Units that only use
 //   strings never call the other five slots; they are declared here as one placeholder (`Release`), exactly as
-//   the 69 client units declared it. u_8028A77C.cpp, which implements the class, keeps its own fuller
+//   the 69 client units declared it. u_8028A8D4.cpp, which implements the class, keeps its own fuller
 //   declaration (two base classes, five named virtuals) until its constructors match: see the note there.
 //   ~Buffer (__dt__6BufferFv, 0x8028B9C0) is out of line; ~String is inline (clients set the String vtable,
 //   null-check, then call ~Buffer(this, 0)).
@@ -23,6 +23,9 @@ public:
     Buffer();                                  // 0x8028BA9C
     virtual ~Buffer();                         // 0x8028B9C0
     virtual void Release(char* p);
+    // Defined in u_8028865C.cpp (0x8028A82C / 0x8028A88C): slots 0x18 / 0x10 of the BufferOwner vtables.
+    void Append(unsigned char* data, unsigned long size);
+    int GetAlignment();
 
     char* mData;                               // 0x04
     int mLength;                               // 0x08

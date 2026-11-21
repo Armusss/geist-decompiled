@@ -805,7 +805,7 @@ config.libs = [
             Object(NonMatching, "game/u_8028703C.cpp"),  # guess
             Object(Matching, "game/Clock.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_8028865C.cpp"),  # split from u_8028703C
-            Object(NonMatching, "game/u_8028A77C.cpp"),  # guess
+            Object(NonMatching, "game/u_8028A8D4.cpp"),  # guess (was u_8028A77C)
             Object(NonMatching, "game/u_8028C54C.cpp"),  # guess
             Object(NonMatching, "game/u_8028DA1C.cpp"),  # guess
             Object(NonMatching, "game/u_80290C58.cpp"),  # guess

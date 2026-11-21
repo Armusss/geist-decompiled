@@ -1138,10 +1138,11 @@ game/Clock.cpp:
 	.sdata2     start:0x804DA4C0 end:0x804DA4E8
 
 game/u_8028865C.cpp:
-	.text       start:0x8028865C end:0x8028A77C
+	.text       start:0x8028865C end:0x8028A8D4
+	.data       start:0x803C29B0 end:0x803C29F0
 
-game/u_8028A77C.cpp:
-	.text       start:0x8028A77C end:0x8028C54C
+game/u_8028A8D4.cpp:
+	.text       start:0x8028A8D4 end:0x8028C54C
 
 game/u_8028C54C.cpp:
 	.text       start:0x8028C54C end:0x8028DA1C

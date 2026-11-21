@@ -1,4 +1,8 @@
-// u_8028865C.cpp: clock texture pages and particle rendering (0x8028865C-0x8028A77C).
+// u_8028865C.cpp: clock texture pages and particle rendering (0x8028865C-0x8028A8D4).
+// Boundary evidence (end 0x8028A8D4, was 0x8028A77C): the functions at 0x8028A77C-0x8028A8D4 are the
+// BufferOwner destructor and virtuals; they appear only in the vtables 0x803C29B0 (BufferOwner) and
+// 0x803C29D0 (ClockPageBuffer), and only this file uses those vtables (__dt__15ClockPageBufferFv,
+// fn_8028A728). CW emits them after the file's own functions; .data 0x803C29B0-0x803C29F0 is this file's.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 // Function names are descriptive guesses.
 
@@ -1256,7 +1260,7 @@ extern "C" void fn_8028A388(void)
 // Releases the payload block owned by the page buffer's base class.
 extern "C" void fn_8028B960(void* self);
 
-// Engine pooled byte buffer (same hierarchy as in u_8028A77C): only the
+// Engine pooled byte buffer (same hierarchy as in u_8028A8D4): only the
 // destructor chain and constructor of the classes below are used here.
 class BufferBase2 {
 public:
@@ -1268,15 +1272,18 @@ public:
     virtual ~BufferBase() {}
 };
 
-// Buffer that releases its payload block when destroyed (vtable 0x803C29B0).
-class PageBufferBase : public Buffer {
+// Guessed class name: Buffer that releases its payload block when destroyed (vtable 0x803C29B0).
+// Its methods are defined at the end of this file (0x8028A77C-0x8028A8D4).
+class BufferOwner : public Buffer {
 public:
-    virtual ~PageBufferBase() { fn_8028B960(this); }
+    virtual ~BufferOwner();
+    void Commit(int start, unsigned long size);
+    static void operator delete(void* p) { VFree(p); }
 };
 
 // The clock page buffer (vtable 0x803C29D0): no members of its own; storage
 // comes from and returns to the VM heap.
-class ClockPageBuffer : public PageBufferBase {
+class ClockPageBuffer : public BufferOwner {
 public:
     virtual ~ClockPageBuffer() {}
     static void* operator new(unsigned long size) { return VAlloc(size); }
@@ -1364,4 +1371,58 @@ extern "C" void fn_8028A6B8()
 extern "C" void fn_8028A728(void)
 {
     lbl_804D56E0 = (ClockPageList*)new ClockPageBuffer;
+}
+
+// ---- BufferOwner methods (0x8028A77C-0x8028A8D4; vtables 0x803C29B0 / 0x803C29D0) ---------------------
+// They fill slots 0x08-0x18 of the BufferOwner and ClockPageBuffer vtables, which only this file uses
+// (moved here from u_8028A77C, now u_8028A8D4). Append/GetAlignment keep their existing mangled names.
+
+void DestroyWordRange(unsigned long start, unsigned long end);
+void ClearWordRange(unsigned long start, unsigned long end);
+extern "C" void fn_8028BC2C(void* self, void* dst, unsigned long size);
+extern "C" void fn_8028BC28(Buffer* self, u8* data, unsigned long size);
+
+// fn_8028A77C: deleting destructor of the Buffer-derived object.
+BufferOwner::~BufferOwner()
+{
+    fn_8028B960(this);
+}
+
+// fn_8028A7E4: release the pending clear, then take [start, start + size) down.
+void BufferOwner::Commit(int start, unsigned long size)
+{
+    fn_8028BC2C(this, (void*)start, size);
+    DestroyWordRange(start, start + (size & ~3));
+}
+
+// fn_8028A82C: append `size` bytes of data to the buffer, then copy them in.
+void Buffer::Append(u8* data, unsigned long size)
+{
+    unsigned long start = (unsigned long)data;
+
+    ClearWordRange(start, start + (size & 0xFFFFFFFC));
+    fn_8028BC28(this, data, size);
+}
+
+// fn_8028A88C: the buffer's element alignment is always 4 bytes.
+int Buffer::GetAlignment()
+{
+    return 4;
+}
+
+// fn_8028A894: run the empty destructor over a range of 4-byte elements
+// (count is derived from the byte range; the loop body optimises away).
+void DestroyWordRange(unsigned long start, unsigned long end)
+{
+    unsigned long p;
+    for (p = start; p < end; p += 4) {
+    }
+}
+
+// fn_8028A8B4: same range walk for the byte buffer append path.
+void ClearWordRange(unsigned long start, unsigned long end)
+{
+    unsigned long p;
+    for (p = start; p < end; p += 4) {
+    }
 }
