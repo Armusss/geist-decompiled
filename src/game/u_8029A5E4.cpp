@@ -13,26 +13,26 @@
 #include <dolphin/types.h>
 
 // TODO (not drafted yet, 0x2D8 bytes at 0x8029A5E4)
-extern "C" void fn_8029A5E4();
+// fn_8029A5E4
 // TODO (not drafted yet, 0x58 bytes at 0x8029A8BC)
-extern "C" void fn_8029A8BC();
+// fn_8029A8BC
 // TODO (not drafted yet, 0x34C bytes at 0x8029A914)
-extern "C" void fn_8029A914();
+// fn_8029A914
 // TODO (not drafted yet, 0x164 bytes at 0x8029AC60)
-extern "C" void fn_8029AC60();
+// fn_8029AC60
 // TODO (not drafted yet, 0x94 bytes at 0x8029ADC4)
-extern "C" void fn_8029ADC4();
+// fn_8029ADC4
 // TODO (not drafted yet, 0x98 bytes at 0x8029AE58)
-extern "C" void fn_8029AE58();
+// fn_8029AE58
 // TODO (not drafted yet, 0x68 bytes at 0x8029AEF0)
-extern "C" void fn_8029AEF0();
+// fn_8029AEF0
 // TODO (not drafted yet, 0x58 bytes at 0x8029AF58)
-extern "C" void fn_8029AF58();
+// fn_8029AF58
 // TODO (not drafted yet, 0x70 bytes at 0x8029AFB0)
-extern "C" void fn_8029AFB0();
+// fn_8029AFB0
 // TODO (not drafted yet, 0x8 bytes at 0x8029B020)
-extern "C" void fn_8029B020();
+// fn_8029B020
 // TODO (not drafted yet, 0x24 bytes at 0x8029B028)
-extern "C" void fn_8029B028();
+// fn_8029B028
 // TODO (not drafted yet, 0x24 bytes at 0x8029B04C)
-extern "C" void fn_8029B04C();
+// fn_8029B04C

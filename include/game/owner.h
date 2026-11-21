@@ -76,7 +76,7 @@ struct Owner {
     unsigned long type;                        // 0x128: u_8016C244
     char pad12C[4];                            // 0x12C
     void* state;                               // 0x130: behaviour state (u_80251CB8, u_8016C244, u_802DB9D0)
-    char pad134[4];                            // 0x134
+    void* unk134;                              // 0x134: per-type host data (u_80294548)
     float dt;                                  // 0x138: frame time (u_80251CB8, u_8023E7E0, NoBot)
     float unk13C;                              // 0x13C: u_8016C244
     char pad140[0xD4];                         // 0x140
