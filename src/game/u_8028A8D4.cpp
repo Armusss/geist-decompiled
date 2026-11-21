@@ -1,4 +1,9 @@
-// u_8028A77C.cpp: Buffer/String classes, screen-effect slots and buffers, and comm helpers (0x8028A77C-0x8028C54C).
+// u_8028A8D4.cpp: Buffer/String classes, screen-effect slots and buffers, and comm helpers (0x8028A8D4-0x8028C54C).
+// Boundary evidence (start 0x8028A8D4, was 0x8028A77C): 0x8028A77C-0x8028A8D4 (the BufferOwner destructor,
+// Commit/Append/GetAlignment and the two word-range walks) fill only the vtables 0x803C29B0 (BufferOwner)
+// and 0x803C29D0 (ClockPageBuffer), which are referenced only by u_8028865C.cpp (__dt__15ClockPageBufferFv,
+// fn_8028A728); this file's own vtables start at 0x803C29F0. Those functions and .data 0x803C29B0-0x803C29F0
+// now belong to the end of u_8028865C.cpp.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #pragma auto_inline off
@@ -18,8 +23,6 @@ extern "C" void ScreenEffectMemFill(void* dst, u32 size, u8 fill);
 extern u8 lbl_804D37C8;
 extern "C" void fn_8028BC5C(void* self, int pos, int size);
 extern "C" void ScreenEffectSlotResetPending(void* self);
-void DestroyWordRange(u32 start, u32 end);
-void ClearWordRange(u32 start, u32 end);
 
 // The buffer classes form a chain ScreenEffectSlot -> ScreenEffectBuffer ->
 // Buffer -> String (vtables 0x803C29F0, 0x803C2A28, 0x803C2A08 and
@@ -59,8 +62,6 @@ class Buffer : public ScreenEffectBuffer {
 public:
     virtual ~Buffer();
     Buffer();
-    void Append(u8* data, u32 size);
-    int GetAlignment();
 };
 
 // String: a Buffer whose text source (mStart) and length (mSize) describe an
@@ -74,60 +75,6 @@ public:
 };
 
 extern "C" void fn_8028BC28(Buffer* self, u8* data, u32 size);
-
-// Guessed class name: object built on a Buffer that releases itself
-// through VFree when its deleting destructor asks for it.
-class BufferOwner : public Buffer {
-public:
-    virtual ~BufferOwner();
-    void Commit(int start, u32 size);
-    static void operator delete(void* p) { VFree(p); }
-};
-
-// fn_8028A77C: deleting destructor of the Buffer-derived object.
-BufferOwner::~BufferOwner()
-{
-    fn_8028B960(this);
-}
-
-// fn_8028A7E4: release the pending clear, then take [start, start + size) down.
-void BufferOwner::Commit(int start, u32 size)
-{
-    fn_8028BC2C(this, (void*)start, size);
-    DestroyWordRange(start, start + (size & ~3));
-}
-
-// fn_8028A82C: append `size` bytes of data to the buffer, then copy them in.
-void Buffer::Append(u8* data, u32 size)
-{
-    u32 start = (u32)data;
-
-    ClearWordRange(start, start + (size & 0xFFFFFFFC));
-    fn_8028BC28(this, data, size);
-}
-
-// fn_8028A88C: the buffer's element alignment is always 4 bytes.
-int Buffer::GetAlignment()
-{
-    return 4;
-}
-
-// fn_8028A894: run the empty destructor over a range of 4-byte elements
-// (count is derived from the byte range; the loop body optimises away).
-void DestroyWordRange(u32 start, u32 end)
-{
-    u32 p;
-    for (p = start; p < end; p += 4) {
-    }
-}
-
-// fn_8028A8B4: same range walk for the byte buffer append path.
-void ClearWordRange(u32 start, u32 end)
-{
-    u32 p;
-    for (p = start; p < end; p += 4) {
-    }
-}
 
 extern int lbl_804D37B8;
 extern int lbl_804D37BC;

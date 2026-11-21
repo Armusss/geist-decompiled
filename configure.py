@@ -725,6 +725,7 @@ config.libs = [
             Object(NonMatching, "game/u_801D8FD4.cpp"),  # msg 0x74xx helpers, own consts 0x804D8C80..
             Object(NonMatching, "game/u_801D9A70.cpp"),  # guess
             Object(NonMatching, "game/u_801E0EDC.cpp"),  # guess
+            Object(NonMatching, "game/u_801E14E8.cpp"),  # split from u_801E0EDC
             Object(NonMatching, "game/u_801E241C.cpp"),  # pinned
             Object(NonMatching, "game/u_801E7DE0.cpp"),  # guess
             Object(NonMatching, "game/u_801EAACC.cpp"),  # guess
@@ -748,7 +749,7 @@ config.libs = [
             Object(Matching, "game/u_8021427C.cpp"),
             Object(NonMatching, "game/u_802154B0.cpp"),  # guess
             Object(NonMatching, "game/u_80221100.cpp"),  # known
-            Object(NonMatching, "game/u_80222C08.cpp"),  # guess
+            Object(NonMatching, "game/u_80222D60.cpp"),  # guess (was u_80222C08)
             Object(NonMatching, "game/u_80226DE8.cpp"),  # guess
             Object(Matching, "game/Streamer.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_8022ED88.cpp"),  # split from u_80226DE8
@@ -766,6 +767,7 @@ config.libs = [
             Object(Matching, "game/u_80247EB0.cpp"),  # guess
             Object(NonMatching, "game/u_80248FC8.cpp"),  # pinned
             Object(NonMatching, "game/u_8024CAA0.cpp"),  # known
+            Object(Matching, "game/u_8024E0D4.cpp"),  # split from u_8024CAA0
             Object(Matching, "game/Scannable.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_8024E5D0.cpp"),  # guess
             Object(Matching, "game/u_80251CB8.cpp"),  # imp actor
@@ -804,7 +806,7 @@ config.libs = [
             Object(NonMatching, "game/u_8028703C.cpp"),  # guess
             Object(Matching, "game/Clock.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_8028865C.cpp"),  # split from u_8028703C
-            Object(NonMatching, "game/u_8028A77C.cpp"),  # guess
+            Object(NonMatching, "game/u_8028A8D4.cpp"),  # guess (was u_8028A77C)
             Object(NonMatching, "game/u_8028C54C.cpp"),  # guess
             Object(NonMatching, "game/u_8028DA1C.cpp"),  # guess
             Object(NonMatching, "game/u_80290C58.cpp"),  # guess

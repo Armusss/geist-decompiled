@@ -1,6 +1,14 @@
-// u_80221100.cpp: "GhostBees" swarm effect state (0x80221100-0x80222C08).
+// u_80221100.cpp: "GhostBees" swarm effect state (0x80221100-0x80222D60).
 // A swarm of bee actors orbits a centre point near its owner: a state machine (idle / flying out / hovering /
 // returning / dying) moves them with spring-like steering, spawns them with trails, and tears them down.
+// Boundary evidence (end 0x80222D60, was 0x80222C08): 0x80222C08 is the BeeBase deleting destructor (it
+// stores vtable 0x803BC9B4) and 0x80222C70-0x80222D40 are the element helpers in slots 0x10-0x18 of the
+// BeeBase / BeeList vtables 0x803BC9B4 / 0x803BC9D4; nothing else references them. CW emits these inline
+// virtuals after the file's own functions. The next file's .sdata2 pool starts at 0x804D95E0 with its own
+// 0.0f (this file's pool 0x804D9530-0x804D95E0 starts with 0.0f).
+// Data: .rodata 0x80349AD0-0x80349B38 (shared action names, "", "GhostBees State:  %s\n", "SPIN"),
+// .data 0x803BC9A0-0x803BC9F8 (state names, the two vtables), .sdata 0x804D3460-0x804D3468 (1, -1),
+// .sbss 0x804D53F8 (debug overlay switch, read only here), .sdata2 0x804D9530-0x804D95E0.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #define fabs(x) __fabs(x)
@@ -159,9 +167,9 @@ int ActorFn80022FD8(Actor* actor);
 void ActorFn800231A8(Actor* actor);
 u32 AssetFind(u32 table, u32 key);
 
-extern int lbl_804D3460;
-extern u32 lbl_804D3464;
-extern int lbl_804D55F8;  // debug overlay switch
+int lbl_804D3460 = 1;
+u32 lbl_804D3464 = 0xFFFFFFFF;
+int lbl_804D53F8;  // debug overlay switch (never set in retail)
 void ScreenPrintf(const char* format, ...);
 
 // One bee of the swarm (0x38 bytes).
@@ -664,7 +672,7 @@ int BeesUpdate(Actor* a)
             s->time = s->time + a->dt;
         }
     }
-    if (lbl_804D55F8 != 0) {
+    if (lbl_804D53F8 != 0) {
         ScreenPrintf("GhostBees State:  %s\n", sStateNames[s->state]);
     }
     return 1;
