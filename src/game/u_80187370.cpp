@@ -83,7 +83,8 @@ struct Player {
     int unk750;           // 0x750
     u8 pad754[0x50];
     int state;            // 0x7A4
-    u8 pad7A8[0xC];
+    int unk7A8;           // 0x7A8
+    u8 pad7AC[0x8];
     u32 flags7B4;         // 0x7B4
     u8 pad7B8[0x18];
     int unk7D0;           // 0x7D0
@@ -94,7 +95,9 @@ struct Player {
     int unk7F0;           // 0x7F0
     u8 pad7F4[0x14];
     int unk808;           // 0x808
-    u8 pad80C[0xCF0];
+    u8 pad80C[0x1D0];
+    int unk9DC;           // 0x9DC
+    u8 pad9E0[0xB1C];
     float unk14FC;        // 0x14FC
     u8 pad1500[0x7D4];
     float unk1CD4;        // 0x1CD4
@@ -136,6 +139,8 @@ int AssetFind(unsigned long bank, unsigned long name);
 void PlayerSetActionMode(void* p, int mode);
 void PlayerSetHeldSlotIndex(void* p, int i);
 void WeatherSetRainB(float rain);
+void HostTimerReset();
+void HostCreateEmitters(Actor* a);
 int PlayerGetHeldSlotIndex(void* p);
 void PlayerSetHeldSlotMode(void* p, int mode);
 int Fn800F7DEC(int a, int b, int msg, int who, void* data);
@@ -151,7 +156,8 @@ void fn_800769A0(Player* p, float dt);
 void fn_80074D68(Player* p, float dt);
 int fn_800A1BC8(int model, int set, u32 anim, int a, int b);
 int fn_80175EFC(int slot);
-void fn_8018ABFC();
+int fn_8018ABFC(int msg, void* data);
+int fn_800C5210(int handle, int msg, void* data);
 HostModel* fn_800A384C(LinkObj* obj);
 int SendMsg(int to, int msg, void* data);
 int fn_802A1D04();
@@ -960,6 +966,75 @@ void fn_8018AA90(Player* p) {
     }
     p->animDone2 = (void*)fn_8018ABFC;
     p->animLoop2 = 1;
+}
+
+// Animation event callback of the player states.
+int fn_8018ABFC(int msg, void* data) {
+    Player* p = (Player*)data;
+    int info[8];
+    int a;
+    int b;
+
+    info[3] = p->handle;
+    info[1] = msg;
+    if (fn_800C5210(p->handle, 0xC06, info) == 1) {
+        return 0;
+    }
+    QueryNameOut(&a, p->handle, 0x2DA8293C);
+    QueryNameOut(&b, p->handle, 0xDFF3097A);
+    switch (msg) {
+    case 0x1B83833F: {
+        int state = p->state;
+        if (state == 5) {
+            if (Fn800F7DEC(a, b, 0x0020EE36, fn_800498D0(p), 0) != 0x04A3E183) {
+                PlayerSetHeldSlotMode(p, 3);
+            } else {
+                PlayerSetActionMode(p, p->unk7A8);
+            }
+        } else if (state == 8) {
+            PlayerSetActionMode(p, 3);
+        } else if (state == 0xD) {
+            if (PlayerInHost((Actor*)p) == 0 && fn_80049940() == 0 && p->unk9DC != 0) {
+                PlayerSetActionMode(p, 0x18);
+            } else {
+                p->flags7B4 |= 0x20000;
+            }
+        } else if (state != 0x18 && state != 0x11 && state != 3) {
+            PlayerSetActionMode(p, p->unk7A8);
+        }
+        break;
+    }
+    case 0x0020EE36:
+        fn_80048BA8(p, p->unk1D04, 1);
+        Fn800F7F5C(a, b, msg, fn_800498D0(p), p->unk1D04, p->unk14FC);
+        break;
+    case 0xF829DB93:
+        fn_80048BA8(p, p->unk1D04, 0);
+        Fn800F7F5C(a, b, msg, fn_800498D0(p), p->unk1D04, p->unk14FC);
+        break;
+    case 0x9791AF51:
+    case 0x96224FCC:
+    case 0x0D19E338:
+    case 0x42E50A3D:
+        fn_80048BA8(p, p->unk1D04, 1);
+        Fn800F7F5C(a, b, msg, fn_800498D0(p), p->unk1D04, p->unk14FC);
+        break;
+    case 0xE6B71BCC:
+        fn_80048BA8(p, p->unk1D04, 1);
+        Fn800F7F5C(a, b, msg, fn_800498D0(p), p->unk1D04, p->unk14FC);
+        break;
+    case 0x968CBE3D:
+        fn_80048BA8(p, p->unk1D04, 1);
+        Fn800F7F5C(a, b, msg, fn_800498D0(p), p->unk1D04, p->unk14FC);
+        break;
+    case 0x3D72424C:
+        HostTimerReset();
+        HostCreateEmitters((Actor*)p);
+        break;
+    case 0x03FDF7D0:
+        break;
+    }
+    return 0;
 }
 
 u32 fn_8018B000(Player* p) {
