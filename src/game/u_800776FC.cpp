@@ -970,9 +970,6 @@ struct FadeTask {
 extern int lbl_804D29A0;
 extern int lbl_804D29A4;
 
-extern "C" {
-void fn_8016EEF4(int fx);
-void fn_8016F018(int fx, int level);
 // Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
 // array overrides here call directly. Class and member names are guesses.
 class ScreenEffectBuffer {
@@ -980,6 +977,10 @@ public:
     void Commit(int start, unsigned long size);
     void Append(unsigned char* data, unsigned long size);
 };
+
+extern "C" {
+void fn_8016EEF4(int fx);
+void fn_8016F018(int fx, int level);
 int FxStart(int a, int b, int c);
 int fn_8016F390(int a, int b, int c);
 int fn_8003A1C0(int v);
