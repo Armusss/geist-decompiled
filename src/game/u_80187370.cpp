@@ -65,7 +65,12 @@ struct Player {
     int unk318;           // 0x318
     u8 pad31C[0xC];
     int unk328;           // 0x328
-    u8 pad32C[0x30C];
+    u8 pad32C[0x60];
+    float unk38C;         // 0x38C
+    float unk390;         // 0x390
+    float unk394;         // 0x394
+    float unk398;         // 0x398
+    u8 pad39C[0x29C];
     int unk638;           // 0x638
     u8 pad63C[0x3C];
     int unk678;           // 0x678
@@ -887,6 +892,49 @@ void fn_8018A604(Player* p) {
 
 void fn_8018A6C0(Player* p) {
     PlayerResetGunTimer(p);
+}
+
+void fn_8018A6E0(Player* p) {
+    int b;
+    int a;
+
+    p->unk638 = 1;
+    p->flags7B4 &= ~1;
+    p->unk7D0 = 1;
+    PlayerSetValue4(&p->state, 3);
+    PlayerGunInput(p);
+    QueryNameOut(&a, p->handle, 0x2DA8293C);
+    QueryNameOut(&b, p->handle, 0xDFF3097A);
+    if ((p->unk314 & ~2) == 1 && p->unk7F0 == 1) {
+        PlayerResetGunTimer(p);
+        switch (Fn800F7DEC(a, b, 0x0020EE36, fn_800498D0(p), 0)) {
+        case 0x04A3E183:
+            if (p->state != 5) {
+                PlayerSetHeldSlotMode(p, 5);
+            }
+            break;
+        case 0xC0BECF7E:
+            if (Fn800F7DEC(a, b, 0xE6B71BCC, fn_800498D0(p), 0) == 0x04A3E183) {
+                PlayerSetHeldSlotMode(p, 0xA);
+            }
+            break;
+        case 0x11D2C025:
+            if (p->state == 5) {
+                PlayerSetHeldSlotMode(p, 3);
+            }
+            break;
+        case 0x3DA260F7:
+            if (p->state == 5) {
+                PlayerSetHeldSlotMode(p, 3);
+            }
+            break;
+        }
+    } else if (p->state == 5) {
+        PlayerSetHeldSlotMode(p, 3);
+    }
+    if (p->unk394 != 0.0f || p->unk38C != 0.0f || p->unk390 != 0.0f || p->unk398 != 0.0f || p->unk328 != 0) {
+        PlayerSetActionMode(p, 3);
+    }
 }
 
 void fn_8018AA90(Player* p) {
