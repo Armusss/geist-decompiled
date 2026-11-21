@@ -267,6 +267,25 @@ int fn_8017D794(u8 slot, int msg, void* data) {
 
 void fn_8017DCBC(void* p);
 
+inline void VecScale(Vec3* out, Vec3* v, float k) {
+    out->x = v->x * k;
+    out->y = v->y * k;
+    out->z = v->z * k;
+}
+
+inline void VecAdd(Vec3* out, Vec3* a, Vec3* b) {
+    out->x = a->x + b->x;
+    out->y = a->y + b->y;
+    out->z = a->z + b->z;
+}
+
+inline void VecLerp(Vec3* out, Vec3* a, Vec3* b, float t) {
+    float u = 1.0f - t;
+    out->x = a->x * u + b->x * t;
+    out->y = a->y * u + b->y * t;
+    out->z = a->z * u + b->z * t;
+}
+
 void fn_8017DC64(Beam* b) {
     if (b != 0 && b->enabled != 0 && b->segments > 0) {
         DeferAdd(b->layer, &((PlaceF*)&b->xf)->pos, fn_8017DCBC, b);
@@ -277,37 +296,45 @@ void fn_8017DC64(Beam* b) {
 // Draws one beam: a jagged line along the local Y axis, then one ring pass per style pass.
 void fn_8017DCBC(void* p) {
     Beam* b = (Beam*)p;
-    int n = b->segments;
-    float arc = 180.0f / n;
-    int k = (b->id * 11) & 0x7F;
-    float jitter = 3.0f * b->def.jitter;
-    float amp = b->def.amplitude;
-    float len = b->segLength;
-    int step = b->def.step;
-    Vec3* pts;
+    int n;
+    float amp;
+    float len;
+    float jitter;
+    float arc;
     Vec3* pt;
+    Vec3* pts;
     int i;
+    int k;
+    int step;
     BeamPass* pass;
     TrailBuffer tb;
 
+    n = b->segments;
+    arc = 180.0f / n;
+    k = (b->id * 11) & 0x7F;
+    jitter = 3.0f * b->def.jitter;
+    amp = b->def.amplitude;
+    len = b->segLength;
+    step = b->def.step;
     pts = (Vec3*)ScratchAAlloc(n * 12);
     if (pts == 0) {
         return;
     }
     pt = pts;
     for (i = 0; i < n; i++) {
-        Vec3* nz = &lbl_80494B00[k];
-        float along = len * i;
-        float x = nz->x * jitter + 0.0f;
-        float y = nz->y * jitter + along;
-        float z = nz->z * jitter + 0.0f;
-        float w = amp * fn_800A1394(arc * i);
-        float v = 1.0f - w;
+        Vec3 a;
+        Vec3 t;
+        Vec3 c;
+        float w;
 
+        a.x = 0.0f;
+        a.y = len * i;
+        a.z = 0.0f;
+        VecScale(&t, &lbl_80494B00[k], jitter);
+        VecAdd(&c, &t, &a);
+        w = amp * fn_800A1394(arc * i);
         k = (k + step) & 0x7F;
-        pt->x = 0.0f * v + x * w;
-        pt->y = along * v + y * w;
-        pt->z = 0.0f * v + z * w;
+        VecLerp(pt, &a, &c, w);
         pt++;
     }
     TrailBufferInit(&tb, (float*)pts, n, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
