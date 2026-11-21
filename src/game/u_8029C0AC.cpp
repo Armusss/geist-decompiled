@@ -1,4 +1,9 @@
 // u_8029C0AC.cpp: NPC / path-follow actor ("Sve") message handlers and follow states (0x8029C0AC-0x8029E714).
+// Sister of u_801CA16C (HostRideJ): same 8-state table layout, message handler and save tag scheme.
+// Data: .rodata 0x8034B818 (POSSESS..SCAN, "", "[NPCSVE]", "\n", "QUERY"), state table 0x803C3188,
+// asset .sdata 0x804D3848, .sdata2 0x804DA778-0x804DA7C0.
+// Status: 32/33. With a temporary Matching flip (and the AdvanceTo* rename below) the whole DOL differs only in
+// NpcSveUpdateActor's `li r4,0xA` / `addi r3,o,0x270` pair (the open "host-ride li r4" shape, like HostRideJTick).
 // Names are descriptive guesses.
 
 #include "game/types.h"
@@ -137,7 +142,9 @@ struct Owner {
     void (*fn600)(void*);                 // 0x600
     void (*fn604)(void*);                 // 0x604
     u8 unk608[0x894 - 0x608];
-    u8 unk894[0x904 - 0x894];
+    u8 unk894[0x8f0 - 0x894];             // 0x894: behaviour block
+    void* unk8f0;                         // 0x8f0
+    u8 unk8f4[0x904 - 0x8f4];
     float f904;                           // 0x904
     int unk908;                           // 0x908: actor id
 };
@@ -148,6 +155,8 @@ int ActorPlayAnim(int id, u32 anim, int arg);
 void FollowSetTargetObj(void* self, void* target);
 // One-argument form: the state-switch helpers below call 0x800A78A0 with a
 // single argument (r4 is never set before the bl), so they bind to this one.
+// The retail callers are slot callbacks taking (owner, target), like HostRideJSlot7 in u_801CA16C:
+// their symbols should be NpcSveAdvanceTo*State__FP5OwnerPv (rename pending approval).
 void FollowSetTargetObj(void* self);
 
 extern "C" String fn_800225C8(const String& a, const String& b);
@@ -179,7 +188,7 @@ int NpcFollowOffsetSetup(void* p);
 int NpcFollowClearState(void* p);
 int NpcSveUpdateFollowAim(void* p);
 int NpcSveClearTargetFollow(void* p);
-extern "C" int NpcSveResetEvent(int owner);
+extern "C" int NpcSveResetEvent(Owner* o);
 extern "C" int NpcSvePlayAnimMsg(Owner* a, Msg40A* m);
 
 // The asset found by AssetFind for the 0x41e query reply, cached at init.
@@ -334,7 +343,7 @@ extern "C" int fn_80162658(void* owner, void* arg);
 extern "C" void fn_801BDC3C(u32 hash, void* owner);
 extern "C" int fn_800BEF9C(u32 handle);
 void ConditionSetBit(void* cond, int id, int value);
-extern "C" int NpcSveChooseState(void* owner);
+extern "C" int fn_8029E058(void* actor);
 
 // Per-frame update for the path-follow actor: runs the current type's handler,
 // advances the event timer and switches to a new type when requested.
@@ -357,7 +366,7 @@ int NpcSveUpdateActor(Owner* owner) {
     fn_80162658(o, o->unk894);
     if (ret != 0 || (evt->flags & 2) != 0) {
         evt->flags &= ~2;
-        int next = NpcSveChooseState(o);
+        int next = fn_8029E058(o);
         if (next == -1) {
             if (o->unk908 == (int)0x8cd18ee1) {
                 fn_801BDC3C(0xc8422a5b, o);
@@ -401,7 +410,7 @@ extern "C" int fn_800B26B8(void* owner);
 extern "C" void fn_800B261C(void* owner, int mode, void* out);
 extern "C" int fn_800B22F8(void* owner, int mode);
 extern "C" void fn_800C748C(void* self);
-extern "C" float fn_80115F68(int id);
+float GfxOwnerBrightness(u32 id);
 
 // Initialises the SVE path-follow actor: installs the per-frame update handler,
 // allocates the 16-byte event block and re-activates the type's animation banks.
@@ -1078,7 +1087,7 @@ int NpcSveUpdatePathFollow(Owner* owner) {
         RangeResetPending(o->cond270);
         o->unk288 = 0;
     }
-    float pathTime = fn_80115F68(o->unk38);
+    float pathTime = GfxOwnerBrightness(o->unk38);
     if (pathTime < 1.0f) {
         ConditionUpdateBit(o->cond270, 9, 1);
     } else {
@@ -1164,7 +1173,7 @@ int NpcSveUpdateFollowAim(void* p) {
         }
     }
     fn_800BBCA8(o);
-    if (fn_80115F68(o->unk38) < 1.0f) {
+    if (GfxOwnerBrightness(o->unk38) < 1.0f) {
         ConditionUpdateBit(o->cond270, 9, 1);
     } else {
         ConditionUpdateBit(o->cond270, 9, 0);
@@ -1186,15 +1195,17 @@ void ConditionUpdateBit(void* cond, int id, int value);
 
 // Clears the event block and arms one of its condition bits; returns whether
 // the actor pointer was non-null.
-extern "C" int NpcSveResetEvent(int owner) {
-    if (owner == 0) {
+extern "C" int NpcSveResetEvent(Owner* o) {
+    PathEvent* ev;
+
+    if (o == 0) {
         return 0;
     }
-    PathEvent* evt = *(PathEvent**)(owner + 0x130);
-    *(int*)(owner + 0x288) = 0;
-    evt->state = 0;
-    evt->unk04 = 0.0f;
-    ConditionUpdateBit((void*)(owner + 0x270), 0x16, 1);
+    ev = (PathEvent*)o->evt;
+    o->unk288 = 0;
+    ev->state = 0;
+    ev->unk04 = 0.0f;
+    ConditionUpdateBit(o->cond270, 0x16, 1);
     return 1;
 }
 
@@ -1225,7 +1236,7 @@ extern "C" int fn_8029E058(void* actor) {
         dist = OwnerValue(o, target);
         n = fn_800B22F8(o, mode);
         if (n <= 2) {
-            if (fn_800F7A90(*(void**)((u8*)o + 0x8f0)) == -0x679f49e4) {
+            if (fn_800F7A90(o->unk8f0) == -0x679f49e4) {
                 return -1;
             }
             return 1;
