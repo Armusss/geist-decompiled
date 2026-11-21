@@ -888,10 +888,15 @@ game/u_802154B0.cpp:
 	.ctors      start:0x80341234 end:0x80341238
 
 game/u_80221100.cpp:
-	.text       start:0x80221100 end:0x80222C08
+	.text       start:0x80221100 end:0x80222D60
+	.rodata     start:0x80349AD0 end:0x80349B38
+	.data       start:0x803BC9A0 end:0x803BC9F8
+	.sdata      start:0x804D3460 end:0x804D3468
+	.sbss       start:0x804D53F8 end:0x804D5400
+	.sdata2     start:0x804D9530 end:0x804D95E0
 
-game/u_80222C08.cpp:
-	.text       start:0x80222C08 end:0x80226DE8
+game/u_80222D60.cpp:
+	.text       start:0x80222D60 end:0x80226DE8
 
 game/u_80226DE8.cpp:
 	.text       start:0x80226DE8 end:0x8022EC64

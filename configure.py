@@ -749,7 +749,7 @@ config.libs = [
             Object(Matching, "game/u_8021427C.cpp"),
             Object(NonMatching, "game/u_802154B0.cpp"),  # guess
             Object(NonMatching, "game/u_80221100.cpp"),  # known
-            Object(NonMatching, "game/u_80222C08.cpp"),  # guess
+            Object(NonMatching, "game/u_80222D60.cpp"),  # guess (was u_80222C08)
             Object(NonMatching, "game/u_80226DE8.cpp"),  # guess
             Object(Matching, "game/Streamer.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_8022ED88.cpp"),  # split from u_80226DE8

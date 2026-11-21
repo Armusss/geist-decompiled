@@ -1,12 +1,14 @@
-// u_80222C08.cpp: rivet puzzle actor, camera tunables and player state callbacks
-// (0x80222C08-0x80226DE8).
-// The first function (0x80222C08) is the BeeBase deleting destructor of the Bees unit
-// (u_80221100) and is only declared here (TODO: move the boundary); the array helpers that
-// follow it (0x80222C70-0x80222D40), the huge 0x80222D60 and the unit's tail (0x80226E78 on) are
-// not drafted.  Then the rivet actor (state, messages, variable set, create / init / destroy),
-// the camera tunables (the table at 0x8049EE68 with its message setter and per-frame ramp update)
-// and a set of small player state callbacks (enter / exit / update for the climb, hang and
-// rivet states).  Names are descriptive guesses; unmatched against retail so far.
+// u_80222D60.cpp: rivet puzzle actor, camera tunables and player state callbacks
+// (0x80222D60-0x80226DE8; the unit was u_80222C08 until its first 0x158 bytes moved to the Bees unit).
+// The huge 0x80222D60 and the unit's tail (0x80226E78 on) are not drafted.  Then the rivet actor
+// (state, messages, variable set, create / init / destroy), the camera tunables (the table at
+// 0x8049EE68 with its message setter and per-frame ramp update) and a set of small player state
+// callbacks (enter / exit / update for the climb, hang and rivet states).
+// Boundary evidence (start 0x80222D60): 0x80222C08-0x80222D60 is the BeeBase deleting destructor and
+// the element helpers of the Bees list classes, referenced only from the Bees vtables 0x803BC9B4 /
+// 0x803BC9D4 (u_80221100.cpp); this file's .sdata2 pool starts at 0x804D95E0 with its own 0.0f (the
+// Bees pool 0x804D9530-0x804D95E0 starts with 0.0f too).
+// Names are descriptive guesses; unmatched against retail so far.
 
 #include "game/types.h"
 #include "game/string.h"
@@ -75,9 +77,6 @@ inline int QueryVar(int target, u32 hash) {
     SendMsg(target, 0x41E, &m);
     return *(int*)&m.result;
 }
-
-// ---- BeeBase deleting destructor (belongs to the Bees unit, u_80221100) -------------------
-// 0x80222C08: not drafted here.
 
 // ---- rivet puzzle actor ------------------------------------------------------------------
 
