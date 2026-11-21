@@ -20,7 +20,8 @@ void fn_8009FE18(struct Mtx43* out, void* link, struct Mtx34* mtx);
 }
 
 struct Mtx43 {
-    float m[4][3];
+    float m[3][3];
+    float t[3];
 };
 
 struct Bone {
@@ -338,32 +339,35 @@ void ShadowLink(ShadowTri* a, Vec3* av, ShadowTri* b, Vec3* bv) {
 }
 
 int ShadowTransform(ShadowModelData* model, ShadowMesh* meshes, int id, LinkInfo* links, LinkInfo* links2, Vec3* out) {
-    Mtx43 mats[761];
+    Mtx43 mats[762];
     Mtx34 mtx;
     int total = 0;
     int i;
     int j;
     int k;
+    int l;
+    int m;
 
-    for (i = 0; i < model->nMeshes; i++, meshes++) {
-        if (meshes->bone >= 0) {
-            for (j = 0; j < meshes->nPrims; j++) {
-                ShadowPrim* prim = &meshes->prims[j];
-                fn_8003E0FC(meshes, prim, links, &out[total], sizeof(Vec3));
+    for (i = 0; i < model->nMeshes; i++) {
+        ShadowMesh* mesh = &meshes[i];
+        if (mesh->bone >= 0) {
+            for (j = 0; j < mesh->nPrims; j++) {
+                ShadowPrim* prim = &mesh->prims[j];
+                fn_8003E0FC(mesh, prim, links, &out[total], sizeof(Vec3));
                 total += prim->count;
             }
         } else {
-            for (j = 0; j < meshes->nBones; j++) {
-                BoneWorldMatrix(&mtx, &meshes->bones[j], meshes->bones[j].pos);
-                fn_8009FE18(&mats[meshes->bones[j].index], &links2[meshes->bones[j].index], &mtx);
+            for (k = 0; k < mesh->nBones; k++) {
+                BoneWorldMatrix(&mtx, &mesh->bones[k], mesh->bones[k].pos);
+                fn_8009FE18(&mats[mesh->bones[k].index], &links2[mesh->bones[k].index], &mtx);
             }
-            for (j = 0; j < meshes->nWeights; j++) {
+            for (j = 0; j < mesh->nWeights; j++) {
                 if (sShadowSkin) {
-                    Mtx43* dst = &mats[meshes->weightBase + j];
+                    Mtx43* dst = &mats[mesh->weightBase + j];
                     memset(dst, 0, sizeof(Mtx43));
-                    for (k = 0; k < meshes->weights[j].count; k++) {
-                        float w = meshes->weights[j].weights[k];
-                        Mtx43* src = &mats[meshes->weights[j].bones[k]];
+                    for (l = 0; l < mesh->weights[j].count; l++) {
+                        float w = mesh->weights[j].weights[l];
+                        Mtx43* src = &mats[mesh->weights[j].bones[l]];
                         dst->m[0][0] += w * src->m[0][0];
                         dst->m[1][0] += w * src->m[1][0];
                         dst->m[2][0] += w * src->m[2][0];
@@ -373,19 +377,19 @@ int ShadowTransform(ShadowModelData* model, ShadowMesh* meshes, int id, LinkInfo
                         dst->m[0][2] += w * src->m[0][2];
                         dst->m[1][2] += w * src->m[1][2];
                         dst->m[2][2] += w * src->m[2][2];
-                        dst->m[3][0] += src->m[3][0] * w;
-                        dst->m[3][1] += src->m[3][1] * w;
-                        dst->m[3][2] += src->m[3][2] * w;
+                        dst->t[0] += src->t[0] * w;
+                        dst->t[1] += src->t[1] * w;
+                        dst->t[2] += src->t[2] * w;
                     }
                 } else {
-                    mats[meshes->weightBase + j] = mats[meshes->weights[j].bones[0]];
+                    mats[mesh->weightBase + j] = mats[mesh->weights[j].bones[0]];
                 }
             }
-            if (meshes->nWeights) {
-                ScreenPrintf("Shadow VBones %d\n", meshes->nWeights);
+            if (mesh->nWeights) {
+                ScreenPrintf("Shadow VBones %d\n", mesh->nWeights);
             }
-            for (j = 0; j < meshes->nPrims; j++) {
-                ShadowPrim* prim = &meshes->prims[j];
+            for (m = 0; m < mesh->nPrims; m++) {
+                ShadowPrim* prim = &mesh->prims[m];
                 fn_8003E1C8(prim, mats, &out[total], sizeof(Vec3));
                 total += prim->count;
             }
