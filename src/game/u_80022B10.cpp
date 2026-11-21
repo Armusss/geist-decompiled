@@ -218,6 +218,19 @@ inline s32& OwnerHead(Owner* o, int layer) {
     return o->head[layer];
 }
 
+inline s32 OwnerGetHead(int owner, s8 layer) {
+    if (layer >= 0 && layer < 3)
+        return lbl_804D41D4[owner].head[layer];
+    return lbl_804D41D4[owner].head[0];
+}
+
+inline void OwnerSetHead(int owner, s8 layer, s32 v) {
+    if (layer >= 0 && layer < 3)
+        lbl_804D41D4[owner].head[layer] = v;
+    else
+        lbl_804D41D4[owner].head[0] = v;
+}
+
 int ActorSetOwnerLayer(Actor* a, int layer) {
     if (layer >= 0 && layer < 3) {
         a->layer = (s8)layer;
@@ -232,6 +245,77 @@ int ActorSetOwnerLayer(Actor* a, int layer) {
         }
     }
     return 0;
+}
+
+int ActorSetOwnerLayer(Actor* a, int layer);
+
+int ActorFn800231A8(Actor* a) {
+    if ((s32)(a->id >> 24) == 0xc)
+        return ActorSetOwnerLayer(a,1);
+    return ActorSetOwnerLayer(a,0);
+}
+
+void ActorDetachOwnerObjects(Actor* a) {
+    s32 i = a->objIndex;
+    if (i >= 0 && i < 0x1600) {
+        while (i != -1) {
+            ObjNode* n = &lbl_804D41EC[i];
+            s8 owner = (s8)n->owner;
+            if (owner == -1)
+                break;
+            s32 next = n->next;
+            if (next == i)
+                break;
+            s8 layer = a->layer;
+            i = next;
+            s32 h = OwnerGetHead(owner, layer);
+            if (lbl_804D41EC[h].actor == a) {
+                OwnerSetHead(owner, layer, lbl_804D41EC[h].next);
+                lbl_804D41EC[h].actor = 0;
+                lbl_804D41EC[h].next = lbl_804D41E8;
+                lbl_804D41EC[h].owner = 0xff;
+                lbl_804D41E8 = h;
+            } else {
+                s32 nx;
+                while ((nx = lbl_804D41EC[h].next) != -1) {
+                    s32 prev = h;
+                    h = nx;
+                    if (lbl_804D41EC[h].actor == a) {
+                        lbl_804D41EC[prev].next = lbl_804D41EC[h].next;
+                        lbl_804D41EC[h].actor = 0;
+                        lbl_804D41EC[h].next = lbl_804D41E8;
+                        lbl_804D41EC[h].owner = 0;
+                        lbl_804D41E8 = h;
+                        break;
+                    }
+                }
+            }
+            s32 j = a->objIndex;
+            if ((s8)lbl_804D41EC[j].owner == owner) {
+                a->objIndex = lbl_804D41EC[j].next;
+                lbl_804D41EC[j].actor = 0;
+                lbl_804D41EC[j].next = lbl_804D41E8;
+                lbl_804D41EC[j].owner = 0xff;
+                lbl_804D41E8 = j;
+            } else {
+                s32 nx;
+                while ((nx = lbl_804D41EC[j].next) != -1) {
+                    s32 prev = j;
+                    j = nx;
+                    if ((s8)lbl_804D41EC[j].owner == owner) {
+                        lbl_804D41EC[prev].next = lbl_804D41EC[j].next;
+                        lbl_804D41EC[j].actor = 0;
+                        lbl_804D41EC[j].next = lbl_804D41E8;
+                        lbl_804D41EC[j].owner = 0;
+                        lbl_804D41E8 = j;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    a->objIndex = -1;
+    a->objIndex2 = -1;
 }
 
 void ActorNoOp234AC() {
@@ -302,80 +386,6 @@ int ActorAttachOwnerObjects(Actor* a) {
     return 1;
 }
 
-int ActorSetOwnerLayer(Actor* a, int layer);
-
-int ActorFn800231A8(Actor* a) {
-    if ((s32)(a->id >> 24) == 0xc)
-        return ActorSetOwnerLayer(a,1);
-    return ActorSetOwnerLayer(a,0);
-}
-
-void ActorDetachOwnerObjects(Actor* a) {
-    s32 i = a->objIndex;
-    if (i >= 0 && i < 0x1600) {
-        while (i != -1) {
-            ObjNode* n = &lbl_804D41EC[i];
-            s8 owner = (s8)n->owner;
-            if (owner == -1)
-                break;
-            s32 next = n->next;
-            if (next == i)
-                break;
-            s8 layer = a->layer;
-            i = next;
-            Owner* o = &lbl_804D41D4[owner];
-            s32 h = OwnerHead(o, layer);
-            if (lbl_804D41EC[h].actor == a) {
-                OwnerHead(o, layer) = lbl_804D41EC[h].next;
-                lbl_804D41EC[h].actor = 0;
-                lbl_804D41EC[h].next = lbl_804D41E8;
-                lbl_804D41EC[h].owner = 0xff;
-                lbl_804D41E8 = h;
-            } else {
-                s32 prev = h;
-                s32 cur = lbl_804D41EC[prev].next;
-                while (cur != -1) {
-                    if (lbl_804D41EC[cur].actor == a) {
-                        lbl_804D41EC[prev].next = lbl_804D41EC[cur].next;
-                        lbl_804D41EC[cur].actor = 0;
-                        lbl_804D41EC[cur].next = lbl_804D41E8;
-                        lbl_804D41EC[cur].owner = 0;
-                        lbl_804D41E8 = cur;
-                        break;
-                    }
-                    prev = cur;
-                    cur = lbl_804D41EC[cur].next;
-                }
-            }
-            s32 j = a->objIndex;
-            if ((s8)lbl_804D41EC[j].owner == owner) {
-                a->objIndex = lbl_804D41EC[j].next;
-                lbl_804D41EC[j].actor = 0;
-                lbl_804D41EC[j].next = lbl_804D41E8;
-                lbl_804D41EC[j].owner = 0xff;
-                lbl_804D41E8 = j;
-            } else {
-                s32 prev = j;
-                s32 cur = lbl_804D41EC[prev].next;
-                while (cur != -1) {
-                    if ((s8)lbl_804D41EC[cur].owner == owner) {
-                        lbl_804D41EC[prev].next = lbl_804D41EC[cur].next;
-                        lbl_804D41EC[cur].actor = 0;
-                        lbl_804D41EC[cur].next = lbl_804D41E8;
-                        lbl_804D41EC[cur].owner = 0;
-                        lbl_804D41E8 = cur;
-                        break;
-                    }
-                    prev = cur;
-                    cur = lbl_804D41EC[cur].next;
-                }
-            }
-        }
-    }
-    a->objIndex = -1;
-    a->objIndex2 = -1;
-}
-
 extern "C" void memset(void*, int, u32);
 extern "C" void* memcpy(void*, const void*, u32);
 extern "C" int SendMsg(int to, int msg, void* data);
@@ -391,7 +401,7 @@ int ActorFn8002378C(Actor* a, int id, int mtx, int msgFn, int model,
                                int ptr40, int p6) {
     memset(a, 0, 0x50);
     if ((u32)mtx != 0)
-        *(Mtx34*)a = *(Mtx34*)mtx;
+        *(Placement*)a = *(Placement*)mtx;
     else
         fn_8009F76C(a);
     a->msgFn = (void (*)(int, void*))msgFn;
@@ -797,7 +807,7 @@ int PoolFree(void* base, void* ptr, int stride,
                                   void* bitsv) {
     u32* bits = (u32*)bitsv;
     int idx = ((u8*)base - (u8*)ptr) / stride;
-    bits[idx / 32] &= ~(1u << (idx & 31));
+    bits[idx / 32] &= ~(1 << (idx & 31));
     return 1;
 }
 
@@ -855,13 +865,19 @@ void BitsetFromIndices(u32* bits, int n, const s32* idx, int count) {
 }
 
 s32 BitsetToIndices(s32* out, int max, u32* bits, int n) {
-    s32 count = 0;
-    s32 base = 0;
-    int words = (n + 31) / 32;
-    for (int i = 0; i < words; i++) {
+    s32 idx;
+    s32 base;
+    int i;
+    int words;
+    s32 count;
+    int j;
+    count = 0;
+    base = 0;
+    words = (n + 31) / 32;
+    for (i = 0; i < words; i++) {
         if (*bits) {
-            s32 idx = base;
-            for (int j = 0; j < 32; j++) {
+            idx = base;
+            for (j = 0; j < 32; j++) {
                 if (*bits & (1u << j)) {
                     out[count] = idx;
                     if (++count >= max)
@@ -943,13 +959,18 @@ void BitsetSetAll(void* bitsv, int nbits) {
 }
 
 void BitsetAllocIndices(u32* bits, int n, s32* out, int count) {
-    int words = (n - 1) / 32 + 1;
-    for (int i = 0; i < words; i++, bits++) {
-        u32 w = *bits;
+    s32 idx;
+    int i;
+    int j;
+    int words;
+    u32 w;
+    words = (n - 1) / 32 + 1;
+    for (i = 0; i < words; i++, bits++) {
+        w = *bits;
         if (w == 0xffffffff)
             continue;
-        s32 idx = i * 32;
-        for (int j = 0; j < 32; j++) {
+        idx = i * 32;
+        for (j = 0; j < 32; j++) {
             if (!(w & (1u << j))) {
                 *bits |= 1u << j;
                 *out++ = idx;
@@ -962,12 +983,18 @@ void BitsetAllocIndices(u32* bits, int n, s32* out, int count) {
 }
 
 s32 BitsetCount(u32* bits, int n, int flag) {
-    int words = (n + 31) / 32;
-    int remaining = n;
-    s32 count = 0;
-    for (int i = 0; i < words; i++) {
-        int nb = remaining < 32 ? remaining : 32;
-        u32 w = bits[i];
+    u32 w;
+    s32 count;
+    int words;
+    int remaining;
+    int i;
+    int nb;
+    words = (n + 31) / 32;
+    remaining = n;
+    count = 0;
+    for (i = 0; i < words; i++) {
+        nb = remaining < 32 ? remaining : 32;
+        w = bits[i];
         if (w != 0) {
             for (int j = 0; j < nb; j++)
                 count += (w >> j) & 1;
@@ -1063,7 +1090,7 @@ int BitTestAndClear(u32* bits, int idx) {
 }
 
 void BitClear(u32* bits, int idx) {
-    bits[idx / 32] &= ~(1u << (idx & 31));
+    bits[idx / 32] &= ~(1 << (idx & 31));
 }
 
 void BitsetCopy(void* dstv, void* srcv, int n) {
