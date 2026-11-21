@@ -58,7 +58,9 @@ struct Player {
     int animLoop2;        // 0xFC
     u8 pad100[0x1C];
     int anim11C;          // 0x11C
-    u8 pad120[0x1F4];
+    u8 pad120[0x128];
+    int unk248;           // 0x248
+    u8 pad24C[0xC8];
     int unk314;           // 0x314
     u8 pad318[0x10];
     int unk328;           // 0x328
@@ -77,7 +79,8 @@ struct Player {
     u32 flags7B4;         // 0x7B4
     u8 pad7B8[0x18];
     int unk7D0;           // 0x7D0
-    u8 pad7D4[0x8];
+    int unk7D4;           // 0x7D4
+    u8 pad7D8[0x4];
     int unk7DC;           // 0x7DC
     u8 pad7E0[0x28];
     int unk808;           // 0x808
@@ -123,6 +126,7 @@ int AssetFind(unsigned long bank, unsigned long name);
 void PlayerSetActionMode(void* p, int mode);
 void PlayerSetHeldSlotIndex(void* p, int i);
 void WeatherSetRainB(float rain);
+void WeatherSetByTypeId(int id, int a, int type);
 void PlayerApplyFrameOffset(Player* p);
 void PlayerStartGunCharge(void* p);
 void Fn800F7F5C(int a, int b, int msg, int who, void* data, float f);
@@ -138,6 +142,10 @@ void fn_8018ABFC();
 HostModel* fn_800A384C(LinkObj* obj);
 int SendMsg(int to, int msg, void* data);
 int fn_802A1D04();
+int fn_80049940();
+void fn_80050EB0(Player* p);
+void fn_800F7AF0(int a, int b);
+int rand();
 int fn_800F7994(int a, u32 b);
 void FxStart(int fx, int a, int b);
 extern int lbl_804D3050;
@@ -487,6 +495,31 @@ void fn_8018879C(Player* p, float dt) {
     WeatherSetRainB(lbl_804D50E4);
 }
 
+void fn_8018886C(Player* p) {
+    int a;
+    int b;
+    QueryNameOut(&a, p->handle, 0x2DA8293C);
+    QueryNameOut(&b, p->handle, 0xDFF3097A);
+    PlayerResetGunTimer(p);
+    p->flags50 |= 0x40000;
+    fn_800F7AF0(a, b);
+    fn_80050EB0(p);
+    {
+        int host = PlayerInHost((Actor*)p);
+        u32* anim = PlayerStateAnim(p, 13);
+        p->anim = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet, *anim, 0, 0);
+        p->animLoop = 0x50;
+        p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, *anim, 1, 0);
+        p->animDone2 = (void*)fn_8018ABFC;
+        p->animLoop2 = 0x50;
+    }
+    if (!fn_80049940()) {
+        lbl_804D50E4 = 0.0f;
+        WeatherSetRainB(lbl_804D50E4);
+        WeatherSetByTypeId(p->unk248, 0, 0x5EAC46DA);
+    }
+}
+
 void fn_80188A40(Player* p, float dt) {
     p->unk638 = 1;
     p->flags7B4 &= ~1;
@@ -681,6 +714,31 @@ void fn_8018A6C0(Player* p) {
     PlayerResetGunTimer(p);
 }
 
+void fn_8018AA90(Player* p) {
+    int host;
+
+    if ((float)rand() / 32767.0f >= 0.5f) {
+        p->unk7D4 = 0;
+    } else {
+        p->unk7D4 = 1;
+    }
+    host = PlayerInHost((Actor*)p);
+    p->anim = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet, lbl_803A8800[0].anims[0], p->unk7D4, 0);
+    if (p->anim == -1) {
+        p->unk7D4 = 0;
+        p->anim = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet, lbl_803A8800[0].anims[0], p->unk7D4, 0);
+    }
+    p->animDone = (void*)fn_8018ABFC;
+    p->animLoop = 1;
+    p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, lbl_803A8800[0].anims[0], p->unk7D4, 0);
+    if (p->anim2 == -1) {
+        p->unk7D4 = 0;
+        p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, lbl_803A8800[0].anims[0], p->unk7D4, 0);
+    }
+    p->animDone2 = (void*)fn_8018ABFC;
+    p->animLoop2 = 1;
+}
+
 u32 fn_8018B000(Player* p) {
     return lbl_803A8800[p->state].unk44;
 }
@@ -707,6 +765,26 @@ void fn_8018B0C0(Player* p) {
     if (lbl_803A8800[p->state].enter != 0) {
         lbl_803A8800[p->state].enter(p);
     }
+}
+
+// Looks up the 16 shared player effect assets.
+void fn_8018B100() {
+    lbl_80495890[0] = AssetFind(0xF1754BF2, 0x0021C5E0);
+    lbl_80495890[1] = AssetFind(0xF1754BF2, 0x0024805F);
+    lbl_80495890[2] = AssetFind(0xF1754BF2, 0x101844CC);
+    lbl_80495890[3] = AssetFind(0xF1754BF2, 0x48874F6E);
+    lbl_80495890[4] = AssetFind(0xF1754BF2, 0x04A53FC1);
+    lbl_80495890[5] = AssetFind(0xF1754BF2, 0x967DAAC6);
+    lbl_80495890[6] = AssetFind(0xF1754BF2, 0xD9404234);
+    lbl_80495890[7] = AssetFind(0xF1754BF2, 0x0450B2BB);
+    lbl_80495890[8] = AssetFind(0xF1754BF2, 0x922BF04E);
+    lbl_80495890[9] = AssetFind(0xF1754BF2, 0x8C73DFA9);
+    lbl_80495890[10] = AssetFind(0xF1754BF2, 0x90AEEEE4);
+    lbl_80495890[11] = AssetFind(0xF1754BF2, 0x04A2F9AA);
+    lbl_80495890[12] = AssetFind(0xF1754BF2, 0x04A48BC0);
+    lbl_80495890[13] = AssetFind(0xF1754BF2, 0x8671DB2A);
+    lbl_80495890[14] = AssetFind(0xF1754BF2, 0x044E6CA4);
+    lbl_80495890[15] = AssetFind(0xF1754BF2, 0x044FFEBA);
 }
 
 }
