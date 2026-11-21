@@ -126,6 +126,8 @@ int AssetFind(unsigned long bank, unsigned long name);
 void PlayerSetActionMode(void* p, int mode);
 void PlayerSetHeldSlotIndex(void* p, int i);
 void WeatherSetRainB(float rain);
+int PlayerGetHeldSlotIndex(void* p);
+int Fn800F7DEC(int a, int b, int msg, int who, void* data);
 void WeatherSetByTypeId(int id, int a, int type);
 void PlayerApplyFrameOffset(Player* p);
 void PlayerStartGunCharge(void* p);
@@ -354,6 +356,20 @@ void fn_801879BC(Player* p) {
     PlayerSetValue4(&p->state, 0x15);
 }
 
+void fn_80187AE0(Player* p, float dt) {
+    PlayerResetGunTimer(p);
+    p->unk638 = 1;
+    p->flags7B4 &= ~1;
+    PlayerMove(p, dt);
+    if (PlayerGetHeldSlotIndex(p)) {
+        PlayerSetValue4(&p->state, 2);
+    } else {
+        PlayerSetValue4(&p->state, 1);
+    }
+    PlayerInHost((Actor*)p);
+    PlayerGunInput(p);
+}
+
 void fn_80187CB4(Player* p) {
     int host = PlayerInHost((Actor*)p);
     u32* anim = PlayerStateAnim(p, 20);
@@ -471,6 +487,35 @@ void fn_80188068(Player* p) {
 }
 
 void fn_801881C4(Player* p) {
+}
+
+void fn_801885AC(Player* p) {
+    int a;
+    int b;
+    int blend;
+    QueryNameOut(&a, p->handle, 0x2DA8293C);
+    QueryNameOut(&b, p->handle, 0xDFF3097A);
+    p->unk7DC = Fn800F7DEC(a, b, 0x6FAB23FE, fn_800498D0(p), 0);
+    switch (p->unk7DC) {
+    case 0x7183F329:
+        blend = 0;
+        break;
+    case 0x7183F5A1:
+        blend = 1;
+        break;
+    case 0xBEF8884D:
+        blend = 2;
+        break;
+    }
+    {
+        int host = PlayerInHost((Actor*)p);
+        u32* anim = PlayerStateAnim(p, 17);
+        p->anim = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet, *anim, blend, 0);
+        p->animDone = (void*)fn_8018ABFC;
+        p->animLoop = 1;
+        p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, *anim, 0, 0);
+        p->animLoop2 = 1;
+    }
 }
 
 void fn_8018878C(Player* p) {
