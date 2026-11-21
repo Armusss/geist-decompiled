@@ -1277,7 +1277,9 @@ public:
 class BufferOwner : public Buffer {
 public:
     virtual ~BufferOwner();
-    void Commit(int start, unsigned long size);
+    virtual int GetAlignment();                             // 0x10
+    virtual void Commit(int start, unsigned long size);     // 0x14
+    virtual void Append(unsigned char* data, unsigned long size); // 0x18
     static void operator delete(void* p) { VFree(p); }
 };
 
@@ -1375,7 +1377,7 @@ extern "C" void fn_8028A728(void)
 
 // ---- BufferOwner methods (0x8028A77C-0x8028A8D4; vtables 0x803C29B0 / 0x803C29D0) ---------------------
 // They fill slots 0x08-0x18 of the BufferOwner and ClockPageBuffer vtables, which only this file uses
-// (moved here from u_8028A77C, now u_8028A8D4). Append/GetAlignment keep their existing mangled names.
+// (moved here from u_8028A77C, now u_8028A8D4). Slot names follow u_8028A8D4.cpp (guesses).
 
 void DestroyWordRange(unsigned long start, unsigned long end);
 void ClearWordRange(unsigned long start, unsigned long end);
@@ -1401,7 +1403,7 @@ void BufferOwner::Commit(int start, unsigned long size)
 }
 
 // fn_8028A82C: append `size` bytes of data to the buffer, then copy them in.
-void Buffer::Append(u8* data, unsigned long size)
+void BufferOwner::Append(u8* data, unsigned long size)
 {
     unsigned long start = (unsigned long)data;
 
@@ -1410,7 +1412,7 @@ void Buffer::Append(u8* data, unsigned long size)
 }
 
 // fn_8028A88C: the buffer's element alignment is always 4 bytes.
-int Buffer::GetAlignment()
+int BufferOwner::GetAlignment()
 {
     return 4;
 }

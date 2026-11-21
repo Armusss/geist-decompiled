@@ -23,9 +23,6 @@ public:
     Buffer();                                  // 0x8028BA9C
     virtual ~Buffer();                         // 0x8028B9C0
     virtual void Release(char* p);
-    // Defined in u_8028865C.cpp (0x8028A82C / 0x8028A88C): slots 0x18 / 0x10 of the BufferOwner vtables.
-    void Append(unsigned char* data, unsigned long size);
-    int GetAlignment();
 
     char* mData;                               // 0x04
     int mLength;                               // 0x08
