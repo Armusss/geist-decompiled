@@ -373,18 +373,23 @@ int ShellEnter00(Actor* a);
 int ShellCrabHitCb(u32 unused, Actor* other, Actor* self);
 void ShellNameArrayClear(void* begin, void* end);
 void ShellNameArrayNop(void* begin, void* end);
-extern "C" void fn_8028BC2C(void* self);
-extern "C" void fn_8028BC28(void* self, void* begin, u32 size);
+// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
+// array overrides here call directly. Class and member names are guesses.
+class ScreenEffectBuffer {
+public:
+    void Commit(int start, unsigned long size);
+    void Append(unsigned char* data, unsigned long size);
+};
 
 // Array helpers for the 8-byte-element name table (compiler-style construct/destruct loops).
 void ShellNameArrayConstruct(void* self, void* begin, u32 size) {
-    fn_8028BC2C(self);
+    ((ScreenEffectBuffer*)self)->Commit((int)begin, size);
     ShellNameArrayClear(begin, (char*)begin + (size & ~7));
 }
 
 void ShellNameArrayDestruct(void* self, void* begin, u32 size) {
     ShellNameArrayNop(begin, (char*)begin + (size & ~7));
-    fn_8028BC28(self, begin, size);
+    ((ScreenEffectBuffer*)self)->Append((unsigned char*)begin, size);
 }
 
 int ShellReturnEight(void) {

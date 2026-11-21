@@ -973,8 +973,13 @@ extern int lbl_804D29A4;
 extern "C" {
 void fn_8016EEF4(int fx);
 void fn_8016F018(int fx, int level);
-void fn_8028BC2C(void* p);
-void fn_8028BC28(void* a, void* b, u32 c);
+// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
+// array overrides here call directly. Class and member names are guesses.
+class ScreenEffectBuffer {
+public:
+    void Commit(int start, unsigned long size);
+    void Append(unsigned char* data, unsigned long size);
+};
 int FxStart(int a, int b, int c);
 int fn_8016F390(int a, int b, int c);
 int fn_8003A1C0(int v);
@@ -1035,13 +1040,13 @@ void FlickerBufClear(void* begin, void* end);
 void FlickerBufNop(void* begin, void* end);
 
 void FlickerBufConstruct(void* self, void* begin, u32 size) {
-    fn_8028BC2C(begin);
+    ((ScreenEffectBuffer*)self)->Commit((int)begin, size);
     FlickerBufClear(begin, (u8*)begin + (size & ~7));
 }
 
 void FlickerBufDestruct(void* self, void* begin, u32 size) {
     FlickerBufNop(begin, (u8*)begin + (size & ~7));
-    fn_8028BC28(self, begin, size);
+    ((ScreenEffectBuffer*)self)->Append((unsigned char*)begin, size);
 }
 
 int ReturnEight(void) {

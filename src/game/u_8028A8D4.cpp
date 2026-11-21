@@ -18,15 +18,19 @@ typedef unsigned char u8;
 void VFree(void* p);
 
 extern "C" void fn_8028B960(void* buffer);
-extern "C" void fn_8028BC2C(void* self, void* dst, u32 size);
 extern "C" void ScreenEffectMemFill(void* dst, u32 size, u8 fill);
 extern u8 lbl_804D37C8;
 extern "C" void fn_8028BC5C(void* self, int pos, int size);
-extern "C" void ScreenEffectSlotResetPending(void* self);
 
 // The buffer classes form a chain ScreenEffectSlot -> ScreenEffectBuffer ->
 // Buffer -> String (vtables 0x803C29F0, 0x803C2A28, 0x803C2A08 and
-// __vt__6String).  Every constructor runs its base constructor out of line;
+// __vt__6String; the two base class names are guesses).  The slots after the
+// destructor are Clear (0x0C), GetAlignment (0x10), Commit (0x14), Append
+// (0x18) and GetSpan (0x1C), named after the BufferOwner overrides in
+// u_8028865C.cpp (names are guesses).  ScreenEffectSlot leaves Commit empty
+// (null slot) and ScreenEffectBuffer leaves GetSpan empty; Buffer's GetSpan
+// is the inline `return 0` (0x8007AD60) shared by every Buffer-derived
+// vtable, emitted with the first of them (u_800776FC.cpp).  Every constructor runs its base constructor out of line;
 // the two base destructors are defined in the class, so ~Buffer runs them
 // inline (each restores its own vtable) and their deleting copies are emitted
 // with the vtables.  CodeWarrior passes the delete flag as a hidden short.
@@ -37,11 +41,10 @@ class ScreenEffectSlot {
 public:
     ScreenEffectSlot();
     virtual ~ScreenEffectSlot() {}
-    virtual void Prepare();                  // 0x0C
-    virtual int Query();                     // 0x10: element alignment
-    virtual void Fill(int offset, int size); // 0x14: clear the newly added store
+    virtual void Clear();                               // 0x0C
+    virtual int GetAlignment();                         // 0x10: element alignment
+    virtual void Commit(int start, unsigned long size) = 0; // 0x14: clear the newly added store
     void Set(int start, int size);
-    void Clear();
     static void operator delete(void* p) { VFree(p); }
 
     char* mStart; // 0x04
@@ -54,14 +57,18 @@ class ScreenEffectBuffer : public ScreenEffectSlot {
 public:
     ScreenEffectBuffer();
     virtual ~ScreenEffectBuffer() {}
-    virtual void Unk18(char* data, u32 size); // 0x18: called with the backing store
-    virtual int GetSpan();                   // 0x1C: bytes the next reserve needs
+    virtual void Clear();
+    virtual void Commit(int start, unsigned long size);
+    virtual void Append(unsigned char* data, unsigned long size); // 0x18: called with the backing store
+    virtual int GetSpan() = 0;                                    // 0x1C: bytes the next reserve needs
 };
 
 class Buffer : public ScreenEffectBuffer {
 public:
     virtual ~Buffer();
     Buffer();
+    virtual void Clear();
+    virtual int GetSpan() { return 0; }
 };
 
 // String: a Buffer whose text source (mStart) and length (mSize) describe an
@@ -73,8 +80,6 @@ public:
     String(const String& src);
     int Equals(const char* name);
 };
-
-extern "C" void fn_8028BC28(Buffer* self, u8* data, u32 size);
 
 extern int lbl_804D37B8;
 extern int lbl_804D37BC;
@@ -316,19 +321,17 @@ extern "C" int ScreenEffectFadeFinish(void)
     return 1;
 }
 
-// 0x8028B1CC: completion callback that reports done immediately; there is no
-// state to release for this effect.
-extern "C" int ScreenEffectQuickFinish(void)
+// 0x8028B1CC: a plain slot holds bytes, so its element alignment is 1.
+int ScreenEffectSlot::GetAlignment()
 {
     return 1;
 }
 
-// 0x8028B1D4: clear the two queued-effect words of a screen-effect state.
-extern "C" void ScreenEffectResetState(void* self)
+// 0x8028B1D4: forget the outside range.
+void ScreenEffectSlot::Clear()
 {
-    int* state = (int*)self;
-    state[1] = 0;
-    state[2] = 0;
+    mStart = 0;
+    mSize = 0;
 }
 
 // fn_8028B23C: constructor; installs the vtable and clears the range.
@@ -341,16 +344,15 @@ ScreenEffectSlot::ScreenEffectSlot()
 // fn_8028B1E4: let the slot prepare itself, then store the new range.
 void ScreenEffectSlot::Set(int start, int size)
 {
-    Prepare();
+    Clear();
     mStart = (char*)start;
     mSize = size;
 }
 
-// fn_8028B2A0: finish any pending slot work, then drop the queued handle in
-// the state word at +0x10.
-void ScreenEffectSlot::Clear()
+// fn_8028B2A0: clear the base state, then forget the store capacity at +0x10.
+void Buffer::Clear()
 {
-    ScreenEffectSlotResetPending(this);
+    ScreenEffectBuffer::Clear();
     mState = 0;
 }
 
@@ -370,7 +372,7 @@ static inline char* SlotErase(ScreenEffectSlot* slot, char* pos, int size)
 
 extern "C" void fn_8028B2D4(ScreenEffectSlot* slot)
 {
-    SlotErase(slot, slot->unk0C + slot->mSize - slot->Query(), slot->Query());
+    SlotErase(slot, slot->unk0C + slot->mSize - slot->GetAlignment(), slot->GetAlignment());
 }
 
 // 0x8028B35C: mark [pos, pos + size) of the current window as written.  The
@@ -442,9 +444,9 @@ static inline void BufferReserve(Buffer* self, u32 size, u8 exact)
         char* store;
 
         if (!exact)
-            want = AlignUp(want, AlignUp(0x40, (u32)self->Query()));
+            want = AlignUp(want, AlignUp(0x40, (u32)self->GetAlignment()));
         store = (char*)VRealloc(old, (int)want);
-        self->Fill((int)(store + self->mState), (int)(want - self->mState));
+        self->Commit((int)(store + self->mState), want - self->mState);
         if (old == 0 && self->mStart != 0) {
             u32 count = want;
             if ((u32)self->mSize + 1 < want)
@@ -498,10 +500,10 @@ extern "C" void fn_8028B960(void* buffer)
     Buffer* self = (Buffer*)buffer;
 
     if (self->mState != 0) {
-        self->Unk18(self->unk0C, self->mState);
+        self->Append((unsigned char*)self->unk0C, self->mState);
         VFree((void*)self->unk0C);
     }
-    ScreenEffectSlotResetPending(self);
+    self->ScreenEffectBuffer::Clear();
     self->mState = 0;
 }
 
@@ -518,10 +520,10 @@ Buffer::~Buffer()
 
     if (!skip) {
         if (mState != 0) {
-            Unk18(unk0C, mState);
+            Append((unsigned char*)unk0C, mState);
             VFree((void*)unk0C);
         }
-        ScreenEffectSlotResetPending(this);
+        ScreenEffectBuffer::Clear();
         mState = 0;
     }
 }
@@ -592,17 +594,17 @@ u8* CopyBytes(const u8* src, u32 size, u8* dst)
     return dst;
 }
 
-// fn_8028BC28: no-op hook; retail is a bare `blr`.
-extern "C" void fn_8028BC28(Buffer* self, u8* data, u32 size) {}
+// 0x8028BC28: no-op hook; retail is a bare `blr`.
+void ScreenEffectBuffer::Append(unsigned char* data, unsigned long size) {}
 
-// fn_8028BC2C: forward (dst, size) to the shared fill routine together with
-// the table's fill byte. The first argument is unused.
-extern "C" void fn_8028BC2C(void* self, void* dst, u32 size)
+// 0x8028BC2C: fill the new range [start, start + size) with the table's fill
+// byte.
+void ScreenEffectBuffer::Commit(int start, unsigned long size)
 {
-    ScreenEffectMemFill(dst, size, lbl_804D37C8);
+    ScreenEffectMemFill((void*)start, size, lbl_804D37C8);
 }
 
-void ScreenEffectRotateBytes(int start, int middle, int end);
+void ScreenEffectRotateBytes(char* start, char* middle, char* end);
 
 // fn_8028BC5C: mark [pos, pos + size) of the window that ends at the slot's
 // current write position (unk0C + mSize).
@@ -610,7 +612,7 @@ extern "C" void fn_8028BC5C(void* self, int pos, int size)
 {
     ScreenEffectSlot* s = (ScreenEffectSlot*)self;
 
-    ScreenEffectRotateBytes(pos, pos + size, (int)(s->unk0C + s->mSize));
+    ScreenEffectRotateBytes((char*)pos, (char*)(pos + size), s->unk0C + s->mSize);
 }
 
 // fn_8028BC94: mark the last `size` bytes before the slot's current write
@@ -618,9 +620,9 @@ extern "C" void fn_8028BC5C(void* self, int pos, int size)
 extern "C" void fn_8028BC94(void* self, int pos, int size)
 {
     ScreenEffectSlot* s = (ScreenEffectSlot*)self;
-    int end = (int)(s->unk0C + s->mSize);
+    char* end = s->unk0C + s->mSize;
 
-    ScreenEffectRotateBytes(pos, end - size, end);
+    ScreenEffectRotateBytes((char*)pos, end - size, end);
 }
 
 // 0x8028BCCC: queue a copy of `size` bytes from `base` into the slot, unless
@@ -631,12 +633,11 @@ extern "C" void ScreenEffectSlotQueueCopy(void* self, u32 base, u32 offset, u32 
         CopyBytes((const u8*)offset, size, (u8*)base);
 }
 
-// 0x8028BD18: clear the slot's queued-effect state and forget the pending
-// buffer pointer in the word at +0x10.
-extern "C" void ScreenEffectSlotResetPending(void* self)
+// 0x8028BD18: clear the base range, then forget the store pointer at +0x0C.
+void ScreenEffectBuffer::Clear()
 {
-    ScreenEffectResetState(self);
-    *(int*)((char*)self + 0xC) = 0;
+    ScreenEffectSlot::Clear();
+    unk0C = 0;
 }
 
 // fn_8028BD4C: constructor of the slot variant that owns the pixel store.
@@ -733,7 +734,7 @@ static inline void ScreenEffectReverseBytes(u8* first, u8* last)
 // first: reverse both halves, then reverse the whole range.  The last pass is
 // written so that it stops as soon as one end reaches the old middle and the
 // remaining stretch is reversed on its own.  The callers pass byte addresses.
-void ScreenEffectRotateBytes(int start, int middle, int end)
+void ScreenEffectRotateBytes(char* start, char* middle, char* end)
 {
     u8* first = (u8*)start;
     u8* mid = (u8*)middle;

@@ -3781,8 +3781,13 @@ extern "C" void fn_8017B7A4(void) {
 extern int sCbLock;
 
 // External helpers used by the range wrappers below (still placeholder names).
-extern "C" void fn_8028BC2C(int ctx);
-extern "C" void fn_8028BC28(int ctx, int ptr, unsigned long size);
+// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
+// array overrides here call directly. Class and member names are guesses.
+class ScreenEffectBuffer {
+public:
+    void Commit(int start, unsigned long size);
+    void Append(unsigned char* data, unsigned long size);
+};
 void GunRangeWalk8017B9F0(unsigned long start, unsigned long end);
 
 void GunRangeNoOp8017B9D0(unsigned long start, unsigned long end);
@@ -3790,7 +3795,7 @@ void GunRangeNoOp8017B9D0(unsigned long start, unsigned long end);
 // 8017B920 - descriptive name (guess): runs a context prologue on `ctx`, then
 // walks the word-aligned range [ptr, ptr + (size & ~3)).
 void GunRangeOp8017B920(int ctx, int ptr, unsigned long size) {
-    fn_8028BC2C(ctx);
+    ((ScreenEffectBuffer*)ctx)->Commit((int)ptr, size);
     GunRangeNoOp8017B9D0(ptr, ptr + (size & ~3));
 }
 
@@ -3798,7 +3803,7 @@ void GunRangeOp8017B920(int ctx, int ptr, unsigned long size) {
 // [ptr, ptr + (size & ~3)) first, then hands (ctx, ptr, size) to the runtime.
 void GunRangeOp8017B968(int ctx, int ptr, unsigned long size) {
     GunRangeWalk8017B9F0(ptr, ptr + (size & ~3));
-    fn_8028BC28(ctx, ptr, size);
+    ((ScreenEffectBuffer*)ctx)->Append((unsigned char*)ptr, size);
 }
 
 // 8017B9C8 - descriptive name (guess): returns the element size (4 bytes) of

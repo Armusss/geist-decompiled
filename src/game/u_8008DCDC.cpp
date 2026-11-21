@@ -478,13 +478,18 @@ int fn_80093990(void* data, int size) {
 extern "C" void fn_80093A04();
 //@@80093A6C
 // Record array: construct hook (base call, then construct the new records).
-extern "C" void fn_8028BC2C(void* arr, void* p, u32 bytes);
-extern "C" void fn_8028BC28(void* arr, void* p, u32 bytes);
+// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
+// array overrides here call directly. Class and member names are guesses.
+class ScreenEffectBuffer {
+public:
+    void Commit(int start, unsigned long size);
+    void Append(unsigned char* data, unsigned long size);
+};
 extern "C" void fn_80093B3C(AnimItem* p, AnimItem* end);
 extern "C" void fn_80093BCC(AnimItem* p, AnimItem* end);
 extern "C" void fn_80093A6C(void* arr, AnimItem* p, u32 bytes);
 void fn_80093A6C(void* arr, AnimItem* p, u32 bytes) {
-    fn_8028BC2C(arr, p, bytes);
+    ((ScreenEffectBuffer*)arr)->Commit((int)p, bytes);
     fn_80093B3C(p, p + bytes / sizeof(AnimItem));
 }
 //@@end
@@ -493,7 +498,7 @@ static inline void AnimItemsDestroy(void* p, u32 bytes) { AnimItem* first = (Ani
 extern "C" void fn_80093AC4(void* arr, AnimItem* p, u32 bytes);
 void fn_80093AC4(void* arr, AnimItem* p, u32 bytes) {
     AnimItemsDestroy(p, bytes);
-    fn_8028BC28(arr, p, bytes);
+    ((ScreenEffectBuffer*)arr)->Append((unsigned char*)p, bytes);
 }
 //@@end
 

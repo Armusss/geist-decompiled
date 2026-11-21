@@ -42,7 +42,6 @@ extern "C" void fn_800B4EFC(void);
 extern "C" void fn_800B98F8(void);
 extern "C" void fn_800B9A8C(void);
 extern "C" int  fn_800B84E4(void* a, void* b, float* outDist);
-extern "C" void fn_8028BC28(void* a, void* b, u32 c);
 extern "C" int  fn_800A37CC(void* object);
 void OwnerUpdateSlot1(Owner* owner);
 extern "C" int  fn_800A3758(Owner* owner);
@@ -52,7 +51,6 @@ int OwnerFindSoundTarget(Owner* owner, int* actorId, float* pos, float* outPos,
 int OwnerFindSightTarget(Owner* owner, int* actorId, float* outPos, int* unk0C,
                          u32* unk14, int a, int b);
 extern "C" void fn_8016D68C(void* dst, void* src);
-extern "C" void fn_8028BC2C(void* a, void* b, u32 c);
 extern "C" void* memset(void* dst, int value, u32 size);
 extern "C" void FileFlushBuffer(void* dst, u32 size);
 int HasCondition(void* object, int id);

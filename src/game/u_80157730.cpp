@@ -89,8 +89,13 @@ void* fn_8028B3BC(void*, void*, int);
 void fn_8028B960(void*);
 void fn_8028B9C0(void*, int);
 void fn_8028BA9C(void*);
-void fn_8028BC28(void*, void*, unsigned);
-void fn_8028BC2C(void*);
+// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
+// array overrides here call directly. Class and member names are guesses.
+class ScreenEffectBuffer {
+public:
+    void Commit(int start, unsigned long size);
+    void Append(unsigned char* data, unsigned long size);
+};
 void fn_800A0094(void*, void*);
 void fn_800A0100(void*);
 f32 fn_800A1394(f32);
@@ -1260,13 +1265,13 @@ void* fn_801593FC(void* p, short freeIt) {
 
 // 0x80159A04 / 0x80159A4C and siblings: pool element array helpers.
 void fn_80159A04(void* pool, int start, unsigned size) {
-    fn_8028BC2C(pool);
+    ((ScreenEffectBuffer*)pool)->Commit((int)start, size);
     fn_80159AB4((int*)start, (int*)(start + (size & 0xfffffffc)));
 }
 
 void fn_80159A4C(void* pool, char* start, int size) {
     fn_80159AD4((int*)start, (int*)(start + (size & 0xfffffffc)));
-    fn_8028BC28(pool, start, size);
+    ((ScreenEffectBuffer*)pool)->Append((unsigned char*)start, size);
 }
 
 int fn_80159AAC() {
@@ -1435,13 +1440,13 @@ void fn_8015A4AC(f32 a, f32 b, void* dst, void* src, int active, int arg, void* 
 
 // 0x8015A934 / 0x8015A97C and siblings: grenade pool element array helpers.
 void fn_8015A934(void* pool, int start, unsigned size) {
-    fn_8028BC2C(pool);
+    ((ScreenEffectBuffer*)pool)->Commit((int)start, size);
     fn_8015A9E4((int*)start, (int*)(start + (size & 0xfffffffc)));
 }
 
 void fn_8015A97C(void* pool, int start, unsigned size) {
     fn_8015AA04((int*)start, (int*)(start + (size & 0xfffffffc)));
-    fn_8028BC28(pool, (void*)start, size);
+    ((ScreenEffectBuffer*)pool)->Append((unsigned char*)start, size);
 }
 
 int fn_8015A9DC() {
@@ -1539,13 +1544,13 @@ void* fn_8015AC08(void* p, short freeIt) {
 
 // 0x8015BF90 / 0x8015BFD8 and siblings: emitter pool element array helpers.
 void fn_8015BF90(void* pool, int start, unsigned size) {
-    fn_8028BC2C(pool);
+    ((ScreenEffectBuffer*)pool)->Commit((int)start, size);
     fn_8015C040((int*)start, (int*)(start + (size & 0xfffffffc)));
 }
 
 void fn_8015BFD8(void* pool, int start, unsigned size) {
     fn_8015C060((int*)start, (int*)(start + (size & 0xfffffffc)));
-    fn_8028BC28(pool, (void*)start, size);
+    ((ScreenEffectBuffer*)pool)->Append((unsigned char*)start, size);
 }
 
 int fn_8015C038() {

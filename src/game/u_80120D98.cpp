@@ -1261,24 +1261,29 @@ s32 HazardSplineProbeFilter(SplineHitData* hit, SplineHitCtx* ctx) {
 
 // Quiesces the hazard spline storage pool, then releases the 4-byte-aligned
 // range [start, start + size).
-extern "C" void fn_8028BC2C();
+// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
+// array overrides here call directly. Class and member names are guesses.
+class ScreenEffectBuffer {
+public:
+    void Commit(int start, unsigned long size);
+    void Append(unsigned char* data, unsigned long size);
+};
 void HazardSplineRangeReset(u8* start, u8* end);
 
-void HazardSplineBufferClear(s32, u8* start, u32 size) {
-    fn_8028BC2C();
+void HazardSplineBufferClear(s32 self, u8* start, u32 size) {
+    ((ScreenEffectBuffer*)self)->Commit((int)start, size);
     HazardSplineRangeReset(start, start + (size & 0xfffffffc));
 }
 
 // Quiesces the 4-byte-aligned prefix of the source range, then copies `size`
 // bytes from src to dst.
-extern "C" void fn_8028BC28(void* dst, void* src, u32 size);
 void HazardBlockRangeReset(u8* start, u8* end);
 
 void HazardBlockCopy(void* dst, u8* src, u32 size) {
     u32 start = (u32)src;
 
     HazardBlockRangeReset((u8*)start, (u8*)(start + (size & 0xfffffffc)));
-    fn_8028BC28(dst, src, size);
+    ((ScreenEffectBuffer*)dst)->Append((unsigned char*)src, size);
 }
 
 // Granularity, in bytes, of the block copy helpers above.
