@@ -1,9 +1,11 @@
-// u_801CC6D0.cpp: 0x801CC6D0-0x801CDFBC, 10 functions. The "Script Move" actor type.
-// Split from u_801BF578 (0x801BF578-0x801D9A70). Evidence for the boundaries:
-//   actor type descriptor 0x803ACBB8 {0, "Script Move" 0x80348878, fn_801CCCE0, fn_801CD484, fn_801CDE88,
-//   0, fn_801CDE40, fn_801CCCDC, fn_801CCCD8}; fn_801CC6D0 registers it (the register function comes
-//   first, as in Skybox.cpp); no POSSESS table in its pool
-//   .data 0x803ACBE8, 0x803ACBF8; .sdata2 0x804D8B48-0x804D8B60
+// u_801CC6D0.cpp: 0x801CC6D0-0x801CDFBC, 9 functions. The "Script Move" actor type.
+// Split from u_801BF578 (0x801BF578-0x801D9A70). Evidence for the boundaries (rechecked 2026-11-21):
+//   actor type descriptor gScriptMoveType 0x803ACBB8 {0, "Script Move" 0x80348878, Msg, Update, Init, 0,
+//   Destroy, Save, Load}; ScriptMoveRegister registers it (the register function comes first, as in
+//   Skybox.cpp); no POSSESS table in its pool. Data only this unit touches: .rodata 0x80348878-0x80348888,
+//   .data 0x803ACBB8-0x803ACC08 (descriptor, speed-set hashes, up vector), .sdata2 0x804D8B48-0x804D8B68
+//   (0.0f, epsilon, int->float bias, 1000, 0.5, 1.0; u_801CA16C reads 0x804D8B40/44, u_801CDFBC starts at
+//   0x804D8B68). Neighbour u_801CDFBC is Matching from 0x801CDFBC.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <dolphin/types.h>
@@ -13,7 +15,6 @@
 #include "game/actor.h"
 #include "game/msg.h"
 
-#define fabs(x) __fabs(x)
 
 // Per-actor state of a scripted mover (VAlloc'd, 0x4C bytes, at actor +0xA4).
 struct ScriptMove {
@@ -34,8 +35,8 @@ struct ScriptMove {
 struct ScriptMoveInfo {
     unsigned long hash;                        // 0x00
     char pad04[0x2C];
-    float maxSpeed[4];                         // 0x30
-    float accel[4];                            // 0x40
+    float maxSpeed[4];                         // 0x30: per speed set
+    float accel[4];                            // 0x40: per speed set
     char pad50[0x44];
     int startAnim;                             // 0x94
     int endAnim;                               // 0x98
@@ -65,41 +66,42 @@ struct Msg1800 {
     int animArg;                               // 0x10
 };
 
+float __fabsf(float x);
 int ActorTypeRegister(ActorType* type);
 int ActorPlayAnim(int handle, u32 hash, int arg);
+int ActorDefaultMsg(Actor* actor, int msg, void* data, int arg); // 0x800E4C64
+int ActorInitBase(Actor* actor);                                // 0x800E6444
+void ActorUpdate(Actor* actor, float dt);                       // 0x800E48A0
+void ActorSetPlacement(Actor* actor, PlaceF* p);
 void ActorGetMatrix(Mtx34* m, Actor* a);
-void PlacementToMatrix(Actor* a, Mtx34* m);
+void PlacementToMatrix(Mtx34* m, PlaceF* p);                    // 0x8009EF04
 void* VAlloc(int size);
 void VFree(void* p);
 
 extern "C" {
 int SendMsg(int to, int msg, void* data);
+void FxStart(int text, int a, int b);                           // 0x8016F390
 int fn_80019F88(void* data, Actor* actor);
 float fn_800E1020(Vec3* v);
 void fn_800E1098(Vec3* out, Vec3* in, float length);
-int fn_800E4C64(Actor* actor, int msg, void* data, int arg);
-void fn_800E48A0(Actor* actor, float dt);
-int fn_800E6444(Actor* actor);
-void fn_800E7898(Actor* actor, Mtx34* m);
 int fn_8008E964(int anim);
 void fn_8008DE4C(int anim, int a, int b, int c);
-void fn_8016F390(int text, int a, int b);
 void fn_800A02C0(Mtx34* m, Vec3* v, int row);
 void fn_8016D6A8(Vec3* v);
 void fn_8016D4EC(Vec3* out, void* in);
 int fn_80090EA4(int id, int model);
 }
 
-int fn_801CCCE0(Actor* actor, int msg, void* data, int arg);
-void fn_801CD484(Actor* actor, float dt);
-int fn_801CDE88(Actor* actor);
-void fn_801CDE40(Actor* actor);
-void fn_801CCCDC(Actor* actor);
-void fn_801CCCD8(Actor* actor);
+int ScriptMoveMsg(Actor* actor, int msg, void* data, int arg);
+void ScriptMoveUpdate(Actor* actor, float dt);
+int ScriptMoveInit(Actor* actor);
+void ScriptMoveDestroy(Actor* actor);
+void ScriptMoveSave(void* stream);
+void ScriptMoveLoad(void* stream);
 
-ActorType lbl_803ACBB8 = {
-    0, "Script Move", (ActorMsgFunc)fn_801CCCE0, fn_801CD484, fn_801CDE88, 0, fn_801CDE40,
-    {(void*)fn_801CCCDC, (void*)fn_801CCCD8, 0, 0, 0},
+ActorType gScriptMoveType = {
+    0, "Script Move", (ActorMsgFunc)ScriptMoveMsg, ScriptMoveUpdate, ScriptMoveInit, 0, ScriptMoveDestroy,
+    {(void*)ScriptMoveSave, (void*)ScriptMoveLoad, 0, 0, 0},
 };
 
 // Speed set names, by index.
@@ -107,36 +109,40 @@ static unsigned long sSpeedHashes[4] = {0x00270002, 0x04B61EF4, 0x002889C9, 0x00
 
 static Vec3 sUp = {0.0f, 0.0f, 1.0f};
 
-inline int VecNonZero(const Vec3* v) {
-    return (fabs(v->x) > 1.1920929e-7f) + (fabs(v->y) > 1.1920929e-7f) + (fabs(v->z) > 1.1920929e-7f);
-}
-
-inline float VecNormalize(Vec3* out, const Vec3* in) {
-    double x, y, z, len;
-    float inv;
-
-    if (VecNonZero(in) == 0) {
-        out->x = 0.0f;
-        out->y = 0.0f;
-        out->z = 0.0f;
-        return 0.0f;
+// Normalizes src into dst; returns the length (0 for a zero vector).
+inline float VecNormalize(Vec3* dst, const Vec3* src) {
+    float len;
+    float az = __fabsf(src->z);
+    float ay = __fabsf(src->y);
+    float ax = __fabsf(src->x);
+    if ((ax > 1.1920929e-7f) + (ay > 1.1920929e-7f) + (az > 1.1920929e-7f) == 0) {
+        dst->x = 0.0f;
+        dst->y = 0.0f;
+        dst->z = 0.0f;
+    } else {
+        float x = src->x;
+        float y = src->y;
+        float z = src->z;
+        float inv = __frsqrte(x * x + y * y + z * z);
+        dst->x = x * inv;
+        dst->y = y * inv;
+        dst->z = z * inv;
+        len = __fres(inv);
     }
-    x = (double)in->x;
-    y = (double)in->y;
-    z = (double)in->z;
-    len = x * x + y * y + z * z;
-    inv = __frsqrte((float)len);
-    out->x = (float)(x * inv);
-    out->y = (float)(y * inv);
-    out->z = (float)(z * inv);
-    return __fres(inv);
+    return len;
 }
+
+inline ScriptMoveInfo* ScriptMoveGetInfo(Actor* actor) { return (ScriptMoveInfo*)actor->info; }
 
 // Direction from the mover's position to an actor.
 inline void ScriptMoveAim(ScriptMove* s, Actor* to) {
-    s->dir.x = (float)to->place.pos.x - s->pos.x;
-    s->dir.y = (float)to->place.pos.y - s->pos.y;
-    s->dir.z = (float)to->place.pos.z - s->pos.z;
+    Vec3 p;
+    p.x = (float)to->place.pos.x;
+    p.y = (float)to->place.pos.y;
+    p.z = (float)to->place.pos.z;
+    s->dir.x = p.x - s->pos.x;
+    s->dir.y = p.y - s->pos.y;
+    s->dir.z = p.z - s->pos.z;
 }
 
 // Ends the start animation / resets a finished move.
@@ -162,10 +168,10 @@ inline void ScriptMoveAnimDone(Actor* actor) {
     }
 }
 
-void fn_801CC6D0() { ActorTypeRegister(&lbl_803ACBB8); }
+void ScriptMoveRegister() { ActorTypeRegister(&gScriptMoveType); }
 
 // Animation callback of message 0xC12.
-void fn_801CC6F8(int msg, Actor* actor) {
+void ScriptMoveAnimEvent(int msg, Actor* actor) {
     ScriptMove* s = (ScriptMove*)actor->data;
 
     switch (msg) {
@@ -192,7 +198,7 @@ void fn_801CC6F8(int msg, Actor* actor) {
 }
 
 // Message 0x41D: script commands.
-int fn_801CC7D4(Actor* actor, Msg41D* m) {
+int ScriptMoveCommand(Actor* actor, Msg41D* m) {
     ScriptMove* s;
 
     if (fn_80019F88(m, actor)) {
@@ -247,102 +253,77 @@ int fn_801CC7D4(Actor* actor, Msg41D* m) {
     return 0;
 }
 
-void fn_801CCCD8(Actor* actor) {}
+void ScriptMoveLoad(void* stream) {}
 
-void fn_801CCCDC(Actor* actor) {}
+void ScriptMoveSave(void* stream) {}
 
-// Starts the move: plays the start animation through message 0xC12 when the type has one.
-inline void ScriptMoveStart(Actor* actor, int anim, int text) {
-    Msg0C12 m;
+// Speed set index of a speed name (0 when unknown).
+inline int ScriptMoveSpeed(unsigned long hash) {
+    int i;
 
-    memset(&m, 0, sizeof(Msg0C12));
-    m.anim = anim;
-    m.blend = 0x50;
-    m.flags = 0x1000;
-    m.callback = fn_801CC6F8;
-    m.actor = actor;
-    SendMsg(actor->id, 0xC12, &m);
-    fn_8016F390(text, 0, 0);
+    for (i = 0; i < 4; i++) {
+        if (hash == sSpeedHashes[i]) {
+            return i;
+        }
+    }
+    return 0;
 }
 
-int fn_801CCCE0(Actor* self, int msg, void* data, int arg) {
+// Message 0x41E: queries.
+inline int ScriptMoveQuery(Actor* actor, Msg41D* m) {
+    switch (m->cmd) {
+    case 0xAFDE81D6: {
+        ScriptMoveInfo* info = (ScriptMoveInfo*)actor->info;
+        if (info != 0 && info->hash == 0xD34C643C) {
+            m->arg = 0;
+        } else {
+            m->arg = 1;
+        }
+        return 1;
+    }
+    }
+    return 0;
+}
+
+int ScriptMoveMsg(Actor* self, int msg, void* data, int arg) {
     Actor* actor = *(Actor**)data;
 
     switch (msg) {
-    case 0xC07: {
-        ScriptMove* s = (ScriptMove*)actor->data;
-        if (fn_800E4C64(self, msg, data, arg) == 0) {
-            return 0;
-        }
-        s->target = -1;
-        s->mode = 0;
-        s->pos.x = (float)actor->place.pos.x;
-        s->pos.y = (float)actor->place.pos.y;
-        s->pos.z = (float)actor->place.pos.z;
-        return 1;
-    }
-    case 0x41E: {
-        Msg41D* m = (Msg41D*)data;
-        int handled;
-        if (m->cmd == 0xAFDE81D6) {
-            ScriptMoveInfo* info = (ScriptMoveInfo*)actor->info;
-            if (info != 0 && info->hash == 0xD34C643C) {
-                m->arg = 0;
-            } else {
-                m->arg = 1;
-            }
-            handled = 1;
-        } else {
-            handled = 0;
-        }
-        if (handled) {
+    case 0x41E:
+        if (ScriptMoveQuery(actor, (Msg41D*)data)) {
             return 1;
         }
         break;
-    }
     case 0x41D:
-        if (fn_801CC7D4(actor, (Msg41D*)data)) {
+        if (ScriptMoveCommand(actor, (Msg41D*)data)) {
             return 1;
         }
         break;
     case 0x1800: {
         Msg1800* m = (Msg1800*)data;
         ScriptMove* s = (ScriptMove*)actor->data;
-        int mode;
         int state;
         MsgResult r;
 
         s->target = m->target;
-        if (m->speed == sSpeedHashes[0]) {
-            mode = 0;
-        } else if (m->speed == sSpeedHashes[1]) {
-            mode = 1;
-        } else if (m->speed == sSpeedHashes[2]) {
-            mode = 2;
-        } else if (m->speed == sSpeedHashes[3]) {
-            mode = 3;
-        } else {
-            mode = 0;
-        }
-        s->mode = mode;
+        s->mode = ScriptMoveSpeed(m->speed);
         s->anim = m->anim;
         s->animArg = m->animArg;
         s->vel.x = 0.0f;
         s->vel.y = 0.0f;
         s->vel.z = 0.0f;
         if (s->target != -1 && SendMsg(s->target, 0x400, &r) && r.p != 0) {
-            Actor* t = (Actor*)r.p;
             if (s->flags & 1) {
-                ScriptMoveAim(s, t);
+                ScriptMoveAim(s, (Actor*)r.p);
                 VecNormalize(&s->dir, &s->dir);
             } else if (s->flags & 2) {
-                ScriptMoveAim(s, t);
+                ScriptMoveAim(s, (Actor*)r.p);
                 s->dir.x = -s->dir.x;
                 s->dir.y = -s->dir.y;
                 s->dir.z = -s->dir.z;
                 VecNormalize(&s->dir, &s->dir);
             } else if (s->flags & 0x10) {
-                actor->place = t->place;
+                actor->place = ((Actor*)r.p)->place;
                 actor->place.pos.x = (int)s->pos.x;
                 actor->place.pos.y = (int)s->pos.y;
                 actor->place.pos.z = (int)s->pos.z;
@@ -350,14 +331,26 @@ int fn_801CCCE0(Actor* self, int msg, void* data, int arg) {
         }
         state = s->state;
         s->state = 1;
-        if (state == 2 || state == 1 || ((ScriptMoveInfo*)actor->info)->startAnim == -1) {
-            ScriptMoveAnimDone(actor);
-        } else if (fn_8008E964(actor->anim) == 0) {
-            s->flags |= 8;
-            ScriptMoveAnimDone(actor);
+        if (state != 2 && state != 1 && ((ScriptMoveInfo*)actor->info)->startAnim != -1) {
+            if (fn_8008E964(actor->anim) != 0) {
+                {
+                Msg0C12 m;
+
+                memset(&m, 0, sizeof(Msg0C12));
+                m.anim = ((ScriptMoveInfo*)actor->info)->startAnim;
+                m.blend = 0x50;
+                m.flags = 0x1000;
+                m.callback = ScriptMoveAnimEvent;
+                m.actor = actor;
+                SendMsg(actor->id, 0xC12, &m);
+                FxStart(((ScriptMoveInfo*)actor->info)->startText, 0, 0);
+            }
+            } else {
+                s->flags |= 8;
+                ScriptMoveAnimDone(actor);
+            }
         } else {
-            ScriptMoveStart(actor, ((ScriptMoveInfo*)actor->info)->startAnim,
-                            ((ScriptMoveInfo*)actor->info)->startText);
+            ScriptMoveAnimDone(actor);
         }
         return 1;
     }
@@ -369,13 +362,24 @@ int fn_801CCCE0(Actor* self, int msg, void* data, int arg) {
         s->animArg = m->animArg;
         return 1;
     }
+    case 0xC07: {
+        ScriptMove* s = (ScriptMove*)actor->data;
+        if (ActorDefaultMsg(self, msg, data, arg) != 0) {
+            s->target = -1;
+            s->mode = 0;
+            s->pos.x = (float)actor->place.pos.x;
+            s->pos.y = (float)actor->place.pos.y;
+            s->pos.z = (float)actor->place.pos.z;
+            return 1;
+        }
+        return 0;
     }
-    return fn_800E4C64(self, msg, data, arg);
+    }
+    return ActorDefaultMsg(self, msg, data, arg);
 }
 
-void fn_801CD484(Actor* actor, float dt) {
+void ScriptMoveUpdate(Actor* actor, float dt) {
     ScriptMove* s = (ScriptMove*)actor->data;
-    ScriptMoveInfo* info;
     Vec3 fwd;
     MsgResult r;
 
@@ -383,7 +387,9 @@ void fn_801CD484(Actor* actor, float dt) {
         return;
     }
     fwd = s->dir;
-    if (s->state == 2 && s->target != -1 && SendMsg(s->target, 0x400, &r) && r.p != 0 && s->state == 2) {
+    switch (s->state) {
+    case 2:
+    if (s->target != -1 && SendMsg(s->target, 0x400, &r) && r.p != 0 && s->state == 2) {
         Vec3 d;
         Vec3 vn;
         Vec3 dn;
@@ -391,30 +397,45 @@ void fn_801CD484(Actor* actor, float dt) {
         float speed;
         float accel;
         float dot;
+        float aabs;
 
-        info = (ScriptMoveInfo*)actor->info;
         if ((s->flags & 8) && fn_8008E964(actor->anim)) {
-            fn_8008DE4C(actor->anim, 0, info->startAnim, 0x50);
+            fn_8008DE4C(actor->anim, 0, ((ScriptMoveInfo*)actor->info)->startAnim, 0x50);
             s->flags &= ~8;
         }
-        ScriptMoveAim(s, (Actor*)r.p);
-        d = s->dir;
-        d.x = (float)((Actor*)r.p)->place.pos.x - s->pos.x;
-        d.y = (float)((Actor*)r.p)->place.pos.y - s->pos.y;
-        d.z = (float)((Actor*)r.p)->place.pos.z - s->pos.z;
+        d.x = (float)((Actor*)r.p)->place.pos.x;
+        d.y = (float)((Actor*)r.p)->place.pos.y;
+        d.z = (float)((Actor*)r.p)->place.pos.z;
+        d.x -= s->pos.x;
+        d.y -= s->pos.y;
+        d.z -= s->pos.z;
         dist = fn_800E1020(&d);
         speed = fn_800E1020(&s->vel);
-        accel = info->accel[s->mode];
+        accel = ScriptMoveGetInfo(actor)->accel[s->mode];
         VecNormalize(&vn, &s->vel);
         VecNormalize(&dn, &d);
-        dot = vn.z * dn.z + vn.x * dn.x + vn.y * dn.y;
-        if (fabs(accel) < 1.1920929e-7f) {
-            fn_800E1098(&d, &s->vel, info->maxSpeed[s->mode]);
-            fn_800E1098(&d, &d, speed * dt / 1000.0f);
+        aabs = __fabsf(accel);
+        dot = vn.x * dn.x + vn.y * dn.y + vn.z * dn.z;
+        if (aabs < 1.1920929e-7f) {
+            fn_800E1098(&s->vel, &d, ScriptMoveGetInfo(actor)->maxSpeed[s->mode]);
+            fn_800E1098(&d, &s->vel, speed * dt / 1000.0f);
             s->pos.x += d.x;
             s->pos.y += d.y;
             s->pos.z += d.z;
-        } else if (dist <= 0.5f * (speed * speed) / accel) {
+        } else if (dist > 0.5f * (speed * speed) / accel) {
+            fn_800E1098(&d, &d, accel * dt / 1000.0f);
+            s->vel.x += d.x;
+            s->vel.y += d.y;
+            s->vel.z += d.z;
+            if (speed > ScriptMoveGetInfo(actor)->maxSpeed[s->mode]) {
+                speed = ScriptMoveGetInfo(actor)->maxSpeed[s->mode];
+                fn_800E1098(&s->vel, &s->vel, speed);
+            }
+            fn_800E1098(&d, &s->vel, speed * dt / 1000.0f);
+            s->pos.x += d.x;
+            s->pos.y += d.y;
+            s->pos.z += d.z;
+        } else {
             fn_800E1098(&d, &d, accel * dt / 1000.0f);
             s->vel.x -= d.x;
             s->vel.y -= d.y;
@@ -426,85 +447,79 @@ void fn_801CD484(Actor* actor, float dt) {
             s->pos.x += d.x;
             s->pos.y += d.y;
             s->pos.z += d.z;
-        } else {
-            float max;
-            fn_800E1098(&d, &d, accel * dt / 1000.0f);
-            s->vel.x += d.x;
-            s->vel.y += d.y;
-            s->vel.z += d.z;
-            max = info->maxSpeed[s->mode];
-            if (max < speed) {
-                fn_800E1098(&s->vel, &s->vel, max);
-                speed = max;
-            }
-            fn_800E1098(&d, &s->vel, speed * dt / 1000.0f);
-            s->pos.x += d.x;
-            s->pos.y += d.y;
-            s->pos.z += d.z;
         }
-        if (dot < 0.0f || dist <= fn_800E1020(&d)) {
+        if (dot < 0.0f || fn_800E1020(&d) >= dist) {
             s->state = 3;
-            if (info->endAnim == -1 || fn_8008E964(actor->anim) == 0) {
-                ScriptMoveAnimDone(actor);
+            if (((ScriptMoveInfo*)actor->info)->endAnim != -1 && fn_8008E964(actor->anim) != 0) {
+                {
+                Msg0C12 m;
+
+                memset(&m, 0, sizeof(Msg0C12));
+                m.anim = ((ScriptMoveInfo*)actor->info)->endAnim;
+                m.blend = 0x50;
+                m.flags = 0x1000;
+                m.callback = ScriptMoveAnimEvent;
+                m.actor = actor;
+                SendMsg(actor->id, 0xC12, &m);
+                FxStart(((ScriptMoveInfo*)actor->info)->endText, 0, 0);
+            }
             } else {
-                ScriptMoveStart(actor, info->endAnim, info->endText);
+                ScriptMoveAnimDone(actor);
             }
             ActorPlayAnim(actor->handle, 0xCB382E92, actor->handle);
         }
+    }
+        break;
     }
     if (s->look != -1 && SendMsg(s->look, 0x400, &r) && r.p != 0) {
         ScriptMoveAim(s, (Actor*)r.p);
         VecNormalize(&s->dir, &s->dir);
     }
-    if ((s->flags & 0x10) == 0) {
-        Vec3 side;
+    if (s->flags & 0x10) {
+        if (s->target != -1 && SendMsg(s->target, 0x400, &r) && r.p != 0) {
+            PlaceF place;
+
+            ActorGetMatrix((Mtx34*)&place, (Actor*)r.p);
+            place.pos = s->pos;
+            PlacementToMatrix((Mtx34*)actor, &place);
+            ActorSetPlacement(actor, &place);
+            actor->unk118 = s->pos.z;
+        }
+    } else {
         Vec3 up;
-        Placement place;
+        Vec3 side;
+        PlaceF place;
 
         side.x = fwd.y * sUp.z - fwd.z * sUp.y;
-        side.z = fwd.x * sUp.y - fwd.y * sUp.x;
         side.y = fwd.z * sUp.x - fwd.x * sUp.z;
-        up.y = side.z * fwd.x - side.x * fwd.z;
+        side.z = fwd.x * sUp.y - fwd.y * sUp.x;
         up.x = side.y * fwd.z - side.z * fwd.y;
+        up.y = side.z * fwd.x - side.x * fwd.z;
         up.z = side.x * fwd.y - side.y * fwd.x;
         fn_800A02C0((Mtx34*)&place, &side, 0);
         fn_800A02C0((Mtx34*)&place, &fwd, 1);
         fn_800A02C0((Mtx34*)&place, &up, 2);
-        place.pos.x = (int)s->pos.x;
-        place.pos.y = (int)s->pos.y;
-        place.pos.z = (int)s->pos.z;
-        PlacementToMatrix(actor, (Mtx34*)&place);
-        fn_800E7898(actor, (Mtx34*)&place);
-        actor->unk118 = (float)place.pos.z;
-    } else if (s->target != -1 && SendMsg(s->target, 0x400, &r) && r.p != 0) {
-        Placement place;
-
-        ActorGetMatrix((Mtx34*)&place, (Actor*)r.p);
-        place.pos.x = (int)s->pos.x;
-        place.pos.y = (int)s->pos.y;
-        place.pos.z = (int)s->pos.z;
-        PlacementToMatrix(actor, (Mtx34*)&place);
-        fn_800E7898(actor, (Mtx34*)&place);
-        actor->unk118 = (float)place.pos.z;
+        place.pos = s->pos;
+        PlacementToMatrix((Mtx34*)actor, &place);
+        ActorSetPlacement(actor, &place);
+        actor->unk118 = s->pos.z;
     }
     actor->flags |= 0x800000;
-    fn_800E48A0(actor, dt);
+    ActorUpdate(actor, dt);
 }
 
-void fn_801CDE40(Actor* actor) {
-    if (actor != 0) {
-        if (actor->data == 0) {
-            return;
-        }
-        VFree(actor->data);
-        actor->data = 0;
+void ScriptMoveDestroy(Actor* actor) {
+    if (actor == 0 || actor->data == 0) {
+        return;
     }
+    VFree(actor->data);
+    actor->data = 0;
 }
 
-int fn_801CDE88(Actor* actor) {
+int ScriptMoveInit(Actor* actor) {
     ScriptMove* s;
 
-    if (fn_800E6444(actor) == 0) {
+    if (ActorInitBase(actor) == 0) {
         return 0;
     }
     if (actor->data == 0) {
