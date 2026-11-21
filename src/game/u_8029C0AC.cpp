@@ -26,21 +26,55 @@ void ClearEntryRange(Entry12* begin, Entry12* end) {
 // Shared declarations for the NPC/"SVE" actor message handlers below.
 // ---------------------------------------------------------------------------
 
-extern u8 __upper_map[];
-extern char lbl_8034B818[];
-extern int lbl_804D3848;
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
+extern unsigned char __upper_map[256];
+inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
+
+inline u32 StrHash(const char* s) {
+    int i;
+    u32 h;
+
+    if (s == 0) {
+        return 0;
+    }
+    h = 0;
+    for (i = 0; s[i] != 0; i++) {
+        h *= 31;
+        h += (unsigned char)toupper(s[i]);
+    }
+    h %= 0xFFFFFFFF;
+    return h;
+}
+
+inline u32 StrHash(const char* s, u32 h) {
+    int i;
+
+    if (s == 0) {
+        return 0;
+    }
+    for (i = 0; s[i] != 0; i++) {
+        h *= 31;
+        h += (unsigned char)toupper(s[i]);
+    }
+    h %= 0xFFFFFFFF;
+    return h;
+}
 
 struct Owner;
 
-// 16-byte per-type descriptor entry; the handler table lives at lbl_803C3188.
+// 16-byte per-state descriptor: enter, may-leave check, per-frame update, name.
+typedef int (*TypeFunc)(Owner*);
+
 struct TypeInfo {
-    int (*fn0)(Owner*);
-    int (*fn4)(Owner*);
-    int (*fn8)(Owner*);
+    TypeFunc fn0;
+    TypeFunc fn4;
+    TypeFunc fn8;
     const char* name;
 };
-
-extern TypeInfo lbl_803C3188[];
 
 // Per-actor event/stream block owned through Owner::evt.
 struct PathEvent {
@@ -116,136 +150,181 @@ void FollowSetTargetObj(void* self, void* target);
 // single argument (r4 is never set before the bl), so they bind to this one.
 void FollowSetTargetObj(void* self);
 
-extern "C" int fn_8029E3B0(void* actor);
 extern "C" String fn_800225C8(const String& a, const String& b);
 extern "C" void fn_8028C188(void* out, const char* s, int length);
 extern "C" void* memcpy(void* dst, const void* src, u32 n);
 
-// Character mapping used by the type-name hash (0xff maps to itself).
-static inline u32 SveHashChar(char c) {
-    if (c == -1) {
-        return 0xffffffff;
-    }
-    return __upper_map[(u8)c];
-}
+int NpcSveHandleMsg(int msg, int* p);
+int NpcSveUpdateActor(Owner* owner);
+int NpcSveCheckTarget(Owner* owner);
+int NpcSveStopFollow(Owner* o);
+int NpcSveBeginFollow(Owner* owner);
+int NpcSveCheckFollowReady(Owner* owner);
+int NpcSveCancelFollow(Owner* o);
+int NpcSveStartFollowTarget(Owner* owner);
+int NpcSveUpdateFollowTarget(Owner* owner);
+int NpcSveResetFollowCondition(Owner* o);
+int NpcSveStartFollowState(Owner* owner);
+int NpcSveUpdateFollow(Owner* owner);
+int NpcSveExitFollowTarget(Owner* o);
+int NpcSveStartTargetFollow(Owner* o);
+int NpcSveUpdateTargetFollow(Owner* owner);
+int NpcSveFinishTargetFollow(Owner* o);
+int NpcSveBeginTargetFollow(Owner* o);
+int NpcSveRefreshFollowTarget(Owner* owner);
+int NpcSveEnterStateThree(Owner* o);
+int NpcSveBeginPathFollow(Owner* o);
+int NpcSveUpdatePathFollow(Owner* owner);
+int NpcFollowOffsetSetup(void* p);
+int NpcFollowClearState(void* p);
+int NpcSveUpdateFollowAim(void* p);
+int NpcSveClearTargetFollow(void* p);
+extern "C" int NpcSveResetEvent(int owner);
+extern "C" int NpcSvePlayAnimMsg(Owner* a, Msg40A* m);
 
-// Lazy type-name hash: h = h * 31 + upper(c), modulo 0xffffffff.
-static inline u32 SveStrHash(const char* name) {
-    u32 h = 0;
-    if (name != 0) {
-        for (int i = 0; name[i] != 0; i++) {
-            h *= 31;
-            h += SveHashChar(name[i]) & 0xff;
+// The asset found by AssetFind for the 0x41e query reply, cached at init.
+int gNpcSveAsset[2] = { -1, 0 };
+
+TypeInfo gNpcSveTypes[8] = {
+    { (TypeFunc)NpcSveResetEvent, (TypeFunc)NpcSveClearTargetFollow, (TypeFunc)NpcSveUpdateFollowAim, "" },
+    { NpcSveBeginPathFollow, NpcSveEnterStateThree, NpcSveRefreshFollowTarget, "" },
+    { (TypeFunc)NpcFollowClearState, (TypeFunc)NpcFollowOffsetSetup, NpcSveUpdatePathFollow, "" },
+    { NpcSveBeginTargetFollow, NpcSveFinishTargetFollow, NpcSveUpdateTargetFollow, "" },
+    { NpcSveStartFollowTarget, NpcSveCancelFollow, NpcSveCheckFollowReady, "" },
+    { NpcSveBeginFollow, NpcSveStopFollow, NpcSveCheckTarget, "" },
+    { NpcSveStartTargetFollow, NpcSveExitFollowTarget, NpcSveUpdateFollow, "" },
+    { NpcSveStartFollowState, NpcSveResetFollowCondition, NpcSveUpdateFollowTarget, "" },
+};
+
+// Save/load request (0x7102 save, 0x7103 load).
+struct MsgSave {
+    Owner* actor;   // 0x00
+    int size;       // 0x04: room left
+    u8* buf;        // 0x08
+    int used;       // 0x0C
+    int ok;         // 0x10
+};
+
+// Reads a saved block's tag word and checks it against the hash of the block's name.
+inline int SaveCheckTag(MsgSave* m, const char* name) {
+    if (m->used < 4) {
+        return 0;
+    } else {
+        u32* p = (u32*)m->buf;
+
+        m->used += 4;
+        m->size -= 4;
+        m->buf += 4;
+        if (*p == StrHash(name)) {
+            return 1;
+        } else {
+            return 0;
         }
     }
-    return h % 0xffffffff;
 }
 
-// Builds the state-name reply String (type name + separator) into out.
-static inline void SveStateName(int* out, const char* name) {
-    String part(name);
-    String sep(lbl_8034B818 + 0x51);
-    String full = fn_800225C8(part, sep);
-    fn_8028C188(out, full.mData, full.mLength);
+static inline void NpcSveStateName(Buffer* out, const char* s) {
+    String name(s);
+    String newline("\n");
+    const String& text = fn_800225C8(name, newline);
+
+    fn_8028C188(out, text.mData, text.mLength);
 }
 
 int NpcSveHandleMsg(int msg, int* p) {
-    Owner* o = (Owner*)*p;
+    Owner* a = *(Owner**)p;
+    u32 tag;
 
     switch (msg) {
-    case 0x400:
-        p[1] = OwnerId(o);
-        p[3] = o->f904 > 0.0f;
-        *(float*)&p[4] = 1.0f;
-        *(float*)&p[5] = 1.0f;
-        p[6] = 2;
-        p[7] = 0;
-        return 1;
+    case 0x400: {
+        Msg400* m = (Msg400*)p;
 
+        m->ownerId = OwnerId(a);
+        m->state = (a->f904 > 0.0f) ? 1 : 0;
+        m->f10 = 1.0f;
+        m->f14 = 1.0f;
+        m->flags = 2;
+        m->unk1C = 0;
+        return 1;
+    }
+    case 0x40A:
+        return NpcSvePlayAnimMsg(a, (Msg40A*)p);
     case 0x409: {
-        int* type = o->evt;
-        int id = OwnerId(o);
-        if (ActorPlayAnim(id, p[3], p[2]) != 0) {
+        Msg409* m = (Msg409*)p;
+        PathEvent* b = (PathEvent*)a->evt;
+
+        if (ActorPlayAnim(OwnerId(a), m->arg, m->anim) != 0) {
             return 1;
         }
-        if (p[3] != 0x272cac) {
-            return 0;
-        }
-        if (lbl_803C3188[*type].fn4(o) != 0) {
-            FollowSetTargetObj((u8*)o + 0x270, (void*)p[1]);
-            if (lbl_803C3188[3].fn0(o) == 0) {
-                lbl_803C3188[*type].fn0(o);
+        switch (m->arg) {
+        case 0x272CAC:
+            if (gNpcSveTypes[b->state].fn4(a)) {
+                FollowSetTargetObj(a->cond270, (void*)m->unk04);
+                if (gNpcSveTypes[3].fn0(a) == 0) {
+                    gNpcSveTypes[b->state].fn0(a);
+                }
             }
-        }
-        return 1;
-    }
-
-    case 0x40a:
-        return fn_8029E3B0(o);
-
-    case 0x41e:
-        switch (p[1]) {
-        case -0x527a8906:                 // 0xad8576fa
-            SveStateName(&p[3], lbl_803C3188[*o->evt].name);
-            return 0;
-        case -0x7cd20af6:                 // 0x832ef50a
-            p[3] = lbl_804D3848;
             return 1;
         }
         return 0;
-
+    }
     case 0x7102: {
-        int* evt = o->evt;
-        if (evt == 0) {
+        MsgSave* m = (MsgSave*)p;
+        PathEvent* b = (PathEvent*)a->evt;
+
+        if (b != 0) {
+            if (m->size < 0x14) {
+                m->ok = 0;
+                return 1;
+            }
+            tag = StrHash("[NPCSVE]");
+            memcpy(m->buf, &tag, 4);
+            m->used += 4;
+            m->size -= 4;
+            m->buf += 4;
+            memcpy(m->buf, b, 0x10);
+            m->used += 0x10;
+            m->size -= 0x10;
+            m->buf += 0x10;
             return 1;
         }
-        if (p[1] < 0x14) {
-            p[4] = 0;
-            return 1;
-        }
-        u32 h = SveStrHash(lbl_8034B818 + 0x48);
-        memcpy((void*)p[2], &h, 4);
-        p[3] += 4;
-        p[1] -= 4;
-        p[2] += 4;
-        memcpy((void*)p[2], evt, 0x10);
-        p[3] += 0x10;
-        p[1] -= 0x10;
-        p[2] += 0x10;
         return 1;
     }
-
     case 0x7103: {
-        int* evt = o->evt;
-        if (evt == 0) {
-            return 1;
+        MsgSave* m = (MsgSave*)p;
+        PathEvent* b = (PathEvent*)a->evt;
+
+        if (b != 0) {
+            if (m->used < 0x14) {
+                m->ok = 0;
+                return 1;
+            }
+            if (!SaveCheckTag(m, "[NPCSVE]")) {
+                return 1;
+            }
+            memcpy(b, m->buf, 0x10);
+            m->used -= 0x10;
+            m->buf += 0x10;
         }
-        if (p[3] < 0x14) {
-            p[4] = 0;
-            return 1;
-        }
-        int ok;
-        if (p[3] < 4) {
-            ok = 0;
-        } else {
-            u32* data = (u32*)p[2];
-            p[3] += 4;
-            p[1] -= 4;
-            p[2] += 4;
-            ok = (*data == SveStrHash(lbl_8034B818 + 0x48));
-        }
-        if (!ok) {
-            return 1;
-        }
-        memcpy(evt, (void*)p[2], 0x10);
-        p[3] -= 0x10;
-        p[2] += 0x10;
         return 1;
     }
+    case 0x41E: {
+        Msg41E* m = (Msg41E*)p;
+        PathEvent* b = (PathEvent*)a->evt;
 
-    default:
+        switch (m->cmd) {
+        case 0x832DF50A:
+            *(int*)&m->result = gNpcSveAsset[0];
+            return 1;
+        case 0xAD8576FA: {
+            NpcSveStateName(&m->result, gNpcSveTypes[b->state].name);
+            return 0;
+        }
+        }
         return 0;
     }
+    }
+    return 0;
 }
 
 int HasCondition(void* cond, int id);
@@ -273,7 +352,7 @@ int NpcSveUpdateActor(Owner* owner) {
     if (o->unk268 > fn_800BEF9C(o->unk2c4)) {
         o->unk268 = fn_800BEF9C(o->unk2c4);
     }
-    int ret = lbl_803C3188[evt->state].fn8(o);
+    int ret = gNpcSveTypes[evt->state].fn8(o);
     evt->timer = evt->timer + o->f138;
     fn_80162658(o, o->unk894);
     if (ret != 0 || (evt->flags & 2) != 0) {
@@ -288,8 +367,8 @@ int NpcSveUpdateActor(Owner* owner) {
             return 1;
         }
         if (next != evt->state &&
-            lbl_803C3188[evt->state].fn4(o) != 0) {
-            lbl_803C3188[next].fn0(o);
+            gNpcSveTypes[evt->state].fn4(o) != 0) {
+            gNpcSveTypes[next].fn0(o);
             evt->timer = 0.0f;
             ConditionSetBit(o->cond270, 0x40, 0);
             ConditionSetBit(o->cond270, 0x41, 0);
@@ -343,7 +422,7 @@ void NpcSveInitActor(Owner* o) {
     ev->state = 0;
     ev->flags = 0;
     ev->timer = 0.0f;
-    lbl_804D3848 = AssetFind(0xf1754bf2, 0x21c5e0);
+    gNpcSveAsset[0] = AssetFind(0xf1754bf2, 0x21c5e0);
     if (o->unkC4->type == 0x17c92eb2 || o->unkC4->type == 0xd06b7dcc ||
         o->unkC4->type == 0x23d7f0f0 || o->unkC4->type == 0x956698c2) {
         if (o->unk5f4 != 0) {
@@ -637,18 +716,22 @@ inline float fabsf(float x) { return __fabsf(x); }
 
 // Per-frame step of the follow-target state machine: validates the reported
 // target, keeps the follow timer and drives the follow animation.
-int NpcSveUpdateFollow(Owner* o) {
+int NpcSveUpdateFollow(Owner* owner) {
+    Owner* o = (Owner*)owner;
+    int mode;
+    PathEvent* ev;
+    Owner* target;
+    Msg400 q;
+
     if (o == 0) {
         return 0;
     }
-    PathEvent* ev = (PathEvent*)o->evt;
-    int active = 0;
-    int mode = fn_800B26B8(o);
+    ev = (PathEvent*)o->evt;
+    mode = fn_800B26B8(o);
     if (mode != 4) {
-        void* reported;
         FollowGetTargetObj(o->cond270);
-        fn_800B261C(o, mode, &reported);
-        if (reported != 0 && reported != FollowGetTargetObj(o->cond270)) {
+        fn_800B261C(o, mode, &target);
+        if (target != 0 && target != FollowGetTargetObj(o->cond270)) {
             return 1;
         }
         if (fn_800B22F8(o, mode) <= 2) {
@@ -658,49 +741,20 @@ int NpcSveUpdateFollow(Owner* o) {
             return 1;
         }
     }
-    Owner* target = (Owner*)FollowGetTargetObj(o->cond270);
+    target = (Owner*)FollowGetTargetObj(o->cond270);
     if (target == 0) {
         return 1;
     }
-    SveFollowState st;
-    SendMsg(target->unk38, 0x400, &st);
-    if ((st.flags & 2) == 0) {
+    SendMsg(target->unk38, 0x400, &q);
+    if ((q.flags & 2) == 0) {
         return 1;
     }
-    if (OwnerValue(o, target) < 1500.0f) {
-        float angle = ActorAimAngleToPos(target, &o->pos84);
-        active = fabsf((float)(angle < 10.0f)) != 0.0f;
-    }
-    if (active == 0) {
-        if ((ev->flags & 1) == 0) {
-            if (200.0f < ev->timer) {
-                Vec3 pos;
-                pos.x = (float)target->i24;
-                pos.y = (float)target->i28;
-                pos.z = (float)target->i2c;
-                int dir[2];
-                ActorAim(dir, (Actor*)target, 1);
-                Vec3 off;
-                off.x = (float)dir[0];
-                off.y = (float)dir[1];
-                off.z = 0.0f;
-                fn_800E1098(1350.0f, &off, &off);
-                pos.x += off.x;
-                pos.y += off.y;
-                pos.z += off.z;
-                fn_800BC5A8(o, &pos);
-                ev->timer = 0.0f;
-            }
-            if (fn_800BAF40(o) == -1) {
-                o->unk288 = 0;
-                return 0;
-            }
-            o->unk288 = 2;
-            return 0;
-        }
-    }
-    if (o->unk288 == 0) {
-        if ((ev->flags & 1) == 0) {
+    if ((OwnerValue(o, target) < 1500.0f && fabsf(ActorAimAngleToPos(target, &o->pos84) < 10.0f)) ||
+        (ev->flags & 1) != 0) {
+        if (o->unk288 != 0) {
+            fn_800BBCA8(o);
+            o->unk288 = 0;
+        } else if ((ev->flags & 1) == 0) {
             ConditionUpdateBit(o->cond270, 4, 0);
             if (ActorPlayAnim(o->unk38, 0x1ce948a2, target->unk38) != 0) {
                 return 1;
@@ -711,8 +765,31 @@ int NpcSveUpdateFollow(Owner* o) {
             return 1;
         }
     } else {
-        fn_800BBCA8(o);
-        o->unk288 = 0;
+        if (ev->timer > 200.0f) {
+            int aim[3];
+            Vec3 to;
+            Vec3 d;
+
+            to.x = target->i24;
+            to.y = target->i28;
+            to.z = target->i2c;
+            ActorAim(aim, (Actor*)target, 1);
+            aim[2] = 0;
+            d.x = aim[0];
+            d.y = aim[1];
+            d.z = aim[2];
+            fn_800E1098(1350.0f, &d, &d);
+            to.x += d.x;
+            to.y += d.y;
+            to.z += d.z;
+            fn_800BC5A8(o, &to);
+            ev->timer = 0.0f;
+        }
+        if (fn_800BAF40(o) == -1) {
+            o->unk288 = 0;
+        } else {
+            o->unk288 = 2;
+        }
     }
     return 0;
 }
@@ -1041,7 +1118,6 @@ int NpcFollowClearState(void* p) {
     return 1;
 }
 
-extern float lbl_804DA7AC;
 void ActorAimOffset3D(void* owner, float* pos, float* dist, float* height);
 
 // Per-frame update of the follow-offset query: advances the follow timer, aims
@@ -1050,39 +1126,45 @@ void ActorAimOffset3D(void* owner, float* pos, float* dist, float* height);
 // path timer.
 int NpcSveUpdateFollowAim(void* p) {
     Owner* o = (Owner*)p;
+    PathEvent* ev;
+    int mode;
+    FollowTarget* target;
+    float yaw;
+    float y;
+    float dist;
+    Vec3 pos;
+
     if (o == 0) {
         return 0;
     }
-    PathEvent* ev = (PathEvent*)o->evt;
+    ev = (PathEvent*)o->evt;
     if (o->unk220 != 0) {
         return 1;
     }
-    int mode = fn_800B26B8(o);
-    ev->timer = ev->timer - o->f138;
+    mode = fn_800B26B8(o);
+    ev->unk04 -= o->f138;
     if (mode != 4) {
         if (fn_800B1EF4(o, mode) == 0) {
             return 1;
         }
-        float height = lbl_804DA7AC;
-        float dist = lbl_804DA7AC;
-        FollowTarget* target = 0;
+        yaw = 3.4028235e38f;
+        dist = 3.4028235e38f;
         fn_800B261C(o, mode, &target);
-        Vec3 aimPos;
         if (target != 0) {
-            aimPos.x = (float)target->x24;
-            aimPos.y = (float)target->y28;
-            aimPos.z = (float)target->z2c;
-            ActorAimOffset3D(o, &aimPos.x, &dist, &height);
+            pos.x = target->x24;
+            pos.y = target->y28;
+            pos.z = target->z2c;
+            ActorAimOffset3D(o, &pos.x, &yaw, &dist);
         }
-        if (fabsf(dist) < 45.0f && height < 3000.0f) {
+        y = yaw;
+        if (fabsf(y) < 45.0f && dist < 3000.0f) {
             FollowSetTargetObj(o->cond270, target);
-        } else if (fabsf(dist) > 70.0f || height > 6000.0f) {
+        } else if (fabsf(y) > 70.0f || dist > 6000.0f) {
             RangeResetPending(o->cond270);
         }
     }
     fn_800BBCA8(o);
-    float pathTime = fn_80115F68(o->unk38);
-    if (pathTime < 1.0f) {
+    if (fn_80115F68(o->unk38) < 1.0f) {
         ConditionUpdateBit(o->cond270, 9, 1);
     } else {
         ConditionUpdateBit(o->cond270, 9, 0);
@@ -1122,42 +1204,45 @@ extern "C" void fn_800B1AB8(float value, void* owner, int mode, int arg);
 // Chooses the actor's next state from its follow mode, the condition block and
 // the distance to the follow target; -1/1/0/2/4/5 are the state codes.
 extern "C" int fn_8029E058(void* actor) {
-    Owner* o = (Owner*)actor;
-    if (o == 0) {
+    Owner* o;
+    int mode;
+    u32 flags;
+    int n;
+    float dist;
+    void* target;
+
+    if (actor == 0) {
         return 0;
     }
-    if (MemFlagIsSet(o->cond270, 5) != 0) {
+    o = (Owner*)actor;
+    if (MemFlagIsSet(o->cond270, 5)) {
         return 2;
     }
-    int mode = fn_800B26B8(o);
-    int target[2];
-    fn_800B261C(o, mode, target);
-    int flags = fn_800B1ED4(o, mode);
-    if (mode != 4 && target[0] != 0) {
-        float dist = OwnerValue(o, (void*)target[0]);
-        int rank = fn_800B22F8(o, mode);
-        if (rank <= 2) {
+    mode = fn_800B26B8(o);
+    fn_800B261C(o, mode, &target);
+    flags = fn_800B1ED4(o, mode);
+    if (mode != 4 && target != 0) {
+        dist = OwnerValue(o, target);
+        n = fn_800B22F8(o, mode);
+        if (n <= 2) {
             if (fn_800F7A90(*(void**)((u8*)o + 0x8f0)) == -0x679f49e4) {
                 return -1;
             }
             return 1;
         }
-        if ((flags & 8) != 0 && dist < 5000.0f) {
+        if ((flags & 8) && dist < 5000.0f) {
             fn_800B1AB8(-1.0f, o, mode, 3);
             return 5;
         }
-        if ((flags & 4) != 0 && dist < 5000.0f &&
-            MemFlagIsSet(o->cond270, 0x27) == 0) {
+        if ((flags & 4) && dist < 5000.0f && MemFlagIsSet(o->cond270, 0x27) == 0) {
             return 4;
         }
-        if ((flags & 0x10) == 0 && (flags & 0x40) == 0 &&
-            (flags & 0x20) == 0 && dist < 1500.0f &&
-            fabsf(ActorAimAngleToPos((void*)target[0], &o->pos84)) <
-                10.0f) {
+        if (!(flags & 0x10) && !(flags & 0x40) && !(flags & 0x20) && dist < 1500.0f &&
+            fabsf(ActorAimAngleToPos(target, &o->pos84)) < 10.0f) {
             o->unk268 = 1;
             return 1;
         }
-        if (rank == 3 && fn_800B1EF4(o, mode) == 0) {
+        if (n == 3 && fn_800B1EF4(o, mode) == 0) {
             fn_800B1F20(o, mode);
             return 0;
         }
@@ -1184,8 +1269,8 @@ void NpcSveAdvanceToFollowState(Owner* owner) {
     }
     FollowSetTargetObj(o->cond270);
     int state = ev->state;
-    if (state != 7 && lbl_803C3188[state].fn4(o) != 0) {
-        lbl_803C3188[7].fn0(o);
+    if (state != 7 && gNpcSveTypes[state].fn4(o) != 0) {
+        gNpcSveTypes[7].fn0(o);
     }
 }
 
@@ -1206,8 +1291,8 @@ void NpcSveAdvanceToTargetFollowState(Owner* owner) {
     }
     FollowSetTargetObj(o->cond270);
     int state = ev->state;
-    if (state != 6 && lbl_803C3188[state].fn4(o) != 0) {
-        lbl_803C3188[6].fn0(o);
+    if (state != 6 && gNpcSveTypes[state].fn4(o) != 0) {
+        gNpcSveTypes[6].fn0(o);
     }
 }
 
@@ -1237,6 +1322,7 @@ struct SveAnimReply {
     int zero;                             // 0x04
     int state;                            // 0x08
     int minusOne;                         // 0x0c
+    int unk10;                            // 0x10
 };
 
 // Per-host slot of the local player: the hosted object's type tag.
@@ -1252,94 +1338,80 @@ struct PlayerMode {
 // The local player, seen through the fields this query reads.
 struct PlayerActor {
     u8 unk000[0x26c4];
-    PlayerHostSlot** hosts;               // 0x26c4: per-host slot table
-    u8 unk26c8[0x26e4 - 0x26c8];
+    PlayerHostSlot* hosts[8];             // 0x26c4: per-host slot table
     PlayerMode* mode;                     // 0x26e4
 };
-
-// Seeded form of the type-name hash: the message carries a partial hash that
-// the name characters are folded into.
-static inline u32 SveStrHashSeeded(const char* name, u32 h) {
-    if (name == 0) {
-        return 0;
-    }
-    for (int i = 0; name[i] != 0; i++) {
-        h *= 31;
-        h += SveHashChar(name[i]) & 0xff;
-    }
-    return h % 0xffffffff;
-}
 
 extern "C" int fn_80049940();
 int ActorAnimState(int id, u32 state);
 int PlayerInHost(Actor* actor);
 
-extern "C" int NpcSvePlayAnimMsg(void* owner, int* msg) {
-    Owner* o = (Owner*)owner;
+extern "C" int NpcSvePlayAnimMsg(Owner* a, Msg40A* m) {
+    Msg400 q;
+    SveAnimReply r;
+    u32 h;
+    PlayerActor* pl;
 
-    QueryArgs args;
-    args.object = *msg;
-    args.id = OwnerId(o);
-    ((QuerySink*)*msg)->query(0x400, &args);
-
-    u32 hash = SveStrHashSeeded(lbl_8034B818 + 0x53, (u32)msg[2]);
-    if (ActorPlayAnim(OwnerId(o), hash, msg[1]) != 0) {
-        msg[3] = 0;
+    q.actor = m->actor;
+    q.ownerId = OwnerId(a);
+    ((QuerySink*)m->actor)->query(0x400, &q);
+    h = StrHash("QUERY", m->anim);
+    if (ActorPlayAnim(OwnerId(a), h, m->unk04) != 0) {
+        m->result = 0;
         return 1;
     }
-    if (HasCondition(o->cond270, 0xa) != 0 ||
-        HasCondition(o->cond270, 0x9) != 0) {
+    if (HasCondition(a->cond270, 0xA) || HasCondition(a->cond270, 9)) {
         return 0;
     }
-    if (fn_80049940() != 0) {
-        if (msg[2] == 0x7c44ec3d) {
-            msg[3] = -0x5ac081dd;
+    if (fn_80049940()) {
+        if (m->anim == 0x7C44EC3D) {
+            m->result = 0xA53F7E23;
             return 1;
         }
         return 0;
     }
-    if (MemFlagIsSet(o->cond270, 0xb) != 0) {
+    if (MemFlagIsSet(a->cond270, 0xB)) {
         return 1;
     }
-    if (msg[2] == (int)0x3ca34bd6 && MemFlagIsSet(o->cond270, 0x20) == 0) {
-        msg[3] = 0x1379c466;
+    if (m->anim == 0x3CA34BD6 && MemFlagIsSet(a->cond270, 0x20) == 0) {
+        m->result = 0x1379C466;
         return 1;
     }
-    if (HasCondition(o->cond270, 0xb) != 0) {
+    if (HasCondition(a->cond270, 0xB)) {
         return 0;
     }
-    if (ActorAnimState(o->unk38, 0xdc35206a) == 0) {
+    if (ActorAnimState(a->unk38, 0xDC35206A) == 0) {
         return 0;
     }
-    PlayerActor* pl = (PlayerActor*)GetPlayer();
+    pl = (PlayerActor*)GetPlayer();
     if (pl == 0) {
         return 0;
     }
-    if (pl->mode != 0 && (pl->mode->flags >> 24) == 1) {
+    if (pl->mode != 0 && (int)(pl->mode->flags >> 24) == 1) {
         return 0;
     }
-    if (pl->hosts[PlayerInHost((Actor*)pl)]->type == 0x4624485 ||
-        pl->hosts[PlayerInHost((Actor*)pl)]->type == 0x13c05 ||
-        pl->hosts[PlayerInHost((Actor*)pl)]->type == (u32)-0x1f5464b1 ||
-        pl->hosts[PlayerInHost((Actor*)pl)]->type == 0xfff5) {
+    if (pl->hosts[PlayerInHost((Actor*)pl)]->type == 0x04624485 ||
+        pl->hosts[PlayerInHost((Actor*)pl)]->type == 0x13C05 ||
+        pl->hosts[PlayerInHost((Actor*)pl)]->type == 0xE0AB9B4F ||
+        pl->hosts[PlayerInHost((Actor*)pl)]->type == 0xFFF5) {
         return 0;
     }
-    if (MemFlagIsSet(o->cond270, 0x1e) != 0) {
+    if (MemFlagIsSet(a->cond270, 0x1E)) {
         return 0;
     }
-    if (msg[2] == 0x7c44ec3d) {
-        int mode = fn_800B26B8(o);
-        if (mode != 4) {
-            if (fn_800B22F8(o, mode) <= 1) {
-                return 0;
-            }
+    if (m->anim == 0x7C44EC3D) {
+        int kind = fn_800B26B8(a);
+
+        if (kind != 4 && fn_800B22F8(a, kind) <= 1) {
+            return 0;
         }
     }
-    SveAnimReply reply;
-    reply.zero = 0;
-    reply.minusOne = -1;
-    msg[3] = 0x272cac;
-    reply.state = msg[3];
-    SendMsg(msg[1], 0x40b, &reply);
+    {
+        r.zero = 0;
+        r.minusOne = -1;
+        m->result = 0x272CAC;
+        r.state = m->result;
+        SendMsg(m->unk04, 0x40B, &r);
+    }
     return 1;
 }
