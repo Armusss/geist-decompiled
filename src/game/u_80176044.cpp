@@ -3436,7 +3436,7 @@ void GunTrailStateStart8017AF78(void* block) {
 
 // Copies one trail sample into the entry and pushes it to the trail buffer
 // (address 0x8017AFA4).
-void GunTrailEntryInit8017AFA4(void* block, void* sample) {
+void GunTrailEntryInit8017AFA4(void* block, void* sample, float dt) {
     GunTrailEntry8017AFA4* entry;
     GunTrailData8017AFA4* data;
     if (!block) {

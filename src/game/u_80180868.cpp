@@ -84,7 +84,7 @@ void ActorGetMatrix(Mtx34* m, Actor* a);
 void MtxSetEuler(Mtx34* m, Vec3* rot);
 int AssetFind(u32 group, u32 name);
 void PlacementToMatrix(Mtx34* m, PlaceF* p);
-void GunTrailEntryInit8017AFA4(void* block, void* sample);
+void GunTrailEntryInit8017AFA4(void* block, void* sample, float dt);
 
 extern "C" {
 int fn_8001F928(void* obj, int* box, u32 mask, void* callback, void* ctx);
@@ -248,7 +248,7 @@ bool fn_80180968(void* behp, void* hostp, float dt) {
         return false;
     } else {
         ActorGetMatrix((Mtx34*)&place, (Actor*)host);
-        GunTrailEntryInit8017AFA4(host->trail, &place);  // retail also passes dt in f1: the callee takes a float
+        GunTrailEntryInit8017AFA4(host->trail, &place, dt);
         return true;
     }
 }

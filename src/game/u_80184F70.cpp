@@ -83,7 +83,7 @@ void ActorGetMatrix(Mtx34* m, Actor* a);
 void MtxSetEuler(Mtx34* m, Vec3* rot);
 void PlacementToMatrix(Mtx34* m, PlaceF* p);
 void GunTrailStateStart8017AF78(void* block);
-void GunTrailEntryInit8017AFA4(void* block, void* sample);
+void GunTrailEntryInit8017AFA4(void* block, void* sample, float dt);
 void* GunTrailSpawn8017B060(int effect);
 
 extern "C" {
@@ -206,7 +206,7 @@ bool fn_80184F74(void* behp, void* hostp, float dt) {
         return false;
     } else {
         ActorGetMatrix((Mtx34*)&place, (Actor*)host);
-        GunTrailEntryInit8017AFA4(host->trail, &place);  // retail also passes dt in f1 (see report)
+        GunTrailEntryInit8017AFA4(host->trail, &place, dt);
         return true;
     }
 }
