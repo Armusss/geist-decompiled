@@ -212,12 +212,6 @@ void ActorUnlinkOwnerObjects(Actor* a) {
     a->flags &= ~0x80;
 }
 
-inline s32& OwnerHead(Owner* o, int layer) {
-    if (layer < 0 || layer >= 3)
-        return o->head[0];
-    return o->head[layer];
-}
-
 inline s32 OwnerGetHead(int owner, s8 layer) {
     if (layer >= 0 && layer < 3)
         return lbl_804D41D4[owner].head[layer];
@@ -321,20 +315,21 @@ void ActorDetachOwnerObjects(Actor* a) {
 void ActorNoOp234AC() {
 }
 
-int ActorAttachOwnerObjects(Actor* a) {
-    if (a == 0 || a->model == 0)
-        return 0;
-    if (a->objIndex != -1)
-        ActorUnlinkOwnerObjects(a);
-    a->objIndex = -1;
-    a->objIndex2 = -1;
-    int base = (int)a->model;
-    s32 minx = 0x2000, miny = 0x2000, minz = 0x2000;
-    s32 maxx = -0x2000, maxy = -0x2000, maxz = -0x2000;
+inline void ActorModelBox(Actor* a, s32* box) {
+    s32 maxz, maxy, maxx;
+    s32 minz, miny, minx;
+    int base;
+    s32 v[3];
+    s32 out[3];
+    minx = 0x2000;
+    miny = minx;
+    minz = minx;
+    maxx = -0x2000;
+    maxy = maxx;
+    maxz = maxx;
+    base = (int)a->model;
     fn_8009F5B0(a);
     for (int i = 0; i < 8; i++) {
-        s32 v[3];
-        s32 out[3];
         v[0] = *(s32*)(base + lbl_80393C50[i * 3 + 0] * 4);
         v[1] = *(s32*)(base + lbl_80393C50[i * 3 + 1] * 4);
         v[2] = *(s32*)(base + lbl_80393C50[i * 3 + 2] * 4);
@@ -346,14 +341,24 @@ int ActorAttachOwnerObjects(Actor* a) {
         if (out[1] > maxy) maxy = out[1];
         if (out[2] > maxz) maxz = out[2];
     }
-    s32 box[6];
     box[0] = minx;
     box[1] = miny;
     box[2] = minz;
     box[3] = maxx;
     box[4] = maxy;
     box[5] = maxz;
+}
+
+int ActorAttachOwnerObjects(Actor* a) {
+    if (a == 0 || a->model == 0)
+        return 0;
+    if (a->objIndex != -1)
+        ActorUnlinkOwnerObjects(a);
+    a->objIndex = -1;
+    a->objIndex2 = -1;
     s32 off[3];
+    s32 box[6];
+    ActorModelBox(a, box);
     fn_8009F6E4(off, a);
     box[0] += off[0];
     box[1] += off[1];
@@ -362,23 +367,22 @@ int ActorAttachOwnerObjects(Actor* a) {
     box[4] += off[1];
     box[5] += off[2];
     for (int i = 1; i < lbl_804D41D0; i++) {
-        Owner* o = &lbl_804D41D4[i];
-        if (fn_80031E48(box, o->shape)) {
+        if (fn_80031E48(box, lbl_804D41D4[i].shape)) {
             s32 idx = lbl_804D41E8;
             if (idx != -1) {
                 ObjNode* n = &lbl_804D41EC[idx];
-                lbl_804D41E8 = n->next;
+                lbl_804D41E8 = lbl_804D41EC[idx].next;
                 n->actor = a;
-                n->owner = 1;
-                n->next = OwnerHead(o, a->layer);
-                OwnerHead(o, a->layer) = idx;
+                n->owner = i;
+                n->next = OwnerGetHead(i, a->layer);
+                OwnerSetHead(i, a->layer, idx);
             }
             idx = lbl_804D41E8;
             if (idx != -1) {
                 ObjNode* n = &lbl_804D41EC[idx];
                 lbl_804D41E8 = n->next;
                 n->next = a->objIndex;
-                n->owner = 1;
+                n->owner = i;
                 a->objIndex = idx;
             }
         }
