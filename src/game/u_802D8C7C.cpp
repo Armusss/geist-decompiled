@@ -1182,8 +1182,9 @@ u32 FollowOffsetTimerReset(Owner* self)
 // Arms the follow-search timer: puts the state block into state 5, clears the
 // pending follow offset, raises the follow conditions and re-arms the follow
 // chain for the actor's current follow target.
-u32 FollowSearchTimerArm(Owner* self)
+u32 FollowSearchTimerArm(Owner* owner)
 {
+    Owner* self = (Owner*)owner;
     StateData* st;
     int index;
     TargetRef* target;
@@ -1219,8 +1220,9 @@ u32 FollowSearchTimerArm(Owner* self)
 // keeps the follow condition bits in sync with the distance to the target and
 // to the player, and leaves the state when the actor has closed in or slipped
 // out of range.
-u32 FollowApproachStateUpdate(Owner* self)
+u32 FollowApproachStateUpdate(Owner* owner)
 {
+    Owner* self = (Owner*)owner;
     StateData* st;
     Owner* player;
     TargetRef* target;
@@ -1425,11 +1427,12 @@ int FollowStateEnterClear(Owner* self)
 
 // Enters the follow idle state: resets the state block, picks a random state
 // timer, arms the follow conditions and refreshes the actor's follow target.
-int FollowIdleStateEnter(Owner* self)
+int FollowIdleStateEnter(Owner* owner)
 {
+    Owner* self = (Owner*)owner;
     StateData* st;
     int index;
-    int target[2];
+    Owner* t;
 
     if (self == 0)
         return 0;
@@ -1438,7 +1441,7 @@ int FollowIdleStateEnter(Owner* self)
     self->unk288 = 3;
     st->unk00 = 0;
     st->unk08 = 0;
-    st->unk0c = 500.0f * ((f32)(u32)rand() / 32767.0f) + 300.0f;
+    st->unk0c = 500.0f * ((f32)rand() / 32767.0f) + 300.0f;
     st->unk04 &= ~1;
     ConditionUpdateBit(self->unk270, 4, 1);
     ConditionUpdateBit(self->unk270, 3, 1);
@@ -1450,17 +1453,18 @@ int FollowIdleStateEnter(Owner* self)
     if (index < 4 && fn_800B1EF4(self, index) == 0) {
         fn_800B1F20(self, index);
         fn_800B1AB8(self, index, -1.0f, 1);
-        fn_800B261C(self, index, target);
-        if (target[0] != 0)
-            fn_800C9FC0(self, *(void**)(target[0] + 0x38), 10000.0f);
+        fn_800B261C(self, index, (int*)&t);
+        if (t != 0)
+            fn_800C9FC0(self, (void*)t->unk038, 10000.0f);
     }
     return 1;
 }
 
 // Chooses the next follow-state id for the actor from the current state block,
 // the tracked follow target and the actor's follow condition flags.
-int FollowStateDecide(Owner* self)
+int FollowStateDecide(Owner* owner)
 {
+    Owner* self = (Owner*)owner;
     StateData* st = self->unk130;
     void* target = FollowGetTargetObj(self->unk270);
     int index = fn_800B26B8(self);
