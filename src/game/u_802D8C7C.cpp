@@ -1463,86 +1463,91 @@ int FollowIdleStateEnter(Owner* owner)
 
 // Chooses the next follow-state id for the actor from the current state block,
 // the tracked follow target and the actor's follow condition flags.
-int FollowStateDecide(Owner* owner)
-{
-    Owner* self = (Owner*)owner;
-    StateData* st = self->unk130;
-    void* target = FollowGetTargetObj(self->unk270);
-    int index = fn_800B26B8(self);
+// Refreshes the followed target from the actor's current follow slot and tells
+// whether the actor lost it (no target, or the target filter rejects it).
+static inline int FollowTargetLost(void* p) {
+    Owner* self = (Owner*)p;
+    int index;
+    void* target;
     int alive;
     void* found;
-    bool pending;
-    void* track;
-    int status;
 
-    if (index != 4) {
-        if (fn_800B1EF4(self, index) == 0) {
-            fn_800B1F20(self, index);
-            fn_800B261C(self, index, (int*)&found);
-            alive = fn_800B22F8(self, index);
-            fn_800B1ED4(self, index);
-            if (found != 0 && alive < 2) {
-                FollowSetTargetObj(self->unk270, found);
-                target = found;
-            }
+    target = FollowGetTargetObj(self->unk270);
+    index = fn_800B26B8(self);
+
+    if (index != 4 && fn_800B1EF4(self, index) == 0) {
+        fn_800B1F20(self, index);
+        fn_800B261C(self, index, (int*)&found);
+        alive = fn_800B22F8(self, index);
+        fn_800B1ED4(self, index);
+        if (found != 0 && alive <= 1) {
+            FollowSetTargetObj(self->unk270, found);
+            target = found;
         }
     }
-
     if (target == 0 ||
         (self->unk604 != 0 &&
          ((int (*)(Owner*, int))self->unk604)(self, ((TargetRef*)target)->unk38) == 0)) {
         RangeResetPending(self->unk270);
-        pending = true;
-    } else {
-        pending = false;
+        return 1;
     }
+    return 0;
+}
 
+int FollowStateDecide(Owner* owner)
+{
+    Owner* self = (Owner*)owner;
+    StateData* st = self->unk130;
+    int lost;
+    void* track;
+    int status;
+
+    lost = FollowTargetLost(owner);
     fn_800B26B8(self);
     track = FollowGetTargetObj(self->unk270);
 
     if (MemFlagIsSet(self->unk270, 5))
         return 7;
 
-    if (pending) {
+    switch (lost) {
+    case 0:
+        if (MemFlagIsSet(self->unk270, 0x24) && st->unk18 > 6000.0f) {
+            ConditionUpdateBit(self->unk270, 0x24, 0);
+            st->unk18 = 0.0f;
+            if ((f32)rand() / 32767.0f < self->unk5b4 ||
+                st->unk14 < 1000.0f ||
+                fn_8029B3B0(self, 0x13e6b) == 0 ||
+                self->unk140 >= 500.0f) {
+                if ((f32)rand() / 32767.0f < 0.142857f &&
+                    st->unk10 > 3000.0f &&
+                    fn_8029B3B0(self, 0x73b1e248) != 0)
+                    return 5;
+                return 6;
+            }
+            return 1;
+        }
+        if (Fn800F7DEC(self->unk8ec, self->unk8f0, 0x20ee36, OwnerId(self), 0) ==
+            0xc0becf7eu) {
+            if (st->unk00 == 2)
+                return 3;
+            if (fn_8029B3B0(self, 0x13e6b) != 0 && track != 0 &&
+                fn_800B84E4(self->unk038, ((TargetRef*)track)->unk38, &status) != -1)
+                return 2;
+            return 3;
+        }
+        if (FollowLineCheckActorDist(self, track, 0.8f) != 0 &&
+            fn_8029B3B0(self, 0x73b1e248) != 0)
+            return 0;
+        if (fn_8029B3B0(self, 0x13e6b) != 0 && self->unk140 < 500.0f &&
+            fn_800B84E4(self->unk038, ((TargetRef*)track)->unk38, 0) != -1)
+            return 1;
+        return 0;
+    case 1:
         if (st->unk1c > 60000.0f || MemFlagIsSet(self->unk270, 5))
             return 7;
-        if (self->unk5e8 == -1 || st->unk00 == 4)
-            return 0;
-        return 4;
-    }
-
-    if (MemFlagIsSet(self->unk270, 0x24) && st->unk18 > 6000.0f) {
-        ConditionUpdateBit(self->unk270, 0x24, 0);
-        st->unk18 = 0.0f;
-
-        if ((f32)rand() / 32767.0f < self->unk5b4 ||
-            st->unk14 < 1000.0f ||
-            fn_8029B3B0(self, 0x13e6b) == 0 ||
-            self->unk140 >= 500.0f) {
-            if ((f32)rand() / 32767.0f >= 0.142857f ||
-                st->unk10 <= 3000.0f ||
-                fn_8029B3B0(self, 0x73b1e248) == 0)
-                return 6;
-            return 5;
-        }
-        return 1;
-    }
-
-    if (Fn800F7DEC(self->unk8ec, self->unk8f0, 0x20ee36, OwnerId(self), 0) ==
-        0xc0becf7eu) {
-        if (st->unk00 == 2)
-            return 3;
-        if (fn_8029B3B0(self, 0x13e6b) == 0 || track == 0 ||
-            fn_800B84E4(self->unk038, ((TargetRef*)track)->unk38, &status) == -1)
-            return 3;
-        return 2;
-    }
-
-    if (FollowLineCheckActorDist(self, track, 0.8f) != 0 &&
-        fn_8029B3B0(self, 0x73b1e248) != 0)
+        if (self->unk5e8 != -1 && st->unk00 != 4)
+            return 4;
         return 0;
-    if (fn_8029B3B0(self, 0x13e6b) != 0 && self->unk140 < 500.0f &&
-        fn_800B84E4(self->unk038, ((TargetRef*)track)->unk38, 0) != -1)
-        return 1;
+    }
     return 0;
 }
