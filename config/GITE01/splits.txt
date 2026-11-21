@@ -903,7 +903,19 @@ game/u_80222D60.cpp:
 	.text       start:0x80222D60 end:0x80226DE8
 
 game/u_80226DE8.cpp:
-	.text       start:0x80226DE8 end:0x8022EC64
+	.text       start:0x80226DE8 end:0x80227DD8
+
+game/u_80227DD8.cpp:
+	.text       start:0x80227DD8 end:0x8022A180
+
+game/u_8022A180.cpp:
+	.text       start:0x8022A180 end:0x8022BA30
+
+game/u_8022BA30.cpp:
+	.text       start:0x8022BA30 end:0x8022CE78
+
+game/u_8022CE78.cpp:
+	.text       start:0x8022CE78 end:0x8022EC64
 
 game/Streamer.cpp:
 	.text       start:0x8022EC64 end:0x8022ED88
