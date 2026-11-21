@@ -400,34 +400,45 @@ int NpcSveStopFollow(Owner* o) {
 extern "C" void SendMsg(int to, int msg, void* data);
 extern "C" void fn_800B1F20(void* owner, int mode);
 
-// Payload of message 0x41d: the follow-behaviour type hash and the entity name.
-struct SveBeginMsg {
-    int unk00;
-    u32 hash;
-    int unk08;
-    String text;
-};
+// Sends the actor itself message 0x41d (key 0xf9d0235b, argument 1).
+static inline void NpcSveSend41D(Owner* o) {
+    int id = o->unk38;
+    QueryMsg q;
+
+    q.hash = 0xf9d0235b;
+    *(int*)&q.result = 1;
+    q.unk8 = 0;
+    SendMsg(id, 0x41d, &q);
+}
+
+void NpcSveAdvanceToFollowState(Owner* o);
+void OwnerSlotAdd(Owner* o, int mode, u32 handler, u32 target, u32 size);
 
 // Picks up the object reported by the movement query, plays its follow
 // animation and tells the host that the follow behaviour has started.
-int NpcSveBeginFollow(Owner* o) {
-    if (o == 0) {
+int NpcSveBeginFollow(Owner* owner) {
+    Owner* o;
+    PathEvent* ev;
+    int mode;
+    void* target;
+
+    if (owner == 0) {
         return 0;
     }
-    PathEvent* ev = (PathEvent*)o->evt;
-    int mode = fn_800B26B8(o);
+    o = (Owner*)owner;
+    ev = (PathEvent*)o->evt;
+    mode = fn_800B26B8(owner);
     if (mode == 4) {
         return 0;
     }
-    void* target;
-    fn_800B261C(o, mode, &target);
+    fn_800B261C(owner, mode, &target);
     if (target == 0) {
         return 0;
     }
     if (ActorPlayAnim(o->unk38, 0xb1c7633c, ((Owner*)target)->unk38) != 0) {
         return 0;
     }
-    fn_800B1F20(o, mode);
+    fn_800B1F20(owner, mode);
     FollowSetTargetObj(o->cond270, target);
     o->unk288 = 0;
     o->unk268 = 3;
@@ -436,10 +447,8 @@ int NpcSveBeginFollow(Owner* o) {
     ConditionUpdateBit(o->cond270, 4, 1);
     ConditionUpdateBit(o->cond270, 9, 1);
     FollowSetTargetObj(o->cond270, target);
-    SveBeginMsg msg;
-    msg.hash = 0xf9d0235b;
-    msg.unk08 = 0;
-    SendMsg(o->unk38, 0x41d, &msg);
+    NpcSveSend41D(o);
+    OwnerSlotAdd(o, mode, (u32)NpcSveAdvanceToFollowState, (u32)target, 0x3c);
     return 1;
 }
 
@@ -485,7 +494,6 @@ int NpcSveCancelFollow(Owner* o) {
 }
 
 void NpcSveAdvanceToTargetFollowState(Owner* o);
-void OwnerSlotAdd(Owner* o, int mode, u32 handler, u32 target, u32 size);
 float OwnerValue(Owner* o, void* arg);
 int MemFlagIsSet(void* cond, int id);
 extern "C" void fn_800BBCA8(void* owner);
@@ -625,7 +633,7 @@ struct Actor;
 int ActorAim(int* out, Actor* actor, int arg);
 float ActorAimAngleToPos(void* actor, Vec3* pos);
 float ActorAngleToPos(void* actor, Vec3* pos);
-float fabsf(float x);
+inline float fabsf(float x) { return __fabsf(x); }
 
 // Per-frame step of the follow-target state machine: validates the reported
 // target, keeps the follow timer and drives the follow animation.
@@ -772,20 +780,26 @@ int NpcSveStartTargetFollow(Owner* o) {
 // still valid it plays the follow animation / checks the facing angle and
 // timer, and reports whether the followed actor is still alive.
 int NpcSveUpdateTargetFollow(Owner* owner) {
-    Owner* o = (Owner*)owner;
-    if (o == 0) {
+    Owner* o;
+    PathEvent* ev;
+    FollowTarget* target;
+    Vec3 pos;
+
+    if (owner == 0) {
         return 0;
     }
-    PathEvent* ev = (PathEvent*)o->evt;
-    FollowTarget* target = (FollowTarget*)FollowGetTargetObj(o->cond270);
-    if (target == 0 || (target->unk38 >> 24) != 2) {
+    o = (Owner*)owner;
+    ev = (PathEvent*)o->evt;
+    target = (FollowTarget*)FollowGetTargetObj(o->cond270);
+    if (target == 0 || (int)(target->unk38 >> 24) != 2) {
+        SveTargetMsg msg;
         int ownId = o->unk38;
         Owner* player = GetPlayer();
+
         if (player->unk38 != -1) {
-            SveTargetMsg msg;
-            msg.anim = 0;
             msg.owner = ownId;
             msg.tag = 0xaf699ed0;
+            msg.anim = 0;
             SendMsg(player->unk38, 0xc14, &msg);
         }
         ev->flags |= 4;
@@ -793,36 +807,41 @@ int NpcSveUpdateTargetFollow(Owner* owner) {
     }
     if (MemFlagIsSet(o->cond270, 0x1f) != 0) {
         if ((ev->flags & 4) == 0) {
+            SveTargetMsg msg;
+            int anim;
+            int id;
+
             ev->flags |= 4;
-            int anim = ActorPlayAnim(o->unk38, 0xdc35206a, target->unk38);
-            if (target->unk38 != (u32)-1) {
-                SveTargetMsg msg;
+            anim = ActorPlayAnim(o->unk38, 0xdc35206a, target->unk38);
+            id = o->unk38;
+            if ((int)target->unk38 != -1) {
                 msg.anim = anim;
-                msg.owner = o->unk38;
+                msg.owner = id;
                 msg.tag = 0xaf699ed0;
                 SendMsg(target->unk38, 0xc14, &msg);
             }
         }
-    } else if (MemFlagIsSet(o->cond270, 4) == 1 &&
-               HasCondition(o->cond270, 0xd) == 0 &&
+    } else if (MemFlagIsSet(o->cond270, 4) == 1 && HasCondition(o->cond270, 0xd) == 0 &&
                HasCondition(o->cond270, 0xc) == 0) {
-        Vec3 pos;
-        pos.x = (float)target->x24;
-        pos.y = (float)target->y28;
-        pos.z = (float)target->z2c;
-        if (fabsf(ActorAngleToPos(o, &pos)) < 10.0f ||
-            ev->timer > 5000.0f) {
+        pos.x = target->x24;
+        pos.y = target->y28;
+        pos.z = target->z2c;
+        if (fabsf(ActorAngleToPos(o, &pos)) < 10.0f || ev->timer > 5000.0f) {
             ConditionUpdateBit(o->cond270, 4, 0);
             ev->flags |= 1;
             ev->timer = 0.0f;
         }
     } else if ((ev->flags & 4) == 0) {
+        SveTargetMsg msg;
+        int anim;
+        int id;
+
         ev->flags |= 4;
-        int anim = ActorPlayAnim(o->unk38, 0xdc35206a, target->unk38);
-        if (target->unk38 != (u32)-1) {
-            SveTargetMsg msg;
+        anim = ActorPlayAnim(o->unk38, 0xdc35206a, target->unk38);
+        id = o->unk38;
+        if ((int)target->unk38 != -1) {
             msg.anim = anim;
-            msg.owner = o->unk38;
+            msg.owner = id;
             msg.tag = 0xaf699ed0;
             SendMsg(target->unk38, 0xc14, &msg);
         }
@@ -830,7 +849,7 @@ int NpcSveUpdateTargetFollow(Owner* owner) {
             ConditionSetBit(o->cond270, 0x12, 1);
         }
     }
-    return fn_8020B97C(target) == 0;
+    return fn_8020B97C(target) == 0 ? 1 : 0;
 }
 
 // Clears the "target reached" event flag and releases the pending follow range;
