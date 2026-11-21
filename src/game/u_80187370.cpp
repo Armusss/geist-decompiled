@@ -77,7 +77,9 @@ struct Player {
     u32 flags7B4;         // 0x7B4
     u8 pad7B8[0x18];
     int unk7D0;           // 0x7D0
-    u8 pad7D4[0x34];
+    u8 pad7D4[0x8];
+    int unk7DC;           // 0x7DC
+    u8 pad7E0[0x28];
     int unk808;           // 0x808
     u8 pad80C[0xCF0];
     float unk14FC;        // 0x14FC
@@ -92,7 +94,8 @@ struct Player {
     u8 pad26B4[0x10];
     HostModel* hosts[2];  // 0x26C4
     u8 pad26CC[0x14];
-    u8 unk26E0[8];        // 0x26E0
+    u8 unk26E0[4];        // 0x26E0
+    LinkObj* unk26E4;     // 0x26E4
     LinkObj* link;        // 0x26E8
     u8 pad26EC[0xB0];
     int unk279C;          // 0x279C
@@ -118,13 +121,15 @@ int HasCondition(void* conds, int id);
 void ActorPlayAnim(int handle, unsigned long anim, int a);
 int AssetFind(unsigned long bank, unsigned long name);
 void PlayerSetActionMode(void* p, int mode);
+void PlayerSetHeldSlotIndex(void* p, int i);
+void WeatherSetRainB(float rain);
 void PlayerApplyFrameOffset(Player* p);
 void PlayerStartGunCharge(void* p);
 void Fn800F7F5C(int a, int b, int msg, int who, void* data, float f);
 
 extern "C" {
 void fn_80155A84(void* a, int b, int c);
-int fn_800498D0();
+int fn_800498D0(Player* p);
 void fn_800769A0(Player* p, float dt);
 void fn_80074D68(Player* p, float dt);
 int fn_800A1BC8(int model, int set, u32 anim, int a, int b);
@@ -133,6 +138,11 @@ void fn_8018ABFC();
 HostModel* fn_800A384C(LinkObj* obj);
 int SendMsg(int to, int msg, void* data);
 int fn_802A1D04();
+int fn_800F7994(int a, u32 b);
+void FxStart(int fx, int a, int b);
+extern int lbl_804D3050;
+extern int lbl_804D3054;
+extern float lbl_804D50E4;
 int fn_80212730(int handle);
 void fn_80048BA8(Player* p, void* buf, int a);
 
@@ -185,6 +195,17 @@ inline void PlayerGunInput(Player* p) {
     } else if (p->unk266C <= 0.0f || p->unk328 == 0) {
         p->flags7B4 &= ~0x100000;
     }
+}
+
+// Asks the target's 0x41E handler for the value stored under a name hash.
+inline void QueryNameOut(int* out, int target, unsigned long hash) {
+    QueryMsg q;
+
+    q.hash = hash;
+    *(int*)&q.result = 0;
+    q.unk8 = 0;
+    SendMsg(target, 0x41E, &q);
+    *out = *(int*)&q.result;
 }
 
 inline u32* PlayerStateAnim(Player* p, int state) {
@@ -325,6 +346,34 @@ void fn_801879BC(Player* p) {
     PlayerSetValue4(&p->state, 0x15);
 }
 
+void fn_80187CB4(Player* p) {
+    int host = PlayerInHost((Actor*)p);
+    u32* anim = PlayerStateAnim(p, 20);
+    p->unk78 = 0;
+    p->flags50 &= ~0x20000;
+    p->anim = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet, *anim, 0, 0);
+    p->animDone = (void*)fn_8018ABFC;
+    p->animLoop = 1;
+    p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, *anim, 0, 0);
+    p->animLoop2 = 1;
+    {
+        QueryMsg q;
+        q.hash = 0x08783452;
+        SendMsg(p->unk26E4->handle, 0x41E, &q);
+        if (*(int*)&q.result != 0) {
+            PlayerSetHeldSlotIndex(p, 0);
+            if (p->anim == -1) {
+                PlayerSetActionMode(p, 1);
+            }
+        } else {
+            PlayerSetHeldSlotIndex(p, 1);
+            if (p->anim == -1) {
+                PlayerSetActionMode(p, 3);
+            }
+        }
+    }
+}
+
 void fn_80187E24(Player* p) {
     PlayerResetGunTimer(p);
     p->unk638 = 1;
@@ -333,6 +382,38 @@ void fn_80187E24(Player* p) {
     } else {
         p->flags50 |= 0x20000;
         p->unk78 = 1;
+    }
+}
+
+void fn_80187E80(Player* p) {
+    int blend = 0;
+    LinkObj* link = p->link;
+    HostModel* m;
+    int host;
+    u32* anim;
+
+    if ((int)(link->handle >> 24) == 0x13) {
+        m = fn_800A384C(link);
+        if (HasCondition(link->conds, 11)) {
+            blend = 1;
+        }
+    }
+    host = PlayerInHost((Actor*)p);
+    anim = PlayerStateAnim(p, 19);
+    p->anim = fn_800A1BC8(m->model, m->animSet, *anim, blend, 0);
+    p->animDone = (void*)fn_8018ABFC;
+    p->animLoop = 0x19;
+    p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, *anim, 0, 0);
+    p->animLoop2 = 0x19;
+    {
+        QueryMsg q;
+        q.hash = 0x08783452;
+        SendMsg(p->link->handle, 0x41E, &q);
+        if (*(int*)&q.result != 0) {
+            PlayerSetHeldSlotIndex(p, 0);
+        } else {
+            PlayerSetHeldSlotIndex(p, 1);
+        }
     }
 }
 
@@ -349,11 +430,61 @@ void fn_8018800C(Player* p) {
     PlayerSetValue4(&p->state, 0x13);
 }
 
+void fn_80188068(Player* p) {
+    int host = PlayerInHost((Actor*)p);
+    LinkObj* link = p->link;
+    int variant = p->animVariant;
+    int blend = 0;
+    HostModel* m;
+    u32* anim;
+
+    if ((int)(link->handle >> 24) == 0x13) {
+        m = fn_800A384C(link);
+        if (HasCondition(link->conds, 11)) {
+            blend = 1;
+        }
+    }
+    anim = &lbl_803A8800[18].anims[variant];
+    p->anim = fn_800A1BC8(m->model, m->animSet, *anim, blend, 0);
+    p->animDone = (void*)fn_8018ABFC;
+    p->animLoop = 0x59;
+    p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, *anim, 0, 0);
+    p->animLoop2 = 0x59;
+    {
+        QueryMsg q;
+        q.hash = 0x08783452;
+        SendMsg(p->link->handle, 0x41E, &q);
+        if (*(int*)&q.result != 0) {
+            PlayerSetHeldSlotIndex(p, 0);
+        } else {
+            PlayerSetHeldSlotIndex(p, 1);
+        }
+    }
+}
+
 void fn_801881C4(Player* p) {
 }
 
 void fn_8018878C(Player* p) {
     p->flags50 &= ~0x40000;
+}
+
+void fn_8018879C(Player* p, float dt) {
+    PlayerResetGunTimer(p);
+    p->unk638 = 1;
+    p->flags7B4 &= ~1;
+    if (p->unk750 == 1) {
+        fn_80074D68(p, dt);
+    } else if (p->unk74C == 1) {
+        PlayerUpdateMotionInput(dt, p);
+    } else {
+        PlayerSelectCollisionUpdate(p, dt);
+    }
+    if (lbl_804D50E4 < 20.0f) {
+        lbl_804D50E4 += 0.02f * dt;
+        lbl_804D50E4 = lbl_804D50E4 < 20.0f ? lbl_804D50E4 : 20.0f;
+    }
+    WeatherSetRainB(lbl_804D50E4);
 }
 
 void fn_80188A40(Player* p, float dt) {
@@ -364,6 +495,24 @@ void fn_80188A40(Player* p, float dt) {
     PlayerSetValue4(&p->state, 3);
 }
 
+void fn_80188BE0(Player* p) {
+    int a;
+    int b;
+    QueryNameOut(&a, p->handle, 0x2DA8293C);
+    QueryNameOut(&b, p->handle, 0xDFF3097A);
+    fn_80048BA8(p, p->unk1D04, 1);
+    Fn800F7F5C(a, b, 0xBC78F550, fn_800498D0(p), p->unk1D04, p->unk14FC);
+    {
+        int host = PlayerInHost((Actor*)p);
+        u32* anim = PlayerStateAnim(p, 11);
+        p->anim = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet, *anim, 0, 0);
+        p->animDone = (void*)fn_8018ABFC;
+        p->animLoop = 0x11;
+        p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, *anim, 0, 0);
+        p->animLoop2 = 0x11;
+    }
+}
+
 void fn_80188D98(Player* p, float dt) {
     p->unk638 = 1;
     p->flags7B4 &= ~1;
@@ -372,8 +521,26 @@ void fn_80188D98(Player* p, float dt) {
     PlayerSetValue4(&p->state, 3);
 }
 
+void fn_80188F38(Player* p) {
+    int a;
+    int b;
+    QueryNameOut(&a, p->handle, 0x2DA8293C);
+    QueryNameOut(&b, p->handle, 0xDFF3097A);
+    fn_80048BA8(p, p->unk1D04, 1);
+    Fn800F7F5C(a, b, 0x8FDD7599, fn_800498D0(p), p->unk1D04, p->unk14FC);
+    {
+        int host = PlayerInHost((Actor*)p);
+        u32* anim = PlayerStateAnim(p, 10);
+        p->anim = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet, *anim, 0, 0);
+        p->animDone = (void*)fn_8018ABFC;
+        p->animLoop = 0x11;
+        p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, *anim, 0, 0);
+        p->animLoop2 = 0x11;
+    }
+}
+
 void fn_801890F0(Player* p) {
-    ActorPlayAnim(0x02000000, 0xD39F69B4, fn_800498D0());
+    ActorPlayAnim(0x02000000, 0xD39F69B4, fn_800498D0(p));
 }
 
 void fn_80189124(Player* p, float dt) {
@@ -384,11 +551,51 @@ void fn_80189124(Player* p, float dt) {
     PlayerSetValue4(&p->state, 1);
 }
 
+void fn_801892C4(Player* p) {
+    int v;
+    QueryNameOut(&v, p->handle, 0xDFF3097A);
+    {
+        int host = PlayerInHost((Actor*)p);
+        u32* anim = PlayerStateAnim(p, 9);
+        p->anim = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet, *anim, 0, 0);
+        p->animDone = (void*)fn_8018ABFC;
+        p->animLoop = 0x10;
+        p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, *anim, 0, 0);
+        p->animLoop2 = 0x10;
+    }
+    lbl_804D3054 = fn_800F7994(v, 0x9D1C245C);
+    FxStart(lbl_804D3054, 0, 0);
+}
+
 void fn_80189404(Player* p, float dt) {
     p->unk638 = 1;
     p->flags7B4 &= ~1;
     PlayerMove(p, dt);
     PlayerGunInput(p);
+}
+
+void fn_80189598(Player* p) {
+    int blend;
+    switch (p->unk7DC) {
+    case 0x7183F329:
+        blend = 0;
+        break;
+    case 0x7183F5A1:
+        blend = 1;
+        break;
+    case 0xBEF8884D:
+        blend = 2;
+        break;
+    }
+    {
+        int host = PlayerInHost((Actor*)p);
+        u32* anim = PlayerStateAnim(p, 8);
+        p->anim = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet, *anim, blend, 0);
+        p->animDone = (void*)fn_8018ABFC;
+        p->animLoop = 1;
+        p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, *anim, 0, 0);
+        p->animLoop2 = 1;
+    }
 }
 
 void fn_801896A0(Player* p, float dt) {
@@ -432,7 +639,7 @@ void fn_80189D54(Player* p) {
 }
 
 void fn_80189F0C(Player* p) {
-    ActorPlayAnim(0x02000000, 0x8B3A27A3, fn_800498D0());
+    ActorPlayAnim(0x02000000, 0x8B3A27A3, fn_800498D0(p));
 }
 
 void fn_80189F40(Player* p, float dt) {
@@ -441,6 +648,22 @@ void fn_80189F40(Player* p, float dt) {
     PlayerMove(p, dt);
     PlayerGunInput(p);
     PlayerSetValue4(&p->state, 3);
+}
+
+void fn_8018A0E0(Player* p) {
+    int v;
+    QueryNameOut(&v, p->handle, 0xDFF3097A);
+    {
+        int host = PlayerInHost((Actor*)p);
+        u32* anim = PlayerStateAnim(p, 2);
+        p->anim = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet, *anim, 0, 0);
+        p->animLoop = 0x10;
+        p->animDone = (void*)fn_8018ABFC;
+        p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, *anim, 0, 0);
+        p->animLoop2 = 0x10;
+    }
+    lbl_804D3050 = fn_800F7994(v, 0xAFEF562B);
+    FxStart(lbl_804D3050, 0, 0);
 }
 
 void fn_8018A604(Player* p) {
