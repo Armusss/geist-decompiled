@@ -582,13 +582,14 @@ static inline int ScanLink(Owner* a, Owner* b, f32 dist) {
 int ActorScanTargetCallback(Owner* owner, Owner* other, f32 dist)
 {
     Owner* self = (Owner*)(void*)owner;
+    Owner* peer = (Owner*)(void*)other;
     Msg400 reply;
 
     if (self == 0 || SendMsg(self->unk038, 0x400, &reply) == 0 ||
         (int)((u32)self->unk038 >> 24) != 0x13 || reply.state == 0) {
         return 1;
     }
-    return ScanLink(self, other, dist);
+    return ScanLink(self, peer, dist);
 }
 
 // Drops every condition bit this actor set up for its target interaction and
