@@ -83,6 +83,9 @@ class ScreenEffectBuffer : public ScreenEffectSlot {
 public:
     ScreenEffectBuffer();
     virtual ~ScreenEffectBuffer() {}
+    // Slot 0x14 / 0x18 bodies (0x8028BC2C / 0x8028BC28), called directly by the KindArray overrides.
+    void Commit(int start, unsigned long size);
+    void Append(unsigned char* data, unsigned long size);
 };
 
 class Buffer : public ScreenEffectBuffer {
@@ -95,8 +98,6 @@ extern "C" {
 void fn_8028B960(Buffer* self);
 char* fn_8028B3BC(Buffer* self, char* pos, u32 size);
 void fn_8028B35C(Buffer* self, char* pos, u32 size);
-void fn_8028BC2C(Buffer* self, char* data, u32 size);
-void fn_8028BC28(Buffer* self, char* data, u32 size);
 }
 
 // --- Behaviour descriptors ---------------------------------------------------------------------------------
@@ -643,14 +644,14 @@ KindArray::~KindArray() {
 }
 
 void KindArray::Construct(char* data, u32 size) {
-    fn_8028BC2C(this, data, size);
+    ScreenEffectBuffer::Commit((int)data, size);
     fn_801870C0((BehKind*)data, (BehKind*)(data + size / sizeof(BehKind) * sizeof(BehKind)));
 }
 
 void KindArray::Destroy(char* data, u32 size) {
     BehKind* first = (BehKind*)data;
     fn_801870E4(first, first + size / sizeof(BehKind));
-    fn_8028BC28(this, data, size);
+    ScreenEffectBuffer::Append((unsigned char*)data, size);
 }
 
 int KindArray::ElementSize() {

@@ -4,7 +4,6 @@
 // asset + scan mask .sdata 0x804D3D28, .sdata2 0x804DB198-0x804DB1F8.
 // Status: 25/27. A temporary Matching flip differs from retail only in the open "li r4 before addi r3"
 // shape after the `mr.` null test (UpdateActorState, FollowStateEnterClear).
-// `(Owner*)(void*)p` copies stand in for retail's void* parameters (the symbols say Owner*).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include "game/types.h"
@@ -204,7 +203,7 @@ int OwnerId(Owner*);
 int OwnerGetInfo(u32 id);
 Owner* GetPlayer(void);
 f32 OwnerValue(Owner*, void* target);
-int ActorScanTargetCallback(Owner* self, Owner* other, f32 dist);
+int ActorScanTargetCallback(void* self, void* other, f32 dist);
 int ConditionUpdateBit(void* mem, int bit, int value);
 int  FollowLineCheckActorDist(void* self, void* target, f32 dist);
 void VFree(void* ptr);
@@ -262,16 +261,16 @@ int FollowIdleStateEnter(Owner* self);
 int FollowStateEnterClear(Owner* self);
 u32 FollowApproachStateUpdate(Owner* self);
 int ActorFollowTargetDetach(Owner* self);
-int FollowOffsetUpdateBegin(Owner* self);
+int FollowOffsetUpdateBegin(void* self);
 int FollowTargetStateUpdate(Owner* self);
 int ActorFollowDetachTarget(void* p);
-int ActorFollowOffsetReset(Owner* self);
+int ActorFollowOffsetReset(void* self);
 int FollowStateUpdate(Owner* self);
 int FollowStateResetToIdle(Owner* self);
 int ActorStateEnterFollow(Owner* self);
 u32 ActorStateCheckTarget(Owner* self);
 int ActorFollowEnd(Owner* self);
-int ActorFollowBegin(Owner* self);
+int ActorFollowBegin(void* self);
 int ActorStateCanContinue(Owner* self);
 u32 FollowSearchTimerArm(Owner* self);
 u32 FollowOffsetTimerReset(Owner* self);
@@ -284,10 +283,10 @@ typedef int (*StateFunc)(Owner*);
 
 StateEntry gFsgSveStates[8] = {
     { FollowIdleStateEnter, FollowStateEnterClear, (StateFunc)FollowApproachStateUpdate, "" },
-    { ActorFollowTargetDetach, FollowOffsetUpdateBegin, FollowTargetStateUpdate, "" },
-    { (StateFunc)ActorFollowDetachTarget, ActorFollowOffsetReset, FollowStateUpdate, "" },
+    { ActorFollowTargetDetach, (StateFunc)FollowOffsetUpdateBegin, FollowTargetStateUpdate, "" },
+    { (StateFunc)ActorFollowDetachTarget, (StateFunc)ActorFollowOffsetReset, FollowStateUpdate, "" },
     { FollowStateResetToIdle, ActorStateEnterFollow, (StateFunc)ActorStateCheckTarget, "" },
-    { ActorFollowEnd, ActorFollowBegin, ActorStateCanContinue, "" },
+    { ActorFollowEnd, (StateFunc)ActorFollowBegin, ActorStateCanContinue, "" },
     { (StateFunc)FollowSearchTimerArm, (StateFunc)FollowOffsetTimerReset, (StateFunc)FollowSearchStateUpdate, "" },
     { FollowWaitStateEnter, FollowOffsetStateLeave, (StateFunc)HasFollowCondition, "" },
     { 0, 0, 0, "" },
@@ -585,10 +584,10 @@ static inline int ScanLink(Owner* a, Owner* b, f32 dist) {
     return 1;
 }
 
-int ActorScanTargetCallback(Owner* owner, Owner* other, f32 dist)
+int ActorScanTargetCallback(void* owner, void* other, f32 dist)
 {
-    Owner* self = (Owner*)(void*)owner;
-    Owner* peer = (Owner*)(void*)other;
+    Owner* self = (Owner*)owner;
+    Owner* peer = (Owner*)other;
     Msg400 reply;
 
     if (self == 0 || SendMsg(self->unk038, 0x400, &reply) == 0 ||
@@ -697,11 +696,11 @@ int ActorStateCanContinue(Owner* self)
 
 // Arms the follow-offset update: installs the offset hinge updater on the actor,
 // clears the pending follow fields and resets the offset timer.
-int ActorFollowBegin(Owner* owner)
+int ActorFollowBegin(void* owner)
 {
     if (owner == 0)
         return 0;
-    Owner* self = (Owner*)(void*)owner;
+    Owner* self = (Owner*)owner;
     StateData* st = self->unk130;
     self->unk10c = (void (*)(Owner*))FollowOffsetUpdate;
     st->unk14 = 0.0f;
@@ -856,11 +855,11 @@ int FollowStateUpdate(Owner* self)
 
 // Arms the follow-offset update: installs the offset hinge updater on the actor,
 // clears the pending follow fields and re-arms the follow conditions.
-int ActorFollowOffsetReset(Owner* owner)
+int ActorFollowOffsetReset(void* owner)
 {
     if (owner == 0)
         return 0;
-    Owner* self = (Owner*)(void*)owner;
+    Owner* self = (Owner*)owner;
     StateData* st = self->unk130;
     self->unk10c = (void (*)(Owner*))FollowOffsetUpdate;
     st->unk14 = 0.0f;
@@ -975,11 +974,11 @@ int FollowTargetStateUpdate(Owner* self)
 // Entry of the follow-offset state: installs the offset hinge updater on the
 // actor, clears the pending follow fields, resets the offset timer and re-arms
 // the follow conditions.
-int FollowOffsetUpdateBegin(Owner* owner)
+int FollowOffsetUpdateBegin(void* owner)
 {
     if (owner == 0)
         return 0;
-    Owner* self = (Owner*)(void*)owner;
+    Owner* self = (Owner*)owner;
     StateData* st = self->unk130;
     self->unk10c = (void (*)(Owner*))FollowOffsetUpdate;
     st->unk14 = 0.0f;

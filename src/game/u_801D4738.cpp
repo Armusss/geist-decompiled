@@ -161,6 +161,14 @@ void SceneNodeSetPos(float x, float y, float z, SceneNode* b);  // 0x802788D4
 PhysObj* SceneNodeGetOwner(SceneNode* b);                       // 0x802789C0
 void SceneNodeSetOwner(SceneNode* b, u32 owner);                // 0x802789C8
 
+// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
+// array overrides here call directly. Class and member names are guesses.
+class ScreenEffectBuffer {
+public:
+    void Commit(int start, unsigned long size);
+    void Append(unsigned char* data, unsigned long size);
+};
+
 extern "C" {
 int sprintf(char* s, const char* fmt, ...);
 int vsprintf(char* s, const char* fmt, void* ap);
@@ -217,8 +225,6 @@ void fn_802789D0(SceneNode* body);
 void* fn_8028B3BC(GeomVec* v, void* at, int size);
 void fn_8028B35C(GeomVec* v, void* at, int size);
 void fn_8028B960(GeomVec* v);
-void fn_8028BC28(GeomVec* v, void* p, u32 bytes);
-void fn_8028BC2C(GeomVec* v, void* p, u32 bytes);
 void fn_801D80F4(Geom** first, Geom** last);
 void fn_801D8114(Geom** first, Geom** last);
 u32 __cvt_fp2unsigned(float f);
@@ -1483,7 +1489,7 @@ GeomVec::~GeomVec() {
 
 // 0x801D8044
 void GeomVec::Construct(void* p, u32 bytes) {
-    fn_8028BC2C(this, p, bytes);
+    ((ScreenEffectBuffer*)this)->Commit((int)p, bytes);
     fn_801D80F4((Geom**)p, (Geom**)((char*)p + (bytes & ~3)));
 }
 
@@ -1491,7 +1497,7 @@ void GeomVec::Construct(void* p, u32 bytes) {
 void GeomVec::Destruct(void* p, u32 bytes) {
     Geom** first = (Geom**)p;
     fn_801D8114(first, (Geom**)((char*)first + (bytes & ~3)));
-    fn_8028BC28(this, p, bytes);
+    ((ScreenEffectBuffer*)this)->Append((unsigned char*)p, bytes);
 }
 
 // 0x801D80EC

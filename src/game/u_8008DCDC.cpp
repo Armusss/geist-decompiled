@@ -478,27 +478,41 @@ int fn_80093990(void* data, int size) {
 extern "C" void fn_80093A04();
 //@@80093A6C
 // Record array: construct hook (base call, then construct the new records).
-extern "C" void fn_8028BC2C(void* arr, void* p, u32 bytes);
-extern "C" void fn_8028BC28(void* arr, void* p, u32 bytes);
+// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
+// array overrides here call directly. Class and member names are guesses.
+class ScreenEffectBuffer {
+public:
+    void Commit(int start, unsigned long size);
+    void Append(unsigned char* data, unsigned long size);
+};
 extern "C" void fn_80093B3C(AnimItem* p, AnimItem* end);
 extern "C" void fn_80093BCC(AnimItem* p, AnimItem* end);
-extern "C" void fn_80093A6C(void* arr, AnimItem* p, u32 bytes);
-void fn_80093A6C(void* arr, AnimItem* p, u32 bytes) {
-    fn_8028BC2C(arr, p, bytes);
+
+// The record array behind a record set's +0x14 (vtable 0x80398608: destructor 0x80093A04, Buffer::Clear,
+// GetAlignment, Commit, Append, Buffer::GetSpan). Class name is a guess; its slots override the Buffer
+// slots of u_8028A8D4.cpp and call the base ones directly.
+class AnimRecordArray : public ScreenEffectBuffer {
+public:
+    void Commit(AnimItem* p, u32 bytes);
+    void Append(AnimItem* p, u32 bytes);
+    int GetAlignment();
+};
+
+void AnimRecordArray::Commit(AnimItem* p, u32 bytes) {
+    ScreenEffectBuffer::Commit((int)p, bytes);
     fn_80093B3C(p, p + bytes / sizeof(AnimItem));
 }
 //@@end
 //@@80093AC4
 static inline void AnimItemsDestroy(void* p, u32 bytes) { AnimItem* first = (AnimItem*)p; fn_80093BCC(first, first + bytes / sizeof(AnimItem)); }
-extern "C" void fn_80093AC4(void* arr, AnimItem* p, u32 bytes);
-void fn_80093AC4(void* arr, AnimItem* p, u32 bytes) {
+void AnimRecordArray::Append(AnimItem* p, u32 bytes) {
     AnimItemsDestroy(p, bytes);
-    fn_8028BC28(arr, p, bytes);
+    ScreenEffectBuffer::Append((unsigned char*)p, bytes);
 }
 //@@end
 
-// Size of one 0x5C-byte record.
-int AnimRecordSize() {
+// Size of one 0x5C-byte record (slot 0x10).
+int AnimRecordArray::GetAlignment() {
     return 0x5C;
 }
 

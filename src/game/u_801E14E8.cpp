@@ -32,11 +32,13 @@ int lbl_803ADE38[64] = {
 
 
 // Actor type descriptor of the barrier (0x803ADF38).
+class Actor;
+
 struct BarrierActorType {
     int unk0;
     const char* name;
     int (*msg)(Actor*, int, void*, int);
-    void (*update)(void*, float);
+    void (*update)(Actor*, float);
     u32 (*init)(void*);
     void* unk14;
     void (*free)(void*);
@@ -44,7 +46,7 @@ struct BarrierActorType {
 };
 
 int BarrierActorMsg(Actor* actor, int msg, void* data, int arg);
-void BarrierActorUpdate(void* actorPtr, float delta);
+void BarrierActorUpdate(Actor* actorPtr, float delta);
 u32 BarrierActorInit(void* actorPtr);
 void BarrierBehaviourFree(void* actorPtr);
 
@@ -67,7 +69,7 @@ struct BarrierBeh {
     int field14;      // 0x14
 };
 
-class Actor;
+
 
 struct BarrierActor {
     char pad00[0x24];
@@ -332,7 +334,7 @@ int BarrierActorMsg(Actor* actor, int msg, void* dataPtr, int arg) {
 // Per-frame update of the barrier actor: runs the open/close state machine,
 // drives the node colour and effect, then chains to ActorUpdate.
 // Descriptive name: BarrierActorUpdate.
-void BarrierActorUpdate(void* actorPtr, float delta) {
+void BarrierActorUpdate(Actor* actorPtr, float delta) {
     BarrierBeh* beh;
     BarrierActor* actor = (BarrierActor*)actorPtr;
     beh = actor->behaviour;

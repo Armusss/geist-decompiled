@@ -10,8 +10,13 @@ typedef signed int    s32;
 void TalkFree();
 void TalkInit();
 
-extern "C" void fn_8028BC28(void* a, void* b, u32 c);
-extern "C" void fn_8028BC2C(void* a, void* b, u32 c);
+// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
+// array overrides here call directly. Class and member names are guesses.
+class ScreenEffectBuffer {
+public:
+    void Commit(int start, unsigned long size);
+    void Append(unsigned char* data, unsigned long size);
+};
 extern "C" void NeoAgentPoolShutdown(void);
 void NeoAgentSaveNotify();
 void NeoAgentSystemCreate();
@@ -47,7 +52,7 @@ int lbl_804D4840;              // selected group index
 // Copy `size` bytes through the unaligned helper after clearing the tail.
 extern "C" void fn_800BA6FC(void* dst, u8* src, u32 size)
 {
-    fn_8028BC2C(dst, src, size);
+    ((ScreenEffectBuffer*)dst)->Commit((int)src, size);
     fn_800BA7AC(src, src + (size & ~3u));
 }
 
@@ -57,7 +62,7 @@ extern "C" void fn_800BA744(void* dst, u8* src, u32 size)
     u32 start = (u32)src;
 
     fn_800BA7CC((u8*)start, (u8*)(start + (size & ~3u)));
-    fn_8028BC28(dst, src, size);
+    ((ScreenEffectBuffer*)dst)->Append((unsigned char*)src, size);
 }
 
 extern "C" int fn_800BA7A4(void)

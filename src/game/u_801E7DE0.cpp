@@ -929,11 +929,11 @@ struct ActionQuery {
     int unk10[4];   // 0x10
 };
 
-// The actor goes through a void* copy: retail ranks it as a local (r31) ahead of
-// the two names, the way the void* message handlers do.
-int PlayerGunActionMessage(int msg, Actor* p)
+// The actor arrives as void* and is copied to a local: retail ranks it as a
+// local (r31) ahead of the two names, the way the void* message handlers do.
+int PlayerGunActionMessage(int msg, void* p)
 {
-    Actor* actor = (Actor*)(void*)p;
+    Actor* actor = (Actor*)p;
     ActionQuery q;
     q.result = actor->host38;
     q.hash = msg;

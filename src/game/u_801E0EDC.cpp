@@ -39,16 +39,17 @@ public:
     static void operator delete(void* p) { VFree(p); }
     ActiveObject() {}
     virtual ~ActiveObject();                                                      // 0x8
-    virtual unsigned char Init(void* a, void* b, void* c, void* d, void* e, void* f) = 0; // 0xC
-    virtual void Feed(float value, int flag) = 0;                                 // 0x10
-    virtual void Animate(int anim, void* mtx, char* name) = 0;                    // 0x14
-    virtual void Cleanup(int flag) = 0;                                           // 0x18
-    virtual u32 Tick() = 0;                                                       // 0x1C
-    virtual void Step() = 0;                                                      // 0x20
-    virtual void Unk24() = 0;
-    virtual void Unk28() = 0;
-    virtual void Unk2C() = 0;
-    virtual void Apply(Vec3* pos, float scale, Vec3* vel, int kind) = 0;          // 0x30
+    // Slot names follow the ActiveNode implementations in u_8020A650.cpp (guesses).
+    virtual unsigned char Setup(void* a, void* b, void* c, void* d, void* e, void* f) = 0; // 0xC
+    virtual void TickTimer(float value, int flag) = 0;                            // 0x10
+    virtual void BuildSourceMatrices(int anim, void* mtx, char* name) = 0;        // 0x14
+    virtual void ApplySourceMode(int flag) = 0;                                   // 0x18
+    virtual u32 SourcesFinished() = 0;                                            // 0x1C
+    virtual void DrawTriggerBoxes() = 0;                                          // 0x20
+    virtual void Teardown() = 0;                                                  // 0x24
+    virtual void StopAll(int flag) = 0;                                           // 0x28
+    virtual void TriggerEntry(u32 hash, void* param) = 0;                         // 0x2C
+    virtual void TriggerModeSounds(float scale, Vec3* pos, Vec3* vel, int kind) = 0; // 0x30
     virtual void Unk34() = 0;
 };
 
@@ -75,7 +76,7 @@ extern "C" void fn_801E0EDC(void* actor, Vec3* a, Vec3* b, int kind, float scale
     if (ActiveIsRegistered(actor)) {
         Vec3 v;
         VecScaleTo(&v, b, 1.0f / fn_802A2080());
-        ((ActiveObject*)actor)->Apply(a, scale, &v, kind);
+        ((ActiveObject*)actor)->TriggerModeSounds(scale, a, &v, kind);
     }
 }
 
@@ -110,7 +111,7 @@ extern "C" void fn_801E0FD0(void** slot) {
 extern "C" u32 fn_801E10D8(void* obj) {
     u32 result;
     if (ActiveIsRegistered(obj)) {
-        result = ((ActiveObject*)obj)->Tick();
+        result = ((ActiveObject*)obj)->SourcesFinished();
     } else {
         result = 1;
     }
@@ -120,14 +121,14 @@ extern "C" u32 fn_801E10D8(void* obj) {
 // Runs the cleanup hook of a registered active object.
 extern "C" void fn_801E1150(void* obj, int flag) {
     if (ActiveIsRegistered(obj)) {
-        ((ActiveObject*)obj)->Cleanup(flag);
+        ((ActiveObject*)obj)->ApplySourceMode(flag);
     }
 }
 
 // Calls the update hook of a registered active object.
 extern "C" void fn_801E11C0(void* obj, int anim, void* mtx, char* name) {
     if (ActiveIsRegistered(obj)) {
-        ((ActiveObject*)obj)->Animate(anim, mtx, name);
+        ((ActiveObject*)obj)->BuildSourceMatrices(anim, mtx, name);
     }
 }
 
@@ -136,16 +137,16 @@ class ActiveNode : public ActiveObject {
 public:
     ActiveNode() : m0C(0) {}
     virtual ~ActiveNode();
-    virtual unsigned char Init(void* a, void* b, void* c, void* d, void* e, void* f);
-    virtual void Feed(float value, int flag);
-    virtual void Animate(int anim, void* mtx, char* name);
-    virtual void Cleanup(int flag);
-    virtual u32 Tick();
-    virtual void Step();
-    virtual void Unk24();
-    virtual void Unk28();
-    virtual void Unk2C();
-    virtual void Apply(Vec3* pos, float scale, Vec3* vel, int kind);
+    virtual unsigned char Setup(void* a, void* b, void* c, void* d, void* e, void* f);
+    virtual void TickTimer(float value, int flag);
+    virtual void BuildSourceMatrices(int anim, void* mtx, char* name);
+    virtual void ApplySourceMode(int flag);
+    virtual u32 SourcesFinished();
+    virtual void DrawTriggerBoxes();
+    virtual void Teardown();
+    virtual void StopAll(int flag);
+    virtual void TriggerEntry(u32 hash, void* param);
+    virtual void TriggerModeSounds(float scale, Vec3* pos, Vec3* vel, int kind);
     virtual void Unk34();
     int m04;                                        // 0x4
     int m08;                                        // 0x8
@@ -163,7 +164,7 @@ extern "C" void* fn_801E1230(void* a, void* b, void* c, void* d, void* e, void* 
     if (node == 0) {
         return 0;
     }
-    if (node->Init(a, b, c, d, e, f) == 0) {
+    if (node->Setup(a, b, c, d, e, f) == 0) {
         delete node;
         return 0;
     }
@@ -181,14 +182,14 @@ extern "C" void* fn_801E1230(void* a, void* b, void* c, void* d, void* e, void* 
 // Calls the per-object tick hook (vtable +0x20) of every registered object.
 extern "C" void fn_801E1354(void) {
     for (ActiveEntry* e = lbl_804D5220; e != 0; e = e->next) {
-        ((ActiveObject*)e->value)->Step();
+        ((ActiveObject*)e->value)->DrawTriggerBoxes();
     }
 }
 
 // Pushes a value to every registered object; the second argument flags it.
 extern "C" void fn_801E13A0(float value) {
     for (ActiveEntry* e = lbl_804D5220; e != 0; e = e->next) {
-        ((ActiveObject*)e->value)->Feed(value, 1);
+        ((ActiveObject*)e->value)->TickTimer(value, 1);
     }
 }
 
@@ -218,17 +219,5 @@ extern "C" void fn_801E1494(void) {
     lbl_804D5220 = 0;
 }
 
-// Vtable installed on released active objects.
-extern char lbl_803ADE00[];
-
-// Resets an active object's vtable and optionally frees its storage.
-// Kept under its fn_ placeholder (it is the ActiveObject destructor, slot 0x8 of vtable 0x803ADE00).
-extern "C" void* fn_801E14A0(void* object, short freeNow) {
-    if (object != 0) {
-        *(void**)object = (void*)lbl_803ADE00;
-        if (freeNow > 0) {
-            VFree(object);
-        }
-    }
-    return object;
-}
+// The ActiveObject destructor (slot 0x8 of vtable 0x803ADE00): nothing to release.
+ActiveObject::~ActiveObject() {}

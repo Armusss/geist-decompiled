@@ -379,8 +379,9 @@ float GfxOwnerBrightness(u32 id) {
     return 0.0f;
 }
 
-// 0x8011600C: mark the player as lit / dark.
-void GfxMarkPlayerLit(float v) {
+// 0x8011600C: mark the player as lit / dark. Only the first float is read; the
+// FearActor caller (fn_80048A34) passes (handle, -1, 1, v, v).
+void GfxMarkPlayerLit(u32 handle, int arg1, int arg2, float v, float v2) {
     void* a = fn_800A3990();
     if (a != 0) {
         if (1.0f <= v) {
