@@ -1094,8 +1094,9 @@ int FollowWaitStateEnter(Owner* owner)
 // Per-frame update of the follow-search state: keeps the tracked target while
 // the target filter accepts it, refreshes the follow timer and condition bits
 // and reports whether the actor should leave the state.
-u32 FollowSearchStateUpdate(Owner* self)
+u32 FollowSearchStateUpdate(Owner* owner)
 {
+    Owner* self = (Owner*)owner;
     StateData* st;
     Owner* target;
     int index;
@@ -1120,7 +1121,7 @@ u32 FollowSearchStateUpdate(Owner* self)
         if (fn_800B1EF4(self, index) == 0) {
             fn_800B261C(self, index, (int*)&target);
             fn_800B22F8(self, index);
-            if (target != 0 && fn_800B22F8(self, index) < 2) {
+            if (target != 0 && fn_800B22F8(self, index) <= 1) {
                 fn_800B2418(5000.0f, self, index);
                 fn_800B1F20(self, index);
                 fn_800B1AB8(self, index, -1.0f, 1);
@@ -1137,11 +1138,11 @@ u32 FollowSearchStateUpdate(Owner* self)
 
     fn_800C9ED0(self);
     if (FollowLineCheckActorDist(self, target, 0.8f) == 0)
-        return 3000.0f < st->unk10;
+        return st->unk10 > 3000.0f;
 
     if (fn_80162940(self->unk894, 2) != 0 &&
         fn_80162940(self->unk894, 8) != 0) {
-        if ((f32)rand() / 32767.0f < self->unk5b8) {
+        if (self->unk5b8 > (f32)rand() / 32767.0f) {
             fn_80162610(self, self->unk894, 2);
             goto CheckConditionBits;
         }
@@ -1157,11 +1158,11 @@ u32 FollowSearchStateUpdate(Owner* self)
     }
 
 CheckConditionBits:
-    if ((fn_80162940(self->unk894, 0x800) == 0 &&
-         fn_80162940(self->unk894, 0x400) == 0) ||
-        st->unk10 <= 3000.0f)
-        return 0;
-    return 1;
+    if ((fn_80162940(self->unk894, 0x800) != 0 ||
+         fn_80162940(self->unk894, 0x400) != 0) &&
+        st->unk10 > 3000.0f)
+        return 1;
+    return 0;
 }
 
 // Resets the follow-offset timer: clears the offset timer, releases follow
