@@ -811,6 +811,9 @@ config.libs = [
             Object(NonMatching, "game/u_8028DA1C.cpp"),  # guess
             Object(NonMatching, "game/u_80290C58.cpp"),  # guess
             Object(NonMatching, "game/u_80294548.cpp"),  # guess
+            Object(Matching, "game/u_80299F0C.cpp"),  # "SpitAndSqueal" effect type (split from u_80294548)
+            Object(NonMatching, "game/u_8029A5E4.cpp"),  # split from u_80294548
+            Object(NonMatching, "game/u_8029B070.cpp"),  # split from u_80294548
             Object(NonMatching, "game/u_8029C0AC.cpp"),  # guess
             Object(NonMatching, "game/u_8029E714.cpp"),  # pinned
             Object(Matching, "game/u_802A770C.cpp"),  # host types
