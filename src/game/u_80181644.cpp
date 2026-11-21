@@ -256,6 +256,8 @@ bool fn_80181644(void* behp, void* hostp) {
     } else {
         DamageMsg msg;
         float amount;
+        int owner;
+        HitTarget* target;
         if (fn_80049940()) {
             amount = kind->count2 * p->scale;
             if ((int)(hit.obj->handle >> 24) == 2) {
@@ -268,7 +270,8 @@ bool fn_80181644(void* behp, void* hostp) {
             }
         }
         msg.source = p;
-        msg.owner = p->id;
+        owner = p->id;
+        msg.owner = owner;
         msg.hash = kind->hash1C;
         msg.amount = amount;
         msg.force = kind->unk18;
@@ -281,40 +284,41 @@ bool fn_80181644(void* behp, void* hostp) {
         msg.unk14 = hit.unk14;
         msg.unk18 = hit.unk18;
         msg.material = hit.material;
-        msg.target = hit.obj;
-        if ((int)(msg.target->handle >> 24) == 0x13 && (int)((u32)msg.owner >> 24) == 2) {
+        target = hit.obj;
+        msg.target = target;
+        if ((int)(target->handle >> 24) == 0x13 && (int)((u32)owner >> 24) == 2) {
             int handled = 0;
             SweepHit h = hit;
             int v;
-            if (msg.target->unk908 == 0x8CD18EE1) {
+            if (target->unk908 == 0x8CD18EE1) {
                 return 0;
             }
             QueryName(&v, 0x4B000000, 0x0E83B88B);
-            if (fn_80049940() && PlayerTeam(HandleToPlayer(p->id)) == PlayerTeam(HandleToPlayer(hit.obj->handle)) &&
+            if (fn_80049940() && PlayerTeam(HandleToPlayer(hit.obj->handle)) == PlayerTeam(HandleToPlayer(p->id)) &&
                 v == 0) {
                 return 0;
             }
             dist.x = box[3] - box[0];
             dist.y = box[4] - box[1];
             dist.z = box[5] - box[2];
-            if (*msg.target->type == 0x11BAC) {
+            if (*target->type == 0x11BAC) {
                 fn_801ED8CC(300.0f, 100.0f, 0, &h, 2000, 0, 0, 1, 1);
                 handled = 1;
-            } else if (*msg.target->type == 0x2889735F || *msg.target->type == 0x27B2569E ||
-                       *msg.target->type == 0x4BD66AD8) {
+            } else if (*target->type == 0x2889735F || *target->type == 0x27B2569E ||
+                       *target->type == 0x4BD66AD8) {
                 fn_801ED8CC(150.0f, 50.0f, 2, &h, 2000, 0, &dist, 0, 1);
                 handled = 1;
             }
             if (!handled) {
                 fn_801ED8CC(300.0f, 100.0f, 1, &h, 2000, 1, &dist, 0, 1);
             }
-        } else if ((int)(msg.target->handle >> 24) == 2 && (int)((u32)p->id >> 24) == 2 &&
-                   msg.target->handle != p->id) {
-            HitTarget* t = msg.target;
+        } else if ((int)(target->handle >> 24) == 2 && (int)((u32)p->id >> 24) == 2 &&
+                   (int)target->handle != p->id) {
+            HitTarget* t = target;
             SweepHit h = hit;
             int v;
             QueryName(&v, 0x4B000000, 0x0E83B88B);
-            if (fn_80049940() && PlayerTeam(HandleToPlayer(p->id)) == PlayerTeam(HandleToPlayer(hit.obj->handle)) &&
+            if (fn_80049940() && PlayerTeam(HandleToPlayer(hit.obj->handle)) == PlayerTeam(HandleToPlayer(p->id)) &&
                 v == 0) {
                 return 0;
             }
