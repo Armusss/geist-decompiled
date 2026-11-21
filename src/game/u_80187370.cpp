@@ -58,7 +58,11 @@ struct Player {
     int animLoop2;        // 0xFC
     u8 pad100[0x1C];
     int anim11C;          // 0x11C
-    u8 pad120[0x518];
+    u8 pad120[0x1F4];
+    int unk314;           // 0x314
+    u8 pad318[0x10];
+    int unk328;           // 0x328
+    u8 pad32C[0x30C];
     int unk638;           // 0x638
     u8 pad63C[0x48];
     float unk684;         // 0x684
@@ -75,9 +79,15 @@ struct Player {
     int unk7D0;           // 0x7D0
     u8 pad7D4[0x34];
     int unk808;           // 0x808
-    u8 pad80C[0x14C8];
+    u8 pad80C[0xCF0];
+    float unk14FC;        // 0x14FC
+    u8 pad1500[0x7D4];
     float unk1CD4;        // 0x1CD4
-    u8 pad1CD8[0x9D8];
+    u8 pad1CD8[0x2C];
+    u8 unk1D04[4];        // 0x1D04
+    u8 pad1D08[0x964];
+    float unk266C;        // 0x266C
+    u8 pad2670[0x40];
     int bone;             // 0x26B0
     u8 pad26B4[0x10];
     HostModel* hosts[2];  // 0x26C4
@@ -106,17 +116,25 @@ int ModelBoneName(int model, int bone);
 int ModelBoneNodeChain(int model, int name, int* out, int max);
 int HasCondition(void* conds, int id);
 void ActorPlayAnim(int handle, unsigned long anim, int a);
+int AssetFind(unsigned long bank, unsigned long name);
+void PlayerSetActionMode(void* p, int mode);
+void PlayerApplyFrameOffset(Player* p);
+void PlayerStartGunCharge(void* p);
+void Fn800F7F5C(int a, int b, int msg, int who, void* data, float f);
 
 extern "C" {
 void fn_80155A84(void* a, int b, int c);
 int fn_800498D0();
-void fn_800769A0(Player* p);
+void fn_800769A0(Player* p, float dt);
 void fn_80074D68(Player* p, float dt);
 int fn_800A1BC8(int model, int set, u32 anim, int a, int b);
 int fn_80175EFC(int slot);
 void fn_8018ABFC();
 HostModel* fn_800A384C(LinkObj* obj);
 int SendMsg(int to, int msg, void* data);
+int fn_802A1D04();
+int fn_80212730(int handle);
+void fn_80048BA8(Player* p, void* buf, int a);
 
 extern PlayerState lbl_803A8800[25];
 float lbl_804D50E0;
@@ -130,6 +148,43 @@ inline void QuerySend(int target, unsigned long hash) {
     *(int*)&q.result = 0;
     q.unk8 = 0;
     SendMsg(target, 0x41E, &q);
+}
+
+// Movement step shared by the state updates.
+inline void PlayerMove(Player* p, float dt) {
+    fn_800769A0(p, dt);
+    if (p->unk750 == 1) {
+        fn_80074D68(p, dt);
+    } else if (p->unk74C == 1) {
+        PlayerUpdateMotionInput(dt, p);
+    } else {
+        PlayerSelectCollisionUpdate(p, dt);
+    }
+}
+
+// Fire / charge input shared by the state updates.
+inline void PlayerGunInput(Player* p) {
+    if (fn_802A1D04() == 0) {
+        if (p->unk750 != 1) {
+            if (p->unk74C == 1) {
+                if (p->unk328 & 1) {
+                    PlayerApplyFrameOffset(p);
+                }
+            } else if ((p->unk328 & 1) && !(p->flags7B4 & 0x08000000) && !(p->flags7B4 & 0x40000) &&
+                       !(p->flags7B4 & 0x80000) && fn_80212730(p->handle) == -1) {
+                PlayerStartGunCharge(p);
+            }
+        }
+    } else if (p->unk328 != 0 && !(p->flags7B4 & 0x100000) && p->unk266C > 1250.0f) {
+        if (p->flags7B4 & 0x800000) {
+            p->flags7B4 &= ~0x100000;
+        } else {
+            p->flags7B4 |= 0x100000;
+            PlayerSetActionMode(p, 0x10);
+        }
+    } else if (p->unk266C <= 0.0f || p->unk328 == 0) {
+        p->flags7B4 &= ~0x100000;
+    }
 }
 
 inline u32* PlayerStateAnim(Player* p, int state) {
@@ -175,7 +230,7 @@ void fn_801873D8(Player* p) {
 void fn_80187598(Player* p, float dt) {
     p->unk638 = 0;
     p->flags7B4 &= ~1;
-    fn_800769A0(p);
+    fn_800769A0(p, dt);
     if (p->unk750 == 1) {
         fn_80074D68(p, dt);
     } else if (p->unk74C == 1) {
@@ -201,6 +256,20 @@ void fn_8018766C(Player* p) {
     }
     if (p->anim11C != -1) {
         p->anim2 = p->anim11C;
+    }
+}
+
+void fn_80187698(Player* p, float dt) {
+    AssetFind(0xD9044CBB, 0x50EC64DA);
+    p->unk638 = 1;
+    p->flags7B4 &= ~1;
+    PlayerMove(p, dt);
+    p->unk7D0 = 1;
+    PlayerGunInput(p);
+    if (!(p->flags7B4 & 0x100000)) {
+        PlayerSetActionMode(p, 3);
+    } else {
+        PlayerSetValue4(&p->state, 0x10);
     }
 }
 
@@ -287,8 +356,56 @@ void fn_8018878C(Player* p) {
     p->flags50 &= ~0x40000;
 }
 
+void fn_80188A40(Player* p, float dt) {
+    p->unk638 = 1;
+    p->flags7B4 &= ~1;
+    PlayerMove(p, dt);
+    PlayerGunInput(p);
+    PlayerSetValue4(&p->state, 3);
+}
+
+void fn_80188D98(Player* p, float dt) {
+    p->unk638 = 1;
+    p->flags7B4 &= ~1;
+    PlayerMove(p, dt);
+    PlayerGunInput(p);
+    PlayerSetValue4(&p->state, 3);
+}
+
 void fn_801890F0(Player* p) {
     ActorPlayAnim(0x02000000, 0xD39F69B4, fn_800498D0());
+}
+
+void fn_80189124(Player* p, float dt) {
+    p->unk638 = 1;
+    p->flags7B4 &= ~1;
+    PlayerMove(p, dt);
+    PlayerGunInput(p);
+    PlayerSetValue4(&p->state, 1);
+}
+
+void fn_80189404(Player* p, float dt) {
+    p->unk638 = 1;
+    p->flags7B4 &= ~1;
+    PlayerMove(p, dt);
+    PlayerGunInput(p);
+}
+
+void fn_801896A0(Player* p, float dt) {
+    p->unk638 = 1;
+    p->flags7B4 &= ~1;
+    PlayerMove(p, dt);
+    if (p->unk808 >= 5) {
+        PlayerSetValue4(&p->state, 3);
+    } else {
+        PlayerSetValue4(&p->state, 5);
+    }
+    PlayerGunInput(p);
+    if (p->unk314 == 0) {
+        PlayerSetValue4(&p->state, 3);
+    } else {
+        PlayerResetGunTimer(p);
+    }
 }
 
 void fn_80189880(Player* p) {
@@ -302,8 +419,28 @@ void fn_80189880(Player* p) {
     p->unk808++;
 }
 
+void fn_80189D54(Player* p) {
+    int host = PlayerInHost((Actor*)p);
+    u32* anim = PlayerStateAnim(p, 3);
+    p->anim = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet, *anim, 0, 0);
+    p->animDone = (void*)fn_8018ABFC;
+    p->animLoop = 1;
+    p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, *anim, 0, 0);
+    p->animLoop2 = 1;
+    PlayerGunInput(p);
+    p->unk808 = 0;
+}
+
 void fn_80189F0C(Player* p) {
     ActorPlayAnim(0x02000000, 0x8B3A27A3, fn_800498D0());
+}
+
+void fn_80189F40(Player* p, float dt) {
+    p->unk638 = 1;
+    p->flags7B4 &= ~1;
+    PlayerMove(p, dt);
+    PlayerGunInput(p);
+    PlayerSetValue4(&p->state, 3);
 }
 
 void fn_8018A604(Player* p) {
