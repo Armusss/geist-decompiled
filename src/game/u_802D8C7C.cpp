@@ -1,4 +1,10 @@
-// u_802D8C7C.cpp: owner follow states and conditions (0x802D8C7C-0x802DB9D0).
+// u_802D8C7C.cpp: owner follow states and conditions ("[FSGSVE]", 0x802D8C7C-0x802DB9D0).
+// Sister of u_8029C0AC / u_801CA16C: same 8-state table, message handler and save tag scheme.
+// Data: .rodata 0x8034C3E8 (POSSESS..SCAN, "", "QUERY", "[FSGSVE]", "\n"), state table 0x803C5730,
+// asset + scan mask .sdata 0x804D3D28, .sdata2 0x804DB198-0x804DB1F8.
+// Status: 25/27. A temporary Matching flip differs from retail only in the open "li r4 before addi r3"
+// shape after the `mr.` null test (UpdateActorState, FollowStateEnterClear).
+// `(Owner*)(void*)p` copies stand in for retail's void* parameters (the symbols say Owner*).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include "game/types.h"
@@ -142,6 +148,11 @@ struct MsgData {
 extern u8 __upper_map[256];
 
 extern "C" {
+int  fn_80162940(void* mem, int value);
+int  fn_8029B140(Owner* self, u32 id);
+int  fn_800B22F8(Owner* self, int index);
+void fn_800B2418(f32 delay, Owner* self, int index);
+int  fn_800B2454(Owner* self, int index);
 void* memcpy(void*, const void*, unsigned long);
 void* memset(void*, int, unsigned long);
 void fn_8001EAF8(void* obj, int time, void (*cb)(void), void* arg, void* data);
@@ -196,12 +207,7 @@ f32 OwnerValue(Owner*, void* target);
 int ActorScanTargetCallback(Owner* self, Owner* other, f32 dist);
 int ConditionUpdateBit(void* mem, int bit, int value);
 int  FollowLineCheckActorDist(void* self, void* target, f32 dist);
-int  fn_80162940(void* mem, int value);
 void VFree(void* ptr);
-int  fn_8029B140(Owner* self, u32 id);
-int  fn_800B22F8(Owner* self, int index);
-void fn_800B2418(f32 delay, Owner* self, int index);
-int  fn_800B2454(Owner* self, int index);
 u32  Fn800F7DEC(int a, int b, int c, int d, void* e);
 void BitClear(u32* bits, int bit);
 int MemFlagIsSet(void* mem, int flag);
@@ -289,8 +295,8 @@ StateEntry gFsgSveStates[8] = {
 
 // The asset found by AssetFind for the 0x41e query reply.
 int gFsgSveAsset = -1;
-// Target-kind mask for the scan timer, built on first use.
-u32 gFsgSveScanMask = 0;
+// Target-kind bit mask for the scan timer, built on first use.
+u32 gFsgSveScanMask[1] = { 0 };
 
 // Save/load request (0x7102 save, 0x7103 load).
 struct MsgSave {
@@ -478,11 +484,11 @@ int UpdateActorState(Owner* owner)
     StateData* st = self->unk130;
 
     if (!MemFlagIsSet(self->unk270, 5)) {
-        if (gFsgSveScanMask == 0) {
-            memset(&gFsgSveScanMask, 0xff, 4);
-            BitClear((u32*)&gFsgSveScanMask, 0x13);
+        if (gFsgSveScanMask[0] == 0) {
+            memset(gFsgSveScanMask, 0xff, 4);
+            BitClear(gFsgSveScanMask, 0x13);
         }
-        fn_8001EAF8(self->unk024, 0x5dc, (void (*)(void))ActorScanTargetCallback, self, &gFsgSveScanMask);
+        fn_8001EAF8(self->unk024, 0x5dc, (void (*)(void))ActorScanTargetCallback, self, gFsgSveScanMask);
     }
 
     st->unk10 += self->unk138;
