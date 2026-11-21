@@ -377,3 +377,41 @@ What is established:
 - Tried without effect: SltInit (address of sSlots before sGroups: pointer locals for either table, `sGroups + 1`,
   9 variants in fable-sched-tools/slt_var.py, all 5); GhostGunUpdate message block (31 statement orders and temp
   choices in gg_var.py: 24-27, the committed form stays at 9).
+
+## The tick-function `li r4,N` before `addi r3,rA,624` (opus-hostride, 2026-11-21): mechanism found, source form not found
+Cases: HostRideJTick, NpcSveUpdateActor, UpdateActorState (+ HostRideBUpdate, HostRideTick, CreatureUpdate,
+BehParamsUpdate, fn_80295634, fn_801DCA38, fn_801DD61C, FoeUpdateChase): `mr. rA,r3` in the entry block, then
+`lwz rB,304(rA) | li r4,N | addi r3,rA,624 | bl`. Toys: ~/geist-work/ds/opus-hostride-tools/t1-t26.cpp (`first.py SRC N`
+prints the N instructions before each first call; `probe.py SRC N "pragma"` is probe-only). `scanboth.py` lists every
+retail site of this block shape: all 11 li-first sites are the big tick functions (3+ saved registers); the 11
+addi-first ones are small state callbacks or other shapes.
+What is established:
+- **The scheduler runs before register coloring.** `h1 = g1+1; h2 = g2+2; h3 = g3+3;` gets r5/r4/r3 with scheduling and
+  r3/r3/r3 with `#pragma scheduling off` (probe), so it sees virtual registers; a copy that coloring later coalesces
+  away is still an instruction to the scheduler. The pass list in mwcceppc.exe confirms the order: INITIAL CODE,
+  BEFORE SCHEDULING, AFTER INSTRUCTION SCHEDULING, PEEPHOLE FORWARD, REGISTER COLORING, VALUE NUMBERING (POST
+  COLORING), prologue/epilogue, PEEPHOLE, FINAL CODE AFTER INSTRUCTION SCHEDULING.
+- **The scheduler never puts an independent `li r4,N` before `addi r3,rA,K`**, but it does move `mr r4,rX` ahead of
+  it (t16 C: `addi | mr r4,r29` with scheduling off, `mr r4,r29 | addi` with it on).
+- **The retail order appears exactly when the constant comes from its own statement.** `b = a->beh; c = 10;
+  if (HasCondition(a->st, c) ...` gives `lwz r30,304(r31) | li r4,10 | addi r3,r31,624` under
+  `#pragma optimization_level 1` (probe), even with scheduling off: the `c = 10` instruction comes first and `c`
+  is coalesced into r4. At -O4 the constant is folded into the call and the order goes back to addi first. O1 is not
+  the answer either: the rest of HostRideJTick then differs (an extra `lwz r0,0(r30)`, other moves).
+- Loops keep the constant in a register (`for/do (c = 10; ...)` gives `li r29,10 | mr r4,r29 | addi`), but they keep
+  the loop as well, and retail has no back edge.
+- Ruled out at -O4 (all addi first, or other code): the constant in a local (before or after the test, `c += 0`,
+  `register`, `u8`/`short`/`long long`, reached through `int*`, set through an `int&` inline, two equal assignments
+  (gives a branch), `x ? 10 : 10`, an inline with two returns, a one-element array, a union, a struct with a
+  constructor, an inline returning a struct, a template argument, a default argument, a `const int&` parameter (loads
+  from .rodata), `static const` scalar/array/struct (loads)); the actor through a copy (`o = a` at O1 too, `for (o =
+  a;;)`, a reassigned copy, a reference local, `Actor* const`, `if ((a = ...) == 0)`, `owner ? ... : 0`, an
+  inline cast), the whole body or the check in an inline (constants as parameters, null test inside or outside), a
+  null-checking condition accessor, member calls (`a->st.Has(10)`, static member, `Cond&` parameter, base class at
+  +0x270, `a->Has(10)` forwarding), callee parameter types, the load before the test, a second parameter, `goto`,
+  `switch (0)`, the full HostRideJTick body with a constant local, and the optimizer pragmas as probes
+  (opt_propagation, opt_common_subs, global_optimizer, opt_lifetimes, opt_dead_code, scheduling 601/604/750).
+- So the retail IR had an extra instruction in that block (most likely `li vC,N` + `mr r4,vC` with vC coalesced into
+  r4) that no ordinary -O4 source form found so far produces. Next ideas: decompile Scheduler.c's priority function in
+  mwcceppc.exe; a constant the backend's global optimizer creates late (strings in the exe: CONSTANT PROPAGATION 2,
+  ARRAY => REGISTER TRANSFORM, VALUE NUMBERING 2/3 run after the front end).
