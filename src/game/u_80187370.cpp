@@ -10,6 +10,8 @@
 
 #include <dolphin/types.h>
 #include "game/types.h"
+#include "game/string.h"
+#include "game/msg.h"
 
 struct Actor;
 
@@ -20,11 +22,25 @@ struct HostModel {
     int animSet2;         // 0x1C
 };
 
+// A world object the player is attached to (only the fields used here).
+struct LinkObj {
+    u8 pad00[0x38];
+    u32 handle;           // 0x38
+    u8 pad3C[0x48];
+    struct { u8 pad[0x9C]; int anim; }* info;  // 0x84
+    u8 pad88[0x1E8];
+    u8 conds[4];          // 0x270
+};
+
 // The player object (only the fields used here).
 struct Player {
-    u8 pad00[0x50];
+    u8 pad00[0x38];
+    int handle;           // 0x38
+    u8 pad3C[0x14];
     u32 flags50;          // 0x50
-    u8 pad54[0x24];
+    u8 pad54[0x4];
+    int model;            // 0x58
+    u8 pad5C[0x1C];
     int unk78;            // 0x78
     u8 pad7C[0x10];
     void* animDone;       // 0x8C
@@ -61,11 +77,13 @@ struct Player {
     int unk808;           // 0x808
     u8 pad80C[0x14C8];
     float unk1CD4;        // 0x1CD4
-    u8 pad1CD8[0x9EC];
+    u8 pad1CD8[0x9D8];
+    int bone;             // 0x26B0
+    u8 pad26B4[0x10];
     HostModel* hosts[2];  // 0x26C4
     u8 pad26CC[0x14];
     u8 unk26E0[8];        // 0x26E0
-    int unk26E8;          // 0x26E8
+    LinkObj* link;        // 0x26E8
     u8 pad26EC[0xB0];
     int unk279C;          // 0x279C
 };
@@ -83,6 +101,10 @@ void PlayerSelectCollisionUpdate(void* p, float dt);
 void PlayerSetValue4(void* p, int v);
 void PlayerUpdateMotionInput(float dt, void* p);
 int PlayerInHost(Actor* a);
+void HostAction(Actor* a);
+int ModelBoneName(int model, int bone);
+int ModelBoneNodeChain(int model, int name, int* out, int max);
+int HasCondition(void* conds, int id);
 void ActorPlayAnim(int handle, unsigned long anim, int a);
 
 extern "C" {
@@ -93,9 +115,22 @@ void fn_80074D68(Player* p, float dt);
 int fn_800A1BC8(int model, int set, u32 anim, int a, int b);
 int fn_80175EFC(int slot);
 void fn_8018ABFC();
+HostModel* fn_800A384C(LinkObj* obj);
+int SendMsg(int to, int msg, void* data);
 
 extern PlayerState lbl_803A8800[25];
 float lbl_804D50E0;
+int lbl_80495890[16];
+
+// Sends a 0x41E name query to the target (the reply is not used).
+inline void QuerySend(int target, unsigned long hash) {
+    QueryMsg q;
+
+    q.hash = hash;
+    *(int*)&q.result = 0;
+    q.unk8 = 0;
+    SendMsg(target, 0x41E, &q);
+}
 
 inline u32* PlayerStateAnim(Player* p, int state) {
     return &lbl_803A8800[state].anims[p->animVariant];
@@ -110,6 +145,31 @@ void fn_80187380(Player* p, float dt) {
     p->unk638 = 1;
     p->flags7B4 &= ~1;
     PlayerSelectCollisionUpdate(p, dt);
+}
+
+void fn_801873D8(Player* p) {
+    int host;
+    u32* anim;
+    int chain;
+    QuerySend(p->handle, 0x2DA8293C);
+    QuerySend(p->handle, 0xDFF3097A);
+    PlayerResetGunTimer(p);
+    HostAction((Actor*)p);
+    host = PlayerInHost((Actor*)p);
+    anim = PlayerStateAnim(p, 24);
+    p->anim = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet, *anim, 0, 0);
+    p->animLoop = 0x50;
+    if (p->bone == -1) {
+        chain = 8;
+    } else {
+        chain = ModelBoneNodeChain(p->model, ModelBoneName(p->model, p->bone), lbl_80495890, 16);
+        if (chain == -1) {
+            chain = 8;
+        }
+    }
+    p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, *anim, chain * 2, 0);
+    p->animDone2 = (void*)fn_8018ABFC;
+    p->animLoop2 = 0x50;
 }
 
 void fn_80187598(Player* p, float dt) {
@@ -163,8 +223,37 @@ void fn_80187934(Player* p) {
     if (p->unk279C == -1 || fn_80175EFC(p->unk279C) != 0) {
         PlayerSetValue4(&p->state, 3);
         p->unk684 = lbl_804D50E0;
-        fn_80155A84(p->unk26E0, p->unk26E8, 1);
+        fn_80155A84(p->unk26E0, (int)p->link, 1);
     }
+}
+
+void fn_801879BC(Player* p) {
+    int blend = 0;
+    LinkObj* link;
+    lbl_804D50E0 = p->unk684;
+    link = p->link;
+    switch (link->handle >> 24) {
+    case 0x13:
+        if ((int)(link->handle >> 24) == 0x13) {
+            HostModel* m = fn_800A384C(link);
+            u32* anim;
+            if (HasCondition(link->conds, 11)) {
+                blend = 1;
+            }
+            anim = PlayerStateAnim(p, 21);
+            p->anim = fn_800A1BC8(m->model, m->animSet, *anim, blend, 0);
+            p->anim2 = fn_800A1BC8(m->model, m->animSet2, *anim, blend, 0);
+        }
+        break;
+    case 1:
+        p->anim = link->info->anim;
+        p->anim2 = link->info->anim;
+        break;
+    }
+    p->animDone = (void*)fn_8018ABFC;
+    p->animLoop = 0x59;
+    p->animLoop2 = 0x59;
+    PlayerSetValue4(&p->state, 0x15);
 }
 
 void fn_80187E24(Player* p) {
@@ -179,7 +268,7 @@ void fn_80187E24(Player* p) {
 }
 
 void fn_80187FE0(Player* p) {
-    fn_80155A84(p->unk26E0, p->unk26E8, 1);
+    fn_80155A84(p->unk26E0, (int)p->link, 1);
 }
 
 void fn_8018800C(Player* p) {
