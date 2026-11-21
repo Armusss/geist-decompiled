@@ -97,7 +97,7 @@ inline void MeshCopyVertex(MeshVertex* dst, MeshVertex* src) {
     dst->color = src->color;
 }
 
-void MeshDrawDeferred(MeshPrim* prim);
+void MeshDrawDeferred(void* p);
 
 void MeshDeferPrim(MeshPrim* prim, MeshVertex* verts) {
     int n;
@@ -163,11 +163,12 @@ void MeshDeferPrim(MeshPrim* prim, MeshVertex* verts) {
         break;
     }
 
-    DeferAdd(fn_8000FECC(prim->material), (Vec3*)dv, (void (*)(void*))MeshDrawDeferred, copy);
+    DeferAdd(fn_8000FECC(prim->material), (Vec3*)dv, MeshDrawDeferred, copy);
 }
 
-void MeshDrawDeferred(MeshPrim* prim) {
+void MeshDrawDeferred(void* p) {
     int old;
+    MeshPrim* prim;
     MeshVertex* verts;
 
     GfxSetVtxDesc(2);
@@ -178,6 +179,7 @@ void MeshDrawDeferred(MeshPrim* prim) {
     GXSetAlphaUpdate(GX_TRUE);
     GfxSetCullMode(0);
 
+    prim = (MeshPrim*)p;
     verts = (MeshVertex*)(prim + 1);
     switch (fn_80010448(prim->material, 1)) {
     case 2:
@@ -193,7 +195,7 @@ void MeshDrawDeferred(MeshPrim* prim) {
     fn_801D89A4(old);
 }
 
-inline void MeshEmitVertex(MeshVertex* v) {
+inline void MeshEmitVertex(const MeshVertex* v) {
     GXPosition3f32(v->x, v->y, v->z);
     GXColor4u8(v->color.r, v->color.g, v->color.b, v->color.a);
     GXTexCoord2f32(v->u, v->v);
