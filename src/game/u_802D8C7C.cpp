@@ -1,7 +1,15 @@
-// u_802D8C7C.cpp: owner follow states and conditions (0x802D8C7C-0x802DB9D0).
+// u_802D8C7C.cpp: owner follow states and conditions ("[FSGSVE]", 0x802D8C7C-0x802DB9D0).
+// Sister of u_8029C0AC / u_801CA16C: same 8-state table, message handler and save tag scheme.
+// Data: .rodata 0x8034C3E8 (POSSESS..SCAN, "", "QUERY", "[FSGSVE]", "\n"), state table 0x803C5730,
+// asset + scan mask .sdata 0x804D3D28, .sdata2 0x804DB198-0x804DB1F8.
+// Status: 25/27. A temporary Matching flip differs from retail only in the open "li r4 before addi r3"
+// shape after the `mr.` null test (UpdateActorState, FollowStateEnterClear).
+// `(Owner*)(void*)p` copies stand in for retail's void* parameters (the symbols say Owner*).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include "game/types.h"
+#include "game/string.h"
+#include "game/msg.h"
 
 // u_802D8C7C.cpp: actor query message handler and per-frame state update.
 // Function, struct and field names are descriptive guesses.
@@ -137,63 +145,29 @@ struct MsgData {
     int    unk1c;       // 0x1c
 };
 
-class Buffer {
-public:
-    virtual ~Buffer();
-    u32 unk04;  // 0x04
-    u32 unk08;  // 0x08
-    u32 unk0c;  // 0x0c
-    u32 unk10;  // 0x10
-};
-
-class String : public Buffer {
-public:
-    String() {}
-    String(const char*);
-};
-
 extern u8 __upper_map[256];
-extern char lbl_8034C3E8[];
-extern StateEntry lbl_803C5730[];
-extern int lbl_804D3D28;
-extern int lbl_804D3D2C;
-extern f32 lbl_804DB198;
-extern f32 lbl_804DB19C;
-extern f32 lbl_804DB1A0;
-extern f32 lbl_804DB1A4;
-extern f32 lbl_804DB1A8;
-extern f32 lbl_804DB1B8;
-extern f32 lbl_804DB1BC;
-extern f32 lbl_804DB1C0;
-extern f32 lbl_804DB1C4;
-extern f32 lbl_804DB1C8;
-extern f32 lbl_804DB1CC;
-extern f32 lbl_804DB1D0;
-extern f32 lbl_804DB1D4;
-extern f32 lbl_804DB1D8;
-extern f32 lbl_804DB1DC;
-extern f32 lbl_804DB1E0;
-extern f32 lbl_804DB1E8;
-extern f32 lbl_804DB1EC;
-extern f32 lbl_804DB1F0;
-extern f32 lbl_804DB1F4;
 
 extern "C" {
+int  fn_80162940(void* mem, int value);
+int  fn_8029B140(Owner* self, u32 id);
+int  fn_800B22F8(Owner* self, int index);
+void fn_800B2418(f32 delay, Owner* self, int index);
+int  fn_800B2454(Owner* self, int index);
 void* memcpy(void*, const void*, unsigned long);
 void* memset(void*, int, unsigned long);
 void fn_8001EAF8(void* obj, int time, void (*cb)(void), void* arg, void* data);
-void fn_800225C8(void* out, void* a, void* b);
 int  fn_80049940(void);
 int  fn_800BAF40(Owner* self);
 int  fn_800BEF9C(int handle);
 void fn_800C9ED0(Owner* self);
-void fn_800C9FC0(f32 value, Owner* self, void* arg);
+void fn_800C9FC0(Owner* self, void* arg, f32 value);
 void fn_80162658(Owner* self, void* arg);
 void fn_801BD7D4(Owner* self);
-void fn_8028C188(void* out, int a, int b);
+void fn_8028C188(void* out, const char* s, int length);
+String fn_800225C8(const String& a, const String& b);
 int  SendMsg(int to, int msg, void* data);
 int  rand(void);
-void fn_800B1AB8(f32 delay, Owner* self, int a, int b);
+void fn_800B1AB8(Owner* self, int a, f32 delay, int b);
 int  fn_800B26B8(Owner* self);
 int  fn_800B261C(Owner* self, int value, int* out);
 int  fn_800B1EF4(Owner* self, int index = 0);
@@ -213,7 +187,7 @@ int  fn_8029B3B0(Owner* self, u32 id);
 int  fn_800B7CE0(int handle);
 u32  fn_8016325C(void* mem);
 int  fn_800E0DBC(void* vec);
-void fn_800E1098(void* vec);
+void fn_800E1098(void* out, void* in, f32 length);
 f32  fn_800E1020(void* vec);
 int  fn_800BF2D0(void* vec);
 void fn_800BC5A8(Owner* self, void* vec);
@@ -233,12 +207,7 @@ f32 OwnerValue(Owner*, void* target);
 int ActorScanTargetCallback(Owner* self, Owner* other, f32 dist);
 int ConditionUpdateBit(void* mem, int bit, int value);
 int  FollowLineCheckActorDist(void* self, void* target, f32 dist);
-int  fn_80162940(void* mem, int value);
 void VFree(void* ptr);
-int  fn_8029B140(Owner* self, u32 id);
-int  fn_800B22F8(Owner* self, int index);
-void fn_800B2418(f32 delay, Owner* self, int index);
-int  fn_800B2454(Owner* self, int index);
 u32  Fn800F7DEC(int a, int b, int c, int d, void* e);
 void BitClear(u32* bits, int bit);
 int MemFlagIsSet(void* mem, int flag);
@@ -252,177 +221,274 @@ void FollowSetTargetObj(void* mem, void* target);
 void* VAlloc(int size);
 void AnimBankActivate(u32 bank, u32 anim);
 
-// Incremental name hash (seeded variant); the seed is part of the caller's
-// message block for the query message and zero elsewhere.
-static u32 NameHash(u32 hash, const char* name)
-{
-    if (name != 0) {
-        const char* p = name;
-        while (*p != 0) {
-            int c = (signed char)*name;
-            u32 v;
-            if (c == -1)
-                v = 0xffffffff;
-            else
-                v = (u8)__upper_map[c & 0xff];
-            hash = hash * 31;
-            hash += v & 0xff;
-            name++;
-            p++;
-        }
-        hash %= 0xffffffff;
-    } else {
-        hash = 0;
+// From a shared header: names of the ghost actions (the table itself is unused here).
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
+inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
+
+inline u32 StrHash(const char* s) {
+    int i;
+    u32 h;
+
+    if (s == 0) {
+        return 0;
     }
-    return hash;
+    h = 0;
+    for (i = 0; s[i] != 0; i++) {
+        h *= 31;
+        h += (unsigned char)toupper(s[i]);
+    }
+    h %= 0xFFFFFFFF;
+    return h;
 }
 
-int HandleQueryActorMsg(int msg, MsgData* data)
-{
-    Owner* owner = data->owner;
+inline u32 StrHash(const char* s, u32 h) {
+    int i;
 
-    if (msg == 0x40a) {
-        struct Query {
-            Owner* owner;
-            int id;
-        } query;
-        query.owner = owner;
-        query.id = OwnerId(owner);
-        data->owner->unk030(0x400, &query);
-
-        u32 hash = NameHash((u32)data->buffer, lbl_8034C3E8 + 0x48);
-        if (ActorPlayAnim(OwnerId(owner), hash, data->cmd) != 0) {
-            data->pos = 0;
-            return 1;
-        }
-        if (HasCondition(owner->unk270, 10) || HasCondition(owner->unk270, 9))
-            return 0;
-        if (fn_80049940() != 0) {
-            if (data->val14.u == 0x7c44ec3du) {
-                data->pos = (int)0xa53f7e23u;
-                return 1;
-            }
-            return 0;
-        }
-        if (MemFlagIsSet(owner->unk270, 0xb))
-            return 1;
-        if (data->val14.u == 0x3ca34bd6u &&
-            !MemFlagIsSet(owner->unk270, 0x20)) {
-            data->pos = 0x1379c466;
-            return 1;
-        }
+    if (s == 0) {
         return 0;
-    } else if (msg < 0x40a) {
-        if (msg == 0x407) {
-            if (data->val14.u != 0x6ca5f172u)
-                fn_800C9FC0(lbl_804DB1A0, data->owner, data->buffer);
+    }
+    for (i = 0; s[i] != 0; i++) {
+        h *= 31;
+        h += (unsigned char)toupper(s[i]);
+    }
+    h %= 0xFFFFFFFF;
+    return h;
+}
+
+int FollowIdleStateEnter(Owner* self);
+int FollowStateEnterClear(Owner* self);
+u32 FollowApproachStateUpdate(Owner* self);
+int ActorFollowTargetDetach(Owner* self);
+int FollowOffsetUpdateBegin(Owner* self);
+int FollowTargetStateUpdate(Owner* self);
+int ActorFollowDetachTarget(void* p);
+int ActorFollowOffsetReset(Owner* self);
+int FollowStateUpdate(Owner* self);
+int FollowStateResetToIdle(Owner* self);
+int ActorStateEnterFollow(Owner* self);
+u32 ActorStateCheckTarget(Owner* self);
+int ActorFollowEnd(Owner* self);
+int ActorFollowBegin(Owner* self);
+int ActorStateCanContinue(Owner* self);
+u32 FollowSearchTimerArm(Owner* self);
+u32 FollowOffsetTimerReset(Owner* self);
+u32 FollowSearchStateUpdate(Owner* self);
+int FollowWaitStateEnter(Owner* self);
+int FollowOffsetStateLeave(Owner* self);
+bool HasFollowCondition(Owner* self);
+
+typedef int (*StateFunc)(Owner*);
+
+StateEntry gFsgSveStates[8] = {
+    { FollowIdleStateEnter, FollowStateEnterClear, (StateFunc)FollowApproachStateUpdate, "" },
+    { ActorFollowTargetDetach, FollowOffsetUpdateBegin, FollowTargetStateUpdate, "" },
+    { (StateFunc)ActorFollowDetachTarget, ActorFollowOffsetReset, FollowStateUpdate, "" },
+    { FollowStateResetToIdle, ActorStateEnterFollow, (StateFunc)ActorStateCheckTarget, "" },
+    { ActorFollowEnd, ActorFollowBegin, ActorStateCanContinue, "" },
+    { (StateFunc)FollowSearchTimerArm, (StateFunc)FollowOffsetTimerReset, (StateFunc)FollowSearchStateUpdate, "" },
+    { FollowWaitStateEnter, FollowOffsetStateLeave, (StateFunc)HasFollowCondition, "" },
+    { 0, 0, 0, "" },
+};
+
+// The asset found by AssetFind for the 0x41e query reply.
+int gFsgSveAsset = -1;
+// Target-kind bit mask for the scan timer, built on first use.
+u32 gFsgSveScanMask[1] = { 0 };
+
+// Save/load request (0x7102 save, 0x7103 load).
+struct MsgSave {
+    Owner* actor;   // 0x00
+    int size;       // 0x04: room left
+    u8* buf;        // 0x08
+    int used;       // 0x0C
+    int ok;         // 0x10
+};
+
+// Reads a saved block's tag word and checks it against the hash of the block's name.
+inline int SaveCheckTag(MsgSave* m, const char* name) {
+    if (m->used < 4) {
+        return 0;
+    } else {
+        u32* p = (u32*)m->buf;
+
+        m->used += 4;
+        m->size -= 4;
+        m->buf += 4;
+        if (*p == StrHash(name)) {
+            return 1;
+        } else {
             return 0;
         }
-        if (msg == 0x400) {
-            data->cmd = OwnerId(owner);
-            data->pos = owner->unk904 > lbl_804DB198;
-            data->val10.f = lbl_804DB19C;
-            data->val14.f = lbl_804DB19C;
-            data->unk18 = 2;
-            data->unk1c = 0;
-            return 1;
+    }
+}
+
+static inline void FsgSveStateName(Buffer* out, const char* s) {
+    String name(s);
+    String newline("\n");
+    const String& text = fn_800225C8(name, newline);
+
+    fn_8028C188(out, text.mData, text.mLength);
+}
+
+struct Msg407 {
+    Owner* actor;   // 0x00
+    int unk04;      // 0x04
+    void* arg;      // 0x08
+    u8 pad0c[8];    // 0x0c
+    u32 key;        // 0x14
+};
+
+static inline int FsgSveQuery(MsgData* data) {
+    Owner* a = data->owner;
+    Msg41E* m = (Msg41E*)data;
+    StateData* b = a->unk130;
+
+    switch (m->cmd) {
+    case 0x63F94A69: {
+        TargetRef* t = (TargetRef*)FollowGetTargetObj(a->unk270);
+
+        if (t != 0) {
+            *(int*)&m->result = t->unk38;
+        } else {
+            *(int*)&m->result = -1;
         }
-    } else {
-        if (msg == 0x7102) {
-            StateData* st = owner->unk130;
-            if (st != 0) {
-                if (data->cmd < 0x24) {
-                    data->val10.u = 0;
-                    return 1;
-                }
-                u32 hash = NameHash(0, lbl_8034C3E8 + 0x4e);
-                memcpy(data->buffer, &hash, 4);
-                data->pos += 4;
-                data->cmd -= 4;
-                data->buffer += 4;
-                memcpy(data->buffer, st, 0x20);
-                data->pos += 0x20;
-                data->cmd -= 0x20;
-                data->buffer += 0x20;
-            }
-            return 1;
-        } else if (msg < 0x7102) {
-            if (msg == 0x41e) {
-                int sel = data->cmd;
-                if (sel == (int)0xbdc9494e) {
-                    data->pos = 0;
-                    return 1;
-                }
-                if (sel < (int)0xbdc9494e) {
-                    if (sel == (int)0xad8576fa) {
-                        String a(lbl_803C5730[owner->unk130->unk00].name);
-                        String b(lbl_8034C3E8 + 0x57);
-                        String text;
-                        fn_800225C8(&text, &a, &b);
-                        fn_8028C188(&data->pos, text.unk04, text.unk08);
-                        return 0;
-                    }
-                    if (sel < (int)0xad8576fa &&
-                        sel == (int)0x832ef50a) {
-                        if (lbl_804D3D28 == -1)
-                            lbl_804D3D28 = AssetFind(0xf1754bf2u, 0x21c5e0u);
-                        data->pos = lbl_804D3D28;
-                        return 1;
-                    }
-                } else if (sel == 0x63f94a69) {
-                    TargetRef* target = (TargetRef*)FollowGetTargetObj(owner->unk270);
-                    if (target != 0)
-                        data->pos = target->unk38;
-                    else
-                        data->pos = -1;
-                    return 1;
-                }
-                return 0;
-            }
-        } else if (msg < 0x7104) {
-            StateData* st = owner->unk130;
-            if (st != 0) {
-                int n = data->pos;
-                bool ok;
-                if (n < 0x24) {
-                    data->val10.u = 0;
-                    return 1;
-                }
-                if (n < 4) {
-                    ok = false;
-                } else {
-                    u32* p = (u32*)data->buffer;
-                    data->pos = n + 4;
-                    data->cmd -= 4;
-                    data->buffer += 4;
-                    u32 hash = NameHash(0, lbl_8034C3E8 + 0x4e);
-                    ok = (*p == hash);
-                }
-                if (!ok)
-                    return 1;
-                memcpy(st, data->buffer, 0x20);
-                data->pos -= 0x20;
-                data->buffer += 0x20;
-            }
-            return 1;
+        return 1;
+    }
+    case 0xBDC9494E:
+        *(int*)&m->result = 0;
+        return 1;
+    case 0x832DF50A:
+        if (gFsgSveAsset == -1) {
+            gFsgSveAsset = AssetFind(0xF1754BF2, 0x21C5E0);
         }
+        *(int*)&m->result = gFsgSveAsset;
+        return 1;
+    case 0xAD8576FA:
+        FsgSveStateName(&m->result, gFsgSveStates[b->unk00].name);
+        return 0;
     }
     return 0;
 }
 
-int UpdateActorState(Owner* self)
+int HandleQueryActorMsg(int msg, MsgData* data)
 {
+    Owner* a = data->owner;
+    u32 tag;
+    Msg400 q;
+
+    switch (msg) {
+    case 0x400: {
+        Msg400* m = (Msg400*)data;
+
+        m->ownerId = OwnerId(data->owner);
+        m->state = (a->unk904 > 0.0f) ? 1 : 0;
+        m->f10 = 1.0f;
+        m->f14 = 1.0f;
+        m->flags = 2;
+        m->unk1C = 0;
+        return 1;
+    }
+    case 0x40A: {
+        Msg40A* m = (Msg40A*)data;
+        u32 h;
+
+        q.actor = (Actor*)data->owner;
+        q.ownerId = OwnerId(data->owner);
+        ((Owner*)m->actor)->unk030(0x400, &q);
+        h = StrHash("QUERY", m->anim);
+        if (ActorPlayAnim(OwnerId(a), h, m->unk04) != 0) {
+            m->result = 0;
+            return 1;
+        }
+        if (HasCondition(a->unk270, 0xA) || HasCondition(a->unk270, 9)) {
+            return 0;
+        }
+        if (fn_80049940()) {
+            if (m->anim == 0x7C44EC3D) {
+                m->result = 0xA53F7E23;
+                return 1;
+            }
+            return 0;
+        }
+        if (MemFlagIsSet(a->unk270, 0xB)) {
+            return 1;
+        }
+        if (m->anim == 0x3CA34BD6 && MemFlagIsSet(a->unk270, 0x20) == 0) {
+            m->result = 0x1379C466;
+            return 1;
+        }
+        return 0;
+    }
+    case 0x407: {
+        Msg407* m = (Msg407*)data;
+
+        if (m->key != 0x6CA5F172) {
+            fn_800C9FC0(data->owner, m->arg, 5000.0f);
+        }
+        return 0;
+    }
+    case 0x7102: {
+        MsgSave* m = (MsgSave*)data;
+        StateData* b = data->owner->unk130;
+
+        if (b != 0) {
+            if (m->size < 0x24) {
+                m->ok = 0;
+                return 1;
+            }
+            tag = StrHash("[FSGSVE]");
+            memcpy(m->buf, &tag, 4);
+            m->used += 4;
+            m->size -= 4;
+            m->buf += 4;
+            memcpy(m->buf, b, 0x20);
+            m->used += 0x20;
+            m->size -= 0x20;
+            m->buf += 0x20;
+        }
+        return 1;
+    }
+    case 0x7103: {
+        MsgSave* m = (MsgSave*)data;
+        StateData* b = data->owner->unk130;
+
+        if (b != 0) {
+            if (m->used < 0x24) {
+                m->ok = 0;
+                return 1;
+            }
+            if (!SaveCheckTag(m, "[FSGSVE]")) {
+                return 1;
+            }
+            memcpy(b, m->buf, 0x20);
+            m->used -= 0x20;
+            m->buf += 0x20;
+        }
+        return 1;
+    }
+    case 0x41E:
+        return FsgSveQuery(data);
+    }
+    return 0;
+}
+
+int UpdateActorState(Owner* owner)
+{
+    Owner* self = (Owner*)owner;
     if (self == 0)
         return 0;
 
     StateData* st = self->unk130;
 
     if (!MemFlagIsSet(self->unk270, 5)) {
-        if (lbl_804D3D2C == 0) {
-            memset(&lbl_804D3D2C, 0xff, 4);
-            BitClear((u32*)&lbl_804D3D2C, 0x13);
+        if (gFsgSveScanMask[0] == 0) {
+            memset(gFsgSveScanMask, 0xff, 4);
+            BitClear(gFsgSveScanMask, 0x13);
         }
-        fn_8001EAF8(self->unk024, 0x5dc, (void (*)(void))ActorScanTargetCallback, self, &lbl_804D3D2C);
+        fn_8001EAF8(self->unk024, 0x5dc, (void (*)(void))ActorScanTargetCallback, self, gFsgSveScanMask);
     }
 
     st->unk10 += self->unk138;
@@ -430,7 +496,7 @@ int UpdateActorState(Owner* self)
     st->unk18 += self->unk138;
 
     if (FollowGetTargetObj(self->unk270) != 0)
-        st->unk1c = lbl_804DB198;
+        st->unk1c = 0.0f;
     else
         st->unk1c += self->unk138;
 
@@ -444,7 +510,7 @@ int UpdateActorState(Owner* self)
     if (self->unk268 > limit)
         self->unk268 = fn_800BEF9C(self->unk2c4);
 
-    int res = lbl_803C5730[st->unk00].fn2(self);
+    int res = gFsgSveStates[st->unk00].fn2(self);
     if (MemFlagIsSet(self->unk270, 5))
         res = 1;
 
@@ -466,9 +532,9 @@ int UpdateActorState(Owner* self)
             return 1;
         }
         if ((next != st->unk00 || next == 1) &&
-            lbl_803C5730[st->unk00].fn1(self) != 0) {
-            if (lbl_803C5730[next].fn0(self) == 0)
-                lbl_803C5730[st->unk00].fn0(self);
+            gFsgSveStates[st->unk00].fn1(self) != 0) {
+            if (gFsgSveStates[next].fn0(self) == 0)
+                gFsgSveStates[st->unk00].fn0(self);
             ConditionSetBit(self->unk270, 0x40, 0);
             ConditionSetBit(self->unk270, 0x41, 0);
             ConditionSetBit(self->unk270, 0x43, 0);
@@ -481,48 +547,55 @@ int UpdateActorState(Owner* self)
 // Timer callback run once per scan interval: if the owner's current target is
 // alive and no other actor has claimed it, arm the pending state change on
 // both actors so they walk into each other's interaction range.
-int ActorScanTargetCallback(Owner* self, Owner* other, f32 dist)
-{
-    if (self != 0) {
-        ScanReply reply;
-        int id = self->unk038;
+// Arms a pending state change on `a` towards `b`.
+static inline void ScanArm(Owner* a, Owner* b) {
+    a->unk17c = 2;
+    a->unk184 = b->unk038;
+    a->unk174 = 1001.0f;
+    a->unk16c = 0;
+    a->unk16c |= 2;
+    a->unk16c |= 1;
+    a->unk178 = 1;
+    fn_800B1AB8(a, 1, -1.0f, 1);
+}
 
-        if (SendMsg(id, 0x400, &reply) != 0 &&
-            ((u32)id >> 24) == 0x13 &&
-            reply.unk0c != 0 &&
-            (other->unk908 == 0 || other->unk908 != self->unk908)) {
-            if ((self->unk16c & 1) == 0 || (self->unk16c & 4) != 0 ||
-                (self->unk184 >> 24) != 2) {
-                self->unk17c = 2;
-                self->unk184 = other->unk038;
-                self->unk174 = lbl_804DB1A4;
-                self->unk16c = 0;
-                self->unk16c |= 2;
-                self->unk16c |= 1;
-                self->unk178 = 1;
-                fn_800B1AB8(lbl_804DB1A8, self, 1, 1);
-            }
-            if ((other->unk16c & 1) != 0 && (other->unk16c & 4) == 0) {
-                OwnerInfo* info = (OwnerInfo*)OwnerGetInfo(other->unk184);
-                if (info != 0) {
-                    f32 dx = (f32)info->unk24;
-                    f32 dy = (f32)info->unk28;
-                    f32 dz = (f32)info->unk2c;
-                    if (dx * dx + dy * dy + dz * dz < dist)
-                        return 1;
-                }
-            }
-            other->unk17c = 2;
-            other->unk184 = self->unk038;
-            other->unk174 = lbl_804DB1A4;
-            other->unk16c = 0;
-            other->unk16c |= 2;
-            other->unk16c |= 1;
-            other->unk178 = 1;
-            fn_800B1AB8(lbl_804DB1A8, other, 1, 1);
+// Links the two actors unless they already belong to the same group: arms `a`
+// unless it is already heading for an actor, then arms `b` unless it is
+// already heading for a target within `dist`.
+static inline int ScanLink(Owner* a, Owner* b, f32 dist) {
+    Owner* s = (Owner*)(void*)a;
+    if (b->unk908 != 0 && b->unk908 == a->unk908) {
+        return 1;
+    }
+    if ((s->unk16c & 1) == 0 || (s->unk16c & 4) != 0 ||
+        (int)(s->unk184 >> 24) != 2) {
+        ScanArm(s, b);
+    }
+    if ((b->unk16c & 1) != 0 && (b->unk16c & 4) == 0) {
+        OwnerInfo* info = (OwnerInfo*)OwnerGetInfo(b->unk184);
+        if (info != 0) {
+            f32 x = (f32)info->unk24;
+            f32 y = (f32)info->unk28;
+            f32 z = (f32)info->unk2c;
+            if (x * x + y * y + z * z < dist)
+                return 1;
         }
     }
+    ScanArm(b, a);
     return 1;
+}
+
+int ActorScanTargetCallback(Owner* owner, Owner* other, f32 dist)
+{
+    Owner* self = (Owner*)(void*)owner;
+    Owner* peer = (Owner*)(void*)other;
+    Msg400 reply;
+
+    if (self == 0 || SendMsg(self->unk038, 0x400, &reply) == 0 ||
+        (int)((u32)self->unk038 >> 24) != 0x13 || reply.state == 0) {
+        return 1;
+    }
+    return ScanLink(self, peer, dist);
 }
 
 // Drops every condition bit this actor set up for its target interaction and
@@ -563,7 +636,7 @@ void ActorStateInit(Owner* self)
     st = (StateData*)self->unk130;
     st->unk00 = FollowStateDecide(self);
     st->unk04 = 0;
-    st->unk14 = st->unk10 = lbl_804DB198;
+    st->unk14 = st->unk10 = 0.0f;
     if (st->unk00 == 7)
         st->unk00 = 0;
 
@@ -578,9 +651,9 @@ void ActorStateInit(Owner* self)
             RangeResetPending(self->unk270);
     }
 
-    lbl_803C5730[st->unk00].fn0(self);
+    gFsgSveStates[st->unk00].fn0(self);
 
-    lbl_804D3D28 = AssetFind(0xf1754bf2u, 0x21c5e0u);
+    gFsgSveAsset = AssetFind(0xf1754bf2u, 0x21c5e0u);
     AnimBankActivate(0xb089184cu, *(u32*)(self->unk0c4 + 0x160));
     AnimBankActivate(0xb089184cu, *(u32*)(self->unk0c4 + 0x164));
     AnimBankActivate(0xb0b21bb1u, *(u32*)(self->unk0c4 + 0x168));
@@ -611,7 +684,7 @@ int ActorStateCanContinue(Owner* self)
         }
         if (fn_800BAF40(self) == -1 && self->unk21c != 0)
             self->unk288 = 0;
-        if (self->unk140 >= lbl_804DB1B8) {
+        if (self->unk140 >= 500.0f) {
             fn_800BBCA8(self);
             self->unk220 = 0;
             return 1;
@@ -624,13 +697,14 @@ int ActorStateCanContinue(Owner* self)
 
 // Arms the follow-offset update: installs the offset hinge updater on the actor,
 // clears the pending follow fields and resets the offset timer.
-int ActorFollowBegin(Owner* self)
+int ActorFollowBegin(Owner* owner)
 {
-    if (self == 0)
+    if (owner == 0)
         return 0;
-
+    Owner* self = (Owner*)(void*)owner;
+    StateData* st = self->unk130;
     self->unk10c = (void (*)(Owner*))FollowOffsetUpdate;
-    self->unk130->unk14 = lbl_804DB198;
+    st->unk14 = 0.0f;
     self->unk288 = 0;
     self->unk21c = 0;
     self->unk220 = 0;
@@ -769,7 +843,7 @@ int FollowStateUpdate(Owner* self)
         }
         if (fn_800BAF40(self) == -1 && self->unk21c != 0)
             self->unk288 = 0;
-        if (self->unk140 >= lbl_804DB1B8) {
+        if (self->unk140 >= 500.0f) {
             fn_800BBCA8(self);
             self->unk220 = 0;
             return 1;
@@ -782,13 +856,14 @@ int FollowStateUpdate(Owner* self)
 
 // Arms the follow-offset update: installs the offset hinge updater on the actor,
 // clears the pending follow fields and re-arms the follow conditions.
-int ActorFollowOffsetReset(Owner* self)
+int ActorFollowOffsetReset(Owner* owner)
 {
-    if (self == 0)
+    if (owner == 0)
         return 0;
-
+    Owner* self = (Owner*)(void*)owner;
+    StateData* st = self->unk130;
     self->unk10c = (void (*)(Owner*))FollowOffsetUpdate;
-    self->unk130->unk14 = lbl_804DB198;
+    st->unk14 = 0.0f;
     self->unk288 = 0;
     self->unk21c = 0;
     self->unk220 = 0;
@@ -859,23 +934,20 @@ int FollowTargetStateUpdate(Owner* self)
                     target->unk038, 0) == 0)
         return 1;
 
-    if (FollowLineCheckActorDist(self, target, lbl_804DB1BC) == 0 ||
-        fn_8029B3B0(self, 0x73b1e248u) == 0) {
-        fn_80162610(self, self->unk894, 0);
-        ConditionUpdateBit(self->unk270, 0, 0);
-    } else {
+    if (FollowLineCheckActorDist(self, FollowGetTargetObj(self->unk270), 0.8f) != 0 &&
+        fn_8029B3B0(self, 0x73b1e248u) != 0) {
         ConditionUpdateBit(self->unk270, 0, 1);
         ConditionUpdateBit(self->unk270, 3, 1);
         ConditionUpdateBit(self->unk270, 4, 1);
-        if (fn_80162940(self->unk894, 2) == 0 ||
-            fn_80162940(self->unk894, 8) == 0 ||
-            self->unk5b8 <= (f32)rand() / lbl_804DB1C0) {
-            if (fn_80162940(self->unk894, 1) != 0 &&
-                fn_80162940(self->unk894, 4) != 0)
-                fn_80162610(self, self->unk894, 1);
-        } else {
+        if (fn_80162940(self->unk894, 2) != 0 && fn_80162940(self->unk894, 8) != 0 &&
+            self->unk5b8 > (f32)rand() / 32767.0f) {
             fn_80162610(self, self->unk894, 2);
+        } else if (fn_80162940(self->unk894, 1) != 0 && fn_80162940(self->unk894, 4) != 0) {
+            fn_80162610(self, self->unk894, 1);
         }
+    } else {
+        fn_80162610(self, self->unk894, 0);
+        ConditionUpdateBit(self->unk270, 0, 0);
     }
 
     if (self->unk220 == 2) {
@@ -889,7 +961,7 @@ int FollowTargetStateUpdate(Owner* self)
         }
         if (fn_800BAF40(self) == -1 && self->unk21c != 0)
             self->unk288 = 0;
-        if (self->unk140 >= lbl_804DB1B8) {
+        if (self->unk140 >= 500.0f) {
             fn_800BBCA8(self);
             self->unk220 = 0;
             return 1;
@@ -903,13 +975,14 @@ int FollowTargetStateUpdate(Owner* self)
 // Entry of the follow-offset state: installs the offset hinge updater on the
 // actor, clears the pending follow fields, resets the offset timer and re-arms
 // the follow conditions.
-int FollowOffsetUpdateBegin(Owner* self)
+int FollowOffsetUpdateBegin(Owner* owner)
 {
-    if (self == 0)
+    if (owner == 0)
         return 0;
-
+    Owner* self = (Owner*)(void*)owner;
+    StateData* st = self->unk130;
     self->unk10c = (void (*)(Owner*))FollowOffsetUpdate;
-    self->unk130->unk14 = lbl_804DB198;
+    st->unk14 = 0.0f;
     self->unk288 = 0;
     self->unk21c = 0;
     self->unk220 = 0;
@@ -974,7 +1047,7 @@ int FollowOffsetStateLeave(Owner* self)
     if (self == 0)
         return 0;
 
-    self->unk130->unk10 = lbl_804DB198;
+    self->unk130->unk10 = 0.0f;
     ConditionUpdateBit(self->unk270, 4, 1);
     fn_80162610(self, self->unk894, 0);
     fn_8029B070(self, 0x73b1e248);
@@ -984,11 +1057,12 @@ int FollowOffsetStateLeave(Owner* self)
 // Enters the follow wait state: switches the state block to state 6, clears the
 // search conditions, resets any pending follow target and re-arms the follow
 // timer for the actor's current follow target.
-int FollowWaitStateEnter(Owner* self)
+int FollowWaitStateEnter(Owner* owner)
 {
+    Owner* self = (Owner*)owner;
     StateData* st;
     int index;
-    int target[4];
+    Owner* t;
 
     if (self == 0)
         return 0;
@@ -996,16 +1070,16 @@ int FollowWaitStateEnter(Owner* self)
     st = self->unk130;
     self->unk288 = 0;
     if (FollowGetTargetObj(self->unk270) != 0) {
-        self->unk240 = lbl_804DB198;
-        self->unk244 = lbl_804DB198;
-        self->unk248 = lbl_804DB198;
+        self->unk240 = 0.0f;
+        self->unk244 = 0.0f;
+        self->unk248 = 0.0f;
         fn_800BBCA8(self);
     }
 
     st->unk00 = 5;
     st->unk00 = 6;
     st->unk08 = 0;
-    st->unk10 = lbl_804DB198;
+    st->unk10 = 0.0f;
 
     ConditionUpdateBit(self->unk270, 4, 0);
     ConditionUpdateBit(self->unk270, 3, 0);
@@ -1019,10 +1093,10 @@ int FollowWaitStateEnter(Owner* self)
     index = fn_800B26B8(self);
     if (index < 4 && fn_800B1EF4(self, index) == 0) {
         fn_800B1F20(self, index);
-        fn_800B1AB8(lbl_804DB1A8, self, index, 1);
-        fn_800B261C(self, index, target);
-        if (target[0] != 0)
-            fn_800C9FC0(lbl_804DB1C4, self, *(void**)(target[0] + 0x38));
+        fn_800B1AB8(self, index, -1.0f, 1);
+        fn_800B261C(self, index, (int*)&t);
+        if (t != 0)
+            fn_800C9FC0(self, (void*)t->unk038, 10000.0f);
     }
     return 1;
 }
@@ -1030,8 +1104,9 @@ int FollowWaitStateEnter(Owner* self)
 // Per-frame update of the follow-search state: keeps the tracked target while
 // the target filter accepts it, refreshes the follow timer and condition bits
 // and reports whether the actor should leave the state.
-u32 FollowSearchStateUpdate(Owner* self)
+u32 FollowSearchStateUpdate(Owner* owner)
 {
+    Owner* self = (Owner*)owner;
     StateData* st;
     Owner* target;
     int index;
@@ -1056,28 +1131,28 @@ u32 FollowSearchStateUpdate(Owner* self)
         if (fn_800B1EF4(self, index) == 0) {
             fn_800B261C(self, index, (int*)&target);
             fn_800B22F8(self, index);
-            if (target != 0 && fn_800B22F8(self, index) < 2) {
-                fn_800B2418(lbl_804DB1A0, self, index);
+            if (target != 0 && fn_800B22F8(self, index) <= 1) {
+                fn_800B2418(5000.0f, self, index);
                 fn_800B1F20(self, index);
-                fn_800B1AB8(lbl_804DB1A8, self, index, 1);
+                fn_800B1AB8(self, index, -1.0f, 1);
                 FollowSetTargetObj(self->unk270, target);
-                if (st->unk10 > lbl_804DB1C8)
+                if (st->unk10 > 3000.0f)
                     return 1;
             }
         } else {
-            if (fn_800B2454(self, index) != 0 && st->unk10 > lbl_804DB1C8)
+            if (fn_800B2454(self, index) != 0 && st->unk10 > 3000.0f)
                 return 1;
-            fn_800B2418(lbl_804DB1A0, self, index);
+            fn_800B2418(5000.0f, self, index);
         }
     }
 
     fn_800C9ED0(self);
-    if (FollowLineCheckActorDist(self, target, lbl_804DB1BC) == 0)
-        return lbl_804DB1C8 < st->unk10;
+    if (FollowLineCheckActorDist(self, target, 0.8f) == 0)
+        return st->unk10 > 3000.0f;
 
     if (fn_80162940(self->unk894, 2) != 0 &&
         fn_80162940(self->unk894, 8) != 0) {
-        if ((f32)rand() / lbl_804DB1C0 < self->unk5b8) {
+        if (self->unk5b8 > (f32)rand() / 32767.0f) {
             fn_80162610(self, self->unk894, 2);
             goto CheckConditionBits;
         }
@@ -1093,11 +1168,11 @@ u32 FollowSearchStateUpdate(Owner* self)
     }
 
 CheckConditionBits:
-    if ((fn_80162940(self->unk894, 0x800) == 0 &&
-         fn_80162940(self->unk894, 0x400) == 0) ||
-        st->unk10 <= lbl_804DB1C8)
-        return 0;
-    return 1;
+    if ((fn_80162940(self->unk894, 0x800) != 0 ||
+         fn_80162940(self->unk894, 0x400) != 0) &&
+        st->unk10 > 3000.0f)
+        return 1;
+    return 0;
 }
 
 // Resets the follow-offset timer: clears the offset timer, releases follow
@@ -1107,7 +1182,7 @@ u32 FollowOffsetTimerReset(Owner* self)
     if (self == 0)
         return 0;
 
-    self->unk130->unk10 = lbl_804DB198;
+    self->unk130->unk10 = 0.0f;
     ConditionUpdateBit(self->unk270, 4, 0);
     ConditionSetBit(self->unk270, 0x2a, 0);
     fn_80162610(self, self->unk894, 0);
@@ -1118,8 +1193,9 @@ u32 FollowOffsetTimerReset(Owner* self)
 // Arms the follow-search timer: puts the state block into state 5, clears the
 // pending follow offset, raises the follow conditions and re-arms the follow
 // chain for the actor's current follow target.
-u32 FollowSearchTimerArm(Owner* self)
+u32 FollowSearchTimerArm(Owner* owner)
 {
+    Owner* self = (Owner*)owner;
     StateData* st;
     int index;
     TargetRef* target;
@@ -1131,7 +1207,7 @@ u32 FollowSearchTimerArm(Owner* self)
     self->unk288 = 0;
     st->unk00 = 5;
     st->unk08 = 0;
-    st->unk10 = lbl_804DB198;
+    st->unk10 = 0.0f;
     ConditionUpdateBit(self->unk270, 4, 1);
     ConditionUpdateBit(self->unk270, 3, 1);
     ConditionUpdateBit(self->unk270, 0x17, 1);
@@ -1143,10 +1219,10 @@ u32 FollowSearchTimerArm(Owner* self)
     index = fn_800B26B8(self);
     if (index < 4 && fn_800B1EF4(self, index) == 0) {
         fn_800B1F20(self, index);
-        fn_800B1AB8(lbl_804DB1A8, self, index, 1);
+        fn_800B1AB8(self, index, -1.0f, 1);
         fn_800B261C(self, index, (int*)&target);
         if (target != 0)
-            fn_800C9FC0(lbl_804DB1C4, self, (void*)target->unk38);
+            fn_800C9FC0(self, (void*)target->unk38, 10000.0f);
     }
     return 1;
 }
@@ -1155,14 +1231,18 @@ u32 FollowSearchTimerArm(Owner* self)
 // keeps the follow condition bits in sync with the distance to the target and
 // to the player, and leaves the state when the actor has closed in or slipped
 // out of range.
-u32 FollowApproachStateUpdate(Owner* self)
+u32 FollowApproachStateUpdate(Owner* owner)
 {
+    Owner* self = (Owner*)owner;
     StateData* st;
     Owner* player;
     TargetRef* target;
     int index;
     int inRange;
     f32 value;
+    int ia;
+    int ib;
+    f32 scale;
 
     if (self == 0)
         return 0;
@@ -1175,7 +1255,7 @@ u32 FollowApproachStateUpdate(Owner* self)
         RangeResetPending(self->unk270);
     }
 
-    if (MemFlagIsSet(self->unk270, 0x24) && st->unk18 > lbl_804DB1CC)
+    if (MemFlagIsSet(self->unk270, 0x24) && st->unk18 > 6000.0f)
         return 1;
 
     index = fn_800B26B8(self);
@@ -1183,18 +1263,18 @@ u32 FollowApproachStateUpdate(Owner* self)
         if (fn_800B1EF4(self, index) == 0) {
             fn_800B261C(self, index, (int*)&target);
             fn_800B22F8(self, index);
-            if (target != 0 && fn_800B22F8(self, index) < 2) {
-                fn_800B2418(lbl_804DB1A0, self, index);
+            if (target != 0 && fn_800B22F8(self, index) <= 1) {
+                fn_800B2418(5000.0f, self, index);
                 fn_800B1F20(self, index);
-                fn_800B1AB8(lbl_804DB1A8, self, index, 1);
+                fn_800B1AB8(self, index, -1.0f, 1);
                 FollowSetTargetObj(self->unk270, target);
-                fn_800C9FC0(lbl_804DB1C4, self, (void*)target->unk38);
+                fn_800C9FC0(self, (void*)target->unk38, 10000.0f);
             }
         } else {
             if (fn_800B2454(self, index) != 0) {
                 ConditionUpdateBit(self->unk270, 4, 0);
             } else {
-                fn_800B2418(lbl_804DB1A0, self, index);
+                fn_800B2418(5000.0f, self, index);
                 ConditionUpdateBit(self->unk270, 4, 1);
             }
         }
@@ -1206,63 +1286,59 @@ u32 FollowApproachStateUpdate(Owner* self)
         return 1;
 
     if (target != 0) {
-        inRange = FollowLineCheckActorDist(self, target, lbl_804DB1BC);
+        inRange = FollowLineCheckActorDist(self, target, 0.8f);
         value = OwnerValue(self, target);
-        ConditionUpdateBit(self->unk270, 4, inRange != 0);
+        if (inRange != 0) {
+            ConditionUpdateBit(self->unk270, 4, 1);
+        } else {
+            ConditionUpdateBit(self->unk270, 4, 0);
+        }
 
         if (inRange != 0 && fn_8029B3B0(self, 0x73b1e248u) != 0) {
             if (fn_80162940(self->unk894, 2) != 0 &&
                 fn_80162940(self->unk894, 8) != 0 &&
-                self->unk5b8 > (f32)rand() / lbl_804DB1C0) {
+                self->unk5b8 > (f32)rand() / 32767.0f) {
                 fn_80162610(self, self->unk894, 2);
             } else if (fn_80162940(self->unk894, 1) != 0 &&
                        fn_80162940(self->unk894, 4) != 0) {
                 fn_80162610(self, self->unk894, 1);
             }
-            goto check_player;
-        }
+        } else {
+            if (fn_800BAF40(self) == -1)
+                st->unk04 &= ~1;
 
-        if (fn_800BAF40(self) == -1)
-            st->unk04 &= ~1;
+            if ((st->unk04 & 1) == 0) {
+                OwnerInfo* info;
 
-        if ((st->unk04 & 1) == 0) {
-            OwnerInfo* info;
-            Vec3 toPlayer;
-            Vec3 toSelf;
-            int distSelf;
-            int distPlayer;
+                if (fn_800B84E4(self->unk038, target->unk38, 0) != -1)
+                    return 1;
 
-            if (fn_800B84E4(self->unk038, target->unk38, 0) != -1)
-                return 1;
+                if (self->unk5e8 != -1 && (info = (OwnerInfo*)OwnerGetInfo(self->unk5e8)) != 0 &&
+                    (inRange == 0 || value > 1200.0f)) {
+                    IVec3 toPlayer;
+                    IVec3 toSelf;
 
-            if (self->unk5e8 == -1)
-                goto check_player;
-            info = (OwnerInfo*)OwnerGetInfo(self->unk5e8);
-            if (info == 0 || (inRange != 0 && value <= lbl_804DB1D0))
-                goto check_player;
-
-            toPlayer.x = info->unk24 - ((OwnerInfo*)player)->unk24;
-            toPlayer.y = info->unk28 - ((OwnerInfo*)player)->unk28;
-            toPlayer.z = info->unk2c - ((OwnerInfo*)player)->unk2c;
-            toSelf.x = info->unk24 - ((OwnerInfo*)self)->unk24;
-            toSelf.y = info->unk28 - ((OwnerInfo*)self)->unk28;
-            toSelf.z = info->unk2c - ((OwnerInfo*)self)->unk2c;
-            distSelf = fn_800E0DBC(&toSelf);
-            distPlayer = fn_800E0DBC(&toPlayer);
-            if ((f32)distPlayer <
-                lbl_804DB1D4 * (self->unk5d8 * self->unk5b4) + (f32)distSelf) {
-                fn_800BC56C(self, (int)target);
-                st->unk04 |= 1;
+                    toPlayer.x = info->unk24 - ((OwnerInfo*)player)->unk24;
+                    toPlayer.y = info->unk28 - ((OwnerInfo*)player)->unk28;
+                    toPlayer.z = info->unk2c - ((OwnerInfo*)player)->unk2c;
+                    toSelf.x = info->unk24 - ((OwnerInfo*)self)->unk24;
+                    toSelf.y = info->unk28 - ((OwnerInfo*)self)->unk28;
+                    toSelf.z = info->unk2c - ((OwnerInfo*)self)->unk2c;
+                    if ((f32)fn_800E0DBC(&toPlayer) <
+                        0.7f * (self->unk5d8 * self->unk5b4) + (f32)fn_800E0DBC(&toSelf)) {
+                        fn_800BC56C(self, (int)target);
+                        st->unk04 |= 1;
+                    }
+                }
             }
         }
     } else {
-        value = lbl_804DB1D8;
+        value = 3.4028235e38f;
         inRange = 0;
         if (fn_800B7CE0(self->unk038) != -1)
             return 1;
     }
 
-check_player:
     if (player != 0) {
         f32 playerValue = OwnerValue(self, player);
 
@@ -1271,16 +1347,15 @@ check_player:
                 if (playerValue > self->unk5d8) {
                     fn_800BBCA8(self);
                     st->unk04 &= ~1;
-                } else if (inRange != 0 && value < lbl_804DB1D0) {
+                } else if (inRange != 0 && value < 1200.0f) {
                     fn_800BBCA8(self);
                     st->unk04 &= ~1;
                 } else if (self->unk5e8 != -1) {
                     OwnerInfo* info = (OwnerInfo*)OwnerGetInfo(self->unk5e8);
                     if (info != 0) {
-                        Vec3 toPlayer;
-                        Vec3 toSelf;
+                        IVec3 toPlayer;
+                        IVec3 toSelf;
                         int distSelf;
-                        int distPlayer;
 
                         toPlayer.x = info->unk24 - ((OwnerInfo*)player)->unk24;
                         toPlayer.y = info->unk28 - ((OwnerInfo*)player)->unk28;
@@ -1289,17 +1364,16 @@ check_player:
                         toSelf.y = info->unk28 - ((OwnerInfo*)self)->unk28;
                         toSelf.z = info->unk2c - ((OwnerInfo*)self)->unk2c;
                         distSelf = fn_800E0DBC(&toSelf);
-                        distPlayer = fn_800E0DBC(&toPlayer);
-                        if (distPlayer > distSelf &&
-                            playerValue > lbl_804DB1D4 * self->unk5d8) {
+                        if (fn_800E0DBC(&toPlayer) > distSelf &&
+                            playerValue > 0.7f * self->unk5d8) {
                             fn_800BBCA8(self);
                             st->unk04 &= ~1;
                         }
                     }
                 }
             } else {
-                if (playerValue < lbl_804DB1DC * self->unk5d8 &&
-                    playerValue > lbl_804DB1E0 * self->unk5dc) {
+                if (playerValue < 0.9f * self->unk5d8 &&
+                    playerValue > 1.1f * self->unk5dc) {
                     ConditionUpdateBit(self->unk270, 0x1d, 0);
                     fn_800BBCA8(self);
                 }
@@ -1311,11 +1385,8 @@ check_player:
                 ConditionUpdateBit(self->unk270, 0x17, 1);
                 self->unk288 = 3;
             } else if (playerValue < self->unk5dc) {
-                Vec3 v;
                 Vec3 p;
-                f32 scale;
-                int ia;
-                int ib;
+                Vec3 v;
 
                 v.x = (f32)((OwnerInfo*)player)->unk24;
                 v.y = (f32)((OwnerInfo*)player)->unk28;
@@ -1323,18 +1394,18 @@ check_player:
                 v.x = self->unk084.x - v.x;
                 v.y = self->unk084.y - v.y;
                 v.z = self->unk084.z - v.z;
-                v.z = lbl_804DB198;
-                fn_800E1098(&v);
+                v.z = 0.0f;
+                fn_800E1098(&v, &v, 2000.0f);
                 p.x = v.x + self->unk084.x;
                 p.y = v.y + self->unk084.y;
                 p.z = v.z + self->unk084.z;
                 if (fn_800BB218(self, self->unk2c4, &self->unk084, &p, self,
                                 &scale, &ia, &ib, self->unk900) != 0) {
                     f32 t = fn_800E1020(&v);
-                    fn_800BAFF8(self, &v, ia, ib, &p, scale,
-                                t * (lbl_804DB19C - scale));
+                    t *= 1.0f - scale;
+                    fn_800BAFF8(self, &v, ia, ib, &p, scale, t);
                 }
-                if (fn_800BF2D0(&self->unk084) == fn_800BF2D0(&p)) {
+                if (fn_800BF2D0(&p) == fn_800BF2D0(&self->unk084)) {
                     ConditionUpdateBit(self->unk270, 0x1d, 1);
                     fn_800BC5A8(self, &p);
                     ConditionUpdateBit(self->unk270, 0x17, 1);
@@ -1361,11 +1432,12 @@ int FollowStateEnterClear(Owner* self)
 
 // Enters the follow idle state: resets the state block, picks a random state
 // timer, arms the follow conditions and refreshes the actor's follow target.
-int FollowIdleStateEnter(Owner* self)
+int FollowIdleStateEnter(Owner* owner)
 {
+    Owner* self = (Owner*)owner;
     StateData* st;
     int index;
-    int target[2];
+    Owner* t;
 
     if (self == 0)
         return 0;
@@ -1374,7 +1446,7 @@ int FollowIdleStateEnter(Owner* self)
     self->unk288 = 3;
     st->unk00 = 0;
     st->unk08 = 0;
-    st->unk0c = lbl_804DB1B8 * ((f32)(u32)rand() / lbl_804DB1C0) + lbl_804DB1E8;
+    st->unk0c = 500.0f * ((f32)rand() / 32767.0f) + 300.0f;
     st->unk04 &= ~1;
     ConditionUpdateBit(self->unk270, 4, 1);
     ConditionUpdateBit(self->unk270, 3, 1);
@@ -1385,95 +1457,101 @@ int FollowIdleStateEnter(Owner* self)
     index = fn_800B26B8(self);
     if (index < 4 && fn_800B1EF4(self, index) == 0) {
         fn_800B1F20(self, index);
-        fn_800B1AB8(lbl_804DB1A8, self, index, 1);
-        fn_800B261C(self, index, target);
-        if (target[0] != 0)
-            fn_800C9FC0(lbl_804DB1C4, self, *(void**)(target[0] + 0x38));
+        fn_800B1AB8(self, index, -1.0f, 1);
+        fn_800B261C(self, index, (int*)&t);
+        if (t != 0)
+            fn_800C9FC0(self, (void*)t->unk038, 10000.0f);
     }
     return 1;
 }
 
 // Chooses the next follow-state id for the actor from the current state block,
 // the tracked follow target and the actor's follow condition flags.
-int FollowStateDecide(Owner* self)
-{
-    StateData* st = self->unk130;
-    void* target = FollowGetTargetObj(self->unk270);
-    int index = fn_800B26B8(self);
+// Refreshes the followed target from the actor's current follow slot and tells
+// whether the actor lost it (no target, or the target filter rejects it).
+static inline int FollowTargetLost(void* p) {
+    Owner* self = (Owner*)p;
+    int index;
+    void* target;
     int alive;
     void* found;
-    bool pending;
-    void* track;
-    int status;
 
-    if (index != 4) {
-        if (fn_800B1EF4(self, index) == 0) {
-            fn_800B1F20(self, index);
-            fn_800B261C(self, index, (int*)&found);
-            alive = fn_800B22F8(self, index);
-            fn_800B1ED4(self, index);
-            if (found != 0 && alive < 2) {
-                FollowSetTargetObj(self->unk270, found);
-                target = found;
-            }
+    target = FollowGetTargetObj(self->unk270);
+    index = fn_800B26B8(self);
+
+    if (index != 4 && fn_800B1EF4(self, index) == 0) {
+        fn_800B1F20(self, index);
+        fn_800B261C(self, index, (int*)&found);
+        alive = fn_800B22F8(self, index);
+        fn_800B1ED4(self, index);
+        if (found != 0 && alive <= 1) {
+            FollowSetTargetObj(self->unk270, found);
+            target = found;
         }
     }
-
     if (target == 0 ||
         (self->unk604 != 0 &&
          ((int (*)(Owner*, int))self->unk604)(self, ((TargetRef*)target)->unk38) == 0)) {
         RangeResetPending(self->unk270);
-        pending = true;
-    } else {
-        pending = false;
+        return 1;
     }
+    return 0;
+}
 
+int FollowStateDecide(Owner* owner)
+{
+    Owner* self = (Owner*)owner;
+    StateData* st = self->unk130;
+    int lost;
+    void* track;
+    int status;
+
+    lost = FollowTargetLost(owner);
     fn_800B26B8(self);
     track = FollowGetTargetObj(self->unk270);
 
     if (MemFlagIsSet(self->unk270, 5))
         return 7;
 
-    if (pending) {
-        if (st->unk1c > lbl_804DB1F4 || MemFlagIsSet(self->unk270, 5))
-            return 7;
-        if (self->unk5e8 == -1 || st->unk00 == 4)
-            return 0;
-        return 4;
-    }
-
-    if (MemFlagIsSet(self->unk270, 0x24) && st->unk18 > lbl_804DB1CC) {
-        ConditionUpdateBit(self->unk270, 0x24, 0);
-        st->unk18 = lbl_804DB198;
-
-        if ((f32)rand() / lbl_804DB1C0 < self->unk5b4 ||
-            st->unk14 < lbl_804DB1EC ||
-            fn_8029B3B0(self, 0x13e6b) == 0 ||
-            self->unk140 >= lbl_804DB1B8) {
-            if ((f32)rand() / lbl_804DB1C0 >= lbl_804DB1F0 ||
-                st->unk10 <= lbl_804DB1C8 ||
-                fn_8029B3B0(self, 0x73b1e248) == 0)
+    switch (lost) {
+    case 0:
+        if (MemFlagIsSet(self->unk270, 0x24) && st->unk18 > 6000.0f) {
+            ConditionUpdateBit(self->unk270, 0x24, 0);
+            st->unk18 = 0.0f;
+            if ((f32)rand() / 32767.0f < self->unk5b4 ||
+                st->unk14 < 1000.0f ||
+                fn_8029B3B0(self, 0x13e6b) == 0 ||
+                self->unk140 >= 500.0f) {
+                if ((f32)rand() / 32767.0f < 0.142857f &&
+                    st->unk10 > 3000.0f &&
+                    fn_8029B3B0(self, 0x73b1e248) != 0)
+                    return 5;
                 return 6;
-            return 5;
+            }
+            return 1;
         }
-        return 1;
-    }
-
-    if (Fn800F7DEC(self->unk8ec, self->unk8f0, 0x20ee36, OwnerId(self), 0) ==
-        0xc0becf7eu) {
-        if (st->unk00 == 2)
+        if (Fn800F7DEC(self->unk8ec, self->unk8f0, 0x20ee36, OwnerId(self), 0) ==
+            0xc0becf7eu) {
+            if (st->unk00 == 2)
+                return 3;
+            if (fn_8029B3B0(self, 0x13e6b) != 0 && track != 0 &&
+                fn_800B84E4(self->unk038, ((TargetRef*)track)->unk38, &status) != -1)
+                return 2;
             return 3;
-        if (fn_8029B3B0(self, 0x13e6b) == 0 || track == 0 ||
-            fn_800B84E4(self->unk038, ((TargetRef*)track)->unk38, &status) == -1)
-            return 3;
-        return 2;
-    }
-
-    if (FollowLineCheckActorDist(self, track, lbl_804DB1BC) != 0 &&
-        fn_8029B3B0(self, 0x73b1e248) != 0)
+        }
+        if (FollowLineCheckActorDist(self, track, 0.8f) != 0 &&
+            fn_8029B3B0(self, 0x73b1e248) != 0)
+            return 0;
+        if (fn_8029B3B0(self, 0x13e6b) != 0 && self->unk140 < 500.0f &&
+            fn_800B84E4(self->unk038, ((TargetRef*)track)->unk38, 0) != -1)
+            return 1;
         return 0;
-    if (fn_8029B3B0(self, 0x13e6b) != 0 && self->unk140 < lbl_804DB1B8 &&
-        fn_800B84E4(self->unk038, ((TargetRef*)track)->unk38, 0) != -1)
-        return 1;
+    case 1:
+        if (st->unk1c > 60000.0f || MemFlagIsSet(self->unk270, 5))
+            return 7;
+        if (self->unk5e8 != -1 && st->unk00 != 4)
+            return 4;
+        return 0;
+    }
     return 0;
 }
