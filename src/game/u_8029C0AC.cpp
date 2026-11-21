@@ -271,7 +271,8 @@ extern "C" int NpcSveChooseState(void* owner);
 
 // Per-frame update for the path-follow actor: runs the current type's handler,
 // advances the event timer and switches to a new type when requested.
-int NpcSveUpdateActor(Owner* o) {
+int NpcSveUpdateActor(Owner* owner) {
+    Owner* o = (Owner*)owner;
     if (o == 0) {
         return 0;
     }
@@ -281,7 +282,7 @@ int NpcSveUpdateActor(Owner* o) {
         fn_80162658(o, o->unk894);
         return 1;
     }
-    if (fn_800BEF9C(o->unk2c4) < o->unk268) {
+    if (o->unk268 > fn_800BEF9C(o->unk2c4)) {
         o->unk268 = fn_800BEF9C(o->unk2c4);
     }
     int ret = lbl_803C3188[evt->state].fn8(o);
@@ -369,13 +370,16 @@ void NpcSveInitActor(Owner* o) {
 
 // Tells whether the actor must stay on its current follow target: the movement
 // mode changed, the followed object changed, or the path timer is still running.
-int NpcSveCheckTarget(Owner* o) {
+int NpcSveCheckTarget(Owner* owner) {
+    Owner* o = (Owner*)owner;
     if (o == 0) {
         return 0;
     }
     void* target;
-    PathEvent* ev = (PathEvent*)o->evt;
-    int mode = fn_800B26B8(o);
+    int mode;
+    PathEvent* ev;
+    ev = (PathEvent*)o->evt;
+    mode = fn_800B26B8(o);
     if (mode != 4) {
         fn_800B261C(o, mode, &target);
         if (target != FollowGetTargetObj(o->cond270)) {
@@ -453,25 +457,28 @@ int NpcSveBeginFollow(Owner* o) {
 
 // Variant of NpcSveCheckTarget used by the follow state machine: also requires
 // the movement query to report an active follow mode and a running path timer.
-int NpcSveCheckFollowReady(Owner* o) {
+int NpcSveCheckFollowReady(Owner* owner) {
+    Owner* o = (Owner*)owner;
     if (o == 0) {
         return 0;
     }
-    PathEvent* ev = (PathEvent*)o->evt;
-    int mode = fn_800B26B8(o);
+    void* target;
+    int mode;
+    PathEvent* ev;
+    ev = (PathEvent*)o->evt;
+    mode = fn_800B26B8(o);
     if (mode != 4) {
-        void* target;
         fn_800B261C(o, mode, &target);
         if (target != FollowGetTargetObj(o->cond270)) {
             return 1;
         }
-        mode = fn_800B22F8(o, mode);
-        if (mode <= 2) {
+        if (fn_800B22F8(o, mode) <= 2) {
             return 1;
         }
-        return ev->timer > 3000.0f;
+    } else {
+        return 1;
     }
-    return 1;
+    return ev->timer > 3000.0f;
 }
 
 // Clears the follow-condition bits and reports whether the owner was valid;
@@ -494,7 +501,8 @@ extern "C" int fn_800BAF40(void* owner);
 
 // Starts following the object reported by the movement query: plays the follow
 // animation, retargets the follow condition block and queues the follow update.
-int NpcSveStartFollowTarget(Owner* o) {
+int NpcSveStartFollowTarget(Owner* owner) {
+    Owner* o = (Owner*)owner;
     if (o == 0) {
         return 0;
     }
@@ -527,10 +535,11 @@ int NpcSveStartFollowTarget(Owner* o) {
 
 // Second half of the follow state machine: validates the reported follow target,
 // watches the path timer and drives the follow animation / host callback.
-int NpcSveUpdateFollowTarget(Owner* o) {
-    if (o == 0) {
+int NpcSveUpdateFollowTarget(Owner* owner) {
+    if (owner == 0) {
         return 0;
     }
+    Owner* o = (Owner*)owner;
     PathEvent* ev = (PathEvent*)o->evt;
     int mode = fn_800B26B8(o);
     if (mode != 4) {
@@ -594,10 +603,11 @@ int NpcSveResetFollowCondition(Owner* o) {
 
 // Starts the follow state machine: switches the event block to the "following"
 // state and retargets the follow condition block at the reported object.
-int NpcSveStartFollowState(Owner* o) {
-    if (o == 0) {
+int NpcSveStartFollowState(Owner* owner) {
+    if (owner == 0) {
         return 0;
     }
+    Owner* o = (Owner*)owner;
     PathEvent* ev = (PathEvent*)o->evt;
     void* target = FollowGetTargetObj(o->cond270);
     if (target == 0) {
@@ -770,7 +780,8 @@ int NpcSveStartTargetFollow(Owner* o) {
 // Per-frame handler of the target-follow phase: if the followed object is
 // still valid it plays the follow animation / checks the facing angle and
 // timer, and reports whether the followed actor is still alive.
-int NpcSveUpdateTargetFollow(Owner* o) {
+int NpcSveUpdateTargetFollow(Owner* owner) {
+    Owner* o = (Owner*)owner;
     if (o == 0) {
         return 0;
     }
@@ -881,7 +892,8 @@ extern "C" int fn_800B1EF4(void* owner, int mode);
 // Per-frame step of the path-follow state machine: refreshes the reported
 // target, restarts the follow timer while the follower is still close, and
 // reports success once the timer runs out (switching the event to state 3).
-int NpcSveRefreshFollowTarget(Owner* o) {
+int NpcSveRefreshFollowTarget(Owner* owner) {
+    Owner* o = (Owner*)owner;
     if (o == 0) {
         return 0;
     }
@@ -940,7 +952,8 @@ int NpcSveBeginPathFollow(Owner* o) {
 
 // Per-frame update of the path-follow behaviour: tracks the movement query's
 // target, drives the follow handler and keeps the path-timer condition bit.
-int NpcSveUpdatePathFollow(Owner* o) {
+int NpcSveUpdatePathFollow(Owner* owner) {
+    Owner* o = (Owner*)owner;
     if (o == 0) {
         return 0;
     }
@@ -1144,11 +1157,13 @@ extern "C" int fn_8029E058(void* actor) {
 // Switches the path-follow actor to follow state 7: asks the current state's
 // exit handler whether the actor may leave and then runs the follow state's
 // entry handler. Only actors of type 0x12ec1 own this state machine.
-void NpcSveAdvanceToFollowState(Owner* o) {
-    if (o == 0) {
+void NpcSveAdvanceToFollowState(Owner* owner) {
+    PathEvent* ev;
+    if (owner == 0) {
         return;
     }
-    PathEvent* ev = (PathEvent*)o->evt;
+    Owner* o = (Owner*)owner;
+    ev = (PathEvent*)o->evt;
     if (ev == 0) {
         return;
     }
@@ -1164,11 +1179,13 @@ void NpcSveAdvanceToFollowState(Owner* o) {
 
 // Switches the path-follow actor to target-follow state 6, with the same
 // leave/enter handshake as NpcSveAdvanceToFollowState.
-void NpcSveAdvanceToTargetFollowState(Owner* o) {
-    if (o == 0) {
+void NpcSveAdvanceToTargetFollowState(Owner* owner) {
+    PathEvent* ev;
+    if (owner == 0) {
         return;
     }
-    PathEvent* ev = (PathEvent*)o->evt;
+    Owner* o = (Owner*)owner;
+    ev = (PathEvent*)o->evt;
     if (ev == 0) {
         return;
     }
