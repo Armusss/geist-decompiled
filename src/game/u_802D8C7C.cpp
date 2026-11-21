@@ -176,7 +176,7 @@ void fn_8028C188(void* out, const char* s, int length);
 String fn_800225C8(const String& a, const String& b);
 int  SendMsg(int to, int msg, void* data);
 int  rand(void);
-void fn_800B1AB8(f32 delay, Owner* self, int a, int b);
+void fn_800B1AB8(Owner* self, int a, f32 delay, int b);
 int  fn_800B26B8(Owner* self);
 int  fn_800B261C(Owner* self, int value, int* out);
 int  fn_800B1EF4(Owner* self, int index = 0);
@@ -489,8 +489,9 @@ int HandleQueryActorMsg(int msg, MsgData* data)
     return 0;
 }
 
-int UpdateActorState(Owner* self)
+int UpdateActorState(Owner* owner)
 {
+    Owner* self = (Owner*)owner;
     if (self == 0)
         return 0;
 
@@ -560,48 +561,54 @@ int UpdateActorState(Owner* self)
 // Timer callback run once per scan interval: if the owner's current target is
 // alive and no other actor has claimed it, arm the pending state change on
 // both actors so they walk into each other's interaction range.
-int ActorScanTargetCallback(Owner* self, Owner* other, f32 dist)
-{
-    if (self != 0) {
-        ScanReply reply;
-        int id = self->unk038;
+// Arms a pending state change on `a` towards `b`.
+static inline void ScanArm(Owner* a, Owner* b) {
+    a->unk17c = 2;
+    a->unk184 = b->unk038;
+    a->unk174 = 1001.0f;
+    a->unk16c = 0;
+    a->unk16c |= 2;
+    a->unk16c |= 1;
+    a->unk178 = 1;
+    fn_800B1AB8(a, 1, -1.0f, 1);
+}
 
-        if (SendMsg(id, 0x400, &reply) != 0 &&
-            ((u32)id >> 24) == 0x13 &&
-            reply.unk0c != 0 &&
-            (other->unk908 == 0 || other->unk908 != self->unk908)) {
-            if ((self->unk16c & 1) == 0 || (self->unk16c & 4) != 0 ||
-                (self->unk184 >> 24) != 2) {
-                self->unk17c = 2;
-                self->unk184 = other->unk038;
-                self->unk174 = lbl_804DB1A4;
-                self->unk16c = 0;
-                self->unk16c |= 2;
-                self->unk16c |= 1;
-                self->unk178 = 1;
-                fn_800B1AB8(lbl_804DB1A8, self, 1, 1);
-            }
-            if ((other->unk16c & 1) != 0 && (other->unk16c & 4) == 0) {
-                OwnerInfo* info = (OwnerInfo*)OwnerGetInfo(other->unk184);
-                if (info != 0) {
-                    f32 dx = (f32)info->unk24;
-                    f32 dy = (f32)info->unk28;
-                    f32 dz = (f32)info->unk2c;
-                    if (dx * dx + dy * dy + dz * dz < dist)
-                        return 1;
-                }
-            }
-            other->unk17c = 2;
-            other->unk184 = self->unk038;
-            other->unk174 = lbl_804DB1A4;
-            other->unk16c = 0;
-            other->unk16c |= 2;
-            other->unk16c |= 1;
-            other->unk178 = 1;
-            fn_800B1AB8(lbl_804DB1A8, other, 1, 1);
+// Links the two actors unless they already belong to the same group: arms `a`
+// unless it is already heading for an actor, then arms `b` unless it is
+// already heading for a target within `dist`.
+static inline int ScanLink(Owner* a, Owner* b, f32 dist) {
+    Owner* s = (Owner*)(void*)a;
+    if (b->unk908 != 0 && b->unk908 == a->unk908) {
+        return 1;
+    }
+    if ((s->unk16c & 1) == 0 || (s->unk16c & 4) != 0 ||
+        (int)(s->unk184 >> 24) != 2) {
+        ScanArm(s, b);
+    }
+    if ((b->unk16c & 1) != 0 && (b->unk16c & 4) == 0) {
+        OwnerInfo* info = (OwnerInfo*)OwnerGetInfo(b->unk184);
+        if (info != 0) {
+            f32 x = (f32)info->unk24;
+            f32 y = (f32)info->unk28;
+            f32 z = (f32)info->unk2c;
+            if (x * x + y * y + z * z < dist)
+                return 1;
         }
     }
+    ScanArm(b, a);
     return 1;
+}
+
+int ActorScanTargetCallback(void* p, Owner* other, f32 dist)
+{
+    Owner* self = (Owner*)p;
+    Msg400 reply;
+
+    if (self == 0 || SendMsg(self->unk038, 0x400, &reply) == 0 ||
+        (int)((u32)self->unk038 >> 24) != 0x13 || reply.state == 0) {
+        return 1;
+    }
+    return ScanLink(self, other, dist);
 }
 
 // Drops every condition bit this actor set up for its target interaction and
@@ -1098,7 +1105,7 @@ int FollowWaitStateEnter(Owner* self)
     index = fn_800B26B8(self);
     if (index < 4 && fn_800B1EF4(self, index) == 0) {
         fn_800B1F20(self, index);
-        fn_800B1AB8(lbl_804DB1A8, self, index, 1);
+        fn_800B1AB8(self, index, lbl_804DB1A8, 1);
         fn_800B261C(self, index, target);
         if (target[0] != 0)
             fn_800C9FC0(self, *(void**)(target[0] + 0x38), lbl_804DB1C4);
@@ -1138,7 +1145,7 @@ u32 FollowSearchStateUpdate(Owner* self)
             if (target != 0 && fn_800B22F8(self, index) < 2) {
                 fn_800B2418(lbl_804DB1A0, self, index);
                 fn_800B1F20(self, index);
-                fn_800B1AB8(lbl_804DB1A8, self, index, 1);
+                fn_800B1AB8(self, index, lbl_804DB1A8, 1);
                 FollowSetTargetObj(self->unk270, target);
                 if (st->unk10 > lbl_804DB1C8)
                     return 1;
@@ -1222,7 +1229,7 @@ u32 FollowSearchTimerArm(Owner* self)
     index = fn_800B26B8(self);
     if (index < 4 && fn_800B1EF4(self, index) == 0) {
         fn_800B1F20(self, index);
-        fn_800B1AB8(lbl_804DB1A8, self, index, 1);
+        fn_800B1AB8(self, index, lbl_804DB1A8, 1);
         fn_800B261C(self, index, (int*)&target);
         if (target != 0)
             fn_800C9FC0(self, (void*)target->unk38, lbl_804DB1C4);
@@ -1265,7 +1272,7 @@ u32 FollowApproachStateUpdate(Owner* self)
             if (target != 0 && fn_800B22F8(self, index) < 2) {
                 fn_800B2418(lbl_804DB1A0, self, index);
                 fn_800B1F20(self, index);
-                fn_800B1AB8(lbl_804DB1A8, self, index, 1);
+                fn_800B1AB8(self, index, lbl_804DB1A8, 1);
                 FollowSetTargetObj(self->unk270, target);
                 fn_800C9FC0(self, (void*)target->unk38, lbl_804DB1C4);
             }
@@ -1464,7 +1471,7 @@ int FollowIdleStateEnter(Owner* self)
     index = fn_800B26B8(self);
     if (index < 4 && fn_800B1EF4(self, index) == 0) {
         fn_800B1F20(self, index);
-        fn_800B1AB8(lbl_804DB1A8, self, index, 1);
+        fn_800B1AB8(self, index, lbl_804DB1A8, 1);
         fn_800B261C(self, index, target);
         if (target[0] != 0)
             fn_800C9FC0(self, *(void**)(target[0] + 0x38), lbl_804DB1C4);
