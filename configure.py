@@ -684,7 +684,7 @@ config.libs = [
             Object(NonMatching, "game/u_8017EC24.cpp"),  # split from u_8017D794 (see file header)
             Object(NonMatching, "game/u_8017F9C0.cpp"),  # split from u_8017D794 (see file header)
             Object(NonMatching, "game/u_80180868.cpp"),  # split from u_8017D794 (see file header)
-            Object(NonMatching, "game/u_80180F18.cpp"),  # split from u_8017D794 (see file header)
+            Object(Matching, "game/u_80180F18.cpp"),  # behaviour 0xB7AAD36E
             Object(NonMatching, "game/u_80181644.cpp"),  # split from u_8017D794 (see file header)
             Object(NonMatching, "game/u_8018424C.cpp"),  # split from u_8017D794 (see file header)
             Object(Matching, "game/u_80184CD4.cpp"),  # behaviour 0x3BB8992E
