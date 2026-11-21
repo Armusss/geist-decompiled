@@ -962,7 +962,7 @@ void BitsetSetAll(void* bitsv, int nbits) {
         p[i] = 0xffffffff;
 }
 
-void BitsetAllocIndices(u32* bits, int n, s32* out, int count) {
+void BitsetAllocIndices(u32* bits, int n, int count, s32* out) {
     s32 idx;
     int i;
     int j;
