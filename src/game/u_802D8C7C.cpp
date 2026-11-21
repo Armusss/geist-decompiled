@@ -1047,11 +1047,12 @@ int FollowOffsetStateLeave(Owner* self)
 // Enters the follow wait state: switches the state block to state 6, clears the
 // search conditions, resets any pending follow target and re-arms the follow
 // timer for the actor's current follow target.
-int FollowWaitStateEnter(Owner* self)
+int FollowWaitStateEnter(Owner* owner)
 {
+    Owner* self = (Owner*)owner;
     StateData* st;
     int index;
-    int target[4];
+    Owner* t;
 
     if (self == 0)
         return 0;
@@ -1083,9 +1084,9 @@ int FollowWaitStateEnter(Owner* self)
     if (index < 4 && fn_800B1EF4(self, index) == 0) {
         fn_800B1F20(self, index);
         fn_800B1AB8(self, index, -1.0f, 1);
-        fn_800B261C(self, index, target);
-        if (target[0] != 0)
-            fn_800C9FC0(self, *(void**)(target[0] + 0x38), 10000.0f);
+        fn_800B261C(self, index, (int*)&t);
+        if (t != 0)
+            fn_800C9FC0(self, (void*)t->unk038, 10000.0f);
     }
     return 1;
 }
