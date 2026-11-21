@@ -974,7 +974,11 @@ game/u_80248FC8.cpp:
 	.ctors      start:0x80341238 end:0x8034123C
 
 game/u_8024CAA0.cpp:
-	.text       start:0x8024CAA0 end:0x8024E374
+	.text       start:0x8024CAA0 end:0x8024E0D4
+
+game/u_8024E0D4.cpp:
+	.text       start:0x8024E0D4 end:0x8024E374
+	.sdata2     start:0x804D9D48 end:0x804D9D68
 
 game/Scannable.cpp:
 	.text       start:0x8024E374 end:0x8024E5D0

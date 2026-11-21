@@ -767,6 +767,7 @@ config.libs = [
             Object(Matching, "game/u_80247EB0.cpp"),  # guess
             Object(NonMatching, "game/u_80248FC8.cpp"),  # pinned
             Object(NonMatching, "game/u_8024CAA0.cpp"),  # known
+            Object(NonMatching, "game/u_8024E0D4.cpp"),  # split from u_8024CAA0
             Object(Matching, "game/Scannable.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_8024E5D0.cpp"),  # guess
             Object(Matching, "game/u_80251CB8.cpp"),  # imp actor
