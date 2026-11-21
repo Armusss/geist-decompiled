@@ -67,7 +67,9 @@ struct Player {
     int unk328;           // 0x328
     u8 pad32C[0x30C];
     int unk638;           // 0x638
-    u8 pad63C[0x48];
+    u8 pad63C[0x3C];
+    int unk678;           // 0x678
+    u8 pad67C[0x8];
     float unk684;         // 0x684
     u8 pad688[0xB4];
     int animVariant;      // 0x73C
@@ -81,9 +83,11 @@ struct Player {
     u8 pad7B8[0x18];
     int unk7D0;           // 0x7D0
     int unk7D4;           // 0x7D4
-    u8 pad7D8[0x4];
+    float unk7D8;         // 0x7D8
     int unk7DC;           // 0x7DC
-    u8 pad7E0[0x28];
+    u8 pad7E0[0x10];
+    int unk7F0;           // 0x7F0
+    u8 pad7F4[0x14];
     int unk808;           // 0x808
     u8 pad80C[0xCF0];
     float unk14FC;        // 0x14FC
@@ -734,6 +738,57 @@ void fn_80189880(Player* p) {
     p->unk808++;
 }
 
+void fn_80189940(Player* p, float dt) {
+    int b;
+    int a;
+
+    p->unk638 = 1;
+    p->flags7B4 &= ~1;
+    PlayerResetGunTimer(p);
+    PlayerMove(p, dt);
+    p->unk7D0 = 1;
+    if (p->unk7D8 == 0.0f) {
+        PlayerSetHeldSlotMode(p, 0);
+        return;
+    }
+    if (p->unk678 & 0x80) {
+        p->unk678 &= ~0x80;
+        PlayerSetActionMode(p, 3);
+        return;
+    }
+    PlayerSetValue4(&p->state, 3);
+    PlayerGunInput(p);
+    QueryNameOut(&a, p->handle, 0x2DA8293C);
+    QueryNameOut(&b, p->handle, 0xDFF3097A);
+    if ((p->unk314 & ~2) == 1 && p->unk7F0 == 1) {
+        PlayerResetGunTimer(p);
+        switch (Fn800F7DEC(a, b, 0x0020EE36, fn_800498D0(p), 0)) {
+        case 0x04A3E183:
+            if (p->state != 5) {
+                PlayerSetHeldSlotMode(p, 5);
+            }
+            break;
+        case 0xC0BECF7E:
+            if (Fn800F7DEC(a, b, 0xE6B71BCC, fn_800498D0(p), 0) == 0x04A3E183) {
+                PlayerSetHeldSlotMode(p, 0xA);
+            }
+            break;
+        case 0x11D2C025:
+            if (p->state == 5) {
+                PlayerSetHeldSlotMode(p, 3);
+            }
+            break;
+        case 0x3DA260F7:
+            if (p->state == 5) {
+                PlayerSetHeldSlotMode(p, 3);
+            }
+            break;
+        }
+    } else if (p->state == 5) {
+        PlayerSetHeldSlotMode(p, 3);
+    }
+}
+
 void fn_80189D54(Player* p) {
     int host = PlayerInHost((Actor*)p);
     u32* anim = PlayerStateAnim(p, 3);
@@ -772,6 +827,51 @@ void fn_8018A0E0(Player* p) {
     }
     lbl_804D3050 = fn_800F7994(v, 0xAFEF562B);
     FxStart(lbl_804D3050, 0, 0);
+}
+
+void fn_8018A220(Player* p, float dt) {
+    int b;
+    int a;
+
+    p->unk638 = 1;
+    p->flags7B4 &= ~1;
+    PlayerMove(p, dt);
+    if (p->unk678 & 0x80) {
+        p->unk678 &= ~0x80;
+        PlayerSetActionMode(p, 1);
+    }
+    PlayerSetValue4(&p->state, 1);
+    p->unk7D0 = 0;
+    PlayerGunInput(p);
+    QueryNameOut(&a, p->handle, 0x2DA8293C);
+    QueryNameOut(&b, p->handle, 0xDFF3097A);
+    if ((p->unk314 & ~2) == 1 && p->unk7F0 == 1) {
+        PlayerResetGunTimer(p);
+        switch (Fn800F7DEC(a, b, 0x0020EE36, fn_800498D0(p), 0)) {
+        case 0x04A3E183:
+            if (p->state != 5) {
+                PlayerSetHeldSlotMode(p, 5);
+            }
+            break;
+        case 0xC0BECF7E:
+            if (Fn800F7DEC(a, b, 0xE6B71BCC, fn_800498D0(p), 0) == 0x04A3E183) {
+                PlayerSetHeldSlotMode(p, 0xA);
+            }
+            break;
+        case 0x11D2C025:
+            if (p->state == 5) {
+                PlayerSetHeldSlotMode(p, 3);
+            }
+            break;
+        case 0x3DA260F7:
+            if (p->state == 5) {
+                PlayerSetHeldSlotMode(p, 3);
+            }
+            break;
+        }
+    } else if (p->state == 5) {
+        PlayerSetHeldSlotMode(p, 3);
+    }
 }
 
 void fn_8018A604(Player* p) {
