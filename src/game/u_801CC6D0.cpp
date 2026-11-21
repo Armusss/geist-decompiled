@@ -14,7 +14,6 @@
 #include "game/types.h"
 #include "game/actor.h"
 #include "game/msg.h"
-#include "game/vecnorm.h"
 
 
 // Per-actor state of a scripted mover (VAlloc'd, 0x4C bytes, at actor +0xA4).
@@ -67,6 +66,7 @@ struct Msg1800 {
     int animArg;                               // 0x10
 };
 
+float __fabsf(float x);
 int ActorTypeRegister(ActorType* type);
 int ActorPlayAnim(int handle, u32 hash, int arg);
 int ActorDefaultMsg(Actor* actor, int msg, void* data, int arg); // 0x800E4C64
@@ -108,6 +108,29 @@ ActorType gScriptMoveType = {
 static unsigned long sSpeedHashes[4] = {0x00270002, 0x04B61EF4, 0x002889C9, 0x00013E6B};
 
 static Vec3 sUp = {0.0f, 0.0f, 1.0f};
+
+// Normalizes src into dst; returns the length (0 for a zero vector).
+inline float VecNormalize(Vec3* dst, const Vec3* src) {
+    float len;
+    float az = __fabsf(src->z);
+    float ay = __fabsf(src->y);
+    float ax = __fabsf(src->x);
+    if ((ax > 1.1920929e-7f) + (ay > 1.1920929e-7f) + (az > 1.1920929e-7f) == 0) {
+        dst->x = 0.0f;
+        dst->y = 0.0f;
+        dst->z = 0.0f;
+    } else {
+        float x = src->x;
+        float y = src->y;
+        float z = src->z;
+        float inv = __frsqrte(x * x + y * y + z * z);
+        dst->x = x * inv;
+        dst->y = y * inv;
+        dst->z = z * inv;
+        len = __fres(inv);
+    }
+    return len;
+}
 
 inline ScriptMoveInfo* ScriptMoveGetInfo(Actor* actor) { return (ScriptMoveInfo*)actor->info; }
 

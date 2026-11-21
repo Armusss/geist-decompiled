@@ -1768,15 +1768,7 @@ inline float FastSqrt(float x) {
     if (x <= 0.0f) {
         r = 0.0f;
     } else {
-        float y;
-        register float t;
-        asm {
-            lfs t, x
-            ps_rsqrte t, t
-            ps_res t, t
-            stfs t, y
-        }
-        r = y;
+        r = __fres(__frsqrte(x));
     }
     return r;
 }
