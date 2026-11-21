@@ -1029,7 +1029,8 @@ float FadeTaskTick(void* p) {
     return 100.0f;
 }
 
-int ReturnZero(void) {
+// Buffer's inline GetSpan (see include/game/string.h), emitted here with the FxList vtable.
+int Buffer::GetSpan() {
     return 0;
 }
 

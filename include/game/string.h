@@ -23,6 +23,11 @@ public:
     Buffer();                                  // 0x8028BA9C
     virtual ~Buffer();                         // 0x8028B9C0
     virtual void Release(char* p);
+    // Slot 0x1C of every Buffer-derived vtable (0x8007AD60, `return 0`). It is referenced only from the 44
+    // vtables, always in slot 0x1C after Buffer::Clear, and sits in u_800776FC.cpp right before the FxList
+    // array methods, the lowest-addressed of those vtables: the shape of an inline virtual emitted with the
+    // first class that needs it. Declared non-virtual here so the clients' vtables keep their layout.
+    int GetSpan();
 
     char* mData;                               // 0x04
     int mLength;                               // 0x08
