@@ -176,7 +176,7 @@ int  fn_8029B3B0(Owner* self, u32 id);
 int  fn_800B7CE0(int handle);
 u32  fn_8016325C(void* mem);
 int  fn_800E0DBC(void* vec);
-void fn_800E1098(void* vec);
+void fn_800E1098(void* out, void* in, f32 length);
 f32  fn_800E1020(void* vec);
 int  fn_800BF2D0(void* vec);
 void fn_800BC5A8(Owner* self, void* vec);
@@ -1230,6 +1230,9 @@ u32 FollowApproachStateUpdate(Owner* owner)
     int index;
     int inRange;
     f32 value;
+    int ia;
+    int ib;
+    f32 scale;
 
     if (self == 0)
         return 0;
@@ -1250,7 +1253,7 @@ u32 FollowApproachStateUpdate(Owner* owner)
         if (fn_800B1EF4(self, index) == 0) {
             fn_800B261C(self, index, (int*)&target);
             fn_800B22F8(self, index);
-            if (target != 0 && fn_800B22F8(self, index) < 2) {
+            if (target != 0 && fn_800B22F8(self, index) <= 1) {
                 fn_800B2418(5000.0f, self, index);
                 fn_800B1F20(self, index);
                 fn_800B1AB8(self, index, -1.0f, 1);
@@ -1275,7 +1278,11 @@ u32 FollowApproachStateUpdate(Owner* owner)
     if (target != 0) {
         inRange = FollowLineCheckActorDist(self, target, 0.8f);
         value = OwnerValue(self, target);
-        ConditionUpdateBit(self->unk270, 4, inRange != 0);
+        if (inRange != 0) {
+            ConditionUpdateBit(self->unk270, 4, 1);
+        } else {
+            ConditionUpdateBit(self->unk270, 4, 0);
+        }
 
         if (inRange != 0 && fn_8029B3B0(self, 0x73b1e248u) != 0) {
             if (fn_80162940(self->unk894, 2) != 0 &&
@@ -1286,40 +1293,33 @@ u32 FollowApproachStateUpdate(Owner* owner)
                        fn_80162940(self->unk894, 4) != 0) {
                 fn_80162610(self, self->unk894, 1);
             }
-            goto check_player;
-        }
+        } else {
+            if (fn_800BAF40(self) == -1)
+                st->unk04 &= ~1;
 
-        if (fn_800BAF40(self) == -1)
-            st->unk04 &= ~1;
+            if ((st->unk04 & 1) == 0) {
+                OwnerInfo* info;
 
-        if ((st->unk04 & 1) == 0) {
-            OwnerInfo* info;
-            Vec3 toPlayer;
-            Vec3 toSelf;
-            int distSelf;
-            int distPlayer;
+                if (fn_800B84E4(self->unk038, target->unk38, 0) != -1)
+                    return 1;
 
-            if (fn_800B84E4(self->unk038, target->unk38, 0) != -1)
-                return 1;
+                if (self->unk5e8 != -1 && (info = (OwnerInfo*)OwnerGetInfo(self->unk5e8)) != 0 &&
+                    (inRange == 0 || value > 1200.0f)) {
+                    IVec3 toPlayer;
+                    IVec3 toSelf;
 
-            if (self->unk5e8 == -1)
-                goto check_player;
-            info = (OwnerInfo*)OwnerGetInfo(self->unk5e8);
-            if (info == 0 || (inRange != 0 && value <= 1200.0f))
-                goto check_player;
-
-            toPlayer.x = info->unk24 - ((OwnerInfo*)player)->unk24;
-            toPlayer.y = info->unk28 - ((OwnerInfo*)player)->unk28;
-            toPlayer.z = info->unk2c - ((OwnerInfo*)player)->unk2c;
-            toSelf.x = info->unk24 - ((OwnerInfo*)self)->unk24;
-            toSelf.y = info->unk28 - ((OwnerInfo*)self)->unk28;
-            toSelf.z = info->unk2c - ((OwnerInfo*)self)->unk2c;
-            distSelf = fn_800E0DBC(&toSelf);
-            distPlayer = fn_800E0DBC(&toPlayer);
-            if ((f32)distPlayer <
-                0.7f * (self->unk5d8 * self->unk5b4) + (f32)distSelf) {
-                fn_800BC56C(self, (int)target);
-                st->unk04 |= 1;
+                    toPlayer.x = info->unk24 - ((OwnerInfo*)player)->unk24;
+                    toPlayer.y = info->unk28 - ((OwnerInfo*)player)->unk28;
+                    toPlayer.z = info->unk2c - ((OwnerInfo*)player)->unk2c;
+                    toSelf.x = info->unk24 - ((OwnerInfo*)self)->unk24;
+                    toSelf.y = info->unk28 - ((OwnerInfo*)self)->unk28;
+                    toSelf.z = info->unk2c - ((OwnerInfo*)self)->unk2c;
+                    if ((f32)fn_800E0DBC(&toPlayer) <
+                        0.7f * (self->unk5d8 * self->unk5b4) + (f32)fn_800E0DBC(&toSelf)) {
+                        fn_800BC56C(self, (int)target);
+                        st->unk04 |= 1;
+                    }
+                }
             }
         }
     } else {
@@ -1329,7 +1329,6 @@ u32 FollowApproachStateUpdate(Owner* owner)
             return 1;
     }
 
-check_player:
     if (player != 0) {
         f32 playerValue = OwnerValue(self, player);
 
@@ -1344,10 +1343,9 @@ check_player:
                 } else if (self->unk5e8 != -1) {
                     OwnerInfo* info = (OwnerInfo*)OwnerGetInfo(self->unk5e8);
                     if (info != 0) {
-                        Vec3 toPlayer;
-                        Vec3 toSelf;
+                        IVec3 toPlayer;
+                        IVec3 toSelf;
                         int distSelf;
-                        int distPlayer;
 
                         toPlayer.x = info->unk24 - ((OwnerInfo*)player)->unk24;
                         toPlayer.y = info->unk28 - ((OwnerInfo*)player)->unk28;
@@ -1356,8 +1354,7 @@ check_player:
                         toSelf.y = info->unk28 - ((OwnerInfo*)self)->unk28;
                         toSelf.z = info->unk2c - ((OwnerInfo*)self)->unk2c;
                         distSelf = fn_800E0DBC(&toSelf);
-                        distPlayer = fn_800E0DBC(&toPlayer);
-                        if (distPlayer > distSelf &&
+                        if (fn_800E0DBC(&toPlayer) > distSelf &&
                             playerValue > 0.7f * self->unk5d8) {
                             fn_800BBCA8(self);
                             st->unk04 &= ~1;
@@ -1378,11 +1375,8 @@ check_player:
                 ConditionUpdateBit(self->unk270, 0x17, 1);
                 self->unk288 = 3;
             } else if (playerValue < self->unk5dc) {
-                Vec3 v;
                 Vec3 p;
-                f32 scale;
-                int ia;
-                int ib;
+                Vec3 v;
 
                 v.x = (f32)((OwnerInfo*)player)->unk24;
                 v.y = (f32)((OwnerInfo*)player)->unk28;
@@ -1391,17 +1385,17 @@ check_player:
                 v.y = self->unk084.y - v.y;
                 v.z = self->unk084.z - v.z;
                 v.z = 0.0f;
-                fn_800E1098(&v);
+                fn_800E1098(&v, &v, 2000.0f);
                 p.x = v.x + self->unk084.x;
                 p.y = v.y + self->unk084.y;
                 p.z = v.z + self->unk084.z;
                 if (fn_800BB218(self, self->unk2c4, &self->unk084, &p, self,
                                 &scale, &ia, &ib, self->unk900) != 0) {
                     f32 t = fn_800E1020(&v);
-                    fn_800BAFF8(self, &v, ia, ib, &p, scale,
-                                t * (1.0f - scale));
+                    t *= 1.0f - scale;
+                    fn_800BAFF8(self, &v, ia, ib, &p, scale, t);
                 }
-                if (fn_800BF2D0(&self->unk084) == fn_800BF2D0(&p)) {
+                if (fn_800BF2D0(&p) == fn_800BF2D0(&self->unk084)) {
                     ConditionUpdateBit(self->unk270, 0x1d, 1);
                     fn_800BC5A8(self, &p);
                     ConditionUpdateBit(self->unk270, 0x17, 1);
