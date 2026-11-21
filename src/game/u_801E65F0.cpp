@@ -45,17 +45,6 @@ inline u32 EffectTypeHash(EffectType* type) {
     }
     return type->hash;
 }
-// TODO (not drafted yet, 0x10 bytes at 0x801E65F0)
-// fn_801E65F0
-// TODO (not drafted yet, 0x214 bytes at 0x801E6600)
-// fn_801E6600
-// TODO (not drafted yet, 0x198 bytes at 0x801E6814)
-// fn_801E6814
-// TODO (not drafted yet, 0x7B4 bytes at 0x801E69AC)
-// fn_801E69AC
-// TODO (not drafted yet, 0x38 bytes at 0x801E7160)
-// fn_801E7160
-
 struct SniperDef {
     u8 pad00[0x4];
     int unk04;
@@ -75,6 +64,31 @@ struct Sniper {
 };
 
 extern EffectType lbl_803B3B00;  // the "Sniper" type descriptor
+
+
+
+//@@801E65F0
+extern "C" void fn_801E65F0(EffectObj* obj);
+void fn_801E65F0(EffectObj* obj) {
+    ((Sniper*)obj->data)->unk00 = 0;
+}
+//@@end
+// TODO (not drafted yet, 0x214 bytes at 0x801E6600)
+// fn_801E6600
+// TODO (not drafted yet, 0x198 bytes at 0x801E6814)
+// fn_801E6814
+// TODO (not drafted yet, 0x7B4 bytes at 0x801E69AC)
+// fn_801E69AC
+//@@801E7160
+extern "C" void fn_800F86A0(int emitter);
+void VFree(void* p);
+extern "C" void fn_801E7160(EffectObj* obj);
+void fn_801E7160(EffectObj* obj) {
+    Sniper* g = (Sniper*)obj->data;
+    fn_800F86A0(g->emitter);
+    VFree(g);
+}
+//@@end
 
 void* SniperCreate(int a, int id) {
     EffectType* type = &lbl_803B3B00;
