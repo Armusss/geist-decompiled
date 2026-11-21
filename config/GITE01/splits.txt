@@ -789,7 +789,22 @@ game/u_801E14E8.cpp:
 	.sdata2     start:0x804D8D80 end:0x804D8DB0
 
 game/u_801E241C.cpp:
-	.text       start:0x801E241C end:0x801E7DE0
+	.text       start:0x801E241C end:0x801E3714
+
+game/u_801E3714.cpp:
+	.text       start:0x801E3714 end:0x801E47D0
+
+game/u_801E47D0.cpp:
+	.text       start:0x801E47D0 end:0x801E5B3C
+
+game/u_801E5B3C.cpp:
+	.text       start:0x801E5B3C end:0x801E65F0
+
+game/u_801E65F0.cpp:
+	.text       start:0x801E65F0 end:0x801E72E0
+
+game/u_801E72E0.cpp:
+	.text       start:0x801E72E0 end:0x801E7DE0
 
 game/u_801E7DE0.cpp:
 	.text       start:0x801E7DE0 end:0x801EAACC

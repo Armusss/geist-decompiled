@@ -727,6 +727,11 @@ config.libs = [
             Object(NonMatching, "game/u_801E0EDC.cpp"),  # guess
             Object(NonMatching, "game/u_801E14E8.cpp"),  # split from u_801E0EDC
             Object(NonMatching, "game/u_801E241C.cpp"),  # pinned
+            Object(NonMatching, "game/u_801E3714.cpp"),  # split from u_801E241C
+            Object(NonMatching, "game/u_801E47D0.cpp"),  # split from u_801E241C
+            Object(NonMatching, "game/u_801E5B3C.cpp"),  # split from u_801E241C
+            Object(NonMatching, "game/u_801E65F0.cpp"),  # split from u_801E241C
+            Object(NonMatching, "game/u_801E72E0.cpp"),  # split from u_801E241C
             Object(NonMatching, "game/u_801E7DE0.cpp"),  # guess
             Object(NonMatching, "game/u_801EAACC.cpp"),  # guess
             Object(NonMatching, "game/u_801EDE74.cpp"),  # guess

@@ -1,85 +1,30 @@
-// u_801E241C.cpp: the "Sniper" effect type. Only the create function is written so far; names are
-// descriptive guesses and the code is matched against the retail DOL.
+// u_801E241C.cpp (0x801E241C-0x801E3714): the "Plant" fear actor ("[FEAR_FOO_PLANT]"). The old u_801E241C range
+// (0x801E241C-0x801E7DE0) held six files: this one, u_801E3714, u_801E47D0 (credits tips), u_801E5B3C,
+// u_801E65F0 (Sniper effect) and u_801E72E0 (SniperRound effect + host states). Boundary evidence for the end:
+// - .data: the actor descriptor 0x803ADF68 lists fn_801E241C, fn_801E2584, fn_801E29B0, fn_801E2DF8, fn_801E3324,
+//   fn_801E335C; fn_801E3524 reads the 0x5B20-byte table 0x803ADFA0 that follows it (to 0x803B3AC0).
+// - .sdata2: own pool 0x804D8DB0-0x804D8E00 (0.0f 0x804D8DC8, int-to-float double 0x804D8DC0); the next file has
+//   its own 0.0f at 0x804D8E34 and double at 0x804D8E28. .rodata pool 0x80348EA0-0x80348F08 (POSSESS..SCAN,
+//   "Plant", "[FEAR_FOO_PLANT]", "QUERY"); .sbss 0x804D5228-0x804D5230.
+// Names are descriptive guesses; unmatched against retail unless noted.
 
 #include <dolphin/types.h>
-#include "game/effect.h"
 
-extern "C" {
-void* fn_800EB21C(int id);
-int fn_800F80DC(int a);
-int fn_800F8A30(int a);
-int fn_80019A04();
-}
-
-void* VAlloc(int size);
-void Fn800F840C(int emitter, int a, int b);
-extern int lbl_804D5280;
-
-extern unsigned char __upper_map[256];
-inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
-
-inline u32 StrHash(const char* s) {
-    if (s == 0) {
-        return 0;
-    } else {
-        u32 h = 0;
-        int i;
-        for (i = 0; s[i] != 0; i++) {
-            h *= 31;
-            h += (unsigned char)toupper(s[i]);
-        }
-        h %= 0xFFFFFFFF;
-        return h;
-    }
-}
-
-inline u32 EffectTypeHash(EffectType* type) {
-    if (type->hash == 0) {
-        const char* name = type->name;
-        type->hash = StrHash(name);
-    }
-    return type->hash;
-}
-struct SniperDef {
-    u8 pad00[0x4];
-    int unk04;
-    int unk08;
-};
-
-struct Sniper {
-    int unk00;
-    float unk04;
-    float unk08;
-    float unk0C;
-    int emitter;
-    SniperDef* def;
-    u8 pad18[0x18];
-    int unk30;
-    int unk34;
-};
-
-extern EffectType lbl_803B3B00;  // the "Sniper" type descriptor
-
-void* SniperCreate(int a, int id) {
-    EffectType* type = &lbl_803B3B00;
-    Sniper* g;
-
-    EffectTypeHash(type);
-    g = (Sniper*)VAlloc(sizeof(Sniper));
-    memset(g, 0, sizeof(Sniper));
-    if (g == 0) {
-        return 0;
-    }
-    g->def = (SniperDef*)fn_800EB21C(id);
-    g->unk00 = 0;
-    g->unk30 = -1;
-    g->unk34 = -1;
-    g->unk04 = 0.0f;
-    g->unk08 = 0.0f;
-    g->unk0C = 0.0f;
-    g->emitter = fn_800F8A30(fn_800F80DC(a));
-    lbl_804D5280 = fn_80019A04();
-    Fn800F840C(g->emitter, g->def->unk04, g->def->unk08);
-    return g;
-}
-
+// TODO (not drafted yet, 0x168 bytes at 0x801E241C)
+// fn_801E241C
+// TODO (not drafted yet, 0x178 bytes at 0x801E2584)
+// fn_801E2584
+// TODO (not drafted yet, 0x2B4 bytes at 0x801E26FC)
+// fn_801E26FC
+// TODO (not drafted yet, 0x448 bytes at 0x801E29B0)
+// fn_801E29B0
+// TODO (not drafted yet, 0x4DC bytes at 0x801E2DF8)
+// fn_801E2DF8
+// TODO (not drafted yet, 0x50 bytes at 0x801E32D4)
+// fn_801E32D4
+// TODO (not drafted yet, 0x38 bytes at 0x801E3324)
+// fn_801E3324
+// TODO (not drafted yet, 0x1C8 bytes at 0x801E335C)
+// fn_801E335C
+// TODO (not drafted yet, 0x1F0 bytes at 0x801E3524)
+// fn_801E3524
