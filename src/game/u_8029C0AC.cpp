@@ -153,11 +153,6 @@ struct Owner {
 int OwnerId(Owner* owner);
 int ActorPlayAnim(int id, u32 anim, int arg);
 void FollowSetTargetObj(void* self, void* target);
-// One-argument form: the state-switch helpers below call 0x800A78A0 with a
-// single argument (r4 is never set before the bl), so they bind to this one.
-// The retail callers are slot callbacks taking (owner, target), like HostRideJSlot7 in u_801CA16C:
-// their symbols should be NpcSveAdvanceTo*State__FP5OwnerPv (rename pending approval).
-void FollowSetTargetObj(void* self);
 
 extern "C" String fn_800225C8(const String& a, const String& b);
 extern "C" void fn_8028C188(void* out, const char* s, int length);
@@ -499,7 +494,7 @@ static inline void NpcSveSend41D(Owner* o) {
     SendMsg(id, 0x41d, &q);
 }
 
-void NpcSveAdvanceToFollowState(Owner* o);
+void NpcSveAdvanceToFollowState(Owner* o, void* target);
 void OwnerSlotAdd(Owner* o, int mode, u32 handler, u32 target, u32 size);
 
 // Picks up the object reported by the movement query, plays its follow
@@ -581,7 +576,7 @@ int NpcSveCancelFollow(Owner* o) {
     return 1;
 }
 
-void NpcSveAdvanceToTargetFollowState(Owner* o);
+void NpcSveAdvanceToTargetFollowState(Owner* o, void* target);
 float OwnerValue(Owner* o, void* arg);
 int MemFlagIsSet(void* cond, int id);
 extern "C" void fn_800BBCA8(void* owner);
@@ -1265,7 +1260,7 @@ extern "C" int fn_8029E058(void* actor) {
 // Switches the path-follow actor to follow state 7: asks the current state's
 // exit handler whether the actor may leave and then runs the follow state's
 // entry handler. Only actors of type 0x12ec1 own this state machine.
-void NpcSveAdvanceToFollowState(Owner* owner) {
+void NpcSveAdvanceToFollowState(Owner* owner, void* target) {
     PathEvent* ev;
     if (owner == 0) {
         return;
@@ -1278,7 +1273,7 @@ void NpcSveAdvanceToFollowState(Owner* owner) {
     if (o->unk128 != 0x12ec1) {
         return;
     }
-    FollowSetTargetObj(o->cond270);
+    FollowSetTargetObj(o->cond270, target);
     int state = ev->state;
     if (state != 7 && gNpcSveTypes[state].fn4(o) != 0) {
         gNpcSveTypes[7].fn0(o);
@@ -1287,7 +1282,7 @@ void NpcSveAdvanceToFollowState(Owner* owner) {
 
 // Switches the path-follow actor to target-follow state 6, with the same
 // leave/enter handshake as NpcSveAdvanceToFollowState.
-void NpcSveAdvanceToTargetFollowState(Owner* owner) {
+void NpcSveAdvanceToTargetFollowState(Owner* owner, void* target) {
     PathEvent* ev;
     if (owner == 0) {
         return;
@@ -1300,7 +1295,7 @@ void NpcSveAdvanceToTargetFollowState(Owner* owner) {
     if (o->unk128 != 0x12ec1) {
         return;
     }
-    FollowSetTargetObj(o->cond270);
+    FollowSetTargetObj(o->cond270, target);
     int state = ev->state;
     if (state != 6 && gNpcSveTypes[state].fn4(o) != 0) {
         gNpcSveTypes[6].fn0(o);
