@@ -925,23 +925,20 @@ int FollowTargetStateUpdate(Owner* self)
                     target->unk038, 0) == 0)
         return 1;
 
-    if (FollowLineCheckActorDist(self, target, 0.8f) == 0 ||
-        fn_8029B3B0(self, 0x73b1e248u) == 0) {
-        fn_80162610(self, self->unk894, 0);
-        ConditionUpdateBit(self->unk270, 0, 0);
-    } else {
+    if (FollowLineCheckActorDist(self, FollowGetTargetObj(self->unk270), 0.8f) != 0 &&
+        fn_8029B3B0(self, 0x73b1e248u) != 0) {
         ConditionUpdateBit(self->unk270, 0, 1);
         ConditionUpdateBit(self->unk270, 3, 1);
         ConditionUpdateBit(self->unk270, 4, 1);
-        if (fn_80162940(self->unk894, 2) == 0 ||
-            fn_80162940(self->unk894, 8) == 0 ||
-            self->unk5b8 <= (f32)rand() / 32767.0f) {
-            if (fn_80162940(self->unk894, 1) != 0 &&
-                fn_80162940(self->unk894, 4) != 0)
-                fn_80162610(self, self->unk894, 1);
-        } else {
+        if (fn_80162940(self->unk894, 2) != 0 && fn_80162940(self->unk894, 8) != 0 &&
+            self->unk5b8 > (f32)rand() / 32767.0f) {
             fn_80162610(self, self->unk894, 2);
+        } else if (fn_80162940(self->unk894, 1) != 0 && fn_80162940(self->unk894, 4) != 0) {
+            fn_80162610(self, self->unk894, 1);
         }
+    } else {
+        fn_80162610(self, self->unk894, 0);
+        ConditionUpdateBit(self->unk270, 0, 0);
     }
 
     if (self->unk220 == 2) {
