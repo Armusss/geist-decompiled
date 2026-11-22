@@ -172,9 +172,8 @@ extern float lbl_804D5720;
 extern int lbl_804D5724;
 extern int lbl_804D572C;
 extern int lbl_804D5730;
-extern int lbl_804D5734;
-extern int lbl_804A46F8;
-extern int lbl_804A46F4[];
+extern int gLevelFlagDepth;
+extern int gLevelFlagStack[6];  // level-flag stack
 extern int lbl_804D5738;
 extern int lbl_804D573C;
 extern float lbl_804D3860;
@@ -222,9 +221,9 @@ void LevelFlagRestore() {
 
 void LevelFlagsInit() {
     lbl_804D5730 = 1;
-    lbl_804A46F8 = 1;
+    gLevelFlagStack[0] = 1;
     lbl_804D572C = 1;
-    lbl_804D5734 = 1;
+    gLevelFlagDepth = 1;
 }
 
 int FrameCountGet() {
@@ -244,11 +243,11 @@ int LevelFlagCurrent() {
 }
 
 void LevelFlagPop() {
-    lbl_804D5730 = lbl_804A46F4[lbl_804D5734];
-    if (lbl_804D5734 < 2) {
+    lbl_804D5730 = gLevelFlagStack[gLevelFlagDepth - 1];
+    if (gLevelFlagDepth <= 1) {
         return;
     }
-    lbl_804D5734--;
+    gLevelFlagDepth--;
 }
 
 char* fn_802A1FA0() {
@@ -565,23 +564,22 @@ void AudioPauseAll() {
 }
 
 extern "C" void MusicResume();
-extern int lbl_804A46F8_arr[];
 
 // Pushes a new level-state value (1..8) on the 5-deep stack and returns the previous top.
 int LevelFlagPush(int v) {
-    if (v > 0 && v < 9) {
-        int n = lbl_804D5734 + 1;
-        (&lbl_804A46F8)[lbl_804D5734] = lbl_804D572C;
-        lbl_804D5730 = v;
-        lbl_804D5734 = n < 5 ? n : 5;
-        if (v == 3) {
-            MusicResume();
-            fn_8016F6A0(1);
-            fn_80170E60(1);
-        }
-        return lbl_804A46F4[lbl_804D5734];
+    if (v <= 0 || v >= 9) {
+        return 0;
     }
-    return 0;
+    int n = gLevelFlagDepth + 1;
+    gLevelFlagStack[gLevelFlagDepth] = lbl_804D572C;
+    lbl_804D5730 = v;
+    gLevelFlagDepth = n < 5 ? n : 5;
+    if (v == 3) {
+        MusicResume();
+        fn_8016F6A0(1);
+        fn_80170E60(1);
+    }
+    return gLevelFlagStack[gLevelFlagDepth - 1];
 }
 
 extern void* lbl_804D3858;
