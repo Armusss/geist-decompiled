@@ -9,294 +9,214 @@
 
 #include "game/string.h"
 #include "game/msg.h"
+#include "game/owner.h"
 
 typedef unsigned char u8;
-typedef unsigned short u16;
 typedef unsigned long u32;
 
-extern unsigned char __upper_map[256];
-inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
+extern "C" int SendMsg(int to, int msg, void* data);
+void OwnerSlotRemove(Owner* o);
 
-extern "C" int SendMsg(int to, int msg, void* data);                 // 0x800265D4
-extern "C" void fn_800872BC(int flags, const char* fmt, ...);        // debug log
+// The character a registered behaviour type runs on (only the fields used here; see game/owner.h).
+struct SveInfo {
+    u8 pad00[0xC];
+    u32 type;                  // 0x0C: the type the character starts in
+};
 
-inline void QueryGet(int* out, int target, u32 hash) {
+struct SveOwner {
+    u8 pad00[0x38];
+    int id;                    // 0x038
+    u8 pad3C[0xC4 - 0x3C];
+    SveInfo* info;             // 0x0C4
+    u8 padC8[0x104 - 0xC8];
+    void* update;              // 0x104: the current type's update callback
+    u8 pad108[0x120 - 0x108];
+    void* msg;                 // 0x120: the current type's message handler
+    u8 pad124[4];
+    u32 type;                  // 0x128: current registered type (-1: none)
+    u8 pad12C[4];
+    void* state;               // 0x130
+    u8 pad134[0x908 - 0x134];
+    u32 variant;               // 0x908
+};
+
+// One registered behaviour type (6 words).
+struct SveType {
+    u32 hash;                          // 0x00
+    void (*enter)(SveOwner* o);        // 0x04
+    void (*leave)(SveOwner* o);        // 0x08
+    void* update;                      // 0x0C
+    void* msg;                         // 0x10
+    const char* name;                  // 0x14
+};
+
+extern SveType lbl_803AB708[];   // the type table
+extern int lbl_804D3200;         // number of entries (30)
+
+void AiNoOp_801BE004();
+void AiNoOp_801BE000();
+int AiReturnFalse_801BDFF8();
+int AiReturnFalse_801BDFF0();
+
+static inline int SveFind(u32 hash) {
+    int i;
+    for (i = 0; i < lbl_804D3200; i++) {
+        if (hash == lbl_803AB708[i].hash) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static inline void SveLeave(SveOwner* o) {
+    if (o != 0) {
+        int i = SveFind(o->type);
+        if (i != -1) {
+            if (lbl_803AB708[i].leave) {
+                lbl_803AB708[i].leave(o);
+            }
+            OwnerSlotRemove((Owner*)o);
+            o->update = 0;
+            o->state = 0;
+            o->msg = 0;
+            o->type = -1;
+        } else {
+            o->type = -1;
+        }
+    }
+}
+
+static inline void SveEnter(u32 hash, void* p) {
+    if (p != 0) {
+        SveOwner* o = (SveOwner*)p;
+        int i = SveFind(hash);
+        if (i != -1) {
+            SveLeave(o);
+            o->update = lbl_803AB708[i].update;
+            o->msg = lbl_803AB708[i].msg;
+            o->type = hash;
+            o->state = 0;
+            if (lbl_803AB708[i].enter) {
+                lbl_803AB708[i].enter(o);
+            }
+        }
+    }
+}
+
+// Makes a registered type do nothing.
+extern "C" void fn_801BD5A4(u32 hash) {
+    int i = SveFind(hash);
+    if (i >= 0) {
+        lbl_803AB708[i].enter = (void (*)(SveOwner*))AiNoOp_801BE004;
+        lbl_803AB708[i].leave = (void (*)(SveOwner*))AiNoOp_801BE000;
+        lbl_803AB708[i].update = (void*)AiReturnFalse_801BDFF8;
+        lbl_803AB708[i].msg = (void*)AiReturnFalse_801BDFF0;
+    }
+}
+
+// Replaces the callbacks of a registered type.
+extern "C" void fn_801BD62C(u32 hash, void (*enter)(SveOwner*), void (*leave)(SveOwner*), void* update,
+                            void* msg) {
+    int i = SveFind(hash);
+    if (i >= 0) {
+        lbl_803AB708[i].enter = enter;
+        lbl_803AB708[i].leave = leave;
+        lbl_803AB708[i].update = update;
+        lbl_803AB708[i].msg = msg;
+    }
+}
+
+// Asks a character for its 0x8132F1B1 value (0 if it does not answer).
+inline int QuerySend(int* out, int target, u32 hash) {
     QueryMsg m;
+    int sent;
     m.hash = hash;
     *(int*)&m.result = 0;
     m.unk8 = 0;
-    SendMsg(target, 0x41E, &m);
+    sent = SendMsg(target, 0x41E, &m);
     *out = *(int*)&m.result;
+    return sent;
 }
 
-// Animation set of a character type (three words used here).
-struct AiAnimSet {
-    u8 pad00[0x14];
-    int a14;         // 0x14
-    int a18;         // 0x18
-    int a1C;         // 0x1C
-    int a20;         // 0x20
-    int a24;         // 0x24
-};
+extern "C" int fn_801BD694(SveOwner* o) {
+    int value;
+    int sent;
 
-// The actor a character is currently targeting / carried by.
-struct AiTarget {
-    u8 pad00[0x38];
-    u32 handle;      // 0x38: type in the top byte
-    u8 pad3C[0x270 - 0x3C];
-    u8 conditions[4]; // 0x270
-};
-
-// Current / next state of a character (a Player-style state record).
-struct AiStateRec {
-    int cur;         // 0x00
-    int next;        // 0x04
-    int unk8;        // 0x08
-    int unkC;        // 0x0C
-};
-
-// Enemy character actor (descriptive guess; only the fields used in this file).
-struct Actor {
-    u8 pad00[0x24];
-    int px;          // 0x24
-    int py;          // 0x28
-    int pz;          // 0x2C
-    u8 pad30[0x38 - 0x30];
-    int handle;      // 0x38
-    u8 pad3C[0x50 - 0x3C];
-    u32 flags;       // 0x50
-    u8 pad54[0x58 - 0x54];
-    int model;       // 0x58
-    u8 pad5C[0x78 - 0x5C];
-    int hold;        // 0x78
-    int unk7C;       // 0x7C
-    u8 pad80[0x8C - 0x80];
-    void* cb8C;      // 0x8C
-    u8 pad90[0x98 - 0x90];
-    int anim98;      // 0x98
-    u8 pad9C[0xA4 - 0x9C];
-    int animFlagA4;  // 0xA4
-    u8 padA8[0xC4 - 0xA8];
-    int animC4;      // 0xC4
-    u8 padC8[0xE4 - 0xC8];
-    void* cbE4;      // 0xE4
-    u8 padE8[0xF0 - 0xE8];
-    int animF0;      // 0xF0
-    u8 padF4[0xFC - 0xF4];
-    int animFlagFC;  // 0xFC
-    u8 pad100[0x11C - 0x100];
-    int anim11C;     // 0x11C
-    u8 pad120[0x2F4 - 0x120];
-    u8 sub2F4[0x20]; // 0x2F4
-    int unk314;      // 0x314
-    int unk318;      // 0x318
-    u32 flags31C;    // 0x31C
-    u32 flags320;    // 0x320
-    u8 pad324[4];
-    int unk328;      // 0x328
-    u8 pad32C[0x38C - 0x32C];
-    float f38C;      // 0x38C
-    float f390;      // 0x390
-    float f394;      // 0x394
-    float f398;      // 0x398
-    u8 pad39C[0x638 - 0x39C];
-    int unk638;      // 0x638
-    u8 pad63C[0x678 - 0x63C];
-    u32 flags678;    // 0x678
-    u8 pad67C[0x73C - 0x67C];
-    int variant;     // 0x73C
-    u8 pad740[0x7A4 - 0x740];
-    AiStateRec state;   // 0x7A4
-    u32 flags7B4;    // 0x7B4
-    u8 pad7B8[0x7D0 - 0x7B8];
-    int unk7D0;      // 0x7D0
-    int unk7D4;      // 0x7D4
-    float unk7D8;    // 0x7D8
-    int unk7DC;      // 0x7DC
-    u8 pad7E0[0x14FC - 0x7E0];
-    float unk14FC;   // 0x14FC
-    u8 pad1500[0x1D04 - 0x1500];
-    u8 unk1D04[0x1D94 - 0x1D04];
-    int unk1D94;     // 0x1D94
-    u8 pad1D98[0x26B0 - 0x1D98];
-    int unk26B0;     // 0x26B0
-    u8 pad26B4[0x26C4 - 0x26B4];
-    AiAnimSet* set[7]; // 0x26C4
-    u8 sub26E0[4];   // 0x26E0
-    Actor* host;   // 0x26E4
-    AiTarget* target; // 0x26E8
-    u8 pad26EC[0x279C - 0x26EC];
-    int unk279C;     // 0x279C
-};
-
-// Engine services (names in symbols.txt come from other units).
-void PlayerSetValue4(void* state, int v);
-void PlayerResetGunTimer(void* a);
-void PlayerSelectCollisionUpdate(void* a, float dt);
-extern "C" void fn_800769A0(void* a, float dt);
-int PlayerInHost(Actor* a);
-void PlayerSetHeldSlotIndex(void* a, int slot);
-void PlayerSetHeldSlotMode(void* a, int mode);
-void PlayerSlideByVar(void* a);
-void PlayerDispatchMotionUpdate(void* a, int mode, float dt);
-extern "C" int fn_802A1D04();
-extern "C" int fn_800C5210(int to, int msg, void* data);
-
-struct MsgQuery {
-    int result;      // 0x00
-    u32 hash;        // 0x04
-    int pad08;       // 0x08
-    int handle;      // 0x0C
-};
-extern "C" void fn_800699A8(void* a);
-void PlayerSetActionMode(void* a, int mode);
-void DashUpdate(Actor* a);
-int HasCondition(void* conditions, int id);
-void ActorPlayAnim(int a, u32 b, int c);
-int ModelBoneName(int model);
-int ModelBoneNodeChain(int model, int bone, int* out, int n);
-int Fn800F7DEC(int a, int b, int c, int d, void* e);
-int Fn800F7F5C(int a, int b, int c, int d, void* e, float f);
-extern "C" int fn_80175EFC(int v);
-extern "C" void fn_80155A84(void* a, void* b, int c);
-extern "C" int fn_800A1BC8(int a, int b, int c, int d, int e);
-extern "C" void* fn_800A384C(void* t);
-extern "C" int fn_800498D0(Actor* a);
-extern "C" void fn_80048BA8(Actor* a, void* b, int c);
-extern "C" void fn_80050EB0(Actor* a);
-extern "C" int fn_800F7994(int a, u32 b);
-extern "C" int FxStart(void* fx, int a, int b);
-
-// Animation lookup table: one row per animation kind, one slot per character variant (data of another unit).
-struct AnimRow {
-    void (*cb00)(Actor*);  // 0x00
-    void (*cb04)(Actor*);  // 0x04
-    void (*msg)(Actor*);   // 0x08
-    int byVariant[15];     // 0x0C
-};
-extern AnimRow lbl_803AAE98[];
-extern AnimRow lbl_803A00D0[];
-int PlayerGunAction(int action, void* p);
-extern int lbl_80496C98[16];
-u32 AssetFind(u32 table, u32 key);
-extern "C" int fn_801B7B88(int action, void* p);
-
-// Per-enemy data block (descriptive guess; only the fields used here).
-struct EnemyData {
-    int f0;          // 0x00
-    int state;       // 0x04
-    int f8;          // 0x08
-    u8 padC[0x14 - 0xC];
-    int f14;         // 0x14
-    u8 pad18[0x24 - 0x18];
-    float f24;       // 0x24
-    u8 pad28[0x3C - 0x28];
-    float f3C;       // 0x3C
-    u8 pad40[0x50 - 0x40];
-    float f50;       // 0x50
-};
-
-// Behaviour object with a data block at 0x130 (descriptive guess).
-struct EnemyObj {
-    u8 pad00[0x130];
-    EnemyData* data; // 0x130
-    u8 pad134[0x270 - 0x134];
-    u8 cond[0x18];   // 0x270
-    u8 pad288[0x5B8 - 0x288];
-    float f5B8;      // 0x5B8
-    u8 pad5BC[0x5D0 - 0x5BC];
-    int i5D0;        // 0x5D0
-    u8 pad5D4[0x5EC - 0x5D4];
-    void* link;      // 0x5EC
-    u8 pad5F0[0x91C - 0x5F0];
-    float f91C;      // 0x91C
-};
-
-inline float Lerp(float lo, float hi, float t) {
-    float d = hi - lo;
-    return lo + d * t;
-}
-extern int lbl_804D31C4;
-extern int lbl_804D31C0;
-extern "C" int fn_800F7994(int a, u32 b);
-extern "C" int FxStart(void* fx, int a, int b);
-extern "C" int rand();
-int Rand();
-void ClearStateMachine(void* o);
-void SetStateMachineState(void* o, u32 state);
-void ConditionUpdateBit(void* c, int bit, int on);
-extern "C" void fn_80118084(void* link, u32 hash, void* data);
-extern "C" int fn_800B949C(u32 hash, int* out, int n, int x);
-extern "C" int fn_801B1F18(EnemyObj* o);
-extern "C" int fn_801B1594(EnemyObj* o, EnemyData* d);
-
-// Picks the next goal: a random entry of a table or the result of the planner.
-inline int EnemyPickGoal(EnemyObj* o) {
-    int list[16];
-    int goal;
-    if (0.5f * (o->f5B8 * (float)o->i5D0) > (float)rand() / 32767.0f) {
-        goal = fn_801B1F18(o);
-    } else {
-        int n = fn_800B949C(0x6D8FDBFF, list, 0x10, 1);
-        if (n == 0) {
-            goal = -1;
-        } else {
-            int r = Rand();
-            goal = list[r - (r / n) * n];
-        }
+    if (o == 0) {
+        return 0;
     }
-    return goal;
+    sent = QuerySend(&value, o->id, 0x8132F1B1);
+    return sent != 0 ? value : 0;
 }
 
-// Enters the wander mode (state 4); shared tail of several mode-enter functions.
-inline void EnemyEnterWanderBody(EnemyObj* o) {
-    EnemyData* d = o->data;
-    d->state = 4;
-    d->f0 = 0;
-    d->f8 = EnemyPickGoal(o);
-    float speed = 1000.0f;
-    ClearStateMachine(o);
-    SetStateMachineState(o, 0xF1C37C5C);
-    fn_80118084(o->link, 0x315C41D, &d->f8);
-    fn_80118084(o->link, 0x33FA508, &speed);
-    fn_80118084(o->link, 0x99A725C, (void*)1);
+// The name of a registered type ("" if unknown).
+extern "C" String fn_801BD74C(u32 hash) {
+    int i = SveFind(hash);
+    if (i != -1) {
+        return String(lbl_803AB708[i].name);
+    }
+    return String("");
 }
 
-extern float lbl_804D31A8;
-extern float lbl_804D31AC;
-extern "C" void fn_8016EEF4(int v);
-extern "C" void fn_80073E80(Actor* a);
-extern "C" void fn_800B4C50(float a, float b, float* pos, int c, int d, int e);
-extern "C" void fn_8016D68C(void* dst, void* src);
-extern "C" int fn_80116E08(Actor* a);
-extern "C" int fn_800E0DBC(void* v);
+// Starts the character's own type. Type 0x12EC1 starts 0xC8422A5B or 0xB1C30D62 instead (by the variant
+// word), unless the character already runs one of the three.
+extern "C" void fn_801BD7D4(SveOwner* o) {
+    u32 type;
 
-// TODO (not drafted yet, 0x88 bytes at 0x801BD5A4): game logic
-extern "C" void fn_801BD5A4();
+    if (o == 0) {
+        return;
+    }
+    type = o->info->type;
+    if (type == 0x12EC1 && o->type != 0x12EC1 && o->type != 0xB1C30D62 && o->type != 0xC8422A5B) {
+        if (o->variant == 0x8CD18EE1) {
+            SveEnter(0xC8422A5B, o);
+        } else {
+            SveEnter(0xB1C30D62, o);
+        }
+        return;
+    }
+    SveEnter(type, o);
+}
 
-// TODO (not drafted yet, 0x68 bytes at 0x801BD62C): game logic
-extern "C" void fn_801BD62C();
+// True when the character does not run its own type.
+extern "C" int fn_801BDC0C(SveOwner* o) {
+    if (o == 0) {
+        return 0;
+    }
+    return o->type != o->info->type;
+}
 
-// TODO (not drafted yet, 0xB8 bytes at 0x801BD694): game logic
-extern "C" void fn_801BD694();
+// Switches a character to a registered type.
+extern "C" void fn_801BDC3C(u32 hash, SveOwner* o) {
+    SveEnter(hash, o);
+}
 
-// TODO (not drafted yet, 0x88 bytes at 0x801BD74C): game logic
-extern "C" void fn_801BD74C();
+// Leaves the character's current type.
+extern "C" void fn_801BDDA4(SveOwner* o) {
+    SveLeave(o);
+}
 
-// TODO (not drafted yet, 0x438 bytes at 0x801BD7D4): game logic
-extern "C" void fn_801BD7D4();
+// Switches type without resetting the state word.
+extern "C" void fn_801BDE6C(u32 hash, SveOwner* o) {
+    int i;
 
-// TODO (not drafted yet, 0x30 bytes at 0x801BDC0C): game logic
-extern "C" void fn_801BDC0C();
-
-// TODO (not drafted yet, 0x168 bytes at 0x801BDC3C): game logic
-extern "C" void fn_801BDC3C();
-
-// TODO (not drafted yet, 0xC8 bytes at 0x801BDDA4): game logic
-extern "C" void fn_801BDDA4();
-
-// TODO (not drafted yet, 0x184 bytes at 0x801BDE6C): game logic
-extern "C" void fn_801BDE6C();
+    if (o == 0) {
+        return;
+    }
+    if (o->type != 0xFFFFFFFF) {
+        SveLeave(o);
+        o->type = -1;
+    }
+    i = SveFind(hash);
+    if (i != -1) {
+        if (lbl_803AB708[i].enter) {
+            lbl_803AB708[i].enter(o);
+        }
+        o->update = lbl_803AB708[i].update;
+        o->msg = lbl_803AB708[i].msg;
+        o->type = hash;
+    }
+}
 
 int AiReturnFalse_801BDFF0() {
     return 0;
