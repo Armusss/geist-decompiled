@@ -12,6 +12,9 @@ published; generate your own from your copy of the game if you want it.
 
 ## User decision (2026-11-22): GC/2.0 for u_801D8FD4
 - APPROVED: u_801D8FD4 -> GC/2.0 (G4 evidence: fn_801D8FD4 loads through its const Vec3* argument before `stw r0`; scratch GC/2.0 compile reproduces it, all other functions identical on both compilers). Kept only if the unit fully matches with AUDIT OK (with the VecNormalize helper in fn_801D96C4).
+- DONE: u_801D8FD4 GC/2.0 + Matching (474f2f8).
+- APPROVED (user, 2026-11-22): u_801D4738 -> GC/2.0 now (fn_801D4EC4 exact on 2.0, fn_801D7F54/7F78 exact on 2.0, all other functions identical on both). Not yet fully matched.
+- u_800C6E8C: revisit later — re-test GC/2.0 once more of the unit is drafted, then ask the user.
 - Run the same scratch GC/2.0 test on u_801D4738 (fn_801D4EC4) and u_800C5028-range (fn_800C7E80, now in u_800C6E8C) and bring results to the user before changing them.
 
 ## User decisions (2026-11-21)
