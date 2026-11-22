@@ -1,138 +1,27 @@
-// u_800E1B5C.cpp: the "AUG" and "Pistol" effect types. Only the create functions are written so far;
-// names are descriptive guesses and the code is matched against the retail DOL.
+// u_800E1B5C.cpp (0x800E1B5C-0x800E2414): the first of six files in the old u_800E1B5C range
+// (0x800E1B5C-0x800E9418): this one, u_800E2414 (AUG effect), u_800E39F4 (Bullet effect), u_800E3EC4 (Pistol
+// effect), u_800E48A0 (actor update/default message) and u_800E7E20. A table at .bss 0x80455780 and its
+// switch table 0x8039C3A8 (fn_800E1EA0).
+// Boundary evidence for the end: own .sdata2 pool 0x804D7190-0x804D71A0 (0.0f 0x804D7190, double 0x804D7198);
+// the AUG file has its own 0.0f at 0x804D71A0 (scan cut exactly at 0x800E2414, the AUG reset in the AUG
+// descriptor).
+// Names are descriptive guesses; unmatched against retail unless noted.
 
 #include <dolphin/types.h>
-#include "game/effect.h"
 
-extern "C" {
-void* fn_800EB21C(int id);
-int fn_800F80DC(int a);
-int fn_800F8A30(int a);
-int fn_80019A04();
-int fn_800F8AF4(int id);
-void fn_80175EE4(void* p);
-}
-
-void* VAlloc(int size);
-void Fn800F840C(int emitter, int a, int b);
-extern int lbl_804D4A10;
-extern int lbl_804D4A18;
-
-extern unsigned char __upper_map[256];
-inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
-
-inline u32 StrHash(const char* s) {
-    if (s == 0) {
-        return 0;
-    } else {
-        u32 h = 0;
-        int i;
-        for (i = 0; s[i] != 0; i++) {
-            h *= 31;
-            h += (unsigned char)toupper(s[i]);
-        }
-        h %= 0xFFFFFFFF;
-        return h;
-    }
-}
-
-inline u32 EffectTypeHash(EffectType* type) {
-    if (type->hash == 0) {
-        const char* name = type->name;
-        type->hash = StrHash(name);
-    }
-    return type->hash;
-}
-struct AugDef {
-    u8 pad00[0x4];
-    int unk04;
-    int unk08;
-};
-
-struct Aug {
-    int unk00;
-    float unk04;
-    float unk08;
-    int emitter;
-    AugDef* def;
-    int unk14;
-    u8 pad18[0x68];
-    int unk80;
-    int unk84;
-    float unk88;
-    float unk8C;
-    float unk90;
-    int unk94;
-    u8 pad98[0x38];
-};
-
-extern EffectType lbl_8039C3C8;  // the "AUG" type descriptor
-
-void* AugCreate(int a, int id) {
-    EffectType* type = &lbl_8039C3C8;
-    Aug* g;
-
-    EffectTypeHash(type);
-    g = (Aug*)VAlloc(sizeof(Aug));
-    memset(g, 0, sizeof(Aug));
-    if (g == 0) {
-        return 0;
-    }
-    g->def = (AugDef*)fn_800EB21C(id);
-    g->unk08 = 100.0f;
-    g->unk00 = 0;
-    g->unk04 = 0.0f;
-    g->unk14 = 1;
-    g->unk80 = fn_800F8AF4(id);
-    g->unk84 = -1;
-    g->unk88 = 0.0f;
-    g->unk8C = 0.0f;
-    g->unk90 = 0.0f;
-    g->emitter = fn_800F8A30(fn_800F80DC(a));
-    lbl_804D4A10 = fn_80019A04();
-    fn_80175EE4(&g->unk94);
-    Fn800F840C(g->emitter, g->def->unk04, g->def->unk08);
-    return g;
-}
-
-struct PistolDef {
-    u8 pad00[0x4];
-    int unk04;
-    int unk08;
-};
-
-struct Pistol {
-    int emitter;
-    PistolDef* def;
-    int unk08;
-    u8 pad0C[0x4];
-    int unk10;
-    float unk14;
-    float unk18;
-    float unk1C;
-};
-
-extern EffectType lbl_8039C428;  // the "Pistol" type descriptor
-
-void* PistolCreate(int a, int id) {
-    EffectType* type = &lbl_8039C428;
-    Pistol* g;
-
-    EffectTypeHash(type);
-    g = (Pistol*)VAlloc(sizeof(Pistol));
-    memset(g, 0, sizeof(Pistol));
-    if (g == 0) {
-        return 0;
-    }
-    g->def = (PistolDef*)fn_800EB21C(id);
-    g->emitter = fn_800F8A30(fn_800F80DC(a));
-    g->unk08 = 1;
-    g->unk10 = -1;
-    g->unk14 = 0.0f;
-    g->unk18 = 0.0f;
-    g->unk1C = 0.0f;
-    lbl_804D4A18 = fn_80019A04();
-    Fn800F840C(g->emitter, g->def->unk04, g->def->unk08);
-    return g;
-}
-
+// TODO (not drafted yet, 0x74 bytes at 0x800E1B5C)
+// fn_800E1B5C
+// TODO (not drafted yet, 0x8 bytes at 0x800E1BD0)
+// fn_800E1BD0
+// TODO (not drafted yet, 0x2C bytes at 0x800E1BD8)
+// fn_800E1BD8
+// TODO (not drafted yet, 0x29C bytes at 0x800E1C04)
+// fn_800E1C04
+// TODO (not drafted yet, 0x460 bytes at 0x800E1EA0)
+// fn_800E1EA0
+// TODO (not drafted yet, 0x68 bytes at 0x800E2300)
+// fn_800E2300
+// TODO (not drafted yet, 0x64 bytes at 0x800E2368)
+// fn_800E2368
+// TODO (not drafted yet, 0x48 bytes at 0x800E23CC)
+// fn_800E23CC

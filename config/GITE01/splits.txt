@@ -292,7 +292,22 @@ game/asyncio.cpp:
 	.rodata     start:0x80344D80 end:0x80344E58
 
 game/u_800E1B5C.cpp:
-	.text       start:0x800E1B5C end:0x800E9418
+	.text       start:0x800E1B5C end:0x800E2414
+
+game/u_800E2414.cpp:
+	.text       start:0x800E2414 end:0x800E39F4
+
+game/u_800E39F4.cpp:
+	.text       start:0x800E39F4 end:0x800E3EC4
+
+game/u_800E3EC4.cpp:
+	.text       start:0x800E3EC4 end:0x800E48A0
+
+game/u_800E48A0.cpp:
+	.text       start:0x800E48A0 end:0x800E7E20
+
+game/u_800E7E20.cpp:
+	.text       start:0x800E7E20 end:0x800E9418
 
 game/u_800E9418.cpp:
 	.text       start:0x800E9418 end:0x800EB1B8

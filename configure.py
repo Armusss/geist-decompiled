@@ -634,6 +634,11 @@ config.libs = [
             Object(Matching, "game/u_800E0CB8.cpp", mw_version="GC/2.0"),  # Vec3 helpers; GC/2.0: const-pointer loads before stwu (STATUS G4)
             Object(Matching, "game/asyncio.cpp"),  # guess
             Object(NonMatching, "game/u_800E1B5C.cpp"),  # guess
+            Object(NonMatching, "game/u_800E2414.cpp"),  # split from u_800E1B5C
+            Object(NonMatching, "game/u_800E39F4.cpp"),  # split from u_800E1B5C
+            Object(NonMatching, "game/u_800E3EC4.cpp"),  # split from u_800E1B5C
+            Object(NonMatching, "game/u_800E48A0.cpp"),  # split from u_800E1B5C
+            Object(NonMatching, "game/u_800E7E20.cpp"),  # split from u_800E1B5C
             Object(Matching, "game/u_800E9418.cpp"),  # guess
             Object(NonMatching, "game/u_800EB1B8.cpp"),  # guess
             Object(Matching, "game/SpiritGun.cpp"),  # "SpiritGun" effect type
