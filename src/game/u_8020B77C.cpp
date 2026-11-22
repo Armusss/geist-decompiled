@@ -294,11 +294,11 @@ extern "C" float lbl_804D33C0;
 extern "C" float lbl_804D33F4;
 extern "C" int lbl_804D3400;
 extern "C" int lbl_804D33D0;
-extern "C" int lbl_804D33D4;
-extern "C" int lbl_804D33D8;
-extern "C" int lbl_804D33DC;
-extern "C" int lbl_804D33E0;
-extern "C" int lbl_804D33E4;
+extern "C" int gFxTextWidth;
+extern "C" int gFxTextOffsetX;
+extern "C" int gFxTextBoxOffsetX;
+extern "C" int gFxTextTop;
+extern "C" int gFxTextBottom;
 extern "C" int lbl_804D33E8;
 extern "C" int lbl_804D33EC;
 extern "C" int lbl_804D33F0;
@@ -498,12 +498,12 @@ void FxEmitterDrawText(FxActor* actor)
 
     if ((actor->cfg.flags & 1) && (actor->cfg.flags & 2) && actor->cfg.handle != 0 &&
         (actor->cfg.flags & 0x60) == 0) {
-        int height = lbl_804D33E4 - lbl_804D33E0;
-        int half = lbl_804D33D4 / 2;
-        int left = (0x140 - half) + lbl_804D33D8;
-        int right = half + lbl_804D33D8 + 0x140;
+        int height = gFxTextBottom - gFxTextTop;
+        int half = gFxTextWidth / 2;
+        int left = (0x140 - half) + gFxTextOffsetX;
+        int right = half + gFxTextOffsetX + 0x140;
 
-        TextSetRect(left, right, height, lbl_804D33E4, actor->cfg.unk958, actor->cfg.unk95A,
+        TextSetRect(left, right, height, gFxTextBottom, actor->cfg.unk958, actor->cfg.unk95A,
                     (int)FxTextRectUpdate, (int)actor);
         TextSetStyle(0xff, 0xff, 0xff, 0xff, lbl_804D33D0, 0, 0, 0, 0, 0, lbl_804D33E8, 0);
         TextSetFlags(1, 0);
@@ -511,8 +511,8 @@ void FxEmitterDrawText(FxActor* actor)
         if (actor->cfg.flags & 0x10) {
             unsigned long key = 0;
 
-            TextSetBox(lbl_804D33DC + (left - lbl_804D33D8),
-                       lbl_804D33DC + (right - lbl_804D33D8), 0, height);
+            TextSetBox(gFxTextBoxOffsetX + (left - gFxTextOffsetX),
+                       gFxTextBoxOffsetX + (right - gFxTextOffsetX), 0, height);
             TextSetMode(1);
             TextSetAlign(1);
             TextSetColor(0xff, 0xff, 0xff, 0xff);
