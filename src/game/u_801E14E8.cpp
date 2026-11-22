@@ -164,9 +164,8 @@ struct BarrierVisitor {
 
 // Whether the visitor may pass: a ghost (kind 0x13) always may, a player
 // only when not inside a host (a hosted player is flagged instead).
-static inline int BarrierVisitorPasses(BarrierBeh* beh, BarrierVisitor* target) {
+static inline int BarrierVisitorPasses(BarrierBeh* beh, BarrierVisitor* target, Msg400& q) {
     if (target != 0 && beh != 0 && beh->field04 != 0) {
-        Msg400 q;
         q.actor = (Actor*)target;
         if (target->handler(0x400, &q) != 0) {
             switch ((int)((u32)q.ownerId >> 24)) {
@@ -194,8 +193,8 @@ static inline bool BarrierBoneDiffers(BarrierActor* self, int* data) {
 static inline int BarrierAsk(int target, u32 hash) {
     QueryMsg q;
     q.hash = hash;
-    q.unk8 = 0;
     *(int*)&q.result = 0;
+    q.unk8 = 0;
     SendMsg(target, 0x41E, &q);
     return *(int*)&q.result;
 }
@@ -218,8 +217,8 @@ int BarrierActorMsg(Actor* actor, int msg, void* dataPtr, int arg) {
 
     switch (msg) {
     case 0x405: {
-        int hit;
         int result = 0;
+        int hit;
         if ((int)(((BarrierActor*)data[1])->field38 >> 24) == 0x13) {
             Mtx34 otherMtx;
             Mtx34 selfMtx;
@@ -296,8 +295,9 @@ int BarrierActorMsg(Actor* actor, int msg, void* dataPtr, int arg) {
     case 2:
         result = ActorDefaultMsg(actor, msg, data, arg);
         if (result != 0) {
+            Msg400 q;
             target = data[3];
-            if (BarrierVisitorPasses(self->behaviour, (BarrierVisitor*)target)) {
+            if (BarrierVisitorPasses(self->behaviour, (BarrierVisitor*)target, q)) {
                 return result;
             }
         }
@@ -305,8 +305,9 @@ int BarrierActorMsg(Actor* actor, int msg, void* dataPtr, int arg) {
     case 3:
         result = ActorDefaultMsg(actor, msg, data, arg);
         if (result != 0) {
+            Msg400 q;
             target = data[4];
-            if (BarrierVisitorPasses(self->behaviour, (BarrierVisitor*)target)) {
+            if (BarrierVisitorPasses(self->behaviour, (BarrierVisitor*)target, q)) {
                 return result;
             }
         }
@@ -314,8 +315,9 @@ int BarrierActorMsg(Actor* actor, int msg, void* dataPtr, int arg) {
     case 4:
         result = ActorDefaultMsg(actor, msg, data, arg);
         if (result != 0) {
+            Msg400 q;
             target = data[7];
-            if (BarrierVisitorPasses(self->behaviour, (BarrierVisitor*)target)) {
+            if (BarrierVisitorPasses(self->behaviour, (BarrierVisitor*)target, q)) {
                 return result;
             }
         }
