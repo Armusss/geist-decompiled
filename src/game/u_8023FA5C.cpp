@@ -164,7 +164,7 @@ void Vec3Set(Vec3* v, float x, float y, float z);
 void EulerNormalize(Vec3* out, Vec3* in);
 void SkinnedActorUpdateModel(Actor* actor);
 
-extern float lbl_803BE6F8[];
+extern float lbl_803BE6F8[3][6];  // per-health-band odds of each guard count
 
 int ModelAnimate(int model, char* name, int arg);
 int ModelFindBone(int model, int bone);
@@ -1206,11 +1206,11 @@ int HydraEnterBehaviourState3(Actor* actor)
         roll = (float)rand() / 32767.0f;
         value = (float)(int)actor->mDataC4->mValue30;
         if (actor->mUnk904 < value * lbl_804D3558) {
-            table = lbl_803BE6F8 + 12;
+            table = lbl_803BE6F8[2];
         } else if (actor->mUnk904 < value * lbl_804D355C) {
-            table = lbl_803BE6F8 + 6;
+            table = lbl_803BE6F8[1];
         } else {
-            table = lbl_803BE6F8;
+            table = lbl_803BE6F8[0];
         }
         for (i = 0; i < 6; i++) {
             total = total + table[i];
