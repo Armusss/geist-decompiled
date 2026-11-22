@@ -5,12 +5,33 @@
 // Names are descriptive guesses; unmatched against retail unless noted.
 
 #include <dolphin/types.h>
+#include "game/effect.h"
 
-// TODO (not drafted yet, 0x4 bytes at 0x800E39F4)
-// fn_800E39F4
-// TODO (not drafted yet, 0xC bytes at 0x800E39F8)
-// fn_800E39F8
-// TODO (not drafted yet, 0x88 bytes at 0x800E3A04)
-// fn_800E3A04
+int Fn80175D60(unsigned long arg);
+
+//@@800E39F4
+extern "C" void fn_800E39F4(EffectObj* obj, float dt);
+void fn_800E39F4(EffectObj* obj, float dt) {}
+//@@end
+//@@800E39F8
+extern "C" unsigned long fn_800E39F8(EffectObj* obj, int msg);
+unsigned long fn_800E39F8(EffectObj* obj, int msg) {
+    return 0x3DA260F7;
+}
+//@@end
+//@@800E3A04
+extern "C" void fn_800E3A8C(int arg, int busy, void* data, int owner);
+extern "C" int fn_800E3A04(EffectObj* obj, int msg, int arg, void* data);
+int fn_800E3A04(EffectObj* obj, int msg, int arg, void* data) {
+    int busy = Fn80175D60(arg);
+
+    switch (msg) {
+    case 0x14967:
+        fn_800E3A8C(arg, busy, data, obj->unk0);
+        return 1;
+    }
+    return 0;
+}
+//@@end
 // TODO (not drafted yet, 0x438 bytes at 0x800E3A8C)
 // fn_800E3A8C

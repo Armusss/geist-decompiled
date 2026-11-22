@@ -71,16 +71,26 @@ struct Pistol {
 
 extern EffectType gPistolType;  // the "Pistol" type descriptor
 
-// TODO (not drafted yet, 0x4 bytes at 0x800E3EC4)
-// fn_800E3EC4
+//@@800E3EC4
+extern "C" void fn_800E3EC4(EffectObj* obj);
+void fn_800E3EC4(EffectObj* obj) {}
+//@@end
 // TODO (not drafted yet, 0x168 bytes at 0x800E3EC8)
 // fn_800E3EC8
 // TODO (not drafted yet, 0x124 bytes at 0x800E4030)
 // fn_800E4030
 // TODO (not drafted yet, 0x5D0 bytes at 0x800E4154)
 // fn_800E4154
-// TODO (not drafted yet, 0x38 bytes at 0x800E4724)
-// fn_800E4724
+//@@800E4724
+extern "C" void fn_800F86A0(int emitter);
+void VFree(void* p);
+extern "C" void fn_800E4724(EffectObj* obj);
+void fn_800E4724(EffectObj* obj) {
+    Pistol* g = (Pistol*)obj->data;
+    fn_800F86A0(g->emitter);
+    VFree(g);
+}
+//@@end
 
 void* PistolCreate(int a, int id) {
     EffectType* type = &gPistolType;

@@ -77,16 +77,34 @@ struct Aug {
 
 extern EffectType gAugType;  // the "AUG" type descriptor
 
-// TODO (not drafted yet, 0x38 bytes at 0x800E2414)
-// fn_800E2414
+//@@800E2414
+extern "C" void fn_80175DA8(void* p);
+extern "C" void fn_800E2414(EffectObj* obj);
+void fn_800E2414(EffectObj* obj) {
+    Aug* g = (Aug*)obj->data;
+    g->unk00 = 0;
+    g->unk04 = 0.0f;
+    fn_80175DA8(&g->unk94);
+}
+//@@end
 // TODO (not drafted yet, 0x440 bytes at 0x800E244C)
 // fn_800E244C
 // TODO (not drafted yet, 0x198 bytes at 0x800E288C)
 // fn_800E288C
 // TODO (not drafted yet, 0xDFC bytes at 0x800E2A24)
 // fn_800E2A24
-// TODO (not drafted yet, 0x40 bytes at 0x800E3820)
-// fn_800E3820
+//@@800E3820
+extern "C" void fn_80175EA4(void* p);
+extern "C" void fn_800F86A0(int emitter);
+void VFree(void* p);
+extern "C" void fn_800E3820(EffectObj* obj);
+void fn_800E3820(EffectObj* obj) {
+    Aug* g = (Aug*)obj->data;
+    fn_80175EA4(&g->unk94);
+    fn_800F86A0(g->emitter);
+    VFree(g);
+}
+//@@end
 
 void* AugCreate(int a, int id) {
     EffectType* type = &gAugType;
@@ -115,5 +133,11 @@ void* AugCreate(int a, int id) {
     return g;
 }
 
-// TODO (not drafted yet, 0x24 bytes at 0x800E39D0)
-// fn_800E39D0
+//@@800E39D0
+extern "C" void fn_80175EF8(void* p);
+extern "C" int fn_800E39D0(void* p);
+int fn_800E39D0(void* p) {
+    fn_80175EF8(p);
+    return 1;
+}
+//@@end
