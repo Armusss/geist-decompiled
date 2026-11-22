@@ -621,7 +621,10 @@ config.libs = [
             Object(NonMatching, "game/u_800B5028.cpp"),  # owner aim/target + group behaviour
             Object(Matching, "game/u_800BA6FC.cpp"),  # group system front end
             Object(NonMatching, "game/u_800BAA14.cpp"),  # guess
-            Object(NonMatching, "game/u_800C5028.cpp"),  # guess
+            Object(NonMatching, "game/u_800C5028.cpp"),  # anim table, pending msgs, camera slots
+            Object(NonMatching, "game/u_800C6E8C.cpp"),  # aim helpers, render, type registry (split from u_800C5028)
+            Object(NonMatching, "game/u_800C99E8.cpp"),  # movement helpers + list classes (split from u_800C5028)
+            Object(NonMatching, "game/u_800CF2E0.cpp"),  # subsystem with AppMain hooks (split from u_800C5028)
             Object(Matching, "game/Progress.cpp"),  # guess
             Object(Matching, "game/u_800D0BF4.cpp"),  # "Powerup" actor
             Object(NonMatching, "game/u_800D14A8.cpp"),  # zone lists, dash, linked actors
@@ -728,7 +731,11 @@ config.libs = [
             Object(Matching, "game/u_801D8768.cpp"),  # LCCopy, sbss 0x804D51E0 block
             Object(Matching, "game/u_801D8994.cpp"),  # Gfx state, sbss 0x804D51F0 block
             Object(NonMatching, "game/u_801D8FD4.cpp"),  # msg 0x74xx helpers, own consts 0x804D8C80..
-            Object(NonMatching, "game/u_801D9A70.cpp"),  # guess
+            Object(NonMatching, "game/u_801D9A70.cpp"),  # [FSGSVE] creature AI
+            Object(NonMatching, "game/u_801DE4B0.cpp"),  # TentacleSpit effect type (split from u_801D9A70)
+            Object(NonMatching, "game/u_801DE7A0.cpp"),  # trails (split from u_801D9A70)
+            Object(Matching, "game/u_801E0850.cpp"),  # effect-module fan-out hooks (split from u_801D9A70)
+            Object(NonMatching, "game/u_801E092C.cpp"),  # Lightning effect type (split from u_801D9A70)
             Object(NonMatching, "game/u_801E0EDC.cpp"),  # guess
             Object(NonMatching, "game/u_801E14E8.cpp"),  # split from u_801E0EDC
             Object(NonMatching, "game/u_801E241C.cpp"),  # pinned
@@ -737,7 +744,8 @@ config.libs = [
             Object(NonMatching, "game/u_801E5B3C.cpp"),  # split from u_801E241C
             Object(NonMatching, "game/u_801E65F0.cpp"),  # split from u_801E241C
             Object(NonMatching, "game/u_801E72E0.cpp"),  # split from u_801E241C
-            Object(NonMatching, "game/u_801E7DE0.cpp"),  # guess
+            Object(Matching, "game/u_801E7534.cpp"),  # sniper host states + gSniperHostTypes (was u_801E72E0 tail + u_801E7DE0)
+            Object(NonMatching, "game/u_801EA880.cpp"),  # debug text helpers (was u_801E7DE0 tail)
             Object(NonMatching, "game/u_801EAACC.cpp"),  # guess
             Object(NonMatching, "game/u_801EDE74.cpp"),  # guess
             Object(Matching, "game/u_801F1798.cpp"),  # guess
@@ -760,7 +768,7 @@ config.libs = [
             Object(NonMatching, "game/u_802154B0.cpp"),  # guess
             Object(NonMatching, "game/u_80221100.cpp"),  # known
             Object(NonMatching, "game/u_80222D60.cpp"),  # guess (was u_80222C08)
-            Object(NonMatching, "game/u_80226DE8.cpp"),  # guess
+            Object(NonMatching, "game/u_80225E34.cpp"),  # guess (was u_80226DE8; starts at the player states)
             Object(NonMatching, "game/u_80227DD8.cpp"),  # split from u_80226DE8
             Object(NonMatching, "game/u_8022A180.cpp"),  # split from u_80226DE8
             Object(NonMatching, "game/u_8022BA30.cpp"),  # split from u_80226DE8
@@ -828,7 +836,7 @@ config.libs = [
             Object(Matching, "game/u_80299F0C.cpp"),  # "SpitAndSqueal" effect type (split from u_80294548)
             Object(NonMatching, "game/u_8029A5E4.cpp"),  # split from u_80294548
             Object(NonMatching, "game/u_8029B070.cpp"),  # split from u_80294548
-            Object(NonMatching, "game/u_8029C0AC.cpp"),  # guess
+            Object(NonMatching, "game/u_8029C0D0.cpp"),  # guess (was u_8029C0AC)
             Object(NonMatching, "game/u_8029E714.cpp"),  # pinned
             Object(Matching, "game/u_802A770C.cpp"),  # host types
             Object(Matching, "game/Fuel.cpp"),  # (helper-game-b)

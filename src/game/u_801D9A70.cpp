@@ -1,7 +1,14 @@
-// u_801D9A70.cpp: a generic creature AI (state table at 0x803ADBF8) plus trail effect helpers
-// (0x801D9A70-0x801E0EDC).  Per-state enter / can-leave / update callbacks, message handling,
-// attack and approach logic, and the trail create / destroy wrappers.
-// Names are descriptive guesses; unmatched against retail so far.
+// u_801D9A70.cpp: a generic creature AI, the "[FSGSVE]" actor (state table 0x803ADBF8), 0x801D9A70-0x801DE4B0.
+// Per-state enter / can-leave / update callbacks, message handling, attack and approach logic. Sister of the
+// "[FSHSVE]" actor in u_801AADA8.cpp.
+// Boundary evidence (the old range 0x801D9A70-0x801E0EDC held four files; cuts at 0x801DE4B0, 0x801DE7A0,
+// 0x801E092C):
+// - .rodata 0x80348D00-0x80348D78: own ghost-action name table + "QUERY", "[FSGSVE]", "Stand Attack\n",
+//   "onLostTarget"; the next file has its own table at 0x80348D78.
+// - .sdata2 0x804D8CA8-0x804D8D18 (int-to-float double 0x804D8CC8); the next file's pool starts at 0x804D8D18
+//   with its own int-to-float double at 0x804D8D20. .data 0x803ADBF8-0x803ADCF8 (state table), .sdata
+//   0x804D3240.
+// Names are descriptive guesses; unmatched against retail unless noted.
 
 #include "game/types.h"
 #include "game/string.h"
@@ -62,9 +69,6 @@ struct Creature {
 };
 
 extern CreatureOps lbl_803ADBF8[];
-extern float lbl_804D8CA8;
-extern float lbl_804D8CD0;
-extern float lbl_804D8CD4;
 extern int lbl_804D3240;
 
 extern "C" {
@@ -97,7 +101,6 @@ void fn_800B1AB8(double a, Creature* c, int slot, int n);
 void fn_800B1DCC(Creature* c, int slot, void* cb, void* target, int n);
 int SendMsg(int to, int msg, void* data);
 }
-extern float lbl_804D8CD8;
 int CreatureChargeCallback(Creature* c);
 
 struct QueryMsg {
@@ -115,13 +118,9 @@ int fn_800A7B78(void* set, int i);
 void fn_800BBCA8(Creature* c);
 void fn_800BC56C(Creature* c, void* target);
 }
-extern float lbl_804D8CDC;
 int CreatureShootCallback(Creature* c);
 
-extern float lbl_804D8CB4;
 
-extern float lbl_804D8CAC;
-extern float lbl_804D8CB8;
 extern "C" {
 void fn_800B2418(double a, Creature* c, int slot);
 int fn_800A8CDC(double a, Creature* c, void* target);
@@ -157,7 +156,7 @@ int CreatureUpdate(Creature* c) {
             if (next != ai->state && lbl_803ADBF8[ai->state].canLeave(c) != 0) {
                 if (lbl_803ADBF8[next].enter(c) == 0)
                     lbl_803ADBF8[ai->state].enter(c);
-                ai->time = lbl_804D8CA8;
+                ai->time = 0.0f;
                 fn_800A7A54(&c->flags270, 0x40, 0);
                 fn_800A7A54(&c->flags270, 0x41, 0);
                 fn_800A7A54(&c->flags270, 0x43, 0);
@@ -192,9 +191,9 @@ void CreatureInit(Creature* c) {
         ai->state = 0;
         ai->pending = 0;
         ai->flags = 0;
-        ai->t10 = lbl_804D8CA8;
-        ai->t14 = lbl_804D8CA8;
-        ai->time = lbl_804D8CA8;
+        ai->t10 = 0.0f;
+        ai->t14 = 0.0f;
+        ai->time = 0.0f;
         ai->health18 = c->health;
         fn_800A7B08(&c->flags270, 6, 1);
         lbl_803ADBF8[ai->state].enter(c);
@@ -210,7 +209,7 @@ int CreatureWantsAttack(Creature* c) {
         return 0;
     {
         CreatureAi* ai = c->ai;
-        if (c->unk220 == 0 || ai->time <= lbl_804D8CD0) {
+        if (c->unk220 == 0 || ai->time <= 2000.0f) {
             int slot = fn_800B26B8(c);
             if (slot != 4 && fn_800B1EF4(c, slot) == 0) {
                 fn_800B261C(c, slot, pick);
@@ -218,10 +217,10 @@ int CreatureWantsAttack(Creature* c) {
                     return 1;
                 if (fn_800B22F8(c, slot) < 2)
                     return 1;
-                if (lbl_804D8CD4 < ai->time)
+                if (3000.0f < ai->time)
                     return 1;
             }
-            if (slot < 3 || (fn_800A7028(&c->flags270), ai->time <= lbl_804D8CD4))
+            if (slot < 3 || (fn_800A7028(&c->flags270), ai->time <= 3000.0f))
                 return 0;
             return 1;
         }
@@ -258,8 +257,8 @@ int CreatureStartRetreat(Creature* c) {
     c->unk288 = 0;
     c->hp = 3;
     ai->state = 15;
-    ai->t10 = lbl_804D8CA8;
-    ai->time = lbl_804D8CA8;
+    ai->t10 = 0.0f;
+    ai->time = 0.0f;
     fn_800A7B08(&c->flags270, 4, 1);
     fn_800A7B08(&c->flags270, 9, 1);
     fn_800A7B08(&c->flags270, 0x16, 1);
@@ -281,7 +280,7 @@ bool CreatureShouldLeave(Creature* c) {
         if (fn_800B22F8(c, slot) < 3)
             return true;
     }
-    return lbl_804D8CD4 < ai->time;
+    return 3000.0f < ai->time;
 }
 
 int CreatureClearFlags2(Creature* c) {
@@ -314,12 +313,12 @@ int CreatureStartCharge(Creature* c) {
     fn_800B1F20(c, slot);
     if (fn_800C5654(*(int*)((u8*)c + 0x38), 0xB1C7633C, *(int*)((u8*)target + 0x38)) != 0)
         return 0;
-    fn_800B1AB8(lbl_804D8CD8, c, slot, 3);
+    fn_800B1AB8(-1.0f, c, slot, 3);
     fn_800A78A0(&c->flags270, target);
     c->unk288 = 0;
     c->hp = 3;
     ai->state = 11;
-    ai->t10 = lbl_804D8CA8;
+    ai->t10 = 0.0f;
     fn_800A7B08(&c->flags270, 4, 1);
     fn_800A7B08(&c->flags270, 9, 1);
     {
@@ -350,7 +349,7 @@ u32 CreatureCanChase(Creature* c) {
     if (who[0] == fn_800A7A18(&c->flags270)) {
         if (fn_800B22F8(c, slot) < 3)
             return 1;
-        r = lbl_804D8CD4 < ai->time;
+        r = 3000.0f < ai->time;
     } else {
         r = 1;
     }
@@ -386,12 +385,12 @@ int CreatureStartShoot(Creature* c) {
     fn_800B1F20(c, slot);
     if (fn_800C5654(*(int*)((u8*)c + 0x38), 0x7C794AB6, *(int*)((u8*)who[0] + 0x38)) != 0)
         return 0;
-    fn_800B1AB8(lbl_804D8CD8, c, slot, 3);
+    fn_800B1AB8(-1.0f, c, slot, 3);
     fn_800A78A0(&c->flags270, who[0]);
     c->unk288 = 0;
     c->hp = 3;
     ai->state = 10;
-    ai->t10 = lbl_804D8CA8;
+    ai->t10 = 0.0f;
     fn_800A7B08(&c->flags270, 4, 1);
     fn_800A7B08(&c->flags270, 0x16, 1);
     fn_800A7B08(&c->flags270, 9, 1);
@@ -424,7 +423,7 @@ int CreatureShootUpdate(Creature* c) {
     fn_800B1F20(c, slot);
     {
         double d = fn_800AA050(c, who[0]);
-        if (d < lbl_804D8CDC || (ai->flags & 4) != 0) {
+        if (d < 600.0f || (ai->flags & 4) != 0) {
             if (c->unk288 == 0) {
                 if ((ai->flags & 4) == 0) {
                     fn_800A7B08(&c->flags270, 4, 0);
@@ -543,7 +542,7 @@ int CreatureStartHold(Creature* c) {
     c->unk288 = 0;
     ai->state = 9;
     ai->flags &= ~0x20;
-    ai->time = lbl_804D8CA8;
+    ai->time = 0.0f;
     fn_800A7B08(&c->flags270, 4, 1);
     fn_800A7B08(&c->flags270, 0x16, 1);
     fn_800A7B08(&c->flags270, 3, 0);
@@ -565,8 +564,8 @@ int CreatureHoldUpdate(Creature* c) {
     fn_800B261C(c, slot, who);
     if (who[0] == fn_800A7A18(&c->flags270) && fn_800B22F8(c, slot) > 2 && (fn_800B1ED4(c, slot) & 0x10) == 0 &&
         (ai->flags & 0x10) == 0) {
-        if (lbl_804D8CB4 < ai->time) {
-            fn_800B1AB8(lbl_804D8CD8, c, slot, 1);
+        if (8000.0f < ai->time) {
+            fn_800B1AB8(-1.0f, c, slot, 1);
             return 1;
         }
         return 0;
@@ -604,13 +603,13 @@ int CreatureStartSeek(Creature* c) {
     c->unk288 = 0;
     c->hp = 3;
     ai->state = 13;
-    ai->t10 = lbl_804D8CA8;
+    ai->t10 = 0.0f;
     fn_800A7B08(&c->flags270, 4, 1);
     fn_800A7B08(&c->flags270, 3, 1);
     fn_800A7B08(&c->flags270, 0x16, 1);
     fn_800A78A0(&c->flags270, who[0]);
     fn_800B1DCC(c, slot, (void*)CreatureSeekCallback, who[0], 0x50);
-    fn_800B1AB8(lbl_804D8CD8, c, slot, 3);
+    fn_800B1AB8(-1.0f, c, slot, 3);
     fn_800DDA24(*(int*)((u8*)c + 0x38), 4);
     if (c->unk220 == 4)
         c->unk220 = 0;
@@ -638,23 +637,23 @@ int CreatureSeekUpdate(Creature* c) {
             fn_800B261C(c, slot, who);
             if (who[0] != 0 && who[0] != target) {
                 fn_800B1F20(c, slot);
-                fn_800B2418(lbl_804D8CB8, c, slot);
-                fn_800B1AB8(lbl_804D8CD8, c, slot, 1);
+                fn_800B2418(5000.0f, c, slot);
+                fn_800B1AB8(-1.0f, c, slot, 1);
             }
         }
     } else if (fn_800B1EF4(c, slot) == 0) {
         return 1;
     }
-    if (fn_800A8CDC(lbl_804D8CAC, c, target) != 0)
+    if (fn_800A8CDC(1.0f, c, target) != 0)
         return 1;
     if (fn_800BAF40(c) == -1) {
         fn_800BC56C(c, target);
         c->unk288 = 3;
-        ai->time = lbl_804D8CA8;
-    } else if (lbl_804D8CB8 < ai->time) {
+        ai->time = 0.0f;
+    } else if (5000.0f < ai->time) {
         fn_800BC56C(c, target);
         c->unk288 = 3;
-        ai->time = lbl_804D8CA8;
+        ai->time = 0.0f;
     }
     return 0;
 }
@@ -670,7 +669,7 @@ int CreatureStartWatch(Creature* c) {
     if (slot == 4)
         return 0;
     fn_800B1F20(c, slot);
-    fn_800B1AB8(lbl_804D8CD8, c, slot, 1);
+    fn_800B1AB8(-1.0f, c, slot, 1);
     fn_800B261C(c, slot, who);
     if (who[0] == 0) {
         fn_800A7028(&c->flags270);
@@ -757,99 +756,3 @@ int CreatureChargeCallback(Creature* c);
 
 // TODO (not drafted yet, 0xCC bytes at 0x801DE3E4)
 int CreatureShootCallback(Creature* c);
-
-// TODO (not drafted yet, 0xC bytes at 0x801DE4B0)
-extern "C" void fn_801DE4B0(void);
-
-// TODO (not drafted yet, 0x2E4 bytes at 0x801DE4BC)
-extern "C" void fn_801DE4BC(void);
-
-// TODO (not drafted yet, 0x3C bytes at 0x801DE7A0)
-extern "C" void fn_801DE7A0(void);
-
-// TODO (not drafted yet, 0x128 bytes at 0x801DE7DC)
-extern "C" void fn_801DE7DC(void);
-
-// TODO (not drafted yet, 0x5C bytes at 0x801DE904)
-void TrailDestroy(int id);
-
-// TODO (not drafted yet, 0x30 bytes at 0x801DE960)
-int TrailCreate(TrailDesc* d);
-
-// TODO (not drafted yet, 0x1DC bytes at 0x801DE990)
-extern "C" void fn_801DE990(void);
-
-// TODO (not drafted yet, 0xC4 bytes at 0x801DEB6C)
-extern "C" void fn_801DEB6C(void);
-
-// TODO (not drafted yet, 0x78 bytes at 0x801DEC30)
-extern "C" void fn_801DEC30(void);
-
-// TODO (not drafted yet, 0xEC bytes at 0x801DECA8)
-extern "C" void fn_801DECA8(void);
-
-// TODO (not drafted yet, 0x178 bytes at 0x801DED94)
-extern "C" void fn_801DED94(void);
-
-// TODO (not drafted yet, 0x28C bytes at 0x801DEF0C)
-extern "C" void fn_801DEF0C(void);
-
-// TODO (not drafted yet, 0x6A8 bytes at 0x801DF198)
-extern "C" void fn_801DF198(void);
-
-// TODO (not drafted yet, 0x108 bytes at 0x801DF840)
-extern "C" void fn_801DF840(void);
-
-// TODO (not drafted yet, 0x778 bytes at 0x801DF948)
-extern "C" void fn_801DF948(void);
-
-// TODO (not drafted yet, 0x3BC bytes at 0x801E00C0)
-extern "C" void fn_801E00C0(void);
-
-// TODO (not drafted yet, 0x27C bytes at 0x801E047C)
-extern "C" void fn_801E047C(void);
-
-// TODO (not drafted yet, 0x68 bytes at 0x801E06F8)
-extern "C" void fn_801E06F8(void);
-
-// TODO (not drafted yet, 0x48 bytes at 0x801E0760)
-extern "C" void fn_801E0760(void);
-
-// TODO (not drafted yet, 0x60 bytes at 0x801E07A8)
-extern "C" void fn_801E07A8(void);
-
-// TODO (not drafted yet, 0x8 bytes at 0x801E0808)
-extern "C" void fn_801E0808(void);
-
-// TODO (not drafted yet, 0x20 bytes at 0x801E0810)
-extern "C" void fn_801E0810(void);
-
-// TODO (not drafted yet, 0x20 bytes at 0x801E0830)
-extern "C" void fn_801E0830(void);
-
-// TODO (not drafted yet, 0x30 bytes at 0x801E0850)
-extern "C" void fn_801E0850(void);
-
-// TODO (not drafted yet, 0x4C bytes at 0x801E0880)
-extern "C" void fn_801E0880(void);
-
-// TODO (not drafted yet, 0x30 bytes at 0x801E08CC)
-extern "C" void fn_801E08CC(void);
-
-// TODO (not drafted yet, 0x30 bytes at 0x801E08FC)
-extern "C" void fn_801E08FC(void);
-
-// TODO (not drafted yet, 0x9C bytes at 0x801E092C)
-extern "C" void fn_801E092C(void);
-
-// TODO (not drafted yet, 0x2B0 bytes at 0x801E09C8)
-extern "C" void fn_801E09C8(void);
-
-// TODO (not drafted yet, 0xF8 bytes at 0x801E0C78)
-extern "C" void fn_801E0C78(void);
-
-// TODO (not drafted yet, 0x58 bytes at 0x801E0D70)
-extern "C" void fn_801E0D70(void);
-
-// TODO (not drafted yet, 0x114 bytes at 0x801E0DC8)
-extern "C" void fn_801E0DC8(void);

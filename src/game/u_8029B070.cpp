@@ -1,4 +1,4 @@
-// u_8029B070.cpp (0x8029B070-0x8029C0AC), split from the old u_80294548 range: a manager over .sbss
+// u_8029B070.cpp (0x8029B070-0x8029C0D0), split from the old u_80294548 range: a manager over .sbss
 // 0x804D5718 with two Buffer-derived array classes (vtables 0x803C3148 and 0x803C3168).
 // Boundary evidence:
 // - .sdata2: own pool 0x804DA760-0x804DA778 (0.0f at 0x804DA760 duplicates the previous file's 0x804DA730).
@@ -45,9 +45,9 @@ public:
     virtual int GetSpan() { return 0; }
 };
 
-// 12-byte element. Its destroy hook ClearEntryRange (0x8029C0AC-0x8029C0D0, now the first function of u_8029C0AC)
-// is called only from EntryList::Append here and pairs with the construct hook fn_8029C00C: it belongs to this
-// file (boundary move to report, not applied).
+// 12-byte element. Its destroy hook ClearEntryRange (0x8029C0AC-0x8029C0D0, the last function here; it was the
+// first function of the old u_8029C0AC range) is called only from EntryList::Append and pairs with the construct
+// hook fn_8029C00C.
 struct Entry12 {
     int a;
     int b;
@@ -210,6 +210,12 @@ void fn_8029C00C(Entry12* first, Entry12* last) {
 void fn_8029C030(Slot* first, Slot* last) {
     for (; first < last; first++) {
         first->~Slot();
+    }
+}
+//@@end
+//@@8029C0AC
+void ClearEntryRange(Entry12* begin, Entry12* end) {
+    for (; begin < end; begin++) {
     }
 }
 //@@end

@@ -224,7 +224,16 @@ game/u_800BAA14.cpp:
 	.text       start:0x800BAA14 end:0x800C5028
 
 game/u_800C5028.cpp:
-	.text       start:0x800C5028 end:0x800D0254
+	.text       start:0x800C5028 end:0x800C6E8C
+
+game/u_800C6E8C.cpp:
+	.text       start:0x800C6E8C end:0x800C99E8
+
+game/u_800C99E8.cpp:
+	.text       start:0x800C99E8 end:0x800CF2E0
+
+game/u_800CF2E0.cpp:
+	.text       start:0x800CF2E0 end:0x800D0254
 
 game/Progress.cpp:
 	.text       start:0x800D0254 end:0x800D0BB8
@@ -794,7 +803,19 @@ game/u_801D8FD4.cpp:
 	.sdata2     start:0x804D8C80 end:0x804D8CA8
 
 game/u_801D9A70.cpp:
-	.text       start:0x801D9A70 end:0x801E0EDC
+	.text       start:0x801D9A70 end:0x801DE4B0
+
+game/u_801DE4B0.cpp:
+	.text       start:0x801DE4B0 end:0x801DE7A0
+
+game/u_801DE7A0.cpp:
+	.text       start:0x801DE7A0 end:0x801E0850
+
+game/u_801E0850.cpp:
+	.text       start:0x801E0850 end:0x801E092C
+
+game/u_801E092C.cpp:
+	.text       start:0x801E092C end:0x801E0EDC
 
 game/u_801E0EDC.cpp:
 	.text       start:0x801E0EDC end:0x801E14E8
@@ -825,10 +846,19 @@ game/u_801E65F0.cpp:
 	.text       start:0x801E65F0 end:0x801E72E0
 
 game/u_801E72E0.cpp:
-	.text       start:0x801E72E0 end:0x801E7DE0
+	.text       start:0x801E72E0 end:0x801E7534
 
-game/u_801E7DE0.cpp:
-	.text       start:0x801E7DE0 end:0x801EAACC
+game/u_801E7534.cpp:
+	.text       start:0x801E7534 end:0x801EA880
+	.rodata     start:0x80348FC0 end:0x80349038
+	.data       start:0x803B3B60 end:0x803B4268
+	.bss        start:0x8049C1E8 end:0x8049C228
+	.sdata      start:0x804D32F8 end:0x804D3310
+	.sbss       start:0x804D5288 end:0x804D5290
+	.sdata2     start:0x804D8EF8 end:0x804D8F30
+
+game/u_801EA880.cpp:
+	.text       start:0x801EA880 end:0x801EAACC
 
 game/u_801EAACC.cpp:
 	.text       start:0x801EAACC end:0x801EDE74
@@ -936,10 +966,10 @@ game/u_80221100.cpp:
 	.sdata2     start:0x804D9530 end:0x804D95E0
 
 game/u_80222D60.cpp:
-	.text       start:0x80222D60 end:0x80226DE8
+	.text       start:0x80222D60 end:0x80225E34
 
-game/u_80226DE8.cpp:
-	.text       start:0x80226DE8 end:0x80227DD8
+game/u_80225E34.cpp:
+	.text       start:0x80225E34 end:0x80227DD8
 
 game/u_80227DD8.cpp:
 	.text       start:0x80227DD8 end:0x8022A180
@@ -1226,10 +1256,10 @@ game/u_8029A5E4.cpp:
 	.text       start:0x8029A5E4 end:0x8029B070
 
 game/u_8029B070.cpp:
-	.text       start:0x8029B070 end:0x8029C0AC
+	.text       start:0x8029B070 end:0x8029C0D0
 
-game/u_8029C0AC.cpp:
-	.text       start:0x8029C0AC end:0x8029E714
+game/u_8029C0D0.cpp:
+	.text       start:0x8029C0D0 end:0x8029E714
 	.rodata     start:0x8034B818 end:0x8034B878
 	.data       start:0x803C3188 end:0x803C3208
 	.sdata      start:0x804D3848 end:0x804D3850
