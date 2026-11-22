@@ -1882,7 +1882,7 @@ int AnimBankInit(short* data, int size)
 // Live-agent query for a 24-bit agent handle: 0 when the handle is out of the
 // active range (or outside the allocated bitmap), otherwise nonzero unless the
 // agent's state field says it is dead (state 7).
-extern int lbl_804D47C4;             // first active agent slot
+extern int gNeoAgentExtraCount;      // agent slots beyond the 16 fixed ones
 extern void* lbl_804D47D0;           // agent slot base
 extern unsigned int lbl_804D47E0[1]; // per-slot allocated bitmap
 
@@ -1893,11 +1893,11 @@ extern "C" int fn_800A1F94(int id)
     if (lbl_804D47D0 == 0) {
         return 0;
     }
-    if (id < 0 || id > lbl_804D47C4 + 0x10) {
+    if (id < 0 || id > gNeoAgentExtraCount + 0x10) {
         return 0;
     }
-    if (id >= lbl_804D47C4) {
-        int bit = id - lbl_804D47C4;
+    if (id >= gNeoAgentExtraCount) {
+        int bit = id - gNeoAgentExtraCount;
         if (!(lbl_804D47E0[bit / 32] & (1 << (bit & 31)))) {
             return 0;
         }
@@ -2015,7 +2015,7 @@ extern "C" int fn_800F8AF4(int entry);
 extern "C" void fn_8016D68C(void* dst, void* src);
 extern unsigned char* lbl_804D47D4;   // AI agent definition table
 extern int lbl_804D47CC;              // number of definition records
-extern int lbl_804D47C8;              // number of allocated dynamic slots
+extern int gNeoAgentDynamicCount;              // number of allocated dynamic slots
 extern unsigned char lbl_804490AC[];  // per-slot agent save records
 int BitsetFirstClear(unsigned long* set, int start, int count);
 int ActorIsActive(Actor* actor);
@@ -2100,7 +2100,7 @@ int AINeoAgentSaveLoad(NeoAgentStream* s)
     s->end += 0xC;
     s->remaining -= 0xC;
     s->cur += 0xC;
-    if (hdr->staticCount != lbl_804D47C4) {
+    if (hdr->staticCount != gNeoAgentExtraCount) {
         return 1;
     }
     for (i = 0; i < hdr->dynamicCount; i++) {
@@ -2250,7 +2250,7 @@ int AINeoAgentSaveWrite(NeoAgentStream* s)
     s->remaining -= 0xC;
     s->cur += 0xC;
     hdr->version = 2;
-    hdr->staticCount = lbl_804D47C4;
+    hdr->staticCount = gNeoAgentExtraCount;
     hdr->dynamicCount = 0;
 
     for (i = 0; i < 16; i++) {
@@ -2258,7 +2258,7 @@ int AINeoAgentSaveWrite(NeoAgentStream* s)
             continue;
         }
         agent = (NeoAgent*)((unsigned char*)lbl_804D47D0 +
-                            (i + lbl_804D47C4) * 0x928);
+                            (i + gNeoAgentExtraCount) * 0x928);
         hdr->dynamicCount = hdr->dynamicCount + 1;
         if (s->remaining < 0x38) {
             s->error = 0;
@@ -2269,9 +2269,9 @@ int AINeoAgentSaveWrite(NeoAgentStream* s)
         AINeoStreamWrite(s, (unsigned char*)agent + 0xC8, 0x34);
     }
 
-    for (i = 0; i < lbl_804D47C4 + 0x10; i++) {
-        if (i >= lbl_804D47C4) {
-            bit = i - lbl_804D47C4;
+    for (i = 0; i < gNeoAgentExtraCount + 0x10; i++) {
+        if (i >= gNeoAgentExtraCount) {
+            bit = i - gNeoAgentExtraCount;
             if (!(lbl_804D47E0[bit / 32] & (1 << (bit & 31)))) {
                 continue;
             }
@@ -2441,7 +2441,7 @@ extern "C" int fn_800A2DE8(int* def, unsigned int* time)
     if (slotId == -1) {
         return 0xFFFFFFFF;
     }
-    lbl_804D47C8 = lbl_804D47C8 + 1;
+    gNeoAgentDynamicCount += 1;
     lbl_804D47E0[slotId / 32] |= 1 << (slotId & 31);
 
     slot = (NeoAgentSlot*)(lbl_804490AC + slotId * 0x34);
@@ -2453,10 +2453,10 @@ extern "C" int fn_800A2DE8(int* def, unsigned int* time)
     slot->f1c = record->f1c;
     slot->f20 = record->f20;
     fn_8016D68C(slot->ext, record->ext);
-    ((void (*)(int, void*))fn_800A6198)(lbl_804D47C4 + slotId, slot);
+    ((void (*)(int, void*))fn_800A6198)(gNeoAgentExtraCount + slotId, slot);
 
     agent = (NeoAgent*)((unsigned char*)lbl_804D47D0 +
-                        (lbl_804D47C4 + slotId) * 0x928);
+                        (gNeoAgentExtraCount + slotId) * 0x928);
     if (time != 0) {
         agent->f904 = (float)*time;
     }
@@ -2485,8 +2485,8 @@ extern "C" int fn_800A31A0(NeoAgent* agent)
 
     NeoAgentRelease(agent);
     slot = ((int)agent - (int)lbl_804D47D0) / 0x928;
-    BitClear((unsigned long*)lbl_804D47E0, slot - lbl_804D47C4);
-    lbl_804D47C8--;
+    BitClear((unsigned long*)lbl_804D47E0, slot - gNeoAgentExtraCount);
+    gNeoAgentDynamicCount--;
     return 1;
 }
 
@@ -2640,7 +2640,7 @@ extern "C" int fn_800A3210(NeoAgent* agent)
                 *(void**)((char*)agent + 0xC8));
 
     offset = 0;
-    for (i = 0; i < lbl_804D47C4 + 0x10; i++) {
+    for (i = 0; i < gNeoAgentExtraCount + 0x10; i++) {
         if (fn_800A1F94(i | 0x13000000)) {
             int* owners;
 
@@ -2667,17 +2667,17 @@ extern "C" int fn_800A3210(NeoAgent* agent)
 }
 
 extern "C" int fn_800BA7FC(int id);
-extern unsigned int lbl_804D47DC;    // id of the currently controlled agent slot
+extern unsigned int gNeoAgentCursor;    // id of the currently controlled agent slot
 
 // Whether the given agent is the one the game currently controls: the slot
-// must match lbl_804D47DC, and the game must report a valid controlled state.
+// must match gNeoAgentCursor, and the game must report a valid controlled state.
 int NeoAgentIsCurrent(int agent)
 {
     int slot;
 
     if (fn_800BA7FC(0x33) != 0) {
         slot = (agent - (int)lbl_804D47D0) / 0x928;
-        return slot == lbl_804D47DC;
+        return slot == gNeoAgentCursor;
     }
     return 1;
 }
@@ -2685,7 +2685,7 @@ int NeoAgentIsCurrent(int agent)
 // Whether the given agent slot is the currently controlled one.
 bool NeoAgentIsCurrentSlot(int agent)
 {
-    return lbl_804D47DC == (agent - (int)lbl_804D47D0) / 0x928;
+    return gNeoAgentCursor == (agent - (int)lbl_804D47D0) / 0x928;
 }
 
 // Searches the global AI agent definition table for the record whose leading
@@ -2719,11 +2719,11 @@ extern "C" void* fn_800A384C(void* obj)
 }
 
 // Number of dynamic agent slots currently allocated; the static slots below
-// lbl_804D47C4 are not counted.
+// gNeoAgentExtraCount are not counted.
 // fn_800A3854
 extern "C" int fn_800A3854()
 {
-    return lbl_804D47C8;
+    return gNeoAgentDynamicCount;
 }
 
 extern unsigned int GameEvent(int from, int event);
@@ -2737,7 +2737,7 @@ unsigned int AINeoAgentFindByEvent(unsigned int event)
     int i = 0;
     int offset = 0;
 
-    while (i < lbl_804D47C4) {
+    while (i < gNeoAgentExtraCount) {
         unsigned int slot = *(unsigned int*)((char*)lbl_804D47D0 + offset + 0x38);
         int ok;
 
@@ -2747,11 +2747,11 @@ unsigned int AINeoAgentFindByEvent(unsigned int event)
             int id = slot & 0xFFFFFF;
             if (lbl_804D47D0 == 0) {
                 ok = 0;
-            } else if (id < 0 || id > lbl_804D47C4 + 0x10) {
+            } else if (id < 0 || id > gNeoAgentExtraCount + 0x10) {
                 ok = 0;
-            } else if (id < lbl_804D47C4 ||
-                       (lbl_804D47E0[(id - lbl_804D47C4) / 32] &
-                        (1 << ((id - lbl_804D47C4) & 31)))) {
+            } else if (id < gNeoAgentExtraCount ||
+                       (lbl_804D47E0[(id - gNeoAgentExtraCount) / 32] &
+                        (1 << ((id - gNeoAgentExtraCount) & 31)))) {
                 ok = *(int*)((char*)lbl_804D47D0 + id * 0x928 + 0x8F8) != 7;
             } else {
                 ok = 0;
@@ -2783,11 +2783,11 @@ extern "C" void* fn_800A3990(int handle)
 
     if (lbl_804D47D0 == 0) {
         live = 0;
-    } else if (id < 0 || id > lbl_804D47C4 + 0x10) {
+    } else if (id < 0 || id > gNeoAgentExtraCount + 0x10) {
         live = 0;
-    } else if (id >= lbl_804D47C4 &&
-               !(lbl_804D47E0[(id - lbl_804D47C4) / 32] &
-                 (1 << ((id - lbl_804D47C4) & 31)))) {
+    } else if (id >= gNeoAgentExtraCount &&
+               !(lbl_804D47E0[(id - gNeoAgentExtraCount) / 32] &
+                 (1 << ((id - gNeoAgentExtraCount) & 31)))) {
         live = 0;
     } else if (((SlotStateView*)((char*)lbl_804D47D0 + id * 0x928))->state == 7) {
         live = 0;
@@ -2814,11 +2814,11 @@ unsigned int OwnerId(Owner* owner)
     id = slot & 0xFFFFFF;
     if (lbl_804D47D0 == 0) {
         live = 0;
-    } else if (id < 0 || id > lbl_804D47C4 + 0x10) {
+    } else if (id < 0 || id > gNeoAgentExtraCount + 0x10) {
         live = 0;
-    } else if (id < lbl_804D47C4 ||
-               (lbl_804D47E0[(id - lbl_804D47C4) / 32] &
-                (1 << ((id - lbl_804D47C4) & 31)))) {
+    } else if (id < gNeoAgentExtraCount ||
+               (lbl_804D47E0[(id - gNeoAgentExtraCount) / 32] &
+                (1 << ((id - gNeoAgentExtraCount) & 31)))) {
         live = *(int*)((char*)lbl_804D47D0 + id * 0x928 + 0x8F8) != 7;
     } else {
         live = 0;
@@ -2902,8 +2902,8 @@ extern const char lbl_803444EB[];   // "%s:  %i"
 
 extern int lbl_804D4798;            // global AI detail level
 extern int lbl_804D479C;            // detail level at the last switch
-extern int lbl_804D47C8;            // number of dynamic agents
-extern unsigned int lbl_804D47DC;   // round-robin agent cursor
+extern int gNeoAgentDynamicCount;            // number of dynamic agents
+extern unsigned int gNeoAgentCursor;   // round-robin agent cursor
 extern int lbl_80449098[];          // per-agent allocated bitmap
 extern const float lbl_804D6BD4;          // flatline threshold
 
@@ -2971,11 +2971,11 @@ static inline unsigned int AgentLiveHandle(unsigned int handle)
     n = handle & 0xFFFFFF;
     if (lbl_804D47D0 == 0) {
         live = false;
-    } else if ((int)n > lbl_804D47C4 + 0x10) {
+    } else if ((int)n > gNeoAgentExtraCount + 0x10) {
         live = false;
-    } else if ((int)n < lbl_804D47C4 ||
-               (lbl_804D47E0[(n - lbl_804D47C4) / 32] &
-                (1u << ((n - lbl_804D47C4) & 31)))) {
+    } else if ((int)n < gNeoAgentExtraCount ||
+               (lbl_804D47E0[(n - gNeoAgentExtraCount) / 32] &
+                (1u << ((n - gNeoAgentExtraCount) & 31)))) {
         live = ((AgentSlot*)((char*)lbl_804D47D0 + n * 0x928))->state != 7;
     } else {
         live = false;
@@ -2999,11 +2999,11 @@ void NeoAgentFrameUpdate(float dt)
     lbl_804D4798 = 4;
     if (!fn_800BA7F4())
         return;
-    if (lbl_804D47C8 > 0x90)
+    if (gNeoAgentDynamicCount > 0x90)
         return;
 
     index = 0;
-    for (i = 0; i < lbl_804D47C4 + 0x10; i++) {
+    for (i = 0; i < gNeoAgentExtraCount + 0x10; i++) {
         agent = (AgentSlot*)((char*)lbl_804D47D0 + index);
         agent->f914 = 0;
         if ((agent->flags & 0x400) == 0) {
@@ -3026,7 +3026,7 @@ void NeoAgentFrameUpdate(float dt)
     }
 
     index = fn_800BA84C(4);
-    if (index >= 0 && index < lbl_804D47C4 + 0x10) {
+    if (index >= 0 && index < gNeoAgentExtraCount + 0x10) {
         agent = (AgentSlot*)((char*)lbl_804D47D0 + index * 0x928);
         if (fn_800BA7FC(0x38)) {
             fn_801EA9F0(lbl_803444D1, (double)agent->posX, (double)agent->posY,
@@ -3042,18 +3042,18 @@ void NeoAgentFrameUpdate(float dt)
         }
     }
 
-    next = lbl_804D47DC;
-    if (lbl_804D47C8 > 0) {
-        int count = lbl_804D47C4 + 0x10;
-        unsigned int cur = (lbl_804D47DC + 1) % count;
-        while (cur != lbl_804D47DC) {
+    next = gNeoAgentCursor;
+    if (gNeoAgentDynamicCount > 0) {
+        int count = gNeoAgentExtraCount + 0x10;
+        unsigned int cur = (gNeoAgentCursor + 1) % count;
+        while (cur != gNeoAgentCursor) {
             next = cur;
             if (lbl_80449098[(int)cur / 32] & (1 << ((int)cur & 31)))
                 break;
             cur = (cur + 1) % count;
         }
     }
-    lbl_804D47DC = next;
+    gNeoAgentCursor = next;
 
     if (lbl_804D4798 < 2 && lbl_804D479C > 1)
         fn_800C5654(0x2000000, 0xd4025a1b, 0x30000000);
@@ -3104,8 +3104,8 @@ int NeoAgentUpdate(AgentSlot* agent, float dt)
     index = ((char*)agent - (char*)lbl_804D47D0) / 0x928;
     if (index < 0)
         return 0;
-    if (index >= lbl_804D47C4) {
-        unsigned int bit = (unsigned int)(index - lbl_804D47C4);
+    if (index >= gNeoAgentExtraCount) {
+        unsigned int bit = (unsigned int)(index - gNeoAgentExtraCount);
         if (!(lbl_804D47E0[bit / 32] & (1u << (bit & 31))))
             return 0;
     }
@@ -3278,14 +3278,14 @@ int NeoAgentUpdate(AgentSlot* agent, float dt)
                             }
                             iv = fn_802A1D04();
                             if (iv == 0) {
-                                if (lbl_804D47C4 <=
+                                if (gNeoAgentExtraCount <=
                                     (int)(agent->id & 0xFFFFFF)) {
                                     NeoAgentRelease(agent);
                                     iv = ((char*)agent -
                                           (char*)lbl_804D47D0) / 0x928;
                                     fn_80025CFC((int*)lbl_804D47E0,
-                                                iv - lbl_804D47C4);
-                                    lbl_804D47C8--;
+                                                iv - gNeoAgentExtraCount);
+                                    gNeoAgentDynamicCount--;
                                 }
                             } else if (iv > -1 && iv < 4) {
                                 fn_800FC764(AgentLiveHandle(agent->id), 0);
@@ -3388,12 +3388,12 @@ int NeoAgentUpdate(AgentSlot* agent, float dt)
                 }
                 iv = fn_802A1D04();
                 if (iv == 0) {
-                    if (lbl_804D47C4 <= (int)(agent->id & 0xFFFFFF)) {
+                    if (gNeoAgentExtraCount <= (int)(agent->id & 0xFFFFFF)) {
                         NeoAgentRelease(agent);
                         iv = ((char*)agent - (char*)lbl_804D47D0) / 0x928;
                         fn_80025CFC((int*)lbl_804D47E0,
-                                    iv - lbl_804D47C4);
-                        lbl_804D47C8--;
+                                    iv - gNeoAgentExtraCount);
+                        gNeoAgentDynamicCount--;
                     }
                 } else if (iv > -1 && iv < 4) {
                     fn_800FC764(AgentLiveHandle(agent->id), 0);
@@ -3413,7 +3413,7 @@ int NeoAgentUpdate(AgentSlot* agent, float dt)
 // Dynamic-agent slots: teardown and pool shutdown.
 //
 // lbl_804D47D0 is the base of the dynamic agent slot array (0x928 bytes per
-// slot); the first lbl_804D47C4 slots are static and the following sixteen are
+// slot); the first gNeoAgentExtraCount slots are static and the following sixteen are
 // claimed through the allocated bitmap lbl_804D47E0.
 extern int lbl_804D47D8;  // static agent slot count (0 when there are none)
 
@@ -3444,10 +3444,10 @@ void NeoAgentPoolShutdown(void)
     if (lbl_804D47D0 != 0) {
         i = 0;
         offset = 0;
-        for (; i < lbl_804D47C4 + 0x10; i++) {
-            if (i < lbl_804D47C4 ||
-                (lbl_804D47E0[(i - lbl_804D47C4) / 32] &
-                 (1 << ((i - lbl_804D47C4) & 31)))) {
+        for (; i < gNeoAgentExtraCount + 0x10; i++) {
+            if (i < gNeoAgentExtraCount ||
+                (lbl_804D47E0[(i - gNeoAgentExtraCount) / 32] &
+                 (1 << ((i - gNeoAgentExtraCount) & 31)))) {
                 NeoAgentRelease((char*)lbl_804D47D0 + offset);
             }
             offset += 0x928;
@@ -3455,7 +3455,7 @@ void NeoAgentPoolShutdown(void)
         VFree(lbl_804D47D0);
     }
     lbl_804D47D0 = 0;
-    lbl_804D47C8 = 0;
+    gNeoAgentDynamicCount = 0;
     lbl_804D47D8 = 0;
     lbl_804D47D4 = 0;
 }
@@ -3568,7 +3568,7 @@ void NeoAgentSaveNotify(void)
 
     type = SaveIsBusy() ? 0x803 : 0x800;
     offset = 0;
-    for (i = 0; i < lbl_804D47C4; i++) {
+    for (i = 0; i < gNeoAgentExtraCount; i++) {
         msg.value = 0;
         msg.slot = (char*)lbl_804D47D0 + offset;
         SendMsg((i & 0xFFFFFF) | 0x13000000, type, &msg);
@@ -3666,8 +3666,8 @@ void NeoAgentSystemCreate(void)
     lbl_804D47BC = 0;
     lbl_804D47C0 = 0;
 
-    if (lbl_804D47C4 > 0) {
-        lbl_804D47D0 = VAlloc((lbl_804D47C4 + 0x10) * 0x928);
+    if (gNeoAgentExtraCount > 0) {
+        lbl_804D47D0 = VAlloc((gNeoAgentExtraCount + 0x10) * 0x928);
     } else {
         lbl_804D47D0 = VAlloc(0x9280);
     }
@@ -3685,7 +3685,7 @@ void NeoAgentSystemCreate(void)
     }
 
     offset = 0;
-    for (i = 0; i < lbl_804D47C4; i++) {
+    for (i = 0; i < gNeoAgentExtraCount; i++) {
         fn_800A6198(i, (void*)(lbl_804D47D8 + offset));
         offset += 0x34;
     }
@@ -3704,9 +3704,9 @@ void NeoAgentSystemInit(void)
     lbl_804D47D8 = 0;
     lbl_804D47CC = 0;
     lbl_804D47D4 = 0;
-    lbl_804D47C8 = 0;
-    lbl_804D47C4 = 0;
-    lbl_804D47DC = 0;
+    gNeoAgentDynamicCount = 0;
+    gNeoAgentExtraCount = 0;
+    gNeoAgentCursor = 0;
     lbl_804D47E0[0] = 0;
     fn_80026680(0x13, fn_800A6054, 0);
     fn_80026660(0x13, fn_800AB2B0, 0);
