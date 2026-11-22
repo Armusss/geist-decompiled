@@ -293,6 +293,10 @@ game/asyncio.cpp:
 
 game/u_800E1B5C.cpp:
 	.text       start:0x800E1B5C end:0x800E2414
+	.data       start:0x8039C3A8 end:0x8039C3C8
+	.bss        start:0x80455780 end:0x80455810
+	.sdata      start:0x804D2C28 end:0x804D2C30
+	.sdata2     start:0x804D7190 end:0x804D71A0
 
 game/u_800E2414.cpp:
 	.text       start:0x800E2414 end:0x800E39F4
