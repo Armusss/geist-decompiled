@@ -525,7 +525,7 @@ void fn_80288CE0(void* texId, ClockProximitySource* source, void* trigger,
     lbl_804D2568 = savedWidth;
     lbl_804D256C = savedHeight;
     fn_80009E44(0, 0);
-    lbl_804D56C8 = lbl_804D56C8 + 1;
+    lbl_804D56C8 += 1;
 }
 
 // Reference directions the page angles are measured from.
@@ -917,7 +917,7 @@ int ClockEmitParticlePage(float* pos, float* dir, u8 type)
             slot->sample = sample;
             SetParticleDrawTransform(lbl_804DA558, lbl_804DA55C * group->radius,
                                      slot->mtx, pos, v);
-            lbl_804D56F4 = lbl_804D56F4 + 1;
+            lbl_804D56F4 += 1;
             side = (short)((side + 1) % group->sideCount);
         }
     }
