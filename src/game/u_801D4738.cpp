@@ -4,7 +4,7 @@
 // Split from u_801BF578 (0x801BF578-0x801D9A70). Evidence for the boundaries:
 //   .sdata2 0x804D8C20-0x804D8C74 (0.0 at 0x804D8C38 read from 0x801D4DC4 to 0x801D7C24: one file)
 //   material table 0x803ADB90 ("RED OAK", "STEEL", "RUBBER"), jump table 0x803ADBB4 (fn_801D6928),
-//   vtable 0x803ADBD4 (fn_801D7FDC, fn_801D80EC, fn_801D8044, fn_801D808C; ScreenEffectSlot base),
+//   vtable 0x803ADBD4 (~GeomVec, ElemSize, Construct, Destruct; ScreenEffectSlot base),
 //   rodata tables 0x80348AC0/0x80348BC0; .sbss 0x804D51A0-0x804D51C8 (+4 pad), .sdata 0x804D3228-0x804D3230
 //   .bss 0x8049A9D8
 // Every function keeps its fn_ placeholder name with C linkage: about 40 other units call them by that name.
@@ -104,7 +104,7 @@ void AmmoRefillResetStatics();                                  // 0x8026A31C
 Geom* UserGeomAlloc(int cls);                                   // 0x8026A32C
 RoomGeomData* UserGeomGetId(UserGeom* g);                       // 0x8026A374
 int GeomRegisterClass(const UserGeomClass* cls);                // 0x8026A37C
-SceneNode* GeomIsEnabled(Geom* g);                              // 0x8026AB90
+int GeomIsEnabled(Geom* g);                                     // 0x8026AB90
 void GeomDisable(Geom* g);                                      // 0x8026AB9C
 void GeomEnable(Geom* g);                                       // 0x8026ABAC
 u32 GeomGetCollideBits(Geom* g);                                // 0x8026ABBC
@@ -234,7 +234,7 @@ void fn_801D7068(Geom* space, Geom* g);
 PhysObj* fn_801D59A4(int owner, int material, Geom* g, Mass* m, int cat, Vec3* offset, int noBody);
 void fn_801D6104(Geom* space);
 void fn_801D64B8(float radius, float length, Vec3* pos, Mtx34* rot, u8* color);
-void fn_801D6CB8(float dt, Geom* space);
+void fn_801D6CB8(Geom* space, float dt);
 int fn_801D6EC8(SceneNode* body, Geom* from, int n, SceneNode** list);
 void fn_801D72F8(void* data, Geom* a, Geom* b);
 void fn_801D77C4(PhysObj* o, float* vel);
@@ -306,15 +306,12 @@ void fn_801D4824(void* group, PhysObj* a, PhysObj* b, const Vec3* axis1, const V
     fn_80273918(j, 2);
     {
         Vec3 c;
-        float y2 = axis2->y;
-        float ay = axis1->y;
-        float x2 = axis2->x;
-        c.x = y2 * axis1->z - axis2->z * ay;
-        c.y = axis2->z * axis1->x - x2 * axis1->z;
-        c.z = x2 * ay - y2 * axis1->x;
-        fn_802737A4(axis1->x, ay, axis1->z, j, 0, 1);
+        c.x = axis2->y * axis1->z - axis2->z * axis1->y;
+        c.y = axis2->z * axis1->x - axis2->x * axis1->z;
+        c.z = axis2->x * axis1->y - axis2->y * axis1->x;
+        fn_802737A4(axis1->x, axis1->y, axis1->z, j, 0, 1);
         fn_802737A4(c.x, c.y, c.z, j, 1, 1);
-        fn_802737A4(x2, y2, axis2->z, j, 2, 2);
+        fn_802737A4(axis2->x, axis2->y, axis2->z, j, 2, 2);
     }
     if (limits > 0) {
         fn_80273688(0.017453292f * angles[0], j, 0);
@@ -1027,37 +1024,44 @@ void fn_801D6928(float dt) {
         fn_80277958(sContacts);
     }
     sForceCount = 0;
-    fn_801D6CB8(dt, (Geom*)sSpace);
+    fn_801D6CB8((Geom*)sSpace, dt);
     fn_801E13A0(dt);
 }
 
 // Squared length of a vector.
 static inline float LenSq(float* v) {
-    return v[2] * v[2] + v[0] * v[0] + v[1] * v[1];
+    float x = v[0] * v[0];
+    float y = v[1] * v[1];
+    float z = v[2] * v[2];
+    return x + y + z;
 }
 
 // 0x801D6CB8: puts resting bodies (and resting islands) to sleep.
-void fn_801D6CB8(float dt, Geom* space) {
+void fn_801D6CB8(Geom* space, float dt) {
     SceneNode* list[34];
     int n = SpaceGetCount((Space*)space);
     int i;
     for (i = 0; i < n; i++) {
         Geom* g = SpaceGetNumGeoms(space, i);
+        float* pos;
+        float* vel;
+        PhysObj* o;
         SceneNode* body;
         if (GeomIsEnabled(g) != 0 && (body = GeomGetBody(g)) != 0 && SceneNodeNotLocked(body) != 0) {
             Geom** p = (Geom**)sGeoms->mUnk0C;
             if (g != 0) {
                 Geom** end = (Geom**)((char*)p + sGeoms->mLength);
-                for (; p != end && *p != g; p++) {
+                for (; p != end; p++) {
+                    if (*p == g) {
+                        break;
+                    }
                 }
                 if (p != end) {
-                    PhysObj* o = GeomGetGFlags(g);
-                    float* pos = SceneNodePosPtr(body);
-                    float* vel = SceneNodeVelocityPtr(body);
+                    o = GeomGetGFlags(g);
+                    pos = SceneNodePosPtr(body);
+                    vel = SceneNodeVelocityPtr(body);
                     fn_801D77C4(o, pos);
-                    if (LenSq(pos) + LenSq(vel) >= 0.1f) {
-                        o->idle = 0.0f;
-                    } else {
+                    if (LenSq(pos) + LenSq(vel) < 0.1f) {
                         o->idle += dt;
                         if (o->idle >= 1000.0f) {
                             if (SceneNodeListCount(body) == 0) {
@@ -1072,13 +1076,15 @@ void fn_801D6CB8(float dt, Geom* space) {
                                     for (k = 0; k < count; k++) {
                                         PhysObj* q = SceneNodeGetOwner(*l);
                                         SceneNodeLock(*l);
-                                        l++;
                                         q->flags &= ~6;
                                         q->hits = 0;
+                                        l++;
                                     }
                                 }
                             }
                         }
+                    } else {
+                        o->idle = 0.0f;
                     }
                 }
             }
@@ -1088,26 +1094,26 @@ void fn_801D6CB8(float dt, Geom* space) {
 
 // 0x801D6EC8: collects the island of bodies jointed to a body; 0 if any of them still moves.
 int fn_801D6EC8(SceneNode* body, Geom* from, int n, SceneNode** list) {
-    int count = n + 1;
     int joints;
     int i;
-    list[n] = body;
+    list[n++] = body;
     joints = SceneNodeListCount(body);
     for (i = 0; i < joints; i++) {
+        SceneNode* other;
         Geom* j = SceneNodeListGet(body, i);
         if (j != from) {
-            SceneNode* other = (SceneNode*)fn_802777BC(j, 0);
+            other = (SceneNode*)fn_802777BC(j, 0);
             if (other == body) {
                 other = (SceneNode*)fn_802777BC(j, 1);
             }
             if (other != 0 && SceneNodeNotLocked(other) != 0) {
                 int k;
-                for (k = 0; k < count; k++) {
+                for (k = 0; k < n; k++) {
                     if (list[k] == other) {
                         break;
                     }
                 }
-                if (k == count) {
+                if (k == n) {
                     PhysObj* o = SceneNodeGetOwner(other);
                     float* pos = SceneNodePosPtr(other);
                     float* vel = SceneNodeVelocityPtr(other);
@@ -1117,15 +1123,26 @@ int fn_801D6EC8(SceneNode* body, Geom* from, int n, SceneNode** list) {
                     if (o->idle < 1000.0f) {
                         return 0;
                     }
-                    count = fn_801D6EC8(other, j, count, list);
-                    if (count == 0) {
-                        return 0;
+                    {
+                        int r = fn_801D6EC8(other, j, n, list);
+                        if (r == 0) {
+                            return 0;
+                        }
+                        n = r;
                     }
                 }
             }
         }
     }
-    return count;
+    return n;
+}
+
+static inline float BoxCenter(float* b, int i) {
+    return 0.5f * (b[i + 1] + b[i]);
+}
+
+static inline float BoxHalf(float* b, int i) {
+    return 0.5f * (b[i + 1] - b[i]);
 }
 
 // 0x801D7068: wakes every sleeping body whose box overlaps the geom's (grown) box, recursively.
@@ -1147,7 +1164,7 @@ void fn_801D7068(Geom* space, Geom* g) {
             Geom* h = SpaceGetNumGeoms(space, i);
             SceneNode* body = GeomGetBody(h);
             if (body != 0 && SceneNodeNotLocked(body) == 0) {
-                bool hit;
+                int hit;
                 GeomGetAabb(h, other);
                 p = GeomGetPosition(h);
                 other[0] += p[0];
@@ -1156,15 +1173,18 @@ void fn_801D7068(Geom* space, Geom* g) {
                 other[3] += p[1];
                 other[4] += p[2];
                 other[5] += p[2];
-                if (0.5f * (box[1] - box[0]) + 0.5f * (other[1] - other[0]) <
-                        __fabsf(0.5f * (other[1] + other[0]) - 0.5f * (box[1] + box[0])) ||
-                    0.5f * (box[3] - box[2]) + 0.5f * (other[3] - other[2]) <
-                        __fabsf(0.5f * (other[3] + other[2]) - 0.5f * (box[3] + box[2])) ||
-                    0.5f * (box[5] - box[4]) + 0.5f * (other[5] - other[4]) <
-                        __fabsf(0.5f * (other[5] + other[4]) - 0.5f * (box[5] + box[4]))) {
-                    hit = false;
+                float dx = BoxCenter(other, 0) - BoxCenter(box, 0);
+                float sx = BoxHalf(box, 0) + BoxHalf(other, 0);
+                float dy = BoxCenter(other, 2) - BoxCenter(box, 2);
+                float sy = BoxHalf(box, 2) + BoxHalf(other, 2);
+                float dz = BoxCenter(other, 4) - BoxCenter(box, 4);
+                float sz = BoxHalf(box, 4) + BoxHalf(other, 4);
+                if (__fabsf(dx) <= sx &&
+                    __fabsf(dy) <= sy &&
+                    __fabsf(dz) <= sz) {
+                    hit = 1;
                 } else {
-                    hit = true;
+                    hit = 0;
                 }
                 if (hit) {
                     GeomGetGFlags(h)->idle = 0.0f;
