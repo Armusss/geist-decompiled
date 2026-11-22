@@ -760,7 +760,7 @@ config.libs = [
             Object(NonMatching, "game/u_802154B0.cpp"),  # guess
             Object(NonMatching, "game/u_80221100.cpp"),  # known
             Object(NonMatching, "game/u_80222D60.cpp"),  # guess (was u_80222C08)
-            Object(NonMatching, "game/u_80226DE8.cpp"),  # guess
+            Object(NonMatching, "game/u_80225E34.cpp"),  # guess (was u_80226DE8; starts at the player states)
             Object(NonMatching, "game/u_80227DD8.cpp"),  # split from u_80226DE8
             Object(NonMatching, "game/u_8022A180.cpp"),  # split from u_80226DE8
             Object(NonMatching, "game/u_8022BA30.cpp"),  # split from u_80226DE8

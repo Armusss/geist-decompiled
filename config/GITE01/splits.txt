@@ -935,10 +935,10 @@ game/u_80221100.cpp:
 	.sdata2     start:0x804D9530 end:0x804D95E0
 
 game/u_80222D60.cpp:
-	.text       start:0x80222D60 end:0x80226DE8
+	.text       start:0x80222D60 end:0x80225E34
 
-game/u_80226DE8.cpp:
-	.text       start:0x80226DE8 end:0x80227DD8
+game/u_80225E34.cpp:
+	.text       start:0x80225E34 end:0x80227DD8
 
 game/u_80227DD8.cpp:
 	.text       start:0x80227DD8 end:0x8022A180
