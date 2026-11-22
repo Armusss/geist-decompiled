@@ -621,7 +621,10 @@ config.libs = [
             Object(NonMatching, "game/u_800B5028.cpp"),  # owner aim/target + group behaviour
             Object(Matching, "game/u_800BA6FC.cpp"),  # group system front end
             Object(NonMatching, "game/u_800BAA14.cpp"),  # guess
-            Object(NonMatching, "game/u_800C5028.cpp"),  # guess
+            Object(NonMatching, "game/u_800C5028.cpp"),  # anim table, pending msgs, camera slots
+            Object(NonMatching, "game/u_800C6E8C.cpp"),  # aim helpers, render, type registry (split from u_800C5028)
+            Object(NonMatching, "game/u_800C99E8.cpp"),  # movement helpers + list classes (split from u_800C5028)
+            Object(NonMatching, "game/u_800CF2E0.cpp"),  # subsystem with AppMain hooks (split from u_800C5028)
             Object(Matching, "game/Progress.cpp"),  # guess
             Object(Matching, "game/u_800D0BF4.cpp"),  # "Powerup" actor
             Object(NonMatching, "game/u_800D14A8.cpp"),  # zone lists, dash, linked actors

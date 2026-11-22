@@ -224,7 +224,16 @@ game/u_800BAA14.cpp:
 	.text       start:0x800BAA14 end:0x800C5028
 
 game/u_800C5028.cpp:
-	.text       start:0x800C5028 end:0x800D0254
+	.text       start:0x800C5028 end:0x800C6E8C
+
+game/u_800C6E8C.cpp:
+	.text       start:0x800C6E8C end:0x800C99E8
+
+game/u_800C99E8.cpp:
+	.text       start:0x800C99E8 end:0x800CF2E0
+
+game/u_800CF2E0.cpp:
+	.text       start:0x800CF2E0 end:0x800D0254
 
 game/Progress.cpp:
 	.text       start:0x800D0254 end:0x800D0BB8
