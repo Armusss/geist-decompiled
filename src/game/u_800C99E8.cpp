@@ -23,6 +23,14 @@ void AnimUnref(int anim);
 void AnimRef(int anim);
 
 
+class ScreenEffectBuffer {
+public:
+    void Commit(int start, unsigned long size);
+    void Append(unsigned char* data, unsigned long size);
+};
+extern "C" void fn_800CF2A0(u8* begin, u8* end);
+extern "C" void fn_800CF2C0(u8* begin, u8* end);
+
 // TODO (not drafted yet, 0x180 bytes at 0x800C99E8)
 // fn_800C99E8
 // TODO (not drafted yet, 0x88 bytes at 0x800C9B68)
@@ -99,13 +107,35 @@ void AnimRef(int anim);
 // fn_800CEEC8
 // TODO (not drafted yet, 0x18C bytes at 0x800CF064)
 // fn_800CF064
-// TODO (not drafted yet, 0x48 bytes at 0x800CF1F0)
-// fn_800CF1F0
-// TODO (not drafted yet, 0x60 bytes at 0x800CF238)
-// fn_800CF238
-// TODO (not drafted yet, 0x8 bytes at 0x800CF298)
-// fn_800CF298
-// TODO (not drafted yet, 0x20 bytes at 0x800CF2A0)
-// fn_800CF2A0
-// TODO (not drafted yet, 0x20 bytes at 0x800CF2C0)
-// fn_800CF2C0
+//@@800CF1F0
+// Element hooks of the list classes (slots of the vtables 0x8039B8B8 / 0x8039B8D8; 8-byte elements),
+// emitted last as inline virtuals; written as free functions like u_800776FC's FlickerBuf hooks.
+extern "C" void fn_800CF1F0(void* list, u8* start, u32 size) {
+    ((ScreenEffectBuffer*)list)->Commit((int)start, size);
+    fn_800CF2A0(start, start + (size & ~7u));
+}
+//@@end
+//@@800CF238
+extern "C" void fn_800CF238(void* list, u8* data, u32 size) {
+    u32 start = (u32)data;
+    fn_800CF2C0((u8*)start, (u8*)(start + (size & ~7u)));
+    ((ScreenEffectBuffer*)list)->Append(data, size);
+}
+//@@end
+//@@800CF298
+extern "C" int fn_800CF298(void) {
+    return 8;
+}
+//@@end
+//@@800CF2A0
+extern "C" void fn_800CF2A0(u8* begin, u8* end) {
+    for (u8* p = begin; p < end; p += 8) {
+    }
+}
+//@@end
+//@@800CF2C0
+extern "C" void fn_800CF2C0(u8* begin, u8* end) {
+    for (u8* p = begin; p < end; p += 8) {
+    }
+}
+//@@end

@@ -81,6 +81,12 @@ extern "C" int fn_800C6F58(Actor* a)
     return 1;
 }
 
+struct Mtx34;
+void MineSlotsFree();
+void MineSlotsClear();
+void ActorGetMatrix(Mtx34* m, Actor* a);
+extern int lbl_804D48F0;
+
 // TODO (not drafted yet, 0xA8 bytes at 0x800C6F84)
 // fn_800C6F84
 // TODO (not drafted yet, 0x14C bytes at 0x800C702C)
@@ -91,16 +97,30 @@ extern "C" int fn_800C6F58(Actor* a)
 // fn_800C725C
 // TODO (not drafted yet, 0x464 bytes at 0x800C748C)
 // fn_800C748C
-// TODO (not drafted yet, 0x20 bytes at 0x800C78F0)
-// fn_800C78F0
-// TODO (not drafted yet, 0x20 bytes at 0x800C7910)
-// fn_800C7910
+//@@800C78F0
+extern "C" void fn_800C78F0(void) {
+    MineSlotsFree();
+}
+//@@end
+//@@800C7910
+extern "C" void fn_800C7910(void) {
+    MineSlotsClear();
+}
+//@@end
 // TODO (not drafted yet, 0x1E4 bytes at 0x800C7930)
 // fn_800C7930
 // TODO (not drafted yet, 0x48 bytes at 0x800C7B14)
 // fn_800C7B14
-// TODO (not drafted yet, 0x1C bytes at 0x800C7B5C)
-// ActorFn800C7B5C__FP5ActorPv
+//@@800C7B5C
+// Default colour callback: opaque black.
+void ActorFn800C7B5C(Actor* a, void* out) {
+    u8* c = (u8*)out;
+    c[0] = 0;
+    c[1] = 0;
+    c[2] = 0;
+    c[3] = 0xFF;
+}
+//@@end
 // TODO (not drafted yet, 0x170 bytes at 0x800C7B78)
 // fn_800C7B78
 // TODO (not drafted yet, 0x198 bytes at 0x800C7CE8)
@@ -137,11 +157,25 @@ extern "C" int fn_800C6F58(Actor* a)
 // fn_800C9830
 // TODO (not drafted yet, 0x98 bytes at 0x800C9874)
 // fn_800C9874
-// TODO (not drafted yet, 0x38 bytes at 0x800C990C)
-// fn_800C990C
-// TODO (not drafted yet, 0x24 bytes at 0x800C9944)
-// fn_800C9944
-// TODO (not drafted yet, 0x8 bytes at 0x800C9968)
-// fn_800C9968
+//@@800C990C
+extern "C" int fn_800C9968(int msg, int a, int* data);
+
+// Registers the message 0x15 handler and clears the state word.
+extern "C" void fn_800C990C(void) {
+    fn_80026660(0x15, (void*)fn_800C9968, 0);
+    lbl_804D48F0 = 0;
+}
+//@@end
+//@@800C9944
+// Fills the matrix with the world matrix of the actor stored at +0x64.
+extern "C" void fn_800C9944(Mtx34* m) {
+    ActorGetMatrix(m, *(Actor**)((u8*)m + 0x64));
+}
+//@@end
+//@@800C9968
+extern "C" int fn_800C9968(int msg, int a, int* data) {
+    return 0;
+}
+//@@end
 // TODO (not drafted yet, 0x78 bytes at 0x800C9970)
 // fn_800C9970

@@ -21,26 +21,53 @@ void AnimUnref(int anim);
 void AnimRef(int anim);
 
 
-// TODO (not drafted yet, 0x4 bytes at 0x800CF2E0)
-// fn_800CF2E0
+void VFree(void* p);
+
+// The actor fields the destroy hook touches.
+struct SubsysActor {
+    u8 pad000[0x104];
+    void* update104;        // 0x104
+    u8 pad108[0x130 - 0x108];
+    void* block;            // 0x130
+};
+
+//@@800CF2E0
+extern "C" void fn_800CF2E0(void) {
+}
+//@@end
 // TODO (not drafted yet, 0x58 bytes at 0x800CF2E4)
 // fn_800CF2E4
 // TODO (not drafted yet, 0x54 bytes at 0x800CF33C)
 // fn_800CF33C
-// TODO (not drafted yet, 0x30 bytes at 0x800CF390)
-// fn_800CF390
+//@@800CF390
+extern "C" int fn_800CF3C0(int msg, int a, int* data);
+
+// Registers the message 0x4E handler.
+extern "C" void fn_800CF390(void) {
+    fn_80026660(0x4E, (void*)fn_800CF3C0, 0);
+}
+//@@end
 // TODO (not drafted yet, 0xF4 bytes at 0x800CF3C0)
 // fn_800CF3C0
 // TODO (not drafted yet, 0x460 bytes at 0x800CF4B4)
 // fn_800CF4B4
 // TODO (not drafted yet, 0x224 bytes at 0x800CF914)
 // fn_800CF914
-// TODO (not drafted yet, 0x40 bytes at 0x800CFB38)
-// fn_800CFB38
+//@@800CFB38
+// Destroy: drops the update callback and frees the state block (as CreatureFree in u_801D9A70.cpp).
+extern "C" void fn_800CFB38(SubsysActor* a) {
+    a->update104 = 0;
+    VFree(a->block);
+    a->block = 0;
+}
+//@@end
 // TODO (not drafted yet, 0x100 bytes at 0x800CFB78)
 // fn_800CFB78
-// TODO (not drafted yet, 0x8 bytes at 0x800CFC78)
-// fn_800CFC78
+//@@800CFC78
+extern "C" int fn_800CFC78(void) {
+    return 1;
+}
+//@@end
 // TODO (not drafted yet, 0x104 bytes at 0x800CFC80)
 // fn_800CFC80
 // TODO (not drafted yet, 0x120 bytes at 0x800CFD84)

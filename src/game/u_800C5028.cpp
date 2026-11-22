@@ -756,8 +756,8 @@ extern "C" void fn_800C6DD8()
     lbl_8039B760[3] = -1;
 }
 
-// TODO (not drafted yet, 0x4 bytes at 0x800C50EC)
-// fn_800C50EC
+// TODO (not drafted yet, 0x4 bytes at 0x800C50EC): a 4-byte `b 0x800C5088` back into ActorAnimState; the
+// fn_800C50EC symbol is probably a split artifact of that function (size to check)
 // TODO (not drafted yet, 0x444 bytes at 0x800C5210)
 // fn_800C5210
 // TODO (not drafted yet, 0x26C bytes at 0x800C5B6C)
@@ -770,5 +770,8 @@ extern "C" void fn_800C6DD8()
 // fn_800C60C4
 // TODO (not drafted yet, 0x1A0 bytes at 0x800C6200)
 // fn_800C6200
-// TODO (not drafted yet, 0x4 bytes at 0x800C6E88)
-// fn_800C6E88
+//@@800C6E88
+// Empty hook (called from u_800F73C8).
+extern "C" void fn_800C6E88(void) {
+}
+//@@end
