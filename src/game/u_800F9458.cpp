@@ -94,10 +94,20 @@ inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned c
 // 16 camera objects (0x124 bytes each) behind handles 0x16xxxxxx; the objects wrap the
 // camera controller (+0x60) and an optional shake controller (+0x64).
 
+struct CamTriple {
+    int v[3];
+};
+
 struct CamObj {
-    u8 pad00[0x34];
+    u8 pad00[0x30];
+    int f30;                // 0x30
     float fov;              // 0x34
-    u8 pad38[0xC0 - 0x38];
+    u8 pad38[0x40 - 0x38];
+    float f40;              // 0x40
+    float f44;              // 0x44
+    float f48;              // 0x48
+    CamTriple t4C;          // 0x4C
+    u8 pad58[0xC0 - 0x58];
     int ctl;                // 0xC0
     int ctl2;               // 0xC4
     int unkC8;              // 0xC8
@@ -442,34 +452,47 @@ void CamObjUpdate(float dt, CamObj* c) {
 
 // Camera message handler (type 0x16): message 0x1C01 copies the requested fields out of the
 // camera object.
+// Reply block of camera message 0x1C01: `mask` selects the fields to fill.
+struct CamQuery {
+    int unk0;              // 0x00
+    u32 mask;              // 0x04
+    int f30;               // 0x08
+    float fov;             // 0x0C
+    float f40;             // 0x10
+    float f44;             // 0x14
+    float f48;             // 0x18
+    CamTriple t4C;         // 0x1C
+    int ctl;               // 0x28
+};
+
 int CamMsg(u32 handle, int msg, int* data) {
-    CamObj* c;
-    if (msg != 0x1C01) {
-        return 0;
+    CamQuery* q = (CamQuery*)data;
+    switch (msg) {
+    case 0x1C01:
+        if ((q->mask & 1) != 0) {
+            q->f30 = gCams[handle & 0xFFFFFF].f30;
+        }
+        if ((q->mask & 2) != 0) {
+            q->fov = gCams[handle & 0xFFFFFF].fov;
+        }
+        if ((q->mask & 4) != 0) {
+            q->f40 = gCams[handle & 0xFFFFFF].f40;
+        }
+        if ((q->mask & 8) != 0) {
+            q->f44 = gCams[handle & 0xFFFFFF].f44;
+        }
+        if ((q->mask & 0x10) != 0) {
+            q->f48 = gCams[handle & 0xFFFFFF].f48;
+        }
+        if ((q->mask & 0x20) != 0) {
+            q->t4C.v[0] = gCams[handle & 0xFFFFFF].t4C.v[0];
+            q->t4C.v[1] = gCams[handle & 0xFFFFFF].t4C.v[1];
+            q->t4C.v[2] = gCams[handle & 0xFFFFFF].t4C.v[2];
+        }
+        if ((q->mask & 0x40) != 0) {
+            q->ctl = gCams[handle & 0xFFFFFF].ctl;
+        }
+        return 1;
     }
-    c = &gCams[handle & 0xFFFFFF];
-    if ((data[1] & 1) != 0) {
-        data[2] = *(int*)((char*)c + 0x30);
-    }
-    if ((data[1] & 2) != 0) {
-        data[3] = *(int*)((char*)c + 0x34);
-    }
-    if ((data[1] & 4) != 0) {
-        data[4] = *(int*)((char*)c + 0x40);
-    }
-    if ((data[1] & 8) != 0) {
-        data[5] = *(int*)((char*)c + 0x44);
-    }
-    if ((data[1] & 0x10) != 0) {
-        data[6] = *(int*)((char*)c + 0x48);
-    }
-    if ((data[1] & 0x20) != 0) {
-        data[7] = *(int*)((char*)c + 0x4C);
-        data[8] = *(int*)((char*)c + 0x50);
-        data[9] = *(int*)((char*)c + 0x54);
-    }
-    if ((data[1] & 0x40) != 0) {
-        data[10] = c->ctl;
-    }
-    return 1;
+    return 0;
 }
