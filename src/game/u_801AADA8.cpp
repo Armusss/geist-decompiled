@@ -1699,8 +1699,8 @@ extern int lbl_804D3114;
 extern int lbl_804D3118;
 extern int lbl_804D311C;
 extern int lbl_804D3120;
-extern float lbl_804D3124;
-extern float lbl_804D3128;
+extern float gPulseRateA;
+extern float gPulseRateB;
 extern int lbl_804D312C;
 extern int lbl_804D3130;
 extern int lbl_804D3134;
@@ -1789,13 +1789,13 @@ int FSHSVEVisualUpdate(int* args)
                 lbl_803AADA0.unk1C =
                     (float)lbl_804D317C * u + (float)lbl_804D3168 * t;
             } else {
-                float s = fn_80017084(st->unk3C * lbl_804D3124);
+                float s = fn_80017084(st->unk3C * gPulseRateA);
                 float blend = 0.5f * (1.0f + s);
                 u = 1.0f - blend;
                 lbl_803AADA0.unk08 =
                     (float)lbl_804D3140 * u + (float)lbl_804D312C * blend;
 
-                s = fn_80017084(st->unk3C * lbl_804D3128 + 5000.0f);
+                s = fn_80017084(st->unk3C * gPulseRateB + 5000.0f);
                 blend = 0.5f * (1.0f + s);
                 u = 1.0f - blend;
                 lbl_803AADA0.unk10 =
