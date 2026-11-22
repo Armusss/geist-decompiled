@@ -606,10 +606,10 @@ extern "C" void fn_8000C334(void) { lbl_804D40EC += fn_80286EAC(); }
 
 // FrameCountersAdd
 extern "C" void fn_8000C354(int a, int b, int c, int d, int doExtra) {
-    lbl_804D4074 = lbl_804D4074 + 1;
+    lbl_804D4074 += 1;
     lbl_804D4078 = lbl_804D4078 + d;
     if (doExtra != 0) {
-        lbl_804D407C = lbl_804D407C + 1;
+        lbl_804D407C += 1;
     }
 }
 
