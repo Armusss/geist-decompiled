@@ -174,7 +174,7 @@ UserGeomClass gUserGeomClasses[4];                     // 0x804A3178
 
 // Other files' statics (sbss).
 extern int lbl_804D5518;
-extern int lbl_804D551C;
+extern int gUserGeomClassCount;
 
 static const char sTooManyUserClasses[] =
     "too many user classes, you must increase the limit and recompile ODE";
@@ -223,14 +223,14 @@ int GeomRegisterClass(const UserGeomClass* cls)
 {
     int type;
 
-    if (lbl_804D551C >= 4) {
+    if (gUserGeomClassCount >= 4) {
         dDebug(0, sTooManyUserClasses);
     }
-    gUserGeomClasses[lbl_804D551C] = *cls;
-    type = lbl_804D551C + 0xb;
+    gUserGeomClasses[gUserGeomClassCount] = *cls;
+    type = gUserGeomClassCount + 0xb;
     CollisionInit();
     GeomSetAllColliders(type, UserGeomCollide);
-    lbl_804D551C += 1;
+    gUserGeomClassCount += 1;
     return type;
 }
 
