@@ -799,7 +799,10 @@ game/u_801DE4B0.cpp:
 	.text       start:0x801DE4B0 end:0x801DE7A0
 
 game/u_801DE7A0.cpp:
-	.text       start:0x801DE7A0 end:0x801E092C
+	.text       start:0x801DE7A0 end:0x801E0850
+
+game/u_801E0850.cpp:
+	.text       start:0x801E0850 end:0x801E092C
 
 game/u_801E092C.cpp:
 	.text       start:0x801E092C end:0x801E0EDC

@@ -730,7 +730,8 @@ config.libs = [
             Object(NonMatching, "game/u_801D8FD4.cpp"),  # msg 0x74xx helpers, own consts 0x804D8C80..
             Object(NonMatching, "game/u_801D9A70.cpp"),  # [FSGSVE] creature AI
             Object(NonMatching, "game/u_801DE4B0.cpp"),  # TentacleSpit effect type (split from u_801D9A70)
-            Object(NonMatching, "game/u_801DE7A0.cpp"),  # trails + effect-module hooks (split from u_801D9A70)
+            Object(NonMatching, "game/u_801DE7A0.cpp"),  # trails (split from u_801D9A70)
+            Object(Matching, "game/u_801E0850.cpp"),  # effect-module fan-out hooks (split from u_801D9A70)
             Object(NonMatching, "game/u_801E092C.cpp"),  # Lightning effect type (split from u_801D9A70)
             Object(NonMatching, "game/u_801E0EDC.cpp"),  # guess
             Object(NonMatching, "game/u_801E14E8.cpp"),  # split from u_801E0EDC
