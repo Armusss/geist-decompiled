@@ -20,3 +20,5 @@ mw_comment_version: 10
 # Functions unreferenced in retail that the original link still kept (dead-stripped otherwise).
 force_active:
 - StatGetDebug__Fiii
+- fn_801BD5A4
+- fn_801BD62C

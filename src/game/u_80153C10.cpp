@@ -61,7 +61,7 @@ extern "C" float fn_80115F68(unsigned long id);
 extern "C" GhostSlot* fn_80116DC4(GhostSlot* target);
 extern "C" void fn_80116E30(GhostSlot* target);
 extern "C" void fn_800F7AF0(int a, int b);
-extern "C" int fn_801BD694(GhostSlot* slot);
+int OwnerIsFollowing(void* owner);
 int GhostFlashNotify(GhostSlot* self, int mode);
 int GhostPossessEnd(GhostSlot* self);
 int GhostPossessMenuNotify(unsigned int flags, int unused, GhostSlot* self);
@@ -511,7 +511,7 @@ int GhostPossessEnd(GhostSlot* self) {
                 actorIdx = HandleToPlayer(self->unk04->id);
                 break;
             case 0x13:
-                if (fn_801BD694(self->unk04) != 0) {
+                if (OwnerIsFollowing(self->unk04) != 0) {
                     actorType = 0;
                     actorIdx = HandleToPlayer(self->unk04->id);
                 } else {
@@ -528,7 +528,7 @@ int GhostPossessEnd(GhostSlot* self) {
                 ghostIdx = HandleToPlayer(self->unk00->id);
                 break;
             case 0x13:
-                if (fn_801BD694(self->unk04) != 0) {
+                if (OwnerIsFollowing(self->unk04) != 0) {
                     ghostType = 0;
                     ghostIdx = HandleToPlayer(self->unk00->id);
                 } else {
@@ -678,7 +678,7 @@ int GhostPossessTick(GhostSlot* self) {
     int result;
     unsigned long kind = target->id >> 24;
     if (kind == 0x13) {
-        if (fn_801BD694(target) != 0) {
+        if (OwnerIsFollowing(target) != 0) {
             fn_800A3990(*(unsigned long*)((char*)target->unk5EC + 0xBC));
         } else {
             fn_800A3990(target->id);
@@ -742,7 +742,7 @@ int GhostPossessTick(GhostSlot* self) {
             actorType = 0;
             actorIdx = HandleToPlayer(self->unk04->id);
         } else if (actorKind == 0x13) {
-            if (fn_801BD694(self->unk04) != 0) {
+            if (OwnerIsFollowing(self->unk04) != 0) {
                 actorType = 0;
                 actorIdx = HandleToPlayer(self->unk04->id);
             } else {
@@ -757,7 +757,7 @@ int GhostPossessTick(GhostSlot* self) {
             ghostType = 0;
             ghostIdx = HandleToPlayer(self->unk00->id);
         } else if (ghostKind == 0x13) {
-            if (fn_801BD694(self->unk04) != 0) {
+            if (OwnerIsFollowing(self->unk04) != 0) {
                 ghostType = 0;
                 ghostIdx = HandleToPlayer(self->unk00->id);
             } else {
@@ -878,7 +878,7 @@ unsigned long fn_801554E0(GhostSlot* self, GhostSlot* target, int mode) {
         break;
     }
     case 0x13:
-        if (fn_801BD694(self->unk04) != 0) {
+        if (OwnerIsFollowing(self->unk04) != 0) {
             QueryMsg m;
             *(int*)&m.result = (int)self->unk00->id;
             m.hash = 0x1C1A4CC9;
@@ -1162,7 +1162,7 @@ unsigned long GhostPossessAttempt(GhostSlot* self) {
                     unsigned long k = target->id >> 24;
                     int* aim = 0;
                     if (k == 0x13) {
-                        if (fn_801BD694((GhostSlot*)target) == 0) {
+                        if (OwnerIsFollowing((GhostSlot*)target) == 0) {
                             fn_800A3990(target->id);
                             aim = (int*)fn_800A384C();
                         } else {

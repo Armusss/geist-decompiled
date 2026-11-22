@@ -136,7 +136,6 @@ void fn_8009F44C(IVec3* out, Mtx34* mtx, IVec3* in);
 int fn_800A1558(int a, int b);
 int fn_800A1688(int a);
 int fn_800A1624(int a);
-int fn_801BD694(Actor* actor);
 int fn_80116E08(Actor* actor);
 void FxStart(void* fx, int a, int b);
 int fn_8001F928(Actor* actor, int* coords, u32 flags, int (*cb)(u32*, u32), Actor* actor2);
@@ -144,6 +143,7 @@ void fn_8028C188(String* dst, char* data, int len);
 void* memset(void* dst, int val, unsigned long n);
 String fn_800225C8(String& a, String& b);
 }
+int OwnerIsFollowing(void* owner);
 void ClearStateMachine(void* actor);                              // 0x8011818C
 void SetStateMachineState(void* actor, u32 id);                   // 0x80118250
 float StatGet(int stat, int index, int who);                      // 0x80120C14
@@ -496,7 +496,7 @@ int CollectCheck(void* p0, void* p1) {
     default:
         goto success;
     }
-    if (fn_801BD694(a) && !fn_80116E08(a)) {
+    if (OwnerIsFollowing(a) && !fn_80116E08(a)) {
         return 0;
     }
     if (a->type == (int)0x8CFF50E3) {

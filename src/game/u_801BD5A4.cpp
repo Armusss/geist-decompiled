@@ -6,11 +6,9 @@
 // previous file's string pool (CW puts a file's string pool after its other .rodata), so it is not part of that file.
 // The next file has a second registry with a different entry layout (5 words) and its own empty params constant
 // (0x803486C0).
-// Flip status (2026-11-22): 13/13 and data defined. Verified by a probe build (reverted) that the unit links
-// byte-identical once (1) fn_801BD694 has C++ linkage (CW emits an extern "C" function that needs implicit
-// destructors only after the next C++ function, which puts it behind fn_801BDE6C), which renames the symbol and
-// the declarations in u_80116B28.cpp and u_8016C244.cpp (needs approval), and (2) fn_801BD5A4 and fn_801BD62C
-// (no callers) are listed in config.yml force_active.
+// Matching (2026-11-22): OwnerIsFollowing (0x801BD694) has C++ linkage (CW emits an extern "C" function that needs
+// implicit destructors only after the next C++ function), and fn_801BD5A4 / fn_801BD62C (no callers) are in
+// config.yml force_active.
 
 #include "game/string.h"
 #include "game/msg.h"
@@ -282,7 +280,8 @@ extern "C" void fn_801BD62C(u32 hash, void (*enter)(SveOwner*), void (*leave)(Sv
     }
 }
 
-// Asks a character for its 0x8132F1B1 value (0 if it does not answer).
+// Asks a character for its 0x8132F1B1 value (0 if it does not answer): the follow behaviours (u_8023824C)
+// answer 1, hence OwnerIsFollowing below.
 inline int QuerySend(int* out, int target, u32 hash) {
     QueryMsg m;
     int sent;
@@ -294,7 +293,8 @@ inline int QuerySend(int* out, int target, u32 hash) {
     return sent;
 }
 
-extern "C" int fn_801BD694(SveOwner* o) {
+int OwnerIsFollowing(void* p) {
+    SveOwner* o = (SveOwner*)p;
     int value;
     int sent;
 
