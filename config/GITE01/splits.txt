@@ -763,6 +763,7 @@ game/u_801D8134.cpp:
 
 game/u_801D8768.cpp:
 	.text       start:0x801D8768 end:0x801D8994
+	.sbss       start:0x804D51E0 end:0x804D51F0
 
 game/u_801D8994.cpp:
 	.text       start:0x801D8994 end:0x801D8FD4

@@ -40,9 +40,10 @@ static void LCCopyBlocks(void* dst, void* src, u32 size) {
     void* srcs[2];
     void* dsts[2];
     int blocks;
-    u32 rest;
-    u32 n;
+    int rest;
     int i;
+    u32 n;
+    int wait;
 
     DCFlushRangeNoSync(src, size);
     DCInvalidateRange(dst, size);
@@ -50,17 +51,16 @@ static void LCCopyBlocks(void* dst, void* src, u32 size) {
     rest = size - (blocks << 14);
     PPCSync();
     for (i = 0; i < 2; i++) {
-        srcs[i] = src;
-        dsts[i] = dst;
+        srcs[i] = (u8*)src + i * 0x2000;
+        dsts[i] = (u8*)dst + i * 0x2000;
         n = LCLoadData(sLCBuf[i], srcs[i], 0x2000);
-        src = (u8*)src + 0x2000;
-        dst = (u8*)dst + 0x2000;
     }
     if (blocks != 0) {
         LCQueueWait(n);
+        wait = n;
         for (; blocks > 0; blocks--) {
             for (i = 0; i < 2; i++) {
-                LCQueueWait(n);
+                LCQueueWait(wait);
                 LCStoreData(dsts[i], sLCBuf[i], 0x2000);
                 srcs[i] = src2;
                 src2 += 0x2000;
