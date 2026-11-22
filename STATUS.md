@@ -147,6 +147,8 @@ and keep it only in a unit that then fully matches (AUDIT OK), the same conditio
 byte-identical to retail in fn_80184A70 and fn_8009F7A8; callers still need register work around it.
 
 **Recurring unsolved shapes (fullmatch round 2026-11-15):**
+- Hoisted function address (e.g. `&fn_801D85F8` handler) ranked in r31 with `li` offsets set before the `lis` in retail; ours ranks it lowest: u_801D8134 PropsSpawn (38 regs-only), u_800776FC FxListSpawnAll (2026-11-22).
+- Tick-function `li r4,N` before `addi r3,rA,624`: see docs/matching-tricks.md (scheduler runs before coloring; retail likely had a constant copy). Blocks u_801CA16C, u_8029C0AC, u_802D8C7C, HostRideB/HostRide ticks, u_8024E5D0.
 - `li r4,9` before `addi r3,rX,624` at a HasCondition call: HostRideBUpdate/HostRideTick (2 diffs each), BehParamsUpdate,
   CreatureUpdate, NpcSveUpdateActor, fn_801CAA48, fn_80295634, fn_8004C9C8, CrabUpdate. `#pragma scheduling off` (probe) still
   puts addi first. 5040 decl orders + wrappers tried. Scanner: ~/geist-work/ds/opus-full-B5-tools/scan.py.
