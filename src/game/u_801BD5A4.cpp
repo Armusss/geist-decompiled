@@ -6,6 +6,11 @@
 // previous file's string pool (CW puts a file's string pool after its other .rodata), so it is not part of that file.
 // The next file has a second registry with a different entry layout (5 words) and its own empty params constant
 // (0x803486C0).
+// Flip status (2026-11-22): 13/13 and data defined. Verified by a probe build (reverted) that the unit links
+// byte-identical once (1) fn_801BD694 has C++ linkage (CW emits an extern "C" function that needs implicit
+// destructors only after the next C++ function, which puts it behind fn_801BDE6C), which renames the symbol and
+// the declarations in u_80116B28.cpp and u_8016C244.cpp (needs approval), and (2) fn_801BD5A4 and fn_801BD62C
+// (no callers) are listed in config.yml force_active.
 
 #include "game/string.h"
 #include "game/msg.h"
@@ -50,13 +55,164 @@ struct SveType {
     const char* name;                  // 0x14
 };
 
-extern SveType lbl_803AB708[];   // the type table
-extern int lbl_804D3200;         // number of entries (30)
-
 void AiNoOp_801BE004();
 void AiNoOp_801BE000();
 int AiReturnFalse_801BDFF8();
 int AiReturnFalse_801BDFF0();
+
+// Callbacks of the registered types (other units).
+struct Actor; struct Creature; struct EventOwner; struct HostObj; struct MsgArg; struct MsgData; struct Rico;
+extern "C" {
+void fn_801D9A70();
+void fn_8029F0BC();
+void fn_8029EDCC();
+void fn_8029E714();
+void fn_800CFB78();
+void fn_800CFB38();
+void fn_800CF914();
+void fn_800CF4B4();
+void fn_8011FCEC();
+void fn_801B455C();
+void fn_801B44E4();
+void fn_801B3DE8();
+void fn_801B3610();
+void fn_8025AD90();
+void fn_80259AB0();
+void fn_802C0564();
+void fn_802C01E8();
+void fn_802C9D1C();
+void fn_802C9818();
+}
+void CreatureInit(Creature*);
+void CreatureFree(Creature*);
+void CreatureUpdate(Creature*);
+void FSHSVEBlockInit(Actor*);
+void FSHSVEBlockFree(Actor*);
+void UpdateFSHSVE(Actor*);
+int HandleFSHSVEMessages(int, int*);
+void HostRideJInit(Actor*);
+void HostRideJFree(Actor*);
+void HostRideJTick(void*);
+int HostRideJMsg(int, void*);
+void HostRideBInit(Actor*);
+void HostRideBFree(Actor*);
+void HostRideBUpdate(void*);
+int HostRideBMsg(int, void*);
+void NpcSveInitActor(Owner*);
+void NpcSveFreeEvent(Owner*);
+void NpcSveUpdateActor(Owner*);
+int NpcSveHandleMsg(int, int*);
+void HostLeaveRide(HostObj*);
+void ActorStateInit(Owner*);
+void ActorReleaseState(Owner*);
+void UpdateActorState(Owner*);
+int HandleQueryActorMsg(int, MsgData*);
+void ItemCreate(void*);
+void ItemDestroy(void*);
+void ItemUpdate(EventOwner*);
+void FollowBehaviourInit(void*);
+void FollowBehaviourRelease(void*);
+void FollowBehaviourTick(void*);
+int FollowBehaviourMessage(int, void*);
+void AllyCreate(Actor*);
+void AllyDestroy(Actor*);
+void AllyUpdate(Actor*);
+int AllyMsg(int, int*);
+void HostInitBehaviour(void*);
+void HostDestroyBehaviour(void*);
+void HostUpdateBehaviour(void*);
+int HostHandleMessage(int, void*);
+void ImpInit(void*);
+void ImpFree(Actor*);
+void ImpTick(void*);
+int ImpMsg(int, void*);
+void GeistA28A4DogFetchInit(int);
+void GeistA28A4StateDetach(int);
+void u801A2D90Update(int);
+int u801A28A4MsgHandler(int, int*);
+void GeistA28A4StateAttach(int);
+void FoeCreate(Actor*);
+void FoeDestroy(Actor*);
+void FoeUpdate(Actor*);
+int FoeMsg(int, void*);
+void FshSveCreateBehaviour(Actor*);
+void FshSveReleaseBehaviour(Actor*);
+void fn_802BB8E0(Actor*);
+int fn_802BB1F4(int, MsgArg*);
+void HostRideDInit(void*);
+void HostRideDFree(Actor*);
+void HostRideDTick(void*);
+int HostRideDMsg(int, int*);
+void RicoInit(Rico*);
+void RicoDestroy(Rico*);
+void ActorInitCollection802B8308(Actor*);
+void ActorFreeExtra802B82C8(Actor*);
+void ActorStateTick802B7FD0(Actor*);
+int ActorMessageHandler802B7120(int, int*);
+void RideInit(void*);
+void RideFree(Actor*);
+void RideUpdate(void*);
+int RideMsg(int, void*);
+void PossessedStatusInitState(Owner*);
+void PossessedStatusFreeState(Owner*);
+void HostBehInit(Actor*);
+void HostBehFree(Actor*);
+void HostBehUpdate(void*);
+int HostBehMsg(int, void*);
+void FollowInit(Actor*);
+void StateBlockFree(Actor*);
+void HostRideInit(Actor*);
+void HostRideFree(Actor*);
+void HostRideTick(void*);
+int HostRideMsg(int, void*);
+void HostRideCInit(void*);
+void HostRideCFree(Actor*);
+void HostRideCTick(void*);
+int HostRideCMsg(int, void*);
+void HostRideAInit(void*);
+void HostRideAFree(Actor*);
+void HostRideAUpdate(void*);
+int HostRideAMsg(int, void*);
+void CollectInit(Actor*);
+void CollectRelease(Actor*);
+void CollectTick(void*);
+int CollectMsg(int, void*);
+
+typedef void (*SveFn)(SveOwner*);
+// The type table and its entry count.
+SveType lbl_803AB708[30] = {
+    { 0xE6858762, (SveFn)CreatureInit, (SveFn)CreatureFree, (void*)CreatureUpdate, (void*)fn_801D9A70, "" },
+    { 0xEA993A8F, (SveFn)FSHSVEBlockInit, (SveFn)FSHSVEBlockFree, (void*)UpdateFSHSVE, (void*)HandleFSHSVEMessages, "" },
+    { 0x045D77C6, (SveFn)HostRideJInit, (SveFn)HostRideJFree, (void*)HostRideJTick, (void*)HostRideJMsg, "" },
+    { 0x03C46091, (SveFn)HostRideBInit, (SveFn)HostRideBFree, (void*)HostRideBUpdate, (void*)HostRideBMsg, "" },
+    { 0x00012EC1, (SveFn)NpcSveInitActor, (SveFn)NpcSveFreeEvent, (void*)NpcSveUpdateActor, (void*)NpcSveHandleMsg, "" },
+    { 0xB1C30D62, (SveFn)fn_8029F0BC, (SveFn)HostLeaveRide, (void*)fn_8029EDCC, (void*)fn_8029E714, "" },
+    { 0xC8422A5B, (SveFn)ActorStateInit, (SveFn)ActorReleaseState, (void*)UpdateActorState, (void*)HandleQueryActorMsg, "" },
+    { 0x00276198, (SveFn)fn_800CFB78, (SveFn)fn_800CFB38, (void*)fn_800CF914, (void*)fn_800CF4B4, "" },
+    { 0x6B9EBFFE, (SveFn)ItemCreate, (SveFn)ItemDestroy, (void*)ItemUpdate, (void*)fn_8011FCEC, "" },
+    { 0x518F8F9A, (SveFn)fn_801B455C, (SveFn)fn_801B44E4, (void*)fn_801B3DE8, (void*)fn_801B3610, "" },
+    { 0x78562990, (SveFn)FollowBehaviourInit, (SveFn)FollowBehaviourRelease, (void*)FollowBehaviourTick, (void*)FollowBehaviourMessage, "" },
+    { 0xAF7258AD, (SveFn)AllyCreate, (SveFn)AllyDestroy, (void*)AllyUpdate, (void*)AllyMsg, "" },
+    { 0x4BD66AD8, (SveFn)HostInitBehaviour, (SveFn)HostDestroyBehaviour, (void*)HostUpdateBehaviour, (void*)HostHandleMessage, "" },
+    { 0x0D028AC2, (SveFn)ImpInit, (SveFn)ImpFree, (void*)ImpTick, (void*)ImpMsg, "" },
+    { 0x0001091C, (SveFn)GeistA28A4DogFetchInit, (SveFn)GeistA28A4StateDetach, (void*)u801A2D90Update, (void*)u801A28A4MsgHandler, "" },
+    { 0xA7F71344, (SveFn)GeistA28A4StateAttach, (SveFn)GeistA28A4StateDetach, (void*)u801A2D90Update, (void*)u801A28A4MsgHandler, "" },
+    { 0x001FA79E, (SveFn)FoeCreate, (SveFn)FoeDestroy, (void*)FoeUpdate, (void*)FoeMsg, "" },
+    { 0x906E8474, (SveFn)FshSveCreateBehaviour, (SveFn)FshSveReleaseBehaviour, (void*)fn_802BB8E0, (void*)fn_802BB1F4, "" },
+    { 0x296DB72C, (SveFn)HostRideDInit, (SveFn)HostRideDFree, (void*)HostRideDTick, (void*)HostRideDMsg, "" },
+    { 0x7ECFB323, (SveFn)RicoInit, (SveFn)RicoDestroy, (void*)fn_8025AD90, (void*)fn_80259AB0, "" },
+    { 0x2C3FD46C, (SveFn)ActorInitCollection802B8308, (SveFn)ActorFreeExtra802B82C8, (void*)ActorStateTick802B7FD0, (void*)ActorMessageHandler802B7120, "" },
+    { 0x0E6D87D7, (SveFn)RideInit, (SveFn)RideFree, (void*)RideUpdate, (void*)RideMsg, "" },
+    { 0xB79B4F12, (SveFn)PossessedStatusInitState, (SveFn)PossessedStatusFreeState, (void*)fn_802C0564, (void*)fn_802C01E8, "" },
+    { 0x208C8734, (SveFn)HostBehInit, (SveFn)HostBehFree, (void*)HostBehUpdate, (void*)HostBehMsg, "" },
+    { 0x3DCD3AD9, (SveFn)FollowInit, (SveFn)StateBlockFree, (void*)fn_802C9D1C, (void*)fn_802C9818, "" },
+    { 0x7DE7AEAE, (SveFn)HostRideInit, (SveFn)HostRideFree, (void*)HostRideTick, (void*)HostRideMsg, "" },
+    { 0xDB3A08C6, (SveFn)HostRideCInit, (SveFn)HostRideCFree, (void*)HostRideCTick, (void*)HostRideCMsg, "" },
+    { 0xDB630C2B, (SveFn)HostRideAInit, (SveFn)HostRideAFree, (void*)HostRideAUpdate, (void*)HostRideAMsg, "" },
+    { 0x8CFF50E3, (SveFn)CollectInit, (SveFn)CollectRelease, (void*)CollectTick, (void*)CollectMsg, "" },
+    { 0x0024A738, 0, 0, 0, 0, "" },
+};
+int lbl_804D3200 = 30;
 
 static inline int SveFind(u32 hash) {
     int i;
