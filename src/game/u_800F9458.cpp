@@ -293,22 +293,35 @@ struct Shake {
 };
 
 // Sine-wave roll shake applied to the camera matrix.
+// A 3x4 fixed-point (Q12) matrix, copied as a whole.
+struct RotQ12 {
+    int m[9];
+};
+struct PosQ12 {
+    int x, y, z;
+};
+struct MtxQ12 {
+    RotQ12 rot;
+    PosQ12 pos;
+};
+
 void ShakeRoll(Shake* s, int* m) {
-    int sinA = fn_800A1624((s->phase & 0x1FF) << 3);
-    int cosA = fn_800A1688((s->phase & 0x1FF) << 3);
-    int sinB = fn_800A1624(s->phase * 4 + 0x800 & 0xFFF);
-    int div = 0x101 - s->amp / 0x1000;
-    int rot[12];
-    int tmp[12];
-    int i;
-    fn_8009F76C(rot);
-    rot[0] = 0x1000 - (sinA << 2) / div;
-    rot[11] = (sinB << 2) / div + 0x1000;
-    rot[8] = (cosA << 1) / div + 0x1000;
-    for (i = 0; i < 12; i++) {
-        tmp[i] = m[i];
-    }
-    MtxMulQ12(m, rot, tmp);
+    int div;
+    int sinA;
+    int cosA;
+    int sinB;
+    MtxQ12 rot;
+    MtxQ12 tmp;
+    sinA = fn_800A1624((s->phase & 0x1FF) << 3) * 4;
+    cosA = fn_800A1688((s->phase & 0x1FF) << 3) * 2;
+    sinB = fn_800A1624(s->phase * 4 + 0x800 & 0xFFF) * 4;
+    div = 0x101 - s->amp / 0x1000;
+    fn_8009F76C(rot.rot.m);
+    rot.rot.m[0] = 0x1000 - sinA / div;
+    rot.rot.m[8] = sinB / div + 0x1000;
+    rot.rot.m[4] = cosA / div + 0x1000;
+    tmp = *(MtxQ12*)m;
+    MtxMulQ12(m, rot.rot.m, tmp.rot.m);
 }
 
 // Slides the camera along its view axis by the shake amplitude.
@@ -340,14 +353,10 @@ void ShakeJitter(Shake* s, int* pos) {
     v[2] = 0;
     amp = s->amp / 0x1000;
     if (amp > 0) {
-        u32 r = rand();
-        v[0] = -amp;
-        if ((r & 1 ^ r >> 31) != r >> 31) {
-            v[0] = amp;
-        }
-        r = rand();
-        v[2] = amp;
-        if ((r & 1 ^ r >> 31) == r >> 31) {
+        v[0] = rand() % 2 ? amp : -amp;
+        if (rand() % 2) {
+            v[2] = amp;
+        } else {
             v[2] = -amp;
         }
     }
