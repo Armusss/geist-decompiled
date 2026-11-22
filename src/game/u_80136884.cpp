@@ -903,7 +903,7 @@ void PlayerGunDashStateUpdate(Actor* a, float dt) {
 
 // 0x80138710: state-entry variant for the name-intro state that reuses the action
 // hash stored in field7DC. The stored hash picks the first slot's mode; both state
-// slots come from the motion table at lbl_803A07D8 + 0x174 for the current weapon
+// slots come from row 5 of the motion table (lbl_803A07D8[5].ids) for the current weapon
 // slot, and the name-intro handler becomes the state callback.
 void PlayerGunStoredHashIntro(void* p) {
     Actor* a = (Actor*)p;

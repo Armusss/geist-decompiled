@@ -172,8 +172,8 @@ extern "C" void fn_800B1F20(void* actor, int kind);
 extern "C" void fn_800B2418(float dist, void* actor, int kind);
 extern int lbl_804D3680;     // 1
 extern int lbl_804D3684;     // 3
-extern int lbl_804D369C;     // 5
-extern int lbl_804D36A0;     // 3
+extern int gRandCountMax;     // 5
+extern int gRandCountMin;     // 3
 int AssetFind(u32 bank, u32 key);                    // 0x8007EB34
 int GameEvent(int type, int id);                                // 0x8007EA84
 void* FxFind(const char* name);                     // 0x80170834
@@ -997,13 +997,13 @@ int RicoSelectState(void* p) {
                     d->flags |= 0x2000;
                     ConditionSetBit(a->cond, 0x3A, 1);
                     ConditionUpdateBit(a->cond, 0x25, 1);
-                    int r = (int)((float)(lbl_804D369C - lbl_804D36A0 + 1) * ((float)rand() / 32767.0f) +
-                                  (float)lbl_804D36A0);
-                    lbl_804D3694 = lbl_804D36A0;
-                    if (lbl_804D36A0 <= r) {
+                    int r = (int)((float)(gRandCountMax - gRandCountMin + 1) * ((float)rand() / 32767.0f) +
+                                  (float)gRandCountMin);
+                    lbl_804D3694 = gRandCountMin;
+                    if (gRandCountMin <= r) {
                         lbl_804D3694 = r;
-                        if (lbl_804D369C < r) {
-                            lbl_804D3694 = lbl_804D369C;
+                        if (gRandCountMax < r) {
+                            lbl_804D3694 = gRandCountMax;
                         }
                     }
                     result = 2;

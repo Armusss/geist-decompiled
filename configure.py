@@ -723,7 +723,7 @@ config.libs = [
             Object(NonMatching, "game/u_801B47CC.cpp"),  # AI state callbacks (split from u_801AE50C)
             Object(NonMatching, "game/u_801B829C.cpp"),  # Overlay actor (split from u_801AE50C)
             Object(NonMatching, "game/u_801B8FC0.cpp"),  # [FASSVE] actor (split from u_801AE50C)
-            Object(NonMatching, "game/u_801BD5A4.cpp"),  # behaviour type registry (split from u_801AE50C)
+            Object(Matching, "game/u_801BD5A4.cpp"),  # behaviour type registry (split from u_801AE50C)
             Object(NonMatching, "game/u_801BE008.cpp"),  # type registry + sinit (split from u_801AE50C)
             Object(Matching, "game/VMem.cpp"),  # known start; end 0x801BF578 (helper-game-b)
             Object(Matching, "game/u_801BF578.cpp"),  # own POSSESS pool 0x803486C8, state table 0x803ABBA8

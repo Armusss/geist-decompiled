@@ -1,9 +1,11 @@
-// u_800F73C8.cpp (0x800F73C8-0x800F77F8): the DVD music stream callbacks (finished, shutdown, trigger, address done, stop, prepared, error).
-// Split from the old u_800F73C8 (0x800F73C8-0x800FDDE4). Names are descriptive guesses; matched against retail
-// unless noted.
-// Boundary note (2026-11-22, not applied: it moves u_800F396C's end): these functions share the stream state in
-// .sbss 0x804D4B58-0x804D4B88 and .bss 0x80457E50-0x80457F70 with fn_800F6CFC..fn_800F7350 at the end of
-// u_800F396C, so this range is the tail of that stream file; the effect code after it starts its own data.
+// u_800F73C8.cpp (0x800F6CFC-0x800F77F8): the DVD music stream player: volume/command/list API (fn_800F6CFC..
+// fn_800F7350, called by u_800DFE3C and Cube) and the stream callbacks (finished, shutdown, trigger, address done,
+// stop, prepared, error). Split from the old u_800F73C8 (0x800F73C8-0x800FDDE4). Names are descriptive guesses;
+// matched against retail.
+// Boundary evidence (2026-11-22): fn_800F6CFC..fn_800F7350 (formerly the end of u_800F396C) use only the stream
+// state in .sbss 0x804D4B58-0x804D4B88 and .bss 0x80457E50-0x80457F70 that the callbacks use, and the callbacks
+// are their DVD/AI callbacks; the weather code before 0x800F6CFC uses .sbss 0x804D4B00-0x804D4B54 and .bss
+// 0x80457BD0-0x80457C4C instead. The effect code after 0x800F77F8 starts its own data.
 
 
 #include "game/types.h"
@@ -95,9 +97,9 @@ struct DVDCommandBlock {
 };
 
 struct StreamNode {
-    u8 pad00[4];
+    StreamNode* prev;       // 0x00
     StreamNode* next;       // 0x04
-    u8 pad08[4];
+    const char* path;       // 0x08
     u32 events;             // 0x0C: which events invoke the callback
     void (*callback)(u32 event); // 0x10: gets the event bit
     u8 file[1];             // 0x14: DVDFileInfo
@@ -106,9 +108,14 @@ struct StreamNode {
 extern "C" {
 void AISetStreamPlayState(int state);
 void AISetStreamTrigger(int t);
-void AISetStreamVolLeft(int v);
-void AISetStreamVolRight(int v);
+void AISetStreamVolLeft(u8 v);
+void AISetStreamVolRight(u8 v);
 void AIResetStreamSampleCount(void);
+void* AIRegisterStreamCallback(void (*cb)(int));
+int DVDOpen(const char* path, void* file);
+int DVDCancelStreamAsync(DVDCommandBlock* b, void* cb);
+int OSDisableInterrupts(void);
+int OSRestoreInterrupts(int level);
 int DVDClose(void* file);
 int DVDGetStreamPlayAddrAsync(DVDCommandBlock* b, void* cb);
 int DVDGetStreamErrorStatusAsync(DVDCommandBlock* b, void* cb);
@@ -118,21 +125,27 @@ int DVDStopStreamAtEndAsync(DVDCommandBlock* b, void* cb);
 
 extern StreamNode* lbl_804D4B58;  // current entry
 extern StreamNode* lbl_804D4B5C;  // list head
-extern int lbl_804D4B60;  // list tail
-extern volatile int lbl_804D4B64;  // stream state
-extern volatile int lbl_804D4B68;  // play mode
+extern StreamNode* lbl_804D4B60;  // list tail
+extern volatile u32 lbl_804D4B64;  // stream state (0 idle, 1 playing, 2 paused, 3 busy)
+extern volatile u32 lbl_804D4B68;  // play mode (0 once, 1 loop list, 2 repeat entry)
 extern volatile int lbl_804D4B6C;  // stream position
-extern int lbl_804D4B70;  // trigger
-extern u8 lbl_804D4B74;  // volume left
-extern u8 lbl_804D4B75;  // volume right
-extern int lbl_804D4B78;  // stream word
+extern volatile int lbl_804D4B70;  // trigger
+extern volatile u8 lbl_804D4B74;  // volume left
+extern volatile u8 lbl_804D4B75;  // volume right
+extern volatile u32 lbl_804D4B78;  // set while the stream system shuts down
 extern volatile u32 lbl_804D4B7C;  // end reached
 extern void (*lbl_804D4B80)(void);    // 0x804D4B80
 extern DVDCommandBlock lbl_80457E80;  // stop command block
 extern DVDCommandBlock lbl_80457E50;  // play command block
 extern DVDCommandBlock lbl_80457EE0;  // address command block
 extern DVDCommandBlock lbl_80457EB0;  // error command block
+extern DVDCommandBlock lbl_80457F10;  // shutdown cancel command block
+extern DVDCommandBlock lbl_80457F40;  // stop cancel command block
 
+void StreamFinished(void);
+void MusicStreamShutdown(void);
+void StreamSetTrigger(int offset);
+void StreamStop(void);
 void StreamPrepared(void);
 void StreamErrorDone(unsigned char status);
 void StreamAddrDone(u32 pos);
@@ -147,21 +160,23 @@ static inline void StreamNotify(u32 bit) {
     }
 }
 
-// Stream finished: notify (bit 2) and clear the state.
-void StreamFinished(void) {
-    StreamNotify(2);
-    lbl_804D4B64 = 0;
+// Calls an entry's callback when it asked for event `bit`.
+static inline void StreamNodeNotify(StreamNode* n, u32 bit) {
+    u32 ev;
+    if (n != NULL && n->callback != NULL && (ev = n->events & bit) != 0) {
+        n->callback(ev);
+    }
 }
 
-// Closes every stream entry and resets the list.
-void MusicStreamShutdown(void) {
+// Closes every stream entry, resets the list and runs the pending shutdown callback.
+static inline void StreamCloseAll(void) {
     StreamNode* n;
     AISetStreamPlayState(0);
     for (n = lbl_804D4B5C; n != NULL; n = n->next) {
         DVDClose(n->file);
     }
     lbl_804D4B5C = NULL;
-    lbl_804D4B60 = 0;
+    lbl_804D4B60 = NULL;
     lbl_804D4B58 = NULL;
     lbl_804D4B64 = 0;
     if (lbl_804D4B80 != NULL) {
@@ -170,6 +185,221 @@ void MusicStreamShutdown(void) {
     }
     lbl_804D4B64 = 0;
     lbl_804D4B78 = 0;
+}
+
+// Sets the stream volumes (applied at once while playing).
+extern "C" void fn_800F6CFC(u8 left, u8 right) {
+    lbl_804D4B74 = left;
+    lbl_804D4B75 = right;
+    if (lbl_804D4B64 == 1) {
+        AISetStreamVolLeft(left);
+        AISetStreamVolRight(right);
+    }
+}
+
+// The current entry.
+extern "C" StreamNode* fn_800F6D44(void) { return lbl_804D4B58; }
+
+// The stream state.
+extern "C" u32 fn_800F6D4C(void) { return lbl_804D4B64; }
+
+// Stream command: 0 stop, 1 play/resume, 2 pause, 4 prepare and stop.
+extern "C" void fn_800F6D54(int cmd) {
+    if (lbl_804D4B64 == cmd || lbl_804D4B64 == 3) {
+        return;
+    }
+    switch (cmd) {
+    case 0:
+        if (lbl_804D4B58 != NULL) {
+            lbl_804D4B64 = 3;
+            AISetStreamVolLeft(0);
+            AISetStreamVolRight(0);
+            AISetStreamPlayState(0);
+            DVDCancelStreamAsync(&lbl_80457F40, (void*)StreamFinished);
+        }
+        break;
+    case 1:
+        if (lbl_804D4B64 == 2) {
+            AISetStreamVolLeft(lbl_804D4B74);
+            AISetStreamVolRight(lbl_804D4B75);
+            AIResetStreamSampleCount();
+            AISetStreamTrigger(lbl_804D4B70);
+            AISetStreamPlayState(1);
+            lbl_804D4B64 = 1;
+            if (lbl_804D4B58 != NULL) {
+                StreamNodeNotify(lbl_804D4B58, 1);
+            }
+        } else if (lbl_804D4B58 != NULL) {
+            lbl_804D4B64 = 3;
+            DVDPrepareStreamAsync(lbl_804D4B58->file, 0, 0, (void*)StreamPrepared);
+        } else {
+            lbl_804D4B64 = 1;
+        }
+        lbl_804D4B7C = 0;
+        break;
+    case 4:
+        if (lbl_804D4B64 == 0) {
+            if (lbl_804D4B58 != NULL) {
+                lbl_804D4B64 = 3;
+                DVDPrepareStreamAsync(lbl_804D4B58->file, 0, 0, (void*)StreamStop);
+            }
+            lbl_804D4B7C = 0;
+        }
+        break;
+    case 2:
+        AISetStreamPlayState(0);
+        if (lbl_804D4B64 == 1) {
+            lbl_804D4B64 = 2;
+        }
+        StreamNotify(4);
+        break;
+    }
+}
+
+// Sets the play mode.
+extern "C" void fn_800F6F34(u32 mode) { lbl_804D4B68 = mode; }
+
+// Shuts the stream down (cancelling a playing stream first) and then calls `done`.
+extern "C" void fn_800F6F3C(void (*done)(void)) {
+    if (lbl_804D4B64 != 3) {
+        u32 state = lbl_804D4B64;
+        lbl_804D4B80 = done;
+        lbl_804D4B64 = 3;
+        if (state == 1) {
+            DVDCancelStreamAsync(&lbl_80457F10, (void*)MusicStreamShutdown);
+        } else {
+            StreamCloseAll();
+        }
+    }
+}
+
+// Removes an entry from the list (2: it is the current one).
+extern "C" int fn_800F6FFC(StreamNode* n) {
+    int level;
+
+    if (n == lbl_804D4B58) {
+        return 2;
+    }
+    level = OSDisableInterrupts();
+    DVDClose(n->file);
+    if (n == lbl_804D4B5C && n == lbl_804D4B60) {
+        lbl_804D4B5C = NULL;
+        lbl_804D4B60 = NULL;
+        OSRestoreInterrupts(level);
+        return 0;
+    }
+    if (n == lbl_804D4B5C) {
+        lbl_804D4B5C = n->next;
+        lbl_804D4B5C->prev = NULL;
+        if (lbl_804D4B68 == 1) {
+            lbl_804D4B60->next = lbl_804D4B5C;
+        }
+        OSRestoreInterrupts(level);
+        return 0;
+    }
+    if (n == lbl_804D4B60) {
+        lbl_804D4B60 = n->prev;
+        lbl_804D4B60->next = NULL;
+        if (lbl_804D4B68 == 1) {
+            lbl_804D4B60->next = lbl_804D4B5C;
+        }
+        OSRestoreInterrupts(level);
+        return 0;
+    }
+    n->prev->next = n->next;
+    n->next->prev = n->prev;
+    OSRestoreInterrupts(level);
+    return 0;
+}
+
+// Opens `path` into entry `n` and appends it to the list (1: the file does not open).
+extern "C" int fn_800F7130(const char* path, StreamNode* n, u32 events, void (*callback)(u32)) {
+    u32 start = 0;
+    int level;
+
+    if (!DVDOpen(path, n->file)) {
+        return 1;
+    }
+    level = OSDisableInterrupts();
+    n->path = path;
+    n->events = events;
+    n->callback = callback;
+    if (lbl_804D4B5C == NULL) {
+        lbl_804D4B5C = n;
+        lbl_804D4B60 = n;
+        n->prev = NULL;
+        n->next = NULL;
+        if (lbl_804D4B64 == 1) {
+            start = 1;
+        }
+    } else {
+        lbl_804D4B60->next = n;
+        n->prev = lbl_804D4B60;
+        lbl_804D4B60 = n;
+        n->next = NULL;
+    }
+    if (lbl_804D4B58 == NULL) {
+        lbl_804D4B58 = n;
+    }
+    OSRestoreInterrupts(level);
+    StreamNodeNotify(n, 8);
+    if (start) {
+        lbl_804D4B64 = 3;
+        DVDPrepareStreamAsync(lbl_804D4B58->file, 0, 0, (void*)StreamPrepared);
+    }
+    return 0;
+}
+
+// Stops the stream system and waits until the shutdown has finished.
+extern "C" void fn_800F724C(void) {
+    AISetStreamVolLeft(0);
+    AISetStreamVolRight(0);
+    AIRegisterStreamCallback(NULL);
+    AIResetStreamSampleCount();
+    AISetStreamPlayState(0);
+    lbl_804D4B78 = 1;
+    if (lbl_804D4B64 != 3) {
+        u32 state = lbl_804D4B64;
+        lbl_804D4B64 = 3;
+        lbl_804D4B80 = NULL;
+        if (state == 1) {
+            DVDCancelStreamAsync(&lbl_80457F10, (void*)MusicStreamShutdown);
+        } else {
+            StreamCloseAll();
+        }
+    }
+    lbl_804D4B64 = 0;
+    while (lbl_804D4B78 != 0) {
+    }
+}
+
+// Initialises the stream player.
+extern "C" void fn_800F7350(void) {
+    lbl_804D4B64 = 0;
+    lbl_804D4B68 = 0;
+    lbl_804D4B6C = 0;
+    lbl_804D4B70 = 48000;
+    lbl_804D4B74 = 0xFF;
+    lbl_804D4B58 = NULL;
+    lbl_804D4B5C = NULL;
+    lbl_804D4B60 = NULL;
+    lbl_804D4B75 = 0xFF;
+    AISetStreamVolLeft(0);
+    AISetStreamVolRight(0);
+    AIRegisterStreamCallback(StreamSetTrigger);
+    AIResetStreamSampleCount();
+    AISetStreamPlayState(0);
+}
+
+// Stream finished: notify (bit 2) and clear the state.
+void StreamFinished(void) {
+    StreamNotify(2);
+    lbl_804D4B64 = 0;
+}
+
+// Closes every stream entry and resets the list.
+void MusicStreamShutdown(void) {
+    StreamCloseAll();
 }
 
 void StreamSetTrigger(int offset) {

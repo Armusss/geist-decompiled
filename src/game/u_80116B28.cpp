@@ -333,7 +333,7 @@ extern "C" void fn_800CE96C(void);
 extern "C" void fn_800CF064(void);
 extern "C" void fn_800B5004(void* dst, void* src);
 extern "C" void fn_80090634(int a, int b, int c, int d);
-extern "C" int fn_801BD694(void* owner);
+int OwnerIsFollowing(void* owner);
 
 // Payload of message 0xC14: {pad, arg, arg, hash}.
 struct U80116B28MsgC14 {
@@ -751,7 +751,7 @@ extern "C" int fn_801174B0(U80116B28Owner* owner, U80116B28Type* type)
     }
 
     fn_80090634(owner->field_D4, 0, 0, 0);
-    if (fn_801BD694(owner) != 0) {
+    if (OwnerIsFollowing(owner) != 0) {
         fn_801BE9FC(owner);
         fn_801BEABC(0x165E8B4A, owner->field_C4->field_1C, owner);
     } else {

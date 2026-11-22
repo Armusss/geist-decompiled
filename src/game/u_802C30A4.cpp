@@ -12,6 +12,12 @@ typedef short s16;
 
 #define NULL 0
 
+// From a shared header: names of the ghost actions (the table itself is unused here). It opens this
+// file's string pool at 0x8034BE98; "\n" (0x8034BEE0) and "Blur Hit" follow.
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
 struct Boss;
 
 class BossBuf : public Buffer {
@@ -143,7 +149,6 @@ void* memset(void* p, int c, u32 n);
 extern const char* lbl_803C4E74[];
 extern "C" double __fabs(double);
 extern "C" float sqrtf(float);
-extern char lbl_8034BEE0[];
 int BossSetupHit(BossMsg* m);
 void BossPartInit(Boss* b);
 void BossHitFeedback(BossMsg* m);
@@ -419,7 +424,7 @@ int BossMsgHandler(int msg, BossMsg* m) {
             if (msg == 0x41E) {
                 if ((int)m->arg1 == -0x527A8906) {
                     String a(lbl_803C4E74[m->boss->state->type * 6]);
-                    String bs(lbl_8034BEE0);
+                    String bs("\n");
                     String c;
                     fn_800225C8(&c, &a, &bs);
                     fn_8028C188((int*)m + 3, 0, 0);
@@ -448,7 +453,7 @@ int BossMsgHandler(int msg, BossMsg* m) {
             }
         } else if (msg == 0xC14) {
             if (m->dmg == 0x7BDA2B92) {
-                fn_8007EF48(-1, 0, lbl_8034BEE0 + 2, 0, 0, 0, 0, 0, 0, 0);
+                fn_8007EF48(-1, 0, "Blur Hit", 0, 0, 0, 0, 0, 0, 0);
                 return 1;
             }
             return 0;

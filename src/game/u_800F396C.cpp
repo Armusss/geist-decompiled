@@ -1,6 +1,6 @@
-// u_800F396C.cpp: weather / sky effect controller (0x800F396C-0x800F73C8).
+// u_800F396C.cpp: weather / sky effect controller (0x800F396C-0x800F6CFC; the stream player after it is u_800F73C8).
 // Keeps the current weather type per zone slot (clear, cloud, rain, ...), ramps the effect
-// parameters, and drives the ambient stream volume.  Names are descriptive guesses; unmatched
+// parameters.  Names are descriptive guesses; unmatched
 // against retail so far.  Only the small helpers are drafted; the large update and draw
 // functions (fn_800F39E0, fn_800F4ACC, fn_800F4F0C, fn_800F6264, fn_800F68AC, ...) are not.
 
@@ -15,8 +15,6 @@ void fn_8009425C(void);
 void fn_800F9468(int on);
 float fn_80017084(float x);
 float fn_800A1394(float x);
-void AISetStreamVolLeft(u8 v);
-void AISetStreamVolRight(u8 v);
 }
 extern int AssetFind(u32 a, u32 b);
 
@@ -58,15 +56,6 @@ extern int sWeatherInit;        // 0x804D4B4C
 extern char sWeatherInitDone;    // 0x804D4B50
 extern int sWeatherEnabled;     // 0x804D2C74
 
-extern int sStreamState;        // 0x804D4B64
-extern int sStreamUnk68;        // 0x804D4B68
-extern int sStreamUnk6C;        // 0x804D4B6C
-extern int sStreamRate;         // 0x804D4B70
-extern u8 sStreamVolL;          // 0x804D4B74
-extern u8 sStreamVolR;          // 0x804D4B75
-extern int sStreamUnk58;        // 0x804D4B58
-extern int sStreamUnk5C;        // 0x804D4B5C
-extern int sStreamUnk60;        // 0x804D4B60
 
 // 0x800F396C: switch to the clear-sky fade.
 void WeatherSetClear(int a, int b) {
@@ -245,20 +234,3 @@ void WeatherReset(void) {
     sWeatherCur = 0;
     sWeatherBase = 100.0f;
 }
-
-// 0x800F6CFC: set the stream volumes (kept as fn_800F6CFC in symbols.txt: called by u_800DFE3C).
-void StreamSetVolumes(u8 left, int right) {
-    sStreamVolR = (u8)right;
-    sStreamVolL = left;
-    if (sStreamState == 1) {
-        AISetStreamVolLeft(left);
-        AISetStreamVolRight((u8)right);
-    }
-}
-
-// kept as fn_800F6D44 in symbols.txt
-int StreamGetUnk58(void) { return sStreamUnk58; }
-// kept as fn_800F6D4C in symbols.txt
-int StreamGetState(void) { return sStreamState; }
-// kept as fn_800F6F34 in symbols.txt
-void StreamSetUnk68(int v) { sStreamUnk68 = v; }

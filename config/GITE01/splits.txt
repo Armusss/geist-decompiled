@@ -364,10 +364,10 @@ game/Image.cpp:
 	.sdata2     start:0x804D7348 end:0x804D7390
 
 game/u_800F396C.cpp:
-	.text       start:0x800F396C end:0x800F73C8
+	.text       start:0x800F396C end:0x800F6CFC
 
 game/u_800F73C8.cpp:
-	.text       start:0x800F73C8 end:0x800F77F8
+	.text       start:0x800F6CFC end:0x800F77F8
 
 game/u_800F77F8.cpp:
 	.text       start:0x800F77F8 end:0x800F9458

@@ -809,29 +809,31 @@ void PossessionEffectWhiteOut(Actor* actor, u32 id) {
     self->flags |= 0x80000000;
 }
 
-extern u32 lbl_804D5558;
-extern u32 lbl_804D555C;
-extern u32 lbl_804D5560;
-extern u32 lbl_804D5564;
-extern u32 lbl_804D5568;
-extern u32 lbl_804D556C;
-extern u32 lbl_804D5570;
-extern u32 lbl_804D5580;
-extern u32 lbl_804D5584;
-extern u32 lbl_804D5588;
-extern u32 lbl_804D558C;
-extern u32 lbl_804D5590;
-extern u32 lbl_804D55D0;
-extern u32 lbl_804D55D4;
-extern u32 lbl_804D55D8;
-extern u32 lbl_804D55E4;
-extern u32 lbl_804D55E8;
-extern u32 lbl_804D55A0;
-extern u32 lbl_804D55A4;
-extern u32 lbl_804D55A8;
-extern u32 lbl_804D55B8;
-extern u32 lbl_804D55BC;
-extern u32 lbl_804D55C0;
+// The nine white-out mask layers (save header slots 1..9): bit buffer, its size in bits, and for some
+// layers an auxiliary word.
+extern u32 gWhiteOutMask1;
+extern u32 gWhiteOutMask1Bits;
+extern u32 gWhiteOutMask1Aux;
+extern u32 gWhiteOutMask2;
+extern u32 gWhiteOutMask2Bits;
+extern u32 gWhiteOutMask3;
+extern u32 gWhiteOutMask3Bits;
+extern u32 gWhiteOutMask4;
+extern u32 gWhiteOutMask4Bits;
+extern u32 gWhiteOutMask4Aux;
+extern u32 gWhiteOutMask5;
+extern u32 gWhiteOutMask5Bits;
+extern u32 gWhiteOutMask6;
+extern u32 gWhiteOutMask6Bits;
+extern u32 gWhiteOutMask6Aux;
+extern u32 gWhiteOutMask7;
+extern u32 gWhiteOutMask7Bits;
+extern u32 gWhiteOutMask8;
+extern u32 gWhiteOutMask8Bits;
+extern u32 gWhiteOutMask8Aux;
+extern u32 gWhiteOutMask9;
+extern u32 gWhiteOutMask9Bits;
+extern u32 gWhiteOutMask9Aux;
 extern u32 lbl_804D5550;
 extern u32 lbl_804D5554;
 extern u32 lbl_804D5574;
@@ -853,55 +855,55 @@ void AnimUnref(int id);
 // Releases the white-out effect assets created by this unit. Called by other
 // units under its placeholder name, so it keeps C linkage.
 extern "C" void fn_8027E76C(void) {
-    if (lbl_804D5558 != 0) {
-        VFree((void*)lbl_804D5558);
-        lbl_804D5558 = 0;
-        lbl_804D555C = 0;
-        lbl_804D5560 = 0;
+    if (gWhiteOutMask1 != 0) {
+        VFree((void*)gWhiteOutMask1);
+        gWhiteOutMask1 = 0;
+        gWhiteOutMask1Bits = 0;
+        gWhiteOutMask1Aux = 0;
     }
-    if (lbl_804D5564 != 0) {
-        VFree((void*)lbl_804D5564);
-        lbl_804D5564 = 0;
-        lbl_804D5568 = 0;
+    if (gWhiteOutMask2 != 0) {
+        VFree((void*)gWhiteOutMask2);
+        gWhiteOutMask2 = 0;
+        gWhiteOutMask2Bits = 0;
     }
-    if (lbl_804D556C != 0) {
-        VFree((void*)lbl_804D556C);
-        lbl_804D556C = 0;
-        lbl_804D5570 = 0;
+    if (gWhiteOutMask3 != 0) {
+        VFree((void*)gWhiteOutMask3);
+        gWhiteOutMask3 = 0;
+        gWhiteOutMask3Bits = 0;
     }
-    if (lbl_804D5580 != 0) {
-        VFree((void*)lbl_804D5580);
-        lbl_804D5580 = 0;
-        lbl_804D5584 = 0;
-        lbl_804D5588 = 0;
+    if (gWhiteOutMask4 != 0) {
+        VFree((void*)gWhiteOutMask4);
+        gWhiteOutMask4 = 0;
+        gWhiteOutMask4Bits = 0;
+        gWhiteOutMask4Aux = 0;
     }
-    if (lbl_804D558C != 0) {
-        VFree((void*)lbl_804D558C);
-        lbl_804D558C = 0;
-        lbl_804D5590 = 0;
+    if (gWhiteOutMask5 != 0) {
+        VFree((void*)gWhiteOutMask5);
+        gWhiteOutMask5 = 0;
+        gWhiteOutMask5Bits = 0;
     }
-    if (lbl_804D55D0 != 0) {
-        VFree((void*)lbl_804D55D0);
-        lbl_804D55D0 = 0;
-        lbl_804D55D4 = 0;
-        lbl_804D55D8 = 0;
+    if (gWhiteOutMask6 != 0) {
+        VFree((void*)gWhiteOutMask6);
+        gWhiteOutMask6 = 0;
+        gWhiteOutMask6Bits = 0;
+        gWhiteOutMask6Aux = 0;
     }
-    if (lbl_804D55E4 != 0) {
-        VFree((void*)lbl_804D55E4);
-        lbl_804D55E4 = 0;
-        lbl_804D55E8 = 0;
+    if (gWhiteOutMask7 != 0) {
+        VFree((void*)gWhiteOutMask7);
+        gWhiteOutMask7 = 0;
+        gWhiteOutMask7Bits = 0;
     }
-    if (lbl_804D55A0 != 0) {
-        VFree((void*)lbl_804D55A0);
-        lbl_804D55A0 = 0;
-        lbl_804D55A4 = 0;
-        lbl_804D55A8 = 0;
+    if (gWhiteOutMask8 != 0) {
+        VFree((void*)gWhiteOutMask8);
+        gWhiteOutMask8 = 0;
+        gWhiteOutMask8Bits = 0;
+        gWhiteOutMask8Aux = 0;
     }
-    if (lbl_804D55B8 != 0) {
-        VFree((void*)lbl_804D55B8);
-        lbl_804D55B8 = 0;
-        lbl_804D55BC = 0;
-        lbl_804D55C0 = 0;
+    if (gWhiteOutMask9 != 0) {
+        VFree((void*)gWhiteOutMask9);
+        gWhiteOutMask9 = 0;
+        gWhiteOutMask9Bits = 0;
+        gWhiteOutMask9Aux = 0;
     }
     fn_8000F60C((void*)AssetFind(0xf2e2beb8, 0x3fd6348d));
     fn_8000F60C((void*)AssetFind(0xf2e2beb8, 0x1651d499));
@@ -913,27 +915,27 @@ extern "C" void fn_8027E76C(void) {
 // screen effect (the layer buffers and the cached region sizes). Called from
 // another unit under its placeholder name, so it keeps C linkage.
 extern "C" void fn_8027E8F8(void) {
-    lbl_804D5558 = 0;
-    lbl_804D555C = 0;
-    lbl_804D5560 = 0;
-    lbl_804D5564 = 0;
-    lbl_804D5568 = 0;
-    lbl_804D556C = 0;
-    lbl_804D5570 = 0;
-    lbl_804D5580 = 0;
-    lbl_804D5584 = 0;
-    lbl_804D5588 = 0;
-    lbl_804D55A0 = 0;
-    lbl_804D55A4 = 0;
-    lbl_804D55A8 = 0;
-    lbl_804D55B8 = 0;
-    lbl_804D55BC = 0;
-    lbl_804D55C0 = 0;
-    lbl_804D55D0 = 0;
-    lbl_804D55D4 = 0;
-    lbl_804D55D8 = 0;
-    lbl_804D55E4 = 0;
-    lbl_804D55E8 = 0;
+    gWhiteOutMask1 = 0;
+    gWhiteOutMask1Bits = 0;
+    gWhiteOutMask1Aux = 0;
+    gWhiteOutMask2 = 0;
+    gWhiteOutMask2Bits = 0;
+    gWhiteOutMask3 = 0;
+    gWhiteOutMask3Bits = 0;
+    gWhiteOutMask4 = 0;
+    gWhiteOutMask4Bits = 0;
+    gWhiteOutMask4Aux = 0;
+    gWhiteOutMask8 = 0;
+    gWhiteOutMask8Bits = 0;
+    gWhiteOutMask8Aux = 0;
+    gWhiteOutMask9 = 0;
+    gWhiteOutMask9Bits = 0;
+    gWhiteOutMask9Aux = 0;
+    gWhiteOutMask6 = 0;
+    gWhiteOutMask6Bits = 0;
+    gWhiteOutMask6Aux = 0;
+    gWhiteOutMask7 = 0;
+    gWhiteOutMask7Bits = 0;
 }
 
 // Message payload for the mask-compositing opcode (0x7104): a destination
@@ -959,7 +961,7 @@ u32 WhiteOutMaskMsg(u32 self, int msg, void* data) {
         return WhiteOutMaskLoad(data);
     case 0x7104: {
         MaskCompositeMsg* m = (MaskCompositeMsg*)data;
-        int count = (s32)(lbl_804D55BC + 0x1f) / 32;
+        int count = (s32)(gWhiteOutMask9Bits + 0x1f) / 32;
         int idx;
         short s0;
         short s1;
@@ -967,12 +969,12 @@ u32 WhiteOutMaskMsg(u32 self, int msg, void* data) {
         short s3;
         short s4;
 
-        if (lbl_804D55B8 == 0) {
+        if (gWhiteOutMask9 == 0) {
             return 1;
         }
         if (count > 0) {
             u32* dst = (u32*)(m->base + 0x1c);
-            u32* src = (u32*)lbl_804D55B8;
+            u32* src = (u32*)gWhiteOutMask9;
             int i;
             for (i = 0; i < count; i++) {
                 dst[i] |= src[i];
@@ -980,13 +982,13 @@ u32 WhiteOutMaskMsg(u32 self, int msg, void* data) {
         }
         idx = fn_800DE2F8(5, 0);
         *(short*)(m->base + idx * 2 + 0x24) =
-            (short)lbl_804D5560 + (short)lbl_804D5588 + (short)lbl_804D55A8 +
-            (short)lbl_804D55C0 + (short)lbl_804D55D8;
-        s0 = fn_800259C8(lbl_804D5580, lbl_804D5584, 1);
-        s1 = fn_800259C8(lbl_804D5558, lbl_804D555C, 1);
-        s2 = fn_800259C8(lbl_804D55A0, lbl_804D55A4, 1);
-        s3 = fn_800259C8(lbl_804D55B8, lbl_804D55BC, 1);
-        s4 = fn_800259C8(lbl_804D55D0, lbl_804D55D4, 1);
+            (short)gWhiteOutMask1Aux + (short)gWhiteOutMask4Aux + (short)gWhiteOutMask8Aux +
+            (short)gWhiteOutMask9Aux + (short)gWhiteOutMask6Aux;
+        s0 = fn_800259C8(gWhiteOutMask4, gWhiteOutMask4Bits, 1);
+        s1 = fn_800259C8(gWhiteOutMask1, gWhiteOutMask1Bits, 1);
+        s2 = fn_800259C8(gWhiteOutMask8, gWhiteOutMask8Bits, 1);
+        s3 = fn_800259C8(gWhiteOutMask9, gWhiteOutMask9Bits, 1);
+        s4 = fn_800259C8(gWhiteOutMask6, gWhiteOutMask6Bits, 1);
         *(short*)(m->base + idx * 2 + 0x2a) = s1 + s0 + s2 + s3 + s4;
         return 1;
     }
@@ -1064,48 +1066,48 @@ u32 WhiteOutMaskLoad(void* data) {
         return 1;
     }
     s0 = hdr[1];
-    if (s0 >> 2 == (u32)((s32)(lbl_804D555C + 0x1f) / 32) &&
-        hdr[2] >> 2 == (u32)((s32)(lbl_804D5568 + 0x1f) / 32) &&
-        hdr[3] >> 2 == (u32)((s32)(lbl_804D5570 + 0x1f) / 32) &&
-        hdr[4] >> 2 == (u32)((s32)(lbl_804D5584 + 0x1f) / 32) &&
-        hdr[5] >> 2 == (u32)((s32)(lbl_804D5590 + 0x1f) / 32) &&
-        hdr[6] >> 2 == (u32)((s32)(lbl_804D55D4 + 0x1f) / 32) &&
-        hdr[7] >> 2 == (u32)((s32)(lbl_804D55E8 + 0x1f) / 32) &&
-        hdr[8] >> 2 == (u32)((s32)(lbl_804D55A4 + 0x1f) / 32) &&
-        hdr[9] >> 2 == (u32)((s32)(lbl_804D55BC + 0x1f) / 32)) {
-        memcpy((void*)lbl_804D5558, s->cur, s0);
+    if (s0 >> 2 == (u32)((s32)(gWhiteOutMask1Bits + 0x1f) / 32) &&
+        hdr[2] >> 2 == (u32)((s32)(gWhiteOutMask2Bits + 0x1f) / 32) &&
+        hdr[3] >> 2 == (u32)((s32)(gWhiteOutMask3Bits + 0x1f) / 32) &&
+        hdr[4] >> 2 == (u32)((s32)(gWhiteOutMask4Bits + 0x1f) / 32) &&
+        hdr[5] >> 2 == (u32)((s32)(gWhiteOutMask5Bits + 0x1f) / 32) &&
+        hdr[6] >> 2 == (u32)((s32)(gWhiteOutMask6Bits + 0x1f) / 32) &&
+        hdr[7] >> 2 == (u32)((s32)(gWhiteOutMask7Bits + 0x1f) / 32) &&
+        hdr[8] >> 2 == (u32)((s32)(gWhiteOutMask8Bits + 0x1f) / 32) &&
+        hdr[9] >> 2 == (u32)((s32)(gWhiteOutMask9Bits + 0x1f) / 32)) {
+        memcpy((void*)gWhiteOutMask1, s->cur, s0);
         s->pos -= s0;
         s->cur += s0;
         n = hdr[2];
-        memcpy((void*)lbl_804D5564, s->cur, n);
+        memcpy((void*)gWhiteOutMask2, s->cur, n);
         s->pos -= n;
         s->cur += n;
         n = hdr[3];
-        memcpy((void*)lbl_804D556C, s->cur, n);
+        memcpy((void*)gWhiteOutMask3, s->cur, n);
         s->pos -= n;
         s->cur += n;
         n = hdr[4];
-        memcpy((void*)lbl_804D5580, s->cur, n);
+        memcpy((void*)gWhiteOutMask4, s->cur, n);
         s->pos -= n;
         s->cur += n;
         n = hdr[5];
-        memcpy((void*)lbl_804D558C, s->cur, n);
+        memcpy((void*)gWhiteOutMask5, s->cur, n);
         s->pos -= n;
         s->cur += n;
         n = hdr[6];
-        memcpy((void*)lbl_804D55D0, s->cur, n);
+        memcpy((void*)gWhiteOutMask6, s->cur, n);
         s->pos -= n;
         s->cur += n;
         n = hdr[7];
-        memcpy((void*)lbl_804D55E4, s->cur, n);
+        memcpy((void*)gWhiteOutMask7, s->cur, n);
         s->pos -= n;
         s->cur += n;
         n = hdr[8];
-        memcpy((void*)lbl_804D55A0, s->cur, n);
+        memcpy((void*)gWhiteOutMask8, s->cur, n);
         s->pos -= n;
         s->cur += n;
         n = hdr[9];
-        memcpy((void*)lbl_804D55B8, s->cur, n);
+        memcpy((void*)gWhiteOutMask9, s->cur, n);
         s->pos -= n;
         s->cur += n;
     }
@@ -1122,15 +1124,15 @@ u32 WhiteOutMaskSave(void* data) {
     u32 n;
 
     if (s->remaining <
-        ((s32)(lbl_804D555C + 0x1f) / 32) * 4 + 0x2c +
-        ((s32)(lbl_804D5568 + 0x1f) / 32) * 4 +
-        ((s32)(lbl_804D5570 + 0x1f) / 32) * 4 +
-        ((s32)(lbl_804D5584 + 0x1f) / 32) * 4 +
-        ((s32)(lbl_804D5590 + 0x1f) / 32) * 4 +
-        ((s32)(lbl_804D55D4 + 0x1f) / 32) * 4 +
-        ((s32)(lbl_804D55E8 + 0x1f) / 32) * 4 +
-        ((s32)(lbl_804D55A4 + 0x1f) / 32) * 4 +
-        ((s32)(lbl_804D55BC + 0x1f) / 32) * 4) {
+        ((s32)(gWhiteOutMask1Bits + 0x1f) / 32) * 4 + 0x2c +
+        ((s32)(gWhiteOutMask2Bits + 0x1f) / 32) * 4 +
+        ((s32)(gWhiteOutMask3Bits + 0x1f) / 32) * 4 +
+        ((s32)(gWhiteOutMask4Bits + 0x1f) / 32) * 4 +
+        ((s32)(gWhiteOutMask5Bits + 0x1f) / 32) * 4 +
+        ((s32)(gWhiteOutMask6Bits + 0x1f) / 32) * 4 +
+        ((s32)(gWhiteOutMask7Bits + 0x1f) / 32) * 4 +
+        ((s32)(gWhiteOutMask8Bits + 0x1f) / 32) * 4 +
+        ((s32)(gWhiteOutMask9Bits + 0x1f) / 32) * 4) {
         s->status = 0;
         return 0;
     }
@@ -1144,57 +1146,57 @@ u32 WhiteOutMaskSave(void* data) {
     s->remaining -= 0x28;
     s->cur += 0x28;
     hdr[0] = 0x103;
-    hdr[1] = ((s32)(lbl_804D555C + 0x1f) / 32) * 4;
-    hdr[2] = ((s32)(lbl_804D5568 + 0x1f) / 32) * 4;
-    hdr[3] = ((s32)(lbl_804D5570 + 0x1f) / 32) * 4;
-    hdr[4] = ((s32)(lbl_804D5584 + 0x1f) / 32) * 4;
-    hdr[5] = ((s32)(lbl_804D5590 + 0x1f) / 32) * 4;
-    hdr[6] = ((s32)(lbl_804D55D4 + 0x1f) / 32) * 4;
-    hdr[7] = ((s32)(lbl_804D55E8 + 0x1f) / 32) * 4;
-    hdr[8] = ((s32)(lbl_804D55A4 + 0x1f) / 32) * 4;
-    hdr[9] = ((s32)(lbl_804D55BC + 0x1f) / 32) * 4;
+    hdr[1] = ((s32)(gWhiteOutMask1Bits + 0x1f) / 32) * 4;
+    hdr[2] = ((s32)(gWhiteOutMask2Bits + 0x1f) / 32) * 4;
+    hdr[3] = ((s32)(gWhiteOutMask3Bits + 0x1f) / 32) * 4;
+    hdr[4] = ((s32)(gWhiteOutMask4Bits + 0x1f) / 32) * 4;
+    hdr[5] = ((s32)(gWhiteOutMask5Bits + 0x1f) / 32) * 4;
+    hdr[6] = ((s32)(gWhiteOutMask6Bits + 0x1f) / 32) * 4;
+    hdr[7] = ((s32)(gWhiteOutMask7Bits + 0x1f) / 32) * 4;
+    hdr[8] = ((s32)(gWhiteOutMask8Bits + 0x1f) / 32) * 4;
+    hdr[9] = ((s32)(gWhiteOutMask9Bits + 0x1f) / 32) * 4;
     n = hdr[1];
-    memcpy(s->cur, (void*)lbl_804D5558, n);
+    memcpy(s->cur, (void*)gWhiteOutMask1, n);
     s->pos += n;
     s->remaining -= n;
     s->cur += n;
     n = hdr[2];
-    memcpy(s->cur, (void*)lbl_804D5564, n);
+    memcpy(s->cur, (void*)gWhiteOutMask2, n);
     s->pos += n;
     s->remaining -= n;
     s->cur += n;
     n = hdr[3];
-    memcpy(s->cur, (void*)lbl_804D556C, n);
+    memcpy(s->cur, (void*)gWhiteOutMask3, n);
     s->pos += n;
     s->remaining -= n;
     s->cur += n;
     n = hdr[4];
-    memcpy(s->cur, (void*)lbl_804D5580, n);
+    memcpy(s->cur, (void*)gWhiteOutMask4, n);
     s->pos += n;
     s->remaining -= n;
     s->cur += n;
     n = hdr[5];
-    memcpy(s->cur, (void*)lbl_804D558C, n);
+    memcpy(s->cur, (void*)gWhiteOutMask5, n);
     s->pos += n;
     s->remaining -= n;
     s->cur += n;
     n = hdr[6];
-    memcpy(s->cur, (void*)lbl_804D55D0, n);
+    memcpy(s->cur, (void*)gWhiteOutMask6, n);
     s->pos += n;
     s->remaining -= n;
     s->cur += n;
     n = hdr[7];
-    memcpy(s->cur, (void*)lbl_804D55E4, n);
+    memcpy(s->cur, (void*)gWhiteOutMask7, n);
     s->pos += n;
     s->remaining -= n;
     s->cur += n;
     n = hdr[8];
-    memcpy(s->cur, (void*)lbl_804D55A0, n);
+    memcpy(s->cur, (void*)gWhiteOutMask8, n);
     s->pos += n;
     s->remaining -= n;
     s->cur += n;
     n = hdr[9];
-    memcpy(s->cur, (void*)lbl_804D55B8, n);
+    memcpy(s->cur, (void*)gWhiteOutMask9, n);
     s->pos += n;
     s->remaining -= n;
     s->cur += n;
@@ -1220,8 +1222,8 @@ void WhiteOutShutdown(void) {
     fn_8000F60C((void*)lbl_804A3278[3]);
     lbl_804D5550 = 0;
 
-    if (lbl_804D5558 != 0) {
-        for (i = 0; i < (s32)lbl_804D555C; i++) {
+    if (gWhiteOutMask1 != 0) {
+        for (i = 0; i < (s32)gWhiteOutMask1Bits; i++) {
             fn_8000F60C((void*)Fn800DF3B8(0x5e130113, i, 0x27873a));
         }
         obj = lbl_804D557C;
@@ -1234,8 +1236,8 @@ void WhiteOutShutdown(void) {
         lbl_804D557C = 0;
     }
 
-    if (lbl_804D5580 != 0) {
-        for (i = 0; i < (s32)lbl_804D5584; i++) {
+    if (gWhiteOutMask4 != 0) {
+        for (i = 0; i < (s32)gWhiteOutMask4Bits; i++) {
             fn_8000F60C((void*)Fn800DF3B8(0x80edd05c, i, 0x27873a));
         }
         obj = lbl_804D559C;
@@ -1247,8 +1249,8 @@ void WhiteOutShutdown(void) {
         lbl_804D559C = 0;
     }
 
-    if (lbl_804D55A0 != 0) {
-        for (i = 0; i < (s32)lbl_804D55A4; i++) {
+    if (gWhiteOutMask8 != 0) {
+        for (i = 0; i < (s32)gWhiteOutMask8Bits; i++) {
             fn_8000F60C((void*)Fn800DF3B8(0x258124ce, i, 0x27873a));
         }
         obj = lbl_804D55B4;
@@ -1260,8 +1262,8 @@ void WhiteOutShutdown(void) {
         lbl_804D55B4 = 0;
     }
 
-    if (lbl_804D55B8 != 0) {
-        for (i = 0; i < (s32)lbl_804D55BC; i++) {
+    if (gWhiteOutMask9 != 0) {
+        for (i = 0; i < (s32)gWhiteOutMask9Bits; i++) {
             fn_8000F60C((void*)Fn800DF3B8(0xd8e68ab7, i, 0x27873a));
         }
         obj = lbl_804D55CC;
@@ -1375,52 +1377,52 @@ void WhiteOutInit(void) {
     fn_8000F7E4(lbl_804A3278[2], 1);
     fn_8000F7E4(lbl_804A3278[3], 1);
 
-    if (lbl_804D5558 != 0) {
-        for (i = 0; i < (s32)lbl_804D555C; i++) {
+    if (gWhiteOutMask1 != 0) {
+        for (i = 0; i < (s32)gWhiteOutMask1Bits; i++) {
             fn_8000F874(Fn800DF3B8(0x5e130113, i, 0x27873a));
         }
-        level = WhiteOutLayerScan((u32*)lbl_804D5558, (s32)lbl_804D555C,
+        level = WhiteOutLayerScan((u32*)gWhiteOutMask1, (s32)gWhiteOutMask1Bits,
                                   0x5e130113, 0x198917dc);
         if ((s32)lbl_804D55F8 < level) {
             lbl_804D55F8 = level;
         }
     }
 
-    if (lbl_804D5580 != 0) {
-        for (i = 0; i < (s32)lbl_804D5584; i++) {
+    if (gWhiteOutMask4 != 0) {
+        for (i = 0; i < (s32)gWhiteOutMask4Bits; i++) {
             fn_8000F874(Fn800DF3B8(0x80edd05c, i, 0x27873a));
         }
-        level = WhiteOutLayerScan((u32*)lbl_804D5580, (s32)lbl_804D5584,
+        level = WhiteOutLayerScan((u32*)gWhiteOutMask4, (s32)gWhiteOutMask4Bits,
                                   0x80edd05c, 0x198917dc);
         if ((s32)lbl_804D55F8 < level) {
             lbl_804D55F8 = level;
         }
     }
 
-    if (lbl_804D55D0 != 0) {
-        level = WhiteOutLayerScan((u32*)lbl_804D55D0, (s32)lbl_804D55D4,
+    if (gWhiteOutMask6 != 0) {
+        level = WhiteOutLayerScan((u32*)gWhiteOutMask6, (s32)gWhiteOutMask6Bits,
                                   0x5eb7a22e, 0x273d2d);
         if ((s32)lbl_804D55F8 < level) {
             lbl_804D55F8 = level;
         }
     }
 
-    if (lbl_804D55A0 != 0) {
-        for (i = 0; i < (s32)lbl_804D55A4; i++) {
+    if (gWhiteOutMask8 != 0) {
+        for (i = 0; i < (s32)gWhiteOutMask8Bits; i++) {
             fn_8000F874(Fn800DF3B8(0x258124ce, i, 0x27873a));
         }
-        level = WhiteOutLayerScan((u32*)lbl_804D55A0, (s32)lbl_804D55A4,
+        level = WhiteOutLayerScan((u32*)gWhiteOutMask8, (s32)gWhiteOutMask8Bits,
                                   0x258124ce, 0x273d2d);
         if ((s32)lbl_804D55F8 < level) {
             lbl_804D55F8 = level;
         }
     }
 
-    if (lbl_804D55B8 != 0) {
-        for (i = 0; i < (s32)lbl_804D55BC; i++) {
+    if (gWhiteOutMask9 != 0) {
+        for (i = 0; i < (s32)gWhiteOutMask9Bits; i++) {
             fn_8000F874(Fn800DF3B8(0xd8e68ab7, i, 0x27873a));
         }
-        level = WhiteOutLayerScan((u32*)lbl_804D55B8, (s32)lbl_804D55BC,
+        level = WhiteOutLayerScan((u32*)gWhiteOutMask9, (s32)gWhiteOutMask9Bits,
                                   0xd8e68ab7, 0x273d2d);
         if ((s32)lbl_804D55F8 < level) {
             lbl_804D55F8 = level;
@@ -1433,23 +1435,23 @@ void WhiteOutInit(void) {
 
     lbl_804D55F0 = 0;
     lbl_804D55F4 = 0;
-    WhiteOutFindSlotObject(0x5e130113, 0x198917dc, (s32)lbl_804D5560,
+    WhiteOutFindSlotObject(0x5e130113, 0x198917dc, (s32)gWhiteOutMask1Aux,
                            &lbl_804D5574);
     lbl_804D5578 = 0;
     lbl_804D557C = 0;
-    WhiteOutFindSlotObject(0x80edd05c, 0x198917dc, (s32)lbl_804D5584,
+    WhiteOutFindSlotObject(0x80edd05c, 0x198917dc, (s32)gWhiteOutMask4Bits,
                            &lbl_804D5594);
     lbl_804D5598 = 0;
     lbl_804D559C = 0;
-    WhiteOutFindSlotObject(0x258124ce, 0x273d2d, (s32)lbl_804D55A4,
+    WhiteOutFindSlotObject(0x258124ce, 0x273d2d, (s32)gWhiteOutMask8Bits,
                            &lbl_804D55AC);
     lbl_804D55B0 = 0;
     lbl_804D55B4 = 0;
-    WhiteOutFindSlotObject(0xd8e68ab7, 0x273d2d, (s32)lbl_804D55BC,
+    WhiteOutFindSlotObject(0xd8e68ab7, 0x273d2d, (s32)gWhiteOutMask9Bits,
                            &lbl_804D55C4);
     lbl_804D55C8 = 0;
     lbl_804D55CC = 0;
-    WhiteOutFindSlotObject(0x5eb8a22e, 0x273d2d, (s32)lbl_804D55D4,
+    WhiteOutFindSlotObject(0x5eb8a22e, 0x273d2d, (s32)gWhiteOutMask6Bits,
                            &lbl_804D55DC);
     lbl_804D55E0 = 0;
 }

@@ -564,7 +564,7 @@ extern "C" int fn_8003C48C(const char* name, s32 blockBase, int count,
     }
 
     lbl_804D4324[index / 32] |= 1 << (index & 0x1F);
-    lbl_804D4328 = lbl_804D4328 + 1;
+    lbl_804D4328 += 1;
     LoadGroupReset(&lbl_8040DF00[index].groups[1]);
     lbl_804D4320 = 0;
     lbl_8040DF00[index].channel = (lbl_8040DF00[index].channel + 1) & 7;

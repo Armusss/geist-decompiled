@@ -99,13 +99,13 @@ int AmmoRefillMsg(Actor* actor, int msg, void* msgData, int param)
 }
 
 extern int lbl_804D5518;
-extern int lbl_804D551C;
+extern int gUserGeomClassCount;
 
 // Clears the two item statics owned by this unit.
 void AmmoRefillResetStatics(void)
 {
     lbl_804D5518 = 0;
-    lbl_804D551C = 0;
+    gUserGeomClassCount = 0;
 }
 
 class UserGeom;

@@ -304,7 +304,7 @@ extern "C" void fn_800C5E00(int view)
 // 0x800C5E5C: counts one more view
 extern "C" void fn_800C5E5C()
 {
-    lbl_804D48C8 = lbl_804D48C8 + 1;
+    lbl_804D48C8 += 1;
 }
 
 // 0x800C5E6C: the current view number

@@ -7,6 +7,12 @@ typedef unsigned char u8;
 typedef unsigned int u32;
 typedef int s32;
 
+// From a shared header: names of the ghost actions (the table itself is unused here). It opens this
+// file's string pool at 0x8034A0D8; the pool's own "\n" follows at +0x48.
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
 struct Vector3f {
     float x;  // 0x00
     float y;  // 0x04
@@ -1220,7 +1226,6 @@ struct FollowStateRecord {
     const char* name;       // 0x0C
 };
 extern FollowStateRecord lbl_803BE260[];
-extern char lbl_8034A0D8[];  // string pool
 struct Actor;
 Actor* GetPlayer();
 int PlayerInHost(Actor* actor);
@@ -1243,7 +1248,7 @@ int ExtraMsgStateChange(void* p, ExtraMsg* msg) {
     case 0xAD8576FA: {
         const char* stateName = lbl_803BE260[state->stateKind].name;
         String base(stateName);
-        String suffix(lbl_8034A0D8 + 0x48);
+        String suffix("\n");
         String full = fn_800225C8(&base, &suffix);
         fn_8028C188((char*)msg + 0x0C, full.mHash, full.mUnk08);
         return 0;

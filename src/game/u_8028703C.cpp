@@ -198,7 +198,7 @@ void AramInit(u32 size, u32 pageCount, u32 pageState)
 void AramInitPageTable(void)
 {
     lbl_804D5698 = (u32*)OSGetArenaLo();
-    OSSetArenaLo((u32)lbl_804D5698 + 0x4000);
+    OSSetArenaLo((u32)&lbl_804D5698[0x1000]);
     for (u32 i = 0; i < 0x200; i++) {
         lbl_804D5698[i * 8 + 0] = 0;
         lbl_804D5698[i * 8 + 1] = 0;
