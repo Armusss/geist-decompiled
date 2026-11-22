@@ -730,7 +730,7 @@ config.libs = [
             Object(NonMatching, "game/u_801D8134.cpp"),  # app-system hooks, sbss 0x804D51D0 block
             Object(Matching, "game/u_801D8768.cpp"),  # LCCopy, sbss 0x804D51E0 block
             Object(Matching, "game/u_801D8994.cpp"),  # Gfx state, sbss 0x804D51F0 block
-            Object(NonMatching, "game/u_801D8FD4.cpp"),  # msg 0x74xx helpers, own consts 0x804D8C80..
+            Object(Matching, "game/u_801D8FD4.cpp", mw_version="GC/2.0"),  # msg 0x74xx helpers, own consts 0x804D8C80..; GC/2.0: const-pointer pre-stwu load in fn_801D8FD4 (STATUS G4)
             Object(NonMatching, "game/u_801D9A70.cpp"),  # [FSGSVE] creature AI
             Object(NonMatching, "game/u_801DE4B0.cpp"),  # TentacleSpit effect type (split from u_801D9A70)
             Object(NonMatching, "game/u_801DE7A0.cpp"),  # trails (split from u_801D9A70)

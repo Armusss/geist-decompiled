@@ -4,17 +4,17 @@
 //   fn_801D9580 is called only by fn_801D902C/fn_801D9114; fn_801D8FD4 sends msg 0x7404 and fn_801D96C4
 //   sends 0x7403; fn_801D9028 is an empty hook called from AppSystemsInit
 // Names are descriptive guesses; the code is matched against the retail DOL.
-// Left (2026-11-22): fn_801D8FD4 loads v before `stw r0` (GC/2.0 const-pointer trait; GC/2.0 gives it with
-// `const Vec3*`), and fn_801D96C4's normalize is the vecnorm.h asm helper (VecNormalize(&dir, &dir) matches).
-// With both the whole unit is byte-identical, function order and .sdata2 included (temporary flip check).
+// Compiler: GC/2.0 (user-approved 2026-11-22, STATUS G4): fn_801D8FD4 loads through its const Vec3* argument
+// before `stw r0`, which GC/1.3.2 never does; every other function compiles identically on both.
+// fn_801D96C4's normalize is the shared vecnorm.h asm helper (user-approved exception).
 // Function order: CW defers functions that use a struct assignment until the next inline definition, so
 // fn_801D9114 sits after SpawnAttach and fn_801D8FD4 copies v member-wise.
 
 #include <dolphin/types.h>
 
 #include "game/types.h"
+#include "game/vecnorm.h"
 
-#define fabs(x) __fabs(x)
 
 // The actor as seen by these helpers: the common prefix plus the shape at +0x40.
 struct Actor {
@@ -252,37 +252,6 @@ extern "C" void fn_801D9580(Blast* blast) {
     }
 }
 
-inline int VecNonZero(const Vec3* v) {
-    return (fabs(v->x) > 1.1920929e-7f) + (fabs(v->y) > 1.1920929e-7f) + (fabs(v->z) > 1.1920929e-7f);
-}
-
-inline float VecNormalize(Vec3* v) {
-    double x, y, z, len;
-    float inv;
-
-    if (VecNonZero(v) == 0) {
-        v->x = 0.0f;
-        v->y = 0.0f;
-        v->z = 0.0f;
-        return 0.0f;
-    }
-    x = (double)v->x;
-    y = (double)v->y;
-    z = (double)v->z;
-    {
-        double xx = x * x;
-        double yy = y * y;
-        double zz = z * z;
-
-        len = xx + yy + zz;
-    }
-    inv = __frsqrte((float)len);
-    v->x = (float)(x * inv);
-    v->y = (float)(y * inv);
-    v->z = (float)(z * inv);
-    return __fres(inv);
-}
-
 inline void VecScale(Vec3* out, const Vec3* v, float s) {
     out->x = v->x * s;
     out->y = v->y * s;
@@ -346,7 +315,7 @@ extern "C" int fn_801D96C4(void* p, Blast* blast, float dist) {
                     dir.x = msg.pos.x - blast->place.pos.x;
                     dir.y = msg.pos.y - blast->place.pos.y;
                     dir.z = msg.pos.z - blast->place.pos.z;
-                    VecNormalize(&dir);
+                    VecNormalize(&dir, &dir);
                     msg.force = dir;
                     msg.force.x *= force;
                     msg.force.y *= force;
