@@ -136,7 +136,7 @@ int fn_800C6AE8(void* obj, void* a, void* b, int c);
 void fn_80026660(int msg, void* fn, int arg);
 }
 
-void CamObjUpdate(float dt, CamObj* c);
+void CamObjUpdate(float dt, CamObj* c, int arg);
 void CamObjEase(CamObj* c, int a, int b, int d, int e);
 int CamMsg(u32 handle, int msg, int* data);
 
@@ -259,7 +259,7 @@ u32 fn_800F9724(int owner, int id) {
         c->flagA = 0;
         c->flagB = 0;
         c->unk104 = 0;
-        CamObjUpdate(0.0f, c);
+        CamObjUpdate(0.0f, c, 0);
         return idx & 0xFFFFFF | 0x16000000;
     }
     return 0xFFFFFFFF;
@@ -384,7 +384,7 @@ extern float gTiltRow[2];       // 0x80345378
 
 // Per-frame update of a camera object: copies the controller's matrix, applies the offset,
 // shake and roll, and mirrors it for the split view.
-void CamObjUpdate(float dt, CamObj* c) {
+void CamObjUpdate(float dt, CamObj* c, int arg) {
     int* cm = (int*)c;
     int* src = (int*)cm[0x3E];
     float* off;
