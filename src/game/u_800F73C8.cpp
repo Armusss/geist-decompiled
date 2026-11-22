@@ -99,7 +99,7 @@ struct StreamNode {
     StreamNode* next;       // 0x04
     u8 pad08[4];
     u32 events;             // 0x0C: which events invoke the callback
-    void (*callback)(void); // 0x10
+    void (*callback)(u32 event); // 0x10: gets the event bit
     u8 file[1];             // 0x14: DVDFileInfo
 };
 
@@ -116,22 +116,22 @@ int DVDPrepareStreamAsync(void* file, int a, int b, void* cb);
 int DVDStopStreamAtEndAsync(DVDCommandBlock* b, void* cb);
 }
 
-extern StreamNode* gStreamCur;          // 0x804D4B58
-extern StreamNode* gStreamHead;         // 0x804D4B5C
-extern int gStreamTail;                 // 0x804D4B60
-extern int gStreamState;                // 0x804D4B64
-extern int gStreamMode;                 // 0x804D4B68
-extern int gStreamPos;                  // 0x804D4B6C
-extern int gStreamTrigger;              // 0x804D4B70
-extern u8 gStreamVolL;                  // 0x804D4B74
-extern u8 gStreamVolR;                  // 0x804D4B75
-extern int gStreamX;                    // 0x804D4B78
-extern int gStreamEnded;                // 0x804D4B7C
-extern void (*gStreamCleanup)(void);    // 0x804D4B80
-extern DVDCommandBlock gStreamBlkStop;  // 0x80457E80
-extern DVDCommandBlock gStreamBlkPlay;  // 0x80457E50
-extern DVDCommandBlock gStreamBlkAddr;  // 0x80457EE0
-extern DVDCommandBlock gStreamBlkErr;   // 0x80457EB0
+extern StreamNode* lbl_804D4B58;  // current entry
+extern StreamNode* lbl_804D4B5C;  // list head
+extern int lbl_804D4B60;  // list tail
+extern volatile int lbl_804D4B64;  // stream state
+extern volatile int lbl_804D4B68;  // play mode
+extern volatile int lbl_804D4B6C;  // stream position
+extern int lbl_804D4B70;  // trigger
+extern u8 lbl_804D4B74;  // volume left
+extern u8 lbl_804D4B75;  // volume right
+extern int lbl_804D4B78;  // stream word
+extern volatile u32 lbl_804D4B7C;  // end reached
+extern void (*lbl_804D4B80)(void);    // 0x804D4B80
+extern DVDCommandBlock lbl_80457E80;  // stop command block
+extern DVDCommandBlock lbl_80457E50;  // play command block
+extern DVDCommandBlock lbl_80457EE0;  // address command block
+extern DVDCommandBlock lbl_80457EB0;  // error command block
 
 void StreamPrepared(void);
 void StreamErrorDone(unsigned char status);
@@ -139,9 +139,10 @@ void StreamAddrDone(u32 pos);
 
 // Calls the current entry's callback when it asked for event `bit`.
 static inline void StreamNotify(u32 bit) {
-    if (gStreamCur != NULL) {
-        if (gStreamCur->callback != NULL && (gStreamCur->events & bit) != 0) {
-            gStreamCur->callback();
+    if (lbl_804D4B58 != NULL) {
+        u32 ev;
+        if (lbl_804D4B58->callback != NULL && (ev = lbl_804D4B58->events & bit) != 0) {
+            lbl_804D4B58->callback(ev);
         }
     }
 }
@@ -149,82 +150,84 @@ static inline void StreamNotify(u32 bit) {
 // Stream finished: notify (bit 2) and clear the state.
 void StreamFinished(void) {
     StreamNotify(2);
-    gStreamState = 0;
+    lbl_804D4B64 = 0;
 }
 
 // Closes every stream entry and resets the list.
 void MusicStreamShutdown(void) {
     StreamNode* n;
     AISetStreamPlayState(0);
-    for (n = gStreamHead; n != NULL; n = n->next) {
+    for (n = lbl_804D4B5C; n != NULL; n = n->next) {
         DVDClose(n->file);
     }
-    gStreamHead = NULL;
-    gStreamTail = 0;
-    gStreamCur = NULL;
-    gStreamState = 0;
-    if (gStreamCleanup != NULL) {
-        gStreamCleanup();
-        gStreamCleanup = NULL;
+    lbl_804D4B5C = NULL;
+    lbl_804D4B60 = 0;
+    lbl_804D4B58 = NULL;
+    lbl_804D4B64 = 0;
+    if (lbl_804D4B80 != NULL) {
+        lbl_804D4B80();
+        lbl_804D4B80 = NULL;
     }
-    gStreamState = 0;
-    gStreamX = 0;
+    lbl_804D4B64 = 0;
+    lbl_804D4B78 = 0;
 }
 
 void StreamSetTrigger(int offset) {
-    AISetStreamTrigger(offset + gStreamTrigger);
-    if (gStreamCur != NULL) {
-        DVDGetStreamPlayAddrAsync(&gStreamBlkAddr, (void*)StreamAddrDone);
+    AISetStreamTrigger(offset + lbl_804D4B70);
+    if (lbl_804D4B58 != NULL) {
+        DVDGetStreamPlayAddrAsync(&lbl_80457EE0, (void*)StreamAddrDone);
     }
 }
 
 // Advances to the next entry (or stops/loops by mode) when the current one ends.
+// Restarts the DVD stream on the current entry.
+static inline void StreamRestart(void) {
+    AISetStreamVolLeft(0);
+    AISetStreamVolRight(0);
+    AISetStreamPlayState(0);
+    DVDPrepareStreamAsync(lbl_804D4B58->file, 0, 0, (void*)StreamPrepared);
+}
+
 void StreamAddrDone(u32 pos) {
-    gStreamPos = pos;
-    if (gStreamEnded == 0) {
-        DVDGetStreamErrorStatusAsync(&gStreamBlkErr, (void*)StreamErrorDone);
-    } else {
-        gStreamEnded = 0;
+    lbl_804D4B6C = pos;
+    if (lbl_804D4B7C != 0) {
+        lbl_804D4B7C = 0;
         StreamNotify(0x10);
-        gStreamState = 3;
-        if (gStreamMode == 1) {
-            if (gStreamCur != NULL) {
-                gStreamCur = gStreamCur->next;
-                if (gStreamCur == NULL) {
-                    gStreamCur = gStreamHead;
-                    AISetStreamVolLeft(0);
-                    AISetStreamVolRight(0);
-                    AISetStreamPlayState(0);
-                    DVDPrepareStreamAsync(gStreamCur->file, 0, 0, (void*)StreamPrepared);
+        lbl_804D4B64 = 3;
+        switch (lbl_804D4B68) {
+        case 0:
+            if (lbl_804D4B58 != NULL) {
+                if (lbl_804D4B58->next != NULL) {
+                    lbl_804D4B58 = lbl_804D4B58->next;
+                    StreamRestart();
                 } else {
+                    lbl_804D4B58 = lbl_804D4B5C;
                     AISetStreamVolLeft(0);
                     AISetStreamVolRight(0);
                     AISetStreamPlayState(0);
-                    DVDPrepareStreamAsync(gStreamCur->file, 0, 0, (void*)StreamPrepared);
+                    lbl_804D4B64 = 0;
                 }
             }
-        } else if (gStreamMode < 1) {
-            if (gStreamMode >= 0 && gStreamCur != NULL) {
-                gStreamCur = gStreamCur->next;
-                if (gStreamCur == NULL) {
-                    gStreamCur = gStreamHead;
-                    AISetStreamVolLeft(0);
-                    AISetStreamVolRight(0);
-                    AISetStreamPlayState(0);
-                    gStreamState = 0;
+            break;
+        case 1:
+            if (lbl_804D4B58 != NULL) {
+                if (lbl_804D4B58->next != NULL) {
+                    lbl_804D4B58 = lbl_804D4B58->next;
+                    StreamRestart();
                 } else {
-                    AISetStreamVolLeft(0);
-                    AISetStreamVolRight(0);
-                    AISetStreamPlayState(0);
-                    DVDPrepareStreamAsync(gStreamCur->file, 0, 0, (void*)StreamPrepared);
+                    lbl_804D4B58 = lbl_804D4B5C;
+                    StreamRestart();
                 }
             }
-        } else if (gStreamMode < 3 && gStreamCur != NULL) {
-            AISetStreamVolLeft(0);
-            AISetStreamVolRight(0);
-            AISetStreamPlayState(0);
-            DVDPrepareStreamAsync(gStreamCur->file, 0, 0, (void*)StreamPrepared);
+            break;
+        case 2:
+            if (lbl_804D4B58 != NULL) {
+                StreamRestart();
+            }
+            break;
         }
+    } else {
+        DVDGetStreamErrorStatusAsync(&lbl_80457EB0, (void*)StreamErrorDone);
     }
 }
 
@@ -233,20 +236,20 @@ void StreamStop(void) {
     AISetStreamVolLeft(0);
     AISetStreamVolRight(0);
     AISetStreamPlayState(0);
-    DVDStopStreamAtEndAsync(&gStreamBlkStop, NULL);
-    gStreamState = 2;
+    DVDStopStreamAtEndAsync(&lbl_80457E80, NULL);
+    lbl_804D4B64 = 2;
     StreamNotify(0x20);
 }
 
 // Stream prepared: start playback and notify (bit 1).
 void StreamPrepared(void) {
-    AISetStreamVolLeft(gStreamVolL);
-    AISetStreamVolRight(gStreamVolR);
+    AISetStreamVolLeft(lbl_804D4B74);
+    AISetStreamVolRight(lbl_804D4B75);
     AIResetStreamSampleCount();
-    AISetStreamTrigger(gStreamTrigger);
+    AISetStreamTrigger(lbl_804D4B70);
     AISetStreamPlayState(1);
-    DVDStopStreamAtEndAsync(&gStreamBlkPlay, NULL);
-    gStreamState = 1;
+    DVDStopStreamAtEndAsync(&lbl_80457E50, NULL);
+    lbl_804D4B64 = 1;
     StreamNotify(1);
 }
 
@@ -255,6 +258,6 @@ void StreamErrorDone(unsigned char status) {
     if (status != 0) {
         return;
     }
-    gStreamEnded = 1;
-    gStreamPos = 0;
+    lbl_804D4B7C = 1;
+    lbl_804D4B6C = 0;
 }
