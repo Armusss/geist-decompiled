@@ -1142,7 +1142,10 @@ game/u_80268528.cpp:
 	.sdata2     start:0x804DA138 end:0x804DA140
 
 game/u_802690C8.cpp:
-	.text       start:0x802690C8 end:0x8026A0F0
+	.text       start:0x802690C8 end:0x802698D0
+
+game/u_802698D0.cpp:
+	.text       start:0x802698D0 end:0x8026A0F0
 
 game/Timer.cpp:
 	.text       start:0x8026A0F0 end:0x8026A158

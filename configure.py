@@ -805,7 +805,8 @@ config.libs = [
             Object(Matching, "game/Thermostat.cpp"),  # thermostat gauge actor
             Object(NonMatching, "game/Retinal.cpp"),  # (helper-game-b)
             Object(Matching, "game/u_80268528.cpp"),  # HERMIT SPIT effect type (merged with its message/create part)
-            Object(NonMatching, "game/u_802690C8.cpp"),  # Hermit Spit Ammo + view sensors
+            Object(NonMatching, "game/u_802690C8.cpp"),  # Hermit Spit Ammo
+            Object(NonMatching, "game/u_802698D0.cpp"),  # view sensors (split from u_802690C8)
             Object(Matching, "game/Timer.cpp"),  # per-level timer hooks
             Object(Matching, "game/u_8026A158.cpp"),  # guess
             Object(Matching, "game/u_8026A37C.cpp"),  # guess
