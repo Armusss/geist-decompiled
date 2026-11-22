@@ -16,8 +16,13 @@ typedef unsigned char u8;
 #define NULL 0
 
 
-// TODO (not drafted yet, 0xC bytes at 0x801DE4B0)
-extern "C" void fn_801DE4B0(void);
+//@@801DE4B0
+// Effect class query (descriptor +0x20): the same class hash as the SniperRound query fn_801E72E0.
+extern "C" unsigned long fn_801DE4B0(void* obj, int msg);
+unsigned long fn_801DE4B0(void* obj, int msg) {
+    return 0x3DA260F7;
+}
+//@@end
 
 // TODO (not drafted yet, 0x2E4 bytes at 0x801DE4BC)
 extern "C" void fn_801DE4BC(void);
