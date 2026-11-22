@@ -104,7 +104,7 @@ void AmmoRefillResetStatics();                                  // 0x8026A31C
 Geom* UserGeomAlloc(int cls);                                   // 0x8026A32C
 RoomGeomData* UserGeomGetId(UserGeom* g);                       // 0x8026A374
 int GeomRegisterClass(const UserGeomClass* cls);                // 0x8026A37C
-SceneNode* GeomIsEnabled(Geom* g);                              // 0x8026AB90
+int GeomIsEnabled(Geom* g);                                     // 0x8026AB90
 void GeomDisable(Geom* g);                                      // 0x8026AB9C
 void GeomEnable(Geom* g);                                       // 0x8026ABAC
 u32 GeomGetCollideBits(Geom* g);                                // 0x8026ABBC
@@ -234,7 +234,7 @@ void fn_801D7068(Geom* space, Geom* g);
 PhysObj* fn_801D59A4(int owner, int material, Geom* g, Mass* m, int cat, Vec3* offset, int noBody);
 void fn_801D6104(Geom* space);
 void fn_801D64B8(float radius, float length, Vec3* pos, Mtx34* rot, u8* color);
-void fn_801D6CB8(float dt, Geom* space);
+void fn_801D6CB8(Geom* space, float dt);
 int fn_801D6EC8(SceneNode* body, Geom* from, int n, SceneNode** list);
 void fn_801D72F8(void* data, Geom* a, Geom* b);
 void fn_801D77C4(PhysObj* o, float* vel);
@@ -1024,7 +1024,7 @@ void fn_801D6928(float dt) {
         fn_80277958(sContacts);
     }
     sForceCount = 0;
-    fn_801D6CB8(dt, (Geom*)sSpace);
+    fn_801D6CB8((Geom*)sSpace, dt);
     fn_801E13A0(dt);
 }
 
@@ -1037,7 +1037,7 @@ static inline float LenSq(float* v) {
 }
 
 // 0x801D6CB8: puts resting bodies (and resting islands) to sleep.
-void fn_801D6CB8(float dt, Geom* space) {
+void fn_801D6CB8(Geom* space, float dt) {
     SceneNode* list[34];
     int n = SpaceGetCount((Space*)space);
     int i;
@@ -1048,16 +1048,17 @@ void fn_801D6CB8(float dt, Geom* space) {
             Geom** p = (Geom**)sGeoms->mUnk0C;
             if (g != 0) {
                 Geom** end = (Geom**)((char*)p + sGeoms->mLength);
-                for (; p != end && *p != g; p++) {
+                for (; p != end; p++) {
+                    if (*p == g) {
+                        break;
+                    }
                 }
                 if (p != end) {
                     PhysObj* o = GeomGetGFlags(g);
                     float* pos = SceneNodePosPtr(body);
                     float* vel = SceneNodeVelocityPtr(body);
                     fn_801D77C4(o, pos);
-                    if (LenSq(pos) + LenSq(vel) >= 0.1f) {
-                        o->idle = 0.0f;
-                    } else {
+                    if (LenSq(pos) + LenSq(vel) < 0.1f) {
                         o->idle += dt;
                         if (o->idle >= 1000.0f) {
                             if (SceneNodeListCount(body) == 0) {
@@ -1079,6 +1080,8 @@ void fn_801D6CB8(float dt, Geom* space) {
                                 }
                             }
                         }
+                    } else {
+                        o->idle = 0.0f;
                     }
                 }
             }
