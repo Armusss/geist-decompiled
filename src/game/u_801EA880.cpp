@@ -43,15 +43,39 @@ struct TextState {
     TextSavedState saved[32];   // 0x06c: one saved copy per nesting level
 };
 
+// The loaded font: the SDK's OSFontHeader layout (field names as in dolphin/os/OSFont.h; not included
+// because its u32 is unsigned long), followed by the sheet images at sheetImage.
+struct FontHeader {
+    u16 fontType;               // 0x00
+    u16 firstChar;              // 0x02
+    u16 lastChar;               // 0x04
+    u16 invalChar;              // 0x06
+    u16 ascent;                 // 0x08
+    u16 descent;                // 0x0a
+    u16 width;                  // 0x0c: widest glyph
+    u16 leading;                // 0x0e
+    u16 cellWidth;              // 0x10
+    u16 cellHeight;             // 0x12
+    u32 sheetSize;              // 0x14: bytes per sheet (font page)
+    u16 sheetFormat;            // 0x18: texture format
+    u16 sheetColumn;            // 0x1a
+    u16 sheetRow;               // 0x1c
+    u16 sheetWidth;             // 0x1e
+    u16 sheetHeight;            // 0x20
+    u16 widthTable;             // 0x22
+    u32 sheetImage;             // 0x24: offset of the sheet images
+    u32 sheetFullSize;          // 0x28
+};
+
 extern TextState lbl_8049C228;
-extern u8 lbl_803B4284[];       // text command buffer
-extern u8* lbl_804D3318;        // command buffer cursor
+extern u8 gTextCmdBuffer[];       // text command buffer
+extern u8* gTextCmdCursor;        // command buffer cursor
 extern char lbl_803B8284[];     // debug string buffer
 extern s32 lbl_804D331C;
 extern s32 lbl_804D3320;
 extern s32 lbl_804D5298;        // current save depth
 extern s32 lbl_804D52A0;
-extern u8* lbl_804D5290;
+extern FontHeader* gTextFont;   // font arena carved from the OS arena
 extern f32 lbl_804D8F30;
 extern f64 lbl_804D8F38;
 extern f32 lbl_804D8F44;
@@ -94,8 +118,8 @@ char* TextMeasureRun(char* str, int width, int* widthOut, int* advanceOut,
 
 // Debug display-list buffer and its write cursor. The buffer is a 16 KB
 // scratch block the debug text renderer appends packets to.
-extern u8 lbl_803B4284[];
-extern u8* lbl_804D3318;
+extern u8 gTextCmdBuffer[];
+extern u8* gTextCmdCursor;
 
 // Builds one 9-byte text packet from the colour/rectangle arguments and then
 // draws the formatted string. (Descriptive name: DebugTextDraw. Kept as
@@ -105,19 +129,19 @@ void DebugText(const char* fmt, ...);
 
 // Debug text packet writers: each stores one field at the write cursor and
 // advances it.
-static inline void DebugPut8(u8 v) { u8* p = lbl_804D3318; *p = v; lbl_804D3318 = p + 1; }
-static inline void DebugPut16(unsigned short v) { u8* p = lbl_804D3318; *(unsigned short*)p = v; lbl_804D3318 = p + 2; }
+static inline void DebugPut8(u8 v) { u8* p = gTextCmdCursor; *p = v; gTextCmdCursor = p + 1; }
+static inline void DebugPut16(unsigned short v) { u8* p = gTextCmdCursor; *(unsigned short*)p = v; gTextCmdCursor = p + 2; }
 
 extern "C" void fn_801EA880(const char* fmt, GXColor color, int x, int y, int w,
                             int h, int flags)
 {
-    if ((int)lbl_804D3318 - (int)lbl_803B4284 + 9 < 0x4000) {
+    if ((int)gTextCmdCursor - (int)gTextCmdBuffer + 9 < 0x4000) {
         DebugPut8(9);
         DebugPut16(x < 0 ? 0 : (x > 640 ? 640 : x));
         DebugPut16(640);
         DebugPut16(0);
         DebugPut16(y < 0 ? 0 : (y > 480 ? 480 : y));
-        *lbl_804D3318 = 0;
+        *gTextCmdCursor = 0;
     }
 
     if (flags != 0) {
@@ -179,15 +203,15 @@ void ScreenPrintf(const char* fmt, ...)
 // the debug string buffer (guessed: TextDebugFlush).
 void TextDebugFlush(void)
 {
-    if (lbl_804D3318 + 9 - lbl_803B4284 < 0x4000) {
-        u8* p = lbl_804D3318;
+    if (gTextCmdCursor + 9 - gTextCmdBuffer < 0x4000) {
+        u8* p = gTextCmdCursor;
 
         p[0] = 9;                   // 0x0: command id
         *(u16*)(p + 1) = 0x14;      // 0x1
         *(u16*)(p + 3) = 0x280;     // 0x3
         *(u16*)(p + 5) = 0;         // 0x5
         *(u16*)(p + 7) = 0x1CC;     // 0x7
-        lbl_804D3318 = p + 9;
+        gTextCmdCursor = p + 9;
         p[9] = 0;                   // 0x9: terminator
     }
     TextSetStyle(0xFF, 0xFF, 0xFF, 0xFF, lbl_804D331C, 2, lbl_804D3320,
@@ -216,7 +240,7 @@ int TextLayoutMeasure(const char* str, int id)
     lbl_8049C228.cur.w[9] = 0;
     lbl_8049C228.cur.w[10] = 0;
     lbl_8049C228.cur.w[16] = id;
-    lbl_8049C228.cur.w[8] = id * (u32)*(u16*)(lbl_804D5290 + 0x10);
+    lbl_8049C228.cur.w[8] = id * (u32)gTextFont->cellWidth;
     lbl_8049C228.cur.w[7] =
         (int)((f32)((f64)lbl_8049C228.cur.w[8] - lbl_804D8F38) * lbl_804D8F30
               / lbl_804D2520);
@@ -235,8 +259,8 @@ int TextLayoutMeasure(const char* str, int id)
 // cursor at it (guessed: TextSysInit).
 void TextSysInit(void)
 {
-    lbl_803B4284[0] = 0;
-    lbl_804D3318 = lbl_803B4284;
+    gTextCmdBuffer[0] = 0;
+    gTextCmdCursor = gTextCmdBuffer;
 }
 
 void GfxSetVtxDesc(int desc);
@@ -255,7 +279,7 @@ void TextProcessCommands(u8* buffer);
 // fn_801EAEAC
 extern "C" void fn_801EAEAC(void)
 {
-    if ((char)lbl_803B4284[0] != 0) {
+    if ((char)gTextCmdBuffer[0] != 0) {
         GfxSetVtxDesc(3);
         fn_80008CA4();
         GfxSetMaterial(0);
@@ -263,13 +287,13 @@ extern "C" void fn_801EAEAC(void)
         GXSetAlphaUpdate(1);
         GXSetColorUpdate(1);
         lbl_804D52A0 = 0;
-        TextProcessCommands(lbl_803B4284);
+        TextProcessCommands(gTextCmdBuffer);
         fn_8000FF7C();
         fn_8010F7EC();
         fn_801D8FC8();
     }
-    lbl_803B4284[0] = 0;
-    lbl_804D3318 = lbl_803B4284;
+    gTextCmdBuffer[0] = 0;
+    gTextCmdCursor = gTextCmdBuffer;
 }
 
 // ---- Font arena ----------------------------------------------------------
@@ -287,27 +311,12 @@ extern u8 lbl_8049D014[];       // GXTexObj table, 0x20 bytes per object
 extern u8* lbl_804D5294;        // start of the font image data
 extern u32 lbl_804D529C;        // number of font pages
 extern s32 lbl_804D3310;        // selected font index
-extern char* lbl_803B4268[];    // font file names
-extern char lbl_80349038[];     // string pool; +0x3c is "fonts/%s.bin"
+// Font file names, selected by index (fonts/<name>.bin).
+const char* gTextFontNames[] = {
+    "font", "kouin", "ryumon_fix", "Maxime_fix", "ryumon", "Eden_Mills", "ROM font",
+};
 extern f32 lbl_804D8F40;
 
-// Header of the block OSGetArenaLo hands back for the font system.
-struct FontArena {
-    u8 unk00[0x08];             // 0x000
-    u16 ascent;                 // 0x008: font ascent in texels
-    u16 descent;                // 0x00a: font descent in texels
-    u16 shear;                  // 0x00c: oblique shear numerator
-    u8 unk0e[0x10 - 0x0e];      // 0x00e
-    u16 maxCharWidth;           // 0x010: character-cell width
-    u16 cellWidth;              // 0x012
-    u32 lineStride;             // 0x014: bytes per glyph row
-    u16 format;                 // 0x018: texture format
-    u8 unk1a[0x1e - 0x1a];      // 0x01a
-    u16 texWidth;               // 0x01e
-    u16 texHeight;              // 0x020
-    u32 headerSize;             // 0x024
-    u32 dataSize;               // 0x028
-};
 
 // Carves the font arena out of the OS arena and builds one texture object per
 // font page (guessed: TextFontInit).
@@ -319,24 +328,24 @@ void TextFontInit(void)
     int i;
 
     arena = (u8*)OSGetArenaLo();
-    lbl_804D5290 = arena;
+    gTextFont = (FontHeader*)arena;
     OSInitFont(arena);
-    sprintf(name, &lbl_80349038[0x3c], lbl_803B4268[lbl_804D3310]);
-    OSInitFont(lbl_804D5290);
-    ((FontArena*)lbl_804D5290)->headerSize = 0x120;
-    lbl_804D5294 = lbl_804D5290 +
-        (((FontArena*)lbl_804D5290)->headerSize + 0x1f & ~0x1f);
-    lbl_804D529C = ((FontArena*)lbl_804D5290)->dataSize /
-                   ((FontArena*)lbl_804D5290)->lineStride;
-    OSSetArenaLo(lbl_804D5290 + 0x20120);
+    sprintf(name, "fonts/%s.bin", gTextFontNames[lbl_804D3310]);
+    OSInitFont(gTextFont);
+    gTextFont->sheetImage = 0x120;
+    lbl_804D5294 = (u8*)gTextFont +
+        (gTextFont->sheetImage + 0x1f & ~0x1f);
+    lbl_804D529C = gTextFont->sheetFullSize /
+                   gTextFont->sheetSize;
+    OSSetArenaLo((u8*)gTextFont + 0x20120);  // OS_FONT_SIZE_ANSI
 
     tex = lbl_8049D014;
     for (i = 0; i < (int)lbl_804D529C; i++) {
         GXInitTexObj(tex,
-                     lbl_804D5294 + ((FontArena*)lbl_804D5290)->lineStride * i,
-                     ((FontArena*)lbl_804D5290)->texWidth,
-                     ((FontArena*)lbl_804D5290)->texHeight,
-                     ((FontArena*)lbl_804D5290)->format, 0, 0, 0);
+                     lbl_804D5294 + gTextFont->sheetSize * i,
+                     gTextFont->sheetWidth,
+                     gTextFont->sheetHeight,
+                     gTextFont->sheetFormat, 0, 0, 0);
         GXInitTexObjLOD(tex, 1, 1, lbl_804D8F40, lbl_804D8F40,
                         lbl_804D8F40, 0, 0, 0);
         tex += 0x20;
@@ -353,25 +362,25 @@ extern "C" void fn_801EB060(int index)
     char name[128];
 
     lbl_804D3310 = index;
-    sprintf(name, &lbl_80349038[0x3c], lbl_803B4268[index]);
-    if (FileLoadInto(name, lbl_804D5290, 0x20120) == 0) {
-        OSInitFont(lbl_804D5290);
+    sprintf(name, "fonts/%s.bin", gTextFontNames[index]);
+    if (FileLoadInto(name, gTextFont, 0x20120) == 0) {
+        OSInitFont(gTextFont);
     }
-    ((FontArena*)lbl_804D5290)->headerSize = 0x120;
+    gTextFont->sheetImage = 0x120;
 }
 
 // Appends a one-glyph draw command (id 8, glyph id) to the text command buffer
 // (guessed: TextDrawChar).
 void TextDrawChar(int ch)
 {
-    if ((int)(lbl_804D3318 - lbl_803B4284 + 5) < 0x4000) {
-        u8* p = lbl_804D3318;
+    if ((int)(gTextCmdCursor - gTextCmdBuffer + 5) < 0x4000) {
+        u8* p = gTextCmdCursor;
 
         *p++ = 8;
-        lbl_804D3318 = p;
+        gTextCmdCursor = p;
         *(u32*)p = ch;
         p += 4;
-        lbl_804D3318 = p;
+        gTextCmdCursor = p;
         *p = 0;
     }
 }
@@ -380,10 +389,10 @@ void TextDrawChar(int ch)
 // TextDraw).
 void TextDraw(const char* str, unsigned long len)
 {
-    if ((int)(lbl_804D3318 - lbl_803B4284 + len + 1) < 0x4000) {
-        memcpy(lbl_804D3318, str, len);
-        lbl_804D3318 += len;
-        *lbl_804D3318 = 0;
+    if ((int)(gTextCmdCursor - gTextCmdBuffer + len + 1) < 0x4000) {
+        memcpy(gTextCmdCursor, str, len);
+        gTextCmdCursor += len;
+        *gTextCmdCursor = 0;
     }
 }
 
@@ -403,12 +412,12 @@ void DebugText(const char* fmt, ...)
         va_start(args, fmt);
         len = vsprintf(buf, fmt, args);
         va_end(args);
-        if ((int)(lbl_804D3318 + len + 3 - lbl_803B4284) < 0x4000) {
-            *lbl_804D3318 = 1;      // 0x0: command id
-            lbl_804D3318++;
-            strcpy((char*)lbl_804D3318, buf);
-            lbl_804D3318 += len + 1;
-            *lbl_804D3318 = 0;
+        if ((int)(gTextCmdCursor + len + 3 - gTextCmdBuffer) < 0x4000) {
+            *gTextCmdCursor = 1;      // 0x0: command id
+            gTextCmdCursor++;
+            strcpy((char*)gTextCmdCursor, buf);
+            gTextCmdCursor += len + 1;
+            *gTextCmdCursor = 0;
         }
     }
 }
@@ -481,15 +490,15 @@ void TextProcessCommands(u8* buffer)
 
             buffer += 3;
             cur->w[16] = v;
-            cur->w[8] = v * *(u16*)(lbl_804D5290 + 0x10);
+            cur->w[8] = v * gTextFont->cellWidth;
             cur->w[7] = (int)((f32)((f64)cur->w[8] - lbl_804D8F38) * lbl_804D8F30
                               / gAspectScale);
             break;
         }
 
         case 7:
-            cur->w[10] = (s32)(s16)*(s16*)(buffer + 1) * *(u16*)(lbl_804D5290 + 0x10);
-            cur->w[11] = (s32)(s16)*(s16*)(buffer + 3) * *(u16*)(lbl_804D5290 + 0x10);
+            cur->w[10] = (s32)(s16)*(s16*)(buffer + 1) * gTextFont->cellWidth;
+            cur->w[11] = (s32)(s16)*(s16*)(buffer + 3) * gTextFont->cellWidth;
             buffer += 5;
             break;
 
@@ -562,8 +571,8 @@ void TextProcessCommands(u8* buffer)
 
         case 12:
             cur->w[13] = (s32)(s8)buffer[1];
-            cur->w[14] = (s32)(s16)*(s16*)(buffer + 2) * *(u16*)(lbl_804D5290 + 0x10);
-            cur->w[15] = (s32)(s16)*(s16*)(buffer + 4) * *(u16*)(lbl_804D5290 + 0x10);
+            cur->w[14] = (s32)(s16)*(s16*)(buffer + 2) * gTextFont->cellWidth;
+            cur->w[15] = (s32)(s16)*(s16*)(buffer + 4) * gTextFont->cellWidth;
             cur->w[1] = 1;
             buffer += 6;
             break;
@@ -660,16 +669,16 @@ void TextProcessCommands(u8* buffer)
                 }
             }
 
-            if ((int)cur->w[14] != -(int)*(u16*)(lbl_804D5290 + 0x12)) {
+            if ((int)cur->w[14] != -(int)gTextFont->cellHeight) {
                 cur->w[0] -= (int)cur->w[11] +
-                             width * *(u16*)(lbl_804D5290 + 0xE) /
-                             *(u16*)(lbl_804D5290 + 0x10);
+                             width * gTextFont->leading /
+                             gTextFont->cellWidth;
             }
             if (lineEnd != 0) {
                 lineEnd = 0;
                 cur->w[0] = cur->w[20];
             } else if ((int)cur->w[1] != 0) {
-                if ((int)cur->w[14] != -(int)*(u16*)(lbl_804D5290 + 0x12)) {
+                if ((int)cur->w[14] != -(int)gTextFont->cellHeight) {
                     cur->w[0] -= (int)cur->w[14];
                 }
             }
@@ -692,7 +701,7 @@ char* TextMeasureRun(char* str, int width, int* widthOut, int* advanceOut,
                      int* flag, int* lineEnd)
 {
     TextSavedState* cur = &lbl_8049C228.cur;
-    FontArena* font = (FontArena*)lbl_804D5290;
+    FontHeader* font = gTextFont;
     void* image;
     int glyphWidth;
     int texY;
@@ -750,7 +759,7 @@ restart:
 
             str += 3;
             cur->w[16] = size;
-            cur->w[8] = (s32)size * font->maxCharWidth;
+            cur->w[8] = (s32)size * font->cellWidth;
             cur->w[7] = (int)((f32)cur->w[8] * lbl_804D8F30 / gAspectScale);
             break;
         }
@@ -758,7 +767,7 @@ restart:
         case 13:
             cur->w[16] += (s32)(s8)str[1];
             str += 2;
-            cur->w[8] = (s32)cur->w[16] * font->maxCharWidth;
+            cur->w[8] = (s32)cur->w[16] * font->cellWidth;
             cur->w[7] = (int)((f32)cur->w[8] * lbl_804D8F30 / gAspectScale);
             break;
 
@@ -769,8 +778,8 @@ restart:
             cur->w[10] = a;
             cur->w[11] = b;
             str += 5;
-            cur->w[10] = (s32)a * font->maxCharWidth;
-            cur->w[11] = (s32)b * font->maxCharWidth;
+            cur->w[10] = (s32)a * font->cellWidth;
+            cur->w[11] = (s32)b * font->cellWidth;
             break;
         }
 
@@ -824,7 +833,7 @@ restart:
                 glyphAdvance = (s32)cur->w[7] + (s32)cur->w[10];
             else
                 glyphAdvance = (s32)cur->w[10] +
-                               (s32)cur->w[7] * glyphWidth / font->maxCharWidth;
+                               (s32)cur->w[7] * glyphWidth / font->cellWidth;
 
             if (*ch == ' ') {
                 if ((s32)cur->w[21] < (s32)cur->w[20])
@@ -860,7 +869,7 @@ restart:
 void TextDrawRun(short x, int y, char* text)
 {
     TextSavedState* cur = &lbl_8049C228.cur;
-    FontArena* font = (FontArena*)lbl_804D5290;
+    FontHeader* font = gTextFont;
     char* str = text;
     void* image;
     int texX;
@@ -913,7 +922,7 @@ void TextDrawRun(short x, int y, char* text)
 
             str += 3;
             cur->w[16] = size;
-            cur->w[8] = (s32)size * font->maxCharWidth;
+            cur->w[8] = (s32)size * font->cellWidth;
             cur->w[7] = (int)((f32)cur->w[8] * lbl_804D8F30 / gAspectScale);
             break;
         }
@@ -921,7 +930,7 @@ void TextDrawRun(short x, int y, char* text)
         case 13:
             cur->w[16] += (s32)(s8)str[1];
             str += 2;
-            cur->w[8] = (s32)cur->w[16] * font->maxCharWidth;
+            cur->w[8] = (s32)cur->w[16] * font->cellWidth;
             cur->w[7] = (int)((f32)cur->w[8] * lbl_804D8F30 / gAspectScale);
             break;
 
@@ -932,8 +941,8 @@ void TextDrawRun(short x, int y, char* text)
             cur->w[10] = a;
             cur->w[11] = b;
             str += 5;
-            cur->w[10] = (s32)a * font->maxCharWidth;
-            cur->w[11] = (s32)b * font->maxCharWidth;
+            cur->w[10] = (s32)a * font->cellWidth;
+            cur->w[11] = (s32)b * font->cellWidth;
             break;
         }
 
@@ -949,7 +958,7 @@ void TextDrawRun(short x, int y, char* text)
 
             str += 5;
             height = (short)((s32)cur->w[8] * (font->ascent + font->descent) /
-                             font->maxCharWidth);
+                             font->cellWidth);
             if ((s32)cur->w[21] <= (s32)cur->w[22]) {
                 lbl_804D52A0 = 0;
                 fn_8000FF7C();
@@ -977,7 +986,7 @@ void TextDrawRun(short x, int y, char* text)
             if (cur->w[9] & 8) {
                 u32 shadow;
                 f32 scale = lbl_804D8F44 -
-                    lbl_804D8F48 * ((f32)cur->w[8] / (f32)font->cellWidth -
+                    lbl_804D8F48 * ((f32)cur->w[8] / (f32)font->cellHeight -
                                     lbl_804D8F4C);
 
                 if (scale < lbl_804D8F50)
@@ -996,7 +1005,7 @@ void TextDrawRun(short x, int y, char* text)
                                             lbl_803B9284[i * 2 + 1]));
                     height = (short)((s32)cur->w[8] *
                                      (font->ascent + font->descent) /
-                                     font->maxCharWidth);
+                                     font->cellWidth);
                     count = cur->w[21];
                     cp = str;
                     while (*cp != 0) {
@@ -1006,12 +1015,12 @@ void TextDrawRun(short x, int y, char* text)
                             advance = (short)((s32)cur->w[7] + (s32)cur->w[10]);
                             xoff = (short)(((s32)cur->w[7] -
                                             (s32)cur->w[7] * glyphWidth /
-                                            font->maxCharWidth) / 2);
+                                            font->cellWidth) / 2);
                         } else {
                             xoff = 0;
                             advance = (short)((s32)cur->w[10] +
                                               (s32)cur->w[7] * glyphWidth /
-                                              font->maxCharWidth);
+                                              font->cellWidth);
                         }
                         if (count <= (s32)cur->w[22]) {
                             if (lbl_804D52A0 == 0)
@@ -1020,7 +1029,7 @@ void TextDrawRun(short x, int y, char* text)
                                 lbl_804D52A0 = (s32)image;
                                 GXLoadTexObj(&lbl_8049D014[
                                     ((u8*)image - lbl_804D5294) /
-                                    font->lineStride * 0x20], 0);
+                                    font->sheetSize * 0x20], 0);
                             }
                             TextDrawGlyphQuad((short)(px + xoff),
                                               (short)cur->w[7], py, height,
@@ -1037,7 +1046,7 @@ void TextDrawRun(short x, int y, char* text)
                 px = penX;
                 height = (short)((s32)cur->w[8] *
                                  (font->ascent + font->descent) /
-                                 font->maxCharWidth);
+                                 font->cellWidth);
                 count = cur->w[21];
                 cp = str;
                 while (*cp != 0) {
@@ -1047,12 +1056,12 @@ void TextDrawRun(short x, int y, char* text)
                         advance = (short)((s32)cur->w[7] + (s32)cur->w[10]);
                         xoff = (short)(((s32)cur->w[7] -
                                         (s32)cur->w[7] * glyphWidth /
-                                        font->maxCharWidth) / 2);
+                                        font->cellWidth) / 2);
                     } else {
                         xoff = 0;
                         advance = (short)((s32)cur->w[10] +
                                           (s32)cur->w[7] * glyphWidth /
-                                          font->maxCharWidth);
+                                          font->cellWidth);
                     }
                     if (count <= (s32)cur->w[22]) {
                         if (lbl_804D52A0 == 0)
@@ -1061,7 +1070,7 @@ void TextDrawRun(short x, int y, char* text)
                             lbl_804D52A0 = (s32)image;
                             GXLoadTexObj(&lbl_8049D014[
                                 ((u8*)image - lbl_804D5294) /
-                                font->lineStride * 0x20], 0);
+                                font->sheetSize * 0x20], 0);
                         }
                         TextDrawGlyphQuad((short)(px + xoff),
                                           (short)cur->w[7], (short)y, height,
@@ -1153,22 +1162,21 @@ void TextDrawFlatQuad(u32 obj, short x, short advance, int y, short height)
 void TextDrawGlyphQuad(short x, short advance, short y, short height,
                        int texX, int texY, u32* color)
 {
-    FontArena* font = (FontArena*)lbl_804D5290;
     const u8* c = (const u8*)color;
     short x0 = x;
     short x1 = (short)(x0 + advance);
     short y1 = (short)(y + height);
     short u0 = (short)texX;
     short v0 = (short)texY;
-    short u1 = (short)(texX + font->maxCharWidth);
-    short v1 = (short)(texY + font->cellWidth);
+    short u1 = (short)(texX + gTextFont->cellWidth);
+    short v1 = (short)(texY + gTextFont->cellHeight);
     short slant;
     short insetX;
     short insetY;
 
     if (lbl_8049C228.cur.w[9] & 1)
-        slant = (short)((s32)lbl_8049C228.cur.w[7] * font->shear /
-                        (font->maxCharWidth * 4));
+        slant = (short)((s32)lbl_8049C228.cur.w[7] * gTextFont->width /
+                        (gTextFont->cellWidth * 4));
     else
         slant = 0;
 
@@ -1239,11 +1247,11 @@ void TextDrawGlyphQuad(short x, short advance, short y, short height,
 // buffer to empty (guessed: TextBegin).
 void TextBegin(void)
 {
-    if (lbl_804D3318 - lbl_803B4284 + 1 < 0x4000) {
-        u8* p = lbl_804D3318;
+    if (gTextCmdCursor - gTextCmdBuffer + 1 < 0x4000) {
+        u8* p = gTextCmdCursor;
 
         p[0] = 0xF;                 // 0x0: command id
-        lbl_804D3318 = p + 1;
+        gTextCmdCursor = p + 1;
         p[1] = 0;                   // 0x1: terminator
     }
 }
@@ -1252,17 +1260,17 @@ void TextBegin(void)
 // values (guessed: TextSetOrigin).
 void TextSetOrigin(u8 mode, u16 x, u16 y)
 {
-    if (lbl_804D3318 - lbl_803B4284 + 6 < 0x4000) {
-        u8* p = lbl_804D3318;
+    if (gTextCmdCursor - gTextCmdBuffer + 6 < 0x4000) {
+        u8* p = gTextCmdCursor;
 
         p[0] = 7;                   // 0x0: command id
-        lbl_804D3318 = p + 1;
+        gTextCmdCursor = p + 1;
         *(u8*)(p + 1) = mode;       // 0x1
-        lbl_804D3318 = p + 2;
+        gTextCmdCursor = p + 2;
         *(u16*)(p + 2) = x;         // 0x2
-        lbl_804D3318 = p + 4;
+        gTextCmdCursor = p + 4;
         *(u16*)(p + 4) = y;         // 0x4
-        lbl_804D3318 = p + 6;
+        gTextCmdCursor = p + 6;
         p[6] = 0;                   // 0x6: terminator
     }
 }
@@ -1271,13 +1279,13 @@ void TextSetOrigin(u8 mode, u16 x, u16 y)
 // (guessed: TextSetAlign).
 void TextSetAlign(int align)
 {
-    if (lbl_804D3318 - lbl_803B4284 + 2 < 0x4000) {
-        u8* p = lbl_804D3318;
+    if (gTextCmdCursor - gTextCmdBuffer + 2 < 0x4000) {
+        u8* p = gTextCmdCursor;
 
         *p++ = 5;
-        lbl_804D3318 = p;
+        gTextCmdCursor = p;
         *p++ = align;
-        lbl_804D3318 = p;
+        gTextCmdCursor = p;
         *p = 0;
     }
 }
@@ -1286,13 +1294,13 @@ void TextSetAlign(int align)
 // (guessed: TextSetMode).
 void TextSetMode(int mode)
 {
-    if (lbl_804D3318 - lbl_803B4284 + 2 < 0x4000) {
-        u8* p = lbl_804D3318;
+    if (gTextCmdCursor - gTextCmdBuffer + 2 < 0x4000) {
+        u8* p = gTextCmdCursor;
 
         *p++ = 6;
-        lbl_804D3318 = p;
+        gTextCmdCursor = p;
         *p++ = mode;
-        lbl_804D3318 = p;
+        gTextCmdCursor = p;
         *p = 0;
     }
 }
@@ -1301,19 +1309,19 @@ void TextSetMode(int mode)
 // red, green, blue, alpha (guessed: TextSetColor).
 void TextSetColor(int r, int g, int b, int a)
 {
-    if (lbl_804D3318 - lbl_803B4284 + 5 < 0x4000) {
-        u8* p = lbl_804D3318;
+    if (gTextCmdCursor - gTextCmdBuffer + 5 < 0x4000) {
+        u8* p = gTextCmdCursor;
 
         p[0] = 2;                   // 0x0: command id
-        lbl_804D3318 = p + 1;
+        gTextCmdCursor = p + 1;
         *(u8*)(p + 1) = r;          // 0x1: red
-        lbl_804D3318 = p + 2;
+        gTextCmdCursor = p + 2;
         *(u8*)(p + 2) = g;          // 0x2: green
-        lbl_804D3318 = p + 3;
+        gTextCmdCursor = p + 3;
         *(u8*)(p + 3) = b;          // 0x3: blue
-        lbl_804D3318 = p + 4;
+        gTextCmdCursor = p + 4;
         *(u8*)(p + 4) = a;          // 0x4: alpha
-        lbl_804D3318 = p + 5;
+        gTextCmdCursor = p + 5;
         p[5] = 0;                   // 0x5: terminator
     }
 }
@@ -1322,15 +1330,15 @@ void TextSetColor(int r, int g, int b, int a)
 // TextSetPosition).
 void TextSetPosition(u16 x, u16 y)
 {
-    if (lbl_804D3318 - lbl_803B4284 + 5 < 0x4000) {
-        u8* p = lbl_804D3318;
+    if (gTextCmdCursor - gTextCmdBuffer + 5 < 0x4000) {
+        u8* p = gTextCmdCursor;
 
         p[0] = 4;                   // 0x0: command id
-        lbl_804D3318 = p + 1;
+        gTextCmdCursor = p + 1;
         *(u16*)(p + 1) = x;         // 0x1: x offset
-        lbl_804D3318 = p + 3;
+        gTextCmdCursor = p + 3;
         *(u16*)(p + 3) = y;         // 0x3: y offset
-        lbl_804D3318 = p + 5;
+        gTextCmdCursor = p + 5;
         p[5] = 0;                   // 0x5: terminator
     }
 }
@@ -1347,13 +1355,13 @@ void TextSetFlags(int flags, int value)
 // TextSetSize).
 void TextSetSize(int size)
 {
-    if (lbl_804D3318 - lbl_803B4284 + 3 < 0x4000) {
-        u8* p = lbl_804D3318;
+    if (gTextCmdCursor - gTextCmdBuffer + 3 < 0x4000) {
+        u8* p = gTextCmdCursor;
 
         p[0] = 3;                   // 0x0: command id
-        lbl_804D3318 = p + 1;
+        gTextCmdCursor = p + 1;
         *(u16*)(p + 1) = size;      // 0x1: size
-        lbl_804D3318 = p + 3;
+        gTextCmdCursor = p + 3;
         p[3] = 0;                   // 0x3: terminator
     }
 }
@@ -1373,27 +1381,27 @@ static inline s16 TextClampCoord(int value, int max)
 void TextSetRect(int x, int y, int width, int height, int u, int v, int a,
                  int b)
 {
-    if (lbl_804D3318 - lbl_803B4284 + 0x13 < 0x4000) {
-        u8* p = lbl_804D3318;
+    if (gTextCmdCursor - gTextCmdBuffer + 0x13 < 0x4000) {
+        u8* p = gTextCmdCursor;
 
         p[0] = 10;                              // 0x0: command id
-        lbl_804D3318 = p + 1;
+        gTextCmdCursor = p + 1;
         *(u16*)(p + 1) = TextClampCoord(x, 0x280);      // 0x1: x
-        lbl_804D3318 = p + 3;
+        gTextCmdCursor = p + 3;
         *(u16*)(p + 3) = TextClampCoord(y, 0x280);      // 0x3: y
-        lbl_804D3318 = p + 5;
+        gTextCmdCursor = p + 5;
         *(u16*)(p + 5) = TextClampCoord(width, 0x1E0);  // 0x5: width
-        lbl_804D3318 = p + 7;
+        gTextCmdCursor = p + 7;
         *(u16*)(p + 7) = TextClampCoord(height, 0x1E0); // 0x7: height
-        lbl_804D3318 = p + 9;
+        gTextCmdCursor = p + 9;
         *(u16*)(p + 9) = u;                     // 0x9
-        lbl_804D3318 = p + 0xB;
+        gTextCmdCursor = p + 0xB;
         *(u16*)(p + 0xB) = v;                   // 0xB
-        lbl_804D3318 = p + 0xD;
+        gTextCmdCursor = p + 0xD;
         *(u32*)(p + 0xD) = a;                   // 0xD
-        lbl_804D3318 = p + 0x11;
+        gTextCmdCursor = p + 0x11;
         *(u32*)(p + 0x11) = b;                  // 0x11
-        lbl_804D3318 = p + 0x15;
+        gTextCmdCursor = p + 0x15;
         p[0x15] = 0;                            // 0x15: terminator
     }
 }
@@ -1402,19 +1410,19 @@ void TextSetRect(int x, int y, int width, int height, int u, int v, int a,
 // (guessed: TextSetBox).
 void TextSetBox(int x, int y, int width, int height)
 {
-    if (lbl_804D3318 - lbl_803B4284 + 9 < 0x4000) {
-        u8* p = lbl_804D3318;
+    if (gTextCmdCursor - gTextCmdBuffer + 9 < 0x4000) {
+        u8* p = gTextCmdCursor;
 
         p[0] = 9;                               // 0x0: command id
-        lbl_804D3318 = p + 1;
+        gTextCmdCursor = p + 1;
         *(u16*)(p + 1) = TextClampCoord(x, 0x280);      // 0x1: x
-        lbl_804D3318 = p + 3;
+        gTextCmdCursor = p + 3;
         *(u16*)(p + 3) = TextClampCoord(y, 0x280);      // 0x3: y
-        lbl_804D3318 = p + 5;
+        gTextCmdCursor = p + 5;
         *(u16*)(p + 5) = TextClampCoord(width, 0x1E0);  // 0x5: width
-        lbl_804D3318 = p + 7;
+        gTextCmdCursor = p + 7;
         *(u16*)(p + 7) = TextClampCoord(height, 0x1E0); // 0x7: height
-        lbl_804D3318 = p + 9;
+        gTextCmdCursor = p + 9;
         p[9] = 0;                               // 0x9: terminator
     }
 }
@@ -1425,75 +1433,75 @@ void TextSetStyle(int red, int green, int blue, int alpha, int size, int align,
                   int x, int y, int textMode, int originMode, int originX,
                   int originY)
 {
-    if (lbl_804D3318 - lbl_803B4284 + 2 < 0x4000) {
-        u8* p = lbl_804D3318;
+    if (gTextCmdCursor - gTextCmdBuffer + 2 < 0x4000) {
+        u8* p = gTextCmdCursor;
 
         p[0] = 6;                   // 0x0: command id
-        lbl_804D3318 = p + 1;
+        gTextCmdCursor = p + 1;
         *(u8*)(p + 1) = textMode;   // 0x1: vertical mode
-        lbl_804D3318 = p + 2;
+        gTextCmdCursor = p + 2;
         p[2] = 0;                   // 0x2: terminator
     }
 
-    if (lbl_804D3318 - lbl_803B4284 + 5 < 0x4000) {
-        u8* p = lbl_804D3318;
+    if (gTextCmdCursor - gTextCmdBuffer + 5 < 0x4000) {
+        u8* p = gTextCmdCursor;
 
         p[0] = 2;                   // 0x0: command id
-        lbl_804D3318 = p + 1;
+        gTextCmdCursor = p + 1;
         *(u8*)(p + 1) = red;        // 0x1
-        lbl_804D3318 = p + 2;
+        gTextCmdCursor = p + 2;
         *(u8*)(p + 2) = green;      // 0x2
-        lbl_804D3318 = p + 3;
+        gTextCmdCursor = p + 3;
         *(u8*)(p + 3) = blue;       // 0x3
-        lbl_804D3318 = p + 4;
+        gTextCmdCursor = p + 4;
         *(u8*)(p + 4) = alpha;      // 0x4
-        lbl_804D3318 = p + 5;
+        gTextCmdCursor = p + 5;
         p[5] = 0;                   // 0x5: terminator
     }
 
-    if (lbl_804D3318 - lbl_803B4284 + 3 < 0x4000) {
-        u8* p = lbl_804D3318;
+    if (gTextCmdCursor - gTextCmdBuffer + 3 < 0x4000) {
+        u8* p = gTextCmdCursor;
 
         p[0] = 3;                   // 0x0: command id
-        lbl_804D3318 = p + 1;
+        gTextCmdCursor = p + 1;
         *(u16*)(p + 1) = size;      // 0x1: font size
-        lbl_804D3318 = p + 3;
+        gTextCmdCursor = p + 3;
         p[3] = 0;                   // 0x3: terminator
     }
 
-    if (lbl_804D3318 - lbl_803B4284 + 5 < 0x4000) {
-        u8* p = lbl_804D3318;
+    if (gTextCmdCursor - gTextCmdBuffer + 5 < 0x4000) {
+        u8* p = gTextCmdCursor;
 
         p[0] = 4;                   // 0x0: command id
-        lbl_804D3318 = p + 1;
+        gTextCmdCursor = p + 1;
         *(u16*)(p + 1) = x;         // 0x1: x offset
-        lbl_804D3318 = p + 3;
+        gTextCmdCursor = p + 3;
         *(u16*)(p + 3) = y;         // 0x3: y offset
-        lbl_804D3318 = p + 5;
+        gTextCmdCursor = p + 5;
         p[5] = 0;                   // 0x5: terminator
     }
 
-    if (lbl_804D3318 - lbl_803B4284 + 2 < 0x4000) {
-        u8* p = lbl_804D3318;
+    if (gTextCmdCursor - gTextCmdBuffer + 2 < 0x4000) {
+        u8* p = gTextCmdCursor;
 
         p[0] = 5;                   // 0x0: command id
-        lbl_804D3318 = p + 1;
+        gTextCmdCursor = p + 1;
         *(u8*)(p + 1) = align;      // 0x1: alignment
-        lbl_804D3318 = p + 2;
+        gTextCmdCursor = p + 2;
         p[2] = 0;                   // 0x2: terminator
     }
 
-    if (lbl_804D3318 - lbl_803B4284 + 6 < 0x4000) {
-        u8* p = lbl_804D3318;
+    if (gTextCmdCursor - gTextCmdBuffer + 6 < 0x4000) {
+        u8* p = gTextCmdCursor;
 
         p[0] = 7;                   // 0x0: command id
-        lbl_804D3318 = p + 1;
+        gTextCmdCursor = p + 1;
         *(u8*)(p + 1) = originMode; // 0x1: origin mode
-        lbl_804D3318 = p + 2;
+        gTextCmdCursor = p + 2;
         *(u16*)(p + 2) = originX;   // 0x2: origin x
-        lbl_804D3318 = p + 4;
+        gTextCmdCursor = p + 4;
         *(u16*)(p + 4) = originY;   // 0x4: origin y
-        lbl_804D3318 = p + 6;
+        gTextCmdCursor = p + 6;
         p[6] = 0;                   // 0x6: terminator
     }
 }
@@ -1516,7 +1524,7 @@ void TextStateInit(void)
     cur->w[4] = 0x280;
     cur->w[5] = 0;
     cur->w[6] = 0x1E0;
-    size = (u32)*(u16*)(lbl_804D5290 + 0x10) * 12;
+    size = (u32)gTextFont->cellWidth * 12;
     cur->w[8] = size;
     scaled = (s32)((f32)((f64)size - lbl_804D8F38) * lbl_804D8F30 /
                    gAspectScale);
@@ -1583,8 +1591,8 @@ extern "C" void fn_801ED838(int enable)
 // the blend mode and z-mode the text quads are drawn with.
 void TextDrawBeginFrame(void)
 {
-    f32 width = (f32)*(u16*)(lbl_804D5290 + 0x1e);
-    f32 height = (f32)*(u16*)(lbl_804D5290 + 0x20);
+    f32 width = (f32)gTextFont->sheetWidth;
+    f32 height = (f32)gTextFont->sheetHeight;
     fn_8010EC10(lbl_804D8F60 / width, lbl_804D8F60 / height, 0);
     fn_8010C880();
     GfxSetBlendMode(1, 4, 5, 0);
