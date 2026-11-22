@@ -253,7 +253,7 @@ struct HostType {
 extern HostType gSniperHostTypes[25];
 
 extern "C" void fn_80155A84(void* a, void* b, int c);
-extern "C" int fn_80175EFC(void);
+extern "C" int fn_80175EFC(int id);
 
 
 //@@801E7534
@@ -293,7 +293,7 @@ void fn_801E75FC(Player* p) {
     p->v638 = 1;
     p->flags7B4 &= ~1;
     PlayerSetValue4(&p->sub7A4, 0x15);
-    if (p->v279C == -1 || fn_80175EFC() != 0) {
+    if (p->v279C == -1 || fn_80175EFC(p->v279C) != 0) {
         PlayerSetValue4(&p->sub7A4, 3);
         fn_80155A84(&p->obj26E0, p->held, 1);
     }

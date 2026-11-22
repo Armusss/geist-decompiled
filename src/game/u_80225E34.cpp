@@ -38,12 +38,12 @@ void fn_800769A0(float dt, void* p);
 int fn_800A384C(void* o);
 int fn_800A1BC8(int a, int b, int c, int d, int e);
 void fn_80155A84(void* a, void* b, int c);
-int fn_80175EFC(void);
+int fn_80175EFC(int id);
 void fn_80050EB0(void* p);
 void fn_80227594(void);
 void fn_802272D4(void* p);
 void fn_80226E78(void* p);
-void fn_80212730(int id);
+int fn_80212730(int id);
 void MarkLookupEntryFlag(int id);
 int OwnerGetInfo(u32 id);
 void fn_8009F63C(void* m, int a);
@@ -55,8 +55,8 @@ int HasCondition(void* conds, int bit);
 // Variable query: the reply word is the first word of the string.
 inline int QueryVar(int target, u32 hash) {
     QueryMsg m;
-    *(int*)&m.result = 0;
     m.hash = hash;
+    *(int*)&m.result = 0;
     m.unk8 = 0;
     SendMsg(target, 0x41E, &m);
     return *(int*)&m.result;
@@ -122,9 +122,16 @@ struct Player {
 // ---- player state callbacks --------------------------------------------------------------
 
 
-extern int gHostAnimA[];        // 0x803BD054
-extern int gHostAnimB[];        // 0x803BCFC4
-extern int gHostAnimC[];        // 0x803BCF7C
+// Per-host-type behaviour table (25 entries of 0x48 bytes), as in GunWithGrenade.cpp.
+struct HostType {
+    void (*enter)(Player* p);
+    void (*update)(Player* p, int arg, float dt);
+    void (*msg)(Player* p);
+    u32 actions[14];
+    void* name;
+};
+
+extern HostType gZoomHostTypes[25];
 
 // Exit of the hang state: back to the normal movement sub-state.
 void PlayerHangExit(float dt, Player* p) {
@@ -159,41 +166,33 @@ void PlayerHangEnter(Player* p) {
     p->v638 = 1;
     p->flags7B4 &= ~1;
     PlayerSetValue4(&p->sub7A4, 0x15);
-    if (p->v279C == -1 || fn_80175EFC() != 0) {
+    if (p->v279C == -1 || fn_80175EFC(p->v279C) != 0) {
         PlayerSetValue4(&p->sub7A4, 3);
         fn_80155A84(&p->obj26E0, p->held, 1);
     }
 }
 
-// Is the held object a player-type actor that has condition bit 0xB set?  (Helper of the
-// grab-state enters below.)
-static inline int HeldIsSpecial(Player* held, int* info) {
-    int r = 0;
-    if ((u32)held->handle >> 24 == 0x13) {
-        *info = fn_800A384C(held);
+//@@80225F7C
+void PlayerGrabEnterA(Player* p) {
+    Player* held = p->held;
+    int info;
+    int special = 0;
+    if ((int)((u32)held->handle >> 24) == 0x13) {
+        info = fn_800A384C(held);
         if (HasCondition((char*)held + 0x270, 0xB) != 0) {
-            r = 1;
+            special = 1;
         }
     }
-    return r;
-}
-
-void PlayerGrabEnterA(Player* p) {
-    int info;
-    int special;
-    int idx;
-    int tbl;
-    Player* held = p->held;
-    special = HeldIsSpecial(held, &info);
     PlayerInHost(p);
-    tbl = p->hostIndex;
-    p->v98 = fn_800A1BC8(*(int*)(info + 0x14), *(int*)(info + 0x18), gHostAnimA[tbl], special, 0);
+    int tbl = p->hostIndex;
+    p->v98 = fn_800A1BC8(*(int*)(info + 0x14), *(int*)(info + 0x18), gZoomHostTypes[21].actions[tbl], special, 0);
     p->fn8C = (void*)fn_80227594;
-    *(int*)((char*)p + 0xA4) = 0x19;
-    p->vF0 = fn_800A1BC8(*(int*)(info + 0x14), *(int*)(info + 0x1C), gHostAnimA[tbl], special, 0);
+    p->vA4 = 0x19;
+    p->vF0 = fn_800A1BC8(*(int*)(info + 0x14), *(int*)(info + 0x1C), gZoomHostTypes[21].actions[tbl], special, 0);
     p->vFC = 0x19;
     PlayerSetValue4(&p->sub7A4, 0x15);
 }
+//@@end
 
 void PlayerGrabUpdate(float dt, Player* p) {
     PlayerResetGunTimer(p);
@@ -211,22 +210,27 @@ void PlayerGrabUpdate(float dt, Player* p) {
 }
 
 void PlayerHostSync(Player* p) {
-    int a;
-    int b;
     PlayerInHost(p);
     p->unk78 = 0;
     p->flags &= ~0x20000;
-    p->v98 = QueryVar(p->target->handle, 0x6A0D51C0);
-    b = QueryVar(p->target->handle, 0x8783452);
-    if (b == 0) {
-        PlayerSetHeldSlotIndex(p, 1);
-        if (p->v98 == -1) {
-            PlayerSetActionMode(p, 3);
-        }
-    } else {
+    {
+        QueryMsg m;
+        m.hash = 0x6A0D51C0;
+        SendMsg(p->target->handle, 0x41E, &m);
+        p->v98 = *(int*)&m.result;
+    }
+    QueryMsg m;
+    m.hash = 0x8783452;
+    SendMsg(p->target->handle, 0x41E, &m);
+    if (*(int*)&m.result != 0) {
         PlayerSetHeldSlotIndex(p, 0);
         if (p->v98 == -1) {
             PlayerSetActionMode(p, 1);
+        }
+    } else {
+        PlayerSetHeldSlotIndex(p, 1);
+        if (p->v98 == -1) {
+            PlayerSetActionMode(p, 3);
         }
     }
 }
@@ -242,24 +246,37 @@ void PlayerHangHold(Player* p) {
     }
 }
 
-void PlayerGrabEnterB(Player* p) {
-    int info = 0;
-    int special = 0;
-    int idx;
-    int tbl;
-    HostInfo* host;
-    Player* held = p->held;
-    special = HeldIsSpecial(held, &info);
-    idx = PlayerInHost(p);
-    tbl = p->hostIndex;
-    p->v98 = fn_800A1BC8(*(int*)(info + 0x14), *(int*)(info + 0x18), gHostAnimB[tbl], special, 0);
-    p->fn8C = (void*)fn_80227594;
-    *(int*)((char*)p + 0xA4) = 0x19;
-    host = p->hosts[idx];
-    p->vF0 = fn_800A1BC8(host->animA, host->animC, gHostAnimB[tbl], 0, 0);
-    p->vFC = 0x19;
-    PlayerSetHeldSlotIndex(p, QueryVar(p->held->handle, 0x8783452) == 0);
+//@@802262BC
+static inline void HeldCheckA(Player* held, int* info, int* special) {
+    if ((int)((u32)held->handle >> 24) == 0x13) {
+        *info = fn_800A384C(held);
+        if (HasCondition((char*)held + 0x270, 0xB) != 0) {
+            *special = 1;
+        }
+    }
 }
+void PlayerGrabEnterB(Player* p) {
+    int info;
+    int special = 0;
+    HeldCheckA(p->held, &info, &special);
+    int idx = PlayerInHost(p);
+    int tbl = p->hostIndex;
+    p->v98 = fn_800A1BC8(*(int*)(info + 0x14), *(int*)(info + 0x18), gZoomHostTypes[19].actions[tbl], special, 0);
+    p->fn8C = (void*)fn_80227594;
+    p->vA4 = 0x19;
+    HostInfo* host = p->hosts[idx];
+    p->vF0 = fn_800A1BC8(host->animA, host->animC, gZoomHostTypes[19].actions[tbl], 0, 0);
+    p->vFC = 0x19;
+    QueryMsg m;
+    m.hash = 0x8783452;
+    SendMsg(p->held->handle, 0x41E, &m);
+    if (*(int*)&m.result != 0) {
+        PlayerSetHeldSlotIndex(p, 0);
+    } else {
+        PlayerSetHeldSlotIndex(p, 1);
+    }
+}
+//@@end
 
 void PlayerReleaseHeld(Player* p) {
     fn_80155A84(&p->obj26E0, p->held, 1);
@@ -274,23 +291,40 @@ void PlayerHangEnterC(Player* p) {
     PlayerSetValue4(&p->sub7A4, 0x13);
 }
 
+//@@802264A4
 void PlayerGrabEnterC(Player* p) {
-    int info = 0;
-    int special;
+    int info;
     int idx;
+    Player* held;
     int tbl;
+    int special;
     HostInfo* host;
     idx = PlayerInHost(p);
+    held = p->held;
     tbl = p->hostIndex;
-    special = HeldIsSpecial(p->held, &info);
-    p->v98 = fn_800A1BC8(*(int*)(info + 0x14), *(int*)(info + 0x18), gHostAnimC[tbl], special, 0);
+    special = 0;
+    if ((int)((u32)held->handle >> 24) == 0x13) {
+        info = fn_800A384C(held);
+        if (HasCondition((char*)held + 0x270, 0xB) != 0) {
+            special = 1;
+        }
+    }
+    p->v98 = fn_800A1BC8(*(int*)(info + 0x14), *(int*)(info + 0x18), gZoomHostTypes[18].actions[tbl], special, 0);
     p->fn8C = (void*)fn_80227594;
-    *(int*)((char*)p + 0xA4) = 0x59;
+    p->vA4 = 0x59;
     host = p->hosts[idx];
-    p->vF0 = fn_800A1BC8(host->animA, host->animC, gHostAnimC[tbl], 0, 0);
+    p->vF0 = fn_800A1BC8(host->animA, host->animC, gZoomHostTypes[18].actions[tbl], 0, 0);
     p->vFC = 0x59;
-    PlayerSetHeldSlotIndex(p, QueryVar(p->held->handle, 0x8783452) == 0);
+    QueryMsg m;
+    m.hash = 0x8783452;
+    SendMsg(p->held->handle, 0x41E, &m);
+    if (*(int*)&m.result != 0) {
+        PlayerSetHeldSlotIndex(p, 0);
+    } else {
+        PlayerSetHeldSlotIndex(p, 1);
+    }
 }
+//@@end
 
 void PlayerClearFlag40000(Player* p) {
     p->flags &= ~0x40000;
@@ -318,8 +352,7 @@ static inline void PlayerSnapToSeat(Player* p) {
     int target;
     int v[3];
     u8 m[0x30];
-    fn_80212730(p->handle);
-    target = OwnerGetInfo(p->handle);
+    target = OwnerGetInfo(fn_80212730(p->handle));
     v[0] = gRivetOffset[0];
     v[1] = gRivetOffset[1];
     v[2] = gRivetOffset[2];
@@ -343,7 +376,9 @@ void PlayerSeatUpdate(float dt, Player* p) {
     if (p->hosts[1]->type == 0x66B15822) {
         PlayerSnapToSeat(p);
     }
-    if ((p->flags & 2) == 0 && (p->flags & 8) == 0) {
+    if ((p->flags & 2) != 0 || (p->flags & 8) != 0) {
+        PlayerSetValue4(&p->sub7A4, 3);
+    } else {
         fn_800769A0(dt, p);
         PlayerSelectCollisionUpdate(dt, p);
         PlayerSetValue4(&p->sub7A4, 5);
@@ -353,17 +388,17 @@ void PlayerSeatUpdate(float dt, Player* p) {
             PlayerResetGunTimer(p);
         }
         fn_80226E78(p);
-    } else {
-        PlayerSetValue4(&p->sub7A4, 3);
     }
 }
 
 void PlayerSeatEnter(Player* p) {
+    Player* target;
     PlayerInHost(p);
-    p->v98 = *(int*)(*(int*)((char*)p->target + 0x84) + 0x98);
+    target = p->target;
+    p->v98 = *(int*)(*(int*)((char*)target + 0x84) + 0x98);
     p->fn8C = (void*)fn_80227594;
     *(int*)((char*)p + 0xA4) = 1;
-    p->vF0 = *(int*)(*(int*)((char*)p->target + 0x84) + 0x94);
+    p->vF0 = *(int*)(*(int*)((char*)target + 0x84) + 0x94);
     p->vFC = 1;
 }
 
@@ -378,11 +413,11 @@ void PlayerSeatUpdateB(float dt, Player* p) {
     fn_800769A0(dt, p);
     PlayerSelectCollisionUpdate(dt, p);
     p->v7D0 = 1;
-    if ((p->flags678 & 0x80) == 0) {
-        PlayerSetValue4(&p->sub7A4, 3);
-    } else {
+    if ((p->flags678 & 0x80) != 0) {
         p->flags678 &= ~0x80;
         PlayerSetActionMode(p, 3);
+    } else {
+        PlayerSetValue4(&p->sub7A4, 3);
     }
     fn_802272D4(p);
     fn_80226E78(p);
@@ -394,7 +429,10 @@ void PlayerHostLeave(Player* p) {
     if (type == 0x54E34D35 || type == 0x6B6F4068) {
         p->v98 = -1;
     } else {
-        p->v98 = QueryVar(p->target->handle, 0x6A0D51C0);
+        QueryMsg m;
+        m.hash = 0x6A0D51C0;
+        SendMsg(p->target->handle, 0x41E, &m);
+        p->v98 = *(int*)&m.result;
     }
 }
 
@@ -415,17 +453,6 @@ void PlayerSeatUpdateC(float dt, Player* p) {
     PlayerSetActionMode(p, 3);
 }
 
-
-// Per-host-type behaviour table (25 entries of 0x48 bytes), as in GunWithGrenade.cpp.
-struct HostType {
-    void (*enter)(Player* p);
-    void (*update)(Player* p, int arg, float dt);
-    void (*msg)(Player* p);
-    u32 actions[14];
-    void* name;
-};
-
-extern HostType gZoomHostTypes[25];
 
 // TODO (not drafted yet, 0x90 bytes at 0x80226DE8)
 // fn_80226DE8
