@@ -306,15 +306,12 @@ void fn_801D4824(void* group, PhysObj* a, PhysObj* b, const Vec3* axis1, const V
     fn_80273918(j, 2);
     {
         Vec3 c;
-        float y2 = axis2->y;
-        float ay = axis1->y;
-        float x2 = axis2->x;
-        c.x = y2 * axis1->z - axis2->z * ay;
-        c.y = axis2->z * axis1->x - x2 * axis1->z;
-        c.z = x2 * ay - y2 * axis1->x;
-        fn_802737A4(axis1->x, ay, axis1->z, j, 0, 1);
+        c.x = axis2->y * axis1->z - axis2->z * axis1->y;
+        c.y = axis2->z * axis1->x - axis2->x * axis1->z;
+        c.z = axis2->x * axis1->y - axis2->y * axis1->x;
+        fn_802737A4(axis1->x, axis1->y, axis1->z, j, 0, 1);
         fn_802737A4(c.x, c.y, c.z, j, 1, 1);
-        fn_802737A4(x2, y2, axis2->z, j, 2, 2);
+        fn_802737A4(axis2->x, axis2->y, axis2->z, j, 2, 2);
     }
     if (limits > 0) {
         fn_80273688(0.017453292f * angles[0], j, 0);
