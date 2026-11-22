@@ -118,7 +118,7 @@ extern float gCamZero2;         // 0x804D749C
 extern "C" {
 int fn_802A1D04(void);
 void fn_802A1EBC(int mode);
-void fn_800C6E88(void);
+void fn_800C6E88(int handle);  // empty in retail; CameraSetFov passes the masked handle in r3
 void fn_800C6560(int ctl);
 void fn_800C6760(int ctl);
 void fn_800C6834(int ctl);
@@ -154,10 +154,10 @@ void fn_800F9468(int on) {
 
 // Controller handle of camera `handle`, or -1.
 int fn_800F94C8(u32 handle) {
-    if (CamIdx(handle) < 0 || CamIdx(handle) >= 16) {
-        return -1;
+    if (CamIdx(handle) >= 0 && CamIdx(handle) < 16) {
+        return gCams[handle & 0xFFFFFF].ctl;
     }
-    return gCams[handle & 0xFFFFFF].ctl;
+    return -1;
 }
 
 void fn_800F94F8(u32 handle, short v) {
@@ -168,10 +168,7 @@ void fn_800F94F8(u32 handle, short v) {
 
 // Starts an ease on a camera object (does nothing when one is running unless `force`).
 void CamObjEase(CamObj* c, int a, int b, int d, int force) {
-    if (c == NULL) {
-        return;
-    }
-    if (b == 0) {
+    if (c == NULL || b == 0) {
         return;
     }
     if (c->unk104 != 0 && force == 0) {
@@ -197,14 +194,14 @@ void CameraSetFov(int handle, float fov) {
     if (handle >= 0 && handle < 16) {
         gCams[handle].fov = fov;
     }
-    fn_800C6E88();
+    fn_800C6E88(handle);
 }
 
 float fn_800F95E4(u32 handle) {
-    if (CamIdx(handle) < 0 || CamIdx(handle) >= 16) {
-        return gCamNeg1;
+    if (CamIdx(handle) >= 0 && CamIdx(handle) < 16) {
+        return gCams[handle & 0xFFFFFF].fov;
     }
-    return gCams[handle & 0xFFFFFF].fov;
+    return -1.0f;
 }
 
 int fn_800F9614(u32 handle) {
@@ -243,7 +240,7 @@ u32 fn_800F9724(int owner, int id) {
         gCamCount++;
         c->ctl = fn_800C6AE8(c, (void*)CamObjUpdate, (void*)CamObjEase, id);
         if (fn_802A1D04() == 0) {
-            c->ctl2 = fn_800C6AE8(&c->ctl2, NULL, NULL, id + 1);
+            c->ctl2 = fn_800C6AE8((char*)c + 0x60, NULL, NULL, id + 1);
             fn_800C6834(c->ctl2);
         } else {
             c->ctl2 = -1;
@@ -252,7 +249,7 @@ u32 fn_800F9724(int owner, int id) {
         c->flagA = 0;
         c->flagB = 0;
         c->unk104 = 0;
-        CamObjUpdate(gZeroF, c);
+        CamObjUpdate(0.0f, c);
         return idx & 0xFFFFFF | 0x16000000;
     }
     return 0xFFFFFFFF;
@@ -318,10 +315,10 @@ void ShakeRoll(Shake* s, int* m) {
 void ShakeSlide(Shake* s, int* pos) {
     int v[3];
     int out[3];
-    if ((s->flags & 1) == 0) {
-        v[0] = s->amp / 0x8000;
-    } else {
+    if ((s->flags & 1) != 0) {
         v[0] = -s->amp / 0x8000;
+    } else {
+        v[0] = s->amp / 0x8000;
     }
     v[1] = s->amp / 0x1000;
     v[2] = -s->amp / 0x2000;
