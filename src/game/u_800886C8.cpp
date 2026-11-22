@@ -289,7 +289,7 @@ unsigned int* FxResolveScrollEntry(unsigned int* key)
 
 // Entry of the scroll-dispatch table as the dispatch path below sees it: the
 // four-character name, two words of data, and the handler pointer at 0x08
-// (retail loads it through lbl_80398470, i.e. lbl_80398468 + 8).
+// (retail loads it through lbl_80398470, the handler field of the first entry at lbl_80398468).
 struct ScrollDispatchEntry {
     unsigned int name;      // 0x00
     unsigned int unk04;     // 0x04
