@@ -443,7 +443,7 @@ extern "C" void GhostHintInit(int index)
                     lbl_80495A60[lbl_804D50F4] =
                         fn_800F7994(entry, 0x94001120);
                     lbl_80495AA0[lbl_804D50F4] = 0.0f;
-                    lbl_804D50F4 = lbl_804D50F4 + 1;
+                    lbl_804D50F4 += 1;
                 } else if ((type == 0x9860B61Cu || type == 0x276198) &&
                            fn_800F8AF4(entry) != 0x3BAD43EFu) {
                     int sub = fn_800F7994(entry, 0xc1e64319);
@@ -456,7 +456,7 @@ extern "C" void GhostHintInit(int index)
                         fn_800DEF3C(sub, 0x94001120);
                     lbl_80495AA0[lbl_804D50F4] =
                         (float)fn_800DEDF8(sub, 0x2e53de90);
-                    lbl_804D50F4 = lbl_804D50F4 + 1;
+                    lbl_804D50F4 += 1;
                 }
             }
         }
