@@ -1,7 +1,14 @@
-// u_801D9A70.cpp: a generic creature AI (state table at 0x803ADBF8) plus trail effect helpers
-// (0x801D9A70-0x801E0EDC).  Per-state enter / can-leave / update callbacks, message handling,
-// attack and approach logic, and the trail create / destroy wrappers.
-// Names are descriptive guesses; unmatched against retail so far.
+// u_801D9A70.cpp: a generic creature AI, the "[FSGSVE]" actor (state table 0x803ADBF8), 0x801D9A70-0x801DE4B0.
+// Per-state enter / can-leave / update callbacks, message handling, attack and approach logic. Sister of the
+// "[FSHSVE]" actor in u_801AADA8.cpp.
+// Boundary evidence (the old range 0x801D9A70-0x801E0EDC held four files; cuts at 0x801DE4B0, 0x801DE7A0,
+// 0x801E092C):
+// - .rodata 0x80348D00-0x80348D78: own ghost-action name table + "QUERY", "[FSGSVE]", "Stand Attack\n",
+//   "onLostTarget"; the next file has its own table at 0x80348D78.
+// - .sdata2 0x804D8CA8-0x804D8D18 (int-to-float double 0x804D8CC8); the next file's pool starts at 0x804D8D18
+//   with its own int-to-float double at 0x804D8D20. .data 0x803ADBF8-0x803ADCF8 (state table), .sdata
+//   0x804D3240.
+// Names are descriptive guesses; unmatched against retail unless noted.
 
 #include "game/types.h"
 #include "game/string.h"
@@ -757,99 +764,3 @@ int CreatureChargeCallback(Creature* c);
 
 // TODO (not drafted yet, 0xCC bytes at 0x801DE3E4)
 int CreatureShootCallback(Creature* c);
-
-// TODO (not drafted yet, 0xC bytes at 0x801DE4B0)
-extern "C" void fn_801DE4B0(void);
-
-// TODO (not drafted yet, 0x2E4 bytes at 0x801DE4BC)
-extern "C" void fn_801DE4BC(void);
-
-// TODO (not drafted yet, 0x3C bytes at 0x801DE7A0)
-extern "C" void fn_801DE7A0(void);
-
-// TODO (not drafted yet, 0x128 bytes at 0x801DE7DC)
-extern "C" void fn_801DE7DC(void);
-
-// TODO (not drafted yet, 0x5C bytes at 0x801DE904)
-void TrailDestroy(int id);
-
-// TODO (not drafted yet, 0x30 bytes at 0x801DE960)
-int TrailCreate(TrailDesc* d);
-
-// TODO (not drafted yet, 0x1DC bytes at 0x801DE990)
-extern "C" void fn_801DE990(void);
-
-// TODO (not drafted yet, 0xC4 bytes at 0x801DEB6C)
-extern "C" void fn_801DEB6C(void);
-
-// TODO (not drafted yet, 0x78 bytes at 0x801DEC30)
-extern "C" void fn_801DEC30(void);
-
-// TODO (not drafted yet, 0xEC bytes at 0x801DECA8)
-extern "C" void fn_801DECA8(void);
-
-// TODO (not drafted yet, 0x178 bytes at 0x801DED94)
-extern "C" void fn_801DED94(void);
-
-// TODO (not drafted yet, 0x28C bytes at 0x801DEF0C)
-extern "C" void fn_801DEF0C(void);
-
-// TODO (not drafted yet, 0x6A8 bytes at 0x801DF198)
-extern "C" void fn_801DF198(void);
-
-// TODO (not drafted yet, 0x108 bytes at 0x801DF840)
-extern "C" void fn_801DF840(void);
-
-// TODO (not drafted yet, 0x778 bytes at 0x801DF948)
-extern "C" void fn_801DF948(void);
-
-// TODO (not drafted yet, 0x3BC bytes at 0x801E00C0)
-extern "C" void fn_801E00C0(void);
-
-// TODO (not drafted yet, 0x27C bytes at 0x801E047C)
-extern "C" void fn_801E047C(void);
-
-// TODO (not drafted yet, 0x68 bytes at 0x801E06F8)
-extern "C" void fn_801E06F8(void);
-
-// TODO (not drafted yet, 0x48 bytes at 0x801E0760)
-extern "C" void fn_801E0760(void);
-
-// TODO (not drafted yet, 0x60 bytes at 0x801E07A8)
-extern "C" void fn_801E07A8(void);
-
-// TODO (not drafted yet, 0x8 bytes at 0x801E0808)
-extern "C" void fn_801E0808(void);
-
-// TODO (not drafted yet, 0x20 bytes at 0x801E0810)
-extern "C" void fn_801E0810(void);
-
-// TODO (not drafted yet, 0x20 bytes at 0x801E0830)
-extern "C" void fn_801E0830(void);
-
-// TODO (not drafted yet, 0x30 bytes at 0x801E0850)
-extern "C" void fn_801E0850(void);
-
-// TODO (not drafted yet, 0x4C bytes at 0x801E0880)
-extern "C" void fn_801E0880(void);
-
-// TODO (not drafted yet, 0x30 bytes at 0x801E08CC)
-extern "C" void fn_801E08CC(void);
-
-// TODO (not drafted yet, 0x30 bytes at 0x801E08FC)
-extern "C" void fn_801E08FC(void);
-
-// TODO (not drafted yet, 0x9C bytes at 0x801E092C)
-extern "C" void fn_801E092C(void);
-
-// TODO (not drafted yet, 0x2B0 bytes at 0x801E09C8)
-extern "C" void fn_801E09C8(void);
-
-// TODO (not drafted yet, 0xF8 bytes at 0x801E0C78)
-extern "C" void fn_801E0C78(void);
-
-// TODO (not drafted yet, 0x58 bytes at 0x801E0D70)
-extern "C" void fn_801E0D70(void);
-
-// TODO (not drafted yet, 0x114 bytes at 0x801E0DC8)
-extern "C" void fn_801E0DC8(void);
