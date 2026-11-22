@@ -10,6 +10,10 @@ equivalents are in `tools/matching/`: `mdiff.py`, `udiff.py`, `variants.py` (var
 `linked.py` and `scan_fakes.sh`. "Ghidra pseudocode" means the maintainer's local study copy, which is never
 published; generate your own from your copy of the game if you want it.
 
+## User decision (2026-11-22): GC/2.0 for u_801D8FD4
+- APPROVED: u_801D8FD4 -> GC/2.0 (G4 evidence: fn_801D8FD4 loads through its const Vec3* argument before `stw r0`; scratch GC/2.0 compile reproduces it, all other functions identical on both compilers). Kept only if the unit fully matches with AUDIT OK (with the VecNormalize helper in fn_801D96C4).
+- Run the same scratch GC/2.0 test on u_801D4738 (fn_801D4EC4) and u_800C5028-range (fn_800C7E80, now in u_800C6E8C) and bring results to the user before changing them.
+
 ## User decisions (2026-11-21)
 - APPROVED: all evidence-backed signature/param fixes (BarrierActorUpdate/Msg -> Actor*, NpcSveAdvance*State __FP5OwnerPv, GunTrailEntryInit8017AFA4 + float dt, GfxMarkPlayerLit (u32,int,int,float,float), BitsetAllocIndices count/out swap, GunActionMessage optional). Each kept only if the build stays byte-identical.
 - APPROVED: free functions -> class virtuals where vtables prove it (ScreenEffect* virtuals, Buffer Append/GetAlignment -> BufferOwner, ReturnZero__Fv in vtables, SoundList ~11 members, AnimRecordSize). Where no real class name exists use a descriptive name marked as a guess in a comment.
