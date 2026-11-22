@@ -633,7 +633,12 @@ config.libs = [
             Object(NonMatching, "game/SAM.cpp"),  # guess
             Object(Matching, "game/u_800E0CB8.cpp", mw_version="GC/2.0"),  # Vec3 helpers; GC/2.0: const-pointer loads before stwu (STATUS G4)
             Object(Matching, "game/asyncio.cpp"),  # guess
-            Object(NonMatching, "game/u_800E1B5C.cpp"),  # guess
+            Object(Matching, "game/u_800E1B5C.cpp"),  # rumble
+            Object(NonMatching, "game/u_800E2414.cpp"),  # split from u_800E1B5C
+            Object(NonMatching, "game/u_800E39F4.cpp"),  # split from u_800E1B5C
+            Object(NonMatching, "game/u_800E3EC4.cpp"),  # split from u_800E1B5C
+            Object(NonMatching, "game/u_800E48A0.cpp"),  # split from u_800E1B5C
+            Object(NonMatching, "game/u_800E7E20.cpp"),  # split from u_800E1B5C
             Object(Matching, "game/u_800E9418.cpp"),  # guess
             Object(NonMatching, "game/u_800EB1B8.cpp"),  # guess
             Object(Matching, "game/SpiritGun.cpp"),  # "SpiritGun" effect type
@@ -727,6 +732,11 @@ config.libs = [
             Object(NonMatching, "game/u_801E0EDC.cpp"),  # guess
             Object(NonMatching, "game/u_801E14E8.cpp"),  # split from u_801E0EDC
             Object(NonMatching, "game/u_801E241C.cpp"),  # pinned
+            Object(NonMatching, "game/u_801E3714.cpp"),  # split from u_801E241C
+            Object(NonMatching, "game/u_801E47D0.cpp"),  # split from u_801E241C
+            Object(NonMatching, "game/u_801E5B3C.cpp"),  # split from u_801E241C
+            Object(NonMatching, "game/u_801E65F0.cpp"),  # split from u_801E241C
+            Object(NonMatching, "game/u_801E72E0.cpp"),  # split from u_801E241C
             Object(NonMatching, "game/u_801E7DE0.cpp"),  # guess
             Object(NonMatching, "game/u_801EAACC.cpp"),  # guess
             Object(NonMatching, "game/u_801EDE74.cpp"),  # guess
@@ -751,6 +761,10 @@ config.libs = [
             Object(NonMatching, "game/u_80221100.cpp"),  # known
             Object(NonMatching, "game/u_80222D60.cpp"),  # guess (was u_80222C08)
             Object(NonMatching, "game/u_80226DE8.cpp"),  # guess
+            Object(NonMatching, "game/u_80227DD8.cpp"),  # split from u_80226DE8
+            Object(NonMatching, "game/u_8022A180.cpp"),  # split from u_80226DE8
+            Object(NonMatching, "game/u_8022BA30.cpp"),  # split from u_80226DE8
+            Object(NonMatching, "game/u_8022CE78.cpp"),  # split from u_80226DE8
             Object(Matching, "game/Streamer.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_8022ED88.cpp"),  # split from u_80226DE8
             Object(Matching, "game/PadRecord.cpp"),  # 0x802301E0 (helper-game-b)
@@ -811,6 +825,9 @@ config.libs = [
             Object(NonMatching, "game/u_8028DA1C.cpp"),  # guess
             Object(NonMatching, "game/u_80290C58.cpp"),  # guess
             Object(NonMatching, "game/u_80294548.cpp"),  # guess
+            Object(Matching, "game/u_80299F0C.cpp"),  # "SpitAndSqueal" effect type (split from u_80294548)
+            Object(NonMatching, "game/u_8029A5E4.cpp"),  # split from u_80294548
+            Object(NonMatching, "game/u_8029B070.cpp"),  # split from u_80294548
             Object(NonMatching, "game/u_8029C0AC.cpp"),  # guess
             Object(NonMatching, "game/u_8029E714.cpp"),  # pinned
             Object(Matching, "game/u_802A770C.cpp"),  # host types

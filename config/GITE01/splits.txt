@@ -292,7 +292,26 @@ game/asyncio.cpp:
 	.rodata     start:0x80344D80 end:0x80344E58
 
 game/u_800E1B5C.cpp:
-	.text       start:0x800E1B5C end:0x800E9418
+	.text       start:0x800E1B5C end:0x800E2414
+	.data       start:0x8039C3A8 end:0x8039C3C8
+	.bss        start:0x80455780 end:0x80455810
+	.sdata      start:0x804D2C28 end:0x804D2C30
+	.sdata2     start:0x804D7190 end:0x804D71A0
+
+game/u_800E2414.cpp:
+	.text       start:0x800E2414 end:0x800E39F4
+
+game/u_800E39F4.cpp:
+	.text       start:0x800E39F4 end:0x800E3EC4
+
+game/u_800E3EC4.cpp:
+	.text       start:0x800E3EC4 end:0x800E48A0
+
+game/u_800E48A0.cpp:
+	.text       start:0x800E48A0 end:0x800E7E20
+
+game/u_800E7E20.cpp:
+	.text       start:0x800E7E20 end:0x800E9418
 
 game/u_800E9418.cpp:
 	.text       start:0x800E9418 end:0x800EB1B8
@@ -790,7 +809,22 @@ game/u_801E14E8.cpp:
 	.sdata2     start:0x804D8D80 end:0x804D8DB0
 
 game/u_801E241C.cpp:
-	.text       start:0x801E241C end:0x801E7DE0
+	.text       start:0x801E241C end:0x801E3714
+
+game/u_801E3714.cpp:
+	.text       start:0x801E3714 end:0x801E47D0
+
+game/u_801E47D0.cpp:
+	.text       start:0x801E47D0 end:0x801E5B3C
+
+game/u_801E5B3C.cpp:
+	.text       start:0x801E5B3C end:0x801E65F0
+
+game/u_801E65F0.cpp:
+	.text       start:0x801E65F0 end:0x801E72E0
+
+game/u_801E72E0.cpp:
+	.text       start:0x801E72E0 end:0x801E7DE0
 
 game/u_801E7DE0.cpp:
 	.text       start:0x801E7DE0 end:0x801EAACC
@@ -904,7 +938,19 @@ game/u_80222D60.cpp:
 	.text       start:0x80222D60 end:0x80226DE8
 
 game/u_80226DE8.cpp:
-	.text       start:0x80226DE8 end:0x8022EC64
+	.text       start:0x80226DE8 end:0x80227DD8
+
+game/u_80227DD8.cpp:
+	.text       start:0x80227DD8 end:0x8022A180
+
+game/u_8022A180.cpp:
+	.text       start:0x8022A180 end:0x8022BA30
+
+game/u_8022BA30.cpp:
+	.text       start:0x8022BA30 end:0x8022CE78
+
+game/u_8022CE78.cpp:
+	.text       start:0x8022CE78 end:0x8022EC64
 
 game/Streamer.cpp:
 	.text       start:0x8022EC64 end:0x8022ED88
@@ -1167,7 +1213,19 @@ game/u_80290C58.cpp:
 	.text       start:0x80290C58 end:0x80294548
 
 game/u_80294548.cpp:
-	.text       start:0x80294548 end:0x8029C0AC
+	.text       start:0x80294548 end:0x80299F0C
+
+game/u_80299F0C.cpp:
+	.text       start:0x80299F0C end:0x8029A5E4
+	.rodata     start:0x8034B7C0 end:0x8034B818
+	.data       start:0x803C30B0 end:0x803C30E0
+	.sdata2     start:0x804DA720 end:0x804DA728
+
+game/u_8029A5E4.cpp:
+	.text       start:0x8029A5E4 end:0x8029B070
+
+game/u_8029B070.cpp:
+	.text       start:0x8029B070 end:0x8029C0AC
 
 game/u_8029C0AC.cpp:
 	.text       start:0x8029C0AC end:0x8029E714
