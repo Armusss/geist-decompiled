@@ -82,11 +82,11 @@ extern ModelDb* lbl_804D4300;
 extern ModelSlot lbl_803E4998[];
 extern u8 lbl_803E19F8[];
 extern u32 lbl_803F9998[];
-extern void* lbl_804D4308;
-extern int lbl_804D430C;
+extern void* gModInfoBits0;
+extern int gModInfoBits0Size;
 extern int lbl_804D4310;
-extern void* lbl_804D4314;
-extern int lbl_804D4318;
+extern void* gModInfoBits1;
+extern int gModInfoBits1Size;
 extern int lbl_804D431C;
 void* MemAlloc(int size, const char* file, int line);
 void MemFree(void* p, const char* file, int line);
@@ -281,42 +281,42 @@ extern "C" void fn_8003B30C() {
                 VFree(lbl_803E4998[i].data);
         }
     }
-    if (lbl_804D4308 != 0)
-        MemFree(lbl_804D4308, "ModInfo.cpp", 387);
-    lbl_804D4308 = 0;
-    lbl_804D430C = 0;
+    if (gModInfoBits0 != 0)
+        MemFree(gModInfoBits0, "ModInfo.cpp", 387);
+    gModInfoBits0 = 0;
+    gModInfoBits0Size = 0;
     lbl_804D4310 = -1;
-    if (lbl_804D4314 != 0)
-        MemFree(lbl_804D4314, "ModInfo.cpp", 394);
-    lbl_804D4314 = 0;
-    lbl_804D4318 = 0;
+    if (gModInfoBits1 != 0)
+        MemFree(gModInfoBits1, "ModInfo.cpp", 394);
+    gModInfoBits1 = 0;
+    gModInfoBits1Size = 0;
     lbl_804D431C = -1;
 }
 
 // 0x8003B400: allocate the two bit tables, sized from the model database counts
 extern "C" void fn_8003B400() {
     if (lbl_804D4300->field0C > 0) {
-        lbl_804D430C = lbl_804D4300->field0C;
-        lbl_804D430C = (lbl_804D430C + 7) & ~7;
-        lbl_804D4308 = MemAlloc(lbl_804D430C, "ModInfo.cpp", 348);
-        lbl_804D430C = lbl_804D430C / 8;
+        gModInfoBits0Size = lbl_804D4300->field0C;
+        gModInfoBits0Size = (gModInfoBits0Size + 7) & ~7;
+        gModInfoBits0 = MemAlloc(gModInfoBits0Size, "ModInfo.cpp", 348);
+        gModInfoBits0Size = gModInfoBits0Size / 8;
     }
     if (lbl_804D4300->field18 > 0) {
-        lbl_804D4318 = lbl_804D4300->field18;
-        lbl_804D4318 = (lbl_804D4318 + 7) & ~7;
-        lbl_804D4314 = MemAlloc(lbl_804D4318, "ModInfo.cpp", 360);
-        lbl_804D4318 = lbl_804D4318 / 8;
+        gModInfoBits1Size = lbl_804D4300->field18;
+        gModInfoBits1Size = (gModInfoBits1Size + 7) & ~7;
+        gModInfoBits1 = MemAlloc(gModInfoBits1Size, "ModInfo.cpp", 360);
+        gModInfoBits1Size = gModInfoBits1Size / 8;
     }
 }
 
 // 0x8003B4A4: reset the model database and the draw slots; register the chunk 6 loader
 extern "C" void fn_8003B4A4() {
     lbl_804D4300 = 0;
-    lbl_804D4308 = 0;
-    lbl_804D430C = 0;
+    gModInfoBits0 = 0;
+    gModInfoBits0Size = 0;
     lbl_804D4310 = -1;
-    lbl_804D4314 = 0;
-    lbl_804D4318 = 0;
+    gModInfoBits1 = 0;
+    gModInfoBits1Size = 0;
     lbl_804D431C = -1;
     memset(lbl_803E4998, 0, 0x15000);
     memset(lbl_803F9998, 0, 100);
