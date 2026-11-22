@@ -745,8 +745,7 @@ config.libs = [
             Object(NonMatching, "game/u_801E65F0.cpp"),  # split from u_801E241C
             Object(NonMatching, "game/u_801E72E0.cpp"),  # split from u_801E241C
             Object(Matching, "game/u_801E7534.cpp"),  # sniper host states + gSniperHostTypes (was u_801E72E0 tail + u_801E7DE0)
-            Object(NonMatching, "game/u_801EA880.cpp"),  # debug text helpers (was u_801E7DE0 tail)
-            Object(NonMatching, "game/u_801EAACC.cpp"),  # guess
+            Object(NonMatching, "game/u_801EA880.cpp"),  # text rendering + debug text (merged u_801EAACC)
             Object(NonMatching, "game/u_801EDE74.cpp"),  # guess
             Object(Matching, "game/u_801F1798.cpp"),  # guess
             Object(NonMatching, "game/u_801F2DA4.cpp"),  # pinned

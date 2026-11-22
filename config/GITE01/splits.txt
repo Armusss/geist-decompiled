@@ -858,10 +858,7 @@ game/u_801E7534.cpp:
 	.sdata2     start:0x804D8EF8 end:0x804D8F30
 
 game/u_801EA880.cpp:
-	.text       start:0x801EA880 end:0x801EAACC
-
-game/u_801EAACC.cpp:
-	.text       start:0x801EAACC end:0x801EDE74
+	.text       start:0x801EA880 end:0x801EDE74
 
 game/u_801EDE74.cpp:
 	.text       start:0x801EDE74 end:0x801F1798
