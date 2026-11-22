@@ -1134,6 +1134,14 @@ int fn_801D6EC8(SceneNode* body, Geom* from, int n, SceneNode** list) {
     return n;
 }
 
+static inline float BoxCenter(float* b, int i) {
+    return 0.5f * (b[i + 1] + b[i]);
+}
+
+static inline float BoxHalf(float* b, int i) {
+    return 0.5f * (b[i + 1] - b[i]);
+}
+
 // 0x801D7068: wakes every sleeping body whose box overlaps the geom's (grown) box, recursively.
 void fn_801D7068(Geom* space, Geom* g) {
     float box[6];
@@ -1153,7 +1161,7 @@ void fn_801D7068(Geom* space, Geom* g) {
             Geom* h = SpaceGetNumGeoms(space, i);
             SceneNode* body = GeomGetBody(h);
             if (body != 0 && SceneNodeNotLocked(body) == 0) {
-                bool hit;
+                int hit;
                 GeomGetAabb(h, other);
                 p = GeomGetPosition(h);
                 other[0] += p[0];
@@ -1162,15 +1170,18 @@ void fn_801D7068(Geom* space, Geom* g) {
                 other[3] += p[1];
                 other[4] += p[2];
                 other[5] += p[2];
-                if (0.5f * (box[1] - box[0]) + 0.5f * (other[1] - other[0]) <
-                        __fabsf(0.5f * (other[1] + other[0]) - 0.5f * (box[1] + box[0])) ||
-                    0.5f * (box[3] - box[2]) + 0.5f * (other[3] - other[2]) <
-                        __fabsf(0.5f * (other[3] + other[2]) - 0.5f * (box[3] + box[2])) ||
-                    0.5f * (box[5] - box[4]) + 0.5f * (other[5] - other[4]) <
-                        __fabsf(0.5f * (other[5] + other[4]) - 0.5f * (box[5] + box[4]))) {
-                    hit = false;
+                float dx = BoxCenter(other, 0) - BoxCenter(box, 0);
+                float sx = BoxHalf(box, 0) + BoxHalf(other, 0);
+                float dy = BoxCenter(other, 2) - BoxCenter(box, 2);
+                float sy = BoxHalf(box, 2) + BoxHalf(other, 2);
+                float dz = BoxCenter(other, 4) - BoxCenter(box, 4);
+                float sz = BoxHalf(box, 4) + BoxHalf(other, 4);
+                if (__fabsf(dx) <= sx &&
+                    __fabsf(dy) <= sy &&
+                    __fabsf(dz) <= sz) {
+                    hit = 1;
                 } else {
-                    hit = true;
+                    hit = 0;
                 }
                 if (hit) {
                     GeomGetGFlags(h)->idle = 0.0f;
