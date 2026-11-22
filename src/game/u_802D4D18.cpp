@@ -12,9 +12,14 @@ typedef signed int s32;
 typedef float f32;
 typedef double f64;
 
+// From a shared header: names of the ghost actions (the table itself is unused here). It opens this
+// file's string pool at 0x8034C308; the file's own strings follow from +0x48.
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
 extern "C" void* memcpy(void* dst, const void* src, u32 n);
 extern "C" u8 __upper_map[];
-extern "C" char lbl_8034C308[];   // rodata block holding the event name strings
 
 // Engine/game helpers that are still placeholders in symbols.txt.
 extern "C" int fn_800AFD20(void* obj);
@@ -277,7 +282,7 @@ int RideEventHandler(int msg, void* argp)
         }
         RideBehaviour* beh = e->owner->behaviour;
         String a(lbl_803C5664[beh->type].name);
-        String b(lbl_8034C308 + 0x51);
+        String b("\n");
         String c = fn_800225C8(&a, &b);
         fn_8028C188(&e->word, c.mData, c.mSize);
         return 0;
@@ -337,7 +342,7 @@ int RideEventHandler(int msg, void* argp)
             e->unk10 = 0;
             return 1;
         }
-        u32 hash = RideNameHash(lbl_8034C308 + 0x48);
+        u32 hash = RideNameHash("[FCOSVE]");
         memcpy(e->ref.p, &hash, 4);
         e->word.i += 4;
         e->name -= 4;
@@ -366,7 +371,7 @@ int RideEventHandler(int msg, void* argp)
             e->word.i = size + 4;
             e->name -= 4;
             e->ref.p = p + 4;
-            ok = (*(u32*)p == RideNameHash(lbl_8034C308 + 0x48));
+            ok = (*(u32*)p == RideNameHash("[FCOSVE]"));
         }
         if (!ok) {
             return 1;
@@ -647,9 +652,9 @@ void RideInitBehaviour(void* arg0, void* argp)
         t->nodeHide[i] = -1;
     }
 
-    lbl_804D3D10 = FxFind(lbl_8034C308 + 0x53);   // Impact_Truck
-    lbl_804D3D14 = FxFind(lbl_8034C308 + 0x60);   // Impact_NoDamage
-    lbl_804D3D18 = FxFind(lbl_8034C308 + 0x70);   // Truck_Horn
+    lbl_804D3D10 = FxFind("Impact_Truck");
+    lbl_804D3D14 = FxFind("Impact_NoDamage");
+    lbl_804D3D18 = FxFind("Truck_Horn");
 
     f32 health = -1.0f;
     for (int i = 0; i < 4; i++) {
