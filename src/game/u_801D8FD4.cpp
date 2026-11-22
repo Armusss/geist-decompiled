@@ -4,6 +4,11 @@
 //   fn_801D9580 is called only by fn_801D902C/fn_801D9114; fn_801D8FD4 sends msg 0x7404 and fn_801D96C4
 //   sends 0x7403; fn_801D9028 is an empty hook called from AppSystemsInit
 // Names are descriptive guesses; the code is matched against the retail DOL.
+// Left (2026-11-22): fn_801D8FD4 loads v before `stw r0` (GC/2.0 const-pointer trait; GC/2.0 gives it with
+// `const Vec3*`), and fn_801D96C4's normalize is the vecnorm.h asm helper (VecNormalize(&dir, &dir) matches).
+// With both the whole unit is byte-identical, function order and .sdata2 included (temporary flip check).
+// Function order: CW defers functions that use a struct assignment until the next inline definition, so
+// fn_801D9114 sits after SpawnAttach and fn_801D8FD4 copies v member-wise.
 
 #include <dolphin/types.h>
 
@@ -74,7 +79,7 @@ struct SpawnDirs {
 extern "C" {
 int SendMsg(int to, int msg, void* data);
 float fn_800E1020(Vec3* v);
-void fn_8001ED98(IVec3* center, int radius, int (*callback)(Actor*, Blast*, float), void* arg, int flag);
+void fn_8001ED98(IVec3* center, int radius, int (*callback)(void*, Blast*, float), void* arg, int flag);
 void fn_800A025C(Vec3* out, Mtx33* m, int axis);
 void fn_800A0168(Mtx34* out, Mtx34* in);
 void fn_8016D864(SpawnDirs* out, int* shape);
@@ -85,7 +90,7 @@ void fn_801D5260(void* obj, Vec3* v);
 void fn_801D5298(void* obj, Vec3* v);
 void fn_801D52E0(void* obj, Mtx34* m);
 void fn_801D556C(void* obj);
-int fn_801D96C4(Actor* a, Blast* blast, float dist);
+int fn_801D96C4(void* p, Blast* blast, float dist);
 void fn_801D9580(Blast* blast);
 }
 float VarFindFloat(u32 set, u32 id, u32 key);
@@ -97,7 +102,7 @@ int ViewFrustumTestOctahedron(const int* planes, const int* shape);
 void fn_800167EC(float* out, const Vec3* pos, const Vec3* a, const Vec3* b, float f1, float f2);
 
 // Sends message 0x7404.
-extern "C" void fn_801D8FD4(int to, int a, int b, float f, int c, Vec3 v, int d) {
+extern "C" void fn_801D8FD4(int to, int a, int b, float f, int c, const Vec3* v, int d) {
     Msg7404 msg;
 
     msg.a = a;
@@ -105,7 +110,9 @@ extern "C" void fn_801D8FD4(int to, int a, int b, float f, int c, Vec3 v, int d)
     msg.f = f;
     msg.c = c;
     msg.d = d;
-    msg.v = v;
+    msg.v.x = v->x;
+    msg.v.y = v->y;
+    msg.v.z = v->z;
     SendMsg(to, 0x7404, &msg);
 }
 
@@ -139,26 +146,6 @@ extern "C" int fn_801D902C(PlaceF* place, Actor* exclude, Actor* source, BlastPa
     return 1;
 }
 
-// Starts a blast whose parameters are game variables of `id`.
-extern "C" int fn_801D9114(PlaceF* place, Actor* exclude, Actor* source, u32 id) {
-    if (exclude != 0) {
-        Blast blast;
-
-        blast.cone = VarFindFloat(0x7C73AF76, id, 0x942E1552);
-        blast.radius = VarFindFloat(0x7C73AF76, id, 0x3FD77BF5);
-        blast.forceNear = VarFindFloat(0x7C73AF76, id, 0x7A277147);
-        blast.forceFar = VarFindFloat(0x7C73AF76, id, 0xD86F2F00);
-        blast.spinNear.x = VarFindFloat(0x7C73AF76, id, 0x13298FE4);
-        blast.spinNear.y = VarFindFloat(0x7C73AF76, id, 0x13298FE5);
-        blast.spinNear.z = VarFindFloat(0x7C73AF76, id, 0x13298FE6);
-        blast.spinFar.x = VarFindFloat(0x7C73AF76, id, 0x9C68889D);
-        blast.spinFar.y = VarFindFloat(0x7C73AF76, id, 0x9C68889E);
-        blast.spinFar.z = VarFindFloat(0x7C73AF76, id, 0x9C68889F);
-        BlastFire(&blast, place, exclude, source);
-    }
-    return 1;
-}
-
 // Places a spawned object on the actor and resets its motion unless `keep` is set.
 inline void SpawnAttach(void* obj, Actor* a, int keep) {
     Mtx34 m;
@@ -180,6 +167,26 @@ inline void SpawnAttach(void* obj, Actor* a, int keep) {
     }
 }
 
+// Starts a blast whose parameters are game variables of `id`.
+extern "C" int fn_801D9114(PlaceF* place, Actor* exclude, Actor* source, u32 id) {
+    if (exclude != 0) {
+        Blast blast;
+
+        blast.cone = VarFindFloat(0x7C73AF76, id, 0x942E1552);
+        blast.radius = VarFindFloat(0x7C73AF76, id, 0x3FD77BF5);
+        blast.forceNear = VarFindFloat(0x7C73AF76, id, 0x7A277147);
+        blast.forceFar = VarFindFloat(0x7C73AF76, id, 0xD86F2F00);
+        blast.spinNear.x = VarFindFloat(0x7C73AF76, id, 0x13298FE4);
+        blast.spinNear.y = VarFindFloat(0x7C73AF76, id, 0x13298FE5);
+        blast.spinNear.z = VarFindFloat(0x7C73AF76, id, 0x13298FE6);
+        blast.spinFar.x = VarFindFloat(0x7C73AF76, id, 0x9C68889D);
+        blast.spinFar.y = VarFindFloat(0x7C73AF76, id, 0x9C68889E);
+        blast.spinFar.z = VarFindFloat(0x7C73AF76, id, 0x9C68889F);
+        BlastFire(&blast, place, exclude, source);
+    }
+    return 1;
+}
+
 extern "C" void* fn_801D92F0(Actor* a, int b, int c, SpawnDirs* dirs, int keep, float x, float y, float z) {
     void* obj;
 
@@ -196,17 +203,21 @@ extern "C" void* fn_801D92F0(Actor* a, int b, int c, SpawnDirs* dirs, int keep, 
 extern "C" void* fn_801D93F4(void* p, u32 id) {
     Actor* a = (Actor*)p;
     int keep;
+    void* obj;
     u32 b;
     u32 c;
     SpawnDirs dirs;
-    void* obj;
 
     if (a == 0) {
         return 0;
     }
     b = VarFindHash(0xF3BEEEDF, id, 0x04B35781);
     c = VarFindHash(0xF3BEEEDF, id, 0x40795527);
-    keep = VarFindHash(0xF3BEEEDF, id, 0x68824BFA) == 0x00276D8E;
+    if (VarFindHash(0xF3BEEEDF, id, 0x68824BFA) == 0x00276D8E) {
+        keep = 1;
+    } else {
+        keep = 0;
+    }
     fn_8016D864(&dirs, a->shape);
     fn_8016D6BC(&dirs, &dirs);
     obj = fn_801D5B38(a->handle, -1, b, c, 0x1FFFFFFF, &dirs, keep, 2.0f * dirs.b.x, 2.0f * dirs.b.y,
@@ -272,6 +283,12 @@ inline float VecNormalize(Vec3* v) {
     return __fres(inv);
 }
 
+inline void VecScale(Vec3* out, const Vec3* v, float s) {
+    out->x = v->x * s;
+    out->y = v->y * s;
+    out->z = v->z * s;
+}
+
 // Whether the blast's cone reaches the actor's shape.
 inline int BlastReaches(Blast* blast, int* shape) {
     float cone = blast->cone;
@@ -289,9 +306,7 @@ inline int BlastReaches(Blast* blast, int* shape) {
     fn_800A025C(&up, &blast->place.rot, 1);
     if (cone > 180.0f) {
         Vec3 down;
-        down.x = up.x * -1.0f;
-        down.y = up.y * -1.0f;
-        down.z = up.z * -1.0f;
+        VecScale(&down, &up, -1.0f);
         fn_800167EC(oct, &blast->place.pos, &fwd, &down, cone - 180.0f, 1.0f);
         if (ViewFrustumTestOctahedron((int*)oct, shape) != -1) {
             return 1;
@@ -306,7 +321,9 @@ inline int BlastReaches(Blast* blast, int* shape) {
 }
 
 // Blast callback for one actor in range: sends it message 0x7403 with the force and spin at its distance.
-extern "C" int fn_801D96C4(Actor* a, Blast* blast, float dist) {
+extern "C" int fn_801D96C4(void* p, Blast* blast, float dist) {
+    Actor* a = (Actor*)p;
+
     if (a == blast->source || a != blast->exclude) {
         if (a->shape != 0 && a->handler != 0) {
             Mtx34 m;
@@ -330,9 +347,10 @@ extern "C" int fn_801D96C4(Actor* a, Blast* blast, float dist) {
                     dir.y = msg.pos.y - blast->place.pos.y;
                     dir.z = msg.pos.z - blast->place.pos.z;
                     VecNormalize(&dir);
-                    msg.force.x = dir.x * force;
-                    msg.force.y = dir.y * force;
-                    msg.force.z = dir.z * force;
+                    msg.force = dir;
+                    msg.force.x *= force;
+                    msg.force.y *= force;
+                    msg.force.z *= force;
                 } else {
                     msg.force.x = 0.0f;
                     msg.force.y = 0.0f;
