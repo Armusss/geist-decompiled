@@ -10,6 +10,16 @@ equivalents are in `tools/matching/`: `mdiff.py`, `udiff.py`, `variants.py` (var
 `linked.py` and `scan_fakes.sh`. "Ghidra pseudocode" means the maintainer's local study copy, which is never
 published; generate your own from your copy of the game if you want it.
 
+## PAUSED 2026-11-22 — resume plan (end of week)
+State: main 4e43e2d+, 3,883 game functions, 119 fully matched / 176 partly matched files, libraries 203/203, DOL byte-identical.
+No agents running. Worktrees ~/geist-work/ds/opus-1 (Agent A, architect) and ~/geist-work/ds/sonnet-3 (Agent B, fully-matched rounds); reset both to main before starting. Merge with `sh ~/geist-work/ds/lead/merge_branch.sh NAME "title"` (runs asm_guard: asm/vecnorm only in Matching units, no lbl+offset; then full audit; then pushes).
+Next, in order:
+1. Agent A — clean up the remaining fake-pattern variants found 2026-11-22: 39 `&lbl_XXXXXXXX[N]` string-pool uses (u_8018FAE8 19, u_800D32E8 10, u_80290C58 6, others) and 54 `lbl_` names used in src that are not in symbols.txt (possible off-by-N aliases like the u_8029E714 one). Then extend asm_guard.py to catch both.
+2. Agent A — architect the next least-matched large units (rank with report.json: total-matched), e.g. u_8009DE94 (GC/2.0), u_8029E714, u_80157730, u_8026C200, Cube, u_80127D80; finish undrafted big functions in u_80181644, u_801C8B6C, u_8018D2D4.
+3. Agent B — near-complete units not yet worked this round; skip the recurring unsolved shapes below. Units that would flip with the VecNormalize helper once their other functions match: u_8020A650 (BuildModel 96 diffs with the helper, scratch ~/geist-work/ds/opus-full-C26-tools/u_8020A650.asm2.cpp), u_80230504 (Apply 153 with it), u_801CC6D0.
+4. u_800C6E8C: re-test GC/2.0 when more is drafted; ask the user.
+Open shapes worth a dedicated investigation: tick `li r4,N` before `addi r3,rA,624` (6+ sites, needs scheduler insight), hoisted function address in r31, GC/2.0 declaration-position effect on registers.
+
 ## User decision (2026-11-22): GC/2.0 for u_801D8FD4
 - APPROVED: u_801D8FD4 -> GC/2.0 (G4 evidence: fn_801D8FD4 loads through its const Vec3* argument before `stw r0`; scratch GC/2.0 compile reproduces it, all other functions identical on both compilers). Kept only if the unit fully matches with AUDIT OK (with the VecNormalize helper in fn_801D96C4).
 - DONE: u_801D8FD4 GC/2.0 + Matching (474f2f8).
