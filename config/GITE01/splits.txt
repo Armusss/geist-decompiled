@@ -824,10 +824,13 @@ game/u_801E65F0.cpp:
 	.text       start:0x801E65F0 end:0x801E72E0
 
 game/u_801E72E0.cpp:
-	.text       start:0x801E72E0 end:0x801E7DE0
+	.text       start:0x801E72E0 end:0x801E7534
 
-game/u_801E7DE0.cpp:
-	.text       start:0x801E7DE0 end:0x801EAACC
+game/u_801E7534.cpp:
+	.text       start:0x801E7534 end:0x801EA880
+
+game/u_801EA880.cpp:
+	.text       start:0x801EA880 end:0x801EAACC
 
 game/u_801EAACC.cpp:
 	.text       start:0x801EAACC end:0x801EDE74

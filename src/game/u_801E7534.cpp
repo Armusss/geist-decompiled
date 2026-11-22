@@ -1,5 +1,21 @@
-// u_801E7DE0.cpp: player weapon, aim and collision-view states (0x801E7DE0-0x801EAACC).
-// Names are descriptive guesses; the code is matched against the retail DOL.
+// u_801E7534.cpp (0x801E7534-0x801EA880): the sniper host's player states (hang / grab / seat states, the
+// first-person weapon, aim, zoom and collision-view states), its zoom strings ("zoom_out", "zoom_level1") and
+// its 25-entry host behaviour table gSniperHostTypes 0x803B3B60. Same layout as u_80225E34.cpp (the zoom host).
+// Boundary evidence:
+// - start 0x801E7534: 0x801E72E0-0x801E7534 is the "SniperRound" effect type (descriptor 0x803B3B30, its own
+//   ghost-action name table + "SniperRound" at .rodata 0x80348F68, .sdata2 0x804D8EF0-0x804D8EF8). This file
+//   has its own ghost-action name table at .rodata 0x80348FC0 (strings to 0x80349038), and its host table
+//   0x803B3B60 starts right after the SniperRound descriptor; fn_801E7534 is the first state it lists.
+// - the old u_801E72E0 / u_801E7DE0 cut at 0x801E7DE0 was wrong: gSniperHostTypes lists states from
+//   fn_801E7534 to PlayerWeaponTimerEnter (0x801E926C), and .sdata2 0x804D8EF8-0x804D8F30 (one 0.0f at
+//   0x804D8F00, one int-to-float double at 0x804D8EF8) is read from PlayerFirstPersonSetup (0x801E7DE0) to
+//   PlayerWeaponStateFrameUpdate (0x801EA49C) with no duplicate.
+// - end 0x801EA880: .bss 0x8049C1E8-0x8049C228 is read only by PlayerFirstPersonSetup and fn_801EA660;
+//   fn_801EA880 starts the debug text code (.data 0x803B4284 text buffer via .sdata 0x804D3318, shared with
+//   u_801EAACC's TextDebugFlush/TextSysInit). The text file's .sdata2 starts at 0x804D8F30, its .data at
+//   0x803B4268 (right after this table), its .bss at 0x8049C228. fn_801EA87C (empty) is placed here; nothing
+//   references it.
+// Names are descriptive guesses; matched against retail unless noted.
 
 #include "game/msg.h"
 #include <dolphin/gx/GXStruct.h>
@@ -166,6 +182,178 @@ extern int Fn800F7DEC(int, int, int, int, void*);
 extern void PlayerSetHeldSlotMode(void*, int);
 extern void PlayerSetActionMode(void*, int);
 extern int ActorPlayAnim(int, u32, int);
+
+// The host/player object, as laid out in u_80222D60.cpp's player state callbacks.
+struct HostInfo {
+    int type;               // 0x00
+    u8 pad04[0x14 - 0x04];
+    int animA;              // 0x14
+    int animB;              // 0x18
+    int animC;              // 0x1C
+};
+struct Player {
+    u8 pad00[0x24];
+    int pos[3];             // 0x24
+    int pad30[2];
+    int handle;             // 0x38
+    u8 pad3C[0x50 - 0x3C];
+    u32 flags;              // 0x50
+    u8 pad54[0x78 - 0x54];
+    int unk78;              // 0x78
+    u8 pad7C[0x8C - 0x7C];
+    void* fn8C;             // 0x8C
+    u8 pad90[0x98 - 0x90];
+    int v98;                // 0x98
+    u8 pad9C[0xA4 - 0x9C];
+    int vA4;                // 0xA4
+    u8 padA8[0xC4 - 0xA8];
+    int vC4;                // 0xC4
+    u8 padC8[0xF0 - 0xC8];
+    int vF0;                // 0xF0
+    u8 padF4[0xFC - 0xF4];
+    int vFC;                // 0xFC
+    u8 pad100[0x11C - 0x100];
+    int v11C;               // 0x11C
+    u8 pad120[0x314 - 0x120];
+    int v314;               // 0x314
+    u8 pad318[0x638 - 0x318];
+    int v638;               // 0x638
+    u8 pad63C[0x678 - 0x63C];
+    u32 flags678;           // 0x678
+    float x67C;             // 0x67C
+    float y680;             // 0x680
+    float z684;             // 0x684
+    u8 pad688[0x73C - 0x688];
+    int hostIndex;          // 0x73C
+    u8 pad740[0x7A4 - 0x740];
+    int sub7A4;             // 0x7A4: movement sub-state object
+    u8 pad7A8[0x7B4 - 0x7A8];
+    u32 flags7B4;           // 0x7B4
+    u8 pad7B8[0x7D0 - 0x7B8];
+    int v7D0;               // 0x7D0
+    u8 pad7D4[0x26C4 - 0x7D4];
+    HostInfo* hosts[2];     // 0x26C4 (indexed by PlayerInHost)
+    u8 pad26CC[0x26E0 - 0x26CC];
+    int obj26E0;            // 0x26E0
+    Player* target;         // 0x26E4
+    Player* held;           // 0x26E8
+    u8 pad26EC[0x279C - 0x26EC];
+    int v279C;              // 0x279C
+};
+
+// Per-host-type behaviour table (25 entries of 0x48 bytes), as in GunWithGrenade.cpp.
+struct HostType {
+    void (*enter)(Player* p);
+    void (*update)(Player* p, int arg, float dt);
+    void (*msg)(Player* p);
+    u32 actions[14];
+    void* name;
+};
+
+extern HostType gSniperHostTypes[25];
+
+extern "C" void fn_80155A84(void* a, void* b, int c);
+extern "C" int fn_80175EFC(void);
+
+
+//@@801E7534
+extern "C" void fn_801E7534(float dt, Player* p);
+void fn_801E7534(float dt, Player* p) {
+    p->v638 = 0;
+    p->flags7B4 &= ~1;
+    fn_800769A0(p, dt);
+    PlayerSelectCollisionUpdate(p, dt);
+    if (p->vC4 == -1) {
+        if (p->v7D0 != 0) {
+            PlayerSetValue4(&p->sub7A4, 3);
+        } else {
+            PlayerSetValue4(&p->sub7A4, 1);
+        }
+    } else {
+        PlayerSetValue4(&p->sub7A4, 0x16);
+    }
+}
+//@@end
+//@@801E75D0
+extern "C" void fn_801E75D0(Player* p);
+void fn_801E75D0(Player* p) {
+    p->fn8C = 0;
+    if (p->vC4 != -1) {
+        p->v98 = p->vC4;
+    }
+    if (p->v11C != -1) {
+        p->vF0 = p->v11C;
+    }
+}
+//@@end
+//@@801E75FC
+extern "C" void fn_801E75FC(Player* p);
+void fn_801E75FC(Player* p) {
+    PlayerResetGunTimer(p);
+    p->v638 = 1;
+    p->flags7B4 &= ~1;
+    PlayerSetValue4(&p->sub7A4, 0x15);
+    if (p->v279C == -1 || fn_80175EFC() != 0) {
+        PlayerSetValue4(&p->sub7A4, 3);
+        fn_80155A84(&p->obj26E0, p->held, 1);
+    }
+}
+//@@end
+// TODO (not drafted yet, 0xFC bytes at 0x801E767C)
+// fn_801E767C
+// TODO (not drafted yet, 0xF0 bytes at 0x801E7778)
+// fn_801E7778
+// TODO (not drafted yet, 0x170 bytes at 0x801E7868)
+// fn_801E7868
+//@@801E79D8
+extern "C" void fn_801E79D8(Player* p);
+void fn_801E79D8(Player* p) {
+    PlayerResetGunTimer(p);
+    p->v638 = 1;
+    if ((p->flags7B4 & 1) != 0) {
+        p->flags7B4 &= ~1;
+    } else {
+        p->flags |= 0x20000;
+        p->unk78 = 1;
+    }
+}
+//@@end
+// TODO (not drafted yet, 0x160 bytes at 0x801E7A34)
+// fn_801E7A34
+//@@801E7B94
+extern "C" void fn_801E7B94(Player* p);
+void fn_801E7B94(Player* p) {
+    fn_80155A84(&p->obj26E0, p->held, 1);
+}
+//@@end
+//@@801E7BC0
+extern "C" void fn_801E7BC0(Player* p);
+void fn_801E7BC0(Player* p) {
+    PlayerResetGunTimer(p);
+    p->v638 = 1;
+    p->flags7B4 &= ~1;
+    p->flags |= 0x20000;
+    p->unk78 = 1;
+    PlayerSetValue4(&p->sub7A4, 0x13);
+}
+//@@end
+// TODO (not drafted yet, 0x15C bytes at 0x801E7C1C)
+// fn_801E7C1C
+//@@801E7D78
+extern "C" void fn_801E7D78(Player* p);
+void fn_801E7D78(Player* p) {
+    p->flags &= ~0x40000;
+}
+//@@end
+//@@801E7D88
+extern "C" void fn_801E7D88(float dt, Player* p);
+void fn_801E7D88(float dt, Player* p) {
+    PlayerResetGunTimer(p);
+    p->v638 = 1;
+    p->flags7B4 &= ~1;
+    PlayerSelectCollisionUpdate(p, dt);
+}
+//@@end
 
 // Shared "leave to weapon select" check of the first-person states: zoom-level
 // update when not in a host, otherwise re-enter the weapon-select state when the
@@ -1153,86 +1341,3 @@ extern "C" void fn_801EA660(void)
 // (Descriptive name: DebugTextNoOp. Kept as fn_801EA87C because other units
 // already call it by that placeholder.)
 extern "C" void fn_801EA87C(void) {}
-
-// Debug display-list buffer and its write cursor. The buffer is a 16 KB
-// scratch block the debug text renderer appends packets to.
-extern u8 lbl_803B4284[];
-extern u8* lbl_804D3318;
-
-// Builds one 9-byte text packet from the colour/rectangle arguments and then
-// draws the formatted string. (Descriptive name: DebugTextDraw. Kept as
-// fn_801EA880 because other units already call it by that placeholder.)
-void TextSetStyle(int, int, int, int, int, int, int, int, int, int, int, int);
-void DebugText(const char* fmt, ...);
-
-// Debug text packet writers: each stores one field at the write cursor and
-// advances it.
-static inline void DebugPut8(u8 v) { u8* p = lbl_804D3318; *p = v; lbl_804D3318 = p + 1; }
-static inline void DebugPut16(unsigned short v) { u8* p = lbl_804D3318; *(unsigned short*)p = v; lbl_804D3318 = p + 2; }
-
-extern "C" void fn_801EA880(const char* fmt, GXColor color, int x, int y, int w,
-                            int h, int flags)
-{
-    if ((int)lbl_804D3318 - (int)lbl_803B4284 + 9 < 0x4000) {
-        DebugPut8(9);
-        DebugPut16(x < 0 ? 0 : (x > 640 ? 640 : x));
-        DebugPut16(640);
-        DebugPut16(0);
-        DebugPut16(y < 0 ? 0 : (y > 480 ? 480 : y));
-        *lbl_804D3318 = 0;
-    }
-
-    if (flags != 0) {
-        TextSetStyle(color.r, color.g, color.b, color.a, w, 2,
-                     h / 16 - w, 0, 0, 0, 0, 0);
-    } else {
-        TextSetStyle(color.r, color.g, color.b, color.a, w, 0, 0, 0,
-                     0, 0, 0, 0);
-    }
-    DebugText(fmt);
-}
-
-// Debug-text state word shared with the screen-printf renderer. It lives in
-// another unit's small-data section, so it keeps its placeholder name here.
-extern int lbl_804D52A4;
-
-// Reads the debug-text state word.
-// (Descriptive name: GetDebugTextState. Was fn_801EA9DC.)
-int GetDebugTextState(void)
-{
-    return lbl_804D52A4;
-}
-
-// Clears the debug-text state word.
-// (Descriptive name: ResetDebugTextState. Was fn_801EA9E4.)
-void ResetDebugTextState(void)
-{
-    lbl_804D52A4 = 0;
-}
-
-#include <stdarg.h>
-
-extern "C" {
-extern int vsprintf(char* buf, const char* fmt, va_list args);
-extern char* strcat(char* dst, const char* src);
-extern char lbl_803B8284[];
-}
-
-void* ScratchAAlloc(int size);
-
-// Formats a debug message into a scratch block and appends it to the debug
-// text buffer when the combined text still fits in the 0x1000-byte block.
-void ScreenPrintf(const char* fmt, ...)
-{
-    va_list args;
-
-    if (lbl_804D52A4 != 0) {
-        char* buf = (char*)ScratchAAlloc(0x40000);
-        va_start(args, fmt);
-        int len = vsprintf(buf, fmt, args);
-
-        if ((u32)(len + strlen(lbl_803B8284)) < 0x1000) {
-            strcat(lbl_803B8284, buf);
-        }
-    }
-}
