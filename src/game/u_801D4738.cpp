@@ -1043,6 +1043,9 @@ void fn_801D6CB8(Geom* space, float dt) {
     int i;
     for (i = 0; i < n; i++) {
         Geom* g = SpaceGetNumGeoms(space, i);
+        float* pos;
+        float* vel;
+        PhysObj* o;
         SceneNode* body;
         if (GeomIsEnabled(g) != 0 && (body = GeomGetBody(g)) != 0 && SceneNodeNotLocked(body) != 0) {
             Geom** p = (Geom**)sGeoms->mUnk0C;
@@ -1054,9 +1057,9 @@ void fn_801D6CB8(Geom* space, float dt) {
                     }
                 }
                 if (p != end) {
-                    PhysObj* o = GeomGetGFlags(g);
-                    float* pos = SceneNodePosPtr(body);
-                    float* vel = SceneNodeVelocityPtr(body);
+                    o = GeomGetGFlags(g);
+                    pos = SceneNodePosPtr(body);
+                    vel = SceneNodeVelocityPtr(body);
                     fn_801D77C4(o, pos);
                     if (LenSq(pos) + LenSq(vel) < 0.1f) {
                         o->idle += dt;
@@ -1073,9 +1076,9 @@ void fn_801D6CB8(Geom* space, float dt) {
                                     for (k = 0; k < count; k++) {
                                         PhysObj* q = SceneNodeGetOwner(*l);
                                         SceneNodeLock(*l);
-                                        l++;
                                         q->flags &= ~6;
                                         q->hits = 0;
+                                        l++;
                                     }
                                 }
                             }
