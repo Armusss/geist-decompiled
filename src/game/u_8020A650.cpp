@@ -492,7 +492,7 @@ void ActiveNode::ApplySourceMode(int mode)
 // base transform, every following entry either takes its live bone matrix or is
 // rotated by the transform of the entry its index points at.
 // Conjugate (inverse rotation) of a unit quaternion.
-static inline void QuatConjugate(Quat* out, Quat* q)
+static inline void QuatConjugate(Quat* out, const Quat* q)
 {
     out->x = -q->x;
     out->y = -q->y;
@@ -790,6 +790,17 @@ static inline void VecCross(Vec3* out, const Vec3* a, const Vec3* b)
     out->z = a->x * b->y - a->y * b->x;
 }
 
+static inline void Vec3Sub(Vec3* out, const Vec3* a, const Vec3* b)
+{
+    float x = a->x, y = a->y, z = a->z;
+    x -= b->x;
+    y -= b->y;
+    z -= b->z;
+    out->x = x;
+    out->y = y;
+    out->z = z;
+}
+
 // Builds the runtime representation of one body: allocates a callback per
 // body part, places it on the animated skeleton and links the attachments.
 int u8020A650BuildModel(ActiveNode* owner, int setIndex, u8* map,
@@ -818,7 +829,7 @@ int u8020A650BuildModel(ActiveNode* owner, int setIndex, u8* map,
     ModelSetMatrix(owner->modelId, mtx, animBuf);
     ctx = fn_801D54E8();
 
-    for (i = 1; i < numParts; i++) {
+    for (int i = 1; i < numParts; i++) {
         u8020A650PartName* part = &parts[i];
         int slot = map[part->asset];
         int slot2 = map[part->asset2];
@@ -836,11 +847,10 @@ int u8020A650BuildModel(ActiveNode* owner, int setIndex, u8* map,
         size.x = 2.0f * part->f14;
         size.y = 2.0f * part->f14;
         size.z = part->f18;
+        delta.x = ((u8020A650Anim*)animBuf)[slot2].pos.x - ((u8020A650Anim*)animBuf)[slot].pos.x;
+        delta.y = ((u8020A650Anim*)animBuf)[slot2].pos.y - ((u8020A650Anim*)animBuf)[slot].pos.y;
+        delta.z = ((u8020A650Anim*)animBuf)[slot2].pos.z - ((u8020A650Anim*)animBuf)[slot].pos.z;
         u8020A650Anim* a = &((u8020A650Anim*)animBuf)[slot];
-        u8020A650Anim* b = &((u8020A650Anim*)animBuf)[slot2];
-        delta.x = b->pos.x - a->pos.x;
-        delta.y = b->pos.y - a->pos.y;
-        delta.z = b->pos.z - a->pos.z;
         axis.x = 0.0f;
         axis.y = 0.0f;
         axis.z = 0.5f * (2.0f * part->f14 + part->f18);
@@ -909,7 +919,7 @@ int u8020A650BuildModel(ActiveNode* owner, int setIndex, u8* map,
 
     owner->ctx = fn_801D4C34();
     list = fn_80037B6C(owner->modelId);
-    for (i = 0; i < owner->count; i++) {
+    for (int i = 0; i < owner->count; i++) {
         int slot = map[list[i]];
         int parent;
         Quat inv;
@@ -948,7 +958,7 @@ int u8020A650BuildModel(ActiveNode* owner, int setIndex, u8* map,
 
     attach = &sAttach[set->attachIndex];
     n = set->attachCount;
-    for (i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         u8020A650AttachName* at = &attach[i];
         int slotA = map[at->asset];
         int slotB = map[at->asset2];
@@ -1034,7 +1044,7 @@ int u8020A650BuildModel(ActiveNode* owner, int setIndex, u8* map,
         }
     }
 
-    for (i = 1; i < numParts; i++) {
+    for (int i = 1; i < numParts; i++) {
         u8020A650PartName* part = &parts[i];
         int slot = map[part->asset];
         int slot2 = map[part->asset2];
@@ -1090,19 +1100,10 @@ int u8020A650BuildModel(ActiveNode* owner, int setIndex, u8* map,
 
         if (owner->entries[i].source != 0)
             continue;
-        {
-            Vec3* d = &owner->entries[i].rest.pos;
-            int k = owner->entries[i].index;
-            d->x = anims[i].pos.x - anims[k].pos.x;
-            d->y = anims[i].pos.y - anims[k].pos.y;
-            d->z = anims[i].pos.z - anims[k].pos.z;
-        }
+        Vec3Sub(&owner->entries[i].rest.pos, &anims[i].pos, &anims[owner->entries[i].index].pos);
         QuatRotateVec(&owner->entries[i].rest.pos, (float*)&anims[owner->entries[i].index].rot.x,
                       &owner->entries[i].rest.pos);
-        inv.x = -anims[owner->entries[i].index].rot.x;
-        inv.y = -anims[owner->entries[i].index].rot.y;
-        inv.z = -anims[owner->entries[i].index].rot.z;
-        inv.w = anims[owner->entries[i].index].rot.w;
+        QuatConjugate(&inv, &anims[owner->entries[i].index].rot);
         PSQUATMultiply((Quat*)&anims[i].rot, &inv, &owner->entries[i].rest.rot);
     }
 
