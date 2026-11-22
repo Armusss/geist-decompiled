@@ -1,8 +1,10 @@
-// u_8029C0AC.cpp: NPC / path-follow actor ("Sve") message handlers and follow states (0x8029C0AC-0x8029E714).
+// u_8029C0D0.cpp: NPC / path-follow actor ("Sve") message handlers and follow states (0x8029C0D0-0x8029E714).
+// Starts at 0x8029C0D0: ClearEntryRange (0x8029C0AC) is the destroy hook of u_8029B070's EntryList, called only
+// from EntryList::Append there.
 // Sister of u_801CA16C (HostRideJ): same 8-state table layout, message handler and save tag scheme.
 // Data: .rodata 0x8034B818 (POSSESS..SCAN, "", "[NPCSVE]", "\n", "QUERY"), state table 0x803C3188,
 // asset .sdata 0x804D3848, .sdata2 0x804DA778-0x804DA7C0.
-// Status: 32/33. With a temporary Matching flip (and the AdvanceTo* rename below) the whole DOL differs only in
+// Status: 31/32. With a temporary Matching flip (and the AdvanceTo* rename below) the whole DOL differs only in
 // NpcSveUpdateActor's `li r4,0xA` / `addi r3,o,0x270` pair (the open "host-ride li r4" shape, like HostRideJTick).
 // Names are descriptive guesses.
 
@@ -13,19 +15,6 @@
 typedef unsigned char u8;
 typedef unsigned long u32;
 typedef long s32;
-
-// Empties a range of 12-byte elements: exactly the counted loop CodeWarrior
-// emits for a "for each element, call the (empty) destructor" loop.
-struct Entry12 {
-    u32 a;
-    u32 b;
-    u32 c;
-};
-
-void ClearEntryRange(Entry12* begin, Entry12* end) {
-    for (; begin < end; begin++) {
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Shared declarations for the NPC/"SVE" actor message handlers below.

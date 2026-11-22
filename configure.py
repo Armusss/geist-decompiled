@@ -829,7 +829,7 @@ config.libs = [
             Object(Matching, "game/u_80299F0C.cpp"),  # "SpitAndSqueal" effect type (split from u_80294548)
             Object(NonMatching, "game/u_8029A5E4.cpp"),  # split from u_80294548
             Object(NonMatching, "game/u_8029B070.cpp"),  # split from u_80294548
-            Object(NonMatching, "game/u_8029C0AC.cpp"),  # guess
+            Object(NonMatching, "game/u_8029C0D0.cpp"),  # guess (was u_8029C0AC)
             Object(NonMatching, "game/u_8029E714.cpp"),  # pinned
             Object(Matching, "game/u_802A770C.cpp"),  # host types
             Object(Matching, "game/Fuel.cpp"),  # (helper-game-b)
