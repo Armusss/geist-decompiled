@@ -791,6 +791,7 @@ game/u_801D8994.cpp:
 
 game/u_801D8FD4.cpp:
 	.text       start:0x801D8FD4 end:0x801D9A70
+	.sdata2     start:0x804D8C80 end:0x804D8CA8
 
 game/u_801D9A70.cpp:
 	.text       start:0x801D9A70 end:0x801E0EDC
