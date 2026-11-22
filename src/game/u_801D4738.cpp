@@ -1030,7 +1030,10 @@ void fn_801D6928(float dt) {
 
 // Squared length of a vector.
 static inline float LenSq(float* v) {
-    return v[2] * v[2] + v[0] * v[0] + v[1] * v[1];
+    float x = v[0] * v[0];
+    float y = v[1] * v[1];
+    float z = v[2] * v[2];
+    return x + y + z;
 }
 
 // 0x801D6CB8: puts resting bodies (and resting islands) to sleep.
@@ -1085,26 +1088,26 @@ void fn_801D6CB8(float dt, Geom* space) {
 
 // 0x801D6EC8: collects the island of bodies jointed to a body; 0 if any of them still moves.
 int fn_801D6EC8(SceneNode* body, Geom* from, int n, SceneNode** list) {
-    int count = n + 1;
     int joints;
     int i;
-    list[n] = body;
+    list[n++] = body;
     joints = SceneNodeListCount(body);
     for (i = 0; i < joints; i++) {
+        SceneNode* other;
         Geom* j = SceneNodeListGet(body, i);
         if (j != from) {
-            SceneNode* other = (SceneNode*)fn_802777BC(j, 0);
+            other = (SceneNode*)fn_802777BC(j, 0);
             if (other == body) {
                 other = (SceneNode*)fn_802777BC(j, 1);
             }
             if (other != 0 && SceneNodeNotLocked(other) != 0) {
                 int k;
-                for (k = 0; k < count; k++) {
+                for (k = 0; k < n; k++) {
                     if (list[k] == other) {
                         break;
                     }
                 }
-                if (k == count) {
+                if (k == n) {
                     PhysObj* o = SceneNodeGetOwner(other);
                     float* pos = SceneNodePosPtr(other);
                     float* vel = SceneNodeVelocityPtr(other);
@@ -1114,15 +1117,18 @@ int fn_801D6EC8(SceneNode* body, Geom* from, int n, SceneNode** list) {
                     if (o->idle < 1000.0f) {
                         return 0;
                     }
-                    count = fn_801D6EC8(other, j, count, list);
-                    if (count == 0) {
-                        return 0;
+                    {
+                        int r = fn_801D6EC8(other, j, n, list);
+                        if (r == 0) {
+                            return 0;
+                        }
+                        n = r;
                     }
                 }
             }
         }
     }
-    return count;
+    return n;
 }
 
 // 0x801D7068: wakes every sleeping body whose box overlaps the geom's (grown) box, recursively.
