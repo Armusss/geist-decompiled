@@ -739,7 +739,22 @@ game/u_801AADA8.cpp:
 	.text       start:0x801AADA8 end:0x801AE50C
 
 game/u_801AE50C.cpp:
-	.text       start:0x801AE50C end:0x801BEC4C
+	.text       start:0x801AE50C end:0x801B47CC
+
+game/u_801B47CC.cpp:
+	.text       start:0x801B47CC end:0x801B829C
+
+game/u_801B829C.cpp:
+	.text       start:0x801B829C end:0x801B8FC0
+
+game/u_801B8FC0.cpp:
+	.text       start:0x801B8FC0 end:0x801BD5A4
+
+game/u_801BD5A4.cpp:
+	.text       start:0x801BD5A4 end:0x801BE008
+
+game/u_801BE008.cpp:
+	.text       start:0x801BE008 end:0x801BEC4C
 	.ctors      start:0x8034122C end:0x80341230
 
 game/VMem.cpp:
