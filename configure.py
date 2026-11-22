@@ -650,7 +650,11 @@ config.libs = [
             Object(Matching, "game/u_800F14A8.cpp"),  # known
             Object(Matching, "game/Image.cpp"),
             Object(NonMatching, "game/u_800F396C.cpp"),  # pinned
-            Object(NonMatching, "game/u_800F73C8.cpp"),  # guess
+            Object(Matching, "game/u_800F73C8.cpp"),  # music stream callbacks (split 2026-11-22)
+            Object(NonMatching, "game/u_800F77F8.cpp"),  # effect kinds + emitters (split from u_800F73C8)
+            Object(NonMatching, "game/u_800F9458.cpp"),  # cameras (split from u_800F73C8)
+            Object(NonMatching, "game/u_800FA004.cpp"),  # team base actors (split from u_800F73C8)
+            Object(NonMatching, "game/u_800FC2F4.cpp"),  # minigame engine (split from u_800F73C8)
             Object(NonMatching, "game/u_800FDDE4.cpp"),  # guess
             Object(NonMatching, "game/u_80100EB0.cpp"),  # guess
             Object(NonMatching, "game/CubeTev.cpp"),  # guess
@@ -715,7 +719,12 @@ config.libs = [
             Object(NonMatching, "game/u_801A28A4.cpp"),  # pinned
             Object(NonMatching, "game/u_801A6094.cpp"),  # pinned
             Object(NonMatching, "game/u_801AADA8.cpp"),  # pinned
-            Object(NonMatching, "game/u_801AE50C.cpp"),  # pinned
+            Object(NonMatching, "game/u_801AE50C.cpp"),  # enemy character (split 2026-11-22)
+            Object(NonMatching, "game/u_801B47CC.cpp"),  # AI state callbacks (split from u_801AE50C)
+            Object(NonMatching, "game/u_801B829C.cpp"),  # Overlay actor (split from u_801AE50C)
+            Object(NonMatching, "game/u_801B8FC0.cpp"),  # [FASSVE] actor (split from u_801AE50C)
+            Object(NonMatching, "game/u_801BD5A4.cpp"),  # behaviour type registry (split from u_801AE50C)
+            Object(NonMatching, "game/u_801BE008.cpp"),  # type registry + sinit (split from u_801AE50C)
             Object(Matching, "game/VMem.cpp"),  # known start; end 0x801BF578 (helper-game-b)
             Object(Matching, "game/u_801BF578.cpp"),  # own POSSESS pool 0x803486C8, state table 0x803ABBA8
             Object(NonMatching, "game/u_801C02FC.cpp"),  # own pool 0x80348718, 161-entry state table 0x803ABBC0, own 0.0/1.0 consts
@@ -745,8 +754,7 @@ config.libs = [
             Object(NonMatching, "game/u_801E65F0.cpp"),  # split from u_801E241C
             Object(NonMatching, "game/u_801E72E0.cpp"),  # split from u_801E241C
             Object(Matching, "game/u_801E7534.cpp"),  # sniper host states + gSniperHostTypes (was u_801E72E0 tail + u_801E7DE0)
-            Object(NonMatching, "game/u_801EA880.cpp"),  # debug text helpers (was u_801E7DE0 tail)
-            Object(NonMatching, "game/u_801EAACC.cpp"),  # guess
+            Object(NonMatching, "game/u_801EA880.cpp"),  # text rendering + debug text (merged u_801EAACC)
             Object(NonMatching, "game/u_801EDE74.cpp"),  # guess
             Object(Matching, "game/u_801F1798.cpp"),  # guess
             Object(NonMatching, "game/u_801F2DA4.cpp"),  # pinned
@@ -806,7 +814,8 @@ config.libs = [
             Object(Matching, "game/Thermostat.cpp"),  # thermostat gauge actor
             Object(NonMatching, "game/Retinal.cpp"),  # (helper-game-b)
             Object(Matching, "game/u_80268528.cpp"),  # HERMIT SPIT effect type (merged with its message/create part)
-            Object(NonMatching, "game/u_802690C8.cpp"),  # Hermit Spit Ammo + view sensors
+            Object(NonMatching, "game/u_802690C8.cpp"),  # Hermit Spit Ammo
+            Object(NonMatching, "game/u_802698D0.cpp"),  # view sensors (split from u_802690C8)
             Object(Matching, "game/Timer.cpp"),  # per-level timer hooks
             Object(Matching, "game/u_8026A158.cpp"),  # guess
             Object(Matching, "game/u_8026A37C.cpp"),  # guess

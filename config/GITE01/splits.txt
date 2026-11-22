@@ -367,7 +367,19 @@ game/u_800F396C.cpp:
 	.text       start:0x800F396C end:0x800F73C8
 
 game/u_800F73C8.cpp:
-	.text       start:0x800F73C8 end:0x800FDDE4
+	.text       start:0x800F73C8 end:0x800F77F8
+
+game/u_800F77F8.cpp:
+	.text       start:0x800F77F8 end:0x800F9458
+
+game/u_800F9458.cpp:
+	.text       start:0x800F9458 end:0x800FA004
+
+game/u_800FA004.cpp:
+	.text       start:0x800FA004 end:0x800FC2F4
+
+game/u_800FC2F4.cpp:
+	.text       start:0x800FC2F4 end:0x800FDDE4
 
 game/u_800FDDE4.cpp:
 	.text       start:0x800FDDE4 end:0x80100EB0
@@ -739,7 +751,25 @@ game/u_801AADA8.cpp:
 	.text       start:0x801AADA8 end:0x801AE50C
 
 game/u_801AE50C.cpp:
-	.text       start:0x801AE50C end:0x801BEC4C
+	.text       start:0x801AE50C end:0x801B47CC
+
+game/u_801B47CC.cpp:
+	.text       start:0x801B47CC end:0x801B829C
+
+game/u_801B829C.cpp:
+	.text       start:0x801B829C end:0x801B8FC0
+
+game/u_801B8FC0.cpp:
+	.text       start:0x801B8FC0 end:0x801BD5A4
+
+game/u_801BD5A4.cpp:
+	.text       start:0x801BD5A4 end:0x801BE008
+	.rodata     start:0x803486A0 end:0x803486A8
+	.data       start:0x803AB708 end:0x803AB9D8
+	.sdata      start:0x804D3200 end:0x804D3208
+
+game/u_801BE008.cpp:
+	.text       start:0x801BE008 end:0x801BEC4C
 	.ctors      start:0x8034122C end:0x80341230
 
 game/VMem.cpp:
@@ -858,10 +888,7 @@ game/u_801E7534.cpp:
 	.sdata2     start:0x804D8EF8 end:0x804D8F30
 
 game/u_801EA880.cpp:
-	.text       start:0x801EA880 end:0x801EAACC
-
-game/u_801EAACC.cpp:
-	.text       start:0x801EAACC end:0x801EDE74
+	.text       start:0x801EA880 end:0x801EDE74
 
 game/u_801EDE74.cpp:
 	.text       start:0x801EDE74 end:0x801F1798
@@ -1145,7 +1172,10 @@ game/u_80268528.cpp:
 	.sdata2     start:0x804DA138 end:0x804DA140
 
 game/u_802690C8.cpp:
-	.text       start:0x802690C8 end:0x8026A0F0
+	.text       start:0x802690C8 end:0x802698D0
+
+game/u_802698D0.cpp:
+	.text       start:0x802698D0 end:0x8026A0F0
 
 game/Timer.cpp:
 	.text       start:0x8026A0F0 end:0x8026A158
