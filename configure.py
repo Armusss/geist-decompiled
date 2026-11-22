@@ -650,7 +650,11 @@ config.libs = [
             Object(Matching, "game/u_800F14A8.cpp"),  # known
             Object(Matching, "game/Image.cpp"),
             Object(NonMatching, "game/u_800F396C.cpp"),  # pinned
-            Object(NonMatching, "game/u_800F73C8.cpp"),  # guess
+            Object(NonMatching, "game/u_800F73C8.cpp"),  # music stream callbacks (split 2026-11-22)
+            Object(NonMatching, "game/u_800F77F8.cpp"),  # effect kinds + emitters (split from u_800F73C8)
+            Object(NonMatching, "game/u_800F9458.cpp"),  # cameras (split from u_800F73C8)
+            Object(NonMatching, "game/u_800FA004.cpp"),  # team base actors (split from u_800F73C8)
+            Object(NonMatching, "game/u_800FC2F4.cpp"),  # minigame engine (split from u_800F73C8)
             Object(NonMatching, "game/u_800FDDE4.cpp"),  # guess
             Object(NonMatching, "game/u_80100EB0.cpp"),  # guess
             Object(NonMatching, "game/CubeTev.cpp"),  # guess

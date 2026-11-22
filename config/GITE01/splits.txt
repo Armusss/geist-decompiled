@@ -367,7 +367,19 @@ game/u_800F396C.cpp:
 	.text       start:0x800F396C end:0x800F73C8
 
 game/u_800F73C8.cpp:
-	.text       start:0x800F73C8 end:0x800FDDE4
+	.text       start:0x800F73C8 end:0x800F77F8
+
+game/u_800F77F8.cpp:
+	.text       start:0x800F77F8 end:0x800F9458
+
+game/u_800F9458.cpp:
+	.text       start:0x800F9458 end:0x800FA004
+
+game/u_800FA004.cpp:
+	.text       start:0x800FA004 end:0x800FC2F4
+
+game/u_800FC2F4.cpp:
+	.text       start:0x800FC2F4 end:0x800FDDE4
 
 game/u_800FDDE4.cpp:
 	.text       start:0x800FDDE4 end:0x80100EB0
