@@ -79,11 +79,23 @@ extern int lbl_804D48C0;
 CameraObj* CameraTable();
 extern "C" void fn_800C5E00(int view);
 
-// Binary search of the animation table: 1 if the state list of `key` holds `state`, 0 if not,
-// -1 if the key is missing.
-static inline int AnimTableFind(u32 key, u32 state, int unused, AnimTableEntry* table, int lo, int hi,
-                                int found)
+int AnimEntryCompare(const u32* a, const u32* b);
+int ActorPendingMsgHandler(int self, int msg, int* data);
+
+// 0x800C5028: does an animation key allow a state? Binary search of the table by key, then a scan of the key's
+// state list: 1 if `state` is listed, 0 if not, -1 if the key is missing. The function is 0xC8 bytes: the 4-byte
+// `b` at 0x800C50EC (a dead loop branch after the last return) is part of it, not a separate function.
+// 1 diff left: ours also emits a dead epilogue `blr` after that `b`; no other retail function ends in blr + b.
+int ActorAnimState(int key, u32 state)
 {
+    AnimTableEntry* table = lbl_804D4898;
+    int lo = 0;
+    int hi = lbl_804D489C;
+    int found = -1;
+
+    if (table == 0) {
+        return -1;
+    }
     while (lo <= hi && found == -1) {
         int mid = (lo + hi) / 2;
         u32 k = table[mid].key;
@@ -97,7 +109,7 @@ static inline int AnimTableFind(u32 key, u32 state, int unused, AnimTableEntry* 
         }
     }
     if (found >= 0) {
-        int i;
+        u32 i;
 
         table = table + found;
         for (i = 0; i < table->count; i++) {
@@ -108,23 +120,6 @@ static inline int AnimTableFind(u32 key, u32 state, int unused, AnimTableEntry* 
         return 0;
     }
     return -1;
-}
-
-int AnimEntryCompare(const u32* a, const u32* b);
-int ActorPendingMsgHandler(int self, int msg, int* data);
-
-// 0x800C5028: does an animation key allow a state?
-int ActorAnimState(int key, u32 state)
-{
-    AnimTableEntry* table = lbl_804D4898;
-    int lo = 0;
-    int hi = lbl_804D489C;
-    int found = -1;
-
-    if (table == 0) {
-        return -1;
-    }
-    return AnimTableFind(key, state, 0, table, lo, hi, found);
 }
 
 // 0x800C50F0: empty
@@ -756,8 +751,6 @@ extern "C" void fn_800C6DD8()
     lbl_8039B760[3] = -1;
 }
 
-// TODO (not drafted yet, 0x4 bytes at 0x800C50EC): a 4-byte `b 0x800C5088` back into ActorAnimState; the
-// fn_800C50EC symbol is probably a split artifact of that function (size to check)
 // TODO (not drafted yet, 0x444 bytes at 0x800C5210)
 // fn_800C5210
 // TODO (not drafted yet, 0x26C bytes at 0x800C5B6C)
