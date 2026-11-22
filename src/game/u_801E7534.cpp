@@ -15,7 +15,7 @@
 //   u_801EAACC's TextDebugFlush/TextSysInit). The text file's .sdata2 starts at 0x804D8F30, its .data at
 //   0x803B4268 (right after this table), its .bss at 0x8049C228. fn_801EA87C (empty) is placed here; nothing
 //   references it.
-// Names are descriptive guesses; matched against retail unless noted.
+// Names are descriptive guesses. Status: Matching (all 44 functions and the data above).
 
 #include "game/msg.h"
 #include <dolphin/gx/GXStruct.h>
@@ -113,24 +113,7 @@ struct Actor {
     PlayerView* views[4];         // 0x26C4 (per local player; element 1 is at 0x26C8)
 };
 
-// Global table holding per-weapon ids; the arrays used here live at 0x0E4,
-// 0x2DC and 0x3B4.
-struct WeaponTable {
-    u8  unk000[0x00C];      // 0x000
-    int globalWeaponId;     // 0x00C weapon id used by the timer variant
-    u8  unk010[0x054 - 0x10]; // 0x010
-    int ids54[0x12];        // 0x054
-    int ids9C[0x12];        // 0x09C
-    int idsE4[0x24];        // 0x0E4
-    int ids174[0x48];       // 0x174
-    int ids294[0x12];       // 0x294
-    int ids2DC[0x36];       // 0x2DC
-    int weapons[0xD5];      // 0x3B4
-};
-
 extern "C" {
-extern WeaponTable lbl_803B3B60;
-extern int lbl_8049C1E8[16];
 extern void fn_80050EB0(void*);
 extern int fn_800A1BC8(int, int, int, int, int);
 extern void SendMsg(void* to, int msg, void* data);
@@ -140,12 +123,8 @@ extern int fn_80049750(void* actor);
 extern void fn_800769A0(void*, float);
 extern int fn_80049940(void);
 extern int fn_802A1D04(void);
-extern int fn_800F60B8(int, int);
-extern void fn_800F60E4(int, int, int);
 extern void fn_80073E80(void*);
 extern void fn_8008E824(void*, int);
-extern int fn_801E9C30(void*);
-extern int fn_801E9F08(int, Actor*);
 extern float fn_800699B8(void*);
 extern void fn_800699A8(void*);
 extern float fn_800F95E4(int);
@@ -154,20 +133,19 @@ extern void fn_8000F60C(void);
 extern void fn_8000F7E4(int, int);
 extern int fn_800C5210(void*, int, void*);
 extern void fn_80165DA8(void*);
-extern float lbl_804D32F8;
-extern float lbl_804D32FC;
-extern float lbl_804D3300;
-extern float lbl_804D3304;
-extern int lbl_804D330C;
 extern int fn_800F7994(int, u32);
 extern void FxStart(int, int, int);
 extern int rand(void);
 }
 
 int FxFind(const char* name);
+int WeatherGetTypeId(int, int);       // name from its own unit; here it reads a model's variant handle
+void WeatherSetByTypeId(int, int, int);
 int AssetFind(unsigned long, unsigned long);
 
 int PlayerZoomLevelUpdate(Actor* actor, int slotA, int slotB);
+int PlayerHeldSlotActionCheck(Actor* actor);
+int PlayerGunActionMessage(int msg, void* p);
 int PlayerZoomStateUpdate(Actor* actor, float dt);
 
 void PlayerResetGunTimer(void*);
@@ -182,6 +160,45 @@ extern int Fn800F7DEC(int, int, int, int, void*);
 extern void PlayerSetHeldSlotMode(void*, int);
 extern void PlayerSetActionMode(void*, int);
 extern int ActorPlayAnim(int, u32, int);
+
+// Shared "leave to weapon select" check of the first-person states: zoom-level
+// update when not in a host, otherwise re-enter the weapon-select state when the
+// host asks for it and the player is free. Returns 1 when a state change was made.
+static inline int PlayerWeaponReenter(Actor* actor)
+{
+    if (fn_802A1D04() == 0) {
+        return PlayerZoomLevelUpdate(actor, 0xD, 0x16);
+    }
+    if (actor->flags328 & 1) {
+        if (PlayerInHost(actor) != 0) {
+            if (!(actor->flags7B4 & 0x40000) && !(actor->flags7B4 & 0x80000)) {
+                fn_80073E80(actor);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+// Shared weapon-model toggle of the first-person states: outside a host, flips
+// the weapon model handle between its two variants while the zoom slot is held;
+// inside one, runs the secondary zoom-level update. Returns 1 when it acted.
+static inline int PlayerWeaponToggle(Actor* actor)
+{
+    if (fn_802A1D04() == 0) {
+        if (actor->field318 == 1 || actor->field318 == 3) {
+            if (WeatherGetTypeId(actor->field248, 1) == 0x24a738) {
+                WeatherSetByTypeId(actor->field248, 1, 0x9b286e6f);
+            } else {
+                WeatherSetByTypeId(actor->field248, 1, 0x24a738);
+            }
+            return 1;
+        }
+    } else {
+        return PlayerZoomLevelUpdate(actor, 9, 0x15);
+    }
+    return 0;
+}
 
 // The host/player object, as laid out in u_80222D60.cpp's player state callbacks.
 struct HostInfo {
@@ -241,19 +258,50 @@ struct Player {
     int v279C;              // 0x279C
 };
 
-// Per-host-type behaviour table (25 entries of 0x48 bytes), as in GunWithGrenade.cpp.
+// Per-state behaviour table of the sniper host (25 entries of 0x48 bytes), the layout of u_80225E34.cpp's
+// table: enter / per-frame update / notify callbacks, one animation hash per host index, and a weapon id.
 struct HostType {
-    void (*enter)(Player* p);
-    void (*update)(Player* p, int arg, float dt);
-    void (*msg)(Player* p);
-    u32 actions[14];
-    void* name;
+    void (*enter)(Actor* actor);                     // 0x00
+    void (*update)(float dt, Actor* actor, int arg); // 0x04
+    void (*notify)(Actor* actor);                    // 0x08
+    u32 anims[14];                                   // 0x0C (indexed by Player::hostIndex)
+    int weaponId;                                    // 0x44
 };
 
 extern HostType gSniperHostTypes[25];
 
+// Zoom ramp divisors (.sdata 0x804D32F8-0x804D3308) and the effect handles of the drawn / view states.
+float gSniperZoomRate480 = 480.0f;
+float gSniperZoomRate600 = 600.0f;
+float gSniperZoomRate160 = 160.0f;
+float gSniperZoomRate200 = 200.0f;
+int gSniperDrawnFx = -1;
+int gSniperViewFx = -1;
+
+// First-person view-bob phase and its first-use flag (.sbss 0x804D5288 / 0x804D528C).
+float gSniperBobPhase;
+signed char gSniperBobInit;
+
+// Asset handles of the first-person weapon view (.bss 0x8049C1E8).
+int gSniperViewAssets[16];
+
 extern "C" void fn_80155A84(void* a, void* b, int c);
 extern "C" int fn_80175EFC(int id);
+extern "C" int fn_800A384C(void* o);
+int HasCondition(void* conds, int bit);
+void PlayerSetHeldSlotIndex(void* p, int v);
+int PlayerGetHeldSlotIndex(void* p);
+int PlayerGunActionMessage(int msg, void* p);
+
+// Grab-state helper: is the held object a player-type actor with condition bit 0xB set?
+static inline void HeldCheck(Player* held, int* info, int* special) {
+    if ((int)((u32)held->handle >> 24) == 0x13) {
+        *info = fn_800A384C(held);
+        if (HasCondition((char*)held + 0x270, 0xB) != 0) {
+            *special = 1;
+        }
+    }
+}
 
 
 //@@801E7534
@@ -299,12 +347,73 @@ void fn_801E75FC(Player* p) {
     }
 }
 //@@end
-// TODO (not drafted yet, 0xFC bytes at 0x801E767C)
-// fn_801E767C
-// TODO (not drafted yet, 0xF0 bytes at 0x801E7778)
-// fn_801E7778
-// TODO (not drafted yet, 0x170 bytes at 0x801E7868)
-// fn_801E7868
+//@@801E767C
+extern "C" void fn_801E767C(Player* p);
+void fn_801E767C(Player* p) {
+    Player* held = p->held;
+    int info;
+    int special = 0;
+    if ((int)((u32)held->handle >> 24) == 0x13) {
+        info = fn_800A384C(held);
+        if (HasCondition((char*)held + 0x270, 0xB) != 0) {
+            special = 1;
+        }
+    }
+    PlayerInHost((Actor*)p);
+    int tbl = p->hostIndex;
+    p->v98 = fn_800A1BC8(*(int*)(info + 0x14), *(int*)(info + 0x18), gSniperHostTypes[21].anims[tbl], special, 0);
+    p->fn8C = (void*)PlayerGunActionMessage;
+    p->vA4 = 0x19;
+    p->vF0 = fn_800A1BC8(*(int*)(info + 0x14), *(int*)(info + 0x1C), gSniperHostTypes[21].anims[tbl], special, 0);
+    p->vFC = 0x19;
+    PlayerSetValue4(&p->sub7A4, 0x15);
+}
+//@@end
+//@@801E7778
+extern "C" void fn_801E7778(float dt, Player* p);
+void fn_801E7778(float dt, Player* p) {
+    PlayerResetGunTimer(p);
+    p->v638 = 1;
+    p->flags7B4 &= ~1;
+    fn_800769A0(p, dt);
+    PlayerSelectCollisionUpdate(p, dt);
+    if (PlayerGetHeldSlotIndex(p) != 0) {
+        PlayerSetValue4(&p->sub7A4, 2);
+    } else {
+        PlayerSetValue4(&p->sub7A4, 1);
+    }
+    PlayerInHost((Actor*)p);
+    PlayerWeaponReenter((Actor*)p);
+}
+//@@end
+//@@801E7868
+extern "C" void fn_801E7868(Player* p);
+void fn_801E7868(Player* p) {
+    int idx = PlayerInHost((Actor*)p);
+    int tbl = p->hostIndex;
+    p->unk78 = 0;
+    p->flags &= ~0x20000;
+    p->v98 = fn_800A1BC8(p->hosts[idx]->animA, p->hosts[idx]->animB, gSniperHostTypes[20].anims[tbl], 0, 0);
+    p->fn8C = (void*)PlayerGunActionMessage;
+    p->vA4 = 1;
+    p->vF0 = fn_800A1BC8(p->hosts[idx]->animA, p->hosts[idx]->animC, gSniperHostTypes[20].anims[tbl], 0, 0);
+    p->vFC = 1;
+    QueryMsg m;
+    m.hash = 0x8783452;
+    SendMsg((void*)p->target->handle, 0x41E, &m);
+    if (*(int*)&m.result != 0) {
+        PlayerSetHeldSlotIndex(p, 0);
+        if (p->v98 == -1) {
+            PlayerSetActionMode(p, 1);
+        }
+    } else {
+        PlayerSetHeldSlotIndex(p, 1);
+        if (p->v98 == -1) {
+            PlayerSetActionMode(p, 3);
+        }
+    }
+}
+//@@end
 //@@801E79D8
 extern "C" void fn_801E79D8(Player* p);
 void fn_801E79D8(Player* p) {
@@ -318,8 +427,30 @@ void fn_801E79D8(Player* p) {
     }
 }
 //@@end
-// TODO (not drafted yet, 0x160 bytes at 0x801E7A34)
-// fn_801E7A34
+//@@801E7A34
+extern "C" void fn_801E7A34(Player* p);
+void fn_801E7A34(Player* p) {
+    int info;
+    int special = 0;
+    HeldCheck(p->held, &info, &special);
+    int idx = PlayerInHost((Actor*)p);
+    int tbl = p->hostIndex;
+    p->v98 = fn_800A1BC8(*(int*)(info + 0x14), *(int*)(info + 0x18), gSniperHostTypes[19].anims[tbl], special, 0);
+    p->fn8C = (void*)PlayerGunActionMessage;
+    p->vA4 = 0x19;
+    HostInfo* host = p->hosts[idx];
+    p->vF0 = fn_800A1BC8(host->animA, host->animC, gSniperHostTypes[19].anims[tbl], 0, 0);
+    p->vFC = 0x19;
+    QueryMsg m;
+    m.hash = 0x8783452;
+    SendMsg((void*)p->held->handle, 0x41E, &m);
+    if (*(int*)&m.result != 0) {
+        PlayerSetHeldSlotIndex(p, 0);
+    } else {
+        PlayerSetHeldSlotIndex(p, 1);
+    }
+}
+//@@end
 //@@801E7B94
 extern "C" void fn_801E7B94(Player* p);
 void fn_801E7B94(Player* p) {
@@ -337,8 +468,41 @@ void fn_801E7BC0(Player* p) {
     PlayerSetValue4(&p->sub7A4, 0x13);
 }
 //@@end
-// TODO (not drafted yet, 0x15C bytes at 0x801E7C1C)
-// fn_801E7C1C
+//@@801E7C1C
+extern "C" void fn_801E7C1C(Player* p);
+void fn_801E7C1C(Player* p) {
+    int info;
+    int idx;
+    Player* held;
+    int tbl;
+    int special;
+    HostInfo* host;
+    idx = PlayerInHost((Actor*)p);
+    held = p->held;
+    tbl = p->hostIndex;
+    special = 0;
+    if ((int)((u32)held->handle >> 24) == 0x13) {
+        info = fn_800A384C(held);
+        if (HasCondition((char*)held + 0x270, 0xB) != 0) {
+            special = 1;
+        }
+    }
+    p->v98 = fn_800A1BC8(*(int*)(info + 0x14), *(int*)(info + 0x18), gSniperHostTypes[18].anims[tbl], special, 0);
+    p->fn8C = (void*)PlayerGunActionMessage;
+    p->vA4 = 0x59;
+    host = p->hosts[idx];
+    p->vF0 = fn_800A1BC8(host->animA, host->animC, gSniperHostTypes[18].anims[tbl], 0, 0);
+    p->vFC = 0x59;
+    QueryMsg m;
+    m.hash = 0x8783452;
+    SendMsg((void*)p->held->handle, 0x41E, &m);
+    if (*(int*)&m.result != 0) {
+        PlayerSetHeldSlotIndex(p, 0);
+    } else {
+        PlayerSetHeldSlotIndex(p, 1);
+    }
+}
+//@@end
 //@@801E7D78
 extern "C" void fn_801E7D78(Player* p);
 void fn_801E7D78(Player* p) {
@@ -355,44 +519,6 @@ void fn_801E7D88(float dt, Player* p) {
 }
 //@@end
 
-// Shared "leave to weapon select" check of the first-person states: zoom-level
-// update when not in a host, otherwise re-enter the weapon-select state when the
-// host asks for it and the player is free. Returns 1 when a state change was made.
-static inline int PlayerWeaponReenter(Actor* actor)
-{
-    if (fn_802A1D04() == 0) {
-        return PlayerZoomLevelUpdate(actor, 0xD, 0x16);
-    }
-    if (actor->flags328 & 1) {
-        if (PlayerInHost(actor) != 0) {
-            if (!(actor->flags7B4 & 0x40000) && !(actor->flags7B4 & 0x80000)) {
-                fn_80073E80(actor);
-                return 1;
-            }
-        }
-    }
-    return 0;
-}
-
-// Shared weapon-model toggle of the first-person states: outside a host, flips
-// the weapon model handle between its two variants while the zoom slot is held;
-// inside one, runs the secondary zoom-level update. Returns 1 when it acted.
-static inline int PlayerWeaponToggle(Actor* actor)
-{
-    if (fn_802A1D04() == 0) {
-        if (actor->field318 == 1 || actor->field318 == 3) {
-            if (fn_800F60B8(actor->field248, 1) == 0x24a738) {
-                fn_800F60E4(actor->field248, 1, 0x9b286e6f);
-            } else {
-                fn_800F60E4(actor->field248, 1, 0x24a738);
-            }
-            return 1;
-        }
-    } else {
-        return PlayerZoomLevelUpdate(actor, 9, 0x15);
-    }
-    return 0;
-}
 
 // Player first-person view setup: creates the two weapon handles, installs the
 // per-frame update callback and syncs the camera field of view.
@@ -406,7 +532,7 @@ void PlayerFirstPersonSetup(Actor* actor)
     int slot = actor->weaponSlot;
 
     actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18,
-                                 lbl_803B3B60.weapons[slot], 0, 0);
+                                 gSniperHostTypes[13].anims[slot], 0, 0);
     actor->fieldA4 = 0x50;
 
     int bone;
@@ -414,15 +540,15 @@ void PlayerFirstPersonSetup(Actor* actor)
         bone = 8;
     } else {
         bone = ModelBoneNodeChain(actor->model, ModelBoneName(actor->model, actor->field26B0),
-                                  lbl_8049C1E8, 0x10);
+                                  gSniperViewAssets, 0x10);
         if (bone == -1) {
             bone = 8;
         }
     }
 
     actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
-                                 lbl_803B3B60.weapons[slot], bone << 1, 0);
-    actor->updateE4 = fn_801E9F08;
+                                 gSniperHostTypes[13].anims[slot], bone << 1, 0);
+    actor->updateE4 = (int (*)(int, Actor*))PlayerGunActionMessage;
     actor->fieldFC = 0x50;
     actor->field7E0 = 0;
     CameraSetFov(actor->cameraIndex, (float)actor->views[1]->fov);
@@ -499,13 +625,13 @@ void PlayerWeaponFirstPersonInit(Actor* actor)
     int slot = actor->weaponSlot;
 
     actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18,
-                                 lbl_803B3B60.ids2DC[slot], 0, 0);
-    actor->field8C = fn_801E9F08;
+                                 gSniperHostTypes[10].anims[slot], 0, 0);
+    actor->field8C = (int (*)(int, Actor*))PlayerGunActionMessage;
     actor->fieldA4 = 0x11;
     actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
-                                 lbl_803B3B60.ids2DC[slot], 0, 0);
+                                 gSniperHostTypes[10].anims[slot], 0, 0);
     if (actor->fieldF0 == fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
-                                      lbl_803B3B60.idsE4[slot], 0, 0)) {
+                                      gSniperHostTypes[3].anims[slot], 0, 0)) {
         actor->fieldFC = 1;
     } else {
         actor->fieldFC = 0x11;
@@ -547,15 +673,15 @@ void PlayerWeaponViewSetup(Actor* actor)
     int slot = actor->weaponSlot;
 
     actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18,
-                                 lbl_803B3B60.ids294[slot], 0, 0);
-    actor->field8C = fn_801E9F08;
+                                 gSniperHostTypes[9].anims[slot], 0, 0);
+    actor->field8C = (int (*)(int, Actor*))PlayerGunActionMessage;
     actor->fieldA4 = 0x10;
     actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
-                                 lbl_803B3B60.ids294[slot], 0, 0);
+                                 gSniperHostTypes[9].anims[slot], 0, 0);
     actor->fieldFC = 0x10;
 
-    lbl_804D330C = fn_800F7994(name, 0x9d1c245c);
-    FxStart(lbl_804D330C, 0, 0);
+    gSniperViewFx = fn_800F7994(name, 0x9d1c245c);
+    FxStart(gSniperViewFx, 0, 0);
     actor->field7E0 = 0;
     CameraSetFov(actor->cameraIndex, (float)actor->views[1]->fov);
     actor->flags7B4 &= ~0x01000000;
@@ -592,11 +718,11 @@ void PlayerWeaponHandlesInit(Actor* actor)
     int slot = actor->weaponSlot;
 
     actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18,
-                                 lbl_803B3B60.ids174[slot], 0, 0);
-    actor->field8C = fn_801E9F08;
+                                 gSniperHostTypes[5].anims[slot], 0, 0);
+    actor->field8C = (int (*)(int, Actor*))PlayerGunActionMessage;
     actor->fieldA4 = 1;
     actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
-                                 lbl_803B3B60.ids174[slot], 0, 0);
+                                 gSniperHostTypes[5].anims[slot], 0, 0);
     actor->fieldFC = 1;
 }
 
@@ -634,7 +760,7 @@ void PlayerWeaponIdleStateUpdate(Actor* actor, float dt)
 
         PlayerWeaponToggle(actor);
 
-        if (fn_801E9C30(actor) == 0) {
+        if (PlayerHeldSlotActionCheck(actor) == 0) {
             if (PlayerWeaponReenter(actor) == 0) {
                 PlayerZoomStateUpdate(actor, dt);
             }
@@ -666,15 +792,15 @@ void PlayerWeaponEnterState(Actor* actor)
 
     actor->field98 = -1;
     while (actor->field98 == -1) {
-        actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18, lbl_803B3B60.idsE4[slot], matched, 0);
-        actor->field8C = fn_801E9F08;
+        actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18, gSniperHostTypes[3].anims[slot], matched, 0);
+        actor->field8C = (int (*)(int, Actor*))PlayerGunActionMessage;
         actor->fieldA4 = 1;
         if (actor->field98 == -1 && matched != 0) {
             matched = 0;
         }
     }
 
-    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C, lbl_803B3B60.idsE4[slot], 0, 0);
+    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C, gSniperHostTypes[3].anims[slot], 0, 0);
     actor->fieldFC = 1;
 
     PlayerWeaponReenter(actor);
@@ -700,7 +826,6 @@ void PlayerCollisionViewStateUpdate(Actor* actor, float dt)
 }
 
 extern "C" {
-extern int lbl_804D3308;
 }
 
 // First-person "weapon drawn" view setup: asks the host for the weapon name
@@ -715,15 +840,15 @@ void PlayerWeaponDrawnSetup(Actor* actor)
     int slot = actor->weaponSlot;
 
     actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18,
-                                 lbl_803B3B60.ids9C[slot], 0, 0);
+                                 gSniperHostTypes[2].anims[slot], 0, 0);
     actor->fieldA4 = 0x10;
-    actor->field8C = fn_801E9F08;
+    actor->field8C = (int (*)(int, Actor*))PlayerGunActionMessage;
     actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
-                                 lbl_803B3B60.ids9C[slot], 0, 0);
+                                 gSniperHostTypes[2].anims[slot], 0, 0);
     actor->fieldFC = 0x10;
 
-    lbl_804D3308 = fn_800F7994(name, 0xafef562b);
-    FxStart(lbl_804D3308, 0, 0);
+    gSniperDrawnFx = fn_800F7994(name, 0xafef562b);
+    FxStart(gSniperDrawnFx, 0, 0);
     actor->field7E0 = 0;
     CameraSetFov(actor->cameraIndex, (float)actor->views[1]->fov);
     actor->flags7B4 &= ~0x01000000;
@@ -749,7 +874,7 @@ void PlayerCollisionViewEnterUpdate(Actor* actor, float dt)
 
     PlayerWeaponToggle(actor);
 
-    if (fn_801E9C30(actor) != 0) {
+    if (PlayerHeldSlotActionCheck(actor) != 0) {
         return;
     }
 
@@ -771,11 +896,11 @@ void PlayerWeaponTimerStateSetup(Actor* actor)
     int slot = actor->weaponSlot;
 
     actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18,
-                                 lbl_803B3B60.ids54[slot], 0, 0);
+                                 gSniperHostTypes[1].anims[slot], 0, 0);
     actor->fieldA4 = 1;
     actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C,
-                                 lbl_803B3B60.ids54[slot], 0, 0);
-    actor->updateE4 = fn_801E9F08;
+                                 gSniperHostTypes[1].anims[slot], 0, 0);
+    actor->updateE4 = (int (*)(int, Actor*))PlayerGunActionMessage;
     actor->fieldFC = 1;
     actor->field7D0 = 0;
 }
@@ -798,7 +923,7 @@ void PlayerAimStateUpdate(Actor* actor, float dt)
 
     PlayerWeaponReenter(actor);
 
-    if (fn_801E9C30(actor) == 0) {
+    if (PlayerHeldSlotActionCheck(actor) == 0) {
         if (PlayerWeaponToggle(actor) == 0) {
             PlayerZoomStateUpdate(actor, dt);
         }
@@ -836,20 +961,20 @@ void PlayerWeaponTimerEnter(Actor* actor)
 
     int localPlayer = PlayerInHost(actor);
 
-    actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18, lbl_803B3B60.globalWeaponId, actor->field7D4, 0);
+    actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18, gSniperHostTypes[0].anims[0], actor->field7D4, 0);
     if (actor->field98 == -1) {
         actor->field7D4 = 0;
-        actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18, lbl_803B3B60.globalWeaponId, actor->field7D4, 0);
+        actor->field98 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field18, gSniperHostTypes[0].anims[0], actor->field7D4, 0);
     }
-    actor->field8C = fn_801E9F08;
+    actor->field8C = (int (*)(int, Actor*))PlayerGunActionMessage;
     actor->fieldA4 = 1;
 
-    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C, lbl_803B3B60.globalWeaponId, actor->field7D4, 0);
+    actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C, gSniperHostTypes[0].anims[0], actor->field7D4, 0);
     if (actor->fieldF0 == -1) {
         actor->field7D4 = 0;
-        actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C, lbl_803B3B60.globalWeaponId, actor->field7D4, 0);
+        actor->fieldF0 = fn_800A1BC8(actor->views[localPlayer]->field14, actor->views[localPlayer]->field1C, gSniperHostTypes[0].anims[0], actor->field7D4, 0);
     }
-    actor->updateE4 = fn_801E9F08;
+    actor->updateE4 = (int (*)(int, Actor*))PlayerGunActionMessage;
     actor->fieldFC = 1;
 }
 
@@ -941,7 +1066,7 @@ int PlayerZoomLevelUpdate(Actor* actor, int slotA, int slotB)
                 PlayerSetHeldSlotMode(actor, 2);
                 return 1;
             }
-            actor->field7E8 = (1.0f - fn_800F95E4(actor->cameraIndex)) / lbl_804D3304;
+            actor->field7E8 = (1.0f - fn_800F95E4(actor->cameraIndex)) / gSniperZoomRate200;
             actor->field7EC = 1.0f;
             actor->field7E0 = 2;
         } else if (actor->zoomTable[slotA] != 0) {
@@ -949,7 +1074,7 @@ int PlayerZoomLevelUpdate(Actor* actor, int slotA, int slotB)
                 PlayerSetHeldSlotMode(actor, 2);
                 return 1;
             }
-            actor->field7E8 = (8.0f - fn_800F95E4(actor->cameraIndex)) / lbl_804D3300;
+            actor->field7E8 = (8.0f - fn_800F95E4(actor->cameraIndex)) / gSniperZoomRate160;
             actor->field7EC = 8.0f;
             actor->field7E0 = 1;
         } else {
@@ -965,12 +1090,12 @@ int PlayerZoomLevelUpdate(Actor* actor, int slotA, int slotB)
             }
             switch (actor->field7E0) {
             case 0:
-                actor->field7E8 = (8.0f - fn_800F95E4(actor->cameraIndex)) / lbl_804D32F8;
+                actor->field7E8 = (8.0f - fn_800F95E4(actor->cameraIndex)) / gSniperZoomRate480;
                 actor->field7EC = 8.0f;
                 actor->field7E0 = 1;
                 break;
             case 1:
-                actor->field7E8 = (1.0f - fn_800F95E4(actor->cameraIndex)) / lbl_804D32FC;
+                actor->field7E8 = (1.0f - fn_800F95E4(actor->cameraIndex)) / gSniperZoomRate600;
                 actor->field7EC = 1.0f;
                 actor->field7E0 = 2;
                 break;
@@ -1220,42 +1345,20 @@ void PlayerWeaponZoomExitFxAsset(Actor* actor)
     fn_80165D9C(actor);
 }
 
-// One entry of the 0x48-byte weapon-state table at lbl_803B3B60; the weapon id
-// belonging to that state lives at +0x44.
-struct WeaponSlotEntry {
-    u8  unk000[0x44];   // 0x000
-    int field44;        // 0x044
-};
-
 // Returns the weapon id assigned to the actor's current weapon state.
 int PlayerWeaponStateId(Actor* actor)
 {
-    WeaponSlotEntry* table = (WeaponSlotEntry*)&lbl_803B3B60;
-    return table[actor->state7A4].field44;
+    return gSniperHostTypes[actor->state7A4].weaponId;
 }
 
-extern "C" {
-extern signed char lbl_804D528C;
-extern float lbl_804D5288;
-}
 
 float fn_80017084(float);
-
-// One entry of the 0x48-byte per-weapon-state callback table at lbl_803B3B60.
-// +0x04 is the per-frame update, +0x08 the plain state notification.
-struct WeaponStateEntry {
-    u8  unk000[0x04];                                 // 0x000
-    void (*update)(float dt, Actor* actor, int arg);  // 0x004
-    void (*notify)(Actor* actor);                     // 0x008
-    u8  unk00C[0x48 - 0x0C];                          // 0x00C
-};
 
 // Notifies the actor's current weapon state through the +0x08 callback.
 void PlayerWeaponStateNotify(Actor* actor)
 {
-    WeaponStateEntry* table = (WeaponStateEntry*)&lbl_803B3B60;
-    if (table[actor->state7A4].notify != 0) {
-        table[actor->state7A4].notify(actor);
+    if (gSniperHostTypes[actor->state7A4].notify != 0) {
+        gSniperHostTypes[actor->state7A4].notify(actor);
     }
 }
 
@@ -1265,50 +1368,42 @@ void PlayerWeaponStateNotify(Actor* actor)
 // re-arms the gun timer, then runs the state's +0x04 frame callback.
 void PlayerWeaponStateFrameUpdate(float dt, Actor* actor, int arg)
 {
-    if (lbl_804D528C == 0) {
-        lbl_804D528C = 1;
-        lbl_804D5288 = 0.0f;
+    if (gSniperBobInit == 0) {
+        gSniperBobInit = 1;
+        gSniperBobPhase = 0.0f;
     }
 
     if (actor->state7A4 == 3 || actor->state7A4 == 5) {
         if (actor->field7E0 == 1) {
-            lbl_804D5288 = lbl_804D5288 + dt;
-            float x = fn_80017084(0.0003f * lbl_804D5288);
+            gSniperBobPhase = gSniperBobPhase + dt;
+            float x = fn_80017084(0.0003f * gSniperBobPhase);
             x *= 0.008f;
             actor->field1F0 += x;
-            float y = fn_80017084(0.0003f * (5000.0f + lbl_804D5288));
+            float y = fn_80017084(0.0003f * (5000.0f + gSniperBobPhase));
             y *= 0.004f;
             actor->field1F8 += y;
             PlayerResetGunTimer(actor);
         } else if (actor->field7E0 == 2) {
-            lbl_804D5288 = lbl_804D5288 + dt;
-            float x = fn_80017084(0.0003f * lbl_804D5288);
+            gSniperBobPhase = gSniperBobPhase + dt;
+            float x = fn_80017084(0.0003f * gSniperBobPhase);
             x *= 0.004f;
             actor->field1F0 += x;
-            float y = fn_80017084(0.0003f * (5000.0f + lbl_804D5288));
+            float y = fn_80017084(0.0003f * (5000.0f + gSniperBobPhase));
             y *= 0.002f;
             actor->field1F8 += y;
             PlayerResetGunTimer(actor);
         }
     }
 
-    WeaponStateEntry* table = (WeaponStateEntry*)&lbl_803B3B60;
-    if (table[actor->state7A4].update != 0) {
-        table[actor->state7A4].update(dt, actor, arg);
+    if (gSniperHostTypes[actor->state7A4].update != 0) {
+        gSniperHostTypes[actor->state7A4].update(dt, actor, arg);
     }
 }
-
-// Leading callback of a per-state entry. The table at 0x803B3B60 is walked
-// with a 0x48-byte stride here, the same layout the weapon-state helpers use.
-struct StateEnterEntry {
-    void (*enter)(Actor* actor);  // 0x000
-    u8 unk004[0x48 - 0x04];       // 0x004
-};
 
 // Runs the enter handler of the actor's current weapon state, if any.
 void Ea620StateEnter(Actor* actor)
 {
-    StateEnterEntry* entry = (StateEnterEntry*)&lbl_803B3B60 + actor->state7A4;
+    HostType* entry = &gSniperHostTypes[actor->state7A4];
     if (entry->enter != 0) {
         entry->enter(actor);
     }
@@ -1319,25 +1414,84 @@ void Ea620StateEnter(Actor* actor)
 // fn_801EA660
 extern "C" void fn_801EA660(void)
 {
-    lbl_8049C1E8[0] = AssetFind(0xf1754bf2, 0x21c5e0);
-    lbl_8049C1E8[1] = AssetFind(0xf1754bf2, 0x24805f);
-    lbl_8049C1E8[2] = AssetFind(0xf1754bf2, 0x101844cc);
-    lbl_8049C1E8[3] = AssetFind(0xf1754bf2, 0x48874f6e);
-    lbl_8049C1E8[4] = AssetFind(0xf1754bf2, 0x4a53fc1);
-    lbl_8049C1E8[5] = AssetFind(0xf1754bf2, 0x967daac6);
-    lbl_8049C1E8[6] = AssetFind(0xf1754bf2, 0xd9404234);
-    lbl_8049C1E8[7] = AssetFind(0xf1754bf2, 0x450b2bb);
-    lbl_8049C1E8[8] = AssetFind(0xf1754bf2, 0x922bf04e);
-    lbl_8049C1E8[9] = AssetFind(0xf1754bf2, 0x8c73dfa9);
-    lbl_8049C1E8[10] = AssetFind(0xf1754bf2, 0x90aeeee4);
-    lbl_8049C1E8[11] = AssetFind(0xf1754bf2, 0x4a2f9aa);
-    lbl_8049C1E8[12] = AssetFind(0xf1754bf2, 0x4a48bc0);
-    lbl_8049C1E8[13] = AssetFind(0xf1754bf2, 0x8671db2a);
-    lbl_8049C1E8[14] = AssetFind(0xf1754bf2, 0x44e6ca4);
-    lbl_8049C1E8[15] = AssetFind(0xf1754bf2, 0x44ffeba);
+    gSniperViewAssets[0] = AssetFind(0xf1754bf2, 0x21c5e0);
+    gSniperViewAssets[1] = AssetFind(0xf1754bf2, 0x24805f);
+    gSniperViewAssets[2] = AssetFind(0xf1754bf2, 0x101844cc);
+    gSniperViewAssets[3] = AssetFind(0xf1754bf2, 0x48874f6e);
+    gSniperViewAssets[4] = AssetFind(0xf1754bf2, 0x4a53fc1);
+    gSniperViewAssets[5] = AssetFind(0xf1754bf2, 0x967daac6);
+    gSniperViewAssets[6] = AssetFind(0xf1754bf2, 0xd9404234);
+    gSniperViewAssets[7] = AssetFind(0xf1754bf2, 0x450b2bb);
+    gSniperViewAssets[8] = AssetFind(0xf1754bf2, 0x922bf04e);
+    gSniperViewAssets[9] = AssetFind(0xf1754bf2, 0x8c73dfa9);
+    gSniperViewAssets[10] = AssetFind(0xf1754bf2, 0x90aeeee4);
+    gSniperViewAssets[11] = AssetFind(0xf1754bf2, 0x4a2f9aa);
+    gSniperViewAssets[12] = AssetFind(0xf1754bf2, 0x4a48bc0);
+    gSniperViewAssets[13] = AssetFind(0xf1754bf2, 0x8671db2a);
+    gSniperViewAssets[14] = AssetFind(0xf1754bf2, 0x44e6ca4);
+    gSniperViewAssets[15] = AssetFind(0xf1754bf2, 0x44ffeba);
 }
 
 // Empty hook, kept so the screen-printf call sites have a stable target.
 // (Descriptive name: DebugTextNoOp. Kept as fn_801EA87C because other units
 // already call it by that placeholder.)
 extern "C" void fn_801EA87C(void) {}
+
+// The sniper host's state table (.data 0x803B3B60). Entry 12 is the shared dash state (0x80243778-0x80243B0C).
+class LargeActor;
+void PlayerDashStart(Actor* actor);
+void PlayerDashCheck(Actor* actor);
+void LargeActorResetFlags(LargeActor* actor);
+
+HostType gSniperHostTypes[25] = {
+    { PlayerWeaponTimerEnter, (void (*)(float, Actor*, int))PlayerAimStateUpdate, PlayerWeaponResetTimer,
+      { 0x002237D4, 0x002237D4, 0x002237D4, 0x002237D4, 0x002237D4, 0x002237D4, 0x002237D4, 0x002237D4, 0x002237D4, 0x002237D4, 0x002237D4, 0x002237D4, 0x002237D4, 0x002237D4 }, 0 },
+    { PlayerWeaponTimerStateSetup, (void (*)(float, Actor*, int))PlayerCollisionViewEnterUpdate, 0,
+      { 0xA8BE217B, 0x744B56B9, 0x90A41C8E, 0x29D70F30, 0xA81C49F3, 0x0A798111, 0x35FC8E1C, 0xA9D72F66, 0x8254AA67, 0xD3193F08, 0x81548F05, 0x40EC2F58, 0xB1BEC6A3, 0x11042941 }, 0 },
+    { PlayerWeaponDrawnSetup, (void (*)(float, Actor*, int))PlayerCollisionViewStateUpdate, PlayerWeaponIdleAnim,
+      { 0x34CD59AA, 0xD84584AC, 0x23823037, 0x30B56155, 0x454C4232, 0x58FCAF54, 0x83AE54E9, 0xB0B5625F, 0x230C033E, 0x9101D67D, 0x4C4E12E0, 0xFFE79C2D, 0x140F6F82, 0x1F644124 }, 0 },
+    { PlayerWeaponEnterState, (void (*)(float, Actor*, int))PlayerWeaponIdleStateUpdate, 0,
+      { 0x02A1A099, 0xC5D70D57, 0x3BE1446C, 0x5514778E, 0xD9DF8711, 0xC1BBEDAF, 0xE424C17A, 0x2FEB2D44, 0x3BDD7485, 0xDC50BD66, 0x1C29E8A3, 0x5BC381B6, 0x1A596FC1, 0x0A32E1DF }, 0 },
+    { 0, 0, 0,
+      { 0x6DB3B0E5, 0x3940E623, 0x5599ABF8, 0xEECC9E9A, 0x6D11D95D, 0xCF6F107B, 0xFAF21D86, 0x6ECCBED0, 0x474A39D1, 0x980ECE72, 0x464A1E6F, 0x05E1BEC2, 0x76B4560D, 0xD5F9B8AB }, 0 },
+    { PlayerWeaponHandlesInit, (void (*)(float, Actor*, int))PlayerWeaponStateUpdate, 0,
+      { 0xCE83F460, 0x50AEF7E2, 0xF9A70A2D, 0x5D8FEACB, 0xCD335EE8, 0x1F00AC8A, 0x0F98B35F, 0x2AD0A655, 0x7DC7F2F4, 0xCD4789F3, 0x2A2D8316, 0x4D42FBA3, 0xB681A038, 0xCEC2725A }, 0 },
+    { 0, 0, 0,
+      { 0x48C2836E, 0xEEDBF5F0, 0x5D9BEABB, 0xEAC74C59, 0x352969F6, 0x1E731698, 0x6351AAED, 0x6ACB32E3, 0xA1FD1802, 0x69CB1781, 0x82F9C724, 0xB6563131, 0x5FD68346, 0xE93D7468 }, 0 },
+    { 0, 0, 0,
+      { 0x21820DA8, 0xA708E7AA, 0x659ED5B5, 0x557847D3, 0x8FC97230, 0x4D5A7E52, 0xD4E55167, 0xE41CB3DD, 0x1669CD3C, 0x22B5E8FB, 0xAAF73BDE, 0x78E156AB, 0xC3957780, 0x8F04A822 }, 0 },
+    { 0, 0, 0,
+      { 0x48C24DC9, 0xEEDBC04B, 0x5D9BB516, 0xEAC716B4, 0x35293451, 0x1E72E0F3, 0x63517548, 0x6ACAFD3E, 0xA1FCE25D, 0x69CAE1DC, 0x82F9917F, 0xB655FB8C, 0x5FD64DA1, 0xE93D3EC3 }, 0 },
+    { PlayerWeaponViewSetup, (void (*)(float, Actor*, int))PlayerCollisionViewUpdate, PlayerWeaponRaiseAnim,
+      { 0x64DDF349, 0x306B2887, 0x4CC3EE5C, 0xE5F6E0FE, 0x643C1BC1, 0xC69952DF, 0xF21C5FEA, 0x65F70134, 0x3E747C35, 0x8F3910D6, 0x3D7460D3, 0xFD0C0126, 0x6DDE9871, 0xCD23FB0F }, 0 },
+    { PlayerWeaponFirstPersonInit, (void (*)(float, Actor*, int))PlayerFirstPersonUpdate, 0,
+      { 0x51979943, 0xF50FC445, 0x404C6FD0, 0x4D7FA0EE, 0x621681CB, 0x75C6EEED, 0xA0789482, 0xCD7FA1F8, 0x3FD642D7, 0xADCC1616, 0x69185279, 0x1CB1DBC6, 0x30D9AF1B, 0x3C2E80BD }, 0 },
+    { 0, 0, 0,
+      { 0x1DE2C92C, 0xA369A32E, 0x61FF9139, 0x51D90357, 0x8C2A2DB4, 0x49BB39D6, 0xD1460CEB, 0xE07D6F61, 0x12CA88C0, 0x1F16A47F, 0xA757F762, 0x7542122F, 0xBFF63304, 0x8B6563A6 }, 0 },
+    { PlayerDashStart, (void (*)(float, Actor*, int))PlayerDashCheck, (void (*)(Actor*))LargeActorResetFlags,
+      { 0x72C27236, 0x72C27236, 0x72C27236, 0x72C27236, 0x72C27236, 0x72C27236, 0x72C27236, 0x72C27236, 0x72C27236, 0x72C27236, 0x72C27236, 0x72C27236, 0x72C27236, 0x72C27236 }, 0 },
+    { PlayerFirstPersonSetup, (void (*)(float, Actor*, int))fn_801E7D88, (void (*)(Actor*))fn_801E7D78,
+      { 0x1F6F94F6, 0x1F6F94F6, 0x1F6F94F6, 0x1F6F94F6, 0x1F6F94F6, 0x1F6F94F6, 0x1F6F94F6, 0x1F6F94F6, 0x1F6F94F6, 0x1F6F94F6, 0x1F6F94F6, 0x1F6F94F6, 0x1F6F94F6, 0x1F6F94F6 }, 0 },
+    { 0, 0, 0,
+      { 0xF8B4BD22, 0x15C99AE0, 0x7F083F75, 0x97491197, 0x992AA79A, 0xD9168F38, 0x300A8583, 0x17C1FC4D, 0xC6CCBB0E, 0xF8BEAB6F, 0x0565F02C, 0x3D96C7BF, 0xC420B84A, 0x6797EB68 }, 0 },
+    { 0, 0, 0,
+      { 0x1DE2FED1, 0xA369D8D3, 0x61FFC6DE, 0x51D938FC, 0x8C2A6359, 0x49BB6F7B, 0xD1464290, 0xE07DA506, 0x12CABE65, 0x1F16DA24, 0xA7582D07, 0x754247D4, 0xBFF668A9, 0x8B65994B }, 0 },
+    { 0, 0, 0,
+      { 0x3FE4C227, 0x5CF99FE5, 0xC638447A, 0xDE79169C, 0xE05AAC9F, 0x2046943D, 0x773A8A88, 0x5EF20152, 0x0DFCC013, 0x3FEEB074, 0x4C95F531, 0x84C6CCC4, 0x0B50BD4F, 0xAEC7F06D }, 0 },
+    { 0, 0, 0,
+      { 0x38243A5E, 0xDB9C6560, 0x26D910EB, 0x340C4209, 0x48A322E6, 0x5C539008, 0x8705359D, 0xB40C4313, 0x2662E3F2, 0x9458B731, 0x4FA4F394, 0x033E7CE1, 0x17665036, 0x22BB21D8 }, 0 },
+    { (void (*)(Actor*))fn_801E7C1C, (void (*)(float, Actor*, int))fn_801E7BC0, (void (*)(Actor*))fn_801E7B94,
+      { 0x672F359C, 0x672F359C, 0x672F359C, 0x672F359C, 0x672F359C, 0x672F359C, 0x672F359C, 0x672F359C, 0x672F359C, 0x672F359C, 0x672F359C, 0x672F359C, 0x672F359C, 0x672F359C }, 0 },
+    { (void (*)(Actor*))fn_801E7A34, (void (*)(float, Actor*, int))fn_801E79D8, 0,
+      { 0x1379C466, 0x1379C466, 0x1379C466, 0x1379C466, 0x1379C466, 0x1379C466, 0x1379C466, 0x1379C466, 0x1379C466, 0x1379C466, 0x1379C466, 0x1379C466, 0x1379C466, 0x1379C466 }, 0 },
+    { (void (*)(Actor*))fn_801E7868, (void (*)(float, Actor*, int))fn_801E7778, 0,
+      { 0x1C1A4B85, 0x1C1A4B85, 0x1C1A4B85, 0x1C1A4B85, 0x1C1A4B85, 0x1C1A4B85, 0x1C1A4B85, 0x1C1A4B85, 0x1C1A4B85, 0x1C1A4B85, 0x1C1A4B85, 0x1C1A4B85, 0x1C1A4B85, 0x1C1A4B85 }, 0 },
+    { (void (*)(Actor*))fn_801E767C, (void (*)(float, Actor*, int))fn_801E75FC, 0,
+      { 0x672F1D89, 0x672F1D89, 0x672F1D89, 0x672F1D89, 0x672F1D89, 0x672F1D89, 0x672F1D89, 0x672F1D89, 0x672F1D89, 0x672F1D89, 0x672F1D89, 0x672F1D89, 0x672F1D89, 0x672F1D89 }, 0 },
+    { (void (*)(Actor*))fn_801E75D0, (void (*)(float, Actor*, int))fn_801E7534, 0,
+      { 0x02A1A099, 0xC5D70D57, 0x3BE1446C, 0x5514778E, 0xD9DF8711, 0xC1BBEDAF, 0xE424C17A, 0x2FEB2D44, 0x3BDD7485, 0xDC50BD66, 0x1C29E8A3, 0x5BC381B6, 0x1A596FC1, 0x0A32E1DF }, 0 },
+    { 0, 0, 0,
+      { 0 }, 0 },
+    { 0, 0, 0,
+      { 0 }, 0 },
+};
