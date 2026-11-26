@@ -399,7 +399,7 @@ struct GhostHintNameQuery {
     String name;              // 0x0c
 };
 
-extern int lbl_80495A60[];    // string table per hint page
+extern int lbl_80495A60[16];  // string table per hint page (this unit's .bss; retail reaches the hint arrays from lbl_804959E0)
 extern "C" int SendMsg(int to, int msg, void* data);
 
 void* ActorGet(int index);
@@ -515,8 +515,8 @@ extern char lbl_804D5120;     // blend defaults installed
 extern float lbl_804D5114;    // time step of the last update
 extern int lbl_804D511C;      // hint is pinned in place
 extern int lbl_804D5110;      // hint origin was moved this frame
-extern Vec3 lbl_80495B70;     // movement target (same block as lbl_80495B40)
-extern Vec3 lbl_80495B88;     // previous position (same block as lbl_80495B40)
+extern Vec3 lbl_80495B70;     // movement target (this unit's .bss, reached from lbl_804959E0 + 0x190)
+extern Vec3 lbl_80495B88;     // previous position (lbl_804959E0 + 0x1A8)
 
 extern "C" {
 float fn_800D8BE4(int pad, int group, int axis, int unused);
