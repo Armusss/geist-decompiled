@@ -216,7 +216,8 @@ struct StateEntry {
     int (*check)(Rico* a);
 };
 
-// Retail .data/.rodata of this unit (not split yet): asset key tables and the state table.
+// Retail .data/.rodata of this unit (not split yet): asset key tables and the state table. Retail reaches
+// them from the unit data base lbl_803BF800 (+0xD8, +0x120, +0x218); symbols.txt lists each object.
 extern u32 lbl_803BF8D8[18];
 extern u32 lbl_803BF920[18];
 extern StateEntry lbl_803BF968[];
