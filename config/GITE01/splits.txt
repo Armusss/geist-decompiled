@@ -837,6 +837,10 @@ game/u_801D9A70.cpp:
 
 game/u_801DE4B0.cpp:
 	.text       start:0x801DE4B0 end:0x801DE7A0
+	.rodata     start:0x80348D78 end:0x80348DD0
+	.data       start:0x803ADCF8 end:0x803ADD28
+	.sdata      start:0x804D3248 end:0x804D3250
+	.sdata2     start:0x804D8D18 end:0x804D8D28
 
 game/u_801DE7A0.cpp:
 	.text       start:0x801DE7A0 end:0x801E0850
