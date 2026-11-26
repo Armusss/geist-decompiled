@@ -477,13 +477,32 @@ game/u_80153C10.cpp:
 	.text       start:0x80153C10 end:0x80157730
 
 game/u_80157730.cpp:
-	.text       start:0x80157730 end:0x8015C080
-	.rodata     start:0x803464D0 end:0x80346640
-	.data       start:0x803A59C8 end:0x803A7068
+	.text       start:0x80157730 end:0x80158C3C
+	.rodata     start:0x803464D0 end:0x80346630
 	.bss        start:0x8046DDE8 end:0x8046DF08
-	.sdata      start:0x804D2F28 end:0x804D2F58
-	.sbss       start:0x804D4E30 end:0x804D4EB8
-	.sdata2     start:0x804D7CE8 end:0x804D7DD4
+	.sdata      start:0x804D2F28 end:0x804D2F50
+	.sbss       start:0x804D4E30 end:0x804D4EA0
+	.sdata2     start:0x804D7CE8 end:0x804D7D18
+
+game/u_80158C3C.cpp:
+	.text       start:0x80158C3C end:0x80159AF4
+	.rodata     start:0x80346630 end:0x80346640
+	.data       start:0x803A59C8 end:0x803A6FE8
+	.sbss       start:0x804D4EA0 end:0x804D4EA8
+	.sdata2     start:0x804D7D18 end:0x804D7D40
+
+game/u_80159AF4.cpp:
+	.text       start:0x80159AF4 end:0x8015AA24
+	.data       start:0x803A6FE8 end:0x803A7028
+	.sbss       start:0x804D4EA8 end:0x804D4EB0
+	.sdata2     start:0x804D7D40 end:0x804D7D90
+
+game/u_8015AA24.cpp:
+	.text       start:0x8015AA24 end:0x8015C080
+	.data       start:0x803A7028 end:0x803A7068
+	.sdata      start:0x804D2F50 end:0x804D2F58
+	.sbss       start:0x804D4EB0 end:0x804D4EB8
+	.sdata2     start:0x804D7D90 end:0x804D7DD4
 
 game/Hazard.cpp:
 	.text       start:0x8015C080 end:0x8015C4B0
@@ -659,7 +678,10 @@ game/Repel.cpp:
 	.sdata2     start:0x804D8618 end:0x804D8638
 
 game/u_801920B8.cpp:
-	.text       start:0x801920B8 end:0x801965FC
+	.text       start:0x801920B8 end:0x80192AC4
+
+game/u_80192AC4.cpp:
+	.text       start:0x80192AC4 end:0x801965FC
 
 game/Foam.cpp:
 	.text       start:0x801965FC end:0x801969D8
@@ -1208,7 +1230,24 @@ game/u_8026A37C.cpp:
 	.bss        start:0x804A2A70 end:0x804A31C8
 
 game/u_8026C200.cpp:
-	.text       start:0x8026C200 end:0x802766F0
+	.text       start:0x8026C200 end:0x8026D428
+
+game/u_8026D428.cpp:
+	.text       start:0x8026D428 end:0x80272060
+
+game/u_80272060.cpp:
+	.text       start:0x80272060 end:0x8027337C
+
+game/u_8027337C.cpp:
+	.text       start:0x8027337C end:0x80273650
+	.rodata     start:0x8034AE38 end:0x8034AE78
+	.sbss       start:0x804D5520 end:0x804D5530
+
+game/u_80273650.cpp:
+	.text       start:0x80273650 end:0x80276090
+
+game/u_80276090.cpp:
+	.text       start:0x80276090 end:0x802766F0
 
 game/ode/matrix.cpp:
 	.text       start:0x802766F0 end:0x80277190

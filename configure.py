@@ -674,6 +674,9 @@ config.libs = [
             Object(NonMatching, "game/u_80150300.cpp"),  # guess
             Object(NonMatching, "game/u_80153C10.cpp"),  # guess
             Object(NonMatching, "game/u_80157730.cpp"),  # guess
+            Object(NonMatching, "game/u_80158C3C.cpp"),  # split from u_80157730 (own Buffer-template block)
+            Object(NonMatching, "game/u_80159AF4.cpp"),  # split from u_80157730 (own Buffer-template block)
+            Object(NonMatching, "game/u_8015AA24.cpp"),  # split from u_80157730 (own Buffer-template block)
             Object(Matching, "game/Hazard.cpp"),  # (helper-game-b)
             Object(Matching, "game/EvacPoint.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_8015C79C.cpp"),  # split from u_80157730
@@ -711,6 +714,7 @@ config.libs = [
             Object(NonMatching, "game/u_8018FAE8.cpp"),  # guess
             Object(Matching, "game/Repel.cpp"),  # starts 0x80191C6C (helper-game-b)
             Object(NonMatching, "game/u_801920B8.cpp"),  # known
+            Object(NonMatching, "game/u_80192AC4.cpp"),  # split from u_801920B8 (imp state table lbl_803A8FD8)
             Object(Matching, "game/Foam.cpp"),  # "Foam" item type
             Object(Matching, "game/Extinguisher.cpp"),  # "EXTINGUISHER" effect type
             Object(Matching, "game/u_8019FDD0.cpp"),  # rendering after zutil (mirror/reflection)
@@ -820,6 +824,11 @@ config.libs = [
             Object(Matching, "game/u_8026A158.cpp"),  # guess
             Object(Matching, "game/u_8026A37C.cpp"),  # guess
             Object(NonMatching, "game/u_8026C200.cpp"),  # guess
+            Object(NonMatching, "game/u_8026D428.cpp"),  # split from u_8026C200 (own .sdata2 pool)
+            Object(NonMatching, "game/u_80272060.cpp"),  # split from u_8026C200 (own .sdata2 pool)
+            Object(Matching, "game/u_8027337C.cpp"),  # split from u_8026C200 (ODE error.cpp)
+            Object(NonMatching, "game/u_80273650.cpp"),  # split from u_8026C200 (own .sdata2 pool)
+            Object(NonMatching, "game/u_80276090.cpp"),  # split from u_8026C200 (own .sdata2 pool)
             # ODE 0.5 library files (STATUS G4): the ODE library was built with -inline deferred, so functions come
             # out in reverse source order (also error.cpp, collision_std.cpp); with the default setting the
             # .sdata2 literal order of matrix.cpp / misc.cpp cannot be produced. Proof: whole DOL matches.
