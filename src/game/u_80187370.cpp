@@ -173,7 +173,7 @@ extern float lbl_804D50E4;
 int fn_80212730(int handle);
 void fn_80048BA8(Player* p, void* buf, int a);
 
-extern PlayerState lbl_803A8800[25];
+extern PlayerState gPlayerStates[25];
 float lbl_804D50E0;
 int lbl_80495890[16];
 
@@ -236,7 +236,7 @@ inline void QueryNameOut(int* out, int target, unsigned long hash) {
 }
 
 inline u32* PlayerStateAnim(Player* p, int state) {
-    return &lbl_803A8800[state].anims[p->animVariant];
+    return &gPlayerStates[state].anims[p->animVariant];
 }
 
 void fn_80187370(Player* p) {
@@ -485,7 +485,7 @@ void fn_80188068(Player* p) {
             blend = 1;
         }
     }
-    anim = &lbl_803A8800[18].anims[variant];
+    anim = &gPlayerStates[18].anims[variant];
     p->anim = fn_800A1BC8(m->model, m->animSet, *anim, blend, 0);
     p->animDone = (void*)fn_8018ABFC;
     p->animLoop = 0x59;
@@ -952,17 +952,17 @@ void fn_8018AA90(Player* p) {
         p->unk7D4 = 1;
     }
     host = PlayerInHost((Actor*)p);
-    p->anim = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet, lbl_803A8800[0].anims[0], p->unk7D4, 0);
+    p->anim = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet, gPlayerStates[0].anims[0], p->unk7D4, 0);
     if (p->anim == -1) {
         p->unk7D4 = 0;
-        p->anim = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet, lbl_803A8800[0].anims[0], p->unk7D4, 0);
+        p->anim = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet, gPlayerStates[0].anims[0], p->unk7D4, 0);
     }
     p->animDone = (void*)fn_8018ABFC;
     p->animLoop = 1;
-    p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, lbl_803A8800[0].anims[0], p->unk7D4, 0);
+    p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, gPlayerStates[0].anims[0], p->unk7D4, 0);
     if (p->anim2 == -1) {
         p->unk7D4 = 0;
-        p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, lbl_803A8800[0].anims[0], p->unk7D4, 0);
+        p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, gPlayerStates[0].anims[0], p->unk7D4, 0);
     }
     p->animDone2 = (void*)fn_8018ABFC;
     p->animLoop2 = 1;
@@ -1038,12 +1038,12 @@ int fn_8018ABFC(int msg, void* data) {
 }
 
 u32 fn_8018B000(Player* p) {
-    return lbl_803A8800[p->state].unk44;
+    return gPlayerStates[p->state].unk44;
 }
 
 void fn_8018B01C(Player* p) {
-    if (lbl_803A8800[p->state].exit != 0) {
-        lbl_803A8800[p->state].exit(p);
+    if (gPlayerStates[p->state].exit != 0) {
+        gPlayerStates[p->state].exit(p);
     }
 }
 
@@ -1054,14 +1054,14 @@ struct StateClock {
 
 void fn_8018B060(Player* p, int arg) {
     static StateClock sClock;
-    if (lbl_803A8800[p->state].update != 0) {
-        lbl_803A8800[p->state].update(p, arg);
+    if (gPlayerStates[p->state].update != 0) {
+        gPlayerStates[p->state].update(p, arg);
     }
 }
 
 void fn_8018B0C0(Player* p) {
-    if (lbl_803A8800[p->state].enter != 0) {
-        lbl_803A8800[p->state].enter(p);
+    if (gPlayerStates[p->state].enter != 0) {
+        gPlayerStates[p->state].enter(p);
     }
 }
 

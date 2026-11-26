@@ -38,7 +38,7 @@ extern "C" u8* lbl_804D565C;
 extern "C" void (*lbl_804D5668)(u32 addr, void* page, int pageIndex, u32 elapsed, int copied);
 extern "C" u32 lbl_804D5658;
 extern "C" int lbl_804D566C;
-extern "C" u32* lbl_804D5698;
+extern "C" u32* gAramPageTable;
 extern "C" u32* lbl_804D569C;
 
 // OS arena allocation
@@ -197,17 +197,17 @@ void AramInit(u32 size, u32 pageCount, u32 pageState)
 // the current OS arena.
 void AramInitPageTable(void)
 {
-    lbl_804D5698 = (u32*)OSGetArenaLo();
-    OSSetArenaLo((u32)&lbl_804D5698[0x1000]);
+    gAramPageTable = (u32*)OSGetArenaLo();
+    OSSetArenaLo((u32)&gAramPageTable[0x1000]);
     for (u32 i = 0; i < 0x200; i++) {
-        lbl_804D5698[i * 8 + 0] = 0;
-        lbl_804D5698[i * 8 + 1] = 0;
-        lbl_804D5698[i * 8 + 2] = 0;
-        lbl_804D5698[i * 8 + 3] = 0;
-        lbl_804D5698[i * 8 + 4] = 0;
-        lbl_804D5698[i * 8 + 5] = 0;
-        lbl_804D5698[i * 8 + 6] = 0;
-        lbl_804D5698[i * 8 + 7] = 0;
+        gAramPageTable[i * 8 + 0] = 0;
+        gAramPageTable[i * 8 + 1] = 0;
+        gAramPageTable[i * 8 + 2] = 0;
+        gAramPageTable[i * 8 + 3] = 0;
+        gAramPageTable[i * 8 + 4] = 0;
+        gAramPageTable[i * 8 + 5] = 0;
+        gAramPageTable[i * 8 + 6] = 0;
+        gAramPageTable[i * 8 + 7] = 0;
     }
 }
 
@@ -302,9 +302,9 @@ int AramMapVirtualRange(u32 addr, u32 size)
                 if (lastPage <= lbl_804D56A4) {
                     lbl_804D56A4 = firstPage;
                 }
-            } while (lbl_804D5698[lbl_804D56A4] != 0);
+            } while (gAramPageTable[lbl_804D56A4] != 0);
 
-            lbl_804D5698[lbl_804D56A4] = vaddr;
+            gAramPageTable[lbl_804D56A4] = vaddr;
             offset += 0x1000;
             lbl_804D569C[(vaddr >> 12) & 0x1FFF] = lbl_804D56A4 << 12;
             lbl_804D56A0 += 0x1000;

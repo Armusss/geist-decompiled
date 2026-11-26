@@ -193,7 +193,11 @@ extern float lbl_804DA608;
 extern float lbl_804DA638;
 
 int HasCondition(void* state, int condition);
-extern char lbl_8034B5D8[];
+// From a shared header: names of the ghost actions (the table itself is unused here). It opens this
+// file's string pool at 0x8034B5D8; the firing messages and demon FX names follow.
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
 
 // 0x80290CCC: message handler of the host actor.
 int HostHandleMessage(int msg, void* payload)
@@ -301,14 +305,14 @@ int HostHandleMessage(int msg, void* payload)
             String name;
             {
                 String stateName((const char*)lbl_803C2B38[behaviour->state].typeName);
-                String prefix(&lbl_8034B5D8[0x48]);
+                String prefix("\n");
                 String text = stateName + prefix;
                 fn_8028C188((u8*)data + 0xc, (const char*)text.data, text.length);
             }
             if (behaviour->mode == 2) {
-                fn_8028C258((u8*)data + 0xc, &lbl_8034B5D8[0x4a]);
+                fn_8028C258((u8*)data + 0xc, "Host is firing\n");
             } else if (behaviour->mode > 0 && behaviour->mode < 2) {
-                fn_8028C258((u8*)data + 0xc, &lbl_8034B5D8[0x5a]);
+                fn_8028C258((u8*)data + 0xc, "Carrier is firing\n");
             }
             return 0;
         }
@@ -468,13 +472,13 @@ void HostInitBehaviour(void* owner)
     fn_800B6D04(host, (void (*)(void))HostAccumLinkDirection);
 
     if (lbl_804D3800 == -1) {
-        lbl_804D3800 = FxFind(&lbl_8034B5D8[0x6d]);
+        lbl_804D3800 = FxFind("CarrierDemon_Attack");
     }
     if (lbl_804D3804 == -1) {
-        lbl_804D3804 = FxFind(&lbl_8034B5D8[0x81]);
+        lbl_804D3804 = FxFind("DemonCarrier_Appear");
     }
     if (lbl_804D3808 == -1) {
-        lbl_804D3808 = FxFind(&lbl_8034B5D8[0x95]);
+        lbl_804D3808 = FxFind("DemonCarrier_Disappear");
     }
 
     s32 params[6];

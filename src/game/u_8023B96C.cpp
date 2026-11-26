@@ -42,6 +42,8 @@ struct RulesState {
     float fade;         // 0x08
     int count;          // 0x0C
     int list[16];       // 0x10
+    int shownScore[8];  // 0x50 (0x804A28F0, own label: RulesDraw addresses it directly)
+    int scoreB[8];      // 0x70
 };
 
 // Per-slot flags (0x803BE4A0..).
@@ -157,10 +159,7 @@ extern int lbl_804D5488;
 extern int lbl_804D548C;
 extern int lbl_804D5490;
 extern int lbl_804D5494;
-extern char lbl_8034A176[];
 
-extern int lbl_804A28F0[16];
-extern int lbl_804A2910[8];
 
 // Send one rule variable to a target (set request, message 0x41D).
 static inline void SendVar(int to, u32 key, int value) {
@@ -606,11 +605,11 @@ void RulesDraw(Game* g, int sel) {
                     break;
                 }
                 if (lbl_803BE4A0.c[i] == 0) {
-                    lbl_804A28F0[i] = score;
+                    lbl_804A28A0.shownScore[i] = score;
                     lbl_803BE4A0.c[i] = 1;
                 }
-                if (score != lbl_804A28F0[i]) {
-                    lbl_804A28F0[i] = score;
+                if (score != lbl_804A28A0.shownScore[i]) {
+                    lbl_804A28A0.shownScore[i] = score;
                 }
                 if (lbl_803BE4A0.b[i] == 0) {
                     lbl_803BE4A0.b[i] = 1;
@@ -871,8 +870,8 @@ void RulesEnd(Game* g) {
         if (lbl_803BE4A0.d[i] == 1) {
             lbl_803BE4A0.d[i] = 0;
         }
-        lbl_804A28F0[i] = 0;
-        lbl_804A2910[i] = 0;
+        lbl_804A28A0.shownScore[i] = 0;
+        lbl_804A28A0.scoreB[i] = 0;
     }
     if (lbl_804D5488 == 1) {
         lbl_804D5488 = 0;

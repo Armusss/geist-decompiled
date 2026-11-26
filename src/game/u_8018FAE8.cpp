@@ -101,7 +101,11 @@ extern Vec3 lbl_803470F8;     // offset scale
 extern Vec3 lbl_803A8F68;     // offset origin
 extern Vec3 lbl_80495B40;     // hint angle
 extern GhostHintObject lbl_80495AE0;
-extern char lbl_80347110[];   // data block holding debug text at +0x47
+// From a shared header: names of the ghost actions (the table itself is unused here). It opens this
+// file's string pool at 0x80347110; the debug/score format strings follow.
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
 
 extern float lbl_804D50F0;    // hint colour
 extern float lbl_804D510C;    // hint blend value
@@ -234,7 +238,7 @@ int GhostHintDrawText(int unnamed, unsigned long frame)
     if (str != 0) {
         TextDraw(str, index);
     }
-    DebugText(&lbl_80347110[0x47]);
+    DebugText("\n");
 
     TextSetStyle(0xff, 0xff, 0xff, frame & 0xff, 0x18, 4, 0, 0, 2, 0, 0, 0);
     TextSetBox(0, 0x280, 0, 0x5a);
@@ -395,7 +399,7 @@ struct GhostHintNameQuery {
     String name;              // 0x0c
 };
 
-extern int lbl_80495A60[];    // string table per hint page
+extern int lbl_80495A60[16];  // string table per hint page (this unit's .bss; retail reaches the hint arrays from lbl_804959E0)
 extern "C" int SendMsg(int to, int msg, void* data);
 
 void* ActorGet(int index);
@@ -511,8 +515,8 @@ extern char lbl_804D5120;     // blend defaults installed
 extern float lbl_804D5114;    // time step of the last update
 extern int lbl_804D511C;      // hint is pinned in place
 extern int lbl_804D5110;      // hint origin was moved this frame
-extern Vec3 lbl_80495B70;     // movement target (same block as lbl_80495B40)
-extern Vec3 lbl_80495B88;     // previous position (same block as lbl_80495B40)
+extern Vec3 lbl_80495B70;     // movement target (this unit's .bss, reached from lbl_804959E0 + 0x190)
+extern Vec3 lbl_80495B88;     // previous position (lbl_804959E0 + 0x1A8)
 
 extern "C" {
 float fn_800D8BE4(int pad, int group, int axis, int unused);
@@ -748,7 +752,7 @@ int GhostHintDebugDraw(void)
         const char* a = StrFindKeySkip(0xb125b682);
         const char* b = StrFindKeySkip(0x2725d0e7);
 
-        sprintf(buf, &lbl_80347110[0x49], b, a);
+        sprintf(buf, "%s %s\n", b, a);
         TextBegin();
         TextSetMode(2);
         TextSetSize(0x18);
@@ -758,7 +762,7 @@ int GhostHintDebugDraw(void)
 
         float stat = StatGet(0xe2d6a9c0, 0, 0);
         const char* c = StrFindKeySkip(0xc09f5ac4);
-        sprintf(buf, &lbl_80347110[0x50], c, (int)stat);
+        sprintf(buf, "%s: %d\n", c, (int)stat);
         TextSetSize(0x14);
         TextSetBox(0x40, 0x240, 0x1e, 0x168);
         DebugText(buf);
@@ -770,7 +774,7 @@ int GhostHintDebugDraw(void)
         const char* a = StrFindKeySkip(0xb125b682);
         const char* b = StrFindKeySkip(0xee96818a);
 
-        sprintf(buf, &lbl_80347110[0x49], b, a);
+        sprintf(buf, "%s %s\n", b, a);
         TextBegin();
         TextSetMode(2);
         TextSetSize(0x18);
@@ -782,7 +786,7 @@ int GhostHintDebugDraw(void)
         char name[40];
         fn_801406B0(name);
         const char* c = StrFindKeySkip(0x3a057d58);
-        sprintf(buf, &lbl_80347110[0x58], c, name);
+        sprintf(buf, "%s: %s\n", c, name);
         TextSetSize(0x14);
         TextSetBox(0x40, 0x240, 0x1e, 0x168);
         DebugText(buf);
@@ -794,7 +798,7 @@ int GhostHintDebugDraw(void)
         const char* a = StrFindKeySkip(0xb125b682);
         const char* b = StrFindKeySkip(0xbd92e05b);
 
-        sprintf(buf, &lbl_80347110[0x49], b, a);
+        sprintf(buf, "%s %s\n", b, a);
         TextBegin();
         TextSetMode(2);
         TextSetSize(0x18);
@@ -804,7 +808,7 @@ int GhostHintDebugDraw(void)
 
         float stat = StatGet(0xe2d6a9c0, 0, 0);
         const char* c = StrFindKeySkip(0xc09f5ac4);
-        sprintf(buf, &lbl_80347110[0x50], c, (int)stat);
+        sprintf(buf, "%s: %d\n", c, (int)stat);
         TextSetSize(0x14);
         TextSetBox(0x40, 0x240, 0x1e, 0x168);
         DebugText(buf);
@@ -881,13 +885,13 @@ void ScoreBoardDrawTeams(void)
     }
 
     if (i == 1) {
-        sprintf(buf, &lbl_80347110[0x60], fn_800FD44C(teams[0]));
+        sprintf(buf, "STR_%s_TEAM_WINS", fn_800FD44C(teams[0]));
         strcpy(buf, StrFindKeySkip(ScoreBoardNameHash(buf)));
     } else {
-        sprintf(buf, &lbl_80347110[0x71], StrFindKeySkip(0x4532b0cf));
+        sprintf(buf, "%s ", StrFindKeySkip(0x4532b0cf));
         for (j = 0; j < i; j++) {
             if (j != 0) {
-                strcat(buf, &lbl_80347110[0x75]);
+                strcat(buf, ", ");
             }
             strcat(buf, fn_800FD5C4(teams[j]));
         }
@@ -922,8 +926,8 @@ void ScoreBoardDrawTeams(void)
             rowY = colY;
         }
 
-        sprintf(buf, &lbl_80347110[0x78], fn_800FD44C(teams[i]));
-        sprintf(buf, &lbl_80347110[0x84],
+        sprintf(buf, "STR_%s_TEAM", fn_800FD44C(teams[i]));
+        sprintf(buf, "%s",
                 StrFindKeySkip(ScoreBoardNameHash(buf)));
         TextSetMode(0);
         TextSetSize(0x12);
@@ -934,7 +938,7 @@ void ScoreBoardDrawTeams(void)
         DebugText(buf);
 
         score = (int)StatGet(0xe2d6a9c0, 1, teams[i]);
-        sprintf(buf, &lbl_80347110[0x87], score);
+        sprintf(buf, "%i", score);
         TextSetColor(0xff, 0xff, 0xff, alpha & 0xff);
         TextSetMode(1);
         TextSetBox(x, w, 0x1e, rowY);
@@ -943,7 +947,7 @@ void ScoreBoardDrawTeams(void)
 
         for (j = 0; j < playerCount; j++) {
             if (PlayerTeam(players[j]) == teams[i]) {
-                sprintf(buf, &lbl_80347110[0x8a],
+                sprintf(buf, "   %s",
                         fn_800FD334(players[j]));
                 TextSetColor((int)(255.0f * pos->x) & 0xff,
                              (int)(255.0f * pos->y) & 0xff,
@@ -955,7 +959,7 @@ void ScoreBoardDrawTeams(void)
                 DebugText(buf);
 
                 score = (int)StatGet(0xe2d6a9c0, 0, players[j]);
-                sprintf(buf, &lbl_80347110[0x87], score);
+                sprintf(buf, "%i", score);
                 TextSetColor(0xff, 0xff, 0xff, alpha & 0xff);
                 TextSetMode(1);
                 TextSetBox(x, w, 0x1e, rowY);
@@ -999,10 +1003,10 @@ void ScoreBoardDrawPlayers(void)
     if (i == 1) {
         sprintf(buf, StrFindKeySkip(0xcb5e990e), fn_800FD334(players[0]));
     } else {
-        sprintf(buf, &lbl_80347110[0x71], StrFindKeySkip(0x4532b0cf));
+        sprintf(buf, "%s ", StrFindKeySkip(0x4532b0cf));
         for (j = 0; j < i; j++) {
             if (j != 0) {
-                strcat(buf, &lbl_80347110[0x75]);
+                strcat(buf, ", ");
             }
             strcat(buf, fn_800FD334(players[j]));
         }
@@ -1021,7 +1025,7 @@ void ScoreBoardDrawPlayers(void)
         Vec3* pos = fn_800FD424(PlayerTeam(players[i]));
         int score;
 
-        sprintf(buf, &lbl_80347110[0x84], fn_800FD334(players[i]));
+        sprintf(buf, "%s", fn_800FD334(players[i]));
         TextSetMode(0);
         TextSetSize(0x12);
         TextSetColor((int)(255.0f * pos->x) & 0xff,
@@ -1031,7 +1035,7 @@ void ScoreBoardDrawPlayers(void)
         DebugText(buf);
 
         score = (int)StatGet(0xe2d6a9c0, 0, players[i]);
-        sprintf(buf, &lbl_80347110[0x87], score);
+        sprintf(buf, "%i", score);
         TextSetMode(1);
         TextSetColor(0xff, 0xff, 0xff, alpha & 0xff);
         TextSetBox(0xc8, 0x1b8, 0x1e, rowY);

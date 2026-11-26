@@ -2943,7 +2943,7 @@ struct EmitterCurveTable {
 };
 
 extern "C" EmitterChannel lbl_80452560[4];
-extern "C" EmitterCurveTable lbl_8039BA20[];
+extern "C" EmitterCurveTable gEmitterCurveTables[8];   // 0x8039BA20, 8 * 0x60
 extern "C" float lbl_80452500[];
 extern "C" u32 lbl_804D2BD8;
 
@@ -3045,16 +3045,16 @@ extern "C" float fn_800D8BE4(int idx, int mode, int type, int arg)
     case 4:
         switch (type) {
         case 0:
-            return SampleEmitterCurve(ch->field64, ch->field68, &lbl_8039BA20[1],
+            return SampleEmitterCurve(ch->field64, ch->field68, &gEmitterCurveTables[1],
                                idx, arg);
         case 1:
-            return SampleEmitterCurve(ch->field6C, ch->field70, &lbl_8039BA20[2],
+            return SampleEmitterCurve(ch->field6C, ch->field70, &gEmitterCurveTables[2],
                                idx, arg);
         case 2:
-            return SampleEmitterCurve(ch->field68, ch->field64, &lbl_8039BA20[0],
+            return SampleEmitterCurve(ch->field68, ch->field64, &gEmitterCurveTables[0],
                                idx, arg);
         case 3:
-            return SampleEmitterCurve(ch->field70, ch->field6C, &lbl_8039BA20[3],
+            return SampleEmitterCurve(ch->field70, ch->field6C, &gEmitterCurveTables[3],
                                idx, arg);
         case 4:
             return ShapeRampB(0.0f);
@@ -3063,16 +3063,16 @@ extern "C" float fn_800D8BE4(int idx, int mode, int type, int arg)
     case 3:
         switch (type) {
         case 0:
-            return SampleEmitterCurve(ch->field6C, ch->field70, &lbl_8039BA20[5],
+            return SampleEmitterCurve(ch->field6C, ch->field70, &gEmitterCurveTables[5],
                                idx, arg);
         case 1:
-            return SampleEmitterCurve(ch->field64, ch->field68, &lbl_8039BA20[6],
+            return SampleEmitterCurve(ch->field64, ch->field68, &gEmitterCurveTables[6],
                                idx, arg);
         case 2:
-            return SampleEmitterCurve(ch->field68, ch->field64, &lbl_8039BA20[4],
+            return SampleEmitterCurve(ch->field68, ch->field64, &gEmitterCurveTables[4],
                                idx, arg);
         case 3:
-            return SampleEmitterCurve(ch->field70, ch->field6C, &lbl_8039BA20[7],
+            return SampleEmitterCurve(ch->field70, ch->field6C, &gEmitterCurveTables[7],
                                idx, arg);
         case 4:
             return ShapeRampB(0.0f);
@@ -4068,12 +4068,12 @@ float SampleEmitterCurve(float x, float y, EmitterCurveTable* table, int idx,
     float scale = 1.0f;
 
     if (mirrored == 0) {
-        if ((table == &lbl_8039BA20[2] || table == &lbl_8039BA20[6]) &&
+        if ((table == &gEmitterCurveTables[2] || table == &gEmitterCurveTables[6]) &&
             lbl_804D499C != 0) {
             scale = lbl_8039BD20[idx];
         }
     } else {
-        if ((table == &lbl_8039BA20[1] || table == &lbl_8039BA20[5]) &&
+        if ((table == &gEmitterCurveTables[1] || table == &gEmitterCurveTables[5]) &&
             lbl_804D499C != 0) {
             scale = lbl_8039BD20[idx];
         }

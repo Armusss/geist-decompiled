@@ -148,6 +148,12 @@ extern "C" void fn_8028C188(void* out, int a, int b);
 void HostRideEffectUpdate(void* actor);
 int HostRideSkinUpdate(void* msg, int arg);
 
+// From a shared header: names of the ghost actions (the table itself is unused here). It opens this
+// file's string pool at 0x8034A5E0; "\n" (0x8034A628) and the FX names follow.
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
 int HasCondition(void* cond, int id);
 void ActorRender(Actor* actor);
 
@@ -157,7 +163,6 @@ extern float lbl_804D35D8;
 extern float lbl_804D35DC;
 extern float lbl_804D9D70;
 extern float lbl_804D9D74;
-extern const char lbl_8034A628[];
 
 int HostStateMsgHandler(int msg, void* data)
 {
@@ -171,7 +176,7 @@ int HostStateMsgHandler(int msg, void* data)
         }
         {
             String name(lbl_803BEB88[b->state].name);
-            String suffix(lbl_8034A628);
+            String suffix("\n");
             String text;
             fn_800225C8(&text, &name, &suffix);
             fn_8028C188(&p->value, text.unk04, text.unk08);

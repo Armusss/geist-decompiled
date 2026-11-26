@@ -3,6 +3,7 @@
 
 #include "game/types.h"
 #include "game/string.h"
+#include "game/msg.h"
 
 // Returns 0 when the object stored in *slot is `other` or is of kind 0x13,
 // 1 otherwise (including when the slot is empty). Name is a guess.
@@ -1554,35 +1555,30 @@ extern "C" void fn_800A0030(void*, void*, void*);
 u32 PlayerCollisionCallback(int*, float*);
 int PlayerCollisionSlideVector(int, float*);
 
-extern "C" float lbl_80343068;
-extern "C" float lbl_8034306c;
-extern "C" float lbl_80343070;
+extern "C" const float lbl_80343068[3];   // default slide base
 
-extern "C" int lbl_804d451c;
-extern "C" int lbl_804d4520;
-extern "C" int lbl_804d4524;
-extern "C" int lbl_804d4528;
+extern "C" int lbl_804D451C;
+extern "C" int lbl_804D4520;
+extern "C" int lbl_804D4524;
+extern "C" int lbl_804D4528;
 
-extern "C" float lbl_80423848;
-extern "C" float lbl_8042384c;
-extern "C" float lbl_80423850;
-extern "C" float lbl_80423854;
-extern "C" float lbl_80423858;
-extern "C" float lbl_8042385c;
-extern "C" float lbl_80423860;
-extern "C" float lbl_80423864;
-extern "C" float lbl_80423868;
+// Player collision work area (0x80420048, 0x3828 bytes). Retail addresses every part from one base
+// register (e.g. lfs f0,0x380c(r29)), so it is one object; field names are guesses from their use.
+struct PlayerCollisionState {
+    float contacts[0x400];       // 0x0000: 0x100 contact planes (normal + distance)
+    float contactHit[0x100];     // 0x1000
+    float prevContacts[0x400];   // 0x1400
+    float prevContactHit[0x100]; // 0x2400
+    float contactDepth[0x100];   // 0x2800
+    float contactPoint[0x300];   // 0x2C00
+    float motion[3];             // 0x3800
+    float prevMotion[3];         // 0x380C
+    float origin[3];             // 0x3818
+    u8 pad3824[4];
+};
+extern "C" PlayerCollisionState lbl_80420048;
 
-extern "C" float lbl_80420048[];
-extern "C" float lbl_80421048[];
-extern "C" float lbl_80421448[];
-extern "C" float lbl_80422448[];
-extern "C" float lbl_80422848[];
-extern "C" float lbl_80422c48[];
-
-extern "C" float lbl_80394a28;
-extern "C" float lbl_80394a2c;
-extern "C" float lbl_80394a30;
+extern "C" float lbl_80394A28[3];   // accumulated push
 
 // Player collision: queries the level collision system with the player's
 // motion, slides the motion along the contact planes (iterating a few times
@@ -1621,12 +1617,12 @@ void PlayerCollisionMove(void* owner, float* motion)
     float accY;
     float accZ;
 
-    lbl_804d4520 = *(int*)(p + 0x740);
+    lbl_804D4520 = *(int*)(p + 0x740);
     touching = false;
 
-    base[0] = lbl_80343068;
-    base[1] = lbl_8034306c;
-    base[2] = lbl_80343070;
+    base[0] = lbl_80343068[0];
+    base[1] = lbl_80343068[1];
+    base[2] = lbl_80343068[2];
 
     if (((*(u32*)(p + 0x62c)) >> 24) == 2)
     {
@@ -1665,24 +1661,24 @@ void PlayerCollisionMove(void* owner, float* motion)
         fn_800E1098(1.0f + *(float*)(*(int*)(p + 0x738) + 0x6c),
                     ref2, ref2);
 
-    lbl_80423848 = motion[0];
-    lbl_8042384c = motion[1];
-    lbl_80423850 = motion[2];
+    lbl_80420048.motion[0] = motion[0];
+    lbl_80420048.motion[1] = motion[1];
+    lbl_80420048.motion[2] = motion[2];
 
     accX = 0.0f;
     accY = 0.0f;
     accZ = 0.0f;
     iter = 0;
     slide = false;
-    saved = lbl_804d451c;
+    saved = lbl_804D451C;
     prev[0] = 0.0f;
     prev[1] = 0.0f;
     prev[2] = 0.0f;
 
     for (;;)
     {
-        lbl_804d451c = saved;
-        lbl_804d4524 = 0;
+        lbl_804D451C = saved;
+        lbl_804D4524 = 0;
         *(float*)(p + 0x6bc) = 3.4028235e+38f;
         *(float*)(p + 0x6c0) = 0.0f;
         *(float*)(p + 0x6c4) = 0.0f;
@@ -1695,25 +1691,25 @@ void PlayerCollisionMove(void* owner, float* motion)
         contact[5] = 0.0f;
         *(float*)(p + 0x14e8) = 0.0f;
 
-        lbl_80423854 = lbl_80423848;
-        lbl_80423858 = lbl_8042384c;
-        lbl_8042385c = lbl_80423850;
-        lbl_80423860 = pos[0];
-        lbl_80423864 = pos[1];
-        lbl_80423868 = pos[2];
+        lbl_80420048.prevMotion[0] = lbl_80420048.motion[0];
+        lbl_80420048.prevMotion[1] = lbl_80420048.motion[1];
+        lbl_80420048.prevMotion[2] = lbl_80420048.motion[2];
+        lbl_80420048.origin[0] = pos[0];
+        lbl_80420048.origin[1] = pos[1];
+        lbl_80420048.origin[2] = pos[2];
 
-        found = fn_8001ACD4(p, pos, ref0, ref1, ref2, &lbl_80423848,
+        found = fn_8001ACD4(p, pos, ref0, ref1, ref2, &lbl_80420048.motion[0],
                             0x10000000, PlayerCollisionCallback, contact);
 
         if (found == 0)
         {
             touching = false;
-            accX += lbl_80423848;
-            accY += lbl_8042384c;
-            accZ += lbl_80423850;
-            lbl_80423848 = 0.0f;
-            lbl_8042384c = 0.0f;
-            lbl_80423850 = 0.0f;
+            accX += lbl_80420048.motion[0];
+            accY += lbl_80420048.motion[1];
+            accZ += lbl_80420048.motion[2];
+            lbl_80420048.motion[0] = 0.0f;
+            lbl_80420048.motion[1] = 0.0f;
+            lbl_80420048.motion[2] = 0.0f;
 
             if (fn_800E1020(motion) < 1.0f)
             {
@@ -1754,9 +1750,9 @@ void PlayerCollisionMove(void* owner, float* motion)
                 if (*(u32*)(p + 0x50) & 0x20000000)
                     fn_80045EBC(p);
 
-                lbl_80423848 -= accX;
-                lbl_8042384c -= accY;
-                lbl_80423850 -= accZ;
+                lbl_80420048.motion[0] -= accX;
+                lbl_80420048.motion[1] -= accY;
+                lbl_80420048.motion[2] -= accZ;
                 pos[0] += accX;
                 pos[1] += accY;
                 pos[2] += accZ;
@@ -1764,9 +1760,9 @@ void PlayerCollisionMove(void* owner, float* motion)
                 prev[2] = contact[4];
                 prev[0] = contact[5];
 
-                if (!(fabsf(lbl_80423848) > 0.0f ||
-                      fabsf(lbl_8042384c) > 0.0f ||
-                      fabsf(lbl_80423850) > 0.0f))
+                if (!(fabsf(lbl_80420048.motion[0]) > 0.0f ||
+                      fabsf(lbl_80420048.motion[1]) > 0.0f ||
+                      fabsf(lbl_80420048.motion[2]) > 0.0f))
                 {
                     nrm[0] = 0.0f;
                     nrm[1] = 0.0f;
@@ -1775,20 +1771,20 @@ void PlayerCollisionMove(void* owner, float* motion)
                 else
                 {
                     float inv =
-                        1.0f / sqrtf(lbl_80423848 * lbl_80423848 +
-                                     lbl_8042384c * lbl_8042384c +
-                                     lbl_80423850 * lbl_80423850);
+                        1.0f / sqrtf(lbl_80420048.motion[0] * lbl_80420048.motion[0] +
+                                     lbl_80420048.motion[1] * lbl_80420048.motion[1] +
+                                     lbl_80420048.motion[2] * lbl_80420048.motion[2]);
 
-                    nrm[0] = lbl_80423848 * inv;
-                    nrm[1] = lbl_8042384c * inv;
-                    nrm[2] = lbl_80423850 * inv;
+                    nrm[0] = lbl_80420048.motion[0] * inv;
+                    nrm[1] = lbl_80420048.motion[1] * inv;
+                    nrm[2] = lbl_80420048.motion[2] * inv;
                 }
 
-                for (i = 0; i < lbl_804d4524; i++)
+                for (i = 0; i < lbl_804D4524; i++)
                 {
-                    float* rec = &lbl_80420048[i * 4];
-                    float* point = &lbl_80422c48[i * 3];
-                    float depth = lbl_80422848[i];
+                    float* rec = &lbl_80420048.contacts[i * 4];
+                    float* point = &lbl_80420048.contactPoint[i * 3];
+                    float depth = lbl_80420048.contactDepth[i];
 
                     if (!(flags & 0x40000) && !(flags & 0x8000000))
                     {
@@ -1935,11 +1931,11 @@ void PlayerCollisionMove(void* owner, float* motion)
                 }
 
                 fn_8009ED70(matBuf, p);
-                fn_800A0030(tmpVec, matBuf, &lbl_80423848);
+                fn_800A0030(tmpVec, matBuf, &lbl_80420048.motion[0]);
 
-                if (!(fabsf(lbl_80423848) > 0.0f ||
-                      fabsf(lbl_8042384c) > 0.0f ||
-                      fabsf(lbl_80423850) > 0.0f))
+                if (!(fabsf(lbl_80420048.motion[0]) > 0.0f ||
+                      fabsf(lbl_80420048.motion[1]) > 0.0f ||
+                      fabsf(lbl_80420048.motion[2]) > 0.0f))
                 {
                     normMotion[0] = 0.0f;
                     normMotion[1] = 0.0f;
@@ -1948,13 +1944,13 @@ void PlayerCollisionMove(void* owner, float* motion)
                 else
                 {
                     float inv =
-                        1.0f / sqrtf(lbl_80423848 * lbl_80423848 +
-                                     lbl_8042384c * lbl_8042384c +
-                                     lbl_80423850 * lbl_80423850);
+                        1.0f / sqrtf(lbl_80420048.motion[0] * lbl_80420048.motion[0] +
+                                     lbl_80420048.motion[1] * lbl_80420048.motion[1] +
+                                     lbl_80420048.motion[2] * lbl_80420048.motion[2]);
 
-                    normMotion[0] = lbl_80423848 * inv;
-                    normMotion[1] = lbl_8042384c * inv;
-                    normMotion[2] = lbl_80423850 * inv;
+                    normMotion[0] = lbl_80420048.motion[0] * inv;
+                    normMotion[1] = lbl_80420048.motion[1] * inv;
+                    normMotion[2] = lbl_80420048.motion[2] * inv;
                 }
 
                 {
@@ -1967,53 +1963,53 @@ void PlayerCollisionMove(void* owner, float* motion)
                         dot = 0.01f;
 
                     len = fn_800E1020(tmpVec);
-                    lbl_80423848 = dot * (len * nrm[0]);
-                    lbl_8042384c = dot * (len * nrm[1]);
-                    lbl_80423850 = dot * (len * nrm[2]);
+                    lbl_80420048.motion[0] = dot * (len * nrm[0]);
+                    lbl_80420048.motion[1] = dot * (len * nrm[1]);
+                    lbl_80420048.motion[2] = dot * (len * nrm[2]);
                 }
             }
             else
             {
-                lbl_80423848 = 0.0f;
-                lbl_8042384c = 0.0f;
-                lbl_80423850 = 0.0f;
+                lbl_80420048.motion[0] = 0.0f;
+                lbl_80420048.motion[1] = 0.0f;
+                lbl_80420048.motion[2] = 0.0f;
             }
 
             touching = true;
         }
 
-        for (i = 0; i < lbl_804d4524; i++)
+        for (i = 0; i < lbl_804D4524; i++)
         {
-            lbl_80421448[i * 4 + 0] = lbl_80420048[i * 4 + 0];
-            lbl_80421448[i * 4 + 1] = lbl_80420048[i * 4 + 1];
-            lbl_80421448[i * 4 + 2] = lbl_80420048[i * 4 + 2];
-            lbl_80422448[i] = lbl_80421048[i];
-            lbl_80421048[i] = 0.0f;
+            lbl_80420048.prevContacts[i * 4 + 0] = lbl_80420048.contacts[i * 4 + 0];
+            lbl_80420048.prevContacts[i * 4 + 1] = lbl_80420048.contacts[i * 4 + 1];
+            lbl_80420048.prevContacts[i * 4 + 2] = lbl_80420048.contacts[i * 4 + 2];
+            lbl_80420048.prevContactHit[i] = lbl_80420048.contactHit[i];
+            lbl_80420048.contactHit[i] = 0.0f;
         }
 
         iter++;
-        lbl_804d451c = 0;
+        lbl_804D451C = 0;
         saved = 0;
-        lbl_804d4528 = lbl_804d4524;
-        lbl_80394a28 = 0.0f;
-        lbl_80394a2c = 0.0f;
-        lbl_80394a30 = 0.0f;
-        lbl_804d451c = 0;
+        lbl_804D4528 = lbl_804D4524;
+        lbl_80394A28[0] = 0.0f;
+        lbl_80394A28[1] = 0.0f;
+        lbl_80394A28[2] = 0.0f;
+        lbl_804D451C = 0;
 
-        if ((lbl_80423848 == 0.0f && lbl_8042384c == 0.0f) || iter > 5)
+        if ((lbl_80420048.motion[0] == 0.0f && lbl_80420048.motion[1] == 0.0f) || iter > 5)
         {
             for (i = 0; i < 0x400; i++)
-                lbl_80421448[i] = 0.0f;
+                lbl_80420048.prevContacts[i] = 0.0f;
 
-            lbl_804d4528 = 0;
+            lbl_804D4528 = 0;
             motion[0] = accX;
             motion[1] = accY;
             motion[2] = accZ;
-            lbl_80394a30 = 0.0f;
-            lbl_80394a2c = 0.0f;
-            lbl_80394a28 = 0.0f;
-            *(int*)(p + 0x740) = lbl_804d451c;
-            lbl_804d451c = 0;
+            lbl_80394A28[2] = 0.0f;
+            lbl_80394A28[1] = 0.0f;
+            lbl_80394A28[0] = 0.0f;
+            *(int*)(p + 0x740) = lbl_804D451C;
+            lbl_804D451C = 0;
             return;
         }
     }
@@ -2110,17 +2106,11 @@ int PlayerCollisionSlideVector(int obj, float* motion)
 
 // --- collision query callback ---------------------------------------------
 
-extern "C" float lbl_80394a34;
-extern "C" float lbl_80394a38;
-extern "C" float lbl_80394a3c;
-extern "C" u8 lbl_80393D7C;
+extern "C" float lbl_80394A34[3];   // last contact normal
 
 extern "C" int fn_80049914(void);
 extern "C" int fn_80212730(void);
 extern "C" int fn_800A3990(u32 id);
-extern "C" void fn_8028C500(void* msg);
-extern "C" int fn_800265D4(u32 id, int msg, void* data);
-extern "C" void fn_8028B9C0(void* msg, int flag);
 extern "C" int fn_800A7AC4(void* obj, int msg);
 extern "C" float sqrtf(float);
 
@@ -2153,8 +2143,8 @@ static inline void PlayerTrackClosest(u8* p, int* contact)
     if (*contact != 0 && (*(u32*)(*contact + 0x38) >> 24) == 2)
         return;
 
-    d[0] = (float)contact[4] - lbl_80423860;
-    d[1] = (float)contact[5] - lbl_80423864;
+    d[0] = (float)contact[4] - lbl_80420048.origin[0];
+    d[1] = (float)contact[5] - lbl_80420048.origin[1];
     d[2] = 0.0f;
     len = fn_800E1020(d);
     if (len < *(float*)(p + 0x6BC))
@@ -2173,9 +2163,9 @@ static inline void PlayerWriteContact(float* out, const float* n)
     out[0] = n[0];
     out[1] = n[1];
     out[2] = n[2];
-    out[3] = lbl_80394a34;
-    out[4] = lbl_80394a38;
-    out[5] = lbl_80394a3c;
+    out[3] = lbl_80394A34[0];
+    out[4] = lbl_80394A34[1];
+    out[5] = lbl_80394A34[2];
 }
 
 // Out block of the 0x400 "who am I" query the collision system sends to both
@@ -2200,14 +2190,6 @@ struct CollisionQueryTarget
 };
 
 // Small stack message used for the kind-0x13 special case.
-struct CollisionMessage
-{
-    u8 data[4];
-    u32 hash;
-    u32 field_08;
-    void* ptr;
-};
-
 // Collision callback installed in the level collision query (fn_8001ACD4).
 // It receives one candidate contact record (`contact`: [0] hit actor, [4..6]
 // contact point, [7..9] stop point, [10..12] normal, [6] depth) and decides
@@ -2233,9 +2215,9 @@ u32 PlayerCollisionCallback(int* contact, float* out)
     int count;
     bool blocked;
 
-    dir[0] = lbl_80423854;
-    dir[1] = lbl_80423858;
-    dir[2] = lbl_8042385c;
+    dir[0] = lbl_80420048.prevMotion[0];
+    dir[1] = lbl_80420048.prevMotion[1];
+    dir[2] = lbl_80420048.prevMotion[2];
     PlayerNormalizeVec3(dir);
 
     state = *(int*)(p + 0x634);
@@ -2294,9 +2276,9 @@ u32 PlayerCollisionCallback(int* contact, float* out)
     acc[1] = 0.0f;
     acc[2] = 0.0f;
 
-    if (1.5f < fn_800E1020(&lbl_80423854) &&
-        1.0f * lbl_8042385c + 0.0f * lbl_80423854 +
-                0.0f * lbl_80423858 <
+    if (1.5f < fn_800E1020(&lbl_80420048.prevMotion[0]) &&
+        1.0f * lbl_80420048.prevMotion[2] + 0.0f * lbl_80420048.prevMotion[0] +
+                0.0f * lbl_80420048.prevMotion[1] <
             0.98f &&
         contactZ < 1.5f)
     {
@@ -2331,9 +2313,9 @@ u32 PlayerCollisionCallback(int* contact, float* out)
         }
     }
 
-    for (i = 0; i < lbl_804d4528; i++)
+    for (i = 0; i < lbl_804D4528; i++)
     {
-        float* rec = &lbl_80421448[i * 4];
+        float* rec = &lbl_80420048.prevContacts[i * 4];
 
         if ((fabsf(rec[0] - (float)contact[10]) <= 0.0f &&
              fabsf(rec[1] - (float)contact[0xb]) <= 0.0f &&
@@ -2342,9 +2324,9 @@ u32 PlayerCollisionCallback(int* contact, float* out)
                                rec[0] * (float)contact[10] +
                                rec[1] * (float)contact[0xb])
         {
-            nrm[0] = lbl_80423848;
-            nrm[1] = lbl_8042384c;
-            nrm[2] = lbl_80423850;
+            nrm[0] = lbl_80420048.motion[0];
+            nrm[1] = lbl_80420048.motion[1];
+            nrm[2] = lbl_80420048.motion[2];
             PlayerNormalizeVec3(nrm);
 
             v[0] = (float)contact[10];
@@ -2359,7 +2341,7 @@ u32 PlayerCollisionCallback(int* contact, float* out)
                 dot = nrm[2] * v[2] + nrm[0] * v[0] + nrm[1] * v[1];
 
                 if (-0.707f <= dot &&
-                    (lbl_80422448[i] == 0.0f || 0.08f <= dot))
+                    (lbl_80420048.prevContactHit[i] == 0.0f || 0.08f <= dot))
                     return 0;
 
                 PlayerWriteContact(out, nrm);
@@ -2418,19 +2400,18 @@ u32 PlayerCollisionCallback(int* contact, float* out)
 
             if ((player.mask & 2) == 0 && (hit.mask & 2) == 0)
             {
-                CollisionMessage msg;
                 int result;
-                void* old;
+                int reply;
 
-                fn_8028C500(&msg);
-                msg.ptr = 0;
-                msg.hash = 0x365F2878;
-                msg.field_08 = 0;
-                result = fn_800265D4(hit.id, 0x41E, msg.data);
-                old = msg.ptr;
-                msg.ptr = &lbl_80393D7C;
-                fn_8028B9C0(&msg, 0);
-                if (result != 0 && old == (void*)1)
+                {
+                    QueryMsg msg;
+                    msg.hash = 0x365F2878;
+                    *(int*)&msg.result = 0;
+                    msg.unk8 = 0;
+                    result = SendMsg(hit.id, 0x41E, &msg);
+                    reply = *(int*)&msg.result;
+                }
+                if (result != 0 && reply == 1)
                     return 0;
             }
             else
@@ -2455,11 +2436,11 @@ u32 PlayerCollisionCallback(int* contact, float* out)
         }
     }
 
-    count = lbl_804d4524;
+    count = lbl_804D4524;
     blocked = false;
     for (i = 0; i < count; i++)
     {
-        float* rec = &lbl_80420048[i * 4];
+        float* rec = &lbl_80420048.contacts[i * 4];
 
         if (0.98f < rec[2] * (float)contact[0xc] +
                                rec[0] * (float)contact[10] +
@@ -2470,10 +2451,10 @@ u32 PlayerCollisionCallback(int* contact, float* out)
         }
     }
 
-    if (!blocked && lbl_804d4524 < 0x100)
+    if (!blocked && lbl_804D4524 < 0x100)
     {
-        int idx = lbl_804d4524;
-        float* rec = &lbl_80420048[idx * 4];
+        int idx = lbl_804D4524;
+        float* rec = &lbl_80420048.contacts[idx * 4];
 
         rec[0] = (float)contact[10];
         rec[1] = (float)contact[0xb];
@@ -2482,18 +2463,18 @@ u32 PlayerCollisionCallback(int* contact, float* out)
                    (float)contact[10] * (float)contact[4] +
                    (float)contact[0xb] * (float)contact[5]);
 
-        lbl_80422c48[idx * 3 + 0] = (float)contact[4];
-        lbl_80422c48[idx * 3 + 1] = (float)contact[5];
-        lbl_80422c48[idx * 3 + 2] = (float)contact[6];
+        lbl_80420048.contactPoint[idx * 3 + 0] = (float)contact[4];
+        lbl_80420048.contactPoint[idx * 3 + 1] = (float)contact[5];
+        lbl_80420048.contactPoint[idx * 3 + 2] = (float)contact[6];
 
-        vec[0] = (float)contact[4] - lbl_80423860;
-        vec[1] = (float)contact[5] - lbl_80423864;
-        vec[2] = (float)contact[6] - lbl_80423868;
-        lbl_80422848[idx] = fn_800E1020(vec);
+        vec[0] = (float)contact[4] - lbl_80420048.origin[0];
+        vec[1] = (float)contact[5] - lbl_80420048.origin[1];
+        vec[2] = (float)contact[6] - lbl_80420048.origin[2];
+        lbl_80420048.contactDepth[idx] = fn_800E1020(vec);
 
         for (i = 0; i < idx; i++)
         {
-            rec = &lbl_80420048[i * 4];
+            rec = &lbl_80420048.contacts[i * 4];
             if (rec[2] * (float)contact[0xc] + rec[0] * (float)contact[10] +
                     rec[1] * (float)contact[0xb] <
                 0.08f ||
@@ -2501,49 +2482,49 @@ u32 PlayerCollisionCallback(int* contact, float* out)
                                    rec[0] * (float)contact[4] +
                                    rec[1] * (float)contact[5])
             {
-                lbl_80421048[i] = 1.0f;
-                lbl_80421048[idx + i] = 1.0f;
+                lbl_80420048.contactHit[i] = 1.0f;
+                lbl_80420048.contactHit[idx + i] = 1.0f;
             }
         }
 
-        lbl_804d4524++;
+        lbl_804D4524++;
     }
 
-    if (lbl_804d451c == 0)
+    if (lbl_804D451C == 0)
     {
-        lbl_80394a34 = (float)contact[7];
-        lbl_80394a38 = (float)contact[8];
-        lbl_80394a3c = (float)contact[9];
-        lbl_80394a28 += (float)contact[10];
-        lbl_80394a2c += (float)contact[0xb];
-        lbl_80394a30 += (float)contact[0xc];
-        lbl_804d451c = 1;
+        lbl_80394A34[0] = (float)contact[7];
+        lbl_80394A34[1] = (float)contact[8];
+        lbl_80394A34[2] = (float)contact[9];
+        lbl_80394A28[0] += (float)contact[10];
+        lbl_80394A28[1] += (float)contact[0xb];
+        lbl_80394A28[2] += (float)contact[0xc];
+        lbl_804D451C = 1;
 
-        acc[0] = lbl_80394a28;
-        acc[1] = lbl_80394a2c;
-        acc[2] = lbl_80394a30;
+        acc[0] = lbl_80394A28[0];
+        acc[1] = lbl_80394A28[1];
+        acc[2] = lbl_80394A28[2];
         PlayerNormalizeVec3(acc);
         PlayerWriteContact(out, acc);
         PlayerTrackClosest(p, contact);
 
-        if (lbl_804d4524 < 0x100)
+        if (lbl_804D4524 < 0x100)
             return 2;
         return 1;
     }
 
-    if (5.0f < fabsf(lbl_80394a34 - (float)contact[7]) ||
-        5.0f < fabsf(lbl_80394a38 - (float)contact[8]))
+    if (5.0f < fabsf(lbl_80394A34[0] - (float)contact[7]) ||
+        5.0f < fabsf(lbl_80394A34[1] - (float)contact[8]))
     {
-        acc[0] = lbl_80394a28 + (float)contact[10];
-        acc[1] = lbl_80394a2c + (float)contact[0xb];
-        acc[2] = lbl_80394a30 + (float)contact[0xc];
+        acc[0] = lbl_80394A28[0] + (float)contact[10];
+        acc[1] = lbl_80394A28[1] + (float)contact[0xb];
+        acc[2] = lbl_80394A28[2] + (float)contact[0xc];
         PlayerNormalizeVec3(acc);
         PlayerWriteContact(out, acc);
 
-        lbl_804d451c = 0;
-        lbl_80394a28 = 0.0f;
-        lbl_80394a2c = 0.0f;
-        lbl_80394a30 = 0.0f;
+        lbl_804D451C = 0;
+        lbl_80394A28[0] = 0.0f;
+        lbl_80394A28[1] = 0.0f;
+        lbl_80394A28[2] = 0.0f;
 
         PlayerTrackClosest(p, contact);
         return 1;
@@ -2551,20 +2532,20 @@ u32 PlayerCollisionCallback(int* contact, float* out)
 
     if (!blocked)
     {
-        lbl_804d451c++;
-        lbl_80394a28 += (float)contact[10];
-        lbl_80394a2c += (float)contact[0xb];
-        lbl_80394a30 += (float)contact[0xc];
+        lbl_804D451C++;
+        lbl_80394A28[0] += (float)contact[10];
+        lbl_80394A28[1] += (float)contact[0xb];
+        lbl_80394A28[2] += (float)contact[0xc];
     }
 
-    acc[0] = lbl_80394a28;
-    acc[1] = lbl_80394a2c;
-    acc[2] = lbl_80394a30;
+    acc[0] = lbl_80394A28[0];
+    acc[1] = lbl_80394A28[1];
+    acc[2] = lbl_80394A28[2];
     PlayerNormalizeVec3(acc);
     PlayerWriteContact(out, acc);
     PlayerTrackClosest(p, contact);
 
-    if (lbl_804d4524 < 0x100)
+    if (lbl_804D4524 < 0x100)
         return 2;
     return 1;
 }

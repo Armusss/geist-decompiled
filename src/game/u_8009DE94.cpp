@@ -8,6 +8,8 @@ struct Bone;
 struct Actor;
 struct Owner;
 
+#include "game/msg.h"
+
 // Fixed-point (Q12) 3x4 matrix stored at the head of an Actor.
 struct ActorMtx { int m[12]; };
 
@@ -2894,11 +2896,6 @@ struct AgentStateCounts {
 };
 
 extern AgentStateCounts lbl_803443A0;
-extern const char lbl_803443C0[];   // state names, short form (8 pointers)
-extern const char lbl_803443E0[];   // state names, print form (8 pointers)
-extern const char lbl_803444D1[];   // "%0.02f %0.02f %0.02f"
-extern const char lbl_803444E7[];   // "%s:  %i"
-extern const char lbl_803444EB[];   // "%s:  %i"
 
 extern int lbl_804D4798;            // global AI detail level
 extern int lbl_804D479C;            // detail level at the last switch
@@ -2913,7 +2910,6 @@ extern const float lbl_804D6BDC;          // frame speed divisor
 extern const float lbl_804D6BE0;          // flatline timer after an RTLP message
 extern const float lbl_804D6BE4;          // damage amount for the ragdoll push
 extern const float lbl_804D6BE8;          // damage scale when the target is an agent
-extern char lbl_80393D7C[];         // RTLP message header marker
 
 extern "C" int fn_800BA7F4(void);
 extern "C" int fn_800BA7FC(int event);
@@ -2939,8 +2935,6 @@ extern "C" int fn_80212730(unsigned int id);
 extern "C" void fn_80230B1C(double value, ...);
 extern "C" void fn_80230F08(void* extra);
 extern "C" int fn_80230450(void* extra = 0);
-extern "C" void fn_8028C500(void* msg);
-extern "C" void fn_8028B9C0(void* msg, int value);
 extern "C" void fn_800265D4(unsigned int id, int type, void* msg);
 extern "C" void fn_80025CFC(void* bitmap, int index);
 extern "C" int fn_80022D80(AgentSlot* agent);
@@ -3029,16 +3023,19 @@ void NeoAgentFrameUpdate(float dt)
     if (index >= 0 && index < gNeoAgentExtraCount + 0x10) {
         agent = (AgentSlot*)((char*)lbl_804D47D0 + index * 0x928);
         if (fn_800BA7FC(0x38)) {
-            fn_801EA9F0(lbl_803444D1, (double)agent->posX, (double)agent->posY,
+            fn_801EA9F0("%0.02f %0.02f %0.02f\n", (double)agent->posX, (double)agent->posY,
                         (double)agent->posZ);
         }
         if (fn_800BA7FC(0x39)) {
-            fn_801EA9F0(lbl_803444D1, (double)agent->f24C, (double)agent->f254,
+            fn_801EA9F0("%0.02f %0.02f %0.02f\n", (double)agent->f24C, (double)agent->f254,
                         (double)agent->f250);
         }
         if (fn_800BA7FC(0x3A)) {
-            fn_801EA9F0(lbl_803444E7, &lbl_803443C0[agent->state * 4],
-                        agent->state);
+            // Local name table: retail copies its initializer (0x803443C0) to the stack.
+            const char* names[8] = {
+                "Asleep", "Awake", "Doze", "Braindead", "Dying", "Flatline", "Dead", "Broken",
+            };
+            fn_801EA9F0("%s\n", names[agent->state]);
         }
     }
 
@@ -3079,8 +3076,12 @@ void NeoAgentFrameUpdate(float dt)
     }
 
     if (fn_800BA7FC(0x34)) {
+        // Second copy of the table (initializer at 0x803443E0).
+        const char* names[8] = {
+            "Asleep", "Awake", "Doze", "Braindead", "Dying", "Flatline", "Dead", "Broken",
+        };
         for (i = 0; i < 8; i++)
-            fn_801EA9F0(lbl_803444EB, &lbl_803443E0[i * 4], counts.v[i]);
+            fn_801EA9F0("%s:  %i\n", names[i], counts.v[i]);
     }
 }
 
@@ -3141,19 +3142,17 @@ int NeoAgentUpdate(AgentSlot* agent, float dt)
             }
 
             if (agent->fEC == 10 && agent->f128 == 0x276198) {
-                unsigned int msgOut[5];
-                int msgHdr[3];
-                void* sent;
+                int sent;
 
                 handle = agent->id;
-                fn_8028C500(msgOut);
-                msgOut[0] = 0;
-                msgHdr[0] = 0xdc13f8ab;
-                msgHdr[1] = 0;
-                fn_800265D4(handle, 0x41e, msgHdr);
-                sent = (void*)msgOut[0];
-                msgOut[0] = (unsigned int)lbl_80393D7C;
-                fn_8028B9C0(msgOut, 0);
+                {
+                    QueryMsg msg;
+                    msg.hash = 0xdc13f8ab;
+                    *(int*)&msg.result = 0;
+                    msg.unk8 = 0;
+                    SendMsg(handle, 0x41e, &msg);
+                    sent = *(int*)&msg.result;
+                }
                 if (sent == 0)
                     agent->f138 = speed;
                 else
@@ -3526,10 +3525,6 @@ void NeoAgentRelease(void* agent)
 // Heap object whose head is a Buffer: releasing it resets the virtual table,
 // runs the base cleanup, destroys the embedded Buffer and, when the caller
 // asks for it, returns the storage to VFree.
-struct Buffer {
-    ~Buffer();
-};
-
 struct BufferObject {
     void** vtable;
 };
@@ -3542,7 +3537,7 @@ void* BufferObjectRelease(void* p, short freeIt)
     if (p != 0) {
         ((BufferObject*)p)->vtable = lbl_8039B67C;
         fn_8028B960(p);
-        ((Buffer*)p)->~Buffer();
+        ((Buffer*)p)->Buffer::~Buffer();
         if (freeIt > 0) {
             VFree(p);
         }

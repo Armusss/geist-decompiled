@@ -30,6 +30,78 @@ struct VMTexturePage
 
 extern VMTexturePage lbl_804A3288[];
 
+// Link info block at the head of the clock render state (0x804A3768).
+struct ClockLinkState
+{
+    float basis[3][3]; // 0x00: orientation basis (X, dir, Z)
+    Vec3  origin;      // 0x24: view origin the page is offset from
+    int   enabled;     // 0x30
+    float scale;       // 0x34
+    u8    unk38[0x8];
+    float r;           // 0x40
+    float g;           // 0x44
+    float b;           // 0x48
+    int   i4C;         // 0x4C
+    int   i50;         // 0x50
+    int   i54;         // 0x54
+    u8    unk58[0x8];
+};
+
+// First TEV pass description.
+struct ClockTevPass
+{
+    void* actor;       // 0x00: actor rendered by this pass
+    int   enabled;     // 0x04
+    u8    unk08[0x8];
+    int   i10;         // 0x10
+    u8    chan[3];     // 0x14
+    u8    alpha;       // 0x17
+    int   i18;         // 0x18
+    int   i1C;         // 0x1C
+    u8    unk20[0x10];
+    int   i30;         // 0x30
+    u8    unk34[0x8];
+    int   i3C;         // 0x3C
+    float color[4];    // 0x40
+    u8    unk50[0xC];
+    float pos[3];      // 0x5C: page origin
+    int   i68;         // 0x68
+    u8    unk6C[0x1A4];
+};
+
+// Second TEV pass description.
+struct ClockTevPassB
+{
+    int   i00;         // 0x00
+    u8    b04;         // 0x04
+    u8    b05;         // 0x05
+    u8    b06;         // 0x06
+    u8    b07;         // 0x07
+    int   i08;         // 0x08
+    int   i0C;         // 0x0C
+    u8    unk10[0x10];
+    int   i20;         // 0x20
+    u8    unk24[0x8];
+    int   i2C;         // 0x2C
+    float color[4];    // 0x30
+    u8    unk40[0xC];
+    float f4C;         // 0x4C
+    float f50;         // 0x50
+    float f54;         // 0x54
+    int   i58;         // 0x58
+    u8    unk5C[0x1A4];
+};
+
+struct ClockRenderState
+{
+    ClockLinkState link;   // 0x000
+    ClockTevPass   passA;  // 0x060
+    ClockTevPassB  passB;  // 0x270
+};
+
+extern ClockRenderState lbl_804A3768;
+
+
 extern int lbl_804D37A0;
 extern int lbl_804D37A4;
 extern int lbl_804D37AC;
@@ -120,8 +192,10 @@ extern "C" void fn_802886B4()
             fn_80013F50();
             GXLoadTexObj(lbl_804A3288[i].texObj, 0);
             GXLoadTexMtxImm(lbl_804A3288[i].texMtx, 0x21, 0);
+            // Retail forms the third argument as pages + 0x750 (= 0x804A39D8, the clock state's second
+            // TEV pass), so pages and the clock state are likely one object; kept as separate symbols here.
             fn_8001D5DC(lbl_804A3288[i].texId, &lbl_804A3288[i],
-                        lbl_804D37A4 != 0 ? &lbl_804A3288[9] : 0);
+                        lbl_804D37A4 != 0 ? &lbl_804A3768.passB : 0);
         }
     }
     else
@@ -237,76 +311,6 @@ void ClockCheckProximityTrigger(ClockProximitySource* source,
     }
 }
 
-// Link info block at the head of the clock render state (0x804A3768).
-struct ClockLinkState
-{
-    float basis[3][3]; // 0x00: orientation basis (X, dir, Z)
-    Vec3  origin;      // 0x24: view origin the page is offset from
-    int   enabled;     // 0x30
-    float scale;       // 0x34
-    u8    unk38[0x8];
-    float r;           // 0x40
-    float g;           // 0x44
-    float b;           // 0x48
-    int   i4C;         // 0x4C
-    int   i50;         // 0x50
-    int   i54;         // 0x54
-    u8    unk58[0x8];
-};
-
-// First TEV pass description.
-struct ClockTevPass
-{
-    void* actor;       // 0x00: actor rendered by this pass
-    int   enabled;     // 0x04
-    u8    unk08[0x8];
-    int   i10;         // 0x10
-    u8    chan[3];     // 0x14
-    u8    alpha;       // 0x17
-    int   i18;         // 0x18
-    int   i1C;         // 0x1C
-    u8    unk20[0x10];
-    int   i30;         // 0x30
-    u8    unk34[0x8];
-    int   i3C;         // 0x3C
-    float color[4];    // 0x40
-    u8    unk50[0xC];
-    float pos[3];      // 0x5C: page origin
-    int   i68;         // 0x68
-    u8    unk6C[0x1A4];
-};
-
-// Second TEV pass description.
-struct ClockTevPassB
-{
-    int   i00;         // 0x00
-    u8    b04;         // 0x04
-    u8    b05;         // 0x05
-    u8    b06;         // 0x06
-    u8    b07;         // 0x07
-    int   i08;         // 0x08
-    int   i0C;         // 0x0C
-    u8    unk10[0x10];
-    int   i20;         // 0x20
-    u8    unk24[0x8];
-    int   i2C;         // 0x2C
-    float color[4];    // 0x30
-    u8    unk40[0xC];
-    float f4C;         // 0x4C
-    float f50;         // 0x50
-    float f54;         // 0x54
-    int   i58;         // 0x58
-    u8    unk5C[0x1A4];
-};
-
-struct ClockRenderState
-{
-    ClockLinkState link;   // 0x000
-    ClockTevPass   passA;  // 0x060
-    ClockTevPassB  passB;  // 0x270
-};
-
-extern ClockRenderState lbl_804A3768;
 extern void* lbl_804D56CC;
 extern float lbl_804DA500;
 extern float lbl_804DA504;

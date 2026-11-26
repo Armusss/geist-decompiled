@@ -15,9 +15,14 @@ extern void* lbl_804415B8[];
 // Per-frame entry table (0x24-byte entries) and the two words reset alongside
 // lbl_804482A0. Names are descriptive guesses.
 extern u8 lbl_804416A0[];
-extern int lbl_804482A0;
-extern int lbl_804482A4;
-extern int lbl_804482A8;
+// Values already applied for the current key (0x804482A0, 0xA0 bytes; retail addresses it from one base).
+struct AppliedList {
+    int key;                // 0x00
+    int count;              // 0x04
+    int values[32];         // 0x08
+    u8 pad88[0x18];
+};
+extern AppliedList lbl_804482A0;
 
 // Returns the entry selected by the stack index, or null if the stack is empty.
 // fn_800886C8
@@ -2535,9 +2540,9 @@ int ClearEntryFlags(unsigned int param)
         return 0;
     }
     entry = (u32*)((u8*)lbl_804416A0 + idx * 0x24);
-    lbl_804482A4 = 0;
-    old = lbl_804482A0;
-    lbl_804482A8 = -1;
+    lbl_804482A0.count = 0;
+    old = lbl_804482A0.key;
+    lbl_804482A0.values[0] = -1;
     *entry &= ~0x2;
     *entry &= ~0x4;
     *entry &= ~0x8;
@@ -2582,10 +2587,10 @@ unsigned int FxApplyEntryFlags(unsigned int key, int value)
     if (index < 0 || index >= 0x300) {
         return -1;
     }
-    if (lbl_804482A0 == key) {
-        count = lbl_804482A4;
+    if (lbl_804482A0.key == key) {
+        count = lbl_804482A0.count;
         if (count > 0) {
-            pending = &lbl_804482A8;
+            pending = lbl_804482A0.values;
             do {
                 if (*pending == value) {
                     return 0;
@@ -2617,9 +2622,9 @@ unsigned int FxApplyEntryFlags(unsigned int key, int value)
     if ((flags & 0x20) != 0) {
         fn_80088E68(value, entry[8]);
     }
-    if (lbl_804482A4 < 0x20) {
-        (&lbl_804482A8)[lbl_804482A4] = value;
-        lbl_804482A4++;
+    if (lbl_804482A0.count < 0x20) {
+        lbl_804482A0.values[lbl_804482A0.count] = value;
+        lbl_804482A0.count++;
     }
     return (unsigned int)index;
 }

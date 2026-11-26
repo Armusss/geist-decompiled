@@ -16,6 +16,12 @@ extern "C" {
 void* memcpy(void* dst, const void* src, unsigned long n);
 void* memset(void* dst, int c, unsigned long n);
 int toupper(int c);
+
+// From a shared header: names of the ghost actions (the table itself is unused here). It opens this
+// file's string pool at 0x8034B580; "[FCOSVE]" and "\n" follow.
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
 }
 
 struct Place {
@@ -265,8 +271,7 @@ extern int lbl_804D37F0;
 extern int lbl_804D37F4;
 extern int lbl_804D37F8;
 extern int lbl_804D37FC;
-extern unsigned char lbl_803C6B08[];
-extern unsigned char lbl_8034B5C8[];
+extern "C" unsigned char __upper_map[];
 
 int HostDriveMsg(int msg, int* data);
 int HostDriveInit2(int* data);
@@ -280,7 +285,7 @@ void HostDriveAnimate(Actor* a);
 // The save-block magic: hash of "[FCOSVE]" through the toupper table.
 static inline u32 HostDriveMagic() {
     u32 h = 0;
-    const unsigned char* s = lbl_8034B5C8;
+    const unsigned char* s = (const unsigned char*)"[FCOSVE]";
     const unsigned char* p;
 
     for (p = s; *p != 0; p++) {
@@ -289,7 +294,7 @@ static inline u32 HostDriveMagic() {
         if (*s == 0xFF) {
             c = 0xFFFFFFFF;
         } else {
-            c = lbl_803C6B08[*s];
+            c = __upper_map[*s];
         }
         h = h * 31 + (c & 0xFF);
         s++;

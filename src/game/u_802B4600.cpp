@@ -246,10 +246,12 @@ Actor* GetPlayer();
 
 // Data owned by other files.
 extern StateRec lbl_803C43A8[5];
-extern char lbl_803C4438[];
-extern char lbl_803C444C[];
-extern char lbl_803C4484[];
-extern char lbl_803C4498[];
+// Spark and debris particle parameter tables: this unit's own .data (retail reaches them from the unit data
+// base lbl_803C42D0 + 0x168/0x17C/0x1B4/0x1C8).
+extern float lbl_803C4438[5];
+extern float lbl_803C444C[14];
+extern float lbl_803C4484[5];
+extern float lbl_803C4498[14];
 extern int lbl_804D3910;
 extern int lbl_804D3914;
 extern int lbl_804D3918;

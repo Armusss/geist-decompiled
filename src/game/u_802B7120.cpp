@@ -940,8 +940,13 @@ struct GunModel {
     int f1c74;                  // 0x1c74
 };
 
-extern const char* lbl_803C49F0;
-extern unsigned long lbl_803C49F4;
+// Named type descriptor (0x803C49F0, 0x30 bytes): its name and the name's hash, computed on first use.
+struct NamedTypeDesc {
+    const char* name;           // 0x00
+    unsigned long hash;         // 0x04
+    unsigned char pad08[0x28];
+};
+extern NamedTypeDesc lbl_803C49F0;
 
 extern float lbl_804D3960;
 extern float lbl_804D3964;
@@ -978,11 +983,11 @@ void ImpThrowFireball802B8A24(int id, int phase, int* payload, void* owner, floa
     float rnd2;
     float rnd3;
 
-    if (lbl_803C49F4 == 0) {
-        if (lbl_803C49F0 != 0)
-            lbl_803C49F4 = TypeNameHash(lbl_803C49F0);
+    if (lbl_803C49F0.hash == 0) {
+        if (lbl_803C49F0.name != 0)
+            lbl_803C49F0.hash = TypeNameHash(lbl_803C49F0.name);
         else
-            lbl_803C49F4 = 0;
+            lbl_803C49F0.hash = 0;
     }
 
     if (phase == 0) {

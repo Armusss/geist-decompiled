@@ -210,11 +210,13 @@ struct SoundDef {
 extern SoundSlot* lbl_804D4FBC;   // table of 256 slots
 extern SoundDef* lbl_804D4F68;    // sound definitions
 extern SND_LISTENER lbl_8046F798;
+// Listener position, velocity, heading and up vectors: this file's own .data (retail addresses them from the
+// unit's data base lbl_803A7CA8 + 0x464..0x488); symbols.txt lists them as separate objects.
 extern SND_FVECTOR lbl_803A810C;
 extern SND_FVECTOR lbl_803A8118;
 extern SND_FVECTOR lbl_803A8124;
 extern SND_FVECTOR lbl_803A8130;
-extern Mtx34 lbl_8046F828[4];
+extern Mtx34 gListenerMatrices[4];
 extern int lbl_804D4FB8;
 extern int lbl_804D4F8C;
 
@@ -239,7 +241,7 @@ static inline int SoundSlotIndex(int h) {
 // ListenerPush: remembers up to four camera matrices.
 extern "C" int fn_8016ECB8(Actor* camera) {
     if (lbl_804D4FB8 < 4) {
-        ActorGetMatrix(&lbl_8046F828[lbl_804D4FB8], camera);
+        ActorGetMatrix(&gListenerMatrices[lbl_804D4FB8], camera);
         lbl_804D4FB8++;
     }
     return 1;
@@ -248,7 +250,7 @@ extern "C" int fn_8016ECB8(Actor* camera) {
 // ListenerSet: sets up the sound listener from the camera.
 extern "C" int fn_8016ED08(Actor* camera) {
     fn_80171F40((char*)camera + 0x24);
-    ActorGetMatrix(&lbl_8046F828[0], camera);
+    ActorGetMatrix(&gListenerMatrices[0], camera);
     lbl_804D4FB8 = 1;
     if (lbl_804D4F8C != 0) {
         sndUpdateListener(&lbl_8046F798, &lbl_803A810C, &lbl_803A8118, &lbl_803A8124, &lbl_803A8130, 0x7F, 0);
