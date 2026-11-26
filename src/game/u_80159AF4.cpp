@@ -414,7 +414,6 @@ extern f32 lbl_804D2F40;
 extern f32 lbl_804D2F44;
 extern u32 lbl_804D2F48;
 extern f32 lbl_804D2F50;
-extern s32 lbl_804D4B98;
 
 extern u32 lbl_804D7CE8;
 
