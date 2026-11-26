@@ -207,7 +207,8 @@ struct SoundDef {
     u8 pad4[0x14 - 4];
     int baseVolume;   // 0x14
     int reverb;       // 0x18: MIDI controller 0x5B (reverb send) value
-    u8 pad1c[0x24 - 0x1C];
+    int group;        // 0x1C: pause group
+    u32 flags;        // 0x20: bit 0 = resumes after a pause
 };
 
 extern SoundSlot* lbl_804D4FBC;   // table of 256 slots
@@ -795,6 +796,132 @@ extern int lbl_804D4F80;   // show the playing-sounds overlay
 extern int lbl_804D4F84;   // show the reverb overlay
 extern char* lbl_803A7CA8[17];   // reverb preset names
 
+extern u32 lbl_804D4FA0;   // paused groups (bit per group)
+
+// SoundGroupRestart: restarts the paused sounds of a group in their old slots.
+static inline void SoundGroupRestart(int group) {
+    int i;
+    int off;
+
+    for (i = 0, off = 0; i < 0x100; i++, off += sizeof(SoundSlot)) {
+        SoundSlot* slot = (SoundSlot*)((char*)lbl_804D4FBC + off);
+        if ((slot->kind == 2 || slot->kind == 3) && group == lbl_804D4F68[slot->def].group) {
+            if (slot->music == 0) {
+                fn_80175030(slot->def, (int*)&slot->pos, slot->onStop, slot->stopArg, i);
+            } else {
+                fn_80175030(slot->def, 0, slot->onStop, slot->stopArg, i);
+            }
+            ((SoundSlot*)((char*)lbl_804D4FBC + off))->kind = 1;
+        }
+    }
+}
+
+// SoundPauseGroup: pause != 0 stops the group's sounds (resumable ones are kept as paused), 0 restarts them.
+extern "C" int fn_8016F4DC(int pause, int group) {
+    if (pause != 0) {
+        int off;
+        int i;
+
+        lbl_804D4FA0 |= 1 << group;
+        for (i = 0, off = 0; i < 0x100; i++, off += sizeof(SoundSlot)) {
+            SoundSlot* slot = (SoundSlot*)((char*)lbl_804D4FBC + off);
+            if (slot->kind == 1 && group == lbl_804D4F68[slot->def].group) {
+                if (slot->music == 0) {
+                    sndRemoveEmitter(&slot->emitter);
+                } else {
+                    sndFXKeyOff(slot->voice);
+                }
+                slot = (SoundSlot*)((char*)lbl_804D4FBC + off);
+                if (lbl_804D4F68[slot->def].flags & 1) {
+                    slot->kind = 2;
+                } else {
+                    slot->kind = 0;
+                    if (((SoundSlot*)((char*)lbl_804D4FBC + off))->onStop != 0) {
+                        ((SoundSlot*)((char*)lbl_804D4FBC + off))
+                            ->onStop(((SoundSlot*)((char*)lbl_804D4FBC + off))->stopArg);
+                    }
+                }
+            }
+        }
+    } else {
+        lbl_804D4FA0 &= ~(1 << group);
+        SoundGroupRestart(group);
+    }
+    return 1;
+}
+
+// SoundPauseAll
+extern "C" int fn_8016F6A0(int pause) {
+    int off;
+    int i;
+
+    if (pause != 0) {
+        for (i = 0, off = 0; i < 0x100; i++, off += sizeof(SoundSlot)) {
+            SoundSlot* slot = (SoundSlot*)((char*)lbl_804D4FBC + off);
+            if (slot->kind == 1) {
+                if (slot->music == 0) {
+                    sndRemoveEmitter(&slot->emitter);
+                } else {
+                    sndFXKeyOff(slot->voice);
+                }
+                slot = (SoundSlot*)((char*)lbl_804D4FBC + off);
+                if (lbl_804D4F68[slot->def].flags & 1) {
+                    slot->kind = 2;
+                } else {
+                    slot->kind = 0;
+                    if (((SoundSlot*)((char*)lbl_804D4FBC + off))->onStop != 0) {
+                        ((SoundSlot*)((char*)lbl_804D4FBC + off))
+                            ->onStop(((SoundSlot*)((char*)lbl_804D4FBC + off))->stopArg);
+                    }
+                }
+            }
+        }
+    } else {
+        for (i = 0, off = 0; i < 0x100; i++, off += sizeof(SoundSlot)) {
+            SoundSlot* slot = (SoundSlot*)((char*)lbl_804D4FBC + off);
+            if (slot->kind == 2 && (lbl_804D4FA0 & (1 << lbl_804D4F68[slot->def].group)) == 0) {
+                if (slot->music == 0) {
+                    fn_80175030(slot->def, (int*)&slot->pos, slot->onStop, slot->stopArg, i);
+                } else {
+                    fn_80175030(slot->def, 0, slot->onStop, slot->stopArg, i);
+                }
+                ((SoundSlot*)((char*)lbl_804D4FBC + off))->kind = 1;
+            }
+        }
+    }
+    return 1;
+}
+
+// SoundSlotsClear: stops every playing sound and frees all slots.
+static inline void SoundSlotsClear(void) {
+    int i;
+    int off;
+
+    for (off = 0, i = 0; i < 0x100; i++, off += sizeof(SoundSlot)) {
+        SoundSlot* slot = (SoundSlot*)((char*)lbl_804D4FBC + off);
+        if (slot->kind == 1) {
+            if (slot->music == 0) {
+                sndRemoveEmitter(&slot->emitter);
+            } else {
+                sndFXKeyOff(slot->voice);
+            }
+            ((SoundSlot*)((char*)lbl_804D4FBC + off))->kind = 0;
+        } else {
+            slot->kind = 0;
+        }
+    }
+}
+
+// SoundStopAll: also fades the master volume and drops the listener.
+extern "C" void fn_8016F818(void) {
+    SoundSlotsClear();
+    sndMasterVolume(0, 0x20, 1, 1);
+    if (lbl_804D4F8C != 0) {
+        sndRemoveListener(&lbl_8046F798);
+        lbl_804D4F8C = 0;
+    }
+}
+
 // SoundDebugDraw
 extern "C" void fn_8016F8EC(void) {
     if (lbl_804D4F80 != 0) {
@@ -926,9 +1053,6 @@ extern "C" void fn_80175000(int size) { MemAlloc(size, "Msx.cpp", 0x413); }
 // Functions not drafted yet (symbol names are still the placeholders):
 // TODO (not drafted yet, 0x2C bytes at 0x8016E578): fn_8016E578
 // TODO (not drafted yet, 0x134 bytes at 0x8016E5A4): fn_8016E5A4
-// TODO (not drafted yet, 0x1C4 bytes at 0x8016F4DC): fn_8016F4DC
-// TODO (not drafted yet, 0x178 bytes at 0x8016F6A0): fn_8016F6A0
-// TODO (not drafted yet, 0xD4 bytes at 0x8016F818): fn_8016F818
 // TODO (not drafted yet, 0x864 bytes at 0x8016F950): fn_8016F950
 // TODO (not drafted yet, 0x134 bytes at 0x80170214): fn_80170214
 // TODO (not drafted yet, 0x4EC bytes at 0x80170348): fn_80170348
