@@ -281,7 +281,8 @@ void fn_802CECE8();
 }
 
 // Defined later in this file.
-extern "C" void fn_801582AC();
+extern "C" {
+void fn_801582AC();
 void fn_801584F8();
 void fn_8015860C();
 void fn_80158744();
@@ -293,7 +294,7 @@ int fn_80158AFC(int);
 void fn_80158B4C(int);
 void fn_80158B90(int, int, int);
 int fn_80158BE0();
-void fn_80158C3C();
+int fn_80158C3C(f32* pos, int kind, int a, int b, int c, int d, int e);
 void fn_80158F90();
 void* fn_8015902C(void*, short);
 void fn_801590A4();
@@ -308,7 +309,7 @@ void fn_80159A4C(void*, char*, int);
 int fn_80159AAC();
 void fn_80159AB4(int*, int*);
 void fn_80159AD4(int*, int*);
-void fn_80159AF4(int, u8, u8, u8);
+void fn_80159AF4(u32, u8, u8, u8);
 void fn_80159B2C();
 void* fn_80159B94(void*, short);
 void fn_80159C0C();
@@ -345,6 +346,7 @@ void fn_8015BFD8(void*, int, unsigned);
 int fn_8015C038();
 void fn_8015C040(int*, int*);
 void fn_8015C060(int*, int*);
+}
 
 // ---- shared per-player HUD/effect pools (three 4-entry arrays in .bss) ----
 struct FxPoolEntry {
@@ -1791,7 +1793,6 @@ void fn_80159118(f32 dt) {
     fn_80233A20(dt);
 }
 // TODO (not drafted yet, 0x4B0 bytes at 0x80159554)
-void fn_80159554();
 void fn_80159C0C() {
     int** p;
 
