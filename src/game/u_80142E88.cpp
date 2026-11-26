@@ -41,8 +41,13 @@ extern u32 lbl_804D4DDC;  // host unlock progress count
 extern int lbl_804D4DA4;  // when set every zone counts as unlocked
 extern int lbl_804D2ED8;
 extern int lbl_804D2EBC;
-extern u32 lbl_8046DAFC;      // mask of valid slots
-extern int lbl_8046DB00[4][4];  // four value banks
+// Slot value banks (0x8046DAFC, 0xEC bytes; retail reads +0x44 from the same base).
+struct SlotBanks {
+    u32 mask;               // 0x00: mask of valid slots
+    int banks[4][4];        // 0x04: four value banks
+    unsigned char pad44[0xA8];
+};
+extern SlotBanks lbl_8046DAFC;
 
 u32 StrFindKey(u32 key, u32* out);
 
@@ -299,28 +304,28 @@ void ClearSelection()
 // 0x8014FF94: stores a value in a bank for a valid slot
 extern "C" void fn_8014FF94(int bank, int slot, int value)
 {
-    if ((lbl_8046DAFC & (1 << slot)) == 0) {
+    if ((lbl_8046DAFC.mask & (1 << slot)) == 0) {
         return;
     }
     if (bank == 2) {
-        lbl_8046DB00[2][slot] = value;
+        lbl_8046DAFC.banks[2][slot] = value;
         return;
     }
     if (bank > 1) {
         if (bank > 3) {
             return;
         }
-        lbl_8046DB00[3][slot] = value;
+        lbl_8046DAFC.banks[3][slot] = value;
         return;
     }
     if (bank != 0) {
         if (bank < 0) {
             return;
         }
-        lbl_8046DB00[1][slot] = value;
+        lbl_8046DAFC.banks[1][slot] = value;
         return;
     }
-    lbl_8046DB00[0][slot] = value;
+    lbl_8046DAFC.banks[0][slot] = value;
 }
 
 // TODO (not drafted yet, 0x16C bytes at 0x80143668): level progress / game state routine
