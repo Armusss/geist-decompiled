@@ -51,7 +51,12 @@ struct ActorBig {
     int timer;              // 0x7D0
 };
 
-extern int lbl_803C05B4[][18];
+// State table entry (0x48 bytes; 25 entries at 0x803C0570, the same shape as the player state table).
+struct ActorStateEntry {
+    u8 pad00[0x44];
+    int value;              // 0x44
+};
+extern ActorStateEntry lbl_803C0570[25];
 extern float lbl_804D3780;
 
 // Functions called from other units under their placeholder names.
@@ -364,7 +369,7 @@ void ActorSetFlag678(ActorBig* a) {
 }
 
 int ActorGetStateValue(ActorBig* a) {
-    return lbl_803C05B4[a->stateIndex][0];
+    return lbl_803C0570[a->stateIndex].value;
 }
 
 // TODO (not drafted yet, 0x44 bytes at 0x8027D31C)
