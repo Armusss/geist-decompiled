@@ -68,7 +68,7 @@ void LinkInfoInit(void* p);
 extern CameraSlot lbl_8044FE00[];
 extern int lbl_804D48C4;  // current view
 extern int lbl_804D48C8;  // view count
-extern int lbl_804D4B98;
+extern int gCamLetterbox;
 extern float lbl_804D48A8;
 extern float lbl_804D48AC;
 extern float lbl_804D48B0;
@@ -347,12 +347,12 @@ extern "C" CameraObj* fn_800C6414(int view)
     return 0;
 }
 
-// 0x800C6448: the active camera (the shared one when lbl_804D4B98 is set)
+// 0x800C6448: the active camera (the shared one when gCamLetterbox is set)
 extern "C" CameraObj* fn_800C6448()
 {
     CameraObj* c;
 
-    if (lbl_804D4B98 != 0) {
+    if (gCamLetterbox != 0) {
         c = CameraTable();
     } else {
         if (lbl_8039B760[lbl_804D48C4] == -1) {

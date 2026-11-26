@@ -36,7 +36,6 @@ void Fn800F7F5C(int a, int b, int c, int d, void* e, float f);
 void* VAlloc(int size);
 void Fn800F840C(int emitter, int a, int b);
 extern int lbl_804D4A10;
-extern int lbl_804D4A18;
 
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }

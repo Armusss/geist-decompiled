@@ -422,7 +422,7 @@ extern f32 lbl_804D2F40;
 extern f32 lbl_804D2F44;
 extern u32 lbl_804D2F48;
 extern f32 lbl_804D2F50;
-extern s32 lbl_804D4B98;
+extern s32 gCamLetterbox;
 
 extern u32 lbl_804D7CE8;
 
@@ -548,7 +548,7 @@ void fn_8015779C(f32 dt, int mode, int view, int flag) {
             }
             if (mode == 1) {
                 if (lbl_804D2F28 != 0) {
-                    if (lbl_804D4B98 != 0) {
+                    if (gCamLetterbox != 0) {
                         fn_800FF294(0);
                         fn_800FD924(0);
                         fn_800499E8(dt, 0);
@@ -806,7 +806,7 @@ void fn_8015779C(f32 dt, int mode, int view, int flag) {
                 if (fn_80220A38() != 4) {
                     fn_80215A24();
                 }
-                if (lbl_804D2F28 != 0 && lbl_804D4B98 == 0) {
+                if (lbl_804D2F28 != 0 && gCamLetterbox == 0) {
                     fn_800FF294(view);
                     fn_800FD924(view);
                     fn_800499E8(dt, view);
