@@ -312,9 +312,16 @@ game/u_800E2414.cpp:
 
 game/u_800E39F4.cpp:
 	.text       start:0x800E39F4 end:0x800E3EC4
+	.rodata     start:0x80344EA8 end:0x80344EF8
+	.data       start:0x8039C3F8 end:0x8039C428
+	.sdata2     start:0x804D71C0 end:0x804D71D8
 
 game/u_800E3EC4.cpp:
 	.text       start:0x800E3EC4 end:0x800E48A0
+	.rodata     start:0x80344EF8 end:0x80344F48
+	.data       start:0x8039C428 end:0x8039C458
+	.sbss       start:0x804D4A18 end:0x804D4A20
+	.sdata2     start:0x804D71D8 end:0x804D71F0
 
 game/u_800E48A0.cpp:
 	.text       start:0x800E48A0 end:0x800E7E20
@@ -837,6 +844,10 @@ game/u_801D9A70.cpp:
 
 game/u_801DE4B0.cpp:
 	.text       start:0x801DE4B0 end:0x801DE7A0
+	.rodata     start:0x80348D78 end:0x80348DD0
+	.data       start:0x803ADCF8 end:0x803ADD28
+	.sdata      start:0x804D3248 end:0x804D3250
+	.sdata2     start:0x804D8D18 end:0x804D8D28
 
 game/u_801DE7A0.cpp:
 	.text       start:0x801DE7A0 end:0x801E0850
@@ -877,6 +888,9 @@ game/u_801E65F0.cpp:
 
 game/u_801E72E0.cpp:
 	.text       start:0x801E72E0 end:0x801E7534
+	.rodata     start:0x80348F68 end:0x80348FC0
+	.data       start:0x803B3B30 end:0x803B3B60
+	.sdata2     start:0x804D8EF0 end:0x804D8EF8
 
 game/u_801E7534.cpp:
 	.text       start:0x801E7534 end:0x801EA880

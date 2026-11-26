@@ -25,6 +25,7 @@ struct CamObj;
 struct Shake;
 struct GameType;
 struct Minigame;
+struct Actor;
 
 // Functions called from other units under their placeholder names.
 extern "C" float fn_800F7920(u32 row, u32 key);
@@ -66,7 +67,6 @@ extern "C" void fn_800FDA90(void);
 extern "C" void fn_800FDC48(void);
 extern "C" void fn_800FDC78(void);
 
-extern float gZeroF;            // 0x804D7488
 
 extern "C" int SendMsg(int to, int msg, void* data);
 
@@ -98,32 +98,52 @@ struct CamTriple {
     int v[3];
 };
 
-struct CamObj {
-    u8 pad00[0x30];
+// Shake record (inside the camera object), started by CamObjEase.
+struct Shake {
+    int kind;               // 0x00: 1 jitter, 2 slide, 3 roll (0 = none)
+    int time;               // 0x04: frames left
+    int amp;                // 0x08: Q12 amplitude
+    int decay;              // 0x0C: amplitude lost per frame
+    u32 flags;              // 0x10: frame counter (bit 0 flips the slide)
+    int phase;              // 0x14
+};
+
+// The camera's view: its placement (read as a matrix by the matrix helpers) and lens values.
+struct CamView {
+    union {
+        Mtx34 m;
+        PlaceF place;
+    };                      // 0x00
     int f30;                // 0x30
     float fov;              // 0x34
-    u8 pad38[0x40 - 0x38];
+    float f38;              // 0x38
+    float f3C;              // 0x3C
     float f40;              // 0x40
     float f44;              // 0x44
     float f48;              // 0x48
-    CamTriple t4C;          // 0x4C
-    u8 pad58[0xC0 - 0x58];
-    int ctl;                // 0xC0
-    int ctl2;               // 0xC4
-    int unkC8;              // 0xC8
-    u8 padCC[0xF8 - 0xCC];
-    int ownerId;            // 0xF8
-    int flagA;              // 0xFC
-    int flagB;              // 0x100
-    int unk104;             // 0x104
-    u8 pad108[0x124 - 0x108];
+    int f4C;                // 0x4C
+    int f50;                // 0x50
+    int f54;                // 0x54
+    int f58;                // 0x58
+    int f5C;                // 0x5C
 };
 
-extern CamObj gCams[16];        // 0x8045C770
-extern int gCamLetterbox;       // 0x804D4B98
-extern int gCamCount;           // 0x804D4B9C
-extern float gCamNeg1;          // 0x804D7498
-extern float gCamZero2;         // 0x804D749C
+struct CamObj {
+    CamView view;           // 0x00
+    CamView split;          // 0x60: the second view of the letterbox (split) mode
+    int ctl;                // 0xC0
+    int ctl2;               // 0xC4
+    PlaceF base;            // 0xC8: the view before the letterbox tilt
+    PlaceF* src;            // 0xF8: the placement the camera follows
+    Vec3* offset;           // 0xFC
+    int roll;               // 0x100
+    Shake shake;            // 0x104
+    u8 pad11C[0x124 - 0x11C];
+};
+
+CamObj gCams[16];
+int gCamLetterbox;
+int gCamCount;
 
 extern "C" {
 int fn_802A1D04(void);
@@ -136,7 +156,7 @@ int fn_800C6AE8(void* obj, void* a, void* b, int c);
 void fn_80026660(int msg, void* fn, int arg);
 }
 
-void CamObjUpdate(float dt, CamObj* c, int arg);
+void CamObjUpdate(float dt, void* obj, int arg);
 void CamObjEase(CamObj* c, int a, int b, int d, int e);
 int CamMsg(u32 handle, int msg, int* data);
 
@@ -172,7 +192,7 @@ int fn_800F94C8(u32 handle) {
 
 void fn_800F94F8(u32 handle, short v) {
     if (CamIdx(handle) >= 0 && CamIdx(handle) < 16) {
-        gCams[handle & 0xFFFFFF].flagB = v;
+        gCams[handle & 0xFFFFFF].roll = v;
     }
 }
 
@@ -181,10 +201,10 @@ void CamObjEase(CamObj* c, int a, int b, int d, int force) {
     if (c == NULL || b == 0) {
         return;
     }
-    if (c->unk104 != 0 && force == 0) {
+    if (c->shake.kind != 0 && force == 0) {
         return;
     }
-    c->unk104 = a;
+    c->shake.kind = a;
     *(int*)((char*)c + 0x108) = b;
     *(int*)((char*)c + 0x10C) = d << 12;
     *(int*)((char*)c + 0x110) = *(int*)((char*)c + 0x10C) / b;
@@ -194,7 +214,7 @@ void CamObjEase(CamObj* c, int a, int b, int d, int force) {
 
 void fn_800F9578(u32 handle, int v) {
     if (CamIdx(handle) >= 0 && CamIdx(handle) < 16) {
-        gCams[handle & 0xFFFFFF].flagA = v;
+        gCams[handle & 0xFFFFFF].offset = (Vec3*)v;
     }
 }
 
@@ -202,14 +222,14 @@ void fn_800F9578(u32 handle, int v) {
 void CameraSetFov(int handle, float fov) {
     handle &= 0xFFFFFF;
     if (handle >= 0 && handle < 16) {
-        gCams[handle].fov = fov;
+        gCams[handle].view.fov = fov;
     }
     fn_800C6E88(handle);
 }
 
 float fn_800F95E4(u32 handle) {
     if (CamIdx(handle) >= 0 && CamIdx(handle) < 16) {
-        return gCams[handle & 0xFFFFFF].fov;
+        return gCams[handle & 0xFFFFFF].view.fov;
     }
     return -1.0f;
 }
@@ -217,7 +237,7 @@ float fn_800F95E4(u32 handle) {
 int fn_800F9614(u32 handle) {
     int r;
     if (CamIdx(handle) >= 0 && CamIdx(handle) < 16) {
-        r = (int)gCams[handle & 0xFFFFFF].fov;
+        r = (int)gCams[handle & 0xFFFFFF].view.fov;
     } else {
         r = -1;
     }
@@ -255,10 +275,10 @@ u32 fn_800F9724(int owner, int id) {
         } else {
             c->ctl2 = -1;
         }
-        c->ownerId = owner;
-        c->flagA = 0;
-        c->flagB = 0;
-        c->unk104 = 0;
+        c->src = (PlaceF*)owner;
+        c->offset = 0;
+        c->roll = 0;
+        c->shake.kind = 0;
         CamObjUpdate(0.0f, c, 0);
         return idx & 0xFFFFFF | 0x16000000;
     }
@@ -275,32 +295,21 @@ struct IMtx {
     int m[12];
 };
 
+void MtxMulQ12(int* out, int* a, int* b);  // 0x8009F258
+
 extern "C" {
 int fn_800A1624(int angle);
 int fn_800A1688(int angle);
 void fn_8009F76C(int* m);
-void MtxMulQ12(int* out, int* a, int* b);                   // 0x8009F258
 void fn_8009F5B0(int* m);
 void fn_8009F50C(int* out, int* in);
 int rand(void);
 void fn_8009F63C(int* m, int* actor);
 void fn_8009F44C(int* out, int* m, int* in);
-void PlacementToMatrix(int* m, int* p);                     // 0x8009EF04
-void ActorGetMatrix(int* m, int* actor);
-void MakeVec(int* v, int x, int y, int z);                  // 0x8016D430
 void fn_8009F028(int* out, int* v);
 void fn_8009FC6C(int* out, int* a, int* b);
-void MtxSetEuler(int* m, float* e);                         // 0x8009FAC0
 }
 
-// Shake record (inside the camera object): +8 amplitude, +0x10 flags, +0x14 phase.
-struct Shake {
-    u8 pad00[8];
-    int amp;                // 0x08
-    u8 pad0C[4];
-    u32 flags;              // 0x10
-    int phase;              // 0x14
-};
 
 // Sine-wave roll shake applied to the camera matrix.
 // A 3x4 fixed-point (Q12) matrix, copied as a whole.
@@ -377,76 +386,70 @@ void ShakeJitter(Shake* s, int* pos) {
     pos[11] += out[2];
 }
 
-extern void (*gShakeFns[])(void* shake, int* m);    // 0x8039CF54 (indexed by shake kind)
-extern float gShakeAngle;       // 0x804D7490 (double bias)
-extern int gCamTilt;            // 0x804D2D70
-extern float gTiltRow[2];       // 0x80345378
+void PlacementToMatrix(Mtx34* out, PlaceF* in);
+void ActorGetMatrix(Mtx34* out, Actor* in);
+void MakeVec(IVec3* v, int x, int y, int z);
+void MtxSetEuler(Mtx34* m, Vec3* euler);
 
-// Per-frame update of a camera object: copies the controller's matrix, applies the offset,
-// shake and roll, and mirrors it for the split view.
-void CamObjUpdate(float dt, CamObj* c, int arg) {
-    int* cm = (int*)c;
-    int* src = (int*)cm[0x3E];
-    float* off;
-    int i;
-    for (i = 0; i < 12; i++) {
-        cm[i] = src[i];
-    }
-    off = (float*)cm[0x3F];
+// Shake functions by kind (1-based).
+void (*gShakeFns[])(Shake* s, int* m) = { ShakeJitter, ShakeSlide, ShakeRoll, 0 };
+
+int gCamTilt = 30;              // letterbox tilt in degrees
+
+// Per-frame update of a camera object: copies the followed placement, applies the offset,
+// shake and roll, and builds the two tilted views of the letterbox mode.
+void CamObjUpdate(float dt, void* obj, int arg) {
+    CamObj* c = (CamObj*)obj;
+    Vec3* off;
+    c->view.place = *c->src;
+    off = c->offset;
     if (off != NULL) {
-        ((float*)cm)[9] += off[0];
-        ((float*)cm)[10] += off[1];
-        ((float*)cm)[11] += off[2];
+        c->view.place.pos.x += off->x;
+        c->view.place.pos.y += off->y;
+        c->view.place.pos.z += off->z;
     }
-    if (cm[0x41] != 0) {
-        int m[12];
-        PlacementToMatrix(m, cm);
-        gShakeFns[cm[0x41]](cm + 0x41, m);
-        {
-            int step = (int)dt;
-            cm[0x42] -= step;
-            if (cm[0x42] < 0) {
-                cm[0x41] = 0;
-            } else {
-                cm[0x43] -= cm[0x44] * step;
-                if (cm[0x43] < 0) {
-                    cm[0x41] = 0;
-                }
-                cm[0x45] += 1;
-                cm[0x46] += step;
+    if (c->shake.kind != 0) {
+        Mtx34 m;
+        int step;
+        PlacementToMatrix(&m, &c->view.place);
+        gShakeFns[c->shake.kind - 1](&c->shake, (int*)&m);
+        step = (int)dt;
+        c->shake.time -= step;
+        if (c->shake.time < 0) {
+            c->shake.kind = 0;
+        } else {
+            c->shake.amp -= c->shake.decay * step;
+            if (c->shake.amp < 0) {
+                c->shake.kind = 0;
             }
+            c->shake.flags++;
+            c->shake.phase += step;
         }
-        ActorGetMatrix(cm, m);
+        ActorGetMatrix(&c->view.m, (Actor*)&m);
     }
-    if (cm[0x40] != 0) {
-        int v[3];
-        int a[12];
-        int b[12];
-        v[1] = 0;
-        v[2] = 0;
-        v[0] = cm[0x40];
-        MakeVec(v, 0, 0, 0);
-        fn_8009F028(a, v);
-        ActorGetMatrix(b, a);
-        fn_8009FC6C(cm, b, cm);
+    if (c->roll != 0) {
+        IVec3 v;
+        Mtx34 a;
+        Mtx34 b;
+        v.x = c->roll;
+        v.y = 0;
+        v.z = 0;
+        MakeVec(&v, 0, 0, c->roll);
+        fn_8009F028((int*)&a, (int*)&v);
+        ActorGetMatrix(&b, (Actor*)&a);
+        fn_8009FC6C((int*)&c->view.m, (int*)&b, (int*)&c->view.m);
     }
-    for (i = 0; i < 12; i++) {
-        cm[0x32 + i] = cm[i];
-    }
+    c->base = c->view.place;
     if (gCamLetterbox != 0) {
-        float tilt[3];
-        float rot[12];
-        tilt[0] = gTiltRow[0];
-        tilt[1] = gTiltRow[1];
-        for (i = 0; i < 24; i++) {
-            cm[0x18 + i] = cm[i];
-        }
-        tilt[2] = (float)(-gCamTilt);
-        MtxSetEuler((int*)rot, tilt);
-        fn_8009FC6C(cm + 0x18, (int*)rot, cm + 0x32);
-        tilt[2] = (float)gCamTilt;
-        MtxSetEuler((int*)rot, tilt);
-        fn_8009FC6C(cm, (int*)rot, cm + 0x32);
+        Vec3 tilt = {0.0f, 0.0f, 0.0f};
+        Mtx34 rot;
+        c->split = c->view;
+        tilt.z = (float)(-gCamTilt);
+        MtxSetEuler(&rot, &tilt);
+        fn_8009FC6C((int*)&c->split.m, (int*)&rot, (int*)&c->base);
+        tilt.z = (float)gCamTilt;
+        MtxSetEuler(&rot, &tilt);
+        fn_8009FC6C((int*)&c->view.m, (int*)&rot, (int*)&c->base);
     }
 }
 
@@ -470,24 +473,24 @@ int CamMsg(u32 handle, int msg, int* data) {
     switch (msg) {
     case 0x1C01:
         if ((q->mask & 1) != 0) {
-            q->f30 = gCams[handle & 0xFFFFFF].f30;
+            q->f30 = gCams[handle & 0xFFFFFF].view.f30;
         }
         if ((q->mask & 2) != 0) {
-            q->fov = gCams[handle & 0xFFFFFF].fov;
+            q->fov = gCams[handle & 0xFFFFFF].view.fov;
         }
         if ((q->mask & 4) != 0) {
-            q->f40 = gCams[handle & 0xFFFFFF].f40;
+            q->f40 = gCams[handle & 0xFFFFFF].view.f40;
         }
         if ((q->mask & 8) != 0) {
-            q->f44 = gCams[handle & 0xFFFFFF].f44;
+            q->f44 = gCams[handle & 0xFFFFFF].view.f44;
         }
         if ((q->mask & 0x10) != 0) {
-            q->f48 = gCams[handle & 0xFFFFFF].f48;
+            q->f48 = gCams[handle & 0xFFFFFF].view.f48;
         }
         if ((q->mask & 0x20) != 0) {
-            q->t4C.v[0] = gCams[handle & 0xFFFFFF].t4C.v[0];
-            q->t4C.v[1] = gCams[handle & 0xFFFFFF].t4C.v[1];
-            q->t4C.v[2] = gCams[handle & 0xFFFFFF].t4C.v[2];
+            q->t4C.v[0] = gCams[handle & 0xFFFFFF].view.f4C;
+            q->t4C.v[1] = gCams[handle & 0xFFFFFF].view.f50;
+            q->t4C.v[2] = gCams[handle & 0xFFFFFF].view.f54;
         }
         if ((q->mask & 0x40) != 0) {
             q->ctl = gCams[handle & 0xFFFFFF].ctl;
