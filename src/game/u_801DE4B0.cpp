@@ -81,8 +81,8 @@ struct SpitDesc {
 // Number of globs per shot.
 static int sSpitCount = 4;
 
-unsigned long fn_801DE4B0(EffectObj* obj, int msg);
-int fn_801DE4BC(EffectObj* obj, int msg, int arg, void* data, float dt);
+extern "C" unsigned long fn_801DE4B0(EffectObj* obj, int msg);
+extern "C" int fn_801DE4BC(EffectObj* obj, int msg, int arg, void* data, float dt);
 
 EffectType gTentacleSpitType = {
     "TentacleSpit", 0, {0, 0, 0}, 0, 0, fn_801DE4BC, fn_801DE4B0, 0, 0, 0,

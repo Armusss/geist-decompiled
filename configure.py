@@ -638,7 +638,7 @@ config.libs = [
             Object(Matching, "game/asyncio.cpp"),  # guess
             Object(Matching, "game/u_800E1B5C.cpp"),  # rumble
             Object(NonMatching, "game/u_800E2414.cpp"),  # split from u_800E1B5C
-            Object(NonMatching, "game/u_800E39F4.cpp"),  # split from u_800E1B5C
+            Object(Matching, "game/u_800E39F4.cpp"),  # split from u_800E1B5C
             Object(NonMatching, "game/u_800E3EC4.cpp"),  # split from u_800E1B5C
             Object(NonMatching, "game/u_800E48A0.cpp"),  # split from u_800E1B5C
             Object(NonMatching, "game/u_800E7E20.cpp"),  # split from u_800E1B5C

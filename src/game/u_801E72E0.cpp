@@ -92,8 +92,8 @@ struct RoundTarget {
     int animB;                     // 0x1C74
 };
 
-unsigned long fn_801E72E0(EffectObj* obj, int msg);
-int fn_801E72EC(EffectObj* obj, int msg, int arg, void* data, float dt);
+extern "C" unsigned long fn_801E72E0(EffectObj* obj, int msg);
+extern "C" int fn_801E72EC(EffectObj* obj, int msg, int arg, void* data, float dt);
 
 EffectType gSniperRoundType = {
     "SniperRound", 0, {0, 0, 0}, 0, 0, fn_801E72EC, fn_801E72E0, 0, 0, 0,
