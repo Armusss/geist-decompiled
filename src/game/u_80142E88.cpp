@@ -209,7 +209,7 @@ int ZoneHasFlags(const char* name, u32 mask)
     if (lbl_804D4DA4 != 0) {
         return 1;
     }
-    for (i = 0; i < ZONE_FLAG_COUNT; i++) {
+    for (i = 0; i != ZONE_FLAG_COUNT; i++) {
         if (stricmp(name, lbl_803A5008[i].name) == 0 && (mask & lbl_803A5008[i].mask) != 0) {
             return 1;
         }
@@ -306,25 +306,20 @@ extern "C" void fn_8014FF94(int bank, int slot, int value)
     if ((lbl_8046DAFC.mask & (1 << slot)) == 0) {
         return;
     }
-    if (bank == 2) {
-        lbl_8046DAFC.banks[2][slot] = value;
-        return;
-    }
-    if (bank > 1) {
-        if (bank > 3) {
-            return;
-        }
-        lbl_8046DAFC.banks[3][slot] = value;
-        return;
-    }
-    if (bank != 0) {
-        if (bank < 0) {
-            return;
-        }
+    switch (bank) {
+    case 0:
+        lbl_8046DAFC.banks[0][slot] = value;
+        break;
+    case 1:
         lbl_8046DAFC.banks[1][slot] = value;
-        return;
+        break;
+    case 2:
+        lbl_8046DAFC.banks[2][slot] = value;
+        break;
+    case 3:
+        lbl_8046DAFC.banks[3][slot] = value;
+        break;
     }
-    lbl_8046DAFC.banks[0][slot] = value;
 }
 
 // TODO (not drafted yet, 0x16C bytes at 0x80143668): level progress / game state routine
