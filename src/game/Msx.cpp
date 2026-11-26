@@ -42,7 +42,8 @@ extern int lbl_804D5038;
 extern int lbl_804D503C;
 extern int lbl_804D2FC0;
 extern int lbl_804D2FC4;
-extern u32 lbl_804D2FCC;
+extern int lbl_804D2FCC;   // music volume (0..127)
+extern int lbl_804D2FC8;   // effects volume (0..127)
 
 // StreamSetPaused: a paused stream plays at sample rate 0.
 extern "C" void fn_8016E20C(int playing) {
@@ -721,6 +722,119 @@ extern "C" void fn_8016F8EC(void) {
     }
 }
 
+extern "C" int stricmp(const char* a, const char* b);
+extern int lbl_804D4F4C;   // number of sound definitions
+
+// FxFind: sound definition index by name, tagged with the top bit; -1 if not found.
+int FxFind(const char* name) {
+    int i;
+
+    for (i = 0; i < lbl_804D4F4C; i++) {
+        if (stricmp(name, lbl_804D4F3C[i]) == 0) {
+            return i | 0x80000000;
+        }
+    }
+    return -1;
+}
+
+extern int lbl_804D4FB4;   // the loader thread is running
+extern OSThread lbl_8046E480;
+void GfxFrameSwap(void);
+void GfxFrameBegin(void);
+
+// SoundLoadWait: waits for the loader thread, keeping the screen alive.
+extern "C" void fn_80170AA4(void) {
+    void* result;
+
+    if (lbl_804D4FB4 != 0) {
+        while (OSIsThreadTerminated(&lbl_8046E480) == 0) {
+            OSYieldThread();
+            GfxFrameSwap();
+            GfxFrameBegin();
+        }
+        OSJoinThread(&lbl_8046E480, &result);
+        lbl_804D4FB4 = 0;
+    }
+}
+
+extern "C" double modf(double x, double* ip);
+
+// RoundToInt: rounds half up through modf.
+static inline float RoundF(float v) {
+    double ip;
+
+    if ((float)modf(v, &ip) >= 0.5f) {
+        ip += 1.0;
+    }
+    return ip;
+}
+
+// MusicVolumeGet / EffectsVolumeGet (percent)
+extern "C" int fn_80170C30(void) { return RoundF(100.0f * (lbl_804D2FCC / 127.0f)); }
+
+extern "C" int fn_80170CBC(void) { return RoundF(100.0f * (lbl_804D2FC8 / 127.0f)); }
+
+// EffectsVolumeSet / MusicVolumeSet (percent)
+extern "C" void fn_80170D48(int percent) { lbl_804D2FC8 = RoundF((127.0f * percent) / 100.0f); }
+
+extern "C" void fn_80170DD4(int percent) { lbl_804D2FCC = RoundF((127.0f * percent) / 100.0f); }
+
+// A loaded song (0xC bytes).
+struct Song {
+    int id;          // 0x00
+    SND_SEQID seq;   // 0x04: -1 when not playing
+    int pad8;
+};
+
+extern Song* lbl_804D4F6C;   // songs
+extern int lbl_804D4F54;     // number of songs
+extern int lbl_804D3000;     // current song (-1 none)
+extern int lbl_804D4FFC;     // music pause depth
+
+// MusicPause: nested pause/resume of the current song.
+extern "C" void fn_80170E60(int pause) {
+    if (pause != 0) {
+        if (lbl_804D4FFC == 0 && lbl_804D3000 != -1) {
+            sndSeqPause(lbl_804D4F6C[lbl_804D3000].seq);
+        }
+        lbl_804D4FFC++;
+    } else {
+        if (--lbl_804D4FFC < 1) {
+            if (lbl_804D3000 != -1) {
+                sndSeqContinue(lbl_804D4F6C[lbl_804D3000].seq);
+            }
+            lbl_804D4FFC = 0;
+        }
+    }
+}
+
+// SongStop
+extern "C" void fn_80170EFC(int song) {
+    if (song > -1 && song < lbl_804D4F54) {
+        if (lbl_804D4F6C[song].seq != -1) {
+            sndSeqStop(lbl_804D4F6C[song].seq);
+            lbl_804D4F6C[song].seq = -1;
+        }
+    }
+}
+
+int FileReadSync(void* file, void* dst, int size, int offset);
+extern "C" int fn_8000786C(void* file, void* dst, int size, int offset);
+extern u8 lbl_80488F64[0x3C];   // the sound data file
+extern void* lbl_804D4F30;      // sound data read buffer
+extern int lbl_804D4F34;        // bytes read so far
+
+// SoundDataRead: reads the next chunk of the sound data file (async while the loader thread runs).
+extern "C" void* fn_80173D5C(int offset, int size) {
+    if (lbl_804D4FB4 == 0) {
+        FileReadSync(lbl_80488F64, lbl_804D4F30, size, offset);
+    } else {
+        fn_8000786C(lbl_80488F64, lbl_804D4F30, size, offset);
+    }
+    lbl_804D4F34 += size;
+    return lbl_804D4F30;
+}
+
 // MemFreeCallback / MemAllocCallback: the memory hooks handed out through the hook table in .sdata2.
 extern "C" void fn_80174FD0(void* p) { MemFree(p, "Msx.cpp", 0x41A); }
 
@@ -738,17 +852,9 @@ extern "C" void fn_80175000(int size) { MemAlloc(size, "Msx.cpp", 0x413); }
 // TODO (not drafted yet, 0x864 bytes at 0x8016F950): fn_8016F950
 // TODO (not drafted yet, 0x134 bytes at 0x80170214): fn_80170214
 // TODO (not drafted yet, 0x4EC bytes at 0x80170348): fn_80170348
-// TODO (not drafted yet, 0x7C bytes at 0x80170834): FxFind__FPCc
 // TODO (not drafted yet, 0xF4 bytes at 0x801708B0): LevelUnload__Fv
 // TODO (not drafted yet, 0x100 bytes at 0x801709A4): LevelLoaded__FPCc
-// TODO (not drafted yet, 0x70 bytes at 0x80170AA4): fn_80170AA4
 // TODO (not drafted yet, 0x114 bytes at 0x80170B14): fn_80170B14
-// TODO (not drafted yet, 0x8C bytes at 0x80170C30): fn_80170C30
-// TODO (not drafted yet, 0x8C bytes at 0x80170CBC): fn_80170CBC
-// TODO (not drafted yet, 0x8C bytes at 0x80170D48): fn_80170D48
-// TODO (not drafted yet, 0x8C bytes at 0x80170DD4): fn_80170DD4
-// TODO (not drafted yet, 0x9C bytes at 0x80170E60): fn_80170E60
-// TODO (not drafted yet, 0x68 bytes at 0x80170EFC): fn_80170EFC
 // TODO (not drafted yet, 0x180 bytes at 0x80170F64): fn_80170F64
 // TODO (not drafted yet, 0x16C bytes at 0x801710E4): fn_801710E4
 // TODO (not drafted yet, 0x3C8 bytes at 0x80171250): fn_80171250
@@ -759,7 +865,6 @@ extern "C" void fn_80175000(int size) { MemAlloc(size, "Msx.cpp", 0x413); }
 // TODO (not drafted yet, 0x2A8 bytes at 0x801723B8): fn_801723B8
 // TODO (not drafted yet, 0x1278 bytes at 0x80172660): fn_80172660
 // TODO (not drafted yet, 0x484 bytes at 0x801738D8): fn_801738D8
-// TODO (not drafted yet, 0x74 bytes at 0x80173D5C): fn_80173D5C
 // TODO (not drafted yet, 0x2CC bytes at 0x80173E20): fn_80173E20
 // TODO (not drafted yet, 0x294 bytes at 0x801740EC): fn_801740EC
 extern float lbl_80488910[2][SND_AUX_BLOCKSIZE];   // reverb work buffers (left, right)
