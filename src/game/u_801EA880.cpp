@@ -83,7 +83,7 @@ extern f32 lbl_804D8F48;
 extern f32 lbl_804D8F4C;
 extern f32 lbl_804D8F50;
 extern f64 lbl_804D8F58;
-extern f32 lbl_804D2520;
+extern f32 gAspectScale;
 extern f32 gAspectScale;
 extern f32 lbl_803B9284[];      // six outline-offset directions, xy pairs
 extern u32 lbl_804DBB18;        // fixed shadow RGB
@@ -243,7 +243,7 @@ int TextLayoutMeasure(const char* str, int id)
     lbl_8049C228.cur.w[8] = id * (u32)gTextFont->cellWidth;
     lbl_8049C228.cur.w[7] =
         (int)((f32)((f64)lbl_8049C228.cur.w[8] - lbl_804D8F38) * lbl_804D8F30
-              / lbl_804D2520);
+              / gAspectScale);
 
     TextMeasureRun((char*)&flag, 0x2800, &width, &unk10, &unkC, &unk8);
 
