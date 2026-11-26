@@ -420,7 +420,7 @@ void BarrierActorUpdate(Actor* actorPtr, float delta) {
             fn_80037EC0(actor->model, lbl_804D3298, 1, 0x40, 0x40, 0x40, 0xFF);
         }
     }
-    ActorUpdate((Actor*)actor, delta);
+    ActorUpdate(actorPtr, delta);
 }
 
 // Message 0x41D handler: keeps the 64-slot table of actor-kind hashes the

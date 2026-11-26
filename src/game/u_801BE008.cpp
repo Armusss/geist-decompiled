@@ -155,7 +155,6 @@ extern "C" int fn_801BE008(RegObj* o) {
     int order[6] = {0, 1, 2, 3, 4, 5};
     ILine line;
     Mtx34 m;
-    Quat rot[254];
     int i;
     int anim;
 
@@ -167,6 +166,7 @@ extern "C" int fn_801BE008(RegObj* o) {
     }
     for (i = 0; i < 6; i++) {
         Vec3 pos[254];
+        Quat rot[254];
         int k = order[i];
         if (k < 2) {
             anim = fn_800A1BC8(o->info->anim14, o->info->arg1C, 0xAB3CB99B, k % 2, 0);
@@ -192,7 +192,9 @@ extern "C" int fn_801BE008(RegObj* o) {
             d.z -= (int)pos[0].z;
             fn_8009F63C(&m, o);
             fn_8009F44C(&line.to, &m, &d);
-            line.from = o->pos;
+            line.from.x = o->pos.x;
+            line.from.y = o->pos.y;
+            line.from.z = o->pos.z;
             line.to.x += o->pos.x;
             line.to.y += o->pos.y;
             line.to.z += o->pos.z;
@@ -202,8 +204,12 @@ extern "C" int fn_801BE008(RegObj* o) {
             seg[1].x = (float)line.to.x;
             seg[1].y = (float)line.to.y;
             seg[1].z = (float)line.to.z;
-            box.min = o->boxMin;
-            box.max = o->boxMax;
+            box.min.x = o->boxMin.x;
+            box.min.y = o->boxMin.y;
+            box.min.z = o->boxMin.z;
+            box.max.x = o->boxMax.x;
+            box.max.y = o->boxMax.y;
+            box.max.z = o->boxMax.z;
             if (d.x < 0) {
                 box.min.x += d.x;
                 box.min.y += d.y;

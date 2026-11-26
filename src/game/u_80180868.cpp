@@ -137,9 +137,7 @@ void fn_80180868(void* behp, void* hostp) {
     fn_800390F4(h);
 }
 
-bool fn_80180968(void* behp, void* hostp, float dt) {
-    BehInst* beh = (BehInst*)behp;
-    BehHost* host = (BehHost*)hostp;
+bool fn_80180968(const BehInst* beh, BehHost* host, float dt) {
     SweepCtx ctx1;
     SweepCtx ctx2;
     Vec3 delta;
@@ -154,11 +152,11 @@ bool fn_80180968(void* behp, void* hostp, float dt) {
     float s;
     float max;
 
-    ctx1.hit = &hit1;
     host->prev.x = host->pos.x;
     host->prev.y = host->pos.y;
     host->prev.z = host->pos.z;
     ctx1.id = host->id;
+    ctx1.hit = &hit1;
     box1[0] = host->pos.x;
     box1[1] = host->pos.y;
     box1[2] = host->pos.z;
@@ -257,7 +255,7 @@ bool fn_80180968(void* behp, void* hostp, float dt) {
 struct BehDesc {
     u32 hash;
     u32 unk04;
-    bool (*update)(void* beh, void* host, float dt);
+    bool (*update)(const BehInst* beh, BehHost* host, float dt);
     u32 unk0C;
     u32 unk10;
     u32 unk14;
