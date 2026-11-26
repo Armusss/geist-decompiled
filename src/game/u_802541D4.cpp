@@ -21,7 +21,6 @@ void fn_80175EE4(void* p);
 
 void* VAlloc(int size);
 void Fn800F840C(int emitter, int a, int b);
-extern int lbl_804D54D0;
 
 extern unsigned char __upper_map[256];
 inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
