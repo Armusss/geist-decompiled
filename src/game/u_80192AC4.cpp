@@ -236,6 +236,21 @@ inline void QueryNameOut(int* out, int target, unsigned long hash) {
     *out = *(int*)&q.result;
 }
 
+// Address of one entry of a state's animation-hash row.
+inline u32* StateAnimEntry(u32* anims, int variant) {
+    return &anims[variant];
+}
+
+// The linked host's animation set and whether it is in condition 11 (only for a host of kind 0x13).
+inline void LinkHostSet(LinkObj* link, HostModel** m, int* blend) {
+    if ((int)(link->handle >> 24) == 0x13) {
+        *m = fn_800A384C(link);
+        if (HasCondition(link->conds, 11)) {
+            *blend = 1;
+        }
+    }
+}
+
 inline u32* PlayerStateAnim(Player* p, int state) {
     return &lbl_803A8FD8[state].anims[p->animVariant];
 }
@@ -301,7 +316,7 @@ void fn_80192C0C(Player* p) {
         }
     }
     PlayerInHost((Actor*)p);
-    anim = PlayerStateAnim(p, 21);
+    anim = StateAnimEntry(lbl_803A8FD8[21].anims, p->animVariant);
     p->anim = fn_800A1BC8(m->model, m->animSet, *anim, blend, 0);
     p->animDone = (void*)fn_80195F5C;
     p->animLoop = 0x19;
@@ -354,35 +369,27 @@ void fn_80192F48(Player* p) {
 
 
 // ported from u_80187370 fn_80187E80; renamed: gPlayerStates->lbl_803A8FD8, fn_8018ABFC->fn_80195F5C
-void fn_80192FA4(Player* p) {
-    int blend = 0;
-    LinkObj* link = p->link;
-    HostModel* m;
-    int host;
+void fn_80192FA4(void* raw) {
     u32* anim;
-
-    if ((int)(link->handle >> 24) == 0x13) {
-        m = fn_800A384C(link);
-        if (HasCondition(link->conds, 11)) {
-            blend = 1;
-        }
-    }
+    HostModel* m;
+    int blend = 0;
+    int host;
+    LinkHostSet(((Player*)raw)->link, &m, &blend);
+    Player* p = (Player*)raw;
     host = PlayerInHost((Actor*)p);
-    anim = PlayerStateAnim(p, 19);
+    anim = StateAnimEntry(lbl_803A8FD8[19].anims, p->animVariant);
     p->anim = fn_800A1BC8(m->model, m->animSet, *anim, blend, 0);
     p->animDone = (void*)fn_80195F5C;
     p->animLoop = 0x19;
     p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, *anim, 0, 0);
     p->animLoop2 = 0x19;
-    {
-        QueryMsg q;
-        q.hash = 0x08783452;
-        SendMsg(p->link->handle, 0x41E, &q);
-        if (*(int*)&q.result != 0) {
-            PlayerSetHeldSlotIndex(p, 0);
-        } else {
-            PlayerSetHeldSlotIndex(p, 1);
-        }
+    QueryMsg q;
+    q.hash = 0x08783452;
+    SendMsg(p->link->handle, 0x41E, &q);
+    if (*(int*)&q.result != 0) {
+        PlayerSetHeldSlotIndex(p, 0);
+    } else {
+        PlayerSetHeldSlotIndex(p, 1);
     }
 }
 
@@ -404,35 +411,37 @@ void fn_80193130(Player* p) {
 
 
 // ported from u_80187370 fn_80188068; renamed: gPlayerStates->lbl_803A8FD8, fn_8018ABFC->fn_80195F5C
-void fn_8019318C(Player* p) {
-    int host = PlayerInHost((Actor*)p);
-    LinkObj* link = p->link;
-    int variant = p->animVariant;
-    int blend = 0;
+void fn_8019318C(void* raw) {
+    Player* p = (Player*)raw;
+    LinkObj* link;
     HostModel* m;
+    int host;
+    int variant;
+    int blend;
     u32* anim;
-
+    host = PlayerInHost((Actor*)p);
+    link = p->link;
+    variant = p->animVariant;
+    blend = 0;
     if ((int)(link->handle >> 24) == 0x13) {
         m = fn_800A384C(link);
         if (HasCondition(link->conds, 11)) {
             blend = 1;
         }
     }
-    anim = &lbl_803A8FD8[18].anims[variant];
+    anim = StateAnimEntry(lbl_803A8FD8[18].anims, variant);
     p->anim = fn_800A1BC8(m->model, m->animSet, *anim, blend, 0);
     p->animDone = (void*)fn_80195F5C;
     p->animLoop = 0x59;
     p->anim2 = fn_800A1BC8(p->hosts[host]->model, p->hosts[host]->animSet2, *anim, 0, 0);
     p->animLoop2 = 0x59;
-    {
-        QueryMsg q;
-        q.hash = 0x08783452;
-        SendMsg(p->link->handle, 0x41E, &q);
-        if (*(int*)&q.result != 0) {
-            PlayerSetHeldSlotIndex(p, 0);
-        } else {
-            PlayerSetHeldSlotIndex(p, 1);
-        }
+    QueryMsg q;
+    q.hash = 0x08783452;
+    SendMsg(p->link->handle, 0x41E, &q);
+    if (*(int*)&q.result != 0) {
+        PlayerSetHeldSlotIndex(p, 0);
+    } else {
+        PlayerSetHeldSlotIndex(p, 1);
     }
 }
 
