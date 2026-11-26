@@ -223,7 +223,7 @@ static inline UnlockEntry* UnlockFind()
     UnlockEntry* e = lbl_803A50B8;
     int i;
 
-    for (i = 0; i < UNLOCK_COUNT; i++, e++) {
+    for (i = 0; i < UNLOCK_COUNT; e++, i++) {
         if (lbl_804D4DDC < e->threshold) {
             return &lbl_803A50B8[i];
         }
