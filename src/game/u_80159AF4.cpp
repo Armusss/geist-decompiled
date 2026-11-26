@@ -313,7 +313,7 @@ void fn_80159F88(f32);
 void fn_80159FEC();
 void fn_8015A050();
 void* fn_8015A0A4(void*, short);
-void fn_8015A10C(int);
+void fn_8015A10C(void*);
 void fn_8015A1A0(f32, int);
 void fn_8015A4AC(f32, f32, void*, void*, int, int, void*);
 int fn_8015A570(f32, f32, u8, u8, u8, u8, u8, u8, u8, u8, int, int);
@@ -614,19 +614,16 @@ void* fn_8015A0A4(void* p, short freeIt) {
 }
 
 // 0x8015A10C: remove one grenade HUD entry.
-void fn_8015A10C(int entry) {
-    void** p;
-    void** end;
-
-    p = lbl_804D4EA8->data;
+void fn_8015A10C(void* entry) {
+    void** p = lbl_804D4EA8->data;
     if (entry != 0) {
-        end = (void**)((u8*)lbl_804D4EA8->data + lbl_804D4EA8->size);
-        for (; p != end; p = p + 1) {
-            if ((void*)entry == *p) {
-                if (*(s32*)(entry + 0x6c) == 1) {
-                    fn_800390F4(*(s32*)(entry + 0x50));
+        void** end = (void**)((u8*)lbl_804D4EA8->data + lbl_804D4EA8->size);
+        for (; p != end; p++) {
+            if (entry == *p) {
+                if (((s32*)entry)[0x1b] == 1) {
+                    fn_800390F4(((s32*)entry)[0x14]);
                 }
-                VFree((void*)entry);
+                VFree(entry);
                 fn_8028B35C(lbl_804D4EA8, p, 4);
                 return;
             }
