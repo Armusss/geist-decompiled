@@ -31,6 +31,7 @@ Open shapes worth a dedicated investigation: tick `li r4,N` before `addi r3,rA,6
 - APPROVED: all evidence-backed signature/param fixes (BarrierActorUpdate/Msg -> Actor*, NpcSveAdvance*State __FP5OwnerPv, GunTrailEntryInit8017AFA4 + float dt, GfxMarkPlayerLit (u32,int,int,float,float), BitsetAllocIndices count/out swap, GunActionMessage optional). Each kept only if the build stays byte-identical.
 - APPROVED: free functions -> class virtuals where vtables prove it (ScreenEffect* virtuals, Buffer Append/GetAlignment -> BufferOwner, ReturnZero__Fv in vtables, SoundList ~11 members, AnimRecordSize). Where no real class name exists use a descriptive name marked as a guess in a comment.
 - REJECTED: dead-stripped pool helper for u_8013A3D4 (invented code). Stays 28/28 NonMatching.
+  Same case: u_800F9458 cameras (19/19; .sdata2 0x4330 double order needs a dead-stripped earlier function, 2026-11-26). Stays NonMatching.
 - APPROVED: second asm helper VecNormalizeLen0 in vecnorm.h (len=0 in zero branch, len kept in a register), same rule: only if the whole unit then fully matches.
 
 ## Two-Opus round (2026-11-18..20): pending boundary moves and user decisions
