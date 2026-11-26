@@ -80,7 +80,9 @@ extern "C" int fn_80142E94()
 // 0x80145B24: steps a three-way option (wraps around)
 void OptionStep3(int delta)
 {
-    int v = fn_8016E758() + delta;
+    int v = fn_8016E758();
+
+    v += delta;
 
     if (v < 0) {
         v = 2;
@@ -99,8 +101,10 @@ int OptionGet3()
 // 0x80145B90: changes a volume by steps of four (0-100)
 void VolumeAdjustA(int steps)
 {
-    int v = steps * 4 + fn_80170C30();
+    int v = fn_80170C30();
     int c;
+
+    v += steps * 4;
 
     if (v < 0) {
         c = 0;
@@ -122,8 +126,10 @@ int VolumeGetA()
 // 0x80145C04: changes the second volume by steps of four (0-100)
 void VolumeAdjustB(int steps)
 {
-    int v = steps * 4 + fn_80170CBC();
+    int v = fn_80170CBC();
     int c;
+
+    v += steps * 4;
 
     if (v < 0) {
         c = 0;
@@ -158,15 +164,13 @@ int OptionGet()
 void BrightnessAdjust(int steps)
 {
     float v = 0.05f * (float)steps + fn_800071A4();
-    float c = 0.5f;
 
-    if (v <= c) {
-        c = v;
-        if (v < -0.5f) {
-            c = -0.5f;
-        }
+    if (v > 0.5f) {
+        v = 0.5f;
+    } else if (v < -0.5f) {
+        v = -0.5f;
     }
-    fn_8000719C(c);
+    fn_8000719C(v);
 }
 
 // 0x80145E88: brightness as a percentage
@@ -178,12 +182,14 @@ int BrightnessGet()
 // 0x80145EC4: steps the widescreen option (0-1)
 void WideScreenStep(int delta)
 {
-    gWideScreen = gWideScreen + delta;
-    if (gWideScreen < 0) {
-        gWideScreen = 0;
-    } else if (gWideScreen > 1) {
-        gWideScreen = 1;
+    int v = gWideScreen + delta;
+
+    if (v < 0) {
+        v = 0;
+    } else if (v > 1) {
+        v = 1;
     }
+    gWideScreen = v;
 }
 
 // 0x80145EEC: is widescreen on?
@@ -198,15 +204,13 @@ extern "C" void fn_80142E9C();
 // 0x8014FCB4: does a zone have all the given progress flags?
 int ZoneHasFlags(const char* name, u32 mask)
 {
-    ZoneFlag* z;
     u32 i;
 
     if (lbl_804D4DA4 != 0) {
         return 1;
     }
-    z = lbl_803A5008;
-    for (i = 0; i < ZONE_FLAG_COUNT; i++, z++) {
-        if (stricmp(name, z->name) == 0 && (mask & z->mask) != 0) {
+    for (i = 0; i < ZONE_FLAG_COUNT; i++) {
+        if (stricmp(name, lbl_803A5008[i].name) == 0 && (mask & lbl_803A5008[i].mask) != 0) {
             return 1;
         }
     }
@@ -233,7 +237,7 @@ int HostUnlockCount()
     UnlockEntry* e = lbl_803A50B8;
     int i;
 
-    for (i = 0; i < 16; i++, e++) {
+    for (i = 0; i < 16; e++, i++) {
         if (lbl_804D4DDC < e->threshold) {
             return lbl_803A50B8[i].threshold - lbl_804D4DDC;
         }
@@ -280,18 +284,13 @@ extern "C" UnlockEntry* fn_8014FEE4(int index)
 extern "C" u32 fn_8014FF10(char* name)
 {
     u32 i;
-    LevelName* l;
 
     strupr(name);
-    i = 0;
-    l = lbl_803A466C;
-    do {
-        if (strcmp(l->name, name) == 0) {
+    for (i = 0; i < LEVEL_NAME_COUNT; i++) {
+        if (strcmp(lbl_803A466C[i].name, name) == 0) {
             return i;
         }
-        i++;
-        l++;
-    } while (i < LEVEL_NAME_COUNT);
+    }
     return 99;
 }
 
