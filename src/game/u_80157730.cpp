@@ -426,7 +426,10 @@ extern u32 lbl_804D2F48;
 extern f32 lbl_804D2F50;
 extern s32 lbl_804D4B98;
 
-extern u32 lbl_804D7CE8;
+struct PromptColor {
+    u32 rgba;
+};
+extern const PromptColor lbl_804D7CE8;
 
 extern u32 lbl_803A59C8[];
 extern u32 lbl_803A6FA8[8];
@@ -1034,9 +1037,9 @@ void fn_801587B8(int mode) {
 
 // 0x80158834: "no save file" prompt; waits for a button before creating one.
 void fn_80158834() {
-    f32 wait;
+    f32 now;
     f32 elapsed;
-    u32 msg;
+    PromptColor msg;
     int r;
     int r2;
 
@@ -1045,18 +1048,18 @@ void fn_80158834() {
     fn_800EC80C(0x32, 0x96, 0x21c, 0x7d);
     LoadingTime();
     do {
-        float now = LoadingTime();
+        now = LoadingTime();
         elapsed = elapsed - now;
         fn_80005A64();
         fn_800ECB18();
         fn_800EC9DC(0x32, 0x96, 0x21c, 0x7d);
         {
-            u32 arg = msg;
+            PromptColor arg = msg;
             fn_801EA880((void*)lbl_804D2F48, &arg, 0x50, 0x82, 0xe, 0x10, 0);
         }
         fn_800EBBB8(now, 0x104, 0x45);
         fn_801EAEAC();
-        fn_80005A64();
+        SystemPoll();
         if (elapsed <= 0.0f) {
             break;
         }
