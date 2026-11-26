@@ -776,7 +776,9 @@ void fn_8015A934(void* pool, int start, unsigned size) {
 }
 
 void fn_8015A97C(void* pool, int start, unsigned size) {
-    fn_8015AA04((int*)start, (int*)(start + (size & 0xfffffffc)));
+    unsigned long p = (unsigned long)start;
+
+    fn_8015AA04((int*)p, (int*)(p + (size & 0xfffffffc)));
     ((ScreenEffectBuffer*)pool)->Append((unsigned char*)start, size);
 }
 
