@@ -18,9 +18,15 @@ typedef unsigned char u8;
 
 // One beam of u_8017D794.cpp (partial layout).
 struct Beam {
-    u8 pad00[0x80];
+    u8 pad00[0x40];
+    float width;            // 0x40
+    float speed;            // 0x44
+    float length;           // 0x48
+    int segments;           // 0x4C
+    u8 pad50[0x80 - 0x50];
     int enabled;            // 0x80
-    u8 pad84[0x94 - 0x84];
+    u8 pad84[0x90 - 0x84];
+    int style;              // 0x90
     int model;              // 0x94
     u8 pad98[0xA0 - 0x98];
     Vec3 start;             // 0xA0
@@ -51,10 +57,16 @@ struct LightningNodes {
 };
 
 void ListRemoveFree(void* p, void** list, u32* bits, int count);
+void* ListAlloc(void** list, int size, u32* bits, int count);
+u32 AssetFind(u32 table, u32 key);
+int ActorInitBase(struct Actor* a);
+int ActorDefaultMsg(struct Actor* a, int msg, void* data, int arg);
 u8* ModelAnimate(int model, char* name, int arg);
 void ActorUpdate(struct Actor* a, float dt);
 extern "C" {
 void fn_8017E15C(Beam* b, int v);
+void fn_8017E174(Beam* b, int v);
+int fn_80019F88(void* data, LightningActor* a);
 void fn_8017DC64(Beam* b);
 void fn_8017DF34(Beam* b, Vec3* from, Vec3* to, float dt);
 int fn_800388A4(int model, int node);
@@ -76,21 +88,111 @@ extern "C" void fn_801E092C(void) {
 }
 //@@end
 
-// TODO (not drafted yet, 0x2B0 bytes at 0x801E09C8)
-extern "C" void fn_801E09C8(void);
+// Message 0xC14 (beam control) and 0x41D (set a beam variable): the hash and value words.
+struct LightningMsg {
+    LightningActor* actor;  // 0x00
+    u32 var;                // 0x04: 0x41D variable hash
+    int unk08;              // 0x08
+    int value;              // 0x0C: 0xC14 command hash / 0x41D value
+};
+
+static inline int BeamCommand(LightningActor* a, LightningMsg* m) {
+    Beam* b = a->beam;
+    if (b == NULL) {
+        return 0;
+    }
+    switch (m->value) {
+    case 0x7850684C:
+        fn_8017E15C(b, 1);
+        return 1;
+    case 0xBD60EC0C:
+        fn_8017E15C(b, 0);
+        return 1;
+    case 0xCC0A97EA:
+        b->style = 0;
+        break;
+    case 0x827330FB:
+        b->style = 1;
+        break;
+    case 0x171BB9FC:
+        b->style = 2;
+        break;
+    case 0x85A06832:
+        b->style = 3;
+        break;
+    }
+    return 0;
+}
+
+static inline int BeamSetVar(LightningActor* a, LightningMsg* m) {
+    Beam* b;
+    if (fn_80019F88(m, a) != 0) {
+        return 1;
+    }
+    b = a->beam;
+    if (b == NULL) {
+        return 0;
+    }
+    switch (m->var) {
+    case 0x829FA6E8:
+        if (m->value >= 0) {
+            b->width = (float)m->value / 100.0f;
+            return 1;
+        }
+        break;
+    case 0x875820C8:
+        if (m->value >= 0) {
+            b->speed = (float)m->value / 100.0f;
+            return 1;
+        }
+        break;
+    case 0xE0E8CE40:
+        if (m->value >= 0) {
+            b->length = (float)m->value;
+            return 1;
+        }
+        break;
+    case 0xD004D547:
+        if (m->value > 0) {
+            b->segments = m->value;
+            return 1;
+        }
+        break;
+    }
+    return 0;
+}
+
+//@@801E09C8
+// Message handler: beam commands (0xC14) and beam variables (0x41D), then the default actor messages.
+extern "C" int fn_801E09C8(struct Actor* self, int msg, void* data, int arg) {
+    LightningActor* a = ((LightningMsg*)data)->actor;
+    switch (msg) {
+    case 0xC14:
+        if (BeamCommand(a, (LightningMsg*)data)) {
+            return 1;
+        }
+        break;
+    case 0x41D:
+        if (BeamSetVar(a, (LightningMsg*)data)) {
+            return 1;
+        }
+        break;
+    }
+    return ActorDefaultMsg(self, msg, data, arg);
+}
+//@@end
 
 //@@801E0C78
-static inline void BoltFollow(LightningActor* a, Beam* b, float dt) {
-    if (b != NULL && b->enabled != 0) {
+// Update: moves the live beam between the two tracked bones, then the default actor update.
+// 4 diffs: retail copies the beam into r31 after the null test (ours before it).
+extern "C" void fn_801E0C78(LightningActor* a, float dt) {
+    Beam* b = a->beam;
+    if (a->beam != NULL && a->beam->enabled != 0) {
         u8* map = ModelAnimate(a->model, 0, 0);
         b->start = a->bones[map[lbl_8049B458.from]].pos;
         b->end = a->bones[map[lbl_8049B458.to]].pos;
         fn_8017DF34(b, &b->start, &b->end, dt);
     }
-}
-
-extern "C" void fn_801E0C78(LightningActor* a, float dt) {
-    BoltFollow(a, a->beam, dt);
     ActorUpdate((struct Actor*)a, dt);
 }
 //@@end
@@ -106,5 +208,31 @@ extern "C" void fn_801E0D70(LightningActor* a) {
 }
 //@@end
 
-// TODO (not drafted yet, 0x114 bytes at 0x801E0DC8)
-extern "C" void fn_801E0DC8(void);
+//@@801E0DC8
+// Init: looks up the bolt's bone ids and the tracked node, then gives the actor a beam.
+extern "C" int fn_801E0DC8(LightningActor* a) {
+    Beam* b;
+    lbl_8049B458.from = AssetFind(0xF1754BF2, 0x04B8CC42);
+    lbl_8049B458.to = AssetFind(0xF1754BF2, 0x00010CBB);
+    lbl_8049B458.node = AssetFind(0xD9044CBB, 0xCF0262AA);
+    if (ActorInitBase((struct Actor*)a) == 0) {
+        return 0;
+    }
+    if (a->beam == NULL) {
+        b = (Beam*)ListAlloc((void**)lbl_8049B3D8, 0xB8, lbl_804D3280, 0x20);
+        if (b == NULL) {
+            return 0;
+        }
+        a->beam = b;
+    }
+    fn_8017E174(b, 2);
+    b->start.x = 0.0f;
+    b->start.y = 0.0f;
+    b->start.z = 0.0f;
+    b->end.x = 0.0f;
+    b->end.y = 0.0f;
+    b->end.z = 0.0f;
+    b->model = a->model;
+    return 1;
+}
+//@@end
