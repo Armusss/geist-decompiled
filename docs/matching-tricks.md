@@ -415,3 +415,22 @@ What is established:
   r4) that no ordinary -O4 source form found so far produces. Next ideas: decompile Scheduler.c's priority function in
   mwcceppc.exe; a constant the backend's global optimizer creates late (strings in the exe: CONSTANT PROPAGATION 2,
   ARRAY => REGISTER TRANSFORM, VALUE NUMBERING 2/3 run after the front end).
+
+## Entry-block order: params copied before the first `obj->data` load means the field is `int` (sonnet-3, 2026-11-26)
+Effect message handlers `fn(EffectObj* obj, int msg, ...)` whose retail entry block is `mr r30,r3 | mr r31,r4 | lwz
+r29,8(r3)` (the parameter copies scheduled BEFORE the load of `obj->data`) while ours loads first and copies after:
+the struct field that is later compared with/passed the handle (`g->arg`, the holder's handle at 0x1C) is `int`, not
+`u32`. With `u32` CW emits `lwz` first; with `int` the copies move up and the rest of the function is unchanged.
+Tests of the top byte then read `((g->arg >> 24) & 0xFF) == 2` (the `(int)(g->arg >> 24)` form needs the u32).
+Evidence: u_800E2414 AUG (26fb426, Aug::arg), u_801E65F0 Sniper (b874ffc, Sniper::arg, 7 diffs -> 0), the same
+effect reproduced on GunWithGrenadeMsg. Look for it whenever a near-match differs only in the first 3-5 instructions.
+
+## Function order: a struct assignment makes CW emit the function out of source order (2026-11-15 .. 11-26)
+A function that contains a struct assignment (`b->start = v;` of a Vec3/IVec3) is held back by CW: it is emitted after
+the following functions (at the end of .text when nothing intervenes; with inline definitions after it, the held
+functions come out in reverse at the next inline definition, see u_801D8FD4's header). Field-by-field copies
+(`b->start.x = v->x; ...`) generate the same instructions and keep source order. So if a unit's functions all match
+but sit in the wrong order (objdiff shows them shifted, report fuzzy < 100 only through relocations), look for a
+struct assignment in the function that came out late and copy member-wise.
+Evidence: u_80116B28 (IVec3, 2026-11-15), u_801D8FD4 (fn_801D9114 after SpawnAttach; fn_801D8FD4 copies v
+member-wise), u_801E092C Lightning (0c10d12: Update emitted last with `b->start = ...pos`, in order with field copies).
