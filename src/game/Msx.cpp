@@ -705,6 +705,27 @@ extern "C" int fn_8016F47C(int handle) {
     return 0;
 }
 
+extern "C" void fn_801723B8(void);
+void ScreenPrintf(const char* fmt, ...);
+extern int lbl_804D4F80;   // show the playing-sounds overlay
+extern int lbl_804D4F84;   // show the reverb overlay
+extern char* lbl_803A7CA8[17];   // reverb preset names
+
+// SoundDebugDraw
+extern "C" void fn_8016F8EC(void) {
+    if (lbl_804D4F80 != 0) {
+        fn_801723B8();
+    }
+    if (lbl_804D4F84 != 0) {
+        ScreenPrintf("Reverb %s (%d)\n", lbl_803A7CA8[lbl_804D4FC8], lbl_804D4FCC);
+    }
+}
+
+// MemFreeCallback / MemAllocCallback: the memory hooks handed out through the hook table in .sdata2.
+extern "C" void fn_80174FD0(void* p) { MemFree(p, "Msx.cpp", 0x41A); }
+
+extern "C" void fn_80175000(int size) { MemAlloc(size, "Msx.cpp", 0x413); }
+
 // Functions not drafted yet (symbol names are still the placeholders):
 // TODO (not drafted yet, 0x2C bytes at 0x8016E578): fn_8016E578
 // TODO (not drafted yet, 0x134 bytes at 0x8016E5A4): fn_8016E5A4
@@ -714,9 +735,7 @@ extern "C" int fn_8016F47C(int handle) {
 // TODO (not drafted yet, 0x1C4 bytes at 0x8016F4DC): fn_8016F4DC
 // TODO (not drafted yet, 0x178 bytes at 0x8016F6A0): fn_8016F6A0
 // TODO (not drafted yet, 0xD4 bytes at 0x8016F818): fn_8016F818
-// TODO (not drafted yet, 0x64 bytes at 0x8016F8EC): fn_8016F8EC
 // TODO (not drafted yet, 0x864 bytes at 0x8016F950): fn_8016F950
-// TODO (not drafted yet, 0x60 bytes at 0x801701B4): fn_801701B4
 // TODO (not drafted yet, 0x134 bytes at 0x80170214): fn_80170214
 // TODO (not drafted yet, 0x4EC bytes at 0x80170348): fn_80170348
 // TODO (not drafted yet, 0x7C bytes at 0x80170834): FxFind__FPCc
@@ -724,7 +743,6 @@ extern "C" int fn_8016F47C(int handle) {
 // TODO (not drafted yet, 0x100 bytes at 0x801709A4): LevelLoaded__FPCc
 // TODO (not drafted yet, 0x70 bytes at 0x80170AA4): fn_80170AA4
 // TODO (not drafted yet, 0x114 bytes at 0x80170B14): fn_80170B14
-// TODO (not drafted yet, 0x8 bytes at 0x80170C28): fn_80170C28
 // TODO (not drafted yet, 0x8C bytes at 0x80170C30): fn_80170C30
 // TODO (not drafted yet, 0x8C bytes at 0x80170CBC): fn_80170CBC
 // TODO (not drafted yet, 0x8C bytes at 0x80170D48): fn_80170D48
@@ -742,11 +760,52 @@ extern "C" int fn_8016F47C(int handle) {
 // TODO (not drafted yet, 0x1278 bytes at 0x80172660): fn_80172660
 // TODO (not drafted yet, 0x484 bytes at 0x801738D8): fn_801738D8
 // TODO (not drafted yet, 0x74 bytes at 0x80173D5C): fn_80173D5C
-// TODO (not drafted yet, 0x28 bytes at 0x80173DD0): fn_80173DD0
-// TODO (not drafted yet, 0x28 bytes at 0x80173DF8): fn_80173DF8
 // TODO (not drafted yet, 0x2CC bytes at 0x80173E20): fn_80173E20
 // TODO (not drafted yet, 0x294 bytes at 0x801740EC): fn_801740EC
-// TODO (not drafted yet, 0x524 bytes at 0x80174380): fn_80174380
+extern float lbl_80488910[2][SND_AUX_BLOCKSIZE];   // reverb work buffers (left, right)
+
+extern int lbl_804D4F38;   // sound group stack depth
+extern int lbl_804D4F94;   // ARAM used by the pushed groups
+extern int lbl_804D4F98;   // ARAM size of the top group
+
+// SoundPopGroup
+extern "C" void fn_801701B4(void) {
+    if (lbl_804D4F38 > 0) {
+        sndPopGroup();
+        lbl_804D4F94 -= lbl_804D4F98;
+        lbl_804D4F38--;
+    } else {
+        DebugPrintf("Tried to pop a group, but the sound stack is empty\n");
+    }
+}
+
+extern "C" int fn_80170C28(void) { return 1; }
+
+extern "C" int fn_8016F4DC(int pause, int group);
+
+// SoundResumeGroup / SoundPauseGroup
+extern "C" void fn_80173DD0(int group) { fn_8016F4DC(0, group); }
+
+extern "C" void fn_80173DF8(int group) { fn_8016F4DC(1, group); }
+
+// ReverbAuxCallback: runs one MusyX aux block through the Freeverb model (user is the revmodel).
+extern "C" void fn_80174380(u8 reason, SND_AUX_INFO* info, void* user) {
+    int i;
+
+    if (reason == SND_AUX_REASON_BUFFERUPDATE) {
+        for (i = 0; i < SND_AUX_BLOCKSIZE; i++) {
+            lbl_80488910[0][i] = info->data.bufferUpdate.left[i] / 16777215.0;
+            lbl_80488910[1][i] = info->data.bufferUpdate.right[i] / 16777215.0;
+        }
+        ((revmodel*)user)->processreplace(lbl_80488910[0], lbl_80488910[1], lbl_80488910[0], lbl_80488910[1],
+                                          SND_AUX_BLOCKSIZE, 1);
+        for (i = 0; i < SND_AUX_BLOCKSIZE; i++) {
+            info->data.bufferUpdate.left[i] = (s32)(16777215.0 * lbl_80488910[0][i]);
+            info->data.bufferUpdate.right[i] = (s32)(16777215.0 * lbl_80488910[1][i]);
+        }
+    }
+}
+
 void revmodel::processreplace(float* inputL, float* inputR, float* outputL, float* outputR, long numsamples,
                               int skip) {
     float outL, outR, input;
@@ -840,8 +899,6 @@ allpass::allpass() {
     bufsize = 0;
 }
 
-// TODO (not drafted yet, 0x30 bytes at 0x80174FD0): fn_80174FD0
-// TODO (not drafted yet, 0x30 bytes at 0x80175000): fn_80175000
 // TODO (not drafted yet, 0x72C bytes at 0x80175030): fn_80175030
 // TODO (not drafted yet, 0x334 bytes at 0x8017575C): fn_8017575C
 // TODO (not drafted yet, 0x2A8 bytes at 0x80175A90): fn_80175A90
