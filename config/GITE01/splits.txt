@@ -671,7 +671,10 @@ game/Repel.cpp:
 	.sdata2     start:0x804D8618 end:0x804D8638
 
 game/u_801920B8.cpp:
-	.text       start:0x801920B8 end:0x801965FC
+	.text       start:0x801920B8 end:0x80192AC4
+
+game/u_80192AC4.cpp:
+	.text       start:0x80192AC4 end:0x801965FC
 
 game/Foam.cpp:
 	.text       start:0x801965FC end:0x801969D8
