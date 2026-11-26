@@ -131,8 +131,15 @@ extern "C" void fn_800B26B8(void* o);
 extern "C" void fn_800BC56C(void* o, void* t);
 
 extern "C" int fn_800A1BC8(int a, int b, u32 type, int c, int d);
-extern "C" u32 lbl_803C39D4[];
-extern "C" u32 lbl_803C3AF4[];
+// Host type table (0x803C3980, 25 * 0x48 bytes; same layout as gMcgHostTypes in u_8022CE78).
+struct HostType {
+    void* enter;            // 0x00
+    void* update;           // 0x04
+    void* msg;              // 0x08
+    u32 anims[14];          // 0x0C
+    void* name;             // 0x44
+};
+extern HostType gHostTypes[25];
 extern "C" void fn_802A770C(void);
 extern "C" int fn_800B84E4(int a, int b, int c);
 extern "C" int fn_800B7CE0(int a);
@@ -1045,11 +1052,11 @@ void HostSetAnimsB(HostObj* o) {
     int slot = PlayerInHost((Actor*)o);
     int v = o->i73C;
     FxData* d = o->fxData[slot];
-    o->i98 = fn_800A1BC8(d->i14, d->i18, lbl_803C3AF4[v], 0, 0);
+    o->i98 = fn_800A1BC8(d->i14, d->i18, gHostTypes[5].anims[v], 0, 0);
     o->cb8C = (void*)fn_802A770C;
     o->iA4 = 0x11;
     d = o->fxData[slot];
-    o->iF0 = fn_800A1BC8(d->i14, d->i1C, lbl_803C3AF4[v], 0, 0);
+    o->iF0 = fn_800A1BC8(d->i14, d->i1C, gHostTypes[5].anims[v], 0, 0);
     o->iFC = 0x11;
 }
 
@@ -1075,10 +1082,10 @@ void HostSetAnimsA(HostObj* o) {
     int slot = PlayerInHost((Actor*)o);
     int v = o->i73C;
     FxData* d = o->fxData[slot];
-    o->i98 = fn_800A1BC8(d->i14, d->i18, lbl_803C39D4[v], 0, 0);
+    o->i98 = fn_800A1BC8(d->i14, d->i18, gHostTypes[1].anims[v], 0, 0);
     o->iA4 = 1;
     d = o->fxData[slot];
-    o->iF0 = fn_800A1BC8(d->i14, d->i1C, lbl_803C39D4[v], 0, 0);
+    o->iF0 = fn_800A1BC8(d->i14, d->i1C, gHostTypes[1].anims[v], 0, 0);
     o->cbE4 = (void*)fn_802A770C;
     o->iFC = 1;
     o->i7D0 = 0;
