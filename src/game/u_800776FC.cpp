@@ -122,7 +122,7 @@ extern LightHeader* lbl_804D4560;
 extern LightDef* lbl_804D4564;
 extern LightInst* lbl_804D4568;
 extern int lbl_804D2998;
-extern int (*lbl_80394A3C[])(void*, void*);
+extern int (*lbl_80394A40[3])(void*, void*);   // light FX handlers for fxKind 1..3
 
 extern "C" {
 int fn_800A1624(int);
@@ -481,7 +481,7 @@ void LightFxUpdate(double dt, void* subp, int unused) {
     if (inst->fxKind != 0) {
         int step;
         PlacementToMatrix(&outMtx, (PlaceF*)subp);
-        lbl_80394A3C[inst->fxKind](&inst->fxKind, &outMtx);
+        lbl_80394A40[inst->fxKind - 1](&inst->fxKind, &outMtx);
         step = (int)dt;
         inst->fxTime -= step;
         if (inst->fxTime < 0) {
