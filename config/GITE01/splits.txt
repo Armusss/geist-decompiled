@@ -1230,7 +1230,22 @@ game/u_8026A37C.cpp:
 	.bss        start:0x804A2A70 end:0x804A31C8
 
 game/u_8026C200.cpp:
-	.text       start:0x8026C200 end:0x802766F0
+	.text       start:0x8026C200 end:0x8026D428
+
+game/u_8026D428.cpp:
+	.text       start:0x8026D428 end:0x80272060
+
+game/u_80272060.cpp:
+	.text       start:0x80272060 end:0x8027337C
+
+game/u_8027337C.cpp:
+	.text       start:0x8027337C end:0x80273650
+
+game/u_80273650.cpp:
+	.text       start:0x80273650 end:0x80276090
+
+game/u_80276090.cpp:
+	.text       start:0x80276090 end:0x802766F0
 
 game/ode/matrix.cpp:
 	.text       start:0x802766F0 end:0x80277190
