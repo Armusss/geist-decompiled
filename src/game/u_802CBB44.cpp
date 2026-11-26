@@ -214,7 +214,6 @@ struct CollisionHolder {
 };
 
 extern StateEntry lbl_803C51F8[];
-extern const char lbl_8034C0A8[];   // TODO: 0x8034C0A8 has no symbol yet
 extern int lbl_804D3B74;
 extern int lbl_804D3B78;
 extern int lbl_804D3B84;
@@ -242,6 +241,12 @@ extern "C" void fn_8016E13C(void* weapon, void* vec, int flag);
 extern "C" void fn_80163378(void* obj, void* out);
 extern "C" int fn_801633BC(void* obj);
 extern "C" int fn_800388A4(int handle, int id);
+// From a shared header: names of the ghost actions (the table itself is unused here). It opens this
+// file's string pool at 0x8034C060; "\n" (0x8034C0A8) and the FX/stat names follow.
+static const char* sActionNames[] = {
+    "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
+};
+
 int StoneMenTick(void* data);
 void StoneMenUpdate(void* owner);
 void StoneMenApplyStateAnim(void* owner, int arg);
@@ -312,8 +317,7 @@ extern int lbl_804D3B80;
 extern int lbl_804D3BD4;
 extern int lbl_804D3BD8;
 extern int lbl_804D3BE0;
-extern int lbl_804D3BE4[];
-extern int lbl_804D3BE8;
+extern int lbl_804D3BE4[2];   // start-walk FX, one per foot
 extern int lbl_804D3BEC;
 extern int lbl_804D3BF0;
 extern int lbl_804D3BF4;
@@ -363,7 +367,7 @@ int MessageHandler802CBB44(int msg, void* data)
             return 0;
         {
             String name1(lbl_803C51F8[ctrl->state].name);
-            String name2(lbl_8034C0A8);
+            String name2("\n");
             String name3(name1, name2);
 
             fn_8028C188((char*)data + 0xc, name3.mData, name3.mSize);
@@ -588,7 +592,7 @@ void StoneMenActorInit(void* unused, void* owner)
     lbl_804D3BDC = AssetFind(0xD9044CBB, 0x9CA18DD0);
     lbl_804D3BE0 = AssetFind(0xF1754BF2, 0x4B71843);
     lbl_804D3BE4[0] = FxFind("StoneMen_StartWalk_01");
-    lbl_804D3BE8 = FxFind("StoneMen_StartWalk_02");
+    lbl_804D3BE4[1] = FxFind("StoneMen_StartWalk_02");
     lbl_804D3BEC = FxFind("StoneMen_Footstep");
     lbl_804D3BF4 = FxFind("stat_stun");
     lbl_804D3BF0 = FxFind("stat_laserfire");
