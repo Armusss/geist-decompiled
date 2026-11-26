@@ -21,6 +21,7 @@ void* MemAlloc(int size, const char* file, int line);
 void MemFree(void* p, const char* file, int line);
 }
 void DebugPrintf(const char* fmt, ...);
+void ScreenPrintf(const char* fmt, ...);
 
 // Streamed music playback: two mono ADPCM-decoded streams (left/right) fed from double buffers.
 extern u32 lbl_804D4FB0;            // sample rate of the streams
@@ -696,6 +697,89 @@ extern "C" int fn_8016F018(int handle, int volume) {
 
 extern "C" int fn_8016F118(void) { return 0; }
 
+// A built sound id (8 bytes): the MusyX effect id for a sound-table index.
+struct SoundId {
+    int fx;     // 0x00
+    int pad4;
+};
+
+extern SoundId* lbl_804D4FD8;   // built sound ids (0 when the sound data was not built)
+extern int lbl_804D4FE0;        // number of built sound ids
+extern "C" int fn_80175030(int fx, int* pos, void (*onStop)(void*), void* arg, int handle);
+
+// SoundIdResolve: table index -> effect id (-1 if unknown).
+static inline int SoundIdResolve(int id) {
+    if (lbl_804D4FD8 == 0) {
+        ScreenPrintf("Sound data was not built!\n");
+        return -1;
+    }
+    if (id >= 0 && id < lbl_804D4FE0) {
+        return lbl_804D4FD8[id].fx;
+    }
+    return -1;
+}
+
+// SoundPlay3d: plays a positional sound; onStop runs at once if it cannot play.
+static inline int SoundPlay3dInline(int id, Vec3* pos, void (*onStop)(void*), void* arg) {
+    int ipos[3];
+
+    if (id == -1) {
+        if (onStop != 0) {
+            onStop(arg);
+        }
+        return -1;
+    }
+    if ((id & 0x80000000) == 0) {
+        id = SoundIdResolve(id);
+        if (id == -1) {
+            if (onStop != 0) {
+                onStop(arg);
+            }
+            return -1;
+        }
+    }
+    ipos[0] = pos->x;
+    ipos[1] = pos->y;
+    ipos[2] = pos->z;
+    return fn_80175030(id, ipos, onStop, arg, -1);
+}
+
+extern "C" int fn_8016F25C(int id, Vec3* pos, void (*onStop)(void*), void* arg);
+
+// SoundPlay3dInt: integer position.
+extern "C" int fn_8016F120(int id, int* pos) {
+    Vec3 p;
+
+    p.x = pos[0];
+    p.y = pos[1];
+    p.z = pos[2];
+    return fn_8016F25C(id, &p, 0, 0);
+}
+
+extern "C" int fn_8016F25C(int id, Vec3* pos, void (*onStop)(void*), void* arg) {
+    return SoundPlay3dInline(id, pos, onStop, arg);
+}
+
+// FxStart: plays a 2d sound.
+extern "C" int FxStart(int id, void (*onStop)(void*), void* arg) {
+    if (id == -1) {
+        if (onStop != 0) {
+            onStop(arg);
+        }
+        return -1;
+    }
+    if ((id & 0x80000000) == 0) {
+        id = SoundIdResolve(id);
+        if (id == -1) {
+            if (onStop != 0) {
+                onStop(arg);
+            }
+            return -1;
+        }
+    }
+    return fn_80175030(id, 0, onStop, arg, -1);
+}
+
 // SoundGetKind: 0 when the handle is stale or the slot is free.
 extern "C" int fn_8016F47C(int handle) {
     int idx = SoundSlotIndex(handle);
@@ -707,7 +791,6 @@ extern "C" int fn_8016F47C(int handle) {
 }
 
 extern "C" void fn_801723B8(void);
-void ScreenPrintf(const char* fmt, ...);
 extern int lbl_804D4F80;   // show the playing-sounds overlay
 extern int lbl_804D4F84;   // show the reverb overlay
 extern char* lbl_803A7CA8[17];   // reverb preset names
@@ -843,9 +926,6 @@ extern "C" void fn_80175000(int size) { MemAlloc(size, "Msx.cpp", 0x413); }
 // Functions not drafted yet (symbol names are still the placeholders):
 // TODO (not drafted yet, 0x2C bytes at 0x8016E578): fn_8016E578
 // TODO (not drafted yet, 0x134 bytes at 0x8016E5A4): fn_8016E5A4
-// TODO (not drafted yet, 0x13C bytes at 0x8016F120): fn_8016F120
-// TODO (not drafted yet, 0x134 bytes at 0x8016F25C): fn_8016F25C
-// TODO (not drafted yet, 0xEC bytes at 0x8016F390): FxStart
 // TODO (not drafted yet, 0x1C4 bytes at 0x8016F4DC): fn_8016F4DC
 // TODO (not drafted yet, 0x178 bytes at 0x8016F6A0): fn_8016F6A0
 // TODO (not drafted yet, 0xD4 bytes at 0x8016F818): fn_8016F818
