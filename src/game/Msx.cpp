@@ -247,6 +247,244 @@ extern int lbl_804D4FA8;
 extern int lbl_804D2FD4;   // filter parameter
 extern int lbl_804D2FDC;
 
+// ---- Freeverb (Jezar at Dreampoint, public domain), built into this file: comb.hpp, allpass.hpp, revmodel.
+// The tuning values and the class layouts are Freeverb's; this port's constructors also clear the members the
+// original leaves alone, and its setters do not call update().
+
+#define undenormalise(sample) if (((*(unsigned int*)&(sample)) & 0x7f800000) == 0) (sample) = 0.0f
+
+const int numcombs = 8;
+const int numallpasses = 4;
+const float muted = 0;
+const float fixedgain = 0.015f;
+const float scalewet = 3;
+const float scaledry = 2;
+const float scaledamp = 0.4f;
+const float scaleroom = 0.28f;
+const float offsetroom = 0.7f;
+const float initialroom = 0.5f;
+const float initialdamp = 0.5f;
+const float initialwet = 1 / scalewet;
+const float initialdry = 0;
+const float initialwidth = 1;
+const float initialmode = 0;
+const float freezemode = 0.5f;
+const int stereospread = 23;
+
+const int combtuningL1 = 1116;
+const int combtuningR1 = 1116 + stereospread;
+const int combtuningL2 = 1188;
+const int combtuningR2 = 1188 + stereospread;
+const int combtuningL3 = 1277;
+const int combtuningR3 = 1277 + stereospread;
+const int combtuningL4 = 1356;
+const int combtuningR4 = 1356 + stereospread;
+const int combtuningL5 = 1422;
+const int combtuningR5 = 1422 + stereospread;
+const int combtuningL6 = 1491;
+const int combtuningR6 = 1491 + stereospread;
+const int combtuningL7 = 1557;
+const int combtuningR7 = 1557 + stereospread;
+const int combtuningL8 = 1617;
+const int combtuningR8 = 1617 + stereospread;
+const int allpasstuningL1 = 556;
+const int allpasstuningR1 = 556 + stereospread;
+const int allpasstuningL2 = 441;
+const int allpasstuningR2 = 441 + stereospread;
+const int allpasstuningL3 = 341;
+const int allpasstuningR3 = 341 + stereospread;
+const int allpasstuningL4 = 225;
+const int allpasstuningR4 = 225 + stereospread;
+
+class comb {
+public:
+    comb();
+    void setbuffer(float* buf, int size) {
+        buffer = buf;
+        bufsize = size;
+    }
+    inline float process(float inp);
+    void mute() {
+        for (int i = 0; i < bufsize; i++) {
+            buffer[i] = 0;
+        }
+    }
+    void setdamp(float val) {
+        damp1 = val;
+        damp2 = 1 - val;
+    }
+    void setfeedback(float val) { feedback = val; }
+
+    float feedback;
+    float filterstore;
+    float damp1;
+    float damp2;
+    float* buffer;
+    int bufsize;
+    int bufidx;
+};
+
+inline float comb::process(float input) {
+    float output;
+
+    output = buffer[bufidx];
+    undenormalise(output);
+    filterstore = (output * damp2) + (filterstore * damp1);
+    undenormalise(filterstore);
+    buffer[bufidx] = input + (filterstore * feedback);
+    if (++bufidx >= bufsize) {
+        bufidx = 0;
+    }
+    return output;
+}
+
+class allpass {
+public:
+    allpass();
+    void setbuffer(float* buf, int size) {
+        buffer = buf;
+        bufsize = size;
+    }
+    inline float process(float inp);
+    void mute() {
+        for (int i = 0; i < bufsize; i++) {
+            buffer[i] = 0;
+        }
+    }
+    void setfeedback(float val) { feedback = val; }
+
+    float feedback;
+    float* buffer;
+    int bufsize;
+    int bufidx;
+};
+
+inline float allpass::process(float input) {
+    float output;
+    float bufout;
+
+    bufout = buffer[bufidx];
+    undenormalise(bufout);
+    output = -input + bufout;
+    buffer[bufidx] = input + (bufout * feedback);
+    if (++bufidx >= bufsize) {
+        bufidx = 0;
+    }
+    return output;
+}
+
+class revmodel {
+public:
+    revmodel();
+    void mute();
+    void processreplace(float* inputL, float* inputR, float* outputL, float* outputR, long numsamples, int skip);
+    void update();
+    void setroomsize(float value) { roomsize = (value * scaleroom) + offsetroom; }
+    void setdamp(float value) { damp = value * scaledamp; }
+    void setwet(float value) { wet = value * scalewet; }
+    void setdry(float value) { dry = value * scaledry; }
+    void setwidth(float value) { width = value; }
+    void setmode(float value) { mode = value; }
+    float getmode() {
+        if (mode >= freezemode) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
+    float gain;        // 0x00
+    float roomsize, roomsize1;
+    float damp, damp1;
+    float wet, wet1, wet2;
+    float dry;
+    float width;
+    float mode;        // 0x28
+    comb combL[numcombs];          // 0x2C
+    comb combR[numcombs];          // 0x10C
+    allpass allpassL[numallpasses];   // 0x1EC
+    allpass allpassR[numallpasses];   // 0x22C
+    float bufcombL1[combtuningL1];    // 0x26C
+    float bufcombR1[combtuningR1];
+    float bufcombL2[combtuningL2];
+    float bufcombR2[combtuningR2];
+    float bufcombL3[combtuningL3];
+    float bufcombR3[combtuningR3];
+    float bufcombL4[combtuningL4];
+    float bufcombR4[combtuningR4];
+    float bufcombL5[combtuningL5];
+    float bufcombR5[combtuningR5];
+    float bufcombL6[combtuningL6];
+    float bufcombR6[combtuningR6];
+    float bufcombL7[combtuningL7];
+    float bufcombR7[combtuningR7];
+    float bufcombL8[combtuningL8];
+    float bufcombR8[combtuningR8];
+    float bufallpassL1[allpasstuningL1];
+    float bufallpassR1[allpasstuningR1];
+    float bufallpassL2[allpasstuningL2];
+    float bufallpassR2[allpasstuningR2];
+    float bufallpassL3[allpasstuningL3];
+    float bufallpassR3[allpasstuningR3];
+    float bufallpassL4[allpasstuningL4];
+    float bufallpassR4[allpasstuningR4];
+};
+
+inline void revmodel::mute() {
+    int i;
+
+    if (getmode() >= freezemode) {
+        return;
+    }
+    for (i = 0; i < numcombs; i++) {
+        combL[i].mute();
+        combR[i].mute();
+    }
+    for (i = 0; i < numallpasses; i++) {
+        allpassL[i].mute();
+        allpassR[i].mute();
+    }
+}
+
+inline void revmodel::update() {
+    int i;
+
+    wet1 = wet * (width / 2 + 0.5f);
+    wet2 = wet * ((1 - width) / 2);
+    if (mode >= freezemode) {
+        roomsize1 = 1;
+        damp1 = 0;
+        gain = muted;
+    } else {
+        roomsize1 = roomsize;
+        damp1 = damp;
+        gain = fixedgain;
+    }
+    for (i = 0; i < numcombs; i++) {
+        combL[i].setfeedback(roomsize1);
+        combR[i].setfeedback(roomsize1);
+    }
+    for (i = 0; i < numcombs; i++) {
+        combL[i].setdamp(damp1);
+        combR[i].setdamp(damp1);
+    }
+}
+
+// A reverb preset (Freeverb parameters).
+struct ReverbPreset {
+    float room;
+    float damp;
+    float wet;
+    float dry;
+    float width;
+};
+
+extern revmodel lbl_8046F8FC;              // the reverb (defined at the end of the file)
+extern ReverbPreset lbl_8046F8E8;          // current preset
+extern ReverbPreset lbl_803A7CEC[3][17];   // presets per output mode
+extern int lbl_804D4FC8;                   // current preset index
+extern int lbl_804D4FCC;                   // current output mode
+
 // SoundSlotSetParams: fills a positional sound's controller list (reverb send, filter value); true when the
 // filter is on for this sound.
 static inline int SoundSlotSetParams(SoundSlot* slot) {
@@ -328,6 +566,28 @@ extern "C" void fn_8016E910(int on, int param) {
                     sndFXSetFilter(slot->voice, enable, param);
                 }
             }
+        }
+    }
+}
+
+// ReverbSetMode: re-applies the current preset for output mode `mode` (0 mono, 1 stereo, 2 surround).
+extern "C" void fn_8016EA98(int mode) {
+    if (mode > -1 && mode < 3) {
+        int preset = lbl_804D4FC8;
+
+        lbl_804D4FCC = mode;
+        lbl_804D4FC8 = -1;
+        if (preset != -1 && preset >= 0 && (u32)preset < 17) {
+            ReverbPreset* p = &lbl_803A7CEC[mode][preset];
+
+            lbl_804D4FC8 = preset;
+            lbl_8046F8E8 = *p;
+            lbl_8046F8FC.setroomsize(p->room);
+            lbl_8046F8FC.setdamp(p->damp);
+            lbl_8046F8FC.setwet(p->wet);
+            lbl_8046F8FC.setdry(p->dry);
+            lbl_8046F8FC.setwidth(p->width);
+            lbl_8046F8FC.update();
         }
     }
 }
@@ -448,7 +708,6 @@ extern "C" int fn_8016F47C(int handle) {
 // Functions not drafted yet (symbol names are still the placeholders):
 // TODO (not drafted yet, 0x2C bytes at 0x8016E578): fn_8016E578
 // TODO (not drafted yet, 0x134 bytes at 0x8016E5A4): fn_8016E5A4
-// TODO (not drafted yet, 0x220 bytes at 0x8016EA98): fn_8016EA98
 // TODO (not drafted yet, 0x13C bytes at 0x8016F120): fn_8016F120
 // TODO (not drafted yet, 0x134 bytes at 0x8016F25C): fn_8016F25C
 // TODO (not drafted yet, 0xEC bytes at 0x8016F390): FxStart
@@ -488,13 +747,102 @@ extern "C" int fn_8016F47C(int handle) {
 // TODO (not drafted yet, 0x2CC bytes at 0x80173E20): fn_80173E20
 // TODO (not drafted yet, 0x294 bytes at 0x801740EC): fn_801740EC
 // TODO (not drafted yet, 0x524 bytes at 0x80174380): fn_80174380
-// TODO (not drafted yet, 0x2CC bytes at 0x801748A4): fn_801748A4
-// TODO (not drafted yet, 0x418 bytes at 0x80174B70): fn_80174B70
-// TODO (not drafted yet, 0x2C bytes at 0x80174F88): fn_80174F88
-// TODO (not drafted yet, 0x1C bytes at 0x80174FB4): fn_80174FB4
+void revmodel::processreplace(float* inputL, float* inputR, float* outputL, float* outputR, long numsamples,
+                              int skip) {
+    float outL, outR, input;
+    int i;
+
+    while (numsamples-- > 0) {
+        outL = outR = 0;
+        input = (*inputL + *inputR) * gain;
+        // Accumulate comb filters in parallel
+        for (i = 0; i < numcombs; i++) {
+            outL += combL[i].process(input);
+            outR += combR[i].process(input);
+        }
+        // Feed through allpasses in series
+        for (i = 0; i < numallpasses; i++) {
+            outL = allpassL[i].process(outL);
+            outR = allpassR[i].process(outR);
+        }
+        // Calculate output REPLACING anything already there
+        *outputL = outL * wet1 + outR * wet2 + *inputL * dry;
+        *outputR = outR * wet1 + outL * wet2 + *inputR * dry;
+        // Increment sample pointers, allowing for interleave (if any)
+        inputL += skip;
+        inputR += skip;
+        outputL += skip;
+        outputR += skip;
+    }
+}
+
+revmodel::revmodel() {
+    // Tie the components to their buffers
+    combL[0].setbuffer(bufcombL1, combtuningL1);
+    combR[0].setbuffer(bufcombR1, combtuningR1);
+    combL[1].setbuffer(bufcombL2, combtuningL2);
+    combR[1].setbuffer(bufcombR2, combtuningR2);
+    combL[2].setbuffer(bufcombL3, combtuningL3);
+    combR[2].setbuffer(bufcombR3, combtuningR3);
+    combL[3].setbuffer(bufcombL4, combtuningL4);
+    combR[3].setbuffer(bufcombR4, combtuningR4);
+    combL[4].setbuffer(bufcombL5, combtuningL5);
+    combR[4].setbuffer(bufcombR5, combtuningR5);
+    combL[5].setbuffer(bufcombL6, combtuningL6);
+    combR[5].setbuffer(bufcombR6, combtuningR6);
+    combL[6].setbuffer(bufcombL7, combtuningL7);
+    combR[6].setbuffer(bufcombR7, combtuningR7);
+    combL[7].setbuffer(bufcombL8, combtuningL8);
+    combR[7].setbuffer(bufcombR8, combtuningR8);
+    allpassL[0].setbuffer(bufallpassL1, allpasstuningL1);
+    allpassR[0].setbuffer(bufallpassR1, allpasstuningR1);
+    allpassL[1].setbuffer(bufallpassL2, allpasstuningL2);
+    allpassR[1].setbuffer(bufallpassR2, allpasstuningR2);
+    allpassL[2].setbuffer(bufallpassL3, allpasstuningL3);
+    allpassR[2].setbuffer(bufallpassR3, allpasstuningR3);
+    allpassL[3].setbuffer(bufallpassL4, allpasstuningL4);
+    allpassR[3].setbuffer(bufallpassR4, allpasstuningR4);
+
+    // Set default values
+    allpassL[0].setfeedback(0.5f);
+    allpassR[0].setfeedback(0.5f);
+    allpassL[1].setfeedback(0.5f);
+    allpassR[1].setfeedback(0.5f);
+    allpassL[2].setfeedback(0.5f);
+    allpassR[2].setfeedback(0.5f);
+    allpassL[3].setfeedback(0.5f);
+    allpassR[3].setfeedback(0.5f);
+    setwet(initialwet);
+    setroomsize(initialroom);
+    setdry(initialdry);
+    setdamp(initialdamp);
+    setwidth(initialwidth);
+    setmode(initialmode);
+
+    // Buffer will be full of rubbish - so we MUST mute them
+    mute();
+}
+
+comb::comb() {
+    filterstore = 0;
+    bufidx = 0;
+    feedback = 0;
+    damp1 = 0;
+    damp2 = 1;
+    buffer = 0;
+    bufsize = 0;
+}
+
+allpass::allpass() {
+    bufidx = 0;
+    feedback = 0;
+    buffer = 0;
+    bufsize = 0;
+}
+
 // TODO (not drafted yet, 0x30 bytes at 0x80174FD0): fn_80174FD0
 // TODO (not drafted yet, 0x30 bytes at 0x80175000): fn_80175000
 // TODO (not drafted yet, 0x72C bytes at 0x80175030): fn_80175030
 // TODO (not drafted yet, 0x334 bytes at 0x8017575C): fn_8017575C
 // TODO (not drafted yet, 0x2A8 bytes at 0x80175A90): fn_80175A90
-// TODO (not drafted yet, 0x28 bytes at 0x80175D38): fn_80175D38
+revmodel lbl_8046F8FC;   // its constructor runs from __sinit_Msx_cpp
