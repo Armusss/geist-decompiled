@@ -703,7 +703,7 @@ config.libs = [
             Object(NonMatching, "game/u_80181644.cpp"),  # split from u_8017D794 (see file header)
             Object(NonMatching, "game/u_8018424C.cpp"),  # split from u_8017D794 (see file header)
             Object(Matching, "game/u_80184CD4.cpp"),  # behaviour 0x3BB8992E
-            Object(NonMatching, "game/u_80184F70.cpp"),  # split from u_8017D794 (see file header)
+            Object(Matching, "game/u_80184F70.cpp"),  # split from u_8017D794 (see file header)
             Object(Matching, "game/u_8018555C.cpp"),  # behaviour 0x90663AD4
             Object(NonMatching, "game/u_80185A9C.cpp"),  # split from u_8017D794 (see file header)
             Object(Matching, "game/u_80187108.cpp"),  # intrusive list API used by the SLT unit

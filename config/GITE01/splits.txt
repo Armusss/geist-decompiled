@@ -637,6 +637,8 @@ game/u_80184CD4.cpp:
 
 game/u_80184F70.cpp:
 	.text       start:0x80184F70 end:0x8018555C
+	.data       start:0x803A8710 end:0x803A8738
+	.sdata2     start:0x804D83A8 end:0x804D83B8
 
 game/u_8018555C.cpp:
 	.text       start:0x8018555C end:0x80185A9C
