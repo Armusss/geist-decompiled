@@ -4,6 +4,11 @@
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <dolphin/os.h>
+// The game was built against the MusyX 2.0.3 headers its library comes from (u16 SND_PARAMETER.ctrl:
+// retail stores the controller numbers with sth).
+#define MUSY_VERSION_MAJOR 2
+#define MUSY_VERSION_MINOR 0
+#define MUSY_VERSION_PATCH 3
 #include <musyx/musyx.h>
 #include "game/types.h"
 
@@ -91,8 +96,8 @@ static inline void StreamAllocBuffers(void) {
     lbl_804D5004 = -1;
 }
 
-u32 StreamUpdateLeft(void* b1, u32 n1, void* b2, u32 n2, u32 user);
-u32 StreamUpdateRight(void* b1, u32 n1, void* b2, u32 n2, u32 user);
+extern "C" u32 fn_8016E5A4(void* b1, u32 n1, void* b2, u32 n2, u32 user);
+extern "C" u32 fn_8016E578(void* b1, u32 n1, void* b2, u32 n2, u32 user);
 
 // StreamStart: allocates the buffers if needed and starts both streams. left/right: rate followed by ADPCM info.
 extern "C" void fn_8016E314(int* left, int* right, u32 (*decode)(void*, void*, u32)) {
@@ -104,54 +109,48 @@ extern "C" void fn_8016E314(int* left, int* right, u32 (*decode)(void*, void*, u
     if (lbl_804D5008 != 0 && lbl_804D500C != 0) {
         lbl_804D4FB0 = *left;
         lbl_804D5000 = sndStreamAllocEx(0xFF, lbl_804D5008, 0x1B90, *left, lbl_804D2FCC, 0, 0, 0, 0, 0, 1,
-                                        StreamUpdateLeft, 0, (SND_ADPCMSTREAM_INFO*)(left + 1));
+                                        fn_8016E5A4, 0, (SND_ADPCMSTREAM_INFO*)(left + 1));
         lbl_804D5004 = sndStreamAllocEx(0xFF, lbl_804D500C, 0x1B90, *right, lbl_804D2FCC, 0x7F, 0, 0, 0, 0, 1,
-                                        StreamUpdateRight, 0, (SND_ADPCMSTREAM_INFO*)(right + 1));
+                                        fn_8016E578, 0, (SND_ADPCMSTREAM_INFO*)(right + 1));
     }
 }
 
 // StreamAlloc: allocates the stream buffers.
 extern "C" void fn_8016E4C8(void) { StreamAllocBuffers(); }
 
-// StreamUpdateRight: records the buffer halves for the right stream.
-u32 StreamUpdateRight(void* b1, u32 n1, void* b2, u32 n2, u32 user) {
-    u32 r;
-
+// fn_8016E578: records the buffer halves for the right stream.
+extern "C" u32 fn_8016E578(void* b1, u32 n1, void* b2, u32 n2, u32 user) {
     lbl_804D5030 = (int)b1;
     lbl_804D5034 = (int)b2;
     lbl_804D5038 = n1;
     lbl_804D503C = n2;
-    r = lbl_804D5014;
-    if (n1 + n2 < lbl_804D5014) {
-        r = n1 + n2;
-    }
-    return r;
+    return lbl_804D5014 > n1 + n2 ? n1 + n2 : lbl_804D5014;
 }
 
-// StreamUpdateLeft: decodes both halves of the left stream's buffer through the decoder callback.
-u32 StreamUpdateLeft(void* b1, u32 n1, void* b2, u32 n2, u32 user) {
-    lbl_804D5028 = 0;
-    lbl_804D502C = 0;
+// fn_8016E5A4: decodes both halves of the left stream's buffer through the decoder callback.
+extern "C" u32 fn_8016E5A4(void* b1, u32 n1, void* b2, u32 n2, u32 user) {
+    int off;
     lbl_804D5018 = (int)b1;
     lbl_804D501C = (int)b2;
     lbl_804D5020 = n1;
     lbl_804D5024 = n2;
-    if (lbl_804D5010((char*)lbl_804D5008 + ((char*)b1 - (char*)lbl_804D5008),
-                     (char*)lbl_804D500C + ((char*)b1 - (char*)lbl_804D5008), (n1 * 8) / 14) == 0) {
+    lbl_804D5028 = 0;
+    lbl_804D502C = 0;
+    off = (char*)b1 - (char*)lbl_804D5008;
+    if ((int)lbl_804D5010((char*)lbl_804D5008 + off, (char*)lbl_804D500C + off, (n1 * 8) / 14) == 0) {
         lbl_804D5014 = 0;
         lbl_804D5028 = 1;
-    } else {
-        if (n2 != 0) {
-            if (lbl_804D5010((char*)lbl_804D5008 + ((char*)b2 - (char*)lbl_804D5008),
-                             (char*)lbl_804D500C + ((char*)b2 - (char*)lbl_804D5008), (n2 * 8) / 14) == 0) {
-                lbl_804D502C = 1;
-                n2 = 0;
-                DebugPrintf("*StreamUpdate : split case failed\n");
-            }
-        }
-        lbl_804D5014 = n1 + n2;
+        return 0;
     }
-    return lbl_804D5014;
+    if (n2 != 0) {
+        off = (char*)b2 - (char*)lbl_804D5008;
+        if ((int)lbl_804D5010((char*)lbl_804D5008 + off, (char*)lbl_804D500C + off, (n2 * 8) / 14) == 0) {
+            lbl_804D502C = 1;
+            n2 = 0;
+            DebugPrintf("*StreamUpdate : split case failed\n");
+        }
+    }
+    return lbl_804D5014 = n1 + n2;
 }
 
 // SoundSetOutputMode: 0 mono, 1 stereo, 2 surround (the OS stays in stereo for surround).
@@ -193,17 +192,19 @@ struct SoundSlot {
     u32 volume;       // 0x10
     int voice;        // 0x14
     SND_EMITTER emitter;   // 0x18
-    u8 pad[0x88 - 0x18 - sizeof(SND_EMITTER)];
+    u8 pad[0x78 - 0x18 - sizeof(SND_EMITTER)];
+    SND_PARAMETER_INFO params;   // 0x78: reverb send (0x5B) and filter (0x80) controllers
+    void (*onStop)(void* arg);   // 0x80: called when the sound is stopped
+    void* stopArg;               // 0x84
     Vec3 pos;         // 0x88
     Vec3 vel;         // 0x94: fed through fn_80175A90 (offset 0x98 as passed)
-    u8 pad9c[0xA0 - 0xA0 + 0];
 };
 
 struct SoundDef {
     int volume;       // 0x00
     u8 pad4[0x14 - 4];
     int baseVolume;   // 0x14
-    int emitterFlag;  // 0x18
+    int reverb;       // 0x18: MIDI controller 0x5B (reverb send) value
     u8 pad1c[0x24 - 0x1C];
 };
 
@@ -228,14 +229,107 @@ static inline int SoundSlotIndex(int h) {
 
     if (h != -1) {
         idx = h & 0xFFFFFF;
-        if ((int)((u32)h >> 24) == lbl_804D4FBC[idx].gen) {
-        } else {
-            idx = -1;
+        if ((int)((u32)h >> 24) != lbl_804D4FBC[idx].gen) {
+            return -1;
         }
-    } else {
-        idx = -1;
+        return idx;
     }
-    return idx;
+    return -1;
+}
+
+extern "C" bool sndFXAddFilterSetting2ParameterInfo(SND_PARAMETER_INFO* info, u8 filter, int param);
+extern "C" bool sndFXSetFilter(SND_VOICEID vid, u8 filter, int param);
+
+extern int lbl_804D2FE4;   // filter cutoff controller value (0x2000 = centre)
+extern int lbl_804D2FE8;
+extern int lbl_804D4FA4;   // filter enabled
+extern int lbl_804D4FA8;
+extern int lbl_804D2FD4;   // filter parameter
+extern int lbl_804D2FDC;
+
+// SoundSlotSetParams: fills a positional sound's controller list (reverb send, filter value); true when the
+// filter is on for this sound.
+static inline int SoundSlotSetParams(SoundSlot* slot) {
+    SND_PARAMETER_INFO* info = &slot->params;
+    SoundDef* def = &lbl_804D4F68[slot->def];
+
+    info->numPara = 2;
+    info->paraArray[0].ctrl = 0x5B;
+    info->paraArray[0].paraData.value7 = def->reverb;
+    info->paraArray[1].ctrl = 0x80;
+    info->paraArray[1].paraData.value14 = lbl_804D2FE4;
+    if (lbl_804D4FA4 != 0 && def->reverb > 0) {
+        sndFXAddFilterSetting2ParameterInfo(info, 1, lbl_804D2FD4);
+        return 1;
+    }
+    return 0;
+}
+
+// SoundSetFilterLevel: level in [-1, 1] moves the filter controller around 0x2000 for every playing sound.
+extern "C" void fn_8016E768(float level, int on) {
+    int value;
+    int off;
+    int i;
+
+    if (level > 1.0f) {
+        level = 1.0f;
+    } else if (level < -1.0f) {
+        level = -1.0f;
+    }
+    if (on != 0) {
+        value = (int)(8191.0f * level) + 0x2000;
+    } else {
+        value = 0x2000;
+    }
+    if (lbl_804D2FE4 != value) {
+        lbl_804D2FE4 = value;
+        lbl_804D2FE8 = value;
+        for (i = 0, off = 0; i < 0x100; i++, off += sizeof(SoundSlot)) {
+            SoundSlot* slot = (SoundSlot*)((char*)lbl_804D4FBC + off);
+            if (slot->kind != 0) {
+                if (slot->music == 0) {
+                    if (SoundSlotSetParams(slot)) {
+                        SND_VOICEID vid = sndEmitterVoiceID(&((SoundSlot*)((char*)lbl_804D4FBC + off))->emitter);
+                        if (vid != -1) {
+                            sndFXCtrl14(vid, 0x80, lbl_804D2FE4);
+                        }
+                    }
+                } else if (lbl_804D4F68[slot->def].reverb > 0) {
+                    sndFXCtrl14(slot->voice, 0x80, lbl_804D2FE4);
+                }
+            }
+        }
+    }
+}
+
+// SoundSetFilter: turns the filter on or off with a parameter for every playing sound.
+extern "C" void fn_8016E910(int on, int param) {
+    int enable;
+    int off;
+    int i;
+
+    if (lbl_804D4FA4 != on || lbl_804D2FD4 != param) {
+        lbl_804D4FA4 = on;
+        lbl_804D4FA8 = on;
+        enable = on != 0;
+        lbl_804D2FD4 = param;
+        lbl_804D2FDC = param;
+        for (i = 0, off = 0; i < 0x100; i++, off += sizeof(SoundSlot)) {
+            SoundSlot* slot = (SoundSlot*)((char*)lbl_804D4FBC + off);
+            if (slot->kind != 0) {
+                if (slot->music == 0) {
+                    if (SoundSlotSetParams(slot)) {
+                        SND_VOICEID vid = sndEmitterVoiceID(&((SoundSlot*)((char*)lbl_804D4FBC + off))->emitter);
+                        if (vid != -1) {
+                            sndFXSetFilter(vid, enable, param);
+                        }
+                    }
+                } else if (lbl_804D4F68[slot->def].reverb > 0) {
+                    sndFXSetFilter(slot->voice, enable, param);
+                }
+            }
+        }
+    }
 }
 
 // ListenerPush: remembers up to four camera matrices.
@@ -285,6 +379,33 @@ extern "C" int fn_8016EDD8(int handle, Vec3* pos) {
     return 0;
 }
 
+extern char** lbl_804D4F3C;   // sound names, by definition index
+extern int lbl_804D4F70;      // sound debug output on
+
+// SoundStop: stops a playing sound and runs its stop callback; returns 1 if the handle was valid.
+extern "C" int fn_8016EEF4(int handle) {
+    int idx = SoundSlotIndex(handle);
+
+    if (idx > -1 && idx < 0x100) {
+        if (lbl_804D4F70 != 0) {
+            DebugPrintf("SndStop %d (%s)\n", handle, lbl_804D4F3C[lbl_804D4FBC[idx].def]);
+        }
+        if (lbl_804D4FBC[idx].kind == 1) {
+            if (lbl_804D4FBC[idx].music == 0) {
+                sndRemoveEmitter(&lbl_804D4FBC[idx].emitter);
+            } else {
+                sndFXKeyOff(lbl_804D4FBC[idx].voice);
+            }
+        }
+        lbl_804D4FBC[idx].kind = 0;
+        if (lbl_804D4FBC[idx].onStop != 0) {
+            lbl_804D4FBC[idx].onStop(lbl_804D4FBC[idx].stopArg);
+        }
+        return 1;
+    }
+    return 0;
+}
+
 extern "C" int fn_8016F010(void) { return 0; }
 
 // SoundSetVolume: volume is 12-bit fixed point (0x1000 = full).
@@ -314,17 +435,23 @@ extern "C" int fn_8016F018(int handle, int volume) {
 
 extern "C" int fn_8016F118(void) { return 0; }
 
+// SoundGetKind: 0 when the handle is stale or the slot is free.
+extern "C" int fn_8016F47C(int handle) {
+    int idx = SoundSlotIndex(handle);
+
+    if (idx >= 0 && idx < 0x100) {
+        return lbl_804D4FBC[idx].kind;
+    }
+    return 0;
+}
+
 // Functions not drafted yet (symbol names are still the placeholders):
 // TODO (not drafted yet, 0x2C bytes at 0x8016E578): fn_8016E578
 // TODO (not drafted yet, 0x134 bytes at 0x8016E5A4): fn_8016E5A4
-// TODO (not drafted yet, 0x1A8 bytes at 0x8016E768): fn_8016E768
-// TODO (not drafted yet, 0x188 bytes at 0x8016E910): fn_8016E910
 // TODO (not drafted yet, 0x220 bytes at 0x8016EA98): fn_8016EA98
-// TODO (not drafted yet, 0x11C bytes at 0x8016EEF4): fn_8016EEF4
 // TODO (not drafted yet, 0x13C bytes at 0x8016F120): fn_8016F120
 // TODO (not drafted yet, 0x134 bytes at 0x8016F25C): fn_8016F25C
 // TODO (not drafted yet, 0xEC bytes at 0x8016F390): FxStart
-// TODO (not drafted yet, 0x60 bytes at 0x8016F47C): fn_8016F47C
 // TODO (not drafted yet, 0x1C4 bytes at 0x8016F4DC): fn_8016F4DC
 // TODO (not drafted yet, 0x178 bytes at 0x8016F6A0): fn_8016F6A0
 // TODO (not drafted yet, 0xD4 bytes at 0x8016F818): fn_8016F818
