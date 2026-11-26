@@ -434,3 +434,8 @@ but sit in the wrong order (objdiff shows them shifted, report fuzzy < 100 only 
 struct assignment in the function that came out late and copy member-wise.
 Evidence: u_80116B28 (IVec3, 2026-11-15), u_801D8FD4 (fn_801D9114 after SpawnAttach; fn_801D8FD4 copies v
 member-wise), u_801E092C Lightning (0c10d12: Update emitted last with `b->start = ...pos`, in order with field copies).
+Related (2026-11-26, u_80184F70 fn_80184F74 / u_80180868 fn_80180968): when retail's parameter copies come first
+and loads through a read-only parameter are hoisted above stores into a local message block, declare that
+parameter `const T*` (extern "C" callbacks can take typed parameters without a mangling change; the descriptor's
+function-pointer type follows). In BarrierActorUpdate (u_801E14E8) the same entry-block order came from passing the
+original `Actor*` parameter to ActorUpdate instead of the casted copy.
