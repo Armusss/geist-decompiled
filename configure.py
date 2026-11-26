@@ -637,7 +637,7 @@ config.libs = [
             Object(Matching, "game/u_800E0CB8.cpp", mw_version="GC/2.0"),  # Vec3 helpers; GC/2.0: const-pointer loads before stwu (STATUS G4)
             Object(Matching, "game/asyncio.cpp"),  # guess
             Object(Matching, "game/u_800E1B5C.cpp"),  # rumble
-            Object(NonMatching, "game/u_800E2414.cpp"),  # split from u_800E1B5C
+            Object(Matching, "game/u_800E2414.cpp"),  # split from u_800E1B5C
             Object(Matching, "game/u_800E39F4.cpp"),  # split from u_800E1B5C
             Object(Matching, "game/u_800E3EC4.cpp"),  # split from u_800E1B5C
             Object(NonMatching, "game/u_800E48A0.cpp"),  # split from u_800E1B5C
@@ -748,14 +748,14 @@ config.libs = [
             Object(Matching, "game/u_801DE4B0.cpp"),  # TentacleSpit effect type (split from u_801D9A70)
             Object(NonMatching, "game/u_801DE7A0.cpp"),  # trails (split from u_801D9A70)
             Object(Matching, "game/u_801E0850.cpp"),  # effect-module fan-out hooks (split from u_801D9A70)
-            Object(NonMatching, "game/u_801E092C.cpp"),  # Lightning effect type (split from u_801D9A70)
+            Object(Matching, "game/u_801E092C.cpp"),  # Lightning effect type (split from u_801D9A70)
             Object(NonMatching, "game/u_801E0EDC.cpp"),  # guess
             Object(NonMatching, "game/u_801E14E8.cpp"),  # split from u_801E0EDC
             Object(NonMatching, "game/u_801E241C.cpp"),  # pinned
             Object(NonMatching, "game/u_801E3714.cpp"),  # split from u_801E241C
             Object(NonMatching, "game/u_801E47D0.cpp"),  # split from u_801E241C
             Object(NonMatching, "game/u_801E5B3C.cpp"),  # split from u_801E241C
-            Object(NonMatching, "game/u_801E65F0.cpp"),  # split from u_801E241C
+            Object(Matching, "game/u_801E65F0.cpp"),  # split from u_801E241C
             Object(Matching, "game/u_801E72E0.cpp"),  # split from u_801E241C
             Object(Matching, "game/u_801E7534.cpp"),  # sniper host states + gSniperHostTypes (was u_801E72E0 tail + u_801E7DE0)
             Object(NonMatching, "game/u_801EA880.cpp"),  # text rendering + debug text (merged u_801EAACC)
