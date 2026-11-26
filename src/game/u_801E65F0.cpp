@@ -4,13 +4,14 @@
 //   msg 0x801E69AC, destroy 0x801E7160 and create 0x801E7198: exactly this range.
 // - .rodata: pool 0x80348F18-0x80348F68, the ghost-action name table followed by "Sniper"; the next file has its
 //   own table at 0x80348F68. .sdata2: own pool 0x804D8ED8-0x804D8EF0 (0.0f 0x804D8ED8, double 0x804D8EE0).
-// Names are descriptive guesses; unmatched against retail unless noted.
+// Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include <dolphin/types.h>
 #include <string.h>
 #include "game/types.h"
 #include "game/msg.h"
 #include "game/effect.h"
+#include "game/vecnorm.h"
 
 extern "C" {
 void* fn_800EB21C(int id);
@@ -106,7 +107,7 @@ struct Sniper {
     int emitter;            // 0x10
     SniperDef* def;         // 0x14
     int unk18;              // 0x18
-    u32 arg;                // 0x1C: the holder's handle
+    int arg;                // 0x1C: the holder's handle
     u8 pad20[0x30 - 0x20];
     int unk30;              // 0x30: shot fx
     int unk34;              // 0x34: hit fx
@@ -135,34 +136,6 @@ struct SniperTarget {
     u8 pad[0x24];
     int x, y, z;
 };
-
-float __fabsf(float x);
-
-// C stand-in for the shared VecNormalize helper (include/game/vecnorm.h), which retail uses here (ps_rsqrte /
-// ps_res, pointer stores at 8/12(r1)); the asm helper is only allowed once the whole unit matches. With the helper
-// fn_801E69AC is at 7 diffs (entry-block order of the parameter copies), see the commit message.
-inline float VecNormalize(Vec3* dst, const Vec3* src) {
-    float len;
-    float az = __fabsf(src->z);
-    float ay = __fabsf(src->y);
-    float ax = __fabsf(src->x);
-    if ((ax > 1.1920929e-7f) + (ay > 1.1920929e-7f) + (az > 1.1920929e-7f) == 0) {
-        dst->x = 0.0f;
-        dst->y = 0.0f;
-        dst->z = 0.0f;
-    } else {
-        float x = src->x;
-        float y = src->y;
-        float z = src->z;
-        float sq = x * x + y * y + z * z;
-        float r = __frsqrte(sq);
-        dst->x = x * r;
-        dst->y = y * r;
-        dst->z = z * r;
-        len = __fres(r);
-    }
-    return len;
-}
 
 inline float Min(float a, float b) { return a < b ? a : b; }
 
@@ -242,14 +215,14 @@ void fn_801E6600(EffectObj* obj, float dt) {
             g->unk08 = 0.0f;
         }
         if (g->unk08 > step) {
-            if ((int)(g->arg >> 24) == 2) {
+            if (((g->arg >> 24) & 0xFF) == 2) {
                 MsgResult q;
                 SendMsg(g->arg, 0x400, &q);
                 PlayerAnimOffUpdate((Player*)q.p, -step);
             }
             g->unk08 -= step;
         } else {
-            if ((int)(g->arg >> 24) == 2) {
+            if (((g->arg >> 24) & 0xFF) == 2) {
                 MsgResult q;
                 SendMsg(g->arg, 0x400, &q);
                 PlayerAnimOffUpdate((Player*)q.p, -g->unk08);

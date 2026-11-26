@@ -751,7 +751,7 @@ config.libs = [
             Object(NonMatching, "game/u_801E3714.cpp"),  # split from u_801E241C
             Object(NonMatching, "game/u_801E47D0.cpp"),  # split from u_801E241C
             Object(NonMatching, "game/u_801E5B3C.cpp"),  # split from u_801E241C
-            Object(NonMatching, "game/u_801E65F0.cpp"),  # split from u_801E241C
+            Object(Matching, "game/u_801E65F0.cpp"),  # split from u_801E241C
             Object(Matching, "game/u_801E72E0.cpp"),  # split from u_801E241C
             Object(Matching, "game/u_801E7534.cpp"),  # sniper host states + gSniperHostTypes (was u_801E72E0 tail + u_801E7DE0)
             Object(NonMatching, "game/u_801EA880.cpp"),  # text rendering + debug text (merged u_801EAACC)
