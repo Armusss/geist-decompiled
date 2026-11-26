@@ -210,6 +210,8 @@ struct SoundDef {
 extern SoundSlot* lbl_804D4FBC;   // table of 256 slots
 extern SoundDef* lbl_804D4F68;    // sound definitions
 extern SND_LISTENER lbl_8046F798;
+// Listener position, velocity, heading and up vectors: this file's own .data (retail addresses them from the
+// unit's data base lbl_803A7CA8 + 0x464..0x488); symbols.txt lists them as separate objects.
 extern SND_FVECTOR lbl_803A810C;
 extern SND_FVECTOR lbl_803A8118;
 extern SND_FVECTOR lbl_803A8124;
