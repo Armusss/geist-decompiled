@@ -318,6 +318,10 @@ game/u_800E39F4.cpp:
 
 game/u_800E3EC4.cpp:
 	.text       start:0x800E3EC4 end:0x800E48A0
+	.rodata     start:0x80344EF8 end:0x80344F48
+	.data       start:0x8039C428 end:0x8039C458
+	.sbss       start:0x804D4A18 end:0x804D4A20
+	.sdata2     start:0x804D71D8 end:0x804D71F0
 
 game/u_800E48A0.cpp:
 	.text       start:0x800E48A0 end:0x800E7E20
