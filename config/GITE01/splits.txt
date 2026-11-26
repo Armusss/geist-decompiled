@@ -861,6 +861,11 @@ game/u_801E0850.cpp:
 
 game/u_801E092C.cpp:
 	.text       start:0x801E092C end:0x801E0EDC
+	.rodata     start:0x80348DF8 end:0x80348E08
+	.data       start:0x803ADDD0 end:0x803ADE00
+	.bss        start:0x8049B3D8 end:0x8049B468
+	.sdata      start:0x804D3280 end:0x804D3288
+	.sdata2     start:0x804D8D60 end:0x804D8D78
 
 game/u_801E0EDC.cpp:
 	.text       start:0x801E0EDC end:0x801E14E8

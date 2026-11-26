@@ -4,10 +4,11 @@
 // the trail file's 0x804D8D38); .bss 0x8049B3D8-0x8049B468 and .sdata 0x804D3280 read only by fn_801E092C,
 // fn_801E0C78, fn_801E0D70 and fn_801E0DC8; .rodata "Lightning" 0x80348DF8. The next file (u_801E0EDC) has its
 // own ghost-action name table at 0x80348E08.
-// Names are descriptive guesses; unmatched against retail unless noted.
+// Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include "game/types.h"
 #include "game/string.h"
+#include "game/actor.h"
 
 typedef unsigned long u32;
 typedef unsigned short u16;
@@ -72,17 +73,17 @@ void fn_8017DF34(Beam* b, Vec3* from, Vec3* to, float dt);
 int fn_800388A4(int model, int node);
 }
 
-extern Beam* lbl_8049B3D8[32];          // live bolts
-extern LightningNodes lbl_8049B458;
-extern u32 lbl_804D3280[2];             // bolt slots in use
+Beam* sLightningBolts[32];              // live bolts
+LightningNodes sLightningNodes;
+u32 sLightningSlots[1] = {0};           // bolt slots in use
 
 //@@801E092C
 // Ends every live bolt whose beam is enabled and touches the tracked node.
 extern "C" void fn_801E092C(void) {
     for (int i = 0; i < 32; i++) {
-        if ((lbl_804D3280[i / 32] & (1 << (i & 31))) != 0 && lbl_8049B3D8[i]->enabled != 0 &&
-            fn_800388A4(lbl_8049B3D8[i]->model, lbl_8049B458.node) != 0) {
-            fn_8017DC64(lbl_8049B3D8[i]);
+        if ((sLightningSlots[i / 32] & (1 << (i & 31))) != 0 && sLightningBolts[i]->enabled != 0 &&
+            fn_800388A4(sLightningBolts[i]->model, sLightningNodes.node) != 0) {
+            fn_8017DC64(sLightningBolts[i]);
         }
     }
 }
@@ -184,16 +185,26 @@ extern "C" int fn_801E09C8(struct Actor* self, int msg, void* data, int arg) {
 
 //@@801E0C78
 // Update: moves the live beam between the two tracked bones, then the default actor update.
-// 4 diffs: retail copies the beam into r31 after the null test (ours before it).
+// The positions are copied field by field: a Vec3 struct assignment gives the same code but makes CodeWarrior
+// emit this function after the rest of the file.
 extern "C" void fn_801E0C78(LightningActor* a, float dt) {
-    Beam* b = a->beam;
-    if (a->beam != NULL && a->beam->enabled != 0) {
-        u8* map = ModelAnimate(a->model, 0, 0);
-        b->start = a->bones[map[lbl_8049B458.from]].pos;
-        b->end = a->bones[map[lbl_8049B458.to]].pos;
-        fn_8017DF34(b, &b->start, &b->end, dt);
+    void* p = a->beam;
+    if (p != NULL) {
+        Beam* b = (Beam*)p;
+        if (b->enabled != 0) {
+            u8* map = ModelAnimate(a->model, 0, 0);
+            Vec3* v = &a->bones[map[sLightningNodes.from]].pos;
+            b->start.x = v->x;
+            b->start.y = v->y;
+            b->start.z = v->z;
+            v = &a->bones[map[sLightningNodes.to]].pos;
+            b->end.x = v->x;
+            b->end.y = v->y;
+            b->end.z = v->z;
+            fn_8017DF34(b, &b->start, &b->end, dt);
+            ActorUpdate((struct Actor*)a, dt);
+        }
     }
-    ActorUpdate((struct Actor*)a, dt);
 }
 //@@end
 
@@ -202,7 +213,7 @@ extern "C" void fn_801E0C78(LightningActor* a, float dt) {
 extern "C" void fn_801E0D70(LightningActor* a) {
     if (a != NULL) {
         fn_8017E15C(a->beam, 0);
-        ListRemoveFree(a->beam, (void**)lbl_8049B3D8, lbl_804D3280, 0x20);
+        ListRemoveFree(a->beam, (void**)sLightningBolts, sLightningSlots, 0x20);
         a->beam = NULL;
     }
 }
@@ -212,14 +223,14 @@ extern "C" void fn_801E0D70(LightningActor* a) {
 // Init: looks up the bolt's bone ids and the tracked node, then gives the actor a beam.
 extern "C" int fn_801E0DC8(LightningActor* a) {
     Beam* b;
-    lbl_8049B458.from = AssetFind(0xF1754BF2, 0x04B8CC42);
-    lbl_8049B458.to = AssetFind(0xF1754BF2, 0x00010CBB);
-    lbl_8049B458.node = AssetFind(0xD9044CBB, 0xCF0262AA);
+    sLightningNodes.from = AssetFind(0xF1754BF2, 0x04B8CC42);
+    sLightningNodes.to = AssetFind(0xF1754BF2, 0x00010CBB);
+    sLightningNodes.node = AssetFind(0xD9044CBB, 0xCF0262AA);
     if (ActorInitBase((struct Actor*)a) == 0) {
         return 0;
     }
     if (a->beam == NULL) {
-        b = (Beam*)ListAlloc((void**)lbl_8049B3D8, 0xB8, lbl_804D3280, 0x20);
+        b = (Beam*)ListAlloc((void**)sLightningBolts, 0xB8, sLightningSlots, 0x20);
         if (b == NULL) {
             return 0;
         }
@@ -236,3 +247,8 @@ extern "C" int fn_801E0DC8(LightningActor* a) {
     return 1;
 }
 //@@end
+
+ActorType gLightningType = {
+    0, "Lightning", (ActorMsgFunc)fn_801E09C8, (void (*)(Actor*, float))fn_801E0C78,
+    (int (*)(Actor*))fn_801E0DC8, 0, (void (*)(Actor*))fn_801E0D70, {0, 0, 0, 0, 0},
+};
