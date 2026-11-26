@@ -60,12 +60,12 @@ struct BossState {
 
 // One row of the boss state table (24 bytes).
 struct BossStateOps {
-    void (*enter)(Boss* b);                 // 0x00
-    int (*canLeave)(Boss* b, int next);     // 0x04
-    int (*update)(Boss* b);                 // 0x08
-    void* unk0C;                            // 0x0C
-    const char* name;                       // 0x10
-    void* unk14;                            // 0x14
+    u32 hash;                               // 0x00
+    void (*enter)(Boss* b);                 // 0x04
+    int (*canLeave)(Boss* b, int next);     // 0x08
+    int (*update)(Boss* b);                 // 0x0C
+    void* unk10;                            // 0x10
+    const char* name;                       // 0x14
 };
 
 struct BossCfg {
@@ -146,7 +146,6 @@ int SendMsg(int to, int msg, void* data);
 void fn_80038AE8(int model, int id, int a, int b);
 void* memset(void* p, int c, u32 n);
 }
-extern const char* lbl_803C4E74[];
 extern "C" double __fabs(double);
 extern "C" float sqrtf(float);
 int BossSetupHit(BossMsg* m);
@@ -166,7 +165,7 @@ void fn_8016EEF4(int fx);
 void fn_800A7B08(void* set, int i, int v);
 void fn_8006DB74(double v);
 }
-extern BossStateOps lbl_803C4E64[];
+extern BossStateOps lbl_803C4E60[16];   // boss state table (0x803C4E60, 16 * 0x18)
 extern float lbl_804D3A48;
 extern int lbl_804D3A54;
 extern int lbl_804D3A58;
@@ -234,7 +233,6 @@ void fn_80211A84(void);
 }
 extern float lbl_804DAEA4;
 extern float lbl_804DAEA8;
-extern int lbl_803C4E60[];
 
 extern "C" {
 void fn_8008F4E8(int anim, int a);
@@ -260,14 +258,14 @@ static inline void BossPlayStateAnim(Boss* b, int pick, bool randomize) {
             fn_8008F378(0.0f, anim);
             fn_8008F4EC(anim, 0);
         }
-        count = fn_800A1AC4(*(int*)((u8*)b->cfg + 0x14), *(int*)((u8*)b->cfg + 0x1C), lbl_803C4E60[s->type * 6]);
+        count = fn_800A1AC4(*(int*)((u8*)b->cfg + 0x14), *(int*)((u8*)b->cfg + 0x1C), lbl_803C4E60[s->type].hash);
         if (count != 0) {
             int idx;
             if (randomize || pick < 0 || count <= pick) {
                 int r = Rand();
                 pick = r - (r / count) * count;
             }
-            idx = fn_800A1BC8(*(int*)((u8*)b->cfg + 0x14), *(int*)((u8*)b->cfg + 0x1C), lbl_803C4E60[s->type * 6], pick, 0);
+            idx = fn_800A1BC8(*(int*)((u8*)b->cfg + 0x14), *(int*)((u8*)b->cfg + 0x1C), lbl_803C4E60[s->type].hash, pick, 0);
             if (fn_8008E7D0(anim) != 0) {
                 fn_800A7A54(&b->flags270, 0x1C, 0);
                 if (fn_800A7AC4(&b->flags270, 0xE) == 0) {
@@ -276,7 +274,7 @@ static inline void BossPlayStateAnim(Boss* b, int pick, bool randomize) {
                     fn_800A7A54(&b->flags270, 0xE, 0);
                     fn_8008F230(0.0f, anim, 0, 0);
                 }
-                fn_80090974(1.0f, anim, 0, idx, 9, (int)lbl_803C4E64[s->type].unk0C, (int)b);
+                fn_80090974(1.0f, anim, 0, idx, 9, (int)lbl_803C4E60[s->type].unk10, (int)b);
                 s->anim = idx;
             }
         }
@@ -423,7 +421,7 @@ int BossMsgHandler(int msg, BossMsg* m) {
         if (msg < 0xC00) {
             if (msg == 0x41E) {
                 if ((int)m->arg1 == -0x527A8906) {
-                    String a(lbl_803C4E74[m->boss->state->type * 6]);
+                    String a(lbl_803C4E60[m->boss->state->type].name);
                     String bs("\n");
                     String c;
                     fn_800225C8(&c, &a, &bs);
@@ -720,7 +718,7 @@ void BossInit(int unused, Boss* b) {
         BossPartInit(b);
         fn_800A7B08(&b->flags270, 10, 1);
         fn_80090634(*(int*)((u8*)b + 0xD4), 0, 0, 0);
-        lbl_803C4E64[s->type].enter(b);
+        lbl_803C4E60[s->type].enter(b);
     }
 }
 
@@ -731,8 +729,8 @@ int BossOnHurt(int msg, Boss* b) {
         return 0;
     s = b->state;
     if (msg == 0x1B83833F) {
-        lbl_803C4E64[s->type].canLeave(b, s->next);
-        lbl_803C4E64[s->next].enter(b);
+        lbl_803C4E60[s->type].canLeave(b, s->next);
+        lbl_803C4E60[s->next].enter(b);
     } else {
         if (msg < 0x1B83833F) {
             if (msg != 0x20EE36) {
@@ -1077,8 +1075,8 @@ int BossEnterDie(Boss* b) {
     fn_8008F230(0.0f, *(int*)((u8*)b + 0xD4), 0, 1);
     *(int*)((u8*)b + 0x220) = 4;
     fn_800A7A54(&b->flags270, 0xD, 1);
-    anim = fn_800A1BC8(*(int*)((u8*)b->cfg + 0x14), *(int*)((u8*)b->cfg + 0x1C), lbl_803C4E60[s->type * 6], 0, 0);
-    fn_80090974(1.0f, *(int*)((u8*)b + 0xD4), 0, anim, 0x58, (int)lbl_803C4E64[s->type].unk0C, (int)b);
+    anim = fn_800A1BC8(*(int*)((u8*)b->cfg + 0x14), *(int*)((u8*)b->cfg + 0x1C), lbl_803C4E60[s->type].hash, 0, 0);
+    fn_80090974(1.0f, *(int*)((u8*)b + 0xD4), 0, anim, 0x58, (int)lbl_803C4E60[s->type].unk10, (int)b);
     s->anim = anim;
     fn_800A7028(&b->flags270);
     fn_800A7A54(&b->flags270, 0xC, 1);
