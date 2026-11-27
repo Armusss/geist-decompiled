@@ -625,21 +625,11 @@ SphereGeom::~SphereGeom()
 }
 
 // 0x80271EB4: out = R * v (dMULTIPLY0_331)
-void MatMulVec(float* out, float* R, float* v)
+void MatMulVec(float* A, const float* B, const float* C)
 {
-    float v1 = v[1];
-    float r5 = R[5];
-    float v0 = v[0];
-    float r9 = R[9];
-    float r4 = R[4];
-    float v2 = v[2];
-    float r8 = R[8];
-    float r6 = R[6];
-    float r10 = R[10];
-
-    out[0] = R[2] * v2 + R[0] * v0 + R[1] * v1;
-    out[1] = r6 * v2 + r4 * v0 + r5 * v1;
-    out[2] = r10 * v2 + r8 * v0 + r9 * v1;
+    A[0] = B[0] * C[0] + B[1] * C[1] + B[2] * C[2];
+    A[1] = B[4] * C[0] + B[5] * C[1] + B[6] * C[2];
+    A[2] = B[8] * C[0] + B[9] * C[1] + B[10] * C[2];
 }
 
 // 0x80271F18: square root (dSqrt)
@@ -649,19 +639,9 @@ float SqrtFloat(float x)
 }
 
 // 0x80271FFC: out = R^T * v (dMULTIPLY1_331)
-void MatTransMulVec(float* out, float* R, float* v)
+void MatTransMulVec(float* A, const float* B, const float* C)
 {
-    float v1 = v[1];
-    float r5 = R[5];
-    float v0 = v[0];
-    float r6 = R[6];
-    float r1 = R[1];
-    float v2 = v[2];
-    float r2 = R[2];
-    float r9 = R[9];
-    float r10 = R[10];
-
-    out[0] = R[8] * v2 + R[0] * v0 + R[4] * v1;
-    out[1] = r9 * v2 + r1 * v0 + r5 * v1;
-    out[2] = r10 * v2 + r2 * v0 + r6 * v1;
+    A[0] = B[0] * C[0] + B[4] * C[1] + B[8] * C[2];
+    A[1] = B[1] * C[0] + B[5] * C[1] + B[9] * C[2];
+    A[2] = B[2] * C[0] + B[6] * C[1] + B[10] * C[2];
 }

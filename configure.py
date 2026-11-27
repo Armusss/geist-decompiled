@@ -824,7 +824,7 @@ config.libs = [
             Object(Matching, "game/u_8026A158.cpp"),  # guess
             Object(Matching, "game/u_8026A37C.cpp", extra_cflags=["-inline deferred"]),  # ODE collision_kernel.cpp (-inline deferred, user-approved 2026-11-27)
             Object(Matching, "game/u_8026C200.cpp", extra_cflags=["-inline deferred"]),  # ODE collision_space.cpp (-inline deferred, user-approved 2026-11-27)
-            Object(NonMatching, "game/u_8026D428.cpp"),  # split from u_8026C200 (own .sdata2 pool)
+            Object(NonMatching, "game/u_8026D428.cpp", mw_version="GC/2.0"),  # ODE collision_std.cpp (split from u_8026C200; own .sdata2 pool); GC/2.0 (user-approved 2026-11-27): MatMulVec/MatTransMulVec (ODE dMULTIPLY0_331/dMULTIPLY1_331 with const args) exact only on 2.0 (16->18/23 on 2.0, none worse)
             Object(Matching, "game/u_80272060.cpp"),  # ODE collision_transform.cpp (split from u_8026C200)
             Object(NonMatching, "game/u_8027243C.cpp"),  # ODE collision_util.cpp (split from u_80272060; own .sdata2 pool)
             Object(Matching, "game/u_8027337C.cpp"),  # split from u_8026C200 (ODE error.cpp)
