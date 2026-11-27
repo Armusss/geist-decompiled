@@ -493,8 +493,150 @@ extern "C" int fn_8026E9C8(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
     return CollideSpheres(p, ccyl->radius, o2->pos, sphere->radius, contact);
 }
 
-// TODO (not drafted yet, 0x770 bytes at 0x8026EAAC): capsule against capsule
-extern "C" int fn_8026EAAC(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
+// 0x8026EAAC: box against plane (dCollideBoxPlane)
+extern "C" int fn_8026EAAC(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
+{
+    BoxGeom* box = (BoxGeom*)o1;
+    PlaneGeom* plane = (PlaneGeom*)o2;
+
+    contact->g1 = o1;
+    contact->g2 = o2;
+    int ret = 0;
+
+    //@@@ problem: using 4-vector (plane->p) as 3-vector (normal).
+    const float* R = o1->rot;  // rotation of box
+    const float* n = plane->p; // normal vector
+
+    // project sides lengths along normal vector, get absolute values
+    float Q1 = Dot14(n, R + 0);
+    float Q2 = Dot14(n, R + 1);
+    float Q3 = Dot14(n, R + 2);
+    float A1 = box->side[0] * Q1;
+    float A2 = box->side[1] * Q2;
+    float A3 = box->side[2] * Q3;
+    float B1 = FAbs(A1);
+    float B2 = FAbs(A2);
+    float B3 = FAbs(A3);
+
+    // early exit test
+    float depth = plane->p[3] + 0.5f * (B1 + B2 + B3) - Dot(n, o1->pos);
+    if (depth < 0) {
+        return 0;
+    }
+
+    // find number of contacts requested
+    int maxc = flags & NUMC_MASK;
+    if (maxc < 1) {
+        maxc = 1;
+    }
+    if (maxc > 3) {
+        maxc = 3;  // no more than 3 contacts per box allowed
+    }
+
+    // find deepest point
+    float p[4];
+    p[0] = o1->pos[0];
+    p[1] = o1->pos[1];
+    p[2] = o1->pos[2];
+#define FOO(i, op)                               \
+    p[0] op 0.5f * box->side[i] * R[0 + i];     \
+    p[1] op 0.5f * box->side[i] * R[4 + i];     \
+    p[2] op 0.5f * box->side[i] * R[8 + i];
+#define BAR(i, iinc)    \
+    if (A##iinc > 0) {  \
+        FOO(i, -=)      \
+    } else {            \
+        FOO(i, +=)      \
+    }
+    BAR(0, 1);
+    BAR(1, 2);
+    BAR(2, 3);
+#undef FOO
+#undef BAR
+
+    // the deepest point is the first contact point
+    contact->pos[0] = p[0];
+    contact->pos[1] = p[1];
+    contact->pos[2] = p[2];
+    contact->normal[0] = n[0];
+    contact->normal[1] = n[1];
+    contact->normal[2] = n[2];
+    contact->depth = depth;
+    ret = 1;  // ret is number of contact points found so far
+    if (maxc == 1) {
+        goto done;
+    }
+
+    // get the second and third contact points by starting from `p' and going
+    // along the two sides with the smallest projected length.
+
+#define FOO(i, j, op)                                                    \
+    CONTACT(contact, i * skip)->pos[0] = p[0] op box->side[j] * R[0 + j]; \
+    CONTACT(contact, i * skip)->pos[1] = p[1] op box->side[j] * R[4 + j]; \
+    CONTACT(contact, i * skip)->pos[2] = p[2] op box->side[j] * R[8 + j];
+#define BAR(ctact, side, sideinc)                 \
+    depth -= B##sideinc;                          \
+    if (depth < 0) goto done;                     \
+    if (A##sideinc > 0) {                         \
+        FOO(ctact, side, +);                      \
+    } else {                                      \
+        FOO(ctact, side, -);                      \
+    }                                             \
+    CONTACT(contact, ctact * skip)->depth = depth; \
+    ret++;
+
+    CONTACT(contact, skip)->normal[0] = n[0];
+    CONTACT(contact, skip)->normal[1] = n[1];
+    CONTACT(contact, skip)->normal[2] = n[2];
+    if (maxc == 3) {
+        CONTACT(contact, 2 * skip)->normal[0] = n[0];
+        CONTACT(contact, 2 * skip)->normal[1] = n[1];
+        CONTACT(contact, 2 * skip)->normal[2] = n[2];
+    }
+
+    if (B1 < B2) {
+        if (B3 < B1) {
+            goto use_side_3;
+        } else {
+            BAR(1, 0, 1);  // use side 1
+            if (maxc == 2) goto done;
+            if (B2 < B3) goto contact2_2;
+            else goto contact2_3;
+        }
+    } else {
+        if (B3 < B2) {
+        use_side_3:  // use side 3
+            BAR(1, 2, 3);
+            if (maxc == 2) goto done;
+            if (B1 < B2) goto contact2_1;
+            else goto contact2_2;
+        } else {
+            BAR(1, 1, 2);  // use side 2
+            if (maxc == 2) goto done;
+            if (B1 < B3) goto contact2_1;
+            else goto contact2_3;
+        }
+    }
+
+contact2_1:
+    BAR(2, 0, 1);
+    goto done;
+contact2_2:
+    BAR(2, 1, 2);
+    goto done;
+contact2_3:
+    BAR(2, 2, 3);
+    goto done;
+#undef FOO
+#undef BAR
+
+done:
+    for (int i = 0; i < ret; i++) {
+        CONTACT(contact, i * skip)->g1 = o1;
+        CONTACT(contact, i * skip)->g2 = o2;
+    }
+    return ret;
+}
 
 // Box-box contact generation (dBoxBox); later in this unit.
 extern "C" int fn_8026FA3C(const float* p1, const float* R1, const float* side1, const float* p2,
