@@ -64,8 +64,8 @@ float* GeomGetRotation(Geom* g);                            // 0x8026AC50
 float SphereGetRadius(Geom* g);                             // 0x80271C90
 void BoxGetLengths(Geom* g, float* result);                 // 0x80271AB4
 void CapsuleGetParams(Geom* g, float* radius, float* length);  // 0x802718A0
-void MtxGetColumn(Vec3* out, Mtx34* m, int col);            // 0x800A0238
-void Mtx34StoreTranslation(Mtx34* m, Vec3* t);              // 0x800A0280
+void MtxGetColumn(Vec3* out, const Mtx34* m, int col);            // 0x800A0238
+void Mtx34StoreTranslation(Mtx34* m, const Vec3* t);              // 0x800A0280
 
 extern "C" {
 void* memcpy(void* dst, const void* src, u32 n);

@@ -101,7 +101,7 @@ void TrailBufferInit(TrailBuffer* tb, float* points, unsigned long count, unsign
 void Draw3DBeginLine(int texture, void* xf, float width);
 void DrawTrailRing(TrailBuffer* tb, unsigned char r, unsigned char g, unsigned char b, unsigned char a);
 void DrawDisableTexOffsets();
-void Mtx34StoreTranslation(Mtx34* m, Vec3* pos);
+void Mtx34StoreTranslation(Mtx34* m, const Vec3* pos);
 unsigned char* ModelAnimate(int model, char* bones, int a);
 float fn_80017084(float x);
 

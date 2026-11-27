@@ -1826,7 +1826,7 @@ void* VAlloc(int size);
 void VFree(void* p);
 int AssetFind(u32 a, u32 b);
 void ActorGetMatrix(Mtx34* m, void* actor);
-void Mtx34StoreColumn(Mtx34* m, Vec3* v, int col);
+void Mtx34StoreColumn(Mtx34* m, const Vec3* v, int col);
 extern "C" {
 int rand(void);
 float sqrtf(float x);

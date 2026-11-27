@@ -308,7 +308,7 @@ extern "C" int fn_800A1494(int value);
 // column of the second row is the sine of the x angle; the two gimbal cases
 // pin x to +/-90 degrees and derive y from the first row instead.
 // fn_8009F190
-extern "C" void fn_8009F190(int* angles, int* mtx)
+extern "C" void fn_8009F190(int* angles, const int* mtx)
 {
     if (mtx[5] < 0x1000) {
         if (mtx[5] < -0xFFF) {
@@ -357,7 +357,7 @@ void MtxMulQ12(int* out, int* a, int* b)
 // Transform a Q12 fixed-point point by a Q12 fixed-point 3x4 matrix (the
 // rotation rows only), rounding each result back to whole units.
 // fn_8009F44C
-extern "C" void fn_8009F44C(int* out, int* mtx, int* vec)
+extern "C" void fn_8009F44C(int* out, const int* mtx, int* vec)
 {
     int x = vec[0];
     int y = vec[1];
@@ -387,7 +387,7 @@ extern "C" void fn_8009F50C(int* out, int* vec)
 // row-vector in the source and column-vector in the shared transform, so the
 // 3x3 rotation part is transposed; the three translation words pass through.
 // fn_8009F5B0
-extern "C" void fn_8009F5B0(int* src)
+extern "C" void fn_8009F5B0(const int* src)
 {
     int* d = lbl_80449038;
 
@@ -462,7 +462,7 @@ void ActorAim(int* out, Actor* actor, int row)
 
 // Copies three words of v into column `col` of the 3x3 integer matrix m.
 // fn_8009F724
-extern "C" void fn_8009F724(int* m, int* v, int col)
+extern "C" void fn_8009F724(int* m, const int* v, int col)
 {
     m[col] = v[0];
     m[col + 3] = v[1];
@@ -716,7 +716,7 @@ extern Mtx34 lbl_80449068;
 
 // Row-vector transform: out = v * M (3x3 part only, translation ignored).
 // fn_800A0094
-extern "C" void fn_800A0094(Vec3* out, Vec3* v)
+extern "C" void fn_800A0094(Vec3* out, const Vec3* v)
 {
     out->x = lbl_80449068.m[1] * v->y + lbl_80449068.m[0] * v->x +
              lbl_80449068.m[2] * v->z;
@@ -729,7 +729,7 @@ extern "C" void fn_800A0094(Vec3* out, Vec3* v)
 // Store a 3x4 matrix into the shared global, transposing the 3x3 basis part
 // (the global is kept in column form for the row-vector helpers).
 // fn_800A0100
-extern "C" void fn_800A0100(Mtx34* m)
+extern "C" void fn_800A0100(const Mtx34* m)
 {
     lbl_80449068.m[0] = m->m[0];
     lbl_80449068.m[3] = m->m[1];
@@ -749,7 +749,7 @@ extern "C" void fn_800A0100(Mtx34* m)
 // source is copied to a local first so dst may alias src; the translation
 // column is not written.
 // fn_800A0168
-extern "C" void fn_800A0168(Mtx34* dst, Mtx34* src)
+extern "C" void fn_800A0168(Mtx34* dst, const Mtx34* src)
 {
     Mtx34 t;
 
@@ -774,7 +774,7 @@ void Mtx34GetTranslation(Vec3* out, const Mtx34* m)
 }
 
 // Copy column `col` of a row-major 3x4 float matrix into a vector.
-void MtxGetColumn(Vec3* out, Mtx34* m, int col)
+void MtxGetColumn(Vec3* out, const Mtx34* m, int col)
 {
     out->x = m->m[col];
     out->y = m->m[col + 3];
@@ -783,14 +783,14 @@ void MtxGetColumn(Vec3* out, Mtx34* m, int col)
 
 // Copy element `index` of an array of Vec3 into a vector.
 // fn_800A025C
-extern "C" void fn_800A025C(Vec3* out, Vec3* arr, int index)
+extern "C" void fn_800A025C(Vec3* out, const Vec3* arr, int index)
 {
     *out = arr[index];
 }
 
 // Store a vector into the translation column (elements 9..11) of a row-major
 // 3x4 float matrix.
-void Mtx34StoreTranslation(Mtx34* m, Vec3* v)
+void Mtx34StoreTranslation(Mtx34* m, const Vec3* v)
 {
     m->m[9] = v->x;
     m->m[10] = v->y;
@@ -798,7 +798,7 @@ void Mtx34StoreTranslation(Mtx34* m, Vec3* v)
 }
 
 // Store a vector into column `col` of a row-major 3x4 float matrix.
-void Mtx34StoreColumn(Mtx34* m, Vec3* v, int col)
+void Mtx34StoreColumn(Mtx34* m, const Vec3* v, int col)
 {
     m->m[col] = v->x;
     m->m[col + 3] = v->y;
@@ -807,14 +807,14 @@ void Mtx34StoreColumn(Mtx34* m, Vec3* v, int col)
 
 // Store a vector into element `index` of an array of Vec3.
 // fn_800A02C0
-extern "C" void fn_800A02C0(Vec3* arr, Vec3* v, int index)
+extern "C" void fn_800A02C0(Vec3* arr, const Vec3* v, int index)
 {
     arr[index] = *v;
 }
 
 // Build a 3x4 matrix whose columns are the given translation with a zeroed
 // rotation basis.
-void Mtx34SetTranslation(Mtx34* m, Vec3* v)
+void Mtx34SetTranslation(Mtx34* m, const Vec3* v)
 {
     float zero = lbl_804D6AB4;
 
@@ -900,7 +900,7 @@ extern "C" double sqrt(double);
 // of the trace, the other three are derived from sums/differences of the
 // off-diagonal terms.
 // fn_800A0420
-extern "C" void fn_800A0420(int* out, int* in)
+extern "C" void fn_800A0420(int* out, const int* in)
 {
     int trace;
     int n;
@@ -1749,8 +1749,7 @@ int AnimBankGetSetCount(int bankId, int groupId, int setId)
 // When `out` is non-null the entry's pad word is stored there; the entry's
 // animation index is returned, or -1 if any level of the tree is missing.
 // fn_800A1BC8
-extern "C" int fn_800A1BC8(unsigned short bankId, unsigned short groupId,
-                      unsigned short setId, int index, unsigned int* out)
+extern "C" int fn_800A1BC8(unsigned short bankId, unsigned short groupId, unsigned short setId, int index, unsigned int* out)
 {
     AnimGroup* group;
     AnimSub* sub;
