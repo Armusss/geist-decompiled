@@ -1,6 +1,7 @@
-// u_80272060.cpp (0x80272060-0x8027337C): ODE collision utilities (box-plane, box-box helpers, segment
-// closest points, LineClosestApproach, CollideSpheres; ODE's collision_util.cpp). Split from u_8026C200.
-// Evidence: own .sdata2 pool 0x804DA228-0x804DA258 (0.5f, -1, 1, 2 and the 0.5/3.0 doubles again).
+// u_80272060.cpp (0x80272060-0x8027243C): ODE 0.5 collision_transform.cpp: dCollideTransform (the class-6
+// collider installed by initColliders, see u_8026A37C) and dxGeomTransform::computeFinalTx, the only parts of
+// the file that survive the link. Split (2026-11-27) from the old u_80272060 range: from 0x8027243C on it is
+// collision_util.cpp (u_8027243C, which owns the .sdata2 pool); this file references no data.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 typedef unsigned long u32;
@@ -200,72 +201,92 @@ static inline void GeomLink(Geom* g, Geom** list)
 
 
 
-// TODO (not drafted yet, 0x1A4 bytes at 0x80272060): box against plane
-extern "C" int fn_80272060(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
-
-// TODO (not drafted yet, 0x238 bytes at 0x80272204): box-box helper (separating axis tests)
-extern "C" void fn_80272204(void);
-
-// TODO (not drafted yet, 0x654 bytes at 0x8027243C): closest points between a line segment and a box
-extern "C" void fn_8027243C(float* p1, float* p2, float* c, float* R, float* side, float* lret, float* bret);
-
-// TODO (not drafted yet, 0x640 bytes at 0x80272A90): closest points between two box segments
-extern "C" void fn_80272A90(void);
-
 static inline float Dot(const float* a, const float* b)
 {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
-// 0x802730D0: closest approach of two lines (dLineClosestApproach)
-void LineClosestApproach(float* pa, float* ua, float* pb, float* ub, float* alpha, float* beta)
+static inline float Dot14(const float* a, const float* b)
 {
-    float p[4];
-    p[0] = pb[0] - pa[0];
-    p[1] = pb[1] - pa[1];
-    p[2] = pb[2] - pa[2];
-    float uaub = Dot(ua, ub);
-    float q1 = Dot(ua, p);
-    float q2 = -Dot(ub, p);
-    float d = 1 - uaub * uaub;
-
-    if (d <= 0.0001f) {
-        *alpha = 0.0f;
-        *beta = 0.0f;
-    } else {
-        d = 1.0f / d;
-        *alpha = (q1 + uaub * q2) * d;
-        *beta = (uaub * q1 + q2) * d;
-    }
+    return a[0] * b[0] + a[1] * b[4] + a[2] * b[8];
 }
 
-// 0x8027317C: collides two spheres (dCollideSpheres)
-int CollideSpheres(float* p1, float r1, float* p2, float r2, ContactGeom* c)
-{
-    float d = SqrtF((p1[0] - p2[0]) * (p1[0] - p2[0]) + (p1[1] - p2[1]) * (p1[1] - p2[1])
-                    + (p1[2] - p2[2]) * (p1[2] - p2[2]));
+// The collider dispatcher (dCollide, collision_kernel.cpp).
+int GeomCollideDispatch(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
 
-    if (d > r1 + r2) {
+// ---- ODE 0.5 collision_transform.cpp (0x80272060-0x8027243C): the geometry transform class (dxGeomTransform),
+// registered for class 6 by initColliders. Only its collider and computeFinalTx survive the link.
+struct GeomTransform : Geom {
+    Geom* obj;           // 0x4c  the transformed geometry
+    int cleanup;         // 0x50
+    int infomode;        // 0x54  report the transform itself as g1
+    float finalPos[4];   // 0x58
+    float finalR[12];    // 0x68
+
+    void computeFinalTx();
+};
+
+// dMULTIPLY0_331 / dMULTIPLY0_333 (odemath.h): A = B*C.
+static inline void Multiply0_331(float* A, const float* B, const float* C)
+{
+    A[0] = Dot(B, C);
+    A[1] = Dot(B + 4, C);
+    A[2] = Dot(B + 8, C);
+}
+
+static inline void Multiply0_333(float* A, const float* B, const float* C)
+{
+    A[0] = Dot14(B, C);
+    A[1] = Dot14(B, C + 1);
+    A[2] = Dot14(B, C + 2);
+    A[4] = Dot14(B + 4, C);
+    A[5] = Dot14(B + 4, C + 1);
+    A[6] = Dot14(B + 4, C + 2);
+    A[8] = Dot14(B + 8, C);
+    A[9] = Dot14(B + 8, C + 1);
+    A[10] = Dot14(B + 8, C + 2);
+}
+
+// 0x80272060: collides a transformed geometry (dCollideTransform)
+extern "C" int fn_80272060(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
+{
+    GeomTransform* tr = (GeomTransform*)o1;
+    if (!tr->obj) {
         return 0;
     }
-    if (d <= 0.0f) {
-        c->pos[0] = p1[0];
-        c->pos[1] = p1[1];
-        c->pos[2] = p1[2];
-        c->normal[0] = 1.0f;
-        c->normal[1] = 0.0f;
-        c->normal[2] = 0.0f;
-        c->depth = r1 + r2;
-    } else {
-        float d1 = 1.0f / d;
-        c->normal[0] = (p1[0] - p2[0]) * d1;
-        c->normal[1] = (p1[1] - p2[1]) * d1;
-        c->normal[2] = (p1[2] - p2[2]) * d1;
-        float k = 0.5f * (r2 - r1 - d);
-        c->pos[0] = p1[0] + c->normal[0] * k;
-        c->pos[1] = p1[1] + c->normal[1] * k;
-        c->pos[2] = p1[2] + c->normal[2] * k;
-        c->depth = r1 + r2 - d;
+
+    float* posbak = tr->obj->pos;
+    float* Rbak = tr->obj->rot;
+    Body* bodybak = tr->obj->body;
+
+    if (tr->flags & GEOM_AABB_BAD) {
+        tr->computeFinalTx();
     }
-    return 1;
+    tr->obj->pos = tr->finalPos;
+    tr->obj->rot = tr->finalR;
+    tr->obj->body = o1->body;
+
+    int n = GeomCollideDispatch(tr->obj, o2, flags, contact, skip);
+
+    if (tr->infomode) {
+        for (int i = 0; i < n; i++) {
+            ContactGeom* c = (ContactGeom*)((char*)contact + skip * i);
+            c->g1 = o1;
+        }
+    }
+
+    tr->obj->pos = posbak;
+    tr->obj->rot = Rbak;
+    tr->obj->body = bodybak;
+    return n;
+}
+
+// 0x80272204: final transform of the encapsulated geometry (dxGeomTransform::computeFinalTx)
+void GeomTransform::computeFinalTx()
+{
+    Multiply0_331(finalPos, rot, obj->pos);
+    finalPos[0] += pos[0];
+    finalPos[1] += pos[1];
+    finalPos[2] += pos[2];
+    Multiply0_333(finalR, rot, obj->rot);
 }
