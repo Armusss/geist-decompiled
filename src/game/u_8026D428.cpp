@@ -315,6 +315,10 @@ extern "C" int fn_8026DEAC(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
     return RaySphereTest(ray, sphere->pos, sphere->radius, contact, 0);
 }
 
+// ODE's dot-product macros (odemath.h)
+#define dDOTpq(a, b, p, q) ((a)[0] * (b)[0] + (a)[p] * (b)[q] + (a)[2 * (p)] * (b)[2 * (q)])
+#define dDOT14(a, b) dDOTpq(a, b, 1, 4)
+
 static inline float Dot(const float* a, const float* b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
 static inline float Dot14(const float* a, const float* b) { return a[0] * b[0] + a[1] * b[4] + a[2] * b[8]; }
 
@@ -437,8 +441,33 @@ extern "C" int fn_8026E9C8(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
 // TODO (not drafted yet, 0x770 bytes at 0x8026EAAC): capsule against capsule
 extern "C" int fn_8026EAAC(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
 
-// TODO (not drafted yet, 0x2B4 bytes at 0x8026F21C): capsule against plane
-extern "C" int fn_8026F21C(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
+// Box-box contact generation (dBoxBox); later in this unit.
+extern "C" int fn_8026FA3C(const float* p1, const float* R1, const float* side1, const float* p2,
+                           const float* R2, const float* side2, float* normal, float* depth, int* return_code,
+                           int maxc, ContactGeom* contact, int skip);
+
+enum { NUMC_MASK = 0xffff };
+#define CONTACT(p, skip) ((ContactGeom*)(((char*)p) + (skip)))
+
+// 0x8026F21C: box against box (dCollideBoxBox)
+extern "C" int fn_8026F21C(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
+{
+    float normal[4];
+    float depth;
+    int code;
+    BoxGeom* b1 = (BoxGeom*)o1;
+    BoxGeom* b2 = (BoxGeom*)o2;
+    int num = fn_8026FA3C(o1->pos, o1->rot, b1->side, o2->pos, o2->rot, b2->side, normal, &depth, &code,
+                          flags & NUMC_MASK, contact, skip);
+    for (int i = 0; i < num; i++) {
+        CONTACT(contact, i * skip)->normal[0] = -normal[0];
+        CONTACT(contact, i * skip)->normal[1] = -normal[1];
+        CONTACT(contact, i * skip)->normal[2] = -normal[2];
+        CONTACT(contact, i * skip)->g1 = o1;
+        CONTACT(contact, i * skip)->g2 = o2;
+    }
+    return num;
+}
 
 // 0x8026F4D0: sphere against plane (dCollideSpherePlane)
 extern "C" int fn_8026F4D0(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
@@ -478,17 +507,156 @@ extern "C" int fn_8026F9F8(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
     return CollideSpheres(o1->pos, s1->radius, o2->pos, s2->radius, contact);
 }
 
-// TODO (not drafted yet, 0x1708 bytes at 0x8026FA3C): box against box
-extern "C" int fn_8026FA3C(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
+// TODO (not drafted yet, 0x1708 bytes at 0x8026FA3C): box-box contact generation (dBoxBox)
 
-// TODO (not drafted yet, 0x3C4 bytes at 0x80271144): polygon point culling (cullPoints)
-extern "C" void fn_80271144(int n, float* p, int m, int i0, int* iret);
+// ODE's float pi (M_PI as a dReal)
+#define M_PI 3.1415926535897932384626433832795029f
 
-// TODO (not drafted yet, 0x20C bytes at 0x80271508): clips a quad against a rectangle (intersectRectQuad)
-extern "C" int fn_80271508(float* h, float* p, float* ret);
+extern "C" double atan2(double y, double x);
 
-// TODO (not drafted yet, 0x18C bytes at 0x80271714): signed depth of a point in a capsule
-extern "C" float fn_80271714(float x, float y, float z, Geom* capsule);
+// 0x80271144: picks m of the n polygon points p[], spread evenly in angle around the centroid,
+// starting with point i0 (cullPoints)
+extern "C" void fn_80271144(int n, float* p, int m, int i0, int* iret)
+{
+    // compute the centroid of the polygon in cx,cy
+    int i, j;
+    float a, cx, cy, q;
+    if (n == 1) {
+        cx = p[0];
+        cy = p[1];
+    } else if (n == 2) {
+        cx = 0.5f * (p[0] + p[2]);
+        cy = 0.5f * (p[1] + p[3]);
+    } else {
+        a = 0;
+        cx = 0;
+        cy = 0;
+        for (i = 0; i < (n - 1); i++) {
+            q = p[i * 2] * p[i * 2 + 3] - p[i * 2 + 2] * p[i * 2 + 1];
+            a += q;
+            cx += q * (p[i * 2] + p[i * 2 + 2]);
+            cy += q * (p[i * 2 + 1] + p[i * 2 + 3]);
+        }
+        q = p[n * 2 - 2] * p[1] - p[0] * p[n * 2 - 1];
+        a = 1.0f / (3.0f * (a + q));
+        cx = a * (cx + q * (p[n * 2 - 2] + p[0]));
+        cy = a * (cy + q * (p[n * 2 - 1] + p[1]));
+    }
+
+    // compute the angle of each point w.r.t. the centroid
+    float A[8];
+    for (i = 0; i < n; i++) {
+        A[i] = atan2(p[i * 2 + 1] - cy, p[i * 2] - cx);
+    }
+
+    // search for points that have angles closest to A[i0] + i*(2*pi/m).
+    int avail[8];
+    for (i = 0; i < n; i++) {
+        avail[i] = 1;
+    }
+    avail[i0] = 0;
+    iret[0] = i0;
+    iret++;
+    for (j = 1; j < m; j++) {
+        a = float(j) * (2 * M_PI / m) + A[i0];
+        if (a > M_PI) {
+            a -= 2 * M_PI;
+        }
+        float maxdiff = 1e9, diff;
+        for (i = 0; i < n; i++) {
+            if (avail[i]) {
+                diff = FAbs(A[i] - a);
+                if (diff > M_PI) {
+                    diff = 2 * M_PI - diff;
+                }
+                if (diff < maxdiff) {
+                    maxdiff = diff;
+                    *iret = i;
+                }
+            }
+        }
+        avail[*iret] = 0;
+        iret++;
+    }
+}
+
+// 0x80271508: clips a quad against a rectangle (intersectRectQuad); returns the point count
+extern "C" int fn_80271508(float* h, float* p, float* ret)
+{
+    // q (and r) contain nq (and nr) coordinate points for the current (and chopped) polygons
+    int nq = 4, nr;
+    float buffer[16];
+    float* q = p;
+    float* r = ret;
+    for (int dir = 0; dir <= 1; dir++) {
+        // direction notation: xy[0] = x axis, xy[1] = y axis
+        for (int sign = -1; sign <= 1; sign += 2) {
+            // chop q along the line xy[dir] = sign*h[dir]
+            float* pq = q;
+            float* pr = r;
+            nr = 0;
+            for (int i = nq; i > 0; i--) {
+                // go through all points in q and all lines between adjacent points
+                if (sign * pq[dir] < h[dir]) {
+                    // this point is inside the chopping line
+                    pr[0] = pq[0];
+                    pr[1] = pq[1];
+                    pr += 2;
+                    nr++;
+                    if (nr & 8) {
+                        q = r;
+                        goto done;
+                    }
+                }
+                float* nextq = (i > 1) ? pq + 2 : q;
+                if ((sign * pq[dir] < h[dir]) ^ (sign * nextq[dir] < h[dir])) {
+                    // this line crosses the chopping line
+                    pr[1 - dir] = pq[1 - dir] + (nextq[1 - dir] - pq[1 - dir]) / (nextq[dir] - pq[dir]) * (sign * h[dir] - pq[dir]);
+                    pr[dir] = sign * h[dir];
+                    pr += 2;
+                    nr++;
+                    if (nr & 8) {
+                        q = r;
+                        goto done;
+                    }
+                }
+                pq += 2;
+            }
+            q = r;
+            r = (q == ret) ? buffer : ret;
+            nq = nr;
+        }
+    }
+done:
+    if (q != ret) {
+        memcpy(ret, q, nr * 2 * sizeof(float));
+    }
+    return nr;
+}
+
+// 0x80271714: signed depth of a point inside a capsule (dGeomCCylinderPointDepth)
+extern "C" float fn_80271714(float x, float y, float z, Geom* g)
+{
+    CapsuleGeom* c = (CapsuleGeom*)g;
+    float* pos = g->pos;
+    float* R = g->rot;
+    float a[3];
+
+    a[0] = x - pos[0];
+    a[1] = y - pos[1];
+    a[2] = z - pos[2];
+    float beta = dDOT14(a, R + 2);
+    float lz2 = c->lz * 0.5f;
+    if (beta < -lz2) {
+        beta = -lz2;
+    } else if (beta > lz2) {
+        beta = lz2;
+    }
+    a[0] = pos[0] + beta * c->rot[0 * 4 + 2];
+    a[1] = pos[1] + beta * c->rot[1 * 4 + 2];
+    a[2] = pos[2] + beta * c->rot[2 * 4 + 2];
+    return c->radius - SqrtF((x - a[0]) * (x - a[0]) + (y - a[1]) * (y - a[1]) + (z - a[2]) * (z - a[2]));
+}
 
 // 0x802718A0: reads a capsule's radius and length
 void CapsuleGetParams(Geom* g, float* radius, float* length)
