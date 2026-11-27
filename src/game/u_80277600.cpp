@@ -241,7 +241,7 @@ static void initObject(dObject* obj, dxWorld* w) {
 }
 
 typedef void dstepper_fn_t(dxWorld* world, void* body, int nb, void* joint, int nj, float stepsize);
-extern "C" void fn_80279558(void);  // dInternalStepIsland (step.cpp)
+extern "C" void fn_80279558(void);  // dxQuickStepper (quickstep.cpp)
 extern "C" void fn_8027BD5C(void);  // dxProcessIslands (util.cpp)
 void dxProcessIslands(dxWorld* world, float stepsize, dstepper_fn_t* stepper);
 void dInternalStepIsland(dxWorld* world, void* body, int nb, void* joint, int nj, float stepsize);
