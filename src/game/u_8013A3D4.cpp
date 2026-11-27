@@ -280,9 +280,9 @@ void Draw3DBegin(int mode, void* setup)
 // directions, interpolating the colour and the offsets across the strip.
 extern "C" int rand(void);
 
-void DrawTrailStrip(int start, u8 r0, u8 g0, u8 b0, u8 a0,
-                    u8 r1, u8 g1, u8 b1, u8 a1,
-                    f32 height, f32 density, f32 x0, f32 x1, f32 jitter)
+void DrawTrailStrip(f32 height, f32 density, f32 x0, f32 x1, f32 jitter,
+                    int start, u8 r0, u8 g0, u8 b0, u8 a0,
+                    u8 r1, u8 g1, u8 b1, u8 a1)
 {
     int n = (int)(24.0f * density * height);
     if (n > 1) {

@@ -676,7 +676,7 @@ config.libs = [
             Object(Matching, "game/u_80157730.cpp"),  # guess
             Object(NonMatching, "game/u_80158C3C.cpp"),  # split from u_80157730 (own Buffer-template block)
             Object(NonMatching, "game/u_80159AF4.cpp"),  # split from u_80157730 (own Buffer-template block)
-            Object(NonMatching, "game/u_8015AA24.cpp"),  # split from u_80157730 (own Buffer-template block)
+            Object(Matching, "game/u_8015AA24.cpp"),  # split from u_80157730 (own Buffer-template block)
             Object(Matching, "game/Hazard.cpp"),  # (helper-game-b)
             Object(Matching, "game/EvacPoint.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_8015C79C.cpp"),  # split from u_80157730

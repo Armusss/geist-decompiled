@@ -20,8 +20,8 @@ void ActorAim(int*, Actor*, int);
 void ActorGetMatrix(Mtx34*, Actor*);
 void SplineHermiteEval(f32 t, Vec3* p0, Vec3* t0, Vec3* p1, Vec3* t1, Vec3* out);
 void Draw3DBeginLine(int texture, void* xf, f32 width);
-void DrawTrailStrip(int start, u8 r0, u8 g0, u8 b0, u8 a0, u8 r1, u8 g1, u8 b1, u8 a1, f32 len, f32 step,
-                    f32 w0, f32 w1, f32 tile);
+void DrawTrailStrip(f32 len, f32 step, f32 w0, f32 w1, f32 tile, int start, u8 r0, u8 g0, u8 b0, u8 a0, u8 r1, u8 g1,
+                    u8 b1, u8 a1);
 void DrawDisableTexOffsets();
 
 extern "C" {
@@ -357,10 +357,10 @@ void fn_8015B5B4(TimedFx* fx) {
 
         if (fx->type == 0 || fx->type == 1) {
             Draw3DBeginLine(-4, &fx->u.line.place, lineW);
-            DrawTrailStrip(start, fx->col[0], fx->col[1], fx->col[2], alpha, fx->col[3], fx->col[4], fx->col[5],
-                           alpha, fx->u.line.len, 0.005f, w0, w0, 8.0f);
-            DrawTrailStrip(start + 0xb4, fx->col[0], fx->col[1], fx->col[2], alpha, fx->col[3], fx->col[4],
-                           fx->col[5], alpha, fx->u.line.len, 0.005f, w1, w1, 8.0f);
+            DrawTrailStrip(fx->u.line.len, 0.005f, w0, w0, 8.0f, start, fx->col[0], fx->col[1], fx->col[2], alpha,
+                           fx->col[3], fx->col[4], fx->col[5], alpha);
+            DrawTrailStrip(fx->u.line.len, 0.005f, w1, w1, 8.0f, start + 0xb4, fx->col[0], fx->col[1], fx->col[2],
+                           alpha, fx->col[3], fx->col[4], fx->col[5], alpha);
             DrawDisableTexOffsets();
         } else if (fx->type == 2 || fx->type == 3) {
             int i;
@@ -398,8 +398,8 @@ void fn_8015B5B4(TimedFx* fx) {
                 gb = LerpU8(fx->col[1], fx->col[4], t1);
                 bb = LerpU8(fx->col[2], fx->col[5], t1);
                 Draw3DBeginLine(-4, &m, lineW);
-                DrawTrailStrip(start, ra, ga, ba, alpha, rb, gb, bb, alpha, fn_800E1020(&d), 0.005f, w0, w0, 8.0f);
-                DrawTrailStrip(start, ra, ga, ba, alpha, rb, gb, bb, alpha, fn_800E1020(&d), 0.005f, w0, w0, 8.0f);
+                DrawTrailStrip(fn_800E1020(&d), 0.005f, w0, w0, 8.0f, start, ra, ga, ba, alpha, rb, gb, bb, alpha);
+                DrawTrailStrip(fn_800E1020(&d), 0.005f, w0, w0, 8.0f, start, ra, ga, ba, alpha, rb, gb, bb, alpha);
                 DrawDisableTexOffsets();
             }
         }
