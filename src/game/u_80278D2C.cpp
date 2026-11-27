@@ -16,7 +16,6 @@ typedef dReal dVector4[4];
 
 #define REAL(x) (x##f)
 #define M_SQRT1_2 REAL(0.7071067811865475244008443621048490)
-#define dFabs(x) ((float)__fabs(x))
 #define dSqrt(x) _dSqrtf(x)
 #define dRecipSqrt(x) ((float)(1.0f / dSqrt(x)))
 #define dCopySign(a, b) ((dReal)copysign(a, b))
@@ -24,6 +23,12 @@ typedef dReal dVector4[4];
 
 extern "C" double copysign(double x, double y);
 extern int __float_nan[];
+
+// The game's MSL fabs/fabsf (inline in its math.h): the double inline inside fabsf gives dNormalize3 its
+// fabs/frsp register pattern.
+static inline double _fabs(double x) { return __fabs(x); }
+static inline float _fabsf(float x) { return (float)_fabs((double)x); }
+#define dFabs(x) _fabsf(x)
 
 // The game's MSL sqrtf (inline in its math.h), as in ode/matrix.cpp.
 static inline int _dFpClassifyf(float x) {
@@ -122,8 +127,8 @@ extern "C" void fn_8027914C(dVector3 a) {
             a0 /= aa1;
             a2 /= aa1;
             l = dRecipSqrt(a0 * a0 + a2 * a2 + 1);
-            a[1] = dCopySign(l, a1);
             a[0] = a0 * l;
+            a[1] = dCopySign(l, a1);
             a[2] = a2 * l;
         }
     } else {
@@ -132,9 +137,9 @@ extern "C" void fn_8027914C(dVector3 a) {
             a0 /= aa2;
             a1 /= aa2;
             l = dRecipSqrt(a0 * a0 + a1 * a1 + 1);
-            a[2] = dCopySign(l, a2);
             a[0] = a0 * l;
             a[1] = a1 * l;
+            a[2] = dCopySign(l, a2);
         } else {  // aa0 is largest
             if (aa0 <= 0) {
                 a[0] = 1;  // if all a's are zero, this is where we'll end up.
