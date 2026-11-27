@@ -47,7 +47,7 @@ void GhostShotDrawAll();
 void GhostShotUpdateAll(f32);
 void GrenadeInit();
 void GrenadeLoadTexture();
-void GrenadeNop();
+void GrenadeNop(f32);
 void GrenadeRemoveAll();
 void LinkInfoInit(void*);
 f32 LoadingTime();
