@@ -1,7 +1,8 @@
-// u_80157730.cpp: the master game file (0x80157730-0x8015C080). It boots and tears down every
+// u_80157730.cpp: the master game file (0x80157730-0x80158C3C). It boots and tears down every
 // game subsystem, runs the per-frame update and draw passes, shows the save-file prompt and
 // manages the shared per-player HUD/effect pools (small handle arrays in .sbss).
 // Names are descriptive guesses; the code is matched against the retail DOL.
+// StoreCheck__FiPCcUl keeps its symbols.txt prototype; the callers here pass 1 as its second argument.
 
 #include "game/types.h"
 #include "game/string.h"
@@ -20,16 +21,29 @@ typedef double f64;
 struct Actor;
 struct Vec3;
 
-// From a shared header: names of the ghost actions (the table itself is unused here), and the
-// save-file prompt text, which is referenced only through a pointer table in .sdata.
+// From a shared header: names of the ghost actions (the table itself is unused here).
 static const char* sActionNames[] = {
     "POSSESS", "GHOSTACTION", "SLIP", "HIJACK", "HOSTACTION", "EXCHANGE", "H_HIJACK", "TALK", "SCAN",
 };
-static const char* sSaveFileMessage =
-    "NO GEIST SAVE FILE FOUND.  A NEW\nGEIST SAVE FILE WILL NOW BE CREATED.\n                  OK";
 
 // --- engine functions with C++ linkage (mangled names in symbols.txt) ---
 int ReflectUpdateCamera();
+int SaveCommand(int cmd, int arg);
+void RoomsFrame();
+int StoreCheck(int mode, const char* name, unsigned long flags);
+void SaveUpdate(f32);
+void SaveRestoreBlocks();
+void WeatherInit();
+void WeatherLatchInit();
+void WeatherBuildTable();
+void WeatherReset();
+void StatReset();
+void HazardDebugDrawSpheres();
+void GhostsTick(f32);
+void GhostSystemInit();
+void GhostSystemReset();
+void EffectListFreeAll();
+void EffectListUpdate(f32);
 int ReflectRender(int);
 void ReflectEnd();
 void HostExtra(Actor*);
@@ -53,11 +67,11 @@ void GhostShotDrawAll();
 void GhostShotUpdateAll(f32);
 void GrenadeInit();
 void GrenadeLoadTexture();
-void GrenadeNop();
+void GrenadeNop(f32);
 void GrenadeRemoveAll();
 void LinkInfoInit(void*);
 f32 LoadingTime();
-void PlayerInHost(Actor*);
+int PlayerInHost(Actor*);
 int Rand();
 void SltAssetInit();
 void SltEffectCleanup();
@@ -67,41 +81,11 @@ void SystemPoll();
 void TextureLoad(short*, int);
 void* VAlloc(int);
 void VFree(void*);
-void* fn_8000AA20Probe();
-void fn_8013A3D4();
-void fn_8013A834(f32, f32, void*, u8, u8, u8, u8);
-void fn_8013AC68(int, int);
-void fn_8013ADF4(f64, f64, f64, f64, f64, int, int, int, int, int, int, int, int, int);
-void fn_8013B5D4();
-void fn_8013B608(void*, void*, u8, u8, u8, u8, u8, u8, u8, u8);
-void fn_8013B6F8(f32, int, void*);
-void fn_801EA880(void*, void*, int, int, int, int, int);
-void fn_801EAEAC();
-void fn_80210D80(int, int, int, int, int, int, int);
-void fn_80210FC8(f32, f64, f64, int, int, int, int, void*, void*, void*);
-void fn_802113F0(f32, int, int, int, void*);
-void fn_80211470(f32, int, int, int);
-void fn_80211638(f64, int, f64, f64, int, void*, void*, int, int);
-void fn_8028B2D4(void*);
-int fn_800391DC(int);
-void fn_8028B35C(void*, void*, int);
-void* fn_8028B3BC(void*, void*, int);
-void fn_8028B960(void*);
-void fn_8028B9C0(void*, int);
-void fn_8028BA9C(void*);
-// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
-// array overrides here call directly. Class and member names are guesses.
-class ScreenEffectBuffer {
-public:
-    void Commit(int start, unsigned long size);
-    void Append(unsigned char* data, unsigned long size);
-};
-void fn_800A0094(void*, void*);
-void fn_800A0100(void*);
-f32 fn_800A1394(f32);
-void fn_800A1418();
 
 extern "C" {
+void AudioNop();
+void fn_801EA880(void*, void*, int, int, int, int, int);
+void fn_801EAEAC();
 void memset(void*, int, u32);
 int SendMsg(int to, int msg, void* data);
 void rand();
@@ -112,69 +96,43 @@ void fn_80008F58();
 void fn_80008F64();
 void fn_80009E10();
 void fn_80009E44(int, int);
-void fn_8000BA8C(f64, f64, f64, f64, f64, f64);
-void fn_8000DDD0();
-void fn_8000F738(void*);
+void fn_8000BA8C(f32, f32, f32, f32, f32, f32);
 void fn_8001CE28();
-int fn_80049750();
-void fn_80049948();
-void fn_8007CF04();
-void fn_800D35B0(int, int, const char*);
-void fn_800F1138(int, int, void (*)(int*));
-void fn_8018D2D4();
-void fn_8018D79C(f32);
-void fn_801A001C();
 void fn_8001D040();
 void fn_8001D258();
-void fn_8001D858();
 void fn_8002756C();
 void fn_80027690(int);
 int fn_80027A58(int, void*, void*, int, int);
 void fn_800390F4(int);
 int fn_800391DC(int);
 void fn_8003F15C(f32, int, void*, int, int, int);
-int fn_80045524(int, int, int);
 void fn_800499E8(f64, int);
 void fn_8007902C();
 void fn_8007AE7C();
 void fn_8007AFBC();
-u32 fn_8007EB34(u32, u32);
 void fn_800857A8();
-void fn_80093F88(int, int, int, int, int);
+void fn_80093F88(int, u8, u8, u8, u8);
 void fn_80096C74(f64, f64);
 void fn_80096DD0(int, int, int, int);
 void fn_80097DD0(f64, int);
 void fn_8009851C(u32, u32, u32);
 void fn_8009EC5C(void*, void*);
-void fn_8009ED70(void*, void*);
-void fn_8009F700(void*, void*, int);
 void fn_8009F7A8(void*, void*);
 void fn_800B9520();
 void fn_800BB3A0();
-void fn_800C5654(u32, u32, u32);
 void fn_800C5E5C();
 void fn_800C5E9C(int);
 int fn_800C6448();
-void fn_800DE0C4(f64);
-int SaveCommand(int, int);
-void fn_800DE9D8();
 void fn_800EBBB8(f64, int, int);
 void fn_800EC614(int, int, int, int);
 void fn_800EC80C(int, int, int, int);
 void fn_800EC9DC(int, int, int, int);
 void fn_800ECB18();
-void fn_800F0D24();
-void fn_800F0DFC();
-void fn_800F0ED4();
 void fn_800F39E0();
-void fn_800F45F8();
-void fn_800F4854();
 void fn_800F4ACC();
 void fn_800F4EE0();
 void fn_800F4F0C();
 void fn_800F6264(f32);
-void fn_800F671C();
-void fn_800F6804();
 u32 fn_800F7994(int, u32);
 int fn_800FD3EC();
 void fn_800FD924(int);
@@ -186,20 +144,8 @@ void fn_800FDC78();
 void fn_800FF294(int);
 void fn_800FF530(f32);
 void fn_800FF66C();
-void fn_80100EB0(f64, void*, void*, void*, void*, void*);
 void fn_801116E4();
-void fn_80120D60();
-void fn_80122590();
 void fn_8013ECCC();
-void fn_80153C10(f32);
-void fn_80156AA0();
-void fn_80156AA4();
-void fn_80160B3C(f32);
-void fn_80160B40();
-void fn_80160B80();
-void fn_8016BEF8(f32);
-void fn_8016C120();
-void fn_8016C198();
 void fn_8016F120(int, void*);
 void fn_8016F8EC();
 void fn_801764F0();
@@ -262,9 +208,7 @@ void fn_8028A8D4();
 int fn_802A1D04();
 void fn_802A20A4();
 void fn_802A214C();
-void fn_802A3AB8();
 void fn_802A3BEC();
-void fn_802A3BF0(f32);
 void fn_802A3CE0();
 void fn_802A3D50();
 void fn_802A815C();
@@ -373,13 +317,22 @@ FxPoolEntry lbl_8046DDE8[4];
 FxPoolEntry lbl_8046DE38[4];
 FocusFx lbl_8046DE88[4];
 
-extern FxPoolEntry* lbl_804D4E34;
-extern FxPoolEntry* lbl_804D4E44;
-extern FocusFx* lbl_804D4E48;
+
+// The object a HUD draw request is sent to (its message id at 0x38).
+struct HudObj {
+    u8 pad00[0x38];
+    s32 id;          // 0x38
+};
+
+// The current 2D placement returned by fn_800C6448 (position at 0x0C).
+struct HudPlace {
+    u8 pad00[0x0C];
+    f32 x, y, z;     // 0x0C
+};
 
 // A 2D draw request posted to an object with message 0x7300.
 struct HudDraw {
-    void* obj;       // 0x00
+    HudObj* obj;     // 0x00
     s32 unk04;       // 0x04
     s32 unk08;       // 0x08
     s32 unk0C;       // 0x0C
@@ -389,7 +342,7 @@ struct HudDraw {
     s32 unk1C;       // 0x1C
     u8 color[4];     // 0x20
     f32 srcX;        // 0x24
-    s32 srcYi;       // 0x28
+    f32 srcY;        // 0x28
     f32 srcZ;        // 0x2C
     s32 unk30;       // 0x30
     s32 unk34;       // 0x34
@@ -401,59 +354,78 @@ struct HudDraw {
     f32 colA;        // 0x4C
     u8 pad50[12];    // 0x50
     f32 dstX;        // 0x5C
-    s32 dstYi;       // 0x60
+    f32 dstY;        // 0x60
     f32 dstZ;        // 0x64
     s32 unk68;       // 0x68
     u8 pad6C[0x210 - 0x6C];
 };
 
-// --- data ---
-extern f32 lbl_804D4E30;
-extern s32 lbl_804D4E5C, lbl_804D4E60, lbl_804D4E64, lbl_804D4E68, lbl_804D4E6C, lbl_804D4E70;
-extern s32 lbl_804D4E74, lbl_804D4E78, lbl_804D4E7C, lbl_804D4E80, lbl_804D4E84, lbl_804D4E88;
-extern s32 lbl_804D4E8C, lbl_804D4E90, lbl_804D4E94, lbl_804D4E98;
-extern s32 gSaveLoaded;
+static inline void HudDrawInit(HudDraw* hud, HudPlace* place) {
+    f32 z, y, x;
 
-extern s32 lbl_804D2F28;
-extern f32 lbl_804D2F2C;
-extern f32 lbl_804D2F30;
-extern f32 lbl_804D2F34;
-extern s32 lbl_804D2F38;
-extern s32 lbl_804D2F3C;
-extern f32 lbl_804D2F40;
-extern f32 lbl_804D2F44;
-extern u32 lbl_804D2F48;
-extern f32 lbl_804D2F50;
+    memset(hud, 0, sizeof(HudDraw));
+    hud->unk04 = 1;
+    x = place->x;
+    y = place->y;
+    z = place->z;
+    x += 0.2f;
+    z -= 0.2f;
+    hud->unk10 = 1;
+    hud->unk18 = 1;
+    hud->unk1C = 1;
+    hud->color[0] = 0xff;
+    hud->color[1] = 0xff;
+    hud->color[2] = 0xff;
+    hud->color[3] = 0xff;
+    hud->srcX = x;
+    hud->srcY = y;
+    hud->srcZ = z;
+    hud->unk30 = 0;
+    hud->unk3C = 0;
+    hud->colR = 1.0f;
+    hud->colG = 1.0f;
+    hud->colB = 1.0f;
+    hud->colA = 1.0f;
+    hud->dstX = x;
+    hud->dstY = y;
+    hud->dstZ = z;
+    hud->unk68 = -32;
+}
+
+// --- data ---
+// .sdata
+s32 lbl_804D2F28 = 1;
+f32 lbl_804D2F2C = 1.2f;
+f32 lbl_804D2F30 = 0.5f;
+f32 lbl_804D2F34 = 0.4f;
+s32 lbl_804D2F38 = 1;
+s32 lbl_804D2F3C = 1;
+f32 lbl_804D2F40 = 255.0f;
+f32 lbl_804D2F44 = 4000.0f;
+// The save-file prompt text.
+const char* lbl_804D2F48 =
+    "NO GEIST SAVE FILE FOUND.  A NEW\nGEIST SAVE FILE WILL NOW BE CREATED.\n                  OK";
+
+// .sbss
+f32 lbl_804D4E30;
+FxPoolEntry* lbl_804D4E34;
+s32 lbl_804D4E38, lbl_804D4E3C, lbl_804D4E40;
+FxPoolEntry* lbl_804D4E44;
+FocusFx* lbl_804D4E48;
+s32 lbl_804D4E4C, lbl_804D4E50, lbl_804D4E54;
+f32 lbl_804D4E58;
+s32 lbl_804D4E5C, lbl_804D4E60, lbl_804D4E64, lbl_804D4E68, lbl_804D4E6C, lbl_804D4E70;
+s32 lbl_804D4E74, lbl_804D4E78, lbl_804D4E7C, lbl_804D4E80, lbl_804D4E84, lbl_804D4E88;
+s32 lbl_804D4E8C, lbl_804D4E90, lbl_804D4E94, lbl_804D4E98;
+
+extern s32 gSaveLoaded;
 extern s32 gCamLetterbox;
 
+// The prompt text colour (.sdata2, ahead of the literal pool).
 struct PromptColor {
     u32 rgba;
 };
-extern const PromptColor lbl_804D7CE8;
-
-extern u32 lbl_803A59C8[];
-extern u32 lbl_803A6FA8[8];
-extern u32 lbl_803A6FC8[8];
-extern u32 lbl_803A6FE8[8];
-extern u32 lbl_803A7008[8];
-extern u32 lbl_803A7028[8];
-extern u32 lbl_803A7048[8];
-
-// Resizable pointer array used by the effect pools.
-class ResArray {
-public:
-    virtual ~ResArray();
-    s32 unk04;     // 0x04
-    s32 size;      // 0x08 (bytes)
-    void** data;   // 0x0C
-};
-
-extern ResArray* lbl_804D4EA0;
-extern ResArray* lbl_804D4EA8;
-extern ResArray* lbl_804D4EB0;
-extern f32 lbl_804D4EB4;
-
-extern u8 lbl_80346630[16];
+const PromptColor lbl_804D7CE8 = {0xC8C8C8FF};
 
 extern "C" {
 
@@ -465,7 +437,7 @@ void fn_80157730() {
     fn_80186754();
     fn_8028A388();
     fn_802C2D20();
-    fn_802A3AB8();
+    EffectListFreeAll();
     fn_80158F90();
     fn_80159B2C();
     fn_8015AA24();
@@ -486,345 +458,273 @@ void fn_80157730() {
 // per-player HUD effect pools. dt is the frame time, mode selects the front-end/in-game path,
 // view is the player/view index (-1 for the unused view) and flag suppresses the loading screen.
 void fn_8015779C(f32 dt, int mode, int view, int flag) {
-    int i;
-    int n;
+    if (fn_801B829C(view) != 0) {
+        return;
+    }
+    if (fn_80215B40(view) != 0) {
+        if (view == -1) {
+            fn_8007F064(0, -1);
+        }
+        return;
+    }
+    lbl_804D4E34 = 0;
+    if (view >= 0) {
+        lbl_804D4E34 = &lbl_8046DDE8[view];
+        if (lbl_804D4E34->state != 0) {
+            lbl_804D4E34->timer += dt;
+            if (lbl_804D4E34->timer > 333.0f) {
+                lbl_804D4E34->state = 2;
+            } else {
+                lbl_804D4E34->alpha = 0xff - (int)(255.0f * (lbl_804D4E34->timer / 333.0f));
+            }
+        }
+    }
+    lbl_804D4E44 = 0;
+    if (view >= 0) {
+        lbl_804D4E44 = &lbl_8046DE38[view];
+        if (lbl_804D4E44->state != 0) {
+            lbl_804D4E44->timer += dt;
+            if (lbl_804D4E44->timer > 333.0f) {
+                lbl_804D4E44->state = 2;
+            } else {
+                lbl_804D4E44->alpha = 0xff - (int)(255.0f * (lbl_804D4E44->timer / 333.0f));
+            }
+        }
+    }
+    lbl_804D4E48 = 0;
+    if (view >= 0) {
+        lbl_804D4E48 = &lbl_8046DE88[view];
+        if (lbl_804D4E48->state != 0) {
+            lbl_804D4E48->timer += dt;
+            if (lbl_804D4E48->timer > 333.0f) {
+                lbl_804D4E48->state = 2;
+            } else {
+                lbl_804D4E48->alpha = 0xff - (int)(255.0f * (lbl_804D4E48->timer / 333.0f));
+            }
+            if (lbl_804D4E48->timer < 4000.0f) {
+                lbl_804D4E48->textAlpha =
+                    (lbl_804D4E58 - lbl_804D2F40) * (lbl_804D4E48->timer / lbl_804D2F44) + lbl_804D2F40;
+            } else {
+                lbl_804D4E48->textAlpha = lbl_804D4E58;
+            }
+            if (lbl_804D4E48->fade > 0.0f) {
+                lbl_804D4E48->fade -= 0.0015f * dt;
+                if (lbl_804D4E48->fade <= 0.0f) {
+                    lbl_804D4E48->fade = 0.0f;
+                    HostExtra((Actor*)lbl_804D4E48->obj);
+                }
+            }
+            if (lbl_804D4E48->sndA != -1) {
+                fn_8007EE6C(lbl_804D4E48->sndA, 0, 0, (int)(255.0f * lbl_804D4E48->fade), 0, 0);
+            }
+            if (lbl_804D4E48->sndB != -1) {
+                fn_8007EE6C(lbl_804D4E48->sndB, (int)(20.0f * lbl_804D4E48->fade), 0, 0, 0, 0);
+            }
+        }
+    }
+    switch (mode) {
+    case 0:
+        if (lbl_804D4E48 != 0 && lbl_804D4E48->state != 0) {
+            HudDraw hud;
+            HudPlace* place = (HudPlace*)fn_800C6448();
 
-    if (fn_801B829C(view) == 0) {
-        if (fn_80215B40(view) == 0) {
-            lbl_804D4E34 = 0;
-            if (view >= 0) {
-                lbl_804D4E34 = &lbl_8046DDE8[view];
-                if (lbl_804D4E34->state != 0) {
-                    lbl_804D4E34->timer = lbl_804D4E34->timer + dt;
-                    if (lbl_804D4E34->timer <= 333.0f) {
-                        i = (int)(255.0f * (lbl_804D4E34->timer / 333.0f));
-                        lbl_804D4E34->alpha = 0xff - i;
-                    } else {
-                        lbl_804D4E34->state = 2;
-                    }
-                }
-            }
-            lbl_804D4E44 = 0;
-            if (view >= 0) {
-                lbl_804D4E44 = &lbl_8046DE38[view];
-                if (lbl_804D4E44->state != 0) {
-                    lbl_804D4E44->timer = lbl_804D4E44->timer + dt;
-                    if (lbl_804D4E44->timer <= 333.0f) {
-                        i = (int)(255.0f * (lbl_804D4E44->timer / 333.0f));
-                        lbl_804D4E44->alpha = 0xff - i;
-                    } else {
-                        lbl_804D4E44->state = 2;
-                    }
-                }
-            }
-            lbl_804D4E48 = 0;
             if (view >= 0) {
                 lbl_804D4E48 = &lbl_8046DE88[view];
-                if (lbl_804D4E48->state != 0) {
-                    lbl_804D4E48->timer = lbl_804D4E48->timer + dt;
-                    if (lbl_804D4E48->timer <= 333.0f) {
-                        i = (int)(255.0f * (lbl_804D4E48->timer / 333.0f));
-                        lbl_804D4E48->alpha = 0xff - i;
-                    } else {
-                        lbl_804D4E48->state = 2;
-                    }
-                    if (4000.0f <= lbl_804D4E48->timer) {
-                        lbl_804D4E48->textAlpha = 0.0f;
-                    } else {
-                        lbl_804D4E48->textAlpha =
-                            (0.0f - lbl_804D2F40) * (lbl_804D4E48->timer / lbl_804D2F44) +
-                            lbl_804D2F40;
-                    }
-                    if (0.0f < lbl_804D4E48->fade) {
-                        lbl_804D4E48->fade = -(0.0015f * dt - lbl_804D4E48->fade);
-                        if (lbl_804D4E48->fade <= 0.0f) {
-                            lbl_804D4E48->fade = 0.0f;
-                            HostExtra((Actor*)lbl_804D4E48->obj);
-                        }
-                    }
-                    if (lbl_804D4E48->sndA != -1) {
-                        fn_8007EE6C(lbl_804D4E48->sndA, 0, 0,
-                                    (int)(255.0f * lbl_804D4E48->fade), 0, 0);
-                    }
-                    if (lbl_804D4E48->sndB != -1) {
-                        fn_8007EE6C(lbl_804D4E48->sndB, (int)(20.0f * lbl_804D4E48->fade),
-                                    0, 0, 0, 0);
-                    }
-                }
+                fn_80093F88(-3, lbl_804D4E4C, lbl_804D4E50, lbl_804D4E54, 0xff);
+                fn_802154B0((int)lbl_804D4E48->textAlpha);
             }
-            if (mode == 1) {
-                if (lbl_804D2F28 != 0) {
-                    if (gCamLetterbox != 0) {
-                        fn_800FF294(0);
-                        fn_800FD924(0);
-                        fn_800499E8(dt, 0);
-                        fn_8007F064(2, 0);
-                    }
-                    fn_800499E8(dt, 0xffffffff);
-                }
-                if (CreditsTipVisible() != 0) {
-                    fn_8000BA8C(0.0f, 0.0f, 1.0f, 0.754f,
-                                1.0f, 1.0f);
-                }
-                fn_800FD924(0xffffffff);
-                fn_801EAEAC();
-                if (CreditsTipVisible() != 0) {
-                    fn_80009E44(0, 0);
-                }
-                fn_8007F064(0, 0xffffffff);
-                fn_801E4850();
-                fn_801EAEAC();
-            } else if (mode < 1 && -1 < mode) {
-                if (lbl_804D4E48 == 0 || lbl_804D4E48->state == 0) {
-                    if (lbl_804D4E44 == 0 || lbl_804D4E44->state == 0) {
-                        if (lbl_804D4E34 == 0 || lbl_804D4E34->state == 0) {
-                            n = ReflectUpdateCamera();
-                            for (i = 0; i < n; i++) {
-                                fn_80009E10();
-                                if (ReflectRender(i) != 0) {
-                                    fn_800857A8();
-                                    fn_80009E10();
-                                    fn_8001D858();
-                                    fn_8001D258();
-                                    fn_8001D040();
-                                    fn_8007AE7C();
-                                    fn_802A3BEC();
-                                    fn_801E092C();
-                                    fn_8017E5BC();
-                                    fn_801590A4();
-                                    fn_80009E10();
-                                    fn_80159C0C();
-                                    fn_8015AB3C();
-                                    fn_80122590();
-                                    fn_8007AE7C();
-                                    fn_80009E10();
-                                    fn_8007AFBC();
-                                    fn_800F0ED4();
-                                    fn_80009E10();
-                                    fn_801A001C();
-                                }
-                            }
-                            fn_800C5E9C(0);
-                            fn_8001D858();
-                            if (flag == 0) {
-                                fn_8001CE28();
-                            }
-                            fn_800857A8();
-                            fn_80009E10();
-                            fn_800C5E9C(0);
-                            fn_8001D258();
-                            fn_80228688();
-                            fn_8028A4BC();
-                            fn_802C2E5C();
-                            if (flag == 0) {
-                                fn_802886B4();
-                                fn_800C5E9C(0);
-                            }
-                            fn_8001D040();
-                            fn_8007AE7C();
-                            fn_802C2D5C();
-                            fn_801E092C();
-                            fn_8017E5BC();
-                            fn_801590A4();
-                            fn_80009E10();
-                            fn_80159C0C();
-                            fn_8015AB3C();
-                            fn_80122590();
-                            fn_8018D2D4();
-                            fn_8007AE7C();
-                            fn_80234900();
-                            fn_80200630();
-                            fn_801D60B4(dt);
-                            fn_8002756C();
-                            fn_8007902C();
-                            fn_8007CF04();
-                            fn_8016F8EC();
-                            fn_800BB3A0();
-                            fn_800B9520();
-                            fn_80009E10();
-                            fn_8007AFBC();
-                            if (view != -1) {
-                                fn_80008F64();
-                            }
-                        } else {
-                            HudDraw hud;
-                            int obj = fn_800C6448();
+            HudDrawInit(&hud, place);
+            fn_800C5E9C(0);
+            if (lbl_804D4E48->obj != 0) {
+                hud.obj = (HudObj*)lbl_804D4E48->obj;
+                SendMsg(hud.obj->id, 0x7300, &hud);
+            }
+            fn_80009E10();
+            DeferFlush3();
+            if (lbl_804D4E48->state == 1) {
+                u8 a = lbl_804D4E48->alpha;
+                fn_8009851C(a, a, a);
+            }
+            fn_801D60B4(dt);
+            if (view != -1) {
+                fn_80008F64();
+            }
+        } else if (lbl_804D4E44 != 0 && lbl_804D4E44->state != 0) {
+            HudDraw hud;
+            HudPlace* place = (HudPlace*)fn_800C6448();
 
-                            fn_80093F88(0xfffffffd, 0, 0, 0, 0xff);
-                            fn_802154B0(0xff);
-                            memset(&hud, 0, 0x210);
-                            hud.unk04 = 1;
-                            hud.srcX = *(f32*)(obj + 0xc) + 0.2f;
-                            hud.srcYi = *(s32*)(obj + 0x10);
-                            hud.srcZ = *(f32*)(obj + 0x14) - 0.2f;
-                            hud.unk10 = 1;
-                            hud.unk18 = 1;
-                            hud.unk1C = 1;
-                            hud.color[0] = 0xff;
-                            hud.color[1] = 0xff;
-                            hud.color[2] = 0xff;
-                            hud.color[3] = 0xff;
-                            hud.unk30 = 0;
-                            hud.unk3C = 0;
-                            hud.colR = 1.0f;
-                            hud.colG = 1.0f;
-                            hud.colB = 1.0f;
-                            hud.colA = 1.0f;
-                            hud.unk68 = -32;
-                            hud.dstX = hud.srcX;
-                            hud.dstYi = hud.srcYi;
-                            hud.dstZ = hud.srcZ;
-                            fn_800C5E9C(0);
-                            hud.obj = lbl_804D4E34->objA;
-                            SendMsg(*(s32*)((u8*)hud.obj + 0x38), 0x7300, &hud);
-                            hud.obj = lbl_804D4E34->objB;
-                            SendMsg(*(s32*)((u8*)hud.obj + 0x38), 0x7300, &hud);
-                            fn_80009E10();
-                            fn_800F0ED4();
-                            fn_80096C74(lbl_804D2F2C, lbl_804D2F30);
-                            for (i = 0; i < lbl_804D2F38; i++) {
-                                fn_80097DD0(lbl_804D2F34, 0);
-                            }
-                            if (lbl_804D2F3C != 0) {
-                                fn_80096DD0(0xff, 0xff, 0xff, 0xc0);
-                            }
-                            if (lbl_804D4E34->state == 1) {
-                                u32 a = lbl_804D4E34->alpha & 0xff;
-                                fn_8009851C(a, a, a);
-                            }
-                        }
-                    } else {
-                        HudDraw hud;
-                        int obj = fn_800C6448();
+            HudDrawInit(&hud, place);
+            fn_800C5E9C(0);
+            if (lbl_804D4E44->objB != 0) {
+                hud.obj = (HudObj*)lbl_804D4E44->objB;
+                SendMsg(hud.obj->id, 0, &hud);
+            }
+            if (lbl_804D4E44->objA != 0) {
+                hud.obj = (HudObj*)lbl_804D4E44->objA;
+                SendMsg(hud.obj->id, 0x7300, &hud);
+            }
+            fn_80009E10();
+            DeferFlush3();
+            if (lbl_804D4E44->state == 1) {
+                u8 a = lbl_804D4E44->alpha;
+                fn_8009851C(a, a, a);
+            }
+        } else if (lbl_804D4E34 != 0 && lbl_804D4E34->state != 0) {
+            HudDraw hud;
+            HudPlace* place = (HudPlace*)fn_800C6448();
+            int i;
 
-                        memset(&hud, 0, 0x210);
-                        hud.unk04 = 1;
-                        hud.srcX = *(f32*)(obj + 0xc) + 0.2f;
-                        hud.srcYi = *(s32*)(obj + 0x10);
-                        hud.srcZ = *(f32*)(obj + 0x14) - 0.2f;
-                        hud.unk10 = 1;
-                        hud.unk18 = 1;
-                        hud.unk1C = 1;
-                        hud.color[0] = 0xff;
-                        hud.color[1] = 0xff;
-                        hud.color[2] = 0xff;
-                        hud.color[3] = 0xff;
-                        hud.unk30 = 0;
-                        hud.unk3C = 0;
-                        hud.colR = 1.0f;
-                        hud.colG = 1.0f;
-                        hud.colB = 1.0f;
-                        hud.colA = 1.0f;
-                        hud.unk68 = -32;
-                        hud.dstX = hud.srcX;
-                        hud.dstYi = hud.srcYi;
-                        hud.dstZ = hud.srcZ;
-                        fn_800C5E9C(0);
-                        obj = (int)lbl_804D4E44->objB;
-                        if (obj != 0) {
-                            hud.obj = (void*)obj;
-                            SendMsg(*(s32*)(obj + 0x38), 0, &hud);
-                        }
-                        obj = (int)lbl_804D4E44->objA;
-                        if (obj != 0) {
-                            hud.obj = (void*)obj;
-                            SendMsg(*(s32*)(obj + 0x38), 0x7300, &hud);
-                        }
-                        fn_80009E10();
-                        fn_800F0ED4();
-                        if (lbl_804D4E44->state == 1) {
-                            u32 a = lbl_804D4E44->alpha & 0xff;
-                            fn_8009851C(a, a, a);
-                        }
-                    }
-                } else {
-                    HudDraw hud;
-                    int obj = fn_800C6448();
+            fn_80093F88(-3, lbl_804D4E38, lbl_804D4E3C, lbl_804D4E40, 0xff);
+            fn_802154B0(0xff);
+            HudDrawInit(&hud, place);
+            fn_800C5E9C(0);
+            hud.obj = (HudObj*)lbl_804D4E34->objA;
+            SendMsg(hud.obj->id, 0x7300, &hud);
+            hud.obj = (HudObj*)lbl_804D4E34->objB;
+            SendMsg(hud.obj->id, 0x7300, &hud);
+            fn_80009E10();
+            DeferFlush3();
+            fn_80096C74(lbl_804D2F2C, lbl_804D2F30);
+            for (i = 0; i < lbl_804D2F38; i++) {
+                fn_80097DD0(lbl_804D2F34, 0);
+            }
+            if (lbl_804D2F3C != 0) {
+                fn_80096DD0(0xff, 0xff, 0xff, 0xc0);
+            }
+            if (lbl_804D4E34->state == 1) {
+                u8 a = lbl_804D4E34->alpha;
+                fn_8009851C(a, a, a);
+            }
+        } else {
+            int n = ReflectUpdateCamera();
+            int i;
 
-                    if (view >= 0) {
-                        lbl_804D4E48 = &lbl_8046DE88[view];
-                        fn_80093F88(0xfffffffd, 0, 0, 0, 0xff);
-                        fn_802154B0((int)lbl_804D4E48->textAlpha);
-                    }
-                    memset(&hud, 0, 0x210);
-                    hud.unk04 = 1;
-                    hud.srcX = *(f32*)(obj + 0xc) + 0.2f;
-                    hud.srcYi = *(s32*)(obj + 0x10);
-                    hud.srcZ = *(f32*)(obj + 0x14) - 0.2f;
-                    hud.unk10 = 1;
-                    hud.unk18 = 1;
-                    hud.unk1C = 1;
-                    hud.color[0] = 0xff;
-                    hud.color[1] = 0xff;
-                    hud.color[2] = 0xff;
-                    hud.color[3] = 0xff;
-                    hud.unk30 = 0;
-                    hud.unk3C = 0;
-                    hud.colR = 1.0f;
-                    hud.colG = 1.0f;
-                    hud.colB = 1.0f;
-                    hud.colA = 1.0f;
-                    hud.unk68 = -32;
-                    hud.dstX = hud.srcX;
-                    hud.dstYi = hud.srcYi;
-                    hud.dstZ = hud.srcZ;
-                    fn_800C5E9C(0);
-                    obj = (int)lbl_804D4E48->obj;
-                    if (obj != 0) {
-                        hud.obj = (void*)obj;
-                        SendMsg(*(s32*)(obj + 0x38), 0x7300, &hud);
-                    }
+            for (i = 0; i < n; i++) {
+                fn_80009E10();
+                if (ReflectRender(i) != 0) {
+                    fn_800857A8();
                     fn_80009E10();
-                    fn_800F0ED4();
-                    if (lbl_804D4E48->state == 1) {
-                        u32 a = lbl_804D4E48->alpha & 0xff;
-                        fn_8009851C(a, a, a);
-                    }
-                    fn_801D60B4(dt);
-                    if (view != -1) {
-                        fn_80008F64();
-                    }
-                }
-                fn_8007F064(1, view);
-                if (lbl_804D4E34 == 0 || lbl_804D4E34->state == 0) {
-                    fn_800F4F0C();
-                    fn_80049948();
-                    if (fn_80049750() == 0) {
-                        fn_800F4854();
-                        fn_8017B164();
-                    }
-                }
-                fn_800C5E9C(0);
-                fn_800F0ED4();
-                fn_80009E10();
-                if (lbl_804D4E34 == 0 || lbl_804D4E34->state == 0) {
-                    fn_800F4EE0();
-                }
-                fn_800C5E9C(0);
-                fn_800F0DFC();
-                fn_80009E10();
-                if (lbl_804D4E34 == 0 || lbl_804D4E34->state == 0) {
-                    fn_800F4ACC();
-                }
-                fn_800C5E9C(0);
-                fn_800F0D24();
-                fn_80009E10();
-                if (fn_80220A38() != 4) {
-                    fn_80215A24();
-                }
-                if (lbl_804D2F28 != 0 && gCamLetterbox == 0) {
-                    fn_800FF294(view);
-                    fn_800FD924(view);
-                    fn_800499E8(dt, view);
-                    fn_8007F064(2, view);
+                    RoomsFrame();
+                    fn_8001D258();
+                    fn_8001D040();
+                    fn_8007AE7C();
+                    fn_802A3BEC();
+                    fn_801E092C();
+                    fn_8017E5BC();
+                    fn_801590A4();
+                    fn_80009E10();
+                    fn_80159C0C();
+                    fn_8015AB3C();
+                    HazardDebugDrawSpheres();
+                    fn_8007AE7C();
+                    fn_80009E10();
+                    fn_8007AFBC();
+                    DeferFlush3();
+                    fn_80009E10();
+                    ReflectEnd();
                 }
             }
-            if (view == -1) {
-                fn_80008F58();
+            fn_800C5E9C(0);
+            RoomsFrame();
+            if (flag == 0) {
+                fn_8001CE28();
             }
-        } else if (view == -1) {
-            fn_8007F064(0, 0xffffffff);
+            fn_800857A8();
+            fn_80009E10();
+            fn_800C5E9C(0);
+            fn_8001D258();
+            fn_80228688();
+            fn_8028A4BC();
+            fn_802C2E5C();
+            if (flag == 0) {
+                fn_802886B4();
+                fn_800C5E9C(0);
+            }
+            fn_8001D040();
+            fn_8007AE7C();
+            fn_802C2D5C();
+            fn_801E092C();
+            fn_8017E5BC();
+            fn_801590A4();
+            fn_80009E10();
+            fn_80159C0C();
+            fn_8015AB3C();
+            HazardDebugDrawSpheres();
+            GhostShotDrawAll();
+            fn_8007AE7C();
+            fn_80234900();
+            fn_80200630();
+            fn_801D60B4(dt);
+            fn_8002756C();
+            fn_8007902C();
+            AudioNop();
+            fn_8016F8EC();
+            fn_800BB3A0();
+            fn_800B9520();
+            fn_80009E10();
+            fn_8007AFBC();
+            if (view != -1) {
+                fn_80008F64();
+            }
         }
+        fn_8007F064(1, view);
+        if (lbl_804D4E34 == 0 || lbl_804D4E34->state == 0) {
+            fn_800F4F0C();
+            if (PlayerInHost(GetPlayer()) == 0) {
+                WeatherLatchInit();
+                fn_8017B164();
+            }
+        }
+        fn_800C5E9C(0);
+        DeferFlush3();
+        fn_80009E10();
+        if (lbl_804D4E34 == 0 || lbl_804D4E34->state == 0) {
+            fn_800F4EE0();
+        }
+        fn_800C5E9C(0);
+        DeferFlush4();
+        fn_80009E10();
+        if (lbl_804D4E34 == 0 || lbl_804D4E34->state == 0) {
+            fn_800F4ACC();
+        }
+        fn_800C5E9C(0);
+        DeferFlush5();
+        fn_80009E10();
+        if (fn_80220A38() != 4) {
+            fn_80215A24();
+        }
+        if (lbl_804D2F28 != 0 && gCamLetterbox == 0) {
+            fn_800FF294(view);
+            fn_800FD924(view);
+            fn_800499E8(dt, view);
+            fn_8007F064(2, view);
+        }
+        break;
+    case 1:
+        if (lbl_804D2F28 != 0) {
+            if (gCamLetterbox != 0) {
+                fn_800FF294(0);
+                fn_800FD924(0);
+                fn_800499E8(dt, 0);
+                fn_8007F064(2, 0);
+            }
+            fn_800499E8(dt, -1);
+        }
+        if (CreditsTipVisible() != 0) {
+            fn_8000BA8C(0.0f, 0.0f, 1.0f, 0.754f, 1.0f, 1.0f);
+        }
+        fn_800FD924(-1);
+        fn_801EAEAC();
+        if (CreditsTipVisible() != 0) {
+            fn_80009E44(0, 0);
+        }
+        fn_8007F064(0, -1);
+        fn_801E4850();
+        fn_801EAEAC();
+        break;
+    }
+    if (view == -1) {
+        fn_80008F58();
     }
 }
 
@@ -837,21 +737,21 @@ void fn_801581DC(f32 dt) {
     fn_8028A554(dt);
     fn_802C2F5C(dt);
     fn_80228A0C(dt);
-    fn_802A3BF0(dt);
+    EffectListUpdate(dt);
     fn_80159118(dt);
     fn_80159F88(dt);
     fn_8015AB90(dt);
-    fn_80160B3C(dt);
-    fn_8016BEF8(dt);
+    GrenadeNop(dt);
+    SltEffectUpdate(dt);
     fn_8017B488(dt);
     fn_8017E288(dt);
-    fn_8018D79C(dt);
+    GhostShotUpdateAll(dt);
     fn_802CEAAC(dt);
     fn_800FF530(dt);
     fn_80200650(dt);
     fn_800FD998(dt);
-    fn_80153C10(dt);
-    fn_800DE0C4(dt);
+    GhostsTick(dt);
+    SaveUpdate(dt);
 }
 
 // 0x801582AC: load the ghost body-part models.
@@ -863,36 +763,36 @@ void fn_801582AC() {
 
     fn_802845CC();
     fn_800FDA90();
-    fn_800F45F8();
-    fn_800F671C();
-    model = fn_8007EB34(0xffffffff, 0x1ddb1c20);
+    WeatherInit();
+    WeatherBuildTable();
+    model = (int)AssetFind(0xffffffff, 0x1ddb1c20);
     if (model != -1) {
-        part = fn_8007EB34(0xffffffff, 0x4a41da93);
-        fn_800D35B0(part, model, "Shadow_ghost_move");
-        part = fn_8007EB34(0xffffffff, 0xdb039652);
-        fn_800D35B0(part, model, "Ghost_head");
-        part = fn_8007EB34(0xffffffff, 0x7344bd62);
-        fn_800D35B0(part, model, "Ghost_torso01");
-        part = fn_8007EB34(0xffffffff, 0x7344bd63);
-        fn_800D35B0(part, model, "Ghost_torso02");
-        part = fn_8007EB34(0xffffffff, 0x2faf3396);
-        fn_800D35B0(part, model, "Ghost_lleg02");
-        part = fn_8007EB34(0xffffffff, 0x39ec4750);
-        fn_800D35B0(part, model, "Ghost_rleg02");
-        part = fn_8007EB34(0xffffffff, 0x2f1a3064);
-        fn_800D35B0(part, model, "Ghost_larm02");
-        part = fn_8007EB34(0xffffffff, 0x3957441e);
-        fn_800D35B0(part, model, "Ghost_rarm02");
-        part = fn_8007EB34(0xffffffff, 0x7344bd62);
-        fn_800D35B0(part, model, "Ghost_torso01");
-        part = fn_8007EB34(0xffffffff, 0x2faf3395);
-        fn_800D35B0(part, model, "Ghost_lleg01");
-        part = fn_8007EB34(0xffffffff, 0x39ec474f);
-        fn_800D35B0(part, model, "Ghost_rleg01");
-        part = fn_8007EB34(0xffffffff, 0x2f1a3063);
-        fn_800D35B0(part, model, "Ghost_larm01");
-        part = fn_8007EB34(0xffffffff, 0x3957441d);
-        fn_800D35B0(part, model, "Ghost_rarm01");
+        part = (int)AssetFind(0xffffffff, 0x4a41da93);
+        EmitterAttach(part, model, "Shadow_ghost_move");
+        part = (int)AssetFind(0xffffffff, 0xdb039652);
+        EmitterAttach(part, model, "Ghost_head");
+        part = (int)AssetFind(0xffffffff, 0x7344bd62);
+        EmitterAttach(part, model, "Ghost_torso01");
+        part = (int)AssetFind(0xffffffff, 0x7344bd63);
+        EmitterAttach(part, model, "Ghost_torso02");
+        part = (int)AssetFind(0xffffffff, 0x2faf3396);
+        EmitterAttach(part, model, "Ghost_lleg02");
+        part = (int)AssetFind(0xffffffff, 0x39ec4750);
+        EmitterAttach(part, model, "Ghost_rleg02");
+        part = (int)AssetFind(0xffffffff, 0x2f1a3064);
+        EmitterAttach(part, model, "Ghost_larm02");
+        part = (int)AssetFind(0xffffffff, 0x3957441e);
+        EmitterAttach(part, model, "Ghost_rarm02");
+        part = (int)AssetFind(0xffffffff, 0x7344bd62);
+        EmitterAttach(part, model, "Ghost_torso01");
+        part = (int)AssetFind(0xffffffff, 0x2faf3395);
+        EmitterAttach(part, model, "Ghost_lleg01");
+        part = (int)AssetFind(0xffffffff, 0x39ec474f);
+        EmitterAttach(part, model, "Ghost_rleg01");
+        part = (int)AssetFind(0xffffffff, 0x2f1a3063);
+        EmitterAttach(part, model, "Ghost_larm01");
+        part = (int)AssetFind(0xffffffff, 0x3957441d);
+        EmitterAttach(part, model, "Ghost_rarm01");
     }
     n = fn_800FD3EC();
     for (i = 0; i != n; i++) {
@@ -929,7 +829,7 @@ void fn_801584F8() {
     fn_80159FEC();
     fn_8015ABB0();
     SltAssetInit();
-    fn_80156AA0();
+    GhostSystemInit();
     fn_80186314();
     fn_800FDC48();
     fn_8017B7A0();
@@ -942,9 +842,9 @@ void fn_801584F8() {
     if (r == 0 && (r = SaveCommand(5, 0)) >= 0 && (r = SaveCommand(9, r)) != 0) {
         SaveCommand(3, 1);
     }
-    fn_800DE9D8();
-    fn_800C5654(0x2000000, 0x5d46c0a8, 0x2000000);
-    fn_800C5654(0x4e000000, 0x5d46c0a8, 0x4e000000);
+    SaveRestoreBlocks();
+    ActorPlayAnim(0x2000000, 0x5d46c0a8, 0x2000000);
+    ActorPlayAnim(0x4e000000, 0x5d46c0a8, 0x4e000000);
 }
 
 // 0x8015860C: shut the game session down.
@@ -955,11 +855,11 @@ void fn_8015860C() {
     fn_80284CB0();
     fn_801116E4();
     fn_8028A8D4();
-    fn_80120D60();
+    StatReset();
     fn_801868AC();
     fn_800FF66C();
     fn_800FDC78();
-    fn_80156AA4();
+    GhostSystemReset();
     fn_801764F0();
     fn_8028A728();
     fn_802C30A0();
@@ -967,9 +867,9 @@ void fn_8015860C() {
     fn_801593A4();
     fn_8015A050();
     fn_8015ABB4();
-    fn_80160B80();
-    fn_8016C198();
-    fn_800F6804();
+    GrenadeInit();
+    SltEffectCleanup();
+    WeatherReset();
     fn_8017B7A4();
     fn_8017E72C();
     fn_80269944();
@@ -1000,7 +900,7 @@ void fn_8015860C() {
 
 // 0x80158744: check for a save file and create one if needed.
 void fn_80158744() {
-    gSaveLoaded = fn_80045524(0x420, 1, 0x38);
+    gSaveLoaded = StoreCheck(0x420, (const char*)1, 0x38);
     switch (gSaveLoaded) {
     case 0:
         break;
@@ -1019,7 +919,7 @@ void fn_80158744() {
 
 // 0x801587B8: the same check with a caller-supplied mode.
 void fn_801587B8(int mode) {
-    gSaveLoaded = fn_80045524(0x420, 1, mode | 8);
+    gSaveLoaded = StoreCheck(0x420, (const char*)1, mode | 8);
     switch (gSaveLoaded) {
     case 0:
         break;

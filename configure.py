@@ -673,7 +673,7 @@ config.libs = [
             Object(Matching, "game/Skybox.cpp"),  # known (helper-game-b)
             Object(NonMatching, "game/u_80150300.cpp"),  # guess
             Object(NonMatching, "game/u_80153C10.cpp"),  # guess
-            Object(NonMatching, "game/u_80157730.cpp"),  # guess
+            Object(Matching, "game/u_80157730.cpp"),  # guess
             Object(NonMatching, "game/u_80158C3C.cpp"),  # split from u_80157730 (own Buffer-template block)
             Object(NonMatching, "game/u_80159AF4.cpp"),  # split from u_80157730 (own Buffer-template block)
             Object(NonMatching, "game/u_8015AA24.cpp"),  # split from u_80157730 (own Buffer-template block)

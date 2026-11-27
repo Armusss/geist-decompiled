@@ -49,7 +49,7 @@ void GhostShotDrawAll();
 void GhostShotUpdateAll(f32);
 void GrenadeInit();
 void GrenadeLoadTexture();
-void GrenadeNop();
+void GrenadeNop(f32);
 void GrenadeRemoveAll();
 void LinkInfoInit(void*);
 f32 LoadingTime();
@@ -74,10 +74,10 @@ void fn_8013B6F8(f32, int, void*);
 void fn_801EA880(void*, void*, int, int, int, int, int);
 void fn_801EAEAC();
 void fn_80210D80(int, int, int, int, int, int, int);
-void fn_80210FC8(f32, f64, f64, int, int, int, int, void*, void*, void*);
+void fn_80210FC8(int, int, int, int, void*, void*, void*, f32, f32, f32);
 void fn_802113F0(f32, int, int, int, void*);
 void fn_80211470(f32, int, int, int);
-void fn_80211638(f64, int, f64, f64, int, void*, void*, int, int);
+void fn_80211638(f32, f32, f32, f32, int, f32*, f32*, int, int);
 void fn_8028B2D4(void*);
 int fn_800391DC(int);
 void fn_8028B35C(void*, void*, int);
@@ -92,7 +92,7 @@ public:
     void Commit(int start, unsigned long size);
     void Append(unsigned char* data, unsigned long size);
 };
-void fn_800A0094(void*, void*);
+void fn_800A0094(f32*, f32*);
 void fn_800A0100(void*);
 f32 fn_800A1394(f32);
 void fn_800A1418();
@@ -100,7 +100,7 @@ void fn_800A1418();
 extern "C" {
 void memset(void*, int, u32);
 int SendMsg(int to, int msg, void* data);
-void rand();
+int rand();
 
 int fn_800059D0(int);
 void fn_80005A64();
@@ -290,7 +290,7 @@ int fn_80158AFC(int);
 void fn_80158B4C(int);
 void fn_80158B90(int, int, int);
 int fn_80158BE0();
-int fn_80158C3C(f32* pos, int kind, int a, int b, int c, int d, int e);
+int fn_80158C3C(f32* pos, u32 kind, int a, int b, int c, int d, int e);
 void fn_80158F90();
 void* fn_8015902C(void*, short);
 void fn_801590A4();
@@ -298,8 +298,8 @@ void fn_80159118(f32);
 void fn_801592E8();
 void fn_801593A4();
 void* fn_801593FC(void*, short);
-void fn_80159464(int*);
-void fn_80159554(f32, f32, f32, f32, f32, f32, f32, int, int, f32*, f32*);
+void fn_80159464(void*);
+void fn_80159554(int, int, const f32*, void*, f32, f32, f32, f32, f32, f32, f32);
 void fn_80159A04(void*, int, unsigned);
 void fn_80159A4C(void*, char*, int);
 int fn_80159AAC();
@@ -418,7 +418,6 @@ extern f32 lbl_804D2F50;
 
 extern u32 lbl_804D7CE8;
 
-extern u32 lbl_803A59C8[];
 extern u32 lbl_803A6FA8[8];
 extern u32 lbl_803A6FC8[8];
 extern u32 lbl_803A6FE8[8];
@@ -440,7 +439,6 @@ extern ResArray* lbl_804D4EA8;
 extern ResArray* lbl_804D4EB0;
 extern f32 lbl_804D4EB4;
 
-extern u8 lbl_80346630[16];
 
 extern "C" {
 
@@ -459,20 +457,23 @@ struct ObjAnimDef {
     f32 offX;        // 0x28
     f32 offY;        // 0x2C
     f32 offZ;        // 0x30
-    u8 pad34[0x50];  // 0x34
-    int next;        // 0x84
+    u8 pad34[0x4C];  // 0x34
+    u32 texHash;     // 0x80
+    int tex;         // 0x84 texture handle (from texHash)
 };
 
 // Object definition (0x2BC bytes; lbl_803A59C8 holds eight of them).
 struct ObjDef {
     u32 id;               // 0x00
-    u8 pad04[4];          // 0x04
+    u32 modelHash;        // 0x04
     int handle;           // 0x08
-    u8 pad0C[2];          // 0x0C
-    u16 count;            // 0x0E
+    u16 parts;            // 0x0C number of anim slots in use
+    u16 count;            // 0x0E particles over all slots
     int hasQuery;         // 0x10
     ObjAnimDef anim[5];   // 0x14
 };
+
+extern ObjDef lbl_803A59C8[8];
 
 struct MsgC15 {
     int unk0;
@@ -484,101 +485,109 @@ struct MsgC15 {
     u8 b3;
 };
 
-int fn_80158C3C(f32* pos, int kind, int a, int b, int c, int d, int e) {
-    ObjDef* table = (ObjDef*)lbl_803A59C8;
+// A spawned object (0x30 bytes, in the ResArray lbl_804D4EA0).
+struct SpawnObj {
+    ObjDef* def;     // 0x00
+    f32 pos[3];      // 0x04
+    int snd;         // 0x10 looping sound emitter, -1 when none
+    f32 sndTime;     // 0x14
+    int tex[5];      // 0x18 texture per slot
+    u8* parts;       // 0x2C particle records (0x44 bytes each)
+};
+
+static inline void SendQuery(int target, u32 hash, int value) {
+    QueryMsg q;
+    q.hash = hash;
+    *(int*)&q.result = value;
+    q.unk8 = 0;
+    SendMsg(target, 0x41D, &q);
+}
+
+// 0x80158C3C: spawns the object definition `kind` at pos; a..e override the slot textures when > 0.
+int fn_80158C3C(f32* pos, u32 kind, int a, int b, int c, int d, int e) {
+    SpawnObj* obj;
     ObjDef* entry = 0;
-    f32* obj;
     int i;
+    f32 rot[4];
+    int ipos[3];
+    f32 p[3];
 
     for (i = 0; i < 8; i++) {
-        if (table[i].id == kind) {
-            entry = &table[i];
+        if (kind == lbl_803A59C8[i].id) {
+            entry = &lbl_803A59C8[i];
             break;
         }
     }
     if (entry == 0) {
         return 0;
     }
-    {
-        int ipos[3];
-
-        ipos[0] = (int)pos[0];
-        ipos[1] = (int)pos[1];
-        ipos[2] = (int)pos[2];
-        fn_8016F120(entry->handle, ipos);
-    }
-    obj = (f32*)VAlloc(0x30);
+    ipos[0] = (int)pos[0];
+    ipos[1] = (int)pos[1];
+    ipos[2] = (int)pos[2];
+    fn_8016F120(entry->handle, ipos);
+    obj = (SpawnObj*)VAlloc(0x30);
     if (obj == 0) {
         return 0;
     }
-    *(int*)((u8*)obj + 0x2C) = (int)VAlloc((int)entry->count * 0x44);
-    if (*(int*)((u8*)obj + 0x2C) == 0) {
+    obj->parts = (u8*)VAlloc(entry->count * 0x44);
+    if (obj->parts == 0) {
         VFree(obj);
         return 0;
     }
-    *(int*)fn_8028B3BC(lbl_804D4EA0, (u8*)lbl_804D4EA0->data + lbl_804D4EA0->size, 4) = (int)obj;
-    *(int*)((u8*)obj + 0x00) = (int)entry;
-    obj[1] = pos[0];
-    obj[2] = pos[1];
-    obj[3] = pos[2];
+    *(SpawnObj**)fn_8028B3BC(lbl_804D4EA0, lbl_804D4EA0->data, 4) = obj;
+    obj->def = entry;
+    obj->pos[0] = pos[0];
+    obj->pos[1] = pos[1];
+    obj->pos[2] = pos[2];
     {
-        int base = *(int*)((u8*)obj + 0x2C);
+        u8* base = obj->parts;
 
         for (i = 0; i < 5; i++) {
-            ObjAnimDef* ad = &entry->anim[i];
-            f32 p[3];
-            f32 color[4];
-
-            *(int*)((u8*)obj + 0x18 + i * 4) = ad->next;
-            p[0] = pos[0] + ad->offX;
-            p[1] = pos[1] + ad->offY;
-            p[2] = pos[2] + ad->offZ;
-            color[0] = -1.0f;
-            color[1] = 0.0f;
-            color[2] = 0.0f;
-            color[3] = 0.0f;
-            fn_80159554(ad->f04, ad->f08, ad->f0C, ad->f18, ad->f1C, ad->f10, ad->f14,
-                        ad->count, base, p, color);
-            base += ad->count * 0x44;
+            obj->tex[i] = entry->anim[i].tex;
+            rot[0] = -1.0f;
+            rot[1] = 0.0f;
+            rot[2] = 0.0f;
+            rot[3] = 0.0f;
+            p[0] = pos[0] + entry->anim[i].offX;
+            p[1] = pos[1] + entry->anim[i].offY;
+            p[2] = pos[2] + entry->anim[i].offZ;
+            fn_80159554(entry->anim[i].count, (int)base, p, rot, entry->anim[i].f04, entry->anim[i].f08,
+                        entry->anim[i].f0C, entry->anim[i].f18, entry->anim[i].f1C, entry->anim[i].f10,
+                        entry->anim[i].f14);
+            base += entry->anim[i].count * 0x44;
         }
     }
-    if (entry->hasQuery == 0) {
-        *(int*)((u8*)obj + 0x10) = -1;
-    } else {
+    if (entry->hasQuery != 0) {
+        f32 color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
         MsgC15 m;
 
-        *(int*)((u8*)obj + 0x10) = fn_80027A58(1, pos, lbl_80346630, 4000, 9);
-        *(f32*)((u8*)obj + 0x14) = 200.0f;
+        obj->snd = fn_80027A58(1, pos, color, 4000, 9);
         m.unk4 = -1;
         m.unk8 = 1;
         m.b0 = 0;
         m.b1 = 0;
         m.b2 = 0;
         m.b3 = 0;
-        {
-            QueryMsg q;
-
-            q.hash = 0x9A6E9C08;
-            *(int*)&q.result = 200;
-            q.unk8 = 0;
-            SendMsg(*(int*)((u8*)obj + 0x10), 0x41D, &q);
-        }
-        SendMsg(*(int*)((u8*)obj + 0x10), 0xC15, &m);
+        obj->sndTime = 200.0f;
+        SendQuery(obj->snd, 0x9A6E9C08, 200);
+        SendMsg(obj->snd, 0xC15, &m);
+    } else {
+        obj->snd = -1;
     }
     if (a > 0) {
-        ((int*)((u8*)obj + 0x18))[0] = a;
+        obj->tex[0] = a;
     }
     if (b > 0) {
-        ((int*)((u8*)obj + 0x18))[1] = b;
+        obj->tex[1] = b;
     }
     if (c > 0) {
-        ((int*)((u8*)obj + 0x18))[2] = c;
+        obj->tex[2] = c;
     }
     if (d > 0) {
-        ((int*)((u8*)obj + 0x18))[3] = d;
+        obj->tex[3] = d;
     }
     if (e > 0) {
-        ((int*)((u8*)obj + 0x18))[4] = e;
+        obj->tex[4] = e;
     }
     return 1;
 }
@@ -625,56 +634,66 @@ void fn_801590A4() {
     }
     fn_80233928();
 }
+// Steps every particle slot of one spawned object and its sound timer; -1 once every particle is dead.
+static inline int SpawnedUpdate(int* obj, f32 dt) {
+    int off;
+    int base;
+    int alive;
+    int i;
+
+    alive = 0;
+    i = 0;
+    base = obj[0xb];
+    off = 0;
+    for (; i < *(u16*)(*obj + 0xc); i++) {
+        f32 v = *(f32*)(*obj + off + 0x34);
+
+        if (0.0f != v) {
+            f32 color[3];
+
+            color[0] = 0.0f;
+            color[1] = 0.0f;
+            color[2] = v;
+            fn_802113F0(dt, base, 0x44, *(int*)(*obj + off + 0x14), color);
+        }
+        fn_80211470(dt, base, 0x44, *(int*)(*obj + off + 0x14));
+        {
+            int n = *(int*)(*obj + off + 0x14) * 0x44;
+
+            if (*(f32*)(base + n - 0x40) > dt) {
+                alive = 1;
+            }
+            base += n;
+        }
+        off += 0x88;
+    }
+    if (obj[4] != -1) {
+        *(f32*)((u8*)obj + 0x14) -= dt;
+        if (*(f32*)((u8*)obj + 0x14) <= 0.0f) {
+            fn_80027690(obj[4]);
+            obj[4] = -1;
+        }
+    }
+    return alive ? 0 : -1;
+}
+
+// 0x80159118: per-frame update of the spawned objects; removes the finished ones.
 void fn_80159118(f32 dt) {
     int** p;
 
-    for (p = (int**)lbl_804D4EA0->data;
-         p != (int**)((u8*)lbl_804D4EA0->data + lbl_804D4EA0->size); ) {
+    for (p = (int**)lbl_804D4EA0->data; p != (int**)((u8*)lbl_804D4EA0->data + lbl_804D4EA0->size);) {
         int* obj = *p;
-        int alive = 0;
-        int base = obj[0xb];
-        int off = 0;
-        int i;
 
-        for (i = 0; i < *(u16*)(*obj + 0xc); i++) {
-            f32 v = *(f32*)(*obj + off + 0x34);
-
-            if (0.0f != v) {
-                f32 color[3];
-
-                color[0] = 0.0f;
-                color[1] = 0.0f;
-                color[2] = v;
-                fn_802113F0(dt, base, 0x44, *(int*)(*obj + off + 0x14), color);
-            }
-            fn_80211470(dt, base, 0x44, *(int*)(*obj + off + 0x14));
-            {
-                int n = *(int*)(*obj + off + 0x14) * 0x44;
-
-                if (*(f32*)(base + n - 0x40) > dt) {
-                    alive = 1;
-                }
-                base += n;
-            }
-            off += 0x88;
-        }
-        if (obj[4] != -1) {
-            *(f32*)((u8*)obj + 0x14) -= dt;
-            if (*(f32*)((u8*)obj + 0x14) <= 0.0f) {
-                fn_80027690(obj[4]);
-                obj[4] = -1;
-            }
-        }
-        if (!alive) {
+        if (SpawnedUpdate(obj, dt) == -1) {
             if (obj[4] != -1) {
                 fn_80027690(obj[4]);
                 obj[4] = -1;
             }
-            if (*(int*)(*p + 0x2c) != 0) {
-                VFree(*(void**)(*p + 0x2c));
-                *(int*)(*p + 0x2c) = 0;
+            if ((void*)(*p)[0xb] != 0) {
+                VFree((void*)(*p)[0xb]);
+                (*p)[0xb] = 0;
             }
-            VFree((void*)*p);
+            VFree(*p);
             fn_8028B35C(lbl_804D4EA0, p, 4);
         } else {
             p++;
@@ -685,33 +704,21 @@ void fn_80159118(f32 dt) {
 
 // 0x801592E8: look up the effect type/part hashes.
 void fn_801592E8() {
-    u16 list[14];
-    u8* rec;
+    short list[5];
     u32 i;
     int j;
 
-    rec = (u8*)lbl_803A59C8;
     for (i = 0; i < 8; i++) {
-        *(s32*)(rec + 8) = (s32)fn_8007EB34(0x92234D44, *(u32*)(rec + 4));
-        *(u16*)(rec + 0xe) = 0;
-        {
-            u8* part = rec;
-            u16* out = list;
-            for (j = 0; j < *(u16*)(rec + 0xc); j++) {
-                *(s32*)(part + 0x98) = (s32)fn_8007EB34(0xF2E2BEB8, *(u32*)(part + 0x94));
-                {
-                    u16 total = *(u16*)(rec + 0xe);
-                    s32 count = *(s32*)(part + 0x14);
-                    s32 hash = *(s32*)(part + 0x98);
-                    part += 0x88;
-                    *out = (u16)hash;
-                    out++;
-                    *(u16*)(rec + 0xe) = total + (u16)count;
-                }
-            }
+        ObjDef* def = &lbl_803A59C8[i];
+
+        def->handle = (int)AssetFind(0x92234D44, def->modelHash);
+        def->count = 0;
+        for (j = 0; j < def->parts; j++) {
+            def->anim[j].tex = (int)AssetFind(0xF2E2BEB8, def->anim[j].texHash);
+            list[j] = def->anim[j].tex;
+            def->count += def->anim[j].count;
         }
-        TextureLoad((short*)list, *(u16*)(rec + 0xc));
-        rec += 0x2bc;
+        TextureLoad(list, def->parts);
     }
     fn_80233B60();
 }
@@ -743,32 +750,99 @@ void* fn_801593FC(void* p, short freeIt) {
 }
 
 // ---- not yet reconstructed ----
-void fn_80159464(int* p) {
-    int offset = 0;
-    int* entry = p;
-    int base = p[0xb];
+void fn_80159464(void* arg) {
+    int offset;
+    int* entry;
+    int* p = (int*)arg;
+    int base;
     int i;
 
-    for (i = 0; i < *(u16*)(*p + 0xc); i++) {
+    i = 0;
+    offset = 0;
+    entry = p;
+    base = p[0xb];
+    for (; i < *(u16*)(*p + 0xc); i++) {
         int rec = *p + offset;
-        int state = *(int*)(rec + 0x38);
 
-        if (state == 1) {
+        switch (*(int*)(rec + 0x38)) {
+        case 0:
+            fn_80210D80(base, 0x44, *(int*)(rec + 0x14), entry[6], 0, rec + 0x48, rec + 0x5c);
+            break;
+        case 1: {
             Mtx34 mtx;
 
             fn_8009F7A8(&mtx, (void*)(base + 0x14));
             rec = *p + offset;
-            fn_80210FC8(*(f32*)(rec + 0x54), 1.0f, 1.0f, base, 0x44,
-                        *(int*)(rec + 0x14), entry[6], &mtx, (void*)(rec + 0x5c), (void*)(rec + 0x5c));
-        } else if (state == 0) {
-            fn_80210D80(base, 0x44, *(int*)(rec + 0x14), entry[6], 0, rec + 0x48, rec + 0x5c);
+            fn_80210FC8(base, 0x44, *(int*)(rec + 0x14), entry[6], &mtx, (void*)(rec + 0x5c), (void*)(rec + 0x5c),
+                        *(f32*)(rec + 0x54), 1.0f, 1.0f);
+            break;
+        }
         }
         base += *(int*)(*p + offset + 0x14) * 0x44;
         offset += 0x88;
         entry++;
     }
 }
-// TODO (not drafted yet, 0x4B0 bytes at 0x80159554)
+
+// A random whole offset in [-range/2, range/2) (0 when the range is under 1).
+static inline f32 RandSpread(f32 range)
+{
+    int r = (int)__fabs(range);
+
+    if (r != 0) {
+        return (f32)(Rand() % r - r / 2);
+    }
+    return 0.0f;
+}
+
+// 0x80159554: emits count particles from pos, spread by (spreadX, spreadY) around the bone's frame and
+// launched along -lift with a random velocity spread.
+void fn_80159554(int count, int base, const f32* pos, void* bone, f32 life, f32 lifeStep, f32 size,
+                 f32 spreadX, f32 spreadY, f32 lift, f32 velSpread)
+{
+    Mtx34 mtx;
+    int part;
+    int i;
+    f32 spreadZ = 0.0f;
+    f32 px, py, pz;
+
+    BoneGetMatrix(&mtx, bone);
+    fn_800A0100(&mtx);
+    px = pos[0];
+    py = pos[1];
+    pz = pos[2];
+    part = base;
+    for (i = 0; i < count; i++) {
+        f32 angle = 4095.0f * ((f32)rand() / 32767.0f);
+        f32 p[3];
+        f32 v[3];
+        f32 x, y, z;
+
+        x = RandSpread(spreadX);
+        y = RandSpread(spreadY);
+        z = spreadZ + RandSpread(spreadZ);
+        p[0] = x;
+        p[1] = y;
+        p[2] = z;
+        fn_800A0094(p, p);
+        p[0] += px;
+        p[1] += py;
+        p[2] += pz;
+        x = RandSpread(velSpread);
+        y = RandSpread(velSpread);
+        z = -lift + RandSpread(velSpread);
+        v[0] = x;
+        v[1] = y;
+        v[2] = z;
+        fn_800A0094(v, v);
+        v[0] *= 0.001f;
+        v[1] *= 0.001f;
+        v[2] *= 0.001f;
+        fn_80211638(life, size, angle, 0.0f, part, p, v, 0, 0);
+        life -= lifeStep;
+        part += 0x44;
+    }
+}
 
 // 0x80159A04 / 0x80159A4C and siblings: pool element array helpers.
 void fn_80159A04(void* pool, int start, unsigned size) {

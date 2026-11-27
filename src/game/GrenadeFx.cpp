@@ -105,7 +105,7 @@ void GrenadeRemoveAll(void) {
     EmitterSlotsClear(gGrenadeEmitters, 8);
 }
 
-void GrenadeNop(void) {}
+void GrenadeNop(float dt) {}
 
 void GrenadeLoadTexture(void) {
     gGrenadeTexture = AssetFind(0xF2E2BEB8, 0xCD678095);
