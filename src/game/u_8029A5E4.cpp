@@ -13,59 +13,13 @@
 #include <dolphin/types.h>
 #include "game/types.h"
 
-void* VAlloc(int size);
-void VFree(void* p);
+#include "game/bufarray.h"
+
 extern "C" void fn_8028B2D4(void* slot);
 
-// The Buffer class chain of u_8028A8D4.cpp (ScreenEffectSlot -> ScreenEffectBuffer -> Buffer; base names are
-// guesses there). The array below overrides the element hooks and calls the base ones directly.
-class ScreenEffectSlot {
-public:
-    virtual ~ScreenEffectSlot() {}
-    virtual void Clear();
-    virtual int GetAlignment();
-    virtual void Commit(int start, unsigned long size) = 0;
-
-    char* mStart; // 0x04
-    int mSize;    // 0x08
-    char* mStore; // 0x0C
-    u32 mState;   // 0x10
-};
-
-class ScreenEffectBuffer : public ScreenEffectSlot {
-public:
-    virtual void Commit(int start, unsigned long size);
-    virtual void Append(unsigned char* data, unsigned long size);
-    virtual int GetSpan() = 0;
-};
-
-class Buffer : public ScreenEffectBuffer {
-public:
-    virtual ~Buffer();
-    Buffer();
-    virtual void Clear();
-    virtual int GetSpan() { return 0; }
-    char* Erase(char* pos, int size);  // 0x8028B35C
-    char* Insert(char* pos, int size); // 0x8028B3BC
-    void Free();                       // 0x8028B960
-};
-
-
-// Construct / destroy hooks for a range of 12-byte elements (trivial: empty loops).
-extern "C" void fn_8029B028(Vec3* first, Vec3* last);
-extern "C" void fn_8029B04C(Vec3* first, Vec3* last);
-
 // A growable array of Vec3 (vtable 0x803C3128: destructor, Buffer::Clear, GetAlignment, Commit, Append,
-// Buffer::GetSpan). Class name is a guess.
-class Vec3Array : public Buffer {
-public:
-    Vec3Array() {}
-    virtual ~Vec3Array() { Free(); }
-    virtual int GetAlignment();
-    virtual void Commit(int start, unsigned long size);
-    virtual void Append(unsigned char* data, unsigned long size);
-    static void operator delete(void* p) { VFree(p); }
-};
+// Buffer::GetSpan); its methods close the file (0x8029AEF0-0x8029B070).
+typedef BufferArray<Vec3> Vec3Array;
 
 // A projectile (laid out like the rivets of u_801FCA4C.cpp; fields used here only).
 struct Projectile {
@@ -169,7 +123,7 @@ void fn_8029A8BC(void* self, Projectile* o) {
 //@@end
 //@@8029A914
 static inline void Vec3Erase(Vec3Array* a, Vec3* first, Vec3* last) {
-    ((Buffer*)a)->Erase((char*)((char*)first), (last - first) * sizeof(Vec3));
+    a->Erase((char*)((char*)first), (last - first) * sizeof(Vec3));
 }
 
 extern "C" int fn_8029A914(void* type, Projectile* p);
@@ -186,10 +140,10 @@ int fn_8029A914(void* type, Projectile* p) {
     if (a == 0) {
         return 0;
     }
-    v = (Vec3*)((Buffer*)a)->Insert((char*)(a->mStore + a->mSize), sizeof(Vec3));
+    v = (Vec3*)a->Insert((char*)a->End(), sizeof(Vec3));
     *v = p->pos;
-    if (a->mSize / sizeof(Vec3) > 6) {
-        Vec3Erase(a, (Vec3*)a->mStore, (Vec3*)a->mStore + 1);
+    if (a->Count() > 6) {
+        Vec3Erase(a, a->Begin(), a->Begin() + 1);
     }
     ctx[0] = &hitInfo;
     ctx[1] = (void*)p->owner;
@@ -256,13 +210,13 @@ void fn_8029AC60(void* self, Projectile* o) {
     Vec3Array* a = o->trail;
     int i;
     float step;
-    if (a == 0 || a->mSize / sizeof(Vec3) < 2) {
+    if (a == 0 || a->Count() < 2) {
         return;
     }
-    step = 255.0f / (a->mSize / sizeof(Vec3) - 1);
+    step = 255.0f / (a->Count() - 1);
     Draw3DBeginLine(-3, 0, 2.0f);
-    for (i = 0, off = 0; i < a->mSize / sizeof(Vec3) - 1; i++, off += sizeof(Vec3)) {
-        DrawLine((float*)(a->mStore + off), (float*)(a->mStore + (i + 1) * sizeof(Vec3)), 255, 255, 255,
+    for (i = 0, off = 0; i < a->Count() - 1; i++, off += sizeof(Vec3)) {
+        DrawLine((float*)((char*)a->Begin() + off), (float*)((char*)a->Begin() + (i + 1) * sizeof(Vec3)), 255, 255, 255,
                  (u8)(i * step), 255, 255, 255, (u8)((i + 1) * step));
     }
     DrawDisableTexOffsets();
@@ -275,11 +229,11 @@ void fn_8029ADC4(void* self, Projectile* o) {
     if (a == 0) {
         return;
     }
-    while (a->mSize / sizeof(Vec3) != 0) {
+    while (a->Count() != 0) {
         fn_8028B2D4(a);
     }
     if (a) {
-        a->Vec3Array::~Vec3Array();
+        a->Vec3Array::~BufferArray();
         VFree(a);
     }
 }
@@ -293,44 +247,8 @@ int fn_8029AE58(void* self, Projectile* o) {
         return 0;
     }
     o->trail = a;
-    v = (Vec3*)((Buffer*)a)->Insert((char*)(a->mStore + a->mSize), sizeof(Vec3));
+    v = (Vec3*)a->Insert((char*)a->End(), sizeof(Vec3));
     *v = o->pos;
     return 1;
-}
-//@@end
-// TODO (not drafted yet, 0x68 bytes at 0x8029AEF0)
-// fn_8029AEF0
-//@@8029AF58
-void Vec3Array::Commit(int start, unsigned long size) {
-    ScreenEffectBuffer::Commit(start, size);
-    fn_8029B028((Vec3*)start, (Vec3*)start + size / sizeof(Vec3));
-}
-//@@end
-//@@8029AFB0
-static inline void Vec3Destroy(void* p, u32 bytes) {
-    Vec3* first = (Vec3*)p;
-    fn_8029B04C(first, first + bytes / sizeof(Vec3));
-}
-
-void Vec3Array::Append(unsigned char* data, unsigned long size) {
-    Vec3Destroy(data, size);
-    ScreenEffectBuffer::Append(data, size);
-}
-//@@end
-//@@8029B020
-int Vec3Array::GetAlignment() {
-    return sizeof(Vec3);
-}
-//@@end
-//@@8029B028
-void fn_8029B028(Vec3* first, Vec3* last) {
-    for (; first < last; first++) {
-    }
-}
-//@@end
-//@@8029B04C
-void fn_8029B04C(Vec3* first, Vec3* last) {
-    for (; first < last; first++) {
-    }
 }
 //@@end
