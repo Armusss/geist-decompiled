@@ -219,6 +219,8 @@ static inline float Dot41(const float* a, const float* b) { return a[0] * b[0] +
 static inline float Dot44(const float* a, const float* b) { return a[0] * b[0] + a[4] * b[4] + a[8] * b[8]; }
 
 
+#define FLT_MAX 3.402823466e+38f
+
 // A ray geometry: the base plus its length.
 struct RayGeom : Geom {
     float length;  // 0x4c
@@ -228,41 +230,6 @@ struct RayGeom : Geom {
 struct PlaneGeom : Geom {
     float p[4];  // 0x4c
 };
-
-// 0x8026D428: ray against plane (RayPlaneCollide)
-extern "C" int fn_8026D428(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
-{
-    RayGeom* ray = (RayGeom*)o1;
-    PlaneGeom* plane = (PlaneGeom*)o2;
-
-    float alpha = plane->p[3] - Dot(plane->p, ray->pos);
-    // note: if alpha > 0 the starting point is below the plane
-    float nsign = (alpha > 0) ? -1.0f : 1.0f;
-    float k = Dot14(plane->p, ray->rot + 2);
-    if (k == 0) {
-        return 0;  // ray parallel to plane
-    }
-    alpha /= k;
-    if (alpha < 0 || alpha > ray->length) {
-        return 0;
-    }
-    contact->pos[0] = ray->pos[0] + alpha * ray->rot[0 * 4 + 2];
-    contact->pos[1] = ray->pos[1] + alpha * ray->rot[1 * 4 + 2];
-    contact->pos[2] = ray->pos[2] + alpha * ray->rot[2 * 4 + 2];
-    contact->normal[0] = nsign * plane->p[0];
-    contact->normal[1] = nsign * plane->p[1];
-    contact->normal[2] = nsign * plane->p[2];
-    contact->depth = alpha;
-    contact->g1 = ray;
-    contact->g2 = plane;
-    return 1;
-}
-
-// TODO (not drafted yet, 0x518 bytes at 0x8026D538): ray against box
-extern "C" int fn_8026D538(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
-
-// TODO (not drafted yet, 0x45C bytes at 0x8026DA50): ray against capsule
-extern "C" int fn_8026DA50(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
 
 // The concrete geometry classes (dxSphere, dxCCylinder, dxBox); their constructors are
 // inlined into the dCreate* functions below.
@@ -307,6 +274,132 @@ struct BoxGeom : Geom {
     virtual ~BoxGeom();
     virtual void computeAABB();
 };
+
+// 0x8026D428: ray against plane (RayPlaneCollide)
+extern "C" int fn_8026D428(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
+{
+    RayGeom* ray = (RayGeom*)o1;
+    PlaneGeom* plane = (PlaneGeom*)o2;
+
+    float alpha = plane->p[3] - Dot(plane->p, ray->pos);
+    // note: if alpha > 0 the starting point is below the plane
+    float nsign = (alpha > 0) ? -1.0f : 1.0f;
+    float k = Dot14(plane->p, ray->rot + 2);
+    if (k == 0) {
+        return 0;  // ray parallel to plane
+    }
+    alpha /= k;
+    if (alpha < 0 || alpha > ray->length) {
+        return 0;
+    }
+    contact->pos[0] = ray->pos[0] + alpha * ray->rot[0 * 4 + 2];
+    contact->pos[1] = ray->pos[1] + alpha * ray->rot[1 * 4 + 2];
+    contact->pos[2] = ray->pos[2] + alpha * ray->rot[2 * 4 + 2];
+    contact->normal[0] = nsign * plane->p[0];
+    contact->normal[1] = nsign * plane->p[1];
+    contact->normal[2] = nsign * plane->p[2];
+    contact->depth = alpha;
+    contact->g1 = ray;
+    contact->g2 = plane;
+    return 1;
+}
+
+// TODO (not drafted yet, 0x518 bytes at 0x8026D538): ray against box
+extern "C" int fn_8026D538(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
+
+// 0x8026DA50: ray against box (dCollideRayBox)
+extern "C" int fn_8026DA50(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
+{
+    RayGeom* ray = (RayGeom*)o1;
+    BoxGeom* box = (BoxGeom*)o2;
+
+    contact->g1 = ray;
+    contact->g2 = box;
+
+    int i;
+
+    // compute v = start point of segment relative to box center
+    float v[4];
+    for (i = 0; i < 3; i++) {
+        v[i] = ray->pos[i] - box->pos[i];
+    }
+
+    // compute v = ray start relative to box, and transformed direction (s,t)
+    float tmp[4], s[4], dir[4];
+    MatTransMulVec(s, box->rot, v);
+    tmp[0] = ray->rot[0 * 4 + 2];
+    tmp[1] = ray->rot[1 * 4 + 2];
+    tmp[2] = ray->rot[2 * 4 + 2];
+    MatTransMulVec(dir, box->rot, tmp);
+
+    // mirror the line so that v has all components >= 0
+    float sign[4];
+    for (i = 0; i < 3; i++) {
+        if (dir[i] < 0) {
+            s[i] = -s[i];
+            dir[i] = -dir[i];
+            sign[i] = 1;
+        } else {
+            sign[i] = -1;
+        }
+    }
+
+    // compute h = half the side lengths
+    float h[4];
+    h[0] = 0.5f * box->side[0];
+    h[1] = 0.5f * box->side[1];
+    h[2] = 0.5f * box->side[2];
+
+    // do a few early exit tests
+    if ((s[0] < -h[0] && dir[0] <= 0) || s[0] > h[0] || (s[1] < -h[1] && dir[1] <= 0) || s[1] > h[1] ||
+        (s[2] < -h[2] && dir[2] <= 0) || s[2] > h[2] || (dir[0] == 0 && dir[1] == 0 && dir[2] == 0)) {
+        return 0;
+    }
+
+    // compute [lo..hi] range for t
+    float lo = -FLT_MAX;
+    float hi = FLT_MAX;
+    int nlo = 0, nhi = 0;
+    for (i = 0; i < 3; i++) {
+        if (dir[i] != 0) {
+            float k = (-h[i] - s[i]) / dir[i];
+            if (k > lo) {
+                lo = k;
+                nlo = i;
+            }
+            k = (h[i] - s[i]) / dir[i];
+            if (k < hi) {
+                hi = k;
+                nhi = i;
+            }
+        }
+    }
+
+    // check if the ray intersects
+    if (lo > hi) {
+        return 0;
+    }
+    float alpha;
+    int n;
+    if (lo >= 0) {
+        alpha = lo;
+        n = nlo;
+    } else {
+        alpha = hi;
+        n = nhi;
+    }
+    if (alpha < 0 || alpha > ray->length) {
+        return 0;
+    }
+    contact->pos[0] = ray->pos[0] + alpha * ray->rot[0 * 4 + 2];
+    contact->pos[1] = ray->pos[1] + alpha * ray->rot[1 * 4 + 2];
+    contact->pos[2] = ray->pos[2] + alpha * ray->rot[2 * 4 + 2];
+    contact->normal[0] = box->rot[0 * 4 + n] * sign[n];
+    contact->normal[1] = box->rot[1 * 4 + n] * sign[n];
+    contact->normal[2] = box->rot[2 * 4 + n] * sign[n];
+    contact->depth = alpha;
+    return 1;
+}
 
 int RaySphereTest(RayGeom* ray, float* sphere_pos, float radius, ContactGeom* contact, int mode);
 
@@ -424,13 +517,127 @@ extern "C" int fn_8026E194(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
     return ncontacts;
 }
 
-// TODO (not drafted yet, 0x454 bytes at 0x8026E498): box against sphere / capsule family
-extern "C" int fn_8026E498(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
 
-// Closest points between a line segment and a box (dClosestLineBoxPoints); later in this unit.
-void ClosestLineBoxPoints(float* p1, float* p2, float* c, float* R, float* side, float* lret, float* bret);
-// Collides two spheres (dCollideSpheres); later in this unit.
+// Closest points between a line segment and a box (dClosestLineBoxPoints) and between two line
+// segments (dClosestLineSegmentPoints); in collision_util (u_8027243C).
+extern "C" void fn_8027243C(const float* p1, const float* p2, const float* c, const float* R, const float* side,
+                            float* lret, float* bret);
+extern "C" void fn_80272A90(const float* a1, const float* a2, const float* b1, const float* b2, float* cp1,
+                            float* cp2);
+// Collides two spheres (dCollideSpheres); in collision_util (u_8027243C).
 int CollideSpheres(float* p1, float r1, float* p2, float r2, ContactGeom* contact);
+
+// 0x8026E498: capsule against capsule (dCollideCCylinderCCylinder)
+extern "C" int fn_8026E498(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
+{
+    int i;
+    const float tolerance = 1e-5f;
+
+    CapsuleGeom* cyl1 = (CapsuleGeom*)o1;
+    CapsuleGeom* cyl2 = (CapsuleGeom*)o2;
+
+    contact->g1 = o1;
+    contact->g2 = o2;
+
+    // copy out some variables, for convenience
+    float lz1 = cyl1->lz * 0.5f;
+    float lz2 = cyl2->lz * 0.5f;
+    float* pos1 = o1->pos;
+    float* pos2 = o2->pos;
+    float axis1[3], axis2[3];
+    axis1[0] = o1->rot[2];
+    axis1[1] = o1->rot[6];
+    axis1[2] = o1->rot[10];
+    axis2[0] = o2->rot[2];
+    axis2[1] = o2->rot[6];
+    axis2[2] = o2->rot[10];
+
+    // if the cylinder axes are close to parallel, we'll try to detect up to
+    // two contact points along the body of the cylinder. if we can't find any
+    // points then we'll fall back to the closest-points algorithm.
+
+    float sphere1[4], sphere2[4];
+    float a1a2 = Dot(axis1, axis2);
+    float det = 1.0f - a1a2 * a1a2;
+    if (det < tolerance) {
+        // the cylinder axes (almost) parallel, so we will generate up to two
+        // contacts. first compute where the two cylinders overlap in alpha1 space:
+        if (a1a2 < 0) {
+            axis2[0] = -axis2[0];
+            axis2[1] = -axis2[1];
+            axis2[2] = -axis2[2];
+        }
+        float q[3];
+        for (i = 0; i < 3; i++) {
+            q[i] = pos1[i] - pos2[i];
+        }
+        float k = Dot(axis1, q);
+        float a1lo = -lz1;
+        float a1hi = lz1;
+        float a2lo = -lz2 - k;
+        float a2hi = lz2 - k;
+        float lo = (a1lo > a2lo) ? a1lo : a2lo;
+        float hi = (a1hi < a2hi) ? a1hi : a2hi;
+        if (lo <= hi) {
+            int num_contacts = flags & NUMC_MASK;
+            if (num_contacts >= 2 && lo < hi) {
+                // generate up to two contacts. if one of those contacts is
+                // not made, fall back on the one-contact strategy.
+                for (i = 0; i < 3; i++) {
+                    sphere1[i] = pos1[i] + lo * axis1[i];
+                }
+                for (i = 0; i < 3; i++) {
+                    sphere2[i] = pos2[i] + (lo + k) * axis2[i];
+                }
+                int n1 = CollideSpheres(sphere1, cyl1->radius, sphere2, cyl2->radius, contact);
+                if (n1) {
+                    for (i = 0; i < 3; i++) {
+                        sphere1[i] = pos1[i] + hi * axis1[i];
+                    }
+                    for (i = 0; i < 3; i++) {
+                        sphere2[i] = pos2[i] + (hi + k) * axis2[i];
+                    }
+                    ContactGeom* c2 = CONTACT(contact, skip);
+                    int n2 = CollideSpheres(sphere1, cyl1->radius, sphere2, cyl2->radius, c2);
+                    if (n2) {
+                        c2->g1 = o1;
+                        c2->g2 = o2;
+                        return 2;
+                    }
+                }
+            }
+
+            // just one contact to generate, so put it in the middle of the range
+            float alpha1 = (lo + hi) * 0.5f;
+            float alpha2 = alpha1 + k;
+            for (i = 0; i < 3; i++) {
+                sphere1[i] = pos1[i] + alpha1 * axis1[i];
+            }
+            for (i = 0; i < 3; i++) {
+                sphere2[i] = pos2[i] + alpha2 * axis2[i];
+            }
+            return CollideSpheres(sphere1, cyl1->radius, sphere2, cyl2->radius, contact);
+        }
+    }
+
+    // use the closest point algorithm
+    float a1[4], a2[4], b1[4], b2[4];
+    a1[0] = o1->pos[0] + axis1[0] * lz1;
+    a1[1] = o1->pos[1] + axis1[1] * lz1;
+    a1[2] = o1->pos[2] + axis1[2] * lz1;
+    a2[0] = o1->pos[0] - axis1[0] * lz1;
+    a2[1] = o1->pos[1] - axis1[1] * lz1;
+    a2[2] = o1->pos[2] - axis1[2] * lz1;
+    b1[0] = o2->pos[0] + axis2[0] * lz2;
+    b1[1] = o2->pos[1] + axis2[1] * lz2;
+    b1[2] = o2->pos[2] + axis2[2] * lz2;
+    b2[0] = o2->pos[0] - axis2[0] * lz2;
+    b2[1] = o2->pos[1] - axis2[1] * lz2;
+    b2[2] = o2->pos[2] - axis2[2] * lz2;
+
+    fn_80272A90(a1, a2, b1, b2, sphere1, sphere2);
+    return CollideSpheres(sphere1, cyl1->radius, sphere2, cyl2->radius, contact);
+}
 
 // 0x8026E8EC: capsule against box (CapsuleBoxCollide)
 extern "C" int fn_8026E8EC(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
@@ -459,7 +666,7 @@ extern "C" int fn_8026E8EC(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
 
     // get the closest point between the cylinder axis and the box
     float pl[4], pb[4];
-    ClosestLineBoxPoints(p1, p2, c, R, side, pl, pb);
+    fn_8027243C(p1, p2, c, R, side, pl, pb);
 
     // generate contact point
     return CollideSpheres(pl, radius, pb, 0, contact);
@@ -803,8 +1010,6 @@ extern "C" int fn_8026F9F8(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
 
 extern "C" void fn_80271144(int n, float* p, int m, int i0, int* iret);
 extern "C" int fn_80271508(float* h, float* p, float* ret);
-
-#define FLT_MAX 3.402823466e+38f
 
 // Closest points of two lines (dLineClosestApproach); in collision_util.
 void LineClosestApproach(float* pa, float* ua, float* pb, float* ub, float* alpha, float* beta);
