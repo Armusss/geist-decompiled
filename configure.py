@@ -828,7 +828,7 @@ config.libs = [
             Object(NonMatching, "game/u_80272060.cpp"),  # split from u_8026C200 (own .sdata2 pool)
             Object(Matching, "game/u_8027337C.cpp"),  # split from u_8026C200 (ODE error.cpp)
             Object(NonMatching, "game/u_80273650.cpp"),  # split from u_8026C200 (own .sdata2 pool)
-            Object(NonMatching, "game/u_80276090.cpp"),  # split from u_8026C200 (own .sdata2 pool)
+            Object(Matching, "game/u_80276090.cpp"),  # ODE mass.cpp (split from u_8026C200; own .sdata2 pool)
             # ODE 0.5 library files (STATUS G4): the ODE library was built with -inline deferred, so functions come
             # out in reverse source order (also error.cpp, collision_std.cpp); with the default setting the
             # .sdata2 literal order of matrix.cpp / misc.cpp cannot be produced. Proof: whole DOL matches.

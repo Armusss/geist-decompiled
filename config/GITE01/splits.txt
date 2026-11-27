@@ -1263,6 +1263,7 @@ game/u_80273650.cpp:
 
 game/u_80276090.cpp:
 	.text       start:0x80276090 end:0x802766F0
+	.sdata2     start:0x804DA298 end:0x804DA2C0
 
 game/ode/matrix.cpp:
 	.text       start:0x802766F0 end:0x80277190
