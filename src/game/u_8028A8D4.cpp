@@ -15,73 +15,16 @@
 typedef unsigned long u32;
 typedef unsigned char u8;
 
-void VFree(void* p);
+#include "game/string.h"
 
 extern "C" void ScreenEffectMemFill(void* dst, u32 size, u8 fill);
 extern u8 lbl_804D37C8;
 extern "C" void fn_8028BC5C(void* self, int pos, int size);
 
-// The buffer classes form a chain ScreenEffectSlot -> ScreenEffectBuffer ->
-// Buffer -> String (vtables 0x803C29F0, 0x803C2A28, 0x803C2A08 and
-// __vt__6String; the two base class names are guesses).  The slots after the
-// destructor are Clear (0x0C), GetAlignment (0x10), Commit (0x14), Append
-// (0x18) and GetSpan (0x1C), named after the BufferOwner overrides in
-// u_8028865C.cpp (names are guesses).  ScreenEffectSlot leaves Commit empty
-// (null slot) and ScreenEffectBuffer leaves GetSpan empty; Buffer's GetSpan
-// is the inline `return 0` (0x8007AD60) shared by every Buffer-derived
-// vtable, emitted with the first of them (u_800776FC.cpp).  Every constructor runs its base constructor out of line;
-// the two base destructors are defined in the class, so ~Buffer runs them
-// inline (each restores its own vtable) and their deleting copies are emitted
-// with the vtables.  CodeWarrior passes the delete flag as a hidden short.
-// All four data words are declared in the base; their meaning:
-//   +0x04 outside text the store is built from, +0x08 length,
-//   +0x0C store, +0x10 store capacity (0 while the outside text is used).
-class ScreenEffectSlot {
-public:
-    ScreenEffectSlot();
-    virtual ~ScreenEffectSlot() {}
-    virtual void Clear();                               // 0x0C
-    virtual int GetAlignment();                         // 0x10: element alignment
-    virtual void Commit(int start, unsigned long size) = 0; // 0x14: clear the newly added store
-    void Set(int start, int size);
-    static void operator delete(void* p) { VFree(p); }
-
-    char* mStart; // 0x04
-    int mSize;    // 0x08
-    char* unk0C;  // 0x0C
-    u32 mState;   // 0x10
-};
-
-class ScreenEffectBuffer : public ScreenEffectSlot {
-public:
-    ScreenEffectBuffer();
-    virtual ~ScreenEffectBuffer() {}
-    virtual void Clear();
-    virtual void Commit(int start, unsigned long size);
-    virtual void Append(unsigned char* data, unsigned long size); // 0x18: called with the backing store
-    virtual int GetSpan() = 0;                                    // 0x1C: bytes the next reserve needs
-};
-
-class Buffer : public ScreenEffectBuffer {
-public:
-    virtual ~Buffer();
-    Buffer();
-    virtual void Clear();
-    virtual int GetSpan() { return 0; }
-    char* Erase(char* pos, int size);
-    char* Insert(char* pos, int size);
-    void Free();
-};
-
-// String: a Buffer whose text source (mStart) and length (mSize) describe an
-// outside character array; the store is built from it on demand.
-class String : public Buffer {
-public:
-    String();
-    String(const char* text);
-    String(const String& src);
-    int Equals(const char* name);
-};
+// The buffer classes (ScreenEffectSlot -> ScreenEffectBuffer -> Buffer -> String) are declared in
+// include/game/string.h.  Every constructor runs its base constructor out of line; the two base destructors
+// are defined in the class, so ~Buffer runs them inline (each restores its own vtable) and their deleting
+// copies are emitted with the vtables.  CodeWarrior passes the delete flag as a hidden short.
 
 extern int lbl_804D37B8;
 extern int lbl_804D37BC;
@@ -332,30 +275,30 @@ int ScreenEffectSlot::GetAlignment()
 // 0x8028B1D4: forget the outside range.
 void ScreenEffectSlot::Clear()
 {
-    mStart = 0;
-    mSize = 0;
-}
-
-// fn_8028B23C: constructor; installs the vtable and clears the range.
-ScreenEffectSlot::ScreenEffectSlot()
-{
-    mStart = 0;
-    mSize = 0;
+    mData = 0;
+    mLength = 0;
 }
 
 // fn_8028B1E4: let the slot prepare itself, then store the new range.
 void ScreenEffectSlot::Set(int start, int size)
 {
     Clear();
-    mStart = (char*)start;
-    mSize = size;
+    mData = (char*)start;
+    mLength = size;
+}
+
+// fn_8028B23C: constructor; installs the vtable and clears the range.
+ScreenEffectSlot::ScreenEffectSlot()
+{
+    mData = 0;
+    mLength = 0;
 }
 
 // fn_8028B2A0: clear the base state, then forget the store capacity at +0x10.
 void Buffer::Clear()
 {
     ScreenEffectBuffer::Clear();
-    mState = 0;
+    mOwned = 0;
 }
 
 // 0x8028B2D4: write the range reported by the slot's virtual query into the
@@ -366,15 +309,15 @@ void Buffer::Clear()
 // address of the first byte after the erased range.
 static inline char* SlotErase(ScreenEffectSlot* slot, char* pos, int size)
 {
-    int rel = pos - slot->unk0C;
-    fn_8028BC5C(slot, (int)(slot->unk0C + rel), size);
-    slot->mSize -= size;
-    return slot->unk0C + rel;
+    int rel = pos - slot->mUnk0C;
+    fn_8028BC5C(slot, (int)(slot->mUnk0C + rel), size);
+    slot->mLength -= size;
+    return slot->mUnk0C + rel;
 }
 
 extern "C" void fn_8028B2D4(ScreenEffectSlot* slot)
 {
-    SlotErase(slot, slot->unk0C + slot->mSize - slot->GetAlignment(), slot->GetAlignment());
+    SlotErase(slot, slot->mUnk0C + slot->mLength - slot->GetAlignment(), slot->GetAlignment());
 }
 
 // 0x8028B35C: erase `size` bytes at `pos` (an address inside the store) and
@@ -382,10 +325,10 @@ extern "C" void fn_8028B2D4(ScreenEffectSlot* slot)
 // the move call, as retail does.
 char* Buffer::Erase(char* pos, int size)
 {
-    int rel = pos - unk0C;
-    fn_8028BC5C(this, (int)(unk0C + rel), size);
-    mSize -= size;
-    return unk0C + rel;
+    int rel = pos - mUnk0C;
+    fn_8028BC5C(this, (int)(mUnk0C + rel), size);
+    mLength -= size;
+    return mUnk0C + rel;
 }
 
 // 0x8009D974: grow (or, with a null base, allocate) a heap block.
@@ -429,7 +372,7 @@ static inline bool BufferShared(Buffer* self)
 {
     bool shared = false;
 
-    if (self->mState == 0 && self->mStart != 0)
+    if (self->mOwned == 0 && self->mData != 0)
         shared = true;
     return shared;
 }
@@ -441,23 +384,23 @@ static inline void BufferReserve(Buffer* self, u32 size, u8 exact)
 {
     u32 want = size + self->GetSpan();
 
-    if (self->mState < want) {
-        char* old = BufferShared(self) ? 0 : self->unk0C;
+    if (self->mOwned < want) {
+        char* old = BufferShared(self) ? 0 : self->mUnk0C;
         char* store;
 
         if (!exact)
             want = AlignUp(want, AlignUp(0x40, (u32)self->GetAlignment()));
         store = (char*)VRealloc(old, (int)want);
-        self->Commit((int)(store + self->mState), want - self->mState);
-        if (old == 0 && self->mStart != 0) {
+        self->Commit((int)(store + self->mOwned), want - self->mOwned);
+        if (old == 0 && self->mData != 0) {
             u32 count = want;
-            if ((u32)self->mSize + 1 < want)
-                count = (u32)self->mSize + 1;
-            CopyBytes((const u8*)self->mStart, count, (u8*)store);
+            if ((u32)self->mLength + 1 < want)
+                count = (u32)self->mLength + 1;
+            CopyBytes((const u8*)self->mData, count, (u8*)store);
         }
-        self->Set((int)store, self->mSize);
-        self->unk0C = store;
-        self->mState = want;
+        self->Set((int)store, self->mLength);
+        self->mUnk0C = store;
+        self->mOwned = want;
     }
 }
 
@@ -465,14 +408,14 @@ static inline void BufferReserve(Buffer* self, u32 size, u8 exact)
 // store when needed, and return the address of the new window.
 char* Buffer::Insert(char* pos, int size)
 {
-    int rel = pos - unk0C;
-    int newSize = size + mSize;
+    int rel = pos - mUnk0C;
+    int newSize = size + mLength;
 
-    if (mState < newSize + GetSpan())
+    if (mOwned < newSize + GetSpan())
         BufferReserve(this, newSize, 0);
-    mSize = newSize;
-    fn_8028BC94(this, (int)(unk0C + rel), size);
-    return unk0C + rel;
+    mLength = newSize;
+    fn_8028BC94(this, (int)(mUnk0C + rel), size);
+    return mUnk0C + rel;
 }
 
 // Reserve room for `size` bytes; a non-zero `exact` skips the block rounding
@@ -487,22 +430,22 @@ void ScreenEffectSlotReserveAndCopy(ScreenEffectSlot* slot, int text, int size)
 {
     Buffer* self = (Buffer*)slot;
 
-    if (self->mState < size + self->GetSpan())
+    if (self->mOwned < size + self->GetSpan())
         BufferReserve(self, size, 1);
-    self->mSize = size;
-    ScreenEffectSlotQueueCopy(self, (u32)self->unk0C, text, size);
+    self->mLength = size;
+    ScreenEffectSlotQueueCopy(self, (u32)self->mUnk0C, text, size);
 }
 
 // 0x8028B960: release the backing store through VFree when the slot holds
 // one, then clear the pending state.
 void Buffer::Free()
 {
-    if (mState != 0) {
-        Append((unsigned char*)unk0C, mState);
-        VFree((void*)unk0C);
+    if (mOwned != 0) {
+        Append((unsigned char*)mUnk0C, mOwned);
+        VFree((void*)mUnk0C);
     }
     ScreenEffectBuffer::Clear();
-    mState = 0;
+    mOwned = 0;
 }
 
 // __dt__6BufferFv: deleting destructor of Buffer.  The body releases the
@@ -513,16 +456,16 @@ Buffer::~Buffer()
 {
     bool skip = false;
 
-    if (mState == 0 && mStart != 0)
+    if (mOwned == 0 && mData != 0)
         skip = true;
 
     if (!skip) {
-        if (mState != 0) {
-            Append((unsigned char*)unk0C, mState);
-            VFree((void*)unk0C);
+        if (mOwned != 0) {
+            Append((unsigned char*)mUnk0C, mOwned);
+            VFree((void*)mUnk0C);
         }
         ScreenEffectBuffer::Clear();
-        mState = 0;
+        mOwned = 0;
     }
 }
 
@@ -530,7 +473,7 @@ Buffer::~Buffer()
 // Buffer vtable (implicit) and marks the buffer as holding no store yet.
 Buffer::Buffer()
 {
-    mState = 0;
+    mOwned = 0;
 }
 
 // 0x8028BAE0: deleting destructor of BufferBase.  Retail shows the shape
@@ -605,12 +548,12 @@ void ScreenEffectBuffer::Commit(int start, unsigned long size)
 void ScreenEffectRotateBytes(char* start, char* middle, char* end);
 
 // fn_8028BC5C: mark [pos, pos + size) of the window that ends at the slot's
-// current write position (unk0C + mSize).
+// current write position (mUnk0C + mLength).
 extern "C" void fn_8028BC5C(void* self, int pos, int size)
 {
     ScreenEffectSlot* s = (ScreenEffectSlot*)self;
 
-    ScreenEffectRotateBytes((char*)pos, (char*)(pos + size), s->unk0C + s->mSize);
+    ScreenEffectRotateBytes((char*)pos, (char*)(pos + size), s->mUnk0C + s->mLength);
 }
 
 // fn_8028BC94: mark the last `size` bytes before the slot's current write
@@ -618,7 +561,7 @@ extern "C" void fn_8028BC5C(void* self, int pos, int size)
 extern "C" void fn_8028BC94(void* self, int pos, int size)
 {
     ScreenEffectSlot* s = (ScreenEffectSlot*)self;
-    char* end = s->unk0C + s->mSize;
+    char* end = s->mUnk0C + s->mLength;
 
     ScreenEffectRotateBytes((char*)pos, end - size, end);
 }
@@ -635,7 +578,7 @@ extern "C" void ScreenEffectSlotQueueCopy(void* self, u32 base, u32 offset, u32 
 void ScreenEffectBuffer::Clear()
 {
     ScreenEffectSlot::Clear();
-    unk0C = 0;
+    mUnk0C = 0;
 }
 
 // fn_8028BD4C: constructor of the slot variant that owns the pixel store.
@@ -645,7 +588,7 @@ void ScreenEffectBuffer::Clear()
 // fn_8028BD4C: __ct__18ScreenEffectBufferFv
 ScreenEffectBuffer::ScreenEffectBuffer()
 {
-    unk0C = 0;
+    mUnk0C = 0;
 }
 
 // The fill routine replicates the fill byte through a word using the two
@@ -766,7 +709,7 @@ extern "C" int vsnprintf(char* buffer, unsigned long count, const char* format,
                          va_list args);
 
 // fn_8028BF80: format text into the buffer's store and record the length in
-// mSize.  The first pass formats into a small local string to learn how long
+// mLength.  The first pass formats into a small local string to learn how long
 // the text is; when the store cannot hold the result plus its terminator it is
 // grown and the text is formatted again into the real store.  Other units call
 // this under its placeholder name, so it keeps C linkage.
@@ -777,19 +720,19 @@ extern "C" int fn_8028BF80(Buffer* self, const char* format, ...)
     int len;
 
     va_start(args, format);
-    len = vsnprintf(self->mState ? (char*)self->unk0C : empty,
-                    self->mState ? (u32)self->mState : 1u, format, args);
+    len = vsnprintf(self->mOwned ? (char*)self->mUnk0C : empty,
+                    self->mOwned ? (u32)self->mOwned : 1u, format, args);
     if (len >= 0) {
-        if ((u32)len >= (u32)(self->mState ? self->mState : 1)) {
+        if ((u32)len >= (u32)(self->mOwned ? self->mOwned : 1)) {
             fn_8028B5FC(self, len, 1);
             va_start(args, format);
-            len = vsnprintf((char*)self->unk0C, (u32)self->mState, format,
+            len = vsnprintf((char*)self->mUnk0C, (u32)self->mOwned, format,
                             args);
         }
-        if ((u32)self->mState < (u32)(len + self->GetSpan()))
+        if ((u32)self->mOwned < (u32)(len + self->GetSpan()))
             fn_8028B5FC(self, len, 1);
-        self->mSize = len;
-        self->unk0C[len] = 0;
+        self->mLength = len;
+        self->mUnk0C[len] = 0;
     }
     return len;
 }
@@ -811,7 +754,7 @@ int String::Equals(const char* name)
         name = sEmptyString;
     length = strlen(name);
     result = 0;
-    if (length == (u32)mSize && memcmp(mStart, name, (u32)mSize) == 0)
+    if (length == (u32)mLength && memcmp(mData, name, (u32)mLength) == 0)
         result = 1;
     return result;
 }
@@ -828,12 +771,12 @@ extern "C" void fn_8028C188(Buffer* self, char* text, int size)
     len = size;
     while (len != 0 && text[len - 1] == 0)
         len--;
-    pos = len + self->mSize;
-    if ((u32)self->mState < (u32)(pos + self->GetSpan()))
+    pos = len + self->mLength;
+    if ((u32)self->mOwned < (u32)(pos + self->GetSpan()))
         fn_8028B5FC(self, pos, 1);
-    self->mSize = pos;
-    self->unk0C[pos] = 0;
-    CopyBytes((const u8*)text, len, (u8*)(self->unk0C + self->mSize - len));
+    self->mLength = pos;
+    self->mUnk0C[pos] = 0;
+    CopyBytes((const u8*)text, len, (u8*)(self->mUnk0C + self->mLength - len));
 }
 
 // fn_8028C258: append a text (AppendText), ignoring any trailing NULs, and
@@ -850,12 +793,12 @@ extern "C" void fn_8028C258(Buffer* self, const char* text)
     len = strlen(text);
     while (len != 0 && text[len - 1] == 0)
         len--;
-    pos = len + self->mSize;
-    if ((u32)self->mState < (u32)(pos + self->GetSpan()))
+    pos = len + self->mLength;
+    if ((u32)self->mOwned < (u32)(pos + self->GetSpan()))
         fn_8028B5FC(self, pos, 1);
-    self->mSize = pos;
-    self->unk0C[pos] = 0;
-    CopyBytes((const u8*)text, len, (u8*)(self->unk0C + self->mSize - len));
+    self->mLength = pos;
+    self->mUnk0C[pos] = 0;
+    CopyBytes((const u8*)text, len, (u8*)(self->mUnk0C + self->mLength - len));
 }
 
 // fn_8028C338: replace the buffer's text with a text (SetText), ignoring any
@@ -870,11 +813,11 @@ extern "C" void fn_8028C338(Buffer* self, const char* text)
     len = strlen(text);
     while (len != 0 && text[len - 1] == 0)
         len--;
-    if ((u32)self->mState < (u32)(len + self->GetSpan()))
+    if ((u32)self->mOwned < (u32)(len + self->GetSpan()))
         fn_8028B5FC(self, len, 1);
-    self->mSize = len;
-    self->unk0C[len] = 0;
-    ScreenEffectSlotQueueCopy(self, (u32)self->unk0C, (u32)text, (u32)len);
+    self->mLength = len;
+    self->mUnk0C[len] = 0;
+    ScreenEffectSlotQueueCopy(self, (u32)self->mUnk0C, (u32)text, (u32)len);
 }
 
 // 0x8028C400: construct a String over an outside character array.  A null
@@ -894,13 +837,13 @@ String::String(const String& src)
 {
     bool share = false;
 
-    if (src.mState == 0 && src.mStart != 0)
+    if (src.mOwned == 0 && src.mData != 0)
         share = true;
     if (share)
-        ((ScreenEffectSlot*)this)->Set((int)src.mStart, src.mSize);
+        ((ScreenEffectSlot*)this)->Set((int)src.mData, src.mLength);
     else
         ScreenEffectSlotReserveAndCopy((ScreenEffectSlot*)this,
-                                       (int)src.mStart, src.mSize);
+                                       (int)src.mData, src.mLength);
 }
 
 // 0x8028C500: default constructor.  The string starts out empty and shares the

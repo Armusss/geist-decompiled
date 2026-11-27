@@ -30,6 +30,9 @@
 void* VAlloc(int size);
 void VFree(void* p);
 
+class Buffer;
+extern "C" void fn_8028B5FC(Buffer* self, int size, unsigned char exact); // 0x8028B5FC: reserve (exact: no rounding)
+
 class ScreenEffectSlot {
 public:
     ScreenEffectSlot();                                       // 0x8028B23C
@@ -37,13 +40,14 @@ public:
     virtual void Clear();                                     // 0x0C
     virtual int GetAlignment();                               // 0x10: element size
     virtual void Commit(int start, unsigned long size) = 0;   // 0x14: newly reserved store
+    void Set(int start, int size);                            // 0x8028B1E4: Clear, then use outside text
     static void* operator new(unsigned long size) { return VAlloc(size); }
     static void operator delete(void* p) { VFree(p); }
 
     char* mData;                               // 0x04 outside text the store is built from
     int mLength;                               // 0x08 length in bytes
-    int mUnk0C;                                // 0x0C store
-    int mOwned;                                // 0x10 store capacity (0 while the outside text is used)
+    char* mUnk0C;                              // 0x0C store
+    unsigned long mOwned;                      // 0x10 store capacity (0 while the outside text is used; compared unsigned)
 };
 
 class ScreenEffectBuffer : public ScreenEffectSlot {
@@ -72,6 +76,8 @@ class String : public Buffer {
 public:
     String();                                  // 0x8028C500
     String(const char* s);                     // 0x8028C400
+    String(const String& src);                 // 0x8028C46C
+    int Equals(const char* name);              // 0x8028C110
     ~String() {}
     virtual int GetSpan();
 };
