@@ -108,23 +108,26 @@ void AmmoRefillResetStatics(void)
     gUserGeomClassCount = 0;
 }
 
-class UserGeom;
+// The user geometry class (dxUserGeom, collision_kernel.cpp): 0x50 bytes, allocated with dAlloc.
+void* dAlloc(unsigned long size);
 
-UserGeom* dAlloc(unsigned long size);
-UserGeom* UserGeomCreate(UserGeom* geom, int type);
+struct UserGeom {
+    char base[0x48];
+    void* vptr;         // 0x48
+    void* userData;     // 0x4c
 
-// Allocates a 0x50-byte user geometry and initialises it for the given type.
+    UserGeom(int type);
+    void* operator new(unsigned long size) { return dAlloc(size); }
+};
+
+// Allocates a user geometry of the given registered class (dCreateGeom).
 UserGeom* UserGeomAlloc(int type)
 {
-    UserGeom* geom = dAlloc(0x50);
-
-    if (geom != 0)
-        geom = UserGeomCreate(geom, type);
-    return geom;
+    return new UserGeom(type);
 }
 
-// Returns the solver handle stored in the geometry.
+// Returns the geometry's user data (dGeomGetClassData).
 int UserGeomGetId(UserGeom* geom)
 {
-    return *(int*)((char*)geom + 0x4c);
+    return (int)geom->userData;
 }

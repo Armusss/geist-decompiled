@@ -822,7 +822,7 @@ config.libs = [
             Object(NonMatching, "game/u_802698D0.cpp"),  # view sensors (split from u_802690C8)
             Object(Matching, "game/Timer.cpp"),  # per-level timer hooks
             Object(Matching, "game/u_8026A158.cpp"),  # guess
-            Object(Matching, "game/u_8026A37C.cpp"),  # guess
+            Object(Matching, "game/u_8026A37C.cpp", extra_cflags=["-inline deferred"]),  # ODE collision_kernel.cpp (-inline deferred, user-approved 2026-11-27)
             Object(NonMatching, "game/u_8026C200.cpp"),  # guess
             Object(NonMatching, "game/u_8026D428.cpp"),  # split from u_8026C200 (own .sdata2 pool)
             Object(NonMatching, "game/u_80272060.cpp"),  # split from u_8026C200 (own .sdata2 pool)

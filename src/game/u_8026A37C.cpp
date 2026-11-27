@@ -1,9 +1,9 @@
-// u_8026A37C.cpp (0x8026A37C-0x8026BE98): the ODE collision kernel (collision_kernel.cpp: geometry classes,
-// the class-pair collider matrix). It ends with space_geom_collider (0x8026BB0C); collision_space.cpp
-// (u_8026C200) starts at 0x8026BE98 with the implicit ~dxHashSpace.
+// u_8026A37C.cpp (0x8026A37C-0x8026BE98): ODE 0.5 collision_kernel.cpp: the user geometry class (dxUserGeom,
+// dCreateGeomClass), the dGeom* API, dxGeom's constructor/destructor, dCollide and the class-pair collider matrix.
+// It ends with space_geom_collider (0x8026BB0C); collision_space.cpp (u_8026C200) starts at 0x8026BE98.
+// Built with -inline deferred like the other ODE files (user-approved 2026-11-27): the functions are in ODE source
+// order and come out reversed; ~UserGeom inlines ~Geom.
 // Names are descriptive guesses; the code is matched against the retail DOL.
-
-#pragma auto_inline off
 
 typedef unsigned long u32;
 typedef signed long s32;
@@ -26,57 +26,19 @@ struct ContactGeom {
     Geom* g2;         // 0x28
 };
 
-// One entry of the class-pair collider matrix.
+// One entry of the class-pair collider matrix (dColliderEntry).
 struct ColliderEntry {
     ColliderFn fn;    // 0x00
     int swap;         // 0x04
 };
 
-// A class registered at run time through GeomRegisterClass.
+// A class registered at run time through GeomRegisterClass (dGeomClass).
 struct UserGeomClass {
     u32 size;                                   // 0x00  per-geometry user data size
     ColliderFn (*getCollider)(int type);        // 0x04  pick a collider for the other type
     void (*computeAabb)(Geom* g, float* aabb);  // 0x08
     int (*test)(Geom* g, Geom* other, float* aabb); // 0x0c
     void (*release)(Geom* g);                   // 0x10
-};
-
-// The per-object class table of a plain geometry (five words: two header words, the
-// destructor, computeAabb and the AABB test).
-struct GeomVtbl {
-    int unk00;                             // 0x00
-    int unk04;                             // 0x04
-    Geom* (*destroy)(Geom* g, short del);  // 0x08
-    void (*computeAabb)(Geom* g);          // 0x0c
-    int (*isDefault)(Geom* g, Geom* other, float* aabb); // 0x10
-};
-
-// A collision space's class table extends the geometry's with the space entries.
-struct SpaceVtbl : GeomVtbl {
-    int (*getNumGeoms)(Geom* g);                // 0x14
-    void (*addGeom)(Geom* g, Geom* child, int arg);   // 0x18
-    void (*removeGeom)(Geom* g, Geom* child);   // 0x1c
-    void (*unk20)(Geom* g);                     // 0x20
-    void (*unk24)(Geom* g);                     // 0x24
-    void (*collideSpace)(Geom* g, void* data, SpaceCallback cb);          // 0x28
-    void (*collideGeom)(Geom* g, void* data, Geom* other, SpaceCallback cb); // 0x2c
-};
-
-// Virtual-call view of a geometry or space: the retail objects keep their vptr at 0x48, after
-// the base data, and every call below dispatches through it. (The class tables themselves
-// are still built by hand further down.)
-struct GeomV {
-    char pad00[0x48];
-    virtual Geom* destroy(short del);                                         // 0x08
-    virtual void computeAabb();                                               // 0x0c
-    virtual int isDefault(Geom* other);                                       // 0x10
-    virtual int getNumGeoms();                                                // 0x14
-    virtual void addGeom(Geom* child, int arg);                               // 0x18
-    virtual void removeGeom(Geom* child);                                     // 0x1c
-    virtual void unk20();                                                     // 0x20
-    virtual void unk24();                                                     // 0x24
-    virtual void collideSpace(void* data, SpaceCallback cb);                  // 0x28
-    virtual void collideGeom(void* data, Geom* other, SpaceCallback cb);      // 0x2c
 };
 
 // A rigid body (only the fields used here).
@@ -89,40 +51,68 @@ struct Body {
     float rot[12];      // 0xb8
 };
 
-// The geometry base class (dxGeom).
+// ODE memory.cpp / error.cpp / matrix.cpp.
+void* dAlloc(u32 size);
+void dDebug(int level, const char* msg, ...);
+void dFree(void* block, u32 size);
+void dSetZero(float* p, int n);
+
+enum { GEOM_DIRTY = 1, GEOM_AABB_BAD = 2, GEOM_PLACEABLE = 4, GEOM_ENABLED = 8 };
+
+// The geometry base class (dxGeom); the vptr follows the data at 0x48.
 struct Geom {
-    int type;          // 0x00
-    u32 flags;         // 0x04
-    int unk08;         // 0x08
-    Body* body;        // 0x0c
-    Geom* next;        // 0x10  next geometry of the same body
-    float* pos;        // 0x14
-    float* rot;        // 0x18
-    int nextInSpace;   // 0x1c  next geometry of the same space
-    int unk20;         // 0x20
-    Space* space;      // 0x24
-    float aabb[6];     // 0x28
-    int categoryBits;  // 0x40
-    int collideBits;   // 0x44
-    GeomVtbl* vtbl;    // 0x48
+    int type;           // 0x00
+    u32 flags;          // 0x04
+    void* data;         // 0x08
+    Body* body;         // 0x0c
+    Geom* bodyNext;     // 0x10  next geometry of the same body
+    float* pos;         // 0x14
+    float* rot;         // 0x18
+    Geom* next;         // 0x1c  next geometry of the same space
+    Geom** tome;        // 0x20
+    Space* parentSpace; // 0x24
+    float aabb[6];      // 0x28
+    int categoryBits;   // 0x40
+    int collideBits;    // 0x44
+
+    Geom(Space* space, int placeable);
+    virtual ~Geom();                                  // 0x08
+    virtual void computeAABB() = 0;                   // 0x0c
+    virtual int AABBTest(Geom* other, float* aabb);   // 0x10
+
+    void* operator new(u32 size) { return dAlloc(size); }
+    void operator delete(void* p, u32 size) { dFree(p, size); }
+
+    // Unlinks the geometry from its body's list (bodyRemove).
+    void bodyRemove()
+    {
+        if (body != 0) {
+            Geom** link = &body->firstGeom;
+            Geom* p = *link;
+            for (; p != 0; p = p->bodyNext) {
+                if (p == this) {
+                    *link = p->bodyNext;
+                    break;
+                }
+                link = &p->bodyNext;
+            }
+            body = 0;
+            bodyNext = 0;
+        }
+    }
 };
 
-// A geometry of a run-time registered class: the base plus the class's user data.
+// A geometry of a run-time registered class (dxUserGeom): the base plus the class's user data.
 struct UserGeom : Geom {
-    void* data;        // 0x4c
+    void* userData;     // 0x4c
+
+    UserGeom(int type);
+    ~UserGeom();
+    void computeAABB();
+    int AABBTest(Geom* other, float* aabb);
 };
 
-// A collision space: a geometry that holds other geometries.
-struct Space : Geom {
-    int count;         // 0x4c
-    Geom* firstGeom;   // 0x50
-    int dirty;         // 0x54
-    char pad58[0xc];   // 0x58
-    int unk64;         // 0x64
-    int unk68;         // 0x68
-};
-
-// The state passed down through a space traversal.
+// The state passed down through a space traversal (SpaceGeomColliderData).
 struct CollideData {
     int count;             // flags in the low half, remaining contact slots above
     ContactGeom* contact;  // 0x04
@@ -134,10 +124,10 @@ enum { GEOM_CLASSES = 15 };
 extern "C" {
 void* memcpy(void* dst, const void* src, unsigned long n);
 void* memset(void* dst, int c, unsigned long n);
-void fn_8026D3A0(Geom* g);
-void fn_802788E4(Body* body);
-void fn_8027896C(Body* body);
-void fn_8027BD20(float* m);
+void fn_8026D3A0(Geom* g);                                 // dGeomMoved (collision_space.cpp)
+void fn_802788E4(Body* body, const float* r);              // dBodySetRotation (ode.cpp)
+void fn_8027896C(Body* body, float x, float y, float z);   // dBodySetPosition (ode.cpp)
+void fn_8027BD20(float* m);                                // dRSetIdentity (rotation.cpp)
 int fn_8026F9F8(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
 int fn_8026F590(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
 int fn_8026F4D0(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
@@ -154,15 +144,10 @@ int fn_8026D428(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
 int fn_80272060(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
 }
 
-// ODE memory.cpp / error.cpp.
-void* dAlloc(u32 size);
-void dDebug(int level, const char* msg, ...);
-void dFree(void* block, u32 size);
-void dSetZero(float* p, int n);
-
-// The class tables of this file.
-extern GeomVtbl gUserGeomVtbl;
-extern GeomVtbl gGeomVtbl;
+// collision_space.cpp.
+void SpaceCollidePair(Geom* g1, Geom* g2, void* data, SpaceCallback callback);
+void SpaceRemoveGeom(Space* s, Geom* g);
+void SpaceAddGeom(Space* s, Geom* g, int arg);
 
 // Collision kernel state.
 ColliderEntry gColliders[GEOM_CLASSES][GEOM_CLASSES];  // 0x804A2A70
@@ -172,68 +157,90 @@ UserGeomClass gUserGeomClasses[4];                     // 0x804A3178
 extern int lbl_804D5518;
 extern int gUserGeomClassCount;
 
-static const char sTooManyUserClasses[] =
-    "too many user classes, you must increase the limit and recompile ODE";
-
-// Forward declarations.
-int GeomRegisterClass(const UserGeomClass* cls);
-int UserGeomCollide(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
-int GeomUserTest(Geom* g, Geom* other, float* aabb);
-void GeomUpdateUserAabb(Geom* g);
-Geom* GeomUserDestroy(Geom* g, short del);
-Geom* UserGeomCreate(UserGeom* g, int type);
-Geom* GeomDestroyBase(Geom* g, short del);
-Geom* GeomInit(Geom* g, Space* space, int isPlaceable);
 int GeomCollideDispatch(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
 void CollisionInit(void);
-int DefaultCollider(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
-void SpaceCollideCallback(void* data, Geom* o1, Geom* o2);
-void SpaceCollidePair(Geom* g1, Geom* g2, void* data, SpaceCallback callback);
-void SpaceRemoveGeom(Space* s, Geom* g);
-void SpaceAddGeom(Space* s, Geom* g, int arg);
 
-// 0x8026A37C
-static inline void GeomSetAllColliders(int type, ColliderFn fn)
+static void GeomSetCollider(int a, int b, ColliderFn fn)
+{
+    if (gColliders[a][b].fn == 0) {
+        gColliders[a][b].fn = fn;
+        gColliders[a][b].swap = 0;
+    }
+    if (gColliders[b][a].fn == 0) {
+        gColliders[b][a].fn = fn;
+        gColliders[b][a].swap = 1;
+    }
+}
+
+static void GeomSetAllColliders(int type, ColliderFn fn)
 {
     int i;
 
     for (i = 0; i < GEOM_CLASSES; i++) {
-        if (gColliders[type][i].fn == 0) {
-            gColliders[type][i].fn = fn;
-            gColliders[type][i].swap = 0;
-        }
-        if (gColliders[i][type].fn == 0) {
-            gColliders[i][type].fn = fn;
-            gColliders[i][type].swap = 1;
-        }
+        GeomSetCollider(type, i, fn);
     }
 }
 
-int GeomRegisterClass(const UserGeomClass* cls)
+// 0x8026BB0C (space_geom_collider)
+void SpaceCollideCallback(void* arg, Geom* o1, Geom* o2)
 {
-    int type;
+    CollideData* data = (CollideData*)arg;
 
-    if (gUserGeomClassCount >= 4) {
-        dDebug(0, sTooManyUserClasses);
+    if ((data->count & 0xffff) != 0) {
+        int result = GeomCollideDispatch(o1, o2, data->count, data->contact, data->skip);
+
+        data->contact = (ContactGeom*)((char*)data->contact + data->skip * result);
+        data->count -= result;
     }
-    gUserGeomClasses[gUserGeomClassCount] = *cls;
-    type = gUserGeomClassCount + 0xb;
-    CollisionInit();
-    GeomSetAllColliders(type, UserGeomCollide);
-    gUserGeomClassCount += 1;
-    return type;
 }
 
-// The geometry-pair dispatcher, inlined into the callers below.
-inline int GeomCollide(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
+// 0x8026BAB4 (dCollideSpaceGeom)
+int DefaultCollider(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
 {
-    ColliderFn fn;
-    int rc;
+    CollideData data;
+
+    data.count = flags;
+    data.contact = contact;
+    data.skip = skip;
+    SpaceCollidePair(o1, o2, &data, SpaceCollideCallback);
+    return (flags & 0xffff) - (data.count & 0xffff);
+}
+
+// 0x8026B40C (initColliders)
+void CollisionInit(void)
+{
     int i;
-    int g1;
-    int g2;
-    ColliderEntry* entry;
+    int j;
 
+    if (lbl_804D5518 != 0) {
+        return;
+    }
+    lbl_804D5518 = 1;
+    memset(gColliders, 0, sizeof(gColliders));
+    for (i = 8; i <= 10; i++) {
+        for (j = 0; j < GEOM_CLASSES; j++) {
+            GeomSetCollider(i, j, DefaultCollider);
+        }
+    }
+    GeomSetCollider(0, 0, fn_8026F9F8);
+    GeomSetCollider(0, 1, fn_8026F590);
+    GeomSetCollider(0, 4, fn_8026F4D0);
+    GeomSetCollider(1, 1, fn_8026F21C);
+    GeomSetCollider(1, 4, fn_8026EAAC);
+    GeomSetCollider(2, 0, fn_8026E9C8);
+    GeomSetCollider(2, 1, fn_8026E8EC);
+    GeomSetCollider(2, 2, fn_8026E498);
+    GeomSetCollider(2, 4, fn_8026E194);
+    GeomSetCollider(5, 0, fn_8026DEAC);
+    GeomSetCollider(5, 1, fn_8026DA50);
+    GeomSetCollider(5, 2, fn_8026D538);
+    GeomSetCollider(5, 4, fn_8026D428);
+    GeomSetAllColliders(6, fn_80272060);
+}
+
+// 0x8026B09C (dCollide)
+int GeomCollideDispatch(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
+{
     if (o1 == o2) {
         return 0;
     }
@@ -241,34 +248,271 @@ inline int GeomCollide(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int 
         return 0;
     }
 
-    g1 = o1->type;
-    g2 = o2->type;
-    entry = &gColliders[g1][g2];
-    rc = 0;
+    ColliderEntry* entry = &gColliders[o1->type][o2->type];
+    int rc = 0;
 
-    fn = entry->fn;
-    if (fn != 0) {
+    if (entry->fn != 0) {
         if (entry->swap != 0) {
-            rc = fn(o2, o1, flags, contact, skip);
-            for (i = 0; i < rc; i++) {
+            rc = entry->fn(o2, o1, flags, contact, skip);
+            for (int i = 0; i < rc; i++) {
                 ContactGeom* c = (ContactGeom*)((char*)contact + skip * i);
-                Geom* tmp;
 
                 c->normal[0] = -c->normal[0];
                 c->normal[1] = -c->normal[1];
                 c->normal[2] = -c->normal[2];
-                tmp = c->g1;
+                Geom* tmp = c->g1;
                 c->g1 = c->g2;
                 c->g2 = tmp;
             }
         } else {
-            rc = fn(o1, o2, flags, contact, skip);
+            rc = entry->fn(o1, o2, flags, contact, skip);
         }
     }
     return rc;
 }
 
-// 0x8026A53C
+// 0x8026AF98
+Geom::Geom(Space* space, int placeable)
+{
+    CollisionInit();
+    type = -1;
+    flags = GEOM_DIRTY | GEOM_AABB_BAD | GEOM_ENABLED;
+    if (placeable != 0) {
+        flags |= GEOM_PLACEABLE;
+    }
+    data = 0;
+    body = 0;
+    bodyNext = 0;
+    if (placeable != 0) {
+        float* p = (float*)dAlloc(0x40);
+        pos = p;
+        rot = p + 4;
+        dSetZero(pos, 4);
+        fn_8027BD20(rot);
+    } else {
+        pos = 0;
+        rot = 0;
+    }
+    next = 0;
+    tome = 0;
+    parentSpace = 0;
+    dSetZero(aabb, 6);
+    categoryBits = -1;
+    collideBits = -1;
+    if (space != 0) {
+        SpaceAddGeom(space, this, 1);
+    }
+}
+
+// 0x8026AEBC
+Geom::~Geom()
+{
+    if (parentSpace != 0) {
+        SpaceRemoveGeom(parentSpace, this);
+    }
+    if ((flags & GEOM_PLACEABLE) != 0 && body == 0) {
+        dFree(pos, 0x40);
+    }
+    bodyRemove();
+}
+
+// 0x8026AEB4
+int Geom::AABBTest(Geom* other, float* aabb)
+{
+    return 1;
+}
+
+// 0x8026AEAC
+Geom* GeomGetNext(Geom* g)
+{
+    return g->bodyNext;
+}
+
+// 0x8026AE74 (dGeomDestroy)
+void GeomDestroyGeom(Geom* g)
+{
+    delete g;
+}
+
+// 0x8026AE6C (dGeomSetData)
+void GeomSetGFlags(Geom* g, int flags)
+{
+    g->data = (void*)flags;
+}
+
+// 0x8026AE64 (dGeomGetData)
+int GeomGetGFlags(Geom* g)
+{
+    return (int)g->data;
+}
+
+// 0x8026AD08
+void GeomSetBody(Geom* g, Body* body)
+{
+    if (body != 0) {
+        if (g->body == 0) {
+            dFree(g->pos, 0x40);
+        }
+        g->pos = body->pos;
+        g->rot = body->rot;
+        fn_8026D3A0(g);
+        if (g->body != body) {
+            g->bodyRemove();
+            g->body = body;
+            g->bodyNext = body->firstGeom;
+            body->firstGeom = g;
+        }
+    } else {
+        if (g->body != 0) {
+            float* p = (float*)dAlloc(0x40);
+
+            g->pos = p;
+            g->rot = p + 4;
+            memcpy(g->pos, g->body->pos, 0x10);
+            memcpy(g->rot, g->body->rot, 0x30);
+            g->bodyRemove();
+        }
+    }
+}
+
+// 0x8026AD00
+Body* GeomGetBody(Geom* g)
+{
+    return g->body;
+}
+
+// 0x8026ACB0
+void GeomSetPosition(Geom* g, float x, float y, float z)
+{
+    if (g->body != 0) {
+        fn_8027896C(g->body, x, y, z);
+    } else {
+        g->pos[0] = x;
+        g->pos[1] = y;
+        g->pos[2] = z;
+        fn_8026D3A0(g);
+    }
+}
+
+// 0x8026AC60
+void GeomSetRotation(Geom* g, const float* r)
+{
+    if (g->body != 0) {
+        fn_802788E4(g->body, r);
+    } else {
+        memcpy(g->rot, r, 0x30);
+        fn_8026D3A0(g);
+    }
+}
+
+// 0x8026AC58
+float* GeomGetPosition(Geom* g)
+{
+    return g->pos;
+}
+
+// 0x8026AC50
+float* GeomGetRotation(Geom* g)
+{
+    return g->rot;
+}
+
+// 0x8026ABE4
+void GeomGetAabb(Geom* g, float* aabb)
+{
+    if ((g->flags & GEOM_AABB_BAD) != 0) {
+        g->computeAABB();
+        g->flags &= ~GEOM_AABB_BAD;
+    }
+    memcpy(aabb, g->aabb, 0x18);
+}
+
+// 0x8026ABDC
+int GeomGetType(Geom* g)
+{
+    return g->type;
+}
+
+// 0x8026ABD4
+void GeomSetCategoryBits(Geom* g, int bits)
+{
+    g->categoryBits = bits;
+}
+
+// 0x8026ABCC
+void GeomSetCollideBits(Geom* g, int bits)
+{
+    g->collideBits = bits;
+}
+
+// 0x8026ABC4
+int GeomGetCategoryBits(Geom* g)
+{
+    return g->categoryBits;
+}
+
+// 0x8026ABBC
+int GeomGetCollideBits(Geom* g)
+{
+    return g->collideBits;
+}
+
+// 0x8026ABAC
+void GeomEnable(Geom* g)
+{
+    g->flags |= GEOM_ENABLED;
+}
+
+// 0x8026AB9C
+void GeomDisable(Geom* g)
+{
+    g->flags &= ~GEOM_ENABLED;
+}
+
+// 0x8026AB90
+int GeomIsEnabled(Geom* g)
+{
+    return (g->flags >> 3) & 1;
+}
+
+// 0x8026AB08
+UserGeom::UserGeom(int t) : Geom(0, 1)
+{
+    type = t;
+    u32 size = gUserGeomClasses[type - 0xb].size;
+    userData = dAlloc(size);
+    memset(userData, 0, size);
+}
+
+// 0x8026A9D8
+UserGeom::~UserGeom()
+{
+    UserGeomClass* cls = &gUserGeomClasses[type - 0xb];
+
+    if (cls->release != 0) {
+        cls->release(this);
+    }
+    dFree(userData, cls->size);
+}
+
+// 0x8026A998
+void UserGeom::computeAABB()
+{
+    gUserGeomClasses[type - 0xb].computeAabb(this, aabb);
+}
+
+// 0x8026A948
+int UserGeom::AABBTest(Geom* other, float* aabb)
+{
+    UserGeomClass* cls = &gUserGeomClasses[type - 0xb];
+
+    if (cls->test != 0) {
+        return cls->test(this, other, aabb);
+    }
+    return 1;
+}
+
+// 0x8026A53C (dCollideUserGeomWithGeom)
 int UserGeomCollide(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
 {
     int g1 = o1->type;
@@ -284,472 +528,19 @@ int UserGeomCollide(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int ski
     gColliders[g1][g2].swap = swap;
     gColliders[g2][g1].fn = fn;
     gColliders[g2][g1].swap = !swap;
-    return GeomCollide(o1, o2, flags, contact, skip);
+    return GeomCollideDispatch(o1, o2, flags, contact, skip);
 }
 
-// 0x8026A948
-int GeomUserTest(Geom* g, Geom* other, float* aabb)
+// 0x8026A37C (dCreateGeomClass)
+int GeomRegisterClass(const UserGeomClass* cls)
 {
-    UserGeomClass* cls = &gUserGeomClasses[g->type - 0xb];
-
-    if (cls->test != 0) {
-        return cls->test(g, other, aabb);
+    if (gUserGeomClassCount >= 4) {
+        dDebug(0, "too many user classes, you must increase the limit and recompile ODE");
     }
-    return 1;
-}
-
-// 0x8026A998
-void GeomUpdateUserAabb(Geom* g)
-{
-    gUserGeomClasses[g->type - 0xb].computeAabb(g, g->aabb);
-}
-
-// 0x8026A9D8
-Geom* GeomUserDestroy(Geom* g, short del)
-{
-    if (g != 0) {
-        UserGeomClass* cls;
-        Body* body;
-        Geom* p;
-        Geom** link;
-
-        g->vtbl = &gUserGeomVtbl;
-        cls = &gUserGeomClasses[g->type - 0xb];
-        if (cls->release != 0) {
-            cls->release(g);
-        }
-        dFree(((UserGeom*)g)->data, cls->size);
-        if (g != 0) {
-            g->vtbl = &gGeomVtbl;
-            if (g->space != 0) {
-                SpaceRemoveGeom(g->space, g);
-            }
-            if ((g->flags & 4) != 0 && g->body == 0) {
-                dFree(g->pos, 0x40);
-            }
-            body = g->body;
-            if (body != 0) {
-                link = &body->firstGeom;
-                p = *link;
-                for (; p != 0; p = p->next) {
-                    if (p == g) {
-                        *link = p->next;
-                        break;
-                    }
-                    link = &p->next;
-                }
-                g->body = 0;
-                g->next = 0;
-            }
-        }
-        if (del > 0) {
-            dFree(g, 0x50);
-        }
-    }
-    return g;
-}
-
-// 0x8026AB08
-Geom* UserGeomCreate(UserGeom* g, int type)
-{
-    u32 size;
-
-    GeomInit(g, 0, 1);
-    g->vtbl = &gUserGeomVtbl;
-    g->type = type;
-    size = gUserGeomClasses[g->type - 0xb].size;
-    g->data = dAlloc(size);
-    memset(g->data, 0, size);
-    return g;
-}
-
-// 0x8026AB90
-int GeomIsEnabled(Geom* g)
-{
-    return (g->flags >> 3) & 1;
-}
-
-// 0x8026AB9C
-void GeomDisable(Geom* g)
-{
-    g->flags &= ~8;
-}
-
-// 0x8026ABAC
-void GeomEnable(Geom* g)
-{
-    g->flags |= 8;
-}
-
-// 0x8026ABBC
-int GeomGetCollideBits(Geom* g)
-{
-    return g->collideBits;
-}
-
-// 0x8026ABC4
-int GeomGetCategoryBits(Geom* g)
-{
-    return g->categoryBits;
-}
-
-// 0x8026ABCC
-void GeomSetCollideBits(Geom* g, int bits)
-{
-    g->collideBits = bits;
-}
-
-// 0x8026ABD4
-void GeomSetCategoryBits(Geom* g, int bits)
-{
-    g->categoryBits = bits;
-}
-
-// 0x8026ABDC
-int GeomGetType(Geom* g)
-{
-    return g->type;
-}
-
-// 0x8026ABE4
-void GeomGetAabb(Geom* g, float* aabb)
-{
-    if ((g->flags & 2) != 0) {
-        ((GeomV*)g)->computeAabb();
-        g->flags &= ~2;
-    }
-    memcpy(aabb, g->aabb, 0x18);
-}
-
-// 0x8026AC50
-float* GeomGetRotation(Geom* g)
-{
-    return g->rot;
-}
-
-// 0x8026AC58
-float* GeomGetPosition(Geom* g)
-{
-    return g->pos;
-}
-
-// 0x8026AC60
-void GeomSetRotation(Geom* g, const float* r)
-{
-    Body* body = g->body;
-
-    if (body != 0) {
-        fn_802788E4(body);
-    } else {
-        memcpy(g->rot, r, 0x30);
-        fn_8026D3A0(g);
-    }
-}
-
-// 0x8026ACB0
-void GeomSetPosition(Geom* g, float x, float y, float z)
-{
-    Body* body = g->body;
-
-    if (body != 0) {
-        fn_8027896C(body);
-    } else {
-        g->pos[0] = x;
-        g->pos[1] = y;
-        g->pos[2] = z;
-        fn_8026D3A0(g);
-    }
-}
-
-// 0x8026AD00
-Body* GeomGetBody(Geom* g)
-{
-    return g->body;
-}
-
-// 0x8026AD08
-void GeomSetBody(Geom* g, Body* body)
-{
-    if (body != 0) {
-        Body* old;
-        Geom* q;
-        Geom** link;
-
-        if (g->body == 0) {
-            dFree(g->pos, 0x40);
-        }
-        g->pos = body->pos;
-        g->rot = body->rot;
-        fn_8026D3A0(g);
-        old = g->body;
-        if (old != body) {
-            if (old != 0) {
-                link = &old->firstGeom;
-                q = *link;
-                for (; q != 0; q = q->next) {
-                    if (q == g) {
-                        *link = q->next;
-                        break;
-                    }
-                    link = &q->next;
-                }
-                g->body = 0;
-                g->next = 0;
-            }
-            g->body = body;
-            g->next = body->firstGeom;
-            body->firstGeom = g;
-        }
-    } else {
-        if (g->body != 0) {
-            float* p = (float*)dAlloc(0x40);
-            Body* old;
-            Geom* q;
-            Geom** link;
-
-            g->pos = p;
-            g->rot = p + 4;
-            memcpy(g->pos, g->body->pos, 0x10);
-            memcpy(g->rot, g->body->rot, 0x30);
-            old = g->body;
-            if (old != 0) {
-                link = &old->firstGeom;
-                q = *link;
-                for (; q != 0; q = q->next) {
-                    if (q == g) {
-                        *link = q->next;
-                        break;
-                    }
-                    link = &q->next;
-                }
-                g->body = 0;
-                g->next = 0;
-            }
-        }
-    }
-}
-
-// 0x8026AE64
-int GeomGetGFlags(Geom* g)
-{
-    return g->unk08;
-}
-
-// 0x8026AE6C
-void GeomSetGFlags(Geom* g, int flags)
-{
-    g->unk08 = flags;
-}
-
-// 0x8026AE74
-void GeomDestroyGeom(Geom* g)
-{
-    if (g != 0) {
-        ((GeomV*)g)->destroy(1);
-    }
-}
-
-// 0x8026AEAC
-Geom* GeomGetNext(Geom* g)
-{
-    return g->next;
-}
-// 0x8026AEB4
-int GeomDefaultTest(Geom* g, Geom* other, float* aabb)
-{
-    return 1;
-}
-
-// 0x8026AEBC
-Geom* GeomDestroyBase(Geom* g, short del)
-{
-    if (g != 0) {
-        Body* body;
-        Geom* p;
-        Geom** link;
-
-        g->vtbl = &gGeomVtbl;
-        if (g->space != 0) {
-            SpaceRemoveGeom(g->space, g);
-        }
-        if ((g->flags & 4) != 0 && g->body == 0) {
-            dFree(g->pos, 0x40);
-        }
-        body = g->body;
-        if (body != 0) {
-            link = &body->firstGeom;
-            p = *link;
-            for (; p != 0; p = p->next) {
-                if (p == g) {
-                    *link = p->next;
-                    break;
-                }
-                link = &p->next;
-            }
-            g->body = 0;
-            g->next = 0;
-        }
-        if (del > 0) {
-            dFree(g, 0x4c);
-        }
-    }
-    return g;
-}
-
-// 0x8026AF98
-Geom* GeomInit(Geom* g, Space* space, int isPlaceable)
-{
-    g->vtbl = &gGeomVtbl;
+    gUserGeomClasses[gUserGeomClassCount] = *cls;
+    int type = gUserGeomClassCount + 0xb;
     CollisionInit();
-    g->type = -1;
-    g->flags = 0xb;
-    if (isPlaceable != 0) {
-        g->flags |= 4;
-    }
-    g->unk08 = 0;
-    g->body = 0;
-    g->next = 0;
-    if (isPlaceable != 0) {
-        float* p = (float*)dAlloc(0x40);
-        g->pos = p;
-        g->rot = p + 4;
-        dSetZero(g->pos, 4);
-        fn_8027BD20(g->rot);
-    } else {
-        g->pos = 0;
-        g->rot = 0;
-    }
-    g->nextInSpace = 0;
-    g->unk20 = 0;
-    g->space = 0;
-    dSetZero(g->aabb, 6);
-    g->categoryBits = -1;
-    g->collideBits = -1;
-    if (space != 0) {
-        SpaceAddGeom(space, g, 1);
-    }
-    return g;
+    GeomSetAllColliders(type, UserGeomCollide);
+    gUserGeomClassCount++;
+    return type;
 }
-
-// 0x8026B09C
-int GeomCollideDispatch(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
-{
-    ColliderFn fn;
-    int rc;
-    int i;
-    int g1;
-    int g2;
-    ColliderEntry* entry;
-
-    if (o1 == o2) {
-        return 0;
-    }
-    if (o1->body == o2->body && o1->body != 0) {
-        return 0;
-    }
-
-    g1 = o1->type;
-    g2 = o2->type;
-    entry = &gColliders[g1][g2];
-    rc = 0;
-
-    fn = entry->fn;
-    if (fn != 0) {
-        if (entry->swap != 0) {
-            rc = fn(o2, o1, flags, contact, skip);
-            for (i = 0; i < rc; i++) {
-                ContactGeom* c = (ContactGeom*)((char*)contact + skip * i);
-                Geom* tmp;
-
-                c->normal[0] = -c->normal[0];
-                c->normal[1] = -c->normal[1];
-                c->normal[2] = -c->normal[2];
-                tmp = c->g1;
-                c->g1 = c->g2;
-                c->g2 = tmp;
-            }
-        } else {
-            rc = fn(o1, o2, flags, contact, skip);
-        }
-    }
-    return rc;
-}
-
-static inline void GeomSetCollider(int a, int b, ColliderFn fn)
-{
-    if (gColliders[a][b].fn == 0) {
-        gColliders[a][b].fn = fn;
-        gColliders[a][b].swap = 0;
-    }
-    if (gColliders[b][a].fn == 0) {
-        gColliders[b][a].fn = fn;
-        gColliders[b][a].swap = 1;
-    }
-}
-
-// 0x8026B40C
-void CollisionInit(void)
-{
-    int i;
-    int j;
-
-    if (lbl_804D5518 == 0) {
-        lbl_804D5518 = 1;
-        memset(gColliders, 0, 0x708);
-        for (i = 8; i <= 10; i++) {
-            for (j = 0; j < GEOM_CLASSES; j++) {
-                if (gColliders[i][j].fn == 0) {
-                    gColliders[i][j].fn = DefaultCollider;
-                    gColliders[i][j].swap = 0;
-                }
-                if (gColliders[j][i].fn == 0) {
-                    gColliders[j][i].fn = DefaultCollider;
-                    gColliders[j][i].swap = 1;
-                }
-            }
-        }
-        GeomSetCollider(0, 0, fn_8026F9F8);
-        GeomSetCollider(0, 1, fn_8026F590);
-        GeomSetCollider(0, 4, fn_8026F4D0);
-        GeomSetCollider(1, 1, fn_8026F21C);
-        GeomSetCollider(1, 4, fn_8026EAAC);
-        GeomSetCollider(2, 0, fn_8026E9C8);
-        GeomSetCollider(2, 1, fn_8026E8EC);
-        GeomSetCollider(2, 2, fn_8026E498);
-        GeomSetCollider(2, 4, fn_8026E194);
-        GeomSetCollider(5, 0, fn_8026DEAC);
-        GeomSetCollider(5, 1, fn_8026DA50);
-        GeomSetCollider(5, 2, fn_8026D538);
-        GeomSetCollider(5, 4, fn_8026D428);
-        GeomSetAllColliders(6, fn_80272060);
-    }
-}
-
-// 0x8026BAB4
-int DefaultCollider(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
-{
-    CollideData data;
-
-    data.count = flags;
-    data.contact = contact;
-    data.skip = skip;
-    SpaceCollidePair(o1, o2, &data, SpaceCollideCallback);
-    return (flags & 0xffff) - (data.count & 0xffff);
-}
-
-// 0x8026BB0C
-void SpaceCollideCallback(void* arg, Geom* o1, Geom* o2)
-{
-    CollideData* data = (CollideData*)arg;
-
-    if ((data->count & 0xffff) != 0) {
-        int result = GeomCollide(o1, o2, data->count, data->contact, data->skip);
-
-        data->contact = (ContactGeom*)((char*)data->contact + data->skip * result);
-        data->count -= result;
-    }
-}
-
-// The two class tables of this file (0x803C0390, 0x803C03A4).
-GeomVtbl gUserGeomVtbl = {0, 0, GeomUserDestroy, GeomUpdateUserAabb, GeomUserTest};
-GeomVtbl gGeomVtbl = {0, 0, GeomDestroyBase, 0, GeomDefaultTest};
