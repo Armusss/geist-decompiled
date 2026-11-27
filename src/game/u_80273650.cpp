@@ -578,6 +578,12 @@ extern "C" void fn_802737A4(dxJointAMotor* joint, int anum, int rel, dReal x, dR
     if (anum > 2) {
         anum = 2;
     }
+
+    // adjust rel to match the internal body order
+    if (!joint->node[1].body && rel == 2) {
+        rel = 1;
+    }
+
     joint->rel[anum] = rel;
 
     // x,y,z is always in global coordinates regardless of rel, so we may have
@@ -697,6 +703,9 @@ static void amotorSetEulerReferenceVectors(dxJointAMotor* j)
         dMULTIPLY1_331(j->reference1, j->node[0].body->R, r);
         dMULTIPLY0_331(r, j->node[0].body->R, j->axis[0]);
         dMULTIPLY1_331(j->reference2, j->node[1].body->R, r);
+    } else if (j->node[0].body) {  // jds
+        dMULTIPLY1_331(j->reference1, j->node[0].body->R, j->axis[2]);
+        dMULTIPLY0_331(j->reference2, j->node[0].body->R, j->axis[0]);
     }
 }
 
@@ -717,7 +726,13 @@ static void amotorComputeEulerAngles(dxJointAMotor* joint, dVector3 ax[3])
     // calculate references in global frame
     dVector3 ref1, ref2;
     dMULTIPLY0_331(ref1, joint->node[0].body->R, joint->reference1);
-    dMULTIPLY0_331(ref2, joint->node[1].body->R, joint->reference2);
+    if (joint->node[1].body) {
+        dMULTIPLY0_331(ref2, joint->node[1].body->R, joint->reference2);
+    } else {
+        ref2[0] = joint->reference2[0];
+        ref2[1] = joint->reference2[1];
+        ref2[2] = joint->reference2[2];
+    }
 
     // get q perpendicular to both ax[0] and ref1, get first euler angle
     dVector3 q;
@@ -739,7 +754,13 @@ static void amotorComputeGlobalAxes(dxJointAMotor* joint, dVector3 ax[3])
     if (joint->mode == dAMotorEuler) {
         // special handling for euler mode
         dMULTIPLY0_331(ax[0], joint->node[0].body->R, joint->axis[0]);
-        dMULTIPLY0_331(ax[2], joint->node[1].body->R, joint->axis[2]);
+        if (joint->node[1].body) {
+            dMULTIPLY0_331(ax[2], joint->node[1].body->R, joint->axis[2]);
+        } else {
+            ax[2][0] = joint->axis[2][0];
+            ax[2][1] = joint->axis[2][1];
+            ax[2][2] = joint->axis[2][2];
+        }
         dCROSS(ax[1], =, ax[2], ax[0]);
         dNormalize3(ax[1]);
     } else {
@@ -747,7 +768,8 @@ static void amotorComputeGlobalAxes(dxJointAMotor* joint, dVector3 ax[3])
             if (joint->rel[i] == 1) {
                 // relative to b1
                 dMULTIPLY0_331(ax[i], joint->node[0].body->R, joint->axis[i]);
-            } else if (joint->rel[i] == 2) {
+            }
+            if (joint->rel[i] == 2) {
                 // relative to b2
                 dMULTIPLY0_331(ax[i], joint->node[1].body->R, joint->axis[i]);
             } else {
@@ -1241,7 +1263,7 @@ int dxJointLimitMotor::addLimot(dxJoint* joint, dxJoint::Info2* info, int row, d
                 // a fudge factor.
 
                 dReal fm = fmax;
-                if ((vel > 0) || (vel == 0 && limit == 2)) {
+                if (vel > 0) {
                     fm = -fm;
                 }
 
