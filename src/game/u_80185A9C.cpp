@@ -7,22 +7,20 @@
 // The file runs a pool of 64 projectiles (lbl_80495790 / lbl_804D50D8, ListAlloc/ListRemoveFree). Each projectile
 // has a kind (+0xC2), an index into lbl_804D50D4, an array of 0x48-byte kind records built from the variable
 // table by fn_80186314. A kind record points at a behaviour descriptor found by name hash in lbl_803A8784.
-// The kind array is a Buffer-derived container (vtable 0x803A87DC: destructor, Clear, element size 0x48,
-// construct, destroy, span); its element constructor and destructor are empty, so the range loops compile to
-// bare counts (fn_801870C0 / fn_801870E4).
+// The kind array is a BufferArray<BehKind> (include/game/bufarray.h, vtable 0x803A87DC); its element
+// constructor and destructor are empty, so the template's range loops compile to bare counts.
 
 // auto_inline off: fn_801868AC calls the empty fn_80185A9C defined above it (an auto-inlined copy would vanish).
 #pragma auto_inline off
 
 #include <dolphin/types.h>
 #include "game/types.h"
+#include "game/bufarray.h"
 
 struct Actor;
 struct BehKind;
 struct Projectile;
 
-void* VAlloc(int size);
-void VFree(void* p);
 void ActorGetMatrix(Mtx34* m, Actor* a);
 int ActorFn80022FD8(Actor* a);
 void ActorUnlinkOwnerObjects(Actor* a);
@@ -58,46 +56,6 @@ float fn_802A2080(void);
 u32 fn_800F7A90(int row);
 float fn_800F7920(int row, u32 hash);
 int fn_800F7994(int row, u32 hash);
-}
-
-// --- The Buffer class chain (implemented in u_8028A8D4.cpp; declared here as that unit declares it) ---------
-class ScreenEffectSlot {
-public:
-    ScreenEffectSlot();
-    virtual ~ScreenEffectSlot() {}
-    virtual void Clear();                           // 0x0C
-    virtual int ElementSize();                      // 0x10
-    virtual void Construct(char* data, u32 size);   // 0x14
-    virtual void Destroy(char* data, u32 size);     // 0x18
-    virtual int Span();                             // 0x1C
-    static void* operator new(unsigned long size) { return VAlloc(size); }
-    static void operator delete(void* p) { VFree(p); }
-
-    char* mText;      // 0x04
-    u32 mLength;      // 0x08 bytes in use
-    char* mStore;     // 0x0C
-    u32 mCapacity;    // 0x10
-};
-
-class ScreenEffectBuffer : public ScreenEffectSlot {
-public:
-    ScreenEffectBuffer();
-    virtual ~ScreenEffectBuffer() {}
-    // Slot 0x14 / 0x18 bodies (0x8028BC2C / 0x8028BC28), called directly by the KindArray overrides.
-    void Commit(int start, unsigned long size);
-    void Append(unsigned char* data, unsigned long size);
-};
-
-class Buffer : public ScreenEffectBuffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    char* Erase(char* pos, int size);  // 0x8028B35C
-    char* Insert(char* pos, int size); // 0x8028B3BC
-    void Free();                       // 0x8028B960
-};
-
-extern "C" {
 }
 
 // --- Behaviour descriptors ---------------------------------------------------------------------------------
@@ -179,22 +137,8 @@ struct Projectile {
     float fade;           // 0xF8
 };
 
-inline void* operator new(unsigned long, void* p) { return p; }
-
-// The kind array.
-class KindArray : public Buffer {
-public:
-    KindArray() {}
-    virtual ~KindArray();
-    virtual void Construct(char* data, u32 size);
-    virtual void Destroy(char* data, u32 size);
-    virtual int ElementSize();
-
-    u32 Count() { return mLength / sizeof(BehKind); }
-    BehKind* Begin() { return (BehKind*)mStore; }
-    BehKind* End() { return (BehKind*)(mStore + mLength); }
-    BehKind& operator[](int i) { return ((BehKind*)mStore)[i]; }
-};
+// The kind array (vtable 0x803A87DC; its methods close the file, 0x80186F88-0x80187108).
+typedef BufferArray<BehKind> KindArray;
 
 struct Msg400 {
     void* actor;          // 0x00
@@ -277,25 +221,23 @@ inline int ProjQuery(Projectile* p, Msg400* out) {
 void fn_80185A9C(void) {
 }
 
-int fn_80185AEC(int msg, void* data);
+int fn_80185AEC(int msg, ProjMsg* m);
 
 int fn_80185AA0(int index, int msg, void* data) {
     Projectile* p = lbl_80495790[index];
     if (p != 0) {
         *(Projectile**)data = p;
-        return fn_80185AEC(msg, data);
+        return fn_80185AEC(msg, (ProjMsg*)data);
     }
     return 0;
 }
 
 void fn_80185F7C(Projectile* p, float dt);
 
-int fn_80185AEC(int msg, void* data) {
-    u32 index;
-    ProjMsg* m;
+int fn_80185AEC(int msg, ProjMsg* m) {
     BehDesc* desc;
+    u32 index;
     int result;
-    m = (ProjMsg*)data;
     index = m->actor->handle & 0xFFFFFF;
     desc = (*lbl_804D50D4)[m->actor->kind].desc;
 
@@ -347,11 +289,12 @@ int fn_80185AEC(int msg, void* data) {
         m->actor->flags |= 0x400;
         return 1;
     case 0xC14:
-        if (m->hash != 0x879F2BDA) {
-            break;
+        switch (m->hash) {
+        case 0x879F2BDA:
+            ProjFree(m->actor);
+            return 1;
         }
-        ProjFree(m->actor);
-        return 1;
+        break;
     case 0x407:
         break;
     }
@@ -470,7 +413,7 @@ void fn_80186314(void) {
                 kind.unk38 = fn_800F7920(row, 0x1727C1BF);
                 kind.unk3C = fn_800F7920(row, 0xCF962098);
                 kind.unk40 = fn_800F7920(row, 0xA7355386);
-                *(BehKind*)((Buffer*)lbl_804D50D4)->Insert((char*)(lbl_804D50D4->mStore + lbl_804D50D4->mLength), sizeof(BehKind)) = kind;
+                *(BehKind*)lbl_804D50D4->Insert((char*)lbl_804D50D4->End(), sizeof(BehKind)) = kind;
             }
         }
     }
@@ -509,9 +452,11 @@ int fn_80186754(void) {
         }
     }
     if (lbl_804D50D4->Count() != 0) {
-        ((Buffer*)lbl_804D50D4)->Erase((char*)((char*)lbl_804D50D4->Begin()), (lbl_804D50D4->End() - lbl_804D50D4->Begin()) * sizeof(BehKind));
+        lbl_804D50D4->Erase((char*)lbl_804D50D4->Begin(), (lbl_804D50D4->End() - lbl_804D50D4->Begin()) * sizeof(BehKind));
     }
-    delete lbl_804D50D4;
+    // Deleted as a Buffer: the array's inline destructor is not emitted here but with the template methods
+    // at the end of the file (0x80186F88).
+    delete (Buffer*)lbl_804D50D4;
     return 1;
 }
 
@@ -630,44 +575,6 @@ int fn_80186A88(int row, ProjSpawn* spawn, int id, int owner, int state, float s
 
 int fn_80186F08(int index, Msg400* out) {
     return ProjQuery(lbl_80495790[index], out);
-}
-
-}
-
-extern "C" void fn_801870C0(BehKind* first, BehKind* last);
-extern "C" void fn_801870E4(BehKind* first, BehKind* last);
-
-KindArray::~KindArray() {
-    Free();
-}
-
-void KindArray::Construct(char* data, u32 size) {
-    ScreenEffectBuffer::Commit((int)data, size);
-    fn_801870C0((BehKind*)data, (BehKind*)(data + size / sizeof(BehKind) * sizeof(BehKind)));
-}
-
-void KindArray::Destroy(char* data, u32 size) {
-    BehKind* first = (BehKind*)data;
-    fn_801870E4(first, first + size / sizeof(BehKind));
-    ScreenEffectBuffer::Append((unsigned char*)data, size);
-}
-
-int KindArray::ElementSize() {
-    return sizeof(BehKind);
-}
-
-extern "C" {
-
-void fn_801870C0(BehKind* first, BehKind* last) {
-    for (; first < last; first++) {
-        new (first) BehKind;
-    }
-}
-
-void fn_801870E4(BehKind* first, BehKind* last) {
-    for (; first < last; first++) {
-        first->~BehKind();
-    }
 }
 
 }

@@ -48,6 +48,7 @@ public:
     unsigned long Count() const { return (unsigned long)mLength / sizeof(T); }
     T* Begin() const { return (T*)mUnk0C; }
     T* End() const { return (T*)((char*)mUnk0C + mLength); }
+    T& operator[](int i) const { return ((T*)mUnk0C)[i]; }   // u_80185A9C: an inline index temp ranks the regs
 };
 
 template <class T>
