@@ -213,11 +213,279 @@ static inline float Dot14(const float* a, const float* b)
 // The collider dispatcher (dCollide, collision_kernel.cpp).
 int GeomCollideDispatch(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
 
-// TODO (not drafted yet, 0x654 bytes at 0x8027243C): closest points between a line segment and a box
-extern "C" void fn_8027243C(float* p1, float* p2, float* c, float* R, float* side, float* lret, float* bret);
+static inline float Dot41(const float* a, const float* b)
+{
+    return a[0] * b[0] + a[4] * b[1] + a[8] * b[2];
+}
 
-// TODO (not drafted yet, 0x640 bytes at 0x80272A90): closest points between two box segments
-extern "C" void fn_80272A90(void);
+// odemath.h matrix-vector products
+static inline void dMULTIPLY0_331(float* A, const float* B, const float* C)
+{
+    A[0] = Dot(B, C);
+    A[1] = Dot(B + 4, C);
+    A[2] = Dot(B + 8, C);
+}
+
+static inline void dMULTIPLY1_331(float* A, const float* B, const float* C)
+{
+    A[0] = Dot41(B, C);
+    A[1] = Dot41(B + 1, C);
+    A[2] = Dot41(B + 2, C);
+}
+
+// 0x8027243C: closest points between the line segment p1-p2 and the box (c,R,side) (dClosestLineBoxPoints).
+// lret is the point on the segment and bret the point on the box.
+extern "C" void fn_8027243C(const float* p1, const float* p2, const float* c, const float* R, const float* side,
+                            float* lret, float* bret)
+{
+    int i;
+
+    // compute the start and delta of the line p1-p2 relative to the box.
+    // we will do all subsequent computations in this box-relative coordinate
+    // system. we have to do a translation and rotation for each point.
+    float tmp[4], s[4], v[4];
+    tmp[0] = p1[0] - c[0];
+    tmp[1] = p1[1] - c[1];
+    tmp[2] = p1[2] - c[2];
+    dMULTIPLY1_331(s, R, tmp);
+    tmp[0] = p2[0] - p1[0];
+    tmp[1] = p2[1] - p1[1];
+    tmp[2] = p2[2] - p1[2];
+    dMULTIPLY1_331(v, R, tmp);
+
+    // mirror the line so that v has all components >= 0
+    float sign[4];
+    for (i = 0; i < 3; i++) {
+        if (v[i] < 0) {
+            s[i] = -s[i];
+            v[i] = -v[i];
+            sign[i] = -1;
+        } else {
+            sign[i] = 1;
+        }
+    }
+
+    // compute v^2
+    float v2[4];
+    v2[0] = v[0] * v[0];
+    v2[1] = v[1] * v[1];
+    v2[2] = v[2] * v[2];
+
+    // compute the half-sides of the box
+    float h[3];
+    h[0] = 0.5f * side[0];
+    h[1] = 0.5f * side[1];
+    h[2] = 0.5f * side[2];
+
+    // region is -1,0,+1 depending on which side of the box planes each
+    // coordinate is on. tanchor is the next t value at which there is a
+    // transition, or the last one if there are no more.
+    int region[3];
+    float tanchor[3];
+
+    // find the region and tanchor values for p1
+    for (i = 0; i < 3; i++) {
+        if (v[i] > 0) {
+            if (s[i] < -h[i]) {
+                region[i] = -1;
+                tanchor[i] = (-h[i] - s[i]) / v[i];
+            } else {
+                region[i] = (s[i] > h[i]);
+                tanchor[i] = (h[i] - s[i]) / v[i];
+            }
+        } else {
+            region[i] = 0;
+            tanchor[i] = 2;  // this will never be a valid tanchor
+        }
+    }
+
+    // compute d|d|^2/dt for t=0. if it's >= 0 then p1 is the closest point
+    float t = 0;
+    float dd2dt = 0;
+    for (i = 0; i < 3; i++) {
+        dd2dt -= (region[i] ? v2[i] : 0) * tanchor[i];
+    }
+    if (dd2dt >= 0) {
+        goto got_answer;
+    }
+
+    do {
+        // find the point on the line that is at the next clip plane boundary
+        float next_t = 1;
+        for (i = 0; i < 3; i++) {
+            if (tanchor[i] > t && tanchor[i] < 1 && tanchor[i] < next_t) {
+                next_t = tanchor[i];
+            }
+        }
+
+        // compute d|d|^2/dt for the next t
+        float next_dd2dt = 0;
+        for (i = 0; i < 3; i++) {
+            next_dd2dt += (region[i] ? v2[i] : 0) * (next_t - tanchor[i]);
+        }
+
+        // if the sign of d|d|^2/dt has changed, solution = the crossover point
+        if (next_dd2dt >= 0) {
+            float m = (next_dd2dt - dd2dt) / (next_t - t);
+            t -= dd2dt / m;
+            goto got_answer;
+        }
+
+        // advance to the next anchor point / region
+        for (i = 0; i < 3; i++) {
+            if (tanchor[i] == next_t) {
+                tanchor[i] = (h[i] - s[i]) / v[i];
+                region[i]++;
+            }
+        }
+        t = next_t;
+        dd2dt = next_dd2dt;
+    } while (t < 1);
+    t = 1;
+
+got_answer:
+
+    // compute closest point on the line
+    for (i = 0; i < 3; i++) {
+        lret[i] = p1[i] + t * tmp[i];  // note: tmp=p2-p1
+    }
+
+    // compute closest point on the box
+    for (i = 0; i < 3; i++) {
+        tmp[i] = sign[i] * (s[i] + t * v[i]);
+        if (tmp[i] < -h[i]) {
+            tmp[i] = -h[i];
+        } else if (tmp[i] > h[i]) {
+            tmp[i] = h[i];
+        }
+    }
+    dMULTIPLY0_331(s, R, tmp);
+    for (i = 0; i < 3; i++) {
+        bret[i] = s[i] + c[i];
+    }
+}
+
+// 0x80272A90: closest points between the segments a1-a2 and b1-b2 (dClosestLineSegmentPoints)
+extern "C" void fn_80272A90(const float* a1, const float* a2, const float* b1, const float* b2, float* cp1,
+                            float* cp2)
+{
+    float a1a2[4], b1b2[4], a1b1[4], a1b2[4], a2b1[4], a2b2[4], n[4];
+    float la, lb, k, da1, da2, da3, da4, db1, db2, db3, db4, det;
+
+#define SET2(a, b) \
+    a[0] = b[0];   \
+    a[1] = b[1];   \
+    a[2] = b[2];
+#define SET3(a, b, op, c) \
+    a[0] = b[0] op c[0];  \
+    a[1] = b[1] op c[1];  \
+    a[2] = b[2] op c[2];
+
+    // check vertex-vertex features
+
+    SET3(a1a2, a2, -, a1);
+    SET3(b1b2, b2, -, b1);
+    SET3(a1b1, b1, -, a1);
+    da1 = Dot(a1a2, a1b1);
+    db1 = Dot(b1b2, a1b1);
+    if (da1 <= 0 && db1 >= 0) {
+        SET2(cp1, a1);
+        SET2(cp2, b1);
+        return;
+    }
+
+    SET3(a1b2, b2, -, a1);
+    da2 = Dot(a1a2, a1b2);
+    db2 = Dot(b1b2, a1b2);
+    if (da2 <= 0 && db2 <= 0) {
+        SET2(cp1, a1);
+        SET2(cp2, b2);
+        return;
+    }
+
+    SET3(a2b1, b1, -, a2);
+    da3 = Dot(a1a2, a2b1);
+    db3 = Dot(b1b2, a2b1);
+    if (da3 >= 0 && db3 >= 0) {
+        SET2(cp1, a2);
+        SET2(cp2, b1);
+        return;
+    }
+
+    SET3(a2b2, b2, -, a2);
+    da4 = Dot(a1a2, a2b2);
+    db4 = Dot(b1b2, a2b2);
+    if (da4 >= 0 && db4 <= 0) {
+        SET2(cp1, a2);
+        SET2(cp2, b2);
+        return;
+    }
+
+    // check edge-vertex features.
+    // if one or both of the lines has zero length, we will never get to here,
+    // so we do not have to worry about the following divisions by zero.
+
+    la = Dot(a1a2, a1a2);
+    if (da1 >= 0 && da3 <= 0) {
+        k = da1 / la;
+        SET3(n, a1b1, -, k * a1a2);
+        if (Dot(b1b2, n) >= 0) {
+            SET3(cp1, a1, +, k * a1a2);
+            SET2(cp2, b1);
+            return;
+        }
+    }
+
+    if (da2 >= 0 && da4 <= 0) {
+        k = da2 / la;
+        SET3(n, a1b2, -, k * a1a2);
+        if (Dot(b1b2, n) <= 0) {
+            SET3(cp1, a1, +, k * a1a2);
+            SET2(cp2, b2);
+            return;
+        }
+    }
+
+    lb = Dot(b1b2, b1b2);
+    if (db1 <= 0 && db2 >= 0) {
+        k = -db1 / lb;
+        SET3(n, -a1b1, -, k * b1b2);
+        if (Dot(a1a2, n) >= 0) {
+            SET2(cp1, a1);
+            SET3(cp2, b1, +, k * b1b2);
+            return;
+        }
+    }
+
+    if (db3 <= 0 && db4 >= 0) {
+        k = -db3 / lb;
+        SET3(n, -a2b1, -, k * b1b2);
+        if (Dot(a1a2, n) <= 0) {
+            SET2(cp1, a2);
+            SET3(cp2, b1, +, k * b1b2);
+            return;
+        }
+    }
+
+    // it must be edge-edge
+
+    k = Dot(a1a2, b1b2);
+    det = la * lb - k * k;
+    if (det <= 0) {
+        // this should never happen, but just in case...
+        SET2(cp1, a1);
+        SET2(cp2, b1);
+        return;
+    }
+    det = 1.0f / det;
+    float alpha = (lb * da1 - k * db1) * det;
+    float beta = (k * da1 - la * db1) * det;
+    SET3(cp1, a1, +, alpha * a1a2);
+    SET3(cp2, b1, +, beta * b1b2);
+
+#undef SET2
+#undef SET3
+}
 
 // 0x802730D0: closest approach of two lines (dLineClosestApproach)
 void LineClosestApproach(float* pa, float* ua, float* pb, float* ub, float* alpha, float* beta)
