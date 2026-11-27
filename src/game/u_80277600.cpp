@@ -1,6 +1,6 @@
 // u_80277600.cpp: ODE 0.5 ode.cpp (0x802775AC-0x80278D2C): world, joint and body API in reverse source order
-// (dWorld* first). "SceneNode" is ODE's dxBody (pos at 0xE8, lvel 0xF8, facc 0x108, tacc 0x118); its accessor
-// names are the earlier descriptive guesses. Own .sdata2 pool 0x804DA2F8-0x804DA318 (0.2f, ..., FLT_MAX, 1.0f).
+// (dWorld* first). The dBody accessors (earlier guessed as a "scene node" API) are proven by their bodies and the
+// dxBody layout (pos 0x98, lvel 0xE8, avel 0xF8, facc 0x108, tacc 0x118). Own .sdata2 pool 0x804DA2F8-0x804DA318 (0.2f, ..., FLT_MAX, 1.0f).
 // Split (2026-11-26, data evidence in each file's header): u_80278D2C (math), u_80279558 (step.cpp),
 // u_8027B4F8, u_8027BD5C (util.cpp), u_8027C650 (game code).
 
@@ -11,33 +11,6 @@ typedef unsigned short u16;
 typedef unsigned char u8;
 
 #define NULL 0
-
-struct ListLink {
-    int value;              // 0x00
-    int unk04;              // 0x04
-    ListLink* next;         // 0x08
-};
-
-struct SceneNode {
-    u8 pad00[0xC];
-    u32 owner;              // 0x00C
-    u8 pad10[4];
-    ListLink* list;         // 0x014
-    u32 flags;              // 0x018
-    u8 pad1C[0xCC];
-    Vec3 pos;               // 0x0E8
-    u8 padF4[4];
-    Vec3 vel;               // 0x0F8
-    u8 pad104[4];
-    Vec3 accel;             // 0x108
-    u8 pad114[4];
-    Vec3 rotAdd;            // 0x118
-    u8 pad124[0x1C];
-    float prevA;            // 0x140: adis.idle_time
-    int prevB;              // 0x144: adis.idle_steps
-    float curA;             // 0x148: adis_timeleft
-    int curB;               // 0x14C: adis_stepsleft
-};
 
 // ODE 0.5 ode.cpp world functions (0x802775AC-0x80277600; reverse source order, as the ODE library was
 // built with -inline deferred).
@@ -519,43 +492,42 @@ extern "C" dxJoint* fn_80278214(dWorldID w, dJointGroupID group) {
     return createJoint(w, group, &lbl_803C04D8);
 }
 
-void SceneNodeSetPinned(SceneNode* n, int pinned) {
-    if (pinned != 0) {
-        n->flags &= ~8;
-        return;
+void dBodySetGravityMode(dBodyID b, int mode) {
+    if (mode) {
+        b->flags &= ~dxBodyNoGravity;
+    } else {
+        b->flags |= dxBodyNoGravity;
     }
-    n->flags |= 8;
 }
 
-u8 SceneNodeNotLocked(SceneNode* n) {
-    return (n->flags >> 2 & 1) ^ 1;
+int dBodyIsEnabled(dBodyID b) {
+    return ((b->flags & dxBodyDisabled) == 0);
 }
 
-void SceneNodeLock(SceneNode* n) {
-    n->flags |= 4;
+void dBodyDisable(dBodyID b) {
+    b->flags |= dxBodyDisabled;
 }
 
-void SceneNodeSnapPrev(SceneNode* n) {
-    n->flags &= ~4;
-    n->curB = n->prevB;
-    n->curA = n->prevA;
+void dBodyEnable(dBodyID b) {
+    b->flags &= ~dxBodyDisabled;
+    b->adis_stepsleft = b->adis.idle_steps;
+    b->adis_timeleft = b->adis.idle_time;
 }
 
-int SceneNodeListGet(SceneNode* n, int index) {
+dJointID dBodyGetJoint(dBodyID b, int index) {
     int i = 0;
-    for (ListLink* l = n->list; l; l = l->next, i++) {
+    for (dxJointNode* n = b->firstjoint; n; n = n->next, i++) {
         if (i == index) {
-            return l->value;
+            return n->joint;
         }
     }
     return 0;
 }
 
-int SceneNodeListCount(SceneNode* n) {
+int dBodyGetNumJoints(dBodyID b) {
     int count = 0;
-    ListLink* l;
-    for (l = n->list; l != NULL; l = l->next)
-        count++;
+    for (dxJointNode* n = b->firstjoint; n; n = n->next, count++)
+        ;
     return count;
 }
 
@@ -655,16 +627,16 @@ extern "C" void fn_80278790(dReal fx, dReal fy, dReal fz, dBodyID b) {
     b->facc[2] += t2[2];
 }
 
-void SceneNodeAddRot(float x, float y, float z, SceneNode* n) {
-    n->rotAdd.x += x;
-    n->rotAdd.y += y;
-    n->rotAdd.z += z;
+void dBodyAddTorque(dBodyID b, dReal fx, dReal fy, dReal fz) {
+    b->tacc[0] += fx;
+    b->tacc[1] += fy;
+    b->tacc[2] += fz;
 }
 
-void SceneNodeAddAccel(float x, float y, float z, SceneNode* n) {
-    n->accel.x += x;
-    n->accel.y += y;
-    n->accel.z += z;
+void dBodyAddForce(dBodyID b, dReal fx, dReal fy, dReal fz) {
+    b->facc[0] += fx;
+    b->facc[1] += fy;
+    b->facc[2] += fz;
 }
 
 extern "C" void fn_8027BD20(dReal* R);   // dRSetIdentity (rotation.cpp)
@@ -678,24 +650,24 @@ extern "C" void fn_80278850(dBodyID b, const dMass* mass) {
     b->invMass = dRecip(b->mass.mass);
 }
 
-Vec3* SceneNodeVelocityPtr(SceneNode* n) {
-    return &n->vel;
+const dReal* dBodyGetAngularVel(dBodyID b) {
+    return b->avel;
 }
 
-Vec3* SceneNodePosPtr(SceneNode* n) {
-    return &n->pos;
+const dReal* dBodyGetLinearVel(dBodyID b) {
+    return b->lvel;
 }
 
-void SceneNodeSetVelocity(float x, float y, float z, SceneNode* n) {
-    n->vel.x = x;
-    n->vel.y = y;
-    n->vel.z = z;
+void dBodySetAngularVel(dBodyID b, dReal x, dReal y, dReal z) {
+    b->avel[0] = x;
+    b->avel[1] = y;
+    b->avel[2] = z;
 }
 
-void SceneNodeSetPos(float x, float y, float z, SceneNode* n) {
-    n->pos.x = x;
-    n->pos.y = y;
-    n->pos.z = z;
+void dBodySetLinearVel(dBodyID b, dReal x, dReal y, dReal z) {
+    b->lvel[0] = x;
+    b->lvel[1] = y;
+    b->lvel[2] = z;
 }
 
 extern "C" void fn_8027B570(dReal* q, const dReal* R);   // dQfromR (rotation.cpp)
@@ -734,12 +706,12 @@ extern "C" void fn_8027896C(dReal x, dReal y, dReal z, dBodyID b) {
     }
 }
 
-u32 SceneNodeGetOwner(SceneNode* n) {
-    return n->owner;
+void* dBodyGetData(dBodyID b) {
+    return b->userdata;
 }
 
-void SceneNodeSetOwner(SceneNode* n, u32 owner) {
-    n->owner = owner;
+void dBodySetData(dBodyID b, void* data) {
+    b->userdata = data;
 }
 
 // dBodyDestroy

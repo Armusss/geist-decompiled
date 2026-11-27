@@ -21,14 +21,15 @@ struct Space;
 struct Body;
 struct UserGeom;
 struct UserGeomClass;
-struct SceneNode;
+struct dxBody;
+struct dxJoint;
 struct dxWorld;
 struct ContactGeom;
 
 // A physics object (VAlloc'd, 0x48 bytes): an ODE body and geom plus the game's bookkeeping.
 struct PhysObj {
     Vec3 offset;                // 0x00: centre of mass in object space
-    SceneNode* body;            // 0x0C
+    dxBody* body;            // 0x0C
     Geom* geom;                 // 0x10
     int owner;                  // 0x14
     int material;               // 0x18
@@ -46,7 +47,7 @@ struct PhysObj {
 // One queued force (0x28 bytes, 64 at 0x8049A9D8), applied every sub-step.
 struct Force {
     int type;                   // 0x00: 0-7 (which body function), 8 = removed
-    SceneNode* body;            // 0x04
+    dxBody* body;            // 0x04
     int unk08;                  // 0x08
     Geom* geom;                 // 0x0C
     Vec3 a;                     // 0x10
@@ -117,7 +118,7 @@ float* GeomGetRotation(Geom* g);                                // 0x8026AC50
 float* GeomGetPosition(Geom* g);                                // 0x8026AC58
 void GeomSetRotation(Geom* g, const float* r);                  // 0x8026AC60
 void GeomSetPosition(Geom* g, float x, float y, float z);       // 0x8026ACB0
-SceneNode* GeomGetBody(Geom* g);                                // 0x8026AD00
+dxBody* GeomGetBody(Geom* g);                                // 0x8026AD00
 void GeomSetBody(Geom* g, Body* b);                             // 0x8026AD08
 PhysObj* GeomGetGFlags(Geom* g);                                // 0x8026AE64
 void GeomSetGFlags(Geom* g, int data);                          // 0x8026AE6C
@@ -146,20 +147,20 @@ void dWorldSetQuickStepNumIterations(dxWorld* w, int n);        // 0x802775AC
 void dWorldSetAutoDisableFlag(dxWorld* w, int flag);            // 0x802775B4
 void dWorldStep(dxWorld* w, float dt);                          // 0x802775C8
 void dWorldSetGravity(dxWorld* w, float x, float y, float z);   // 0x802775F0
-void SceneNodeSetPinned(SceneNode* b, int pinned);              // 0x8027835C
-int SceneNodeNotLocked(SceneNode* b);                           // 0x80278384
-void SceneNodeLock(SceneNode* b);                               // 0x80278398
-void SceneNodeSnapPrev(SceneNode* b);                           // 0x802783A8
-Geom* SceneNodeListGet(SceneNode* b, int i);                    // 0x802783C8
-int SceneNodeListCount(SceneNode* b);                           // 0x802783FC
-void SceneNodeAddRot(float x, float y, float z, SceneNode* b);  // 0x80278800
-void SceneNodeAddAccel(float x, float y, float z, SceneNode* b); // 0x80278828
-float* SceneNodeVelocityPtr(SceneNode* b);                      // 0x802788B4
-float* SceneNodePosPtr(SceneNode* b);                           // 0x802788BC
-void SceneNodeSetVelocity(float x, float y, float z, SceneNode* b); // 0x802788C4
-void SceneNodeSetPos(float x, float y, float z, SceneNode* b);  // 0x802788D4
-PhysObj* SceneNodeGetOwner(SceneNode* b);                       // 0x802789C0
-void SceneNodeSetOwner(SceneNode* b, u32 owner);                // 0x802789C8
+void dBodySetGravityMode(dxBody* b, int mode);                  // 0x8027835C
+int dBodyIsEnabled(dxBody* b);                                  // 0x80278384
+void dBodyDisable(dxBody* b);                                   // 0x80278398
+void dBodyEnable(dxBody* b);                                    // 0x802783A8
+dxJoint* dBodyGetJoint(dxBody* b, int index);                   // 0x802783C8
+int dBodyGetNumJoints(dxBody* b);                               // 0x802783FC
+void dBodyAddTorque(dxBody* b, float fx, float fy, float fz);   // 0x80278800
+void dBodyAddForce(dxBody* b, float fx, float fy, float fz);    // 0x80278828
+const float* dBodyGetAngularVel(dxBody* b);                     // 0x802788B4
+const float* dBodyGetLinearVel(dxBody* b);                      // 0x802788BC
+void dBodySetAngularVel(dxBody* b, float x, float y, float z);  // 0x802788C4
+void dBodySetLinearVel(dxBody* b, float x, float y, float z);   // 0x802788D4
+void* dBodyGetData(dxBody* b);                                  // 0x802789C0
+void dBodySetData(dxBody* b, void* data);                       // 0x802789C8
 
 // Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
 // array overrides here call directly. Class and member names are guesses.
@@ -203,9 +204,9 @@ void fn_80276170(float density, float radius, float length, Mass* m, int dir);
 void fn_802762AC(float density, float radius, Mass* m);
 void fn_80277600(dxWorld* w);
 dxWorld* fn_802776D4();
-int fn_80277778(SceneNode* a, SceneNode* b, int type);
-void* fn_802777BC(Geom* j, int i);
-void fn_80277804(void* j, SceneNode* a, SceneNode* b);
+int fn_80277778(dxBody* a, dxBody* b, int type);
+dxBody* fn_802777BC(dxJoint* j, int i);
+void fn_80277804(void* j, dxBody* a, dxBody* b);
 void fn_80277958(void* group);
 void fn_80277B38(void* group);
 void* fn_80277D38(int n);
@@ -213,15 +214,15 @@ void* fn_80277D80(dxWorld* w, void* group);
 void* fn_80277EC8(dxWorld* w, void* group, void* contact);
 void* fn_802780CC(dxWorld* w, void* group);
 void* fn_80278214(dxWorld* w, void* group);
-void fn_8027841C(float a, float b, float c, float d, float e, float f, SceneNode* body);
-void fn_80278534(float a, float b, float c, float d, float e, float f, SceneNode* body);
-void fn_802785F8(float a, float b, float c, float d, float e, float f, SceneNode* body);
-void fn_802786A4(float a, float b, float c, float d, float e, float f, SceneNode* body);
-void fn_80278720(float x, float y, float z, SceneNode* body);
-void fn_80278790(float x, float y, float z, SceneNode* body);
-void fn_80278850(SceneNode* body, Mass* m);
-SceneNode* fn_80278B70(dxWorld* w);
-void fn_802789D0(SceneNode* body);
+void fn_8027841C(float a, float b, float c, float d, float e, float f, dxBody* body);
+void fn_80278534(float a, float b, float c, float d, float e, float f, dxBody* body);
+void fn_802785F8(float a, float b, float c, float d, float e, float f, dxBody* body);
+void fn_802786A4(float a, float b, float c, float d, float e, float f, dxBody* body);
+void fn_80278720(float x, float y, float z, dxBody* body);
+void fn_80278790(float x, float y, float z, dxBody* body);
+void fn_80278850(dxBody* body, Mass* m);
+dxBody* fn_80278B70(dxWorld* w);
+void fn_802789D0(dxBody* body);
 void* fn_8028B3BC(GeomVec* v, void* at, int size);
 void fn_8028B35C(GeomVec* v, void* at, int size);
 void fn_8028B960(GeomVec* v);
@@ -235,9 +236,9 @@ PhysObj* fn_801D59A4(int owner, int material, Geom* g, Mass* m, int cat, Vec3* o
 void fn_801D6104(Geom* space);
 void fn_801D64B8(float radius, float length, Vec3* pos, Mtx34* rot, u8* color);
 void fn_801D6CB8(Geom* space, float dt);
-int fn_801D6EC8(SceneNode* body, Geom* from, int n, SceneNode** list);
+int fn_801D6EC8(dxBody* body, dxJoint* from, int n, dxBody** list);
 void fn_801D72F8(void* data, Geom* a, Geom* b);
-void fn_801D77C4(PhysObj* o, float* vel);
+void fn_801D77C4(PhysObj* o, const float* vel);
 void fn_801D7DDC(int num, const char* fmt, void* ap);
 void fn_801D7E74(int num, const char* fmt, void* ap);
 void fn_801D7F0C(void* p, u32 size);
@@ -300,8 +301,8 @@ int fn_801D4738(PhysObj* o, Vec3* p, float r) {
 void fn_801D4824(void* group, PhysObj* a, PhysObj* b, const Vec3* axis1, const Vec3* axis2, int limits,
                  const float* angles) {
     void* j = fn_80277D80(sWorld, group);
-    SceneNode* ba = a == 0 ? 0 : a->body;
-    SceneNode* bb = b == 0 ? 0 : b->body;
+    dxBody* ba = a == 0 ? 0 : a->body;
+    dxBody* bb = b == 0 ? 0 : b->body;
     fn_80277804(j, ba, bb);
     fn_80273918(j, 2);
     {
@@ -334,8 +335,8 @@ void fn_801D4824(void* group, PhysObj* a, PhysObj* b, const Vec3* axis1, const V
 // 0x801D4A70: hinge joint.
 void fn_801D4A70(void* group, PhysObj* a, PhysObj* b, Vec3* anchor, Vec3* axis, float* limits) {
     void* j = fn_802780CC(sWorld, group);
-    SceneNode* ba = a == 0 ? 0 : a->body;
-    SceneNode* bb = b == 0 ? 0 : b->body;
+    dxBody* ba = a == 0 ? 0 : a->body;
+    dxBody* bb = b == 0 ? 0 : b->body;
     fn_80277804(j, ba, bb);
     float s = 0.0023818598f;
     fn_80275218(anchor->x * s, anchor->y * s, anchor->z * s, j);
@@ -349,8 +350,8 @@ void fn_801D4A70(void* group, PhysObj* a, PhysObj* b, Vec3* anchor, Vec3* axis, 
 // 0x801D4B5C: ball joint.
 void fn_801D4B5C(void* group, PhysObj* a, PhysObj* b, Vec3* anchor) {
     void* j = fn_80278214(sWorld, group);
-    SceneNode* ba = a == 0 ? 0 : a->body;
-    SceneNode* bb = b == 0 ? 0 : b->body;
+    dxBody* ba = a == 0 ? 0 : a->body;
+    dxBody* bb = b == 0 ? 0 : b->body;
     fn_80277804(j, ba, bb);
     float s = 0.0023818598f;
     fn_802759B8(anchor->x * s, anchor->y * s, anchor->z * s, j);
@@ -394,9 +395,9 @@ static inline void ForceAdd(PhysObj* o, int type, const Vec3* a, const Vec3* b) 
     if (sForceCount != 64 && o != 0 && o->body != 0) {
         Force* f = &gForces[sForceCount++];
         f->type = type;
-        if (o->body != 0 && SceneNodeNotLocked(o->body) == 0) {
+        if (o->body != 0 && dBodyIsEnabled(o->body) == 0) {
             o->idle = 0.0f;
-            SceneNodeSnapPrev(o->body);
+            dBodyEnable(o->body);
         }
         f->body = o->body;
         f->geom = o->geom;
@@ -445,7 +446,7 @@ void fn_801D5010(PhysObj* o, const Vec3* v) {
 // 0x801D5110
 void fn_801D5110(PhysObj* o, int pinned) {
     if (o->body != 0) {
-        SceneNodeSetPinned(o->body, pinned);
+        dBodySetGravityMode(o->body, pinned);
     }
 }
 
@@ -488,14 +489,14 @@ void fn_801D513C(PhysObj* o, Mtx34* m) {
 // 0x801D5260
 void fn_801D5260(PhysObj* o, Vec3* v) {
     if (o->body != 0) {
-        SceneNodeSetVelocity(v->x, v->y, v->z, o->body);
+        dBodySetAngularVel(o->body, v->x, v->y, v->z);
     }
 }
 
 // 0x801D5298
 void fn_801D5298(PhysObj* o, Vec3* v) {
     if (o->body != 0) {
-        SceneNodeSetPos(0.0023818598f * v->x, 0.0023818598f * v->y, 0.0023818598f * v->z, o->body);
+        dBodySetLinearVel(o->body, 0.0023818598f * v->x, 0.0023818598f * v->y, 0.0023818598f * v->z);
     }
 }
 
@@ -528,7 +529,7 @@ void fn_801D52E0(PhysObj* o, const Mtx34* m) {
 // 0x801D53D4: enables the object and wakes what touches it.
 void fn_801D53D4(PhysObj* o) {
     if (o->body != 0) {
-        SceneNodeSnapPrev(o->body);
+        dBodyEnable(o->body);
     }
     if (o->geom != 0) {
         GeomEnable(o->geom);
@@ -543,8 +544,8 @@ void fn_801D53D4(PhysObj* o) {
 // 0x801D5448: puts the object's body to sleep.
 void fn_801D5448(PhysObj* o) {
     if (o->body != 0) {
-        SceneNodeLock(o->body);
-        PhysObj* p = SceneNodeGetOwner(o->body);
+        dBodyDisable(o->body);
+        PhysObj* p = (PhysObj*)dBodyGetData(o->body);
         p->flags &= ~6;
         p->hits = 0;
     }
@@ -555,7 +556,7 @@ int fn_801D549C(PhysObj* o) {
     if (o->body == 0) {
         return 0;
     }
-    return SceneNodeNotLocked(o->body) != 0;
+    return dBodyIsEnabled(o->body) != 0;
 }
 
 // 0x801D54DC
@@ -575,7 +576,7 @@ int fn_801D54E8(void) {
 // 0x801D550C: disables the object.
 void fn_801D550C(PhysObj* o) {
     if (o->body != 0) {
-        SceneNodeLock(o->body);
+        dBodyDisable(o->body);
     }
     if (o->geom != 0) {
         GeomDisable(o->geom);
@@ -587,7 +588,7 @@ void fn_801D550C(PhysObj* o) {
 // 0x801D556C: enables the object.
 void fn_801D556C(PhysObj* o) {
     if (o->body != 0) {
-        SceneNodeSnapPrev(o->body);
+        dBodyEnable(o->body);
     }
     if (o->geom != 0) {
         GeomEnable(o->geom);
@@ -693,7 +694,7 @@ PhysObj* fn_801D5810(float x, float y, float z, int owner, int mat, int material
 // 0x801D59A4: wraps a geom (and a new body, unless noBody) into a physics object.
 PhysObj* fn_801D59A4(int owner, int mat, Geom* g, Mass* m, int cat, Vec3* offset, int noBody) {
     PhysObj* o;
-    SceneNode* body;
+    dxBody* body;
 
     if (g == 0) {
         return 0;
@@ -718,7 +719,7 @@ PhysObj* fn_801D59A4(int owner, int mat, Geom* g, Mass* m, int cat, Vec3* offset
     GeomSetBody(g, (Body*)body);
     if (body != 0) {
         fn_80278850(body, m);
-        SceneNodeLock(body);
+        dBodyDisable(body);
         GeomSetCollideBits(g, 0);
     } else {
         GeomSetCollideBits(g, -1);
@@ -743,7 +744,7 @@ PhysObj* fn_801D59A4(int owner, int mat, Geom* g, Mass* m, int cat, Vec3* offset
     o->angDamp = m->data[0] / 10.0f;
     GeomSetGFlags(g, (int)o);
     if (body != 0) {
-        SceneNodeSetOwner(body, (u32)o);
+        dBodySetData(body, o);
     }
     return o;
 }
@@ -812,13 +813,13 @@ void fn_801D6104(Geom* space) {
         Geom* g = SpaceGetNumGeoms(space, i);
         int type = GeomGetType(g);
         u8 color[4];
-        SceneNode* body = GeomGetBody(g);
+        dxBody* body = GeomGetBody(g);
         if (body == 0) {
             color[0] = 0xFF;
             color[1] = 0;
             color[2] = 0;
             color[3] = 0x80;
-        } else if (SceneNodeNotLocked(body) == 0) {
+        } else if (dBodyIsEnabled(body) == 0) {
             color[0] = 0;
             color[1] = 0;
             color[2] = 0xFF;
@@ -971,7 +972,7 @@ void fn_801D6928(float dt) {
                 }
                 switch (f->type) {
                 case 0:
-                    SceneNodeAddAccel(f->a.x, f->a.y, f->a.z, f->body);
+                    dBodyAddForce(f->body, f->a.x, f->a.y, f->a.z);
                     break;
                 case 1:
                     fn_80278790(f->a.x, f->a.y, f->a.z, f->body);
@@ -989,7 +990,7 @@ void fn_801D6928(float dt) {
                     fn_8027841C(f->a.x, f->a.y, f->a.z, f->b.x, f->b.y, f->b.z, f->body);
                     break;
                 case 6:
-                    SceneNodeAddRot(f->a.x, f->a.y, f->a.z, f->body);
+                    dBodyAddTorque(f->body, f->a.x, f->a.y, f->a.z);
                     break;
                 case 7:
                     fn_80278720(f->a.x, f->a.y, f->a.z, f->body);
@@ -1003,15 +1004,15 @@ void fn_801D6928(float dt) {
             int k;
             for (k = 0; k < count; k++) {
                 Geom* g = SpaceGetNumGeoms((Geom*)sp, k);
-                SceneNode* body;
-                if (GeomIsEnabled(g) != 0 && (body = GeomGetBody(g)) != 0 && SceneNodeNotLocked(body) != 0) {
+                dxBody* body;
+                if (GeomIsEnabled(g) != 0 && (body = GeomGetBody(g)) != 0 && dBodyIsEnabled(body) != 0) {
                     PhysObj* o = GeomGetGFlags(g);
-                    float* v = SceneNodePosPtr(body);
+                    const float* v = dBodyGetLinearVel(body);
                     float d = -o->damp;
-                    SceneNodeAddAccel(v[0] * d, v[1] * d, v[2] * d, body);
-                    v = SceneNodeVelocityPtr(body);
+                    dBodyAddForce(body, v[0] * d, v[1] * d, v[2] * d);
+                    v = dBodyGetAngularVel(body);
                     d = -o->angDamp;
-                    SceneNodeAddRot(v[0] * d, v[1] * d, v[2] * d, body);
+                    dBodyAddTorque(body, v[0] * d, v[1] * d, v[2] * d);
                 }
             }
         }
@@ -1029,7 +1030,7 @@ void fn_801D6928(float dt) {
 }
 
 // Squared length of a vector.
-static inline float LenSq(float* v) {
+static inline float LenSq(const float* v) {
     float x = v[0] * v[0];
     float y = v[1] * v[1];
     float z = v[2] * v[2];
@@ -1038,16 +1039,16 @@ static inline float LenSq(float* v) {
 
 // 0x801D6CB8: puts resting bodies (and resting islands) to sleep.
 void fn_801D6CB8(Geom* space, float dt) {
-    SceneNode* list[34];
+    dxBody* list[34];
     int n = SpaceGetCount((Space*)space);
     int i;
     for (i = 0; i < n; i++) {
         Geom* g = SpaceGetNumGeoms(space, i);
-        float* pos;
-        float* vel;
+        const float* pos;
+        const float* vel;
         PhysObj* o;
-        SceneNode* body;
-        if (GeomIsEnabled(g) != 0 && (body = GeomGetBody(g)) != 0 && SceneNodeNotLocked(body) != 0) {
+        dxBody* body;
+        if (GeomIsEnabled(g) != 0 && (body = GeomGetBody(g)) != 0 && dBodyIsEnabled(body) != 0) {
             Geom** p = (Geom**)sGeoms->mUnk0C;
             if (g != 0) {
                 Geom** end = (Geom**)((char*)p + sGeoms->mLength);
@@ -1058,24 +1059,24 @@ void fn_801D6CB8(Geom* space, float dt) {
                 }
                 if (p != end) {
                     o = GeomGetGFlags(g);
-                    pos = SceneNodePosPtr(body);
-                    vel = SceneNodeVelocityPtr(body);
+                    pos = dBodyGetLinearVel(body);
+                    vel = dBodyGetAngularVel(body);
                     fn_801D77C4(o, pos);
                     if (LenSq(pos) + LenSq(vel) < 0.1f) {
                         o->idle += dt;
                         if (o->idle >= 1000.0f) {
-                            if (SceneNodeListCount(body) == 0) {
-                                SceneNodeLock(body);
+                            if (dBodyGetNumJoints(body) == 0) {
+                                dBodyDisable(body);
                                 o->flags &= ~6;
                                 o->hits = 0;
                             } else {
                                 int count = fn_801D6EC8(body, 0, 0, list);
                                 if (count != 0) {
-                                    SceneNode** l = list;
+                                    dxBody** l = list;
                                     int k;
                                     for (k = 0; k < count; k++) {
-                                        PhysObj* q = SceneNodeGetOwner(*l);
-                                        SceneNodeLock(*l);
+                                        PhysObj* q = (PhysObj*)dBodyGetData(*l);
+                                        dBodyDisable(*l);
                                         q->flags &= ~6;
                                         q->hits = 0;
                                         l++;
@@ -1093,20 +1094,20 @@ void fn_801D6CB8(Geom* space, float dt) {
 }
 
 // 0x801D6EC8: collects the island of bodies jointed to a body; 0 if any of them still moves.
-int fn_801D6EC8(SceneNode* body, Geom* from, int n, SceneNode** list) {
+int fn_801D6EC8(dxBody* body, dxJoint* from, int n, dxBody** list) {
     int joints;
     int i;
     list[n++] = body;
-    joints = SceneNodeListCount(body);
+    joints = dBodyGetNumJoints(body);
     for (i = 0; i < joints; i++) {
-        SceneNode* other;
-        Geom* j = SceneNodeListGet(body, i);
+        dxBody* other;
+        dxJoint* j = dBodyGetJoint(body, i);
         if (j != from) {
-            other = (SceneNode*)fn_802777BC(j, 0);
+            other = fn_802777BC(j, 0);
             if (other == body) {
-                other = (SceneNode*)fn_802777BC(j, 1);
+                other = fn_802777BC(j, 1);
             }
-            if (other != 0 && SceneNodeNotLocked(other) != 0) {
+            if (other != 0 && dBodyIsEnabled(other) != 0) {
                 int k;
                 for (k = 0; k < n; k++) {
                     if (list[k] == other) {
@@ -1114,9 +1115,9 @@ int fn_801D6EC8(SceneNode* body, Geom* from, int n, SceneNode** list) {
                     }
                 }
                 if (k == n) {
-                    PhysObj* o = SceneNodeGetOwner(other);
-                    float* pos = SceneNodePosPtr(other);
-                    float* vel = SceneNodeVelocityPtr(other);
+                    PhysObj* o = (PhysObj*)dBodyGetData(other);
+                    const float* pos = dBodyGetLinearVel(other);
+                    const float* vel = dBodyGetAngularVel(other);
                     if (LenSq(pos) + LenSq(vel) >= 0.1f) {
                         return 0;
                     }
@@ -1162,8 +1163,8 @@ void fn_801D7068(Geom* space, Geom* g) {
         int i;
         for (i = 0; i < n; i++) {
             Geom* h = SpaceGetNumGeoms(space, i);
-            SceneNode* body = GeomGetBody(h);
-            if (body != 0 && SceneNodeNotLocked(body) == 0) {
+            dxBody* body = GeomGetBody(h);
+            if (body != 0 && dBodyIsEnabled(body) == 0) {
                 int hit;
                 GeomGetAabb(h, other);
                 p = GeomGetPosition(h);
@@ -1188,7 +1189,7 @@ void fn_801D7068(Geom* space, Geom* g) {
                 }
                 if (hit) {
                     GeomGetGFlags(h)->idle = 0.0f;
-                    SceneNodeSnapPrev(body);
+                    dBodyEnable(body);
                     fn_801D7068(space, h);
                 }
             }
@@ -1197,9 +1198,9 @@ void fn_801D7068(Geom* space, Geom* g) {
 }
 
 // Records a contact on an object for the impact sounds.
-static inline void ContactNote(PhysObj* o, SceneNode* body, Geom* other, int surface, float nx, float ny, float nz) {
+static inline void ContactNote(PhysObj* o, dxBody* body, Geom* other, int surface, float nx, float ny, float nz) {
     if ((o->flags & 2) == 0) {
-        float* v = SceneNodePosPtr(body);
+        const float* v = dBodyGetLinearVel(body);
         if (LenSq(v) > 0.1f) {
             if (o->hits == 0 || o->other != other || o->surface != surface ||
                 __fabsf(o->normal.z * nz + o->normal.x * nx + o->normal.y * ny) < 0.99f) {
@@ -1250,8 +1251,8 @@ struct Contact {
 // 0x801D72F8: ODE near callback: creates the contact joints.
 void fn_801D72F8(void* data, Geom* a, Geom* b) {
     Contact contacts[16];
-    SceneNode* ba = GeomGetBody(a);
-    SceneNode* bb = GeomGetBody(b);
+    dxBody* ba = GeomGetBody(a);
+    dxBody* bb = GeomGetBody(b);
     if (ba != 0 && bb != 0 && fn_80277778(ba, bb, 4) != 0) {
         return;
     }
@@ -1269,8 +1270,8 @@ void fn_801D72F8(void* data, Geom* a, Geom* b) {
     if (ca != 0x1FFFFFFF && ca == GeomGetCategoryBits(b)) {
         return;
     }
-    int ea = ba == 0 ? 0 : SceneNodeNotLocked(ba);
-    int eb = bb == 0 ? 0 : SceneNodeNotLocked(bb);
+    int ea = ba == 0 ? 0 : dBodyIsEnabled(ba);
+    int eb = bb == 0 ? 0 : dBodyIsEnabled(bb);
     if (ea == 0 && eb == 0) {
         return;
     }
@@ -1322,7 +1323,7 @@ static inline int GeomOwnerId(Geom* g) {
 }
 
 // 0x801D77C4: reports impacts and slides of an object.
-void fn_801D77C4(PhysObj* o, float* vel) {
+void fn_801D77C4(PhysObj* o, const float* vel) {
     if (o->hits == 0) {
         return;
     }
