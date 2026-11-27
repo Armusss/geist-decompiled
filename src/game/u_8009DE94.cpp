@@ -440,9 +440,9 @@ extern "C" void fn_8009F63C(int* dst, int* src)
 // Copy the translation row (words 9..11) of an actor's fixed-point 3x4 matrix
 // into a vector.
 // fn_8009F6E4
-extern "C" void fn_8009F6E4(int* out, Actor* actor)
+extern "C" void fn_8009F6E4(int* out, const Actor* actor)
 {
-    int* src = (int*)actor;
+    const int* src = (const int*)actor;
 
     out[0] = src[9];
     out[1] = src[10];
@@ -766,14 +766,11 @@ extern "C" void fn_800A0168(Mtx34* dst, Mtx34* src)
 }
 
 // Extract the translation column (element 9..11) of a 3x4 matrix.
-void Mtx34GetTranslation(Vec3* out, Mtx34* m)
+void Mtx34GetTranslation(Vec3* out, const Mtx34* m)
 {
-    float x = m->m[9];
-    float y = m->m[10];
-    out->x = x;
-    float z = m->m[11];
-    out->y = y;
-    out->z = z;
+    out->x = m->m[9];
+    out->y = m->m[10];
+    out->z = m->m[11];
 }
 
 // Copy column `col` of a row-major 3x4 float matrix into a vector.
@@ -2476,7 +2473,7 @@ extern "C" int fn_800A2DE8(int* def, unsigned int* time)
 }
 
 void BitClear(unsigned long* set, int bit);
-void NeoAgentRelease(void* agent);
+extern "C" void NeoAgentRelease(void* agent);
 
 // Release one dynamic agent slot: tear the agent down, clear its bit in the
 // dynamic-agent bitmap and drop the live-agent count. Returns 1.
@@ -3432,10 +3429,10 @@ void ExtraTrailClear(ExtraHolder* holder);
 int ActorFn80022FD8(Actor* actor);
 void ActorUnlinkOwnerObjects(Actor* actor);
 
-void NeoAgentRelease(void* agent);
+extern "C" void NeoAgentRelease(void* agent);
 
 // Release every allocated dynamic agent slot, then free the slot array.
-void NeoAgentPoolShutdown(void)
+extern "C" void NeoAgentPoolShutdown(void)
 {
     int offset;
     int i;
@@ -3461,7 +3458,7 @@ void NeoAgentPoolShutdown(void)
 
 // Tear down one dynamic agent slot: its streams, live handle and every owned
 // object, then the slot allocator.  Dead agents (state 7) are left alone.
-void NeoAgentRelease(void* agent)
+extern "C" void NeoAgentRelease(void* agent)
 {
     NeoAgent* a;
     int* list;
