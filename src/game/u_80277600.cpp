@@ -33,10 +33,10 @@ struct SceneNode {
     u8 pad114[4];
     Vec3 rotAdd;            // 0x118
     u8 pad124[0x1C];
-    float prevA;            // 0x140
-    float prevB;            // 0x144
-    float curA;             // 0x148
-    float curB;             // 0x14C
+    float prevA;            // 0x140: adis.idle_time
+    int prevB;              // 0x144: adis.idle_steps
+    float curA;             // 0x148: adis_timeleft
+    int curB;               // 0x14C: adis_stepsleft
 };
 
 // ODE 0.5 ode.cpp world functions (0x802775AC-0x80277600; reverse source order, as the ODE library was
@@ -291,12 +291,6 @@ void dWorldSetGravity(dWorldID w, float x, float y, float z) {
     w->gravity[2] = z;
 }
 
-// TODO (not drafted yet, 0x1E0 bytes at 0x80277958)
-extern "C" void fn_80277958(void);
-
-// TODO (not drafted yet, 0x200 bytes at 0x80277B38)
-extern "C" void fn_80277B38(void);
-
 extern "C" void fn_8027337C(int num, const char* msg, ...);   // dMessage (error.cpp)
 
 // dWorldDestroy
@@ -411,6 +405,45 @@ extern "C" void fn_80277804(dxJoint* joint, dxBody* body1, dxBody* body2) {
     }
 }
 
+extern "C" void* __alloca(unsigned int size);
+#define EFFICIENT_ALIGNMENT 16
+#define dEFFICIENT_SIZE(x) ((((x)-1) | (EFFICIENT_ALIGNMENT - 1)) + 1)
+#define dALLOCA16(n) ((char*)dEFFICIENT_SIZE(((size_t)(__alloca((n) + (EFFICIENT_ALIGNMENT - 1))))))
+#define ALLOCA dALLOCA16
+
+// dJointGroupEmpty
+extern "C" void fn_80277958(dJointGroupID group) {
+    // the joints in this group are detached starting from the most recently
+    // added (at the top of the stack). this helps ensure that the various
+    // linked lists are not traversed too much, as the joints will hopefully
+    // be at the start of those lists.
+    // if any group joints have their world pointer set to 0, their world was
+    // previously destroyed. no special handling is required for these joints.
+
+    int i;
+    dxJoint** jlist = (dxJoint**)ALLOCA(group->num * sizeof(dxJoint*));
+    dxJoint* j = (dxJoint*)group->stack.rewind();
+    for (i = 0; i < group->num; i++) {
+        jlist[i] = j;
+        j = (dxJoint*)(group->stack.next(j->vtable->size));
+    }
+    for (i = group->num - 1; i >= 0; i--) {
+        if (jlist[i]->world) {
+            removeJointReferencesFromAttachedBodies(jlist[i]);
+            removeObjectFromList(jlist[i]);
+            jlist[i]->world->nj--;
+        }
+    }
+    group->num = 0;
+    group->stack.freeAll();
+}
+
+// dJointGroupDestroy
+extern "C" void fn_80277B38(dJointGroupID group) {
+    fn_80277958(group);
+    delete group;
+}
+
 // dJointGroupCreate
 extern "C" dxJointGroup* fn_80277D38(int max_size) {
     dxJointGroup* group = new dxJointGroup;
@@ -509,11 +542,11 @@ void SceneNodeSnapPrev(SceneNode* n) {
 }
 
 int SceneNodeListGet(SceneNode* n, int index) {
-    ListLink* l = n->list;
     int i = 0;
-    for (; l != NULL; l = l->next, i++) {
-        if (i == index)
+    for (ListLink* l = n->list; l; l = l->next, i++) {
+        if (i == index) {
             return l->value;
+        }
     }
     return 0;
 }
