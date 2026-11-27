@@ -828,7 +828,7 @@ config.libs = [
             Object(NonMatching, "game/u_80272060.cpp"),  # split from u_8026C200 (own .sdata2 pool)
             Object(Matching, "game/u_8027337C.cpp"),  # split from u_8026C200 (ODE error.cpp)
             Object(NonMatching, "game/u_80273650.cpp"),  # split from u_8026C200 (own .sdata2 pool)
-            Object(NonMatching, "game/u_80276090.cpp"),  # split from u_8026C200 (own .sdata2 pool)
+            Object(Matching, "game/u_80276090.cpp"),  # ODE mass.cpp (split from u_8026C200; own .sdata2 pool)
             # ODE 0.5 library files (STATUS G4): the ODE library was built with -inline deferred, so functions come
             # out in reverse source order (also error.cpp, collision_std.cpp); with the default setting the
             # .sdata2 literal order of matrix.cpp / misc.cpp cannot be produced. Proof: whole DOL matches.
@@ -837,9 +837,9 @@ config.libs = [
             Object(Matching, "game/ode/misc.cpp", extra_cflags=["-inline deferred"]),
             Object(Matching, "game/ode/obstack.cpp", extra_cflags=["-inline deferred"]),
             Object(NonMatching, "game/u_80277600.cpp"),  # ODE 0.5 ode.cpp (body/joint/world API)
-            Object(NonMatching, "game/u_80278D2C.cpp"),  # ODE math (split from u_80277600)
+            Object(Matching, "game/u_80278D2C.cpp", mw_version="GC/2.0"),  # ODE math (split from u_80277600); GC/2.0 (user-approved 2026-11-27): dPlaneSpace exact only on 2.0 (109 diffs on 1.3.2)
             Object(NonMatching, "game/u_80279558.cpp"),  # ODE step.cpp (split from u_80277600)
-            Object(NonMatching, "game/u_8027B4F8.cpp"),  # ODE rotation? (split from u_80277600)
+            Object(Matching, "game/u_8027B4F8.cpp", mw_version="GC/2.0"),  # ODE rotation.cpp (split from u_80277600); GC/2.0 (user-approved 2026-11-27): 7/8 exact on 2.0, 1/8 on 1.3.2
             Object(NonMatching, "game/u_8027BD5C.cpp"),  # ODE util.cpp (split from u_80277600)
             Object(NonMatching, "game/u_8027C650.cpp"),  # player states (split from u_80277600)
             Object(NonMatching, "game/u_8027D3EC.cpp"),  # guess

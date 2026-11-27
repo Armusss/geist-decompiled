@@ -157,9 +157,15 @@ static inline float SqrtF(float x)
     return x;
 }
 
-static inline float FAbs(float x)
+// The game's MSL fabs/fabsf (inline in its math.h).
+static inline double _fabs(double x)
 {
     return __fabs(x);
+}
+
+static inline float FAbs(float x)
+{
+    return (float)_fabs((double)x);
 }
 
 // Collider helpers further down in this file / in the neighbouring unit.
@@ -524,26 +530,33 @@ void CapsuleGeom::computeAABB()
 // 0x802719E8: signed depth of a point inside a box (dGeomBoxPointDepth)
 float BoxPointDepth(float x, float y, float z, Geom* g)
 {
-    BoxGeom* box = (BoxGeom*)g;
-    float* p = g->pos;
-    float* R = g->rot;
-    float dy = y - p[1];
-    float dx = x - p[0];
-    float dz = z - p[2];
-    float dX = 0.5f * box->side[0] - FAbs(R[8] * dz + R[0] * dx + R[4] * dy);
-    float dY = 0.5f * box->side[1] - FAbs(R[9] * dz + R[1] * dx + R[5] * dy);
-    float dZ = 0.5f * box->side[2] - FAbs(R[10] * dz + R[2] * dx + R[6] * dy);
-
-    if (dY <= dX) {
-        if (dY < dZ) {
-            return dY;
+    BoxGeom* b = (BoxGeom*)g;
+    float* R = b->rot;
+    float* pos = b->pos;
+    float p[4], q[4];
+    p[0] = x - pos[0];
+    p[1] = y - pos[1];
+    p[2] = z - pos[2];
+    // q = R^T p (dMULTIPLY1_331)
+    q[0] = R[0] * p[0] + R[4] * p[1] + R[8] * p[2];
+    q[1] = R[1] * p[0] + R[5] * p[1] + R[9] * p[2];
+    q[2] = R[2] * p[0] + R[6] * p[1] + R[10] * p[2];
+    float dx = b->side[0] * 0.5f - FAbs(q[0]);
+    float dy = b->side[1] * 0.5f - FAbs(q[1]);
+    float dz = b->side[2] * 0.5f - FAbs(q[2]);
+    if (dx < dy) {
+        if (dx < dz) {
+            return dx;
+        } else {
+            return dz;
         }
-        return dZ;
+    } else {
+        if (dy < dz) {
+            return dy;
+        } else {
+            return dz;
+        }
     }
-    if (dX < dZ) {
-        return dX;
-    }
-    return dZ;
 }
 
 // 0x80271AB4: reads a box's side lengths
@@ -566,12 +579,9 @@ Geom* BoxCreate(float lx, float ly, float lz, Space* space)
 void BoxGeom::computeAABB()
 {
     float* R = rot;
-    float sx = side[0];
-    float sy = side[1];
-    float sz = side[2];
-    float xr = 0.5f * (FAbs(R[0] * sx) + FAbs(R[1] * sy) + FAbs(R[2] * sz));
-    float yr = 0.5f * (FAbs(R[4] * sx) + FAbs(R[5] * sy) + FAbs(R[6] * sz));
-    float zr = 0.5f * (FAbs(R[8] * sx) + FAbs(R[9] * sy) + FAbs(R[10] * sz));
+    float xr = 0.5f * (FAbs(R[0] * side[0]) + FAbs(R[1] * side[1]) + FAbs(R[2] * side[2]));
+    float yr = 0.5f * (FAbs(R[4] * side[0]) + FAbs(R[5] * side[1]) + FAbs(R[6] * side[2]));
+    float zr = 0.5f * (FAbs(R[8] * side[0]) + FAbs(R[9] * side[1]) + FAbs(R[10] * side[2]));
 
     aabb[0] = pos[0] - xr;
     aabb[1] = pos[0] + xr;

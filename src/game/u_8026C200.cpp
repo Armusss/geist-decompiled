@@ -1,11 +1,14 @@
-// u_8026C200.cpp (0x8026C200-0x8026D428): the ODE hash space and the space list helpers (collision_space.cpp).
-// The colliders, utilities, error, joint and mass code that followed are now u_8026D428, u_80272060,
-// u_8027337C, u_80273650 and u_80276090 (each has its own .sdata2 pool).
-// Names are descriptive guesses; the code is matched against the retail DOL.
-// Not flippable as split: the compiled vtables (__vt__5Space before __vt__9HashSpace) and the implicit
-// ~HashSpace (emitted at the end here) sit at 0x803C0434/0x803C0464 in the opposite order and at
-// 0x8026BE98 (SpaceDestroy__FP5Spaces in u_8026A37C) in retail, so collision_space.cpp most likely
-// starts at or before 0x8026BE98; u_8026A37C also emulates the Geom/Space classes with C tables.
+// u_8026C200.cpp (0x8026BE98-0x8026D428): ODE 0.5 collision_space.cpp: the implicit ~dxHashSpace, the dSpace*
+// API (dSpaceCollide2 .. dHashSpaceSetLevels), dHashSpaceCreate, the dxHashSpace/dxSpace methods and dGeomMoved.
+// Boundary (2026-11-27): starts at 0x8026BE98, not 0x8026C200. 0x8026BE98 (was SpaceDestroy__FP5Spaces in
+// u_8026A37C) is the compiler-generated ~HashSpace (stores __vt__9HashSpace then __vt__5Space, inlines ~Space,
+// frees 0x6C bytes); u_8026A37C (collision_kernel.cpp) ends with space_geom_collider at 0x8026BB0C. The file
+// keeps its old name. Data: .data 0x803C03B8-0x803C0498 (hash-table prime sizes, __vt__9HashSpace 0x803C0434,
+// __vt__5Space 0x803C0464), .sdata2 0x804DA1C0-0x804DA1D0.
+// All 20 functions match, but the unit cannot flip with the current flags: retail emits ~HashSpace first and
+// __vt__9HashSpace before __vt__5Space, which every compiler here gives only with -inline deferred and the
+// functions in ODE source order (scratch test: 20/20 exact and the retail layout). Flag change = user decision.
+// The remaining names are descriptive guesses; the code is matched against the retail DOL.
 
 typedef unsigned long u32;
 typedef signed long s32;
@@ -204,6 +207,107 @@ static inline void GeomLink(Geom* g, Geom** list)
         (*list)->tome = &g->next;
     }
     *list = g;
+}
+
+// Destroys a geometry (dGeomDestroy); lives in the neighbouring unit.
+void GeomDestroyGeom(Geom* g);
+
+// 0x8026BF70: collides two geometries, either of which may be a space (dSpaceCollide2)
+void SpaceCollidePair(Geom* g1, Geom* g2, void* data, SpaceCallback callback)
+{
+    Space* s1;
+    Space* s2;
+
+    if (g1->type >= 8 && g1->type <= 10) {
+        s1 = (Space*)g1;
+    } else {
+        s1 = 0;
+    }
+    if (g2->type >= 8 && g2->type <= 10) {
+        s2 = (Space*)g2;
+    } else {
+        s2 = 0;
+    }
+    if (s1 != 0) {
+        if (s2 != 0) {
+            if (s1 == s2) {
+                s1->collide(data, callback);
+            } else if (s1->count < s2->count) {
+                Geom* g = s1->first;
+                while (g != 0) {
+                    s2->collide2(data, g, callback);
+                    g = g->next;
+                }
+            } else {
+                Geom* g = s2->first;
+                while (g != 0) {
+                    s1->collide2(data, g, callback);
+                    g = g->next;
+                }
+            }
+        } else {
+            s1->collide2(data, g2, callback);
+        }
+    } else {
+        if (s2 != 0) {
+            s2->collide2(data, g1, callback);
+        } else {
+            callback(data, g1, g2);
+        }
+    }
+}
+
+// 0x8026C11C: collides the geometries of a space with each other (dSpaceCollide)
+void SpaceCollideSelf(Geom* s, void* data, SpaceCallback callback)
+{
+    ((Space*)s)->collide(data, callback);
+}
+
+// 0x8026C148: n-th geometry of a space (dSpaceGetGeom). The symbol keeps its one-parameter guess
+// (SpaceGetNumGeoms__FP4Geom), so the index is never named and passes through in r4 to the getGeom
+// slot (0x14); the real prototype is Geom* (Space*, int).
+struct SpaceGetGeomCall {
+    char pad00[0x48];
+    virtual void slot08();
+    virtual void slot0C();
+    virtual void slot10();
+    virtual int getGeom();  // 0x14
+};
+
+int SpaceGetNumGeoms(Geom* s)
+{
+    return ((SpaceGetGeomCall*)s)->getGeom();
+}
+
+// 0x8026C174: number of geometries in a space (dSpaceGetNumGeoms)
+int SpaceGetCount(Space* s)
+{
+    return s->count;
+}
+
+// 0x8026C17C (dSpaceRemove)
+void SpaceRemoveGeom(Space* s, Geom* g)
+{
+    s->remove(g);
+}
+
+// 0x8026C1A8 (dSpaceAdd)
+void SpaceAddGeom(Space* s, Geom* g, int arg)
+{
+    s->add(g, arg);
+}
+
+// 0x8026C1D4 (dSpaceDestroy)
+void GeomDelete(Geom* g)
+{
+    GeomDestroyGeom(g);
+}
+
+// 0x8026C1F4 (dHashSpaceSetLevels)
+void SpaceSetFields(Space* s, int a, int b)
+{
+    ((HashSpace*)s)->minLevel = a;
+    ((HashSpace*)s)->maxLevel = b;
 }
 
 // 0x8026C200: allocates a hash space (dHashSpaceCreate)
@@ -566,9 +670,6 @@ void Space::computeAABB()
         dSetZero(aabb, 6);
     }
 }
-
-// Destroys a geometry (dGeomDestroy); lives in the neighbouring unit.
-void GeomDestroyGeom(Geom* g);
 
 // 0x8026D2D8: destroys a space and its geometries (dxSpace::~dxSpace)
 Space::~Space()
