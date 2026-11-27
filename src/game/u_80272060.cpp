@@ -240,7 +240,7 @@ void LineClosestApproach(float* pa, float* ua, float* pb, float* ub, float* alph
 }
 
 // 0x8027317C: collides two spheres (dCollideSpheres)
-int CollideSpheres(float r1, float r2, float* p1, float* p2, ContactGeom* c)
+int CollideSpheres(float* p1, float r1, float* p2, float r2, ContactGeom* c)
 {
     float d = SqrtF((p1[0] - p2[0]) * (p1[0] - p2[0]) + (p1[1] - p2[1]) * (p1[1] - p2[1])
                     + (p1[2] - p2[2]) * (p1[2] - p2[2]));
