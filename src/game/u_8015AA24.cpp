@@ -92,10 +92,17 @@ public:
 };
 void fn_800A0094(void*, void*);
 void fn_800A0100(void*);
-f32 fn_800A1394(f32);
+void SplineHermiteEval(f32 t, Vec3* p0, Vec3* t0, Vec3* p1, Vec3* t1, Vec3* out);
+void Draw3DBeginLine(int texture, void* xf, f32 width);
+void DrawTrailStrip(int start, u8 r0, u8 g0, u8 b0, u8 a0, u8 r1, u8 g1, u8 b1, u8 a1, f32 len, f32 step,
+                    f32 w0, f32 w1, f32 tile);
+void DrawDisableTexOffsets();
 void fn_800A1418();
 
 extern "C" {
+f32 fn_800A1394(f32 angle);
+f32 fn_800E1020(Vec3* v);
+void fn_800E1098(Vec3* out, Vec3* in, f32 len);
 void memset(void*, int, u32);
 int SendMsg(int to, int msg, void* data);
 void rand();
@@ -329,11 +336,12 @@ void fn_8015AB90(f32);
 void fn_8015ABB0();
 void fn_8015ABB4();
 void* fn_8015AC08(void*, short);
-void fn_8015AC70();
-void fn_8015AF74();
-int fn_8015B2A0(f32, void*, u8, u8, u8, u8, u8, u8);
-int fn_8015B428(f32, void*, int, u8, u8, u8, u8, u8, u8);
-void fn_8015B5B4(int);
+struct TimedFx;
+int fn_8015AC70(int target, int bone, Vec3* pos, u8 r0, u8 g0, u8 b0, u8 r1, u8 g1, u8 b1);
+int fn_8015AF74(int target, int bone, Placement* actor, u8 r0, u8 g0, u8 b0, u8 r1, u8 g1, u8 b1);
+int fn_8015B2A0(f32 len, const PlaceF* place, u8 r0, u8 g0, u8 b0, u8 r1, u8 g1, u8 b1);
+int fn_8015B428(f32 len, const PlaceF* place, const IVec3* target, u8 r0, u8 g0, u8 b0, u8 r1, u8 g1, u8 b1);
+void fn_8015B5B4(TimedFx* fx);
 void fn_8015BA5C(f32);
 void fn_8015BF90(void*, int, unsigned);
 void fn_8015BFD8(void*, int, unsigned);
@@ -481,7 +489,7 @@ void fn_8015AB3C() {
 
     p = lbl_804D4EB0->data;
     while (p != (void**)((u8*)lbl_804D4EB0->data + lbl_804D4EB0->size)) {
-        fn_8015B5B4((int)*p);
+        fn_8015B5B4((TimedFx*)*p);
         p = p + 1;
     }
 }
@@ -519,85 +527,423 @@ void* fn_8015AC08(void* p, short freeIt) {
     }
     return p;
 }
-// TODO (not drafted yet, 0x304 bytes at 0x8015AC70)
-// TODO (not drafted yet, 0x32C bytes at 0x8015AF74)
-int fn_8015B2A0(f32 timer, void* posRaw, u8 a, u8 b, u8 c, u8 d, u8 e, u8 f) {
-    int* pos = (int*)posRaw;
-    u32* p;
+// A pooled timed line effect (0x4C bytes). Types 0/1 draw a straight beam from a placement (1 follows
+// a target point); types 2/3 draw a Hermite curve from a bone of `target` to an actor (2) or a point (3).
+struct LineFx {
+    PlaceF place;          // 0x0C
+    f32 len;               // 0x3C
+    const IVec3* target;   // 0x40 (type 1)
+};
+
+struct CurveFx {
+    Vec3* pts;                 // 0x0C eight curve points
+    int target;                // 0x10
+    int bone;                  // 0x14
+    union {
+        const Placement* actor;  // 0x18 (type 2)
+        Vec3 pos;                // 0x18 (type 3)
+    } end;
+    Vec3 tan0;                 // 0x24
+    Vec3 tan1;                 // 0x30
+};
+
+struct TimedFx {
+    int state;             // 0x00 1 = shown, 2 = fading, 0 = finished
+    int type;              // 0x04
+    f32 time;              // 0x08
+    union {
+        LineFx line;
+        CurveFx curve;
+    } u;                   // 0x0C
+    u8 col[6];             // 0x44 start and end colour
+};
+
+// Reply of the 0x402 bone query: the bone's placement.
+static inline u8 LerpU8(u8 a, u8 b, f32 t) {
+    return b * t + a * (1.0f - t);
+}
+
+struct BoneQuery {
+    int unk00;             // 0x00
+    short bone;            // 0x04
+    char pad06[0x0A];
+    Placement place;       // 0x10
+};
+
+// 0x8015AC70: a curve from a bone of `target` to the point pos.
+int fn_8015AC70(int target, int bone, Vec3* pos, u8 r0, u8 g0, u8 b0, u8 r1, u8 g1, u8 b1) {
+    TimedFx* fx;
     int i;
 
     while ((u32)lbl_804D4EB0->size >> 2 >= 8) {
-        int* obj = *(int**)lbl_804D4EB0->data;
+        TimedFx* old = *(TimedFx**)lbl_804D4EB0->data;
 
-        if ((obj[1] == 2 || obj[1] == 3) && obj[3] != 0) {
-            VFree((void*)obj[3]);
-            obj[3] = 0;
+        if ((old->type == 2 || old->type == 3) && old->u.curve.pts != 0) {
+            VFree(old->u.curve.pts);
+            old->u.curve.pts = 0;
         }
-        VFree(obj);
+        VFree(old);
         fn_8028B35C(lbl_804D4EB0, lbl_804D4EB0->data, 4);
     }
-    p = (u32*)VAlloc(0x4c);
-    if (p != 0) {
-        u32* slot = (u32*)fn_8028B3BC(lbl_804D4EB0,
-                                      (u8*)lbl_804D4EB0->data + lbl_804D4EB0->size, 4);
+    fx = (TimedFx*)VAlloc(0x4c);
+    if (fx != 0) {
+    *(TimedFx**)fn_8028B3BC(lbl_804D4EB0, (u8*)lbl_804D4EB0->data + lbl_804D4EB0->size, 4) = fx;
+    fx->state = 1;
+    fx->time = lbl_804D4EB4;
+    fx->col[0] = r0;
+    fx->col[1] = g0;
+    fx->col[2] = b0;
+    fx->col[3] = r1;
+    fx->col[4] = g1;
+    fx->col[5] = b1;
+    fx->u.curve.target = target;
+    fx->u.curve.bone = bone;
+    fx->u.curve.pts = (Vec3*)VAlloc(0x60);
+    fx->type = 3;
+    fx->u.curve.end.pos.x = pos->x;
+    fx->u.curve.end.pos.y = pos->y;
+    fx->u.curve.end.pos.z = pos->z;
+    {
+        BoneQuery q;
+        Vec3 a;
+        Vec3 b;
+        Vec3 d;
+        IVec3 aim;
+        f32 s;
+        Vec3* tan;
 
-        *slot = (u32)p;
-        p[0] = 1;
-        p[1] = 0;
-        for (i = 0; i < 12; i++) {
-            p[3 + i] = pos[i];
+        q.bone = fx->u.curve.bone;
+        if (SendMsg(fx->u.curve.target, 0x402, &q)) {
+            a.x = q.place.pos.x;
+            a.y = q.place.pos.y;
+            a.z = q.place.pos.z;
+            b = *pos;
+            d.x = b.x - a.x;
+            d.y = b.y - a.y;
+            d.z = b.z - a.z;
+            s = 0.25f * fn_800E1020(&d);
+            ActorAim(&aim.x, (Actor*)&q.place, 0);
+            fx->u.curve.tan0.x = aim.x;
+            fx->u.curve.tan0.y = aim.y;
+            fx->u.curve.tan0.z = aim.z;
+            tan = &fx->u.curve.tan0;
+            fn_800E1098(tan, tan, s);
+            fn_800E1098(&fx->u.curve.tan1, &fx->u.curve.tan0, -s);
+            for (i = 0; i < 8; i++) {
+                SplineHermiteEval(i / 8.0f, &a, &fx->u.curve.tan0, &b, &fx->u.curve.tan1, &fx->u.curve.pts[i]);
+            }
         }
-        *(f32*)(p + 2) = lbl_804D4EB4;
-        *(f32*)(p + 0xf) = timer;
-        *(u8*)((u8*)p + 0x44) = a;
-        *(u8*)((u8*)p + 0x45) = b;
-        *(u8*)((u8*)p + 0x46) = c;
-        *(u8*)((u8*)p + 0x47) = d;
-        *(u8*)((u8*)p + 0x48) = e;
-        *(u8*)((u8*)p + 0x49) = f;
     }
-    return p != 0;
+    } else {
+        return 0;
+    }
+    return 1;
 }
-int fn_8015B428(f32 timer, void* posRaw, int arg, u8 a, u8 b, u8 c, u8 d, u8 e, u8 f) {
-    int* pos = (int*)posRaw;
-    u32* p;
+
+// 0x8015AF74
+// a curve from a bone of `target` to the actor.
+int fn_8015AF74(int target, int bone, Placement* actor, u8 r0, u8 g0, u8 b0, u8 r1, u8 g1, u8 b1) {
+    TimedFx* fx;
     int i;
 
     while ((u32)lbl_804D4EB0->size >> 2 >= 8) {
-        int* obj = *(int**)lbl_804D4EB0->data;
+        TimedFx* old = *(TimedFx**)lbl_804D4EB0->data;
 
-        if ((obj[1] == 2 || obj[1] == 3) && obj[3] != 0) {
-            VFree((void*)obj[3]);
-            obj[3] = 0;
+        if ((old->type == 2 || old->type == 3) && old->u.curve.pts != 0) {
+            VFree(old->u.curve.pts);
+            old->u.curve.pts = 0;
         }
-        VFree(obj);
+        VFree(old);
         fn_8028B35C(lbl_804D4EB0, lbl_804D4EB0->data, 4);
     }
-    p = (u32*)VAlloc(0x4c);
-    if (p != 0) {
-        u32* slot = (u32*)fn_8028B3BC(lbl_804D4EB0,
-                                      (u8*)lbl_804D4EB0->data + lbl_804D4EB0->size, 4);
+    fx = (TimedFx*)VAlloc(0x4c);
+    if (fx != 0) {
+    *(TimedFx**)fn_8028B3BC(lbl_804D4EB0, (u8*)lbl_804D4EB0->data + lbl_804D4EB0->size, 4) = fx;
+    fx->state = 1;
+    fx->time = lbl_804D4EB4;
+    fx->col[0] = r0;
+    fx->col[1] = g0;
+    fx->col[2] = b0;
+    fx->col[3] = r1;
+    fx->col[4] = g1;
+    fx->col[5] = b1;
+    fx->u.curve.target = target;
+    fx->u.curve.bone = bone;
+    fx->u.curve.pts = (Vec3*)VAlloc(0x60);
+    fx->type = 2;
+    fx->u.curve.end.actor = actor;
+    {
+        BoneQuery q;
+        Vec3 a;
+        Vec3 b;
+        Vec3 d;
+        IVec3 aim;
+        f32 s;
+        Vec3* tan;
 
-        *slot = (u32)p;
-        p[0] = 1;
-        p[1] = 1;
-        for (i = 0; i < 12; i++) {
-            p[3 + i] = pos[i];
+        q.bone = fx->u.curve.bone;
+        if (SendMsg(fx->u.curve.target, 0x402, &q)) {
+            a.x = q.place.pos.x;
+            a.y = q.place.pos.y;
+            a.z = q.place.pos.z;
+            b.x = actor->pos.x;
+            b.y = actor->pos.y;
+            b.z = actor->pos.z;
+            d.x = b.x - a.x;
+            d.y = b.y - a.y;
+            d.z = b.z - a.z;
+            s = 0.25f * fn_800E1020(&d);
+            ActorAim(&aim.x, (Actor*)&q.place, 0);
+            fx->u.curve.tan0.x = aim.x;
+            fx->u.curve.tan0.y = aim.y;
+            fx->u.curve.tan0.z = aim.z;
+            tan = &fx->u.curve.tan0;
+            fn_800E1098(tan, tan, s);
+            fn_800E1098(&fx->u.curve.tan1, &fx->u.curve.tan0, -s);
+            for (i = 0; i < 8; i++) {
+                SplineHermiteEval(i / 8.0f, &a, &fx->u.curve.tan0, &b, &fx->u.curve.tan1, &fx->u.curve.pts[i]);
+            }
         }
-        *(f32*)(p + 2) = lbl_804D4EB4;
-        *(f32*)(p + 0xf) = timer;
-        p[0x10] = arg;
-        *(u8*)((u8*)p + 0x44) = a;
-        *(u8*)((u8*)p + 0x45) = b;
-        *(u8*)((u8*)p + 0x46) = c;
-        *(u8*)((u8*)p + 0x47) = d;
-        *(u8*)((u8*)p + 0x48) = e;
-        *(u8*)((u8*)p + 0x49) = f;
     }
-    return p != 0;
+    } else {
+        return 0;
+    }
+    return 1;
 }
-// TODO (not drafted yet, 0x4A8 bytes at 0x8015B5B4)
-// TODO (not drafted yet, 0x534 bytes at 0x8015BA5C)
+
+// 0x8015B2A0: a straight beam of length len along the placement.
+int fn_8015B2A0(f32 len, const PlaceF* place, u8 r0, u8 g0, u8 b0, u8 r1, u8 g1, u8 b1) {
+    TimedFx* fx;
+
+    while ((u32)lbl_804D4EB0->size >> 2 >= 8) {
+        TimedFx* old = *(TimedFx**)lbl_804D4EB0->data;
+
+        if ((old->type == 2 || old->type == 3) && old->u.curve.pts != 0) {
+            VFree(old->u.curve.pts);
+            old->u.curve.pts = 0;
+        }
+        VFree(old);
+        fn_8028B35C(lbl_804D4EB0, lbl_804D4EB0->data, 4);
+    }
+    fx = (TimedFx*)VAlloc(0x4c);
+    if (fx != 0) {
+    *(TimedFx**)fn_8028B3BC(lbl_804D4EB0, (u8*)lbl_804D4EB0->data + lbl_804D4EB0->size, 4) = fx;
+    fx->state = 1;
+    fx->type = 0;
+    fx->u.line.place = *place;
+    fx->time = lbl_804D4EB4;
+    fx->u.line.len = len;
+    fx->col[0] = r0;
+    fx->col[1] = g0;
+    fx->col[2] = b0;
+    fx->col[3] = r1;
+    fx->col[4] = g1;
+    fx->col[5] = b1;
+    } else {
+        return 0;
+    }
+    return 1;
+}
+
+// 0x8015B428
+// a beam from the placement towards the target point (its length follows the target).
+int fn_8015B428(f32 len, const PlaceF* place, const IVec3* target, u8 r0, u8 g0, u8 b0, u8 r1, u8 g1, u8 b1) {
+    TimedFx* fx;
+
+    while ((u32)lbl_804D4EB0->size >> 2 >= 8) {
+        TimedFx* old = *(TimedFx**)lbl_804D4EB0->data;
+
+        if ((old->type == 2 || old->type == 3) && old->u.curve.pts != 0) {
+            VFree(old->u.curve.pts);
+            old->u.curve.pts = 0;
+        }
+        VFree(old);
+        fn_8028B35C(lbl_804D4EB0, lbl_804D4EB0->data, 4);
+    }
+    fx = (TimedFx*)VAlloc(0x4c);
+    if (fx != 0) {
+        *(TimedFx**)fn_8028B3BC(lbl_804D4EB0, (u8*)lbl_804D4EB0->data + lbl_804D4EB0->size, 4) = fx;
+    fx->state = 1;
+    fx->type = 1;
+    fx->u.line.place = *place;
+    fx->time = lbl_804D4EB4;
+    fx->u.line.len = len;
+    fx->u.line.target = target;
+    fx->col[0] = r0;
+    fx->col[1] = g0;
+    fx->col[2] = b0;
+    fx->col[3] = r1;
+    fx->col[4] = g1;
+    fx->col[5] = b1;
+    } else {
+        return 0;
+    }
+    return 1;
+}
+
+// 0x8015B5B4: draw one effect; it fades and thins out as its time runs down.
+void fn_8015B5B4(TimedFx* fx) {
+    if (fx != 0) {
+        f32 frac = (lbl_804D2F50 - fx->time) / lbl_804D2F50;
+        f32 w0 = 40.0f * frac + 8.0f;
+        f32 w1 = 10.0f * frac + 8.0f;
+        int start = (int)(0.5f * fx->time);
+        u8 alpha = (int)(255.0f * (1.0f - fn_800A1394(90.0f * frac)));
+        f32 lineW = 8.0f * frac + 2.0f;
+
+        if (fx->type == 0 || fx->type == 1) {
+            Draw3DBeginLine(-4, &fx->u.line.place, lineW);
+            DrawTrailStrip(start, fx->col[0], fx->col[1], fx->col[2], alpha, fx->col[3], fx->col[4], fx->col[5],
+                           alpha, fx->u.line.len, 0.005f, w0, w0, 8.0f);
+            DrawTrailStrip(start + 0xb4, fx->col[0], fx->col[1], fx->col[2], alpha, fx->col[3], fx->col[4],
+                           fx->col[5], alpha, fx->u.line.len, 0.005f, w1, w1, 8.0f);
+            DrawDisableTexOffsets();
+        } else if (fx->type == 2 || fx->type == 3) {
+            int i;
+
+            for (i = 0; i < 7; i++) {
+                Vec3 d;
+                IVec3 id;
+                Placement pl;
+                PlaceF m;
+                f32 t0;
+                f32 t1;
+                u8 ra, ga, ba, rb, gb, bb;
+
+                Vec3* cur = &fx->u.curve.pts[i];
+                Vec3* next = &fx->u.curve.pts[i + 1];
+
+                d.x = next->x - cur->x;
+                d.y = next->y - cur->y;
+                d.z = next->z - cur->z;
+                id.x = d.x;
+                id.y = d.y;
+                id.z = d.z;
+                fn_8009EC5C(&pl, &id);
+                ActorGetMatrix((Mtx34*)&m, (Actor*)&pl);
+                cur = &fx->u.curve.pts[i];
+                m.pos.x = cur->x;
+                m.pos.y = cur->y;
+                m.pos.z = cur->z;
+                t0 = i / 8.0f;
+                t1 = (i + 1) / 8.0f;
+                ra = LerpU8(fx->col[0], fx->col[3], t0);
+                ga = LerpU8(fx->col[1], fx->col[4], t0);
+                ba = LerpU8(fx->col[2], fx->col[5], t0);
+                rb = LerpU8(fx->col[0], fx->col[3], t1);
+                gb = LerpU8(fx->col[1], fx->col[4], t1);
+                bb = LerpU8(fx->col[2], fx->col[5], t1);
+                Draw3DBeginLine(-4, &m, lineW);
+                DrawTrailStrip(start, ra, ga, ba, alpha, rb, gb, bb, alpha, fn_800E1020(&d), 0.005f, w0, w0, 8.0f);
+                DrawTrailStrip(start, ra, ga, ba, alpha, rb, gb, bb, alpha, fn_800E1020(&d), 0.005f, w0, w0, 8.0f);
+                DrawDisableTexOffsets();
+            }
+        }
+    }
+}
+
+// 0x8015BA5C: per-frame update: follow the targets, count the time down, free the finished effects.
+void fn_8015BA5C(f32 dt) {
+    TimedFx** it;
+    int i;
+
+    it = (TimedFx**)lbl_804D4EB0->data;
+    while (it != (TimedFx**)((u8*)lbl_804D4EB0->data + lbl_804D4EB0->size)) {
+        TimedFx* fx = *it;
+
+        if (fx->type == 1) {
+            Vec3 d;
+            f32 px = fx->u.line.place.pos.x;
+            f32 py = fx->u.line.place.pos.y;
+            f32 pz = fx->u.line.place.pos.z;
+            f32 tx = fx->u.line.target->x;
+            f32 ty = fx->u.line.target->y;
+            f32 tz = fx->u.line.target->z;
+
+            d.x = tx - px;
+            d.y = ty - py;
+            d.z = tz - pz;
+            fx->u.line.len = fn_800E1020(&d);
+            fx->u.line.len = 16384.0f < fx->u.line.len ? 16384.0f : fx->u.line.len;
+        } else if (fx->type == 2) {
+            BoneQuery q;
+            Vec3 a;
+            Vec3 b;
+            IVec3 aim;
+            f32 s;
+
+            q.bone = fx->u.curve.bone;
+            if (SendMsg(fx->u.curve.target, 0x402, &q)) {
+                a.x = q.place.pos.x;
+                a.y = q.place.pos.y;
+                a.z = q.place.pos.z;
+                b.x = fx->u.curve.end.actor->pos.x;
+                b.y = fx->u.curve.end.actor->pos.y;
+                b.z = fx->u.curve.end.actor->pos.z;
+                s = fn_800E1020(&fx->u.curve.tan0);
+                ActorAim(&aim.x, (Actor*)&q.place, 0);
+                fx->u.curve.tan0.x = aim.x;
+                fx->u.curve.tan0.y = aim.y;
+                fx->u.curve.tan0.z = aim.z;
+                    fn_800E1098(&fx->u.curve.tan0, &fx->u.curve.tan0, s);
+                for (i = 0; i < 8; i++) {
+                    SplineHermiteEval(i / 8.0f, &a, &fx->u.curve.tan0, &b, &fx->u.curve.tan1,
+                                      &fx->u.curve.pts[i]);
+                }
+            }
+        } else if (fx->type == 3) {
+            BoneQuery q;
+            Vec3 a;
+            Vec3 b;
+            IVec3 aim;
+            f32 s;
+
+            q.bone = fx->u.curve.bone;
+            if (SendMsg(fx->u.curve.target, 0x402, &q)) {
+                a.x = q.place.pos.x;
+                a.y = q.place.pos.y;
+                a.z = q.place.pos.z;
+                b.x = fx->u.curve.end.pos.x;
+                b.y = fx->u.curve.end.pos.y;
+                b.z = fx->u.curve.end.pos.z;
+                s = fn_800E1020(&fx->u.curve.tan0);
+                ActorAim(&aim.x, (Actor*)&q.place, 0);
+                fx->u.curve.tan0.x = aim.x;
+                fx->u.curve.tan0.y = aim.y;
+                fx->u.curve.tan0.z = aim.z;
+                    fn_800E1098(&fx->u.curve.tan0, &fx->u.curve.tan0, s);
+                for (i = 0; i < 8; i++) {
+                    SplineHermiteEval(i / 8.0f, &a, &fx->u.curve.tan0, &b, &fx->u.curve.tan1,
+                                      &fx->u.curve.pts[i]);
+                }
+            }
+        }
+        if (fx->state == 1) {
+            if (fx->time <= dt) {
+                fx->time = lbl_804D2F50;
+                fx->state = 2;
+            } else {
+                fx->time -= dt;
+            }
+        } else if (fx->state == 2) {
+            if (fx->time <= dt) {
+                fx->state = 0;
+            } else {
+                fx->time -= dt;
+            }
+        }
+        if (fx->state == 0) {
+            if ((fx->type == 2 || fx->type == 3) && fx->u.curve.pts != 0) {
+                VFree(fx->u.curve.pts);
+                fx->u.curve.pts = 0;
+            }
+            VFree(*it);
+            fn_8028B35C(lbl_804D4EB0, it, 4);
+        } else {
+            it++;
+        }
+    }
+}
 
 // 0x8015BF90 / 0x8015BFD8 and siblings: emitter pool element array helpers.
 void fn_8015BF90(void* pool, int start, unsigned size) {
