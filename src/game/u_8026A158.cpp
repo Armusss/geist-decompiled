@@ -1,4 +1,5 @@
-// u_8026A158.cpp: "Ammo Refill" item message handler and two user-geometry helpers (0x8026A158-0x8026A37C).
+// u_8026A158.cpp: "Ammo Refill" item message handler (0x8026A158-0x8026A31C). The ODE functions that followed
+// (dCloseODE, dCreateGeom, dGeomGetClassData) are the start of collision_kernel.cpp (u_8026A37C).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include "game/string.h"
@@ -96,35 +97,4 @@ int AmmoRefillMsg(Actor* actor, int msg, void* msgData, int param)
     }
 
     return ActorDefaultMsg(actor, msg, msgData, param);
-}
-
-extern int lbl_804D5518;
-extern int gUserGeomClassCount;
-
-// Clears the two item statics owned by this unit.
-void AmmoRefillResetStatics(void)
-{
-    lbl_804D5518 = 0;
-    gUserGeomClassCount = 0;
-}
-
-class UserGeom;
-
-UserGeom* dAlloc(unsigned long size);
-UserGeom* UserGeomCreate(UserGeom* geom, int type);
-
-// Allocates a 0x50-byte user geometry and initialises it for the given type.
-UserGeom* UserGeomAlloc(int type)
-{
-    UserGeom* geom = dAlloc(0x50);
-
-    if (geom != 0)
-        geom = UserGeomCreate(geom, type);
-    return geom;
-}
-
-// Returns the solver handle stored in the geometry.
-int UserGeomGetId(UserGeom* geom)
-{
-    return *(int*)((char*)geom + 0x4c);
 }
