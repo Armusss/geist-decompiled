@@ -647,6 +647,11 @@ game/u_8018555C.cpp:
 
 game/u_80185A9C.cpp:
 	.text       start:0x80185A9C end:0x80187108
+	.data       start:0x803A8760 end:0x803A8800
+	.bss        start:0x80495790 end:0x80495890
+	.sdata      start:0x804D3028 end:0x804D3050
+	.sbss       start:0x804D50D0 end:0x804D50E0
+	.sdata2     start:0x804D83E8 end:0x804D8408
 
 game/u_80187108.cpp:
 	.text       start:0x80187108 end:0x80187370

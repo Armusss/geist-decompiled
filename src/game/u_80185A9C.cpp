@@ -161,7 +161,18 @@ struct ProjMsg {
 
 extern "C" {
 
-extern BehDesc* lbl_803A8784[22];
+// The behaviour descriptors, defined by the behaviour files (0x803A8568-0x803C54B4).
+extern BehDesc lbl_803A85B8, lbl_803A85DC, lbl_803A8710, lbl_803A86E8, lbl_803A8600, lbl_803A8568, lbl_803A8648, lbl_803A866C, lbl_803A8590, lbl_803A8738, lbl_803BEB00, lbl_803C30E0, lbl_803C3104, lbl_803A8624, gFearRivetDesc, lbl_803C3930, lbl_803C3958, lbl_803C5328, lbl_803C53E0, lbl_803C54B4, lbl_803BEB24;
+
+// 0x803A8760: the empty behaviour.
+BehDesc lbl_803A8760 = {0x0024BD87};
+
+// 0x803A8784: every behaviour, searched by name hash in fn_80186314.
+BehDesc* lbl_803A8784[22] = {
+    &lbl_803A8760, &lbl_803A85B8, &lbl_803A85DC, &lbl_803A8710, &lbl_803A86E8, &lbl_803A8600, &lbl_803A8568, &lbl_803A8648,
+    &lbl_803A866C, &lbl_803A8590, &lbl_803A8738, &lbl_803BEB00, &lbl_803C30E0, &lbl_803C3104, &lbl_803A8624,
+    &gFearRivetDesc, &lbl_803C3930, &lbl_803C3958, &lbl_803C5328, &lbl_803C53E0, &lbl_803C54B4, &lbl_803BEB24,
+};
 Projectile* lbl_80495790[64];
 int lbl_804D3028 = -1;
 int lbl_804D302C = -1;
@@ -296,6 +307,9 @@ int fn_80185AEC(int msg, ProjMsg* m) {
         }
         break;
     case 0x407:
+        break;
+    case 1: // no-op messages: retail's case-0 leaf has a `blt` for a range of break cases starting at 1 (values unknown)
+    case 2:
         break;
     }
     return fn_80084540(index | 0x4A000000, msg, m, &result) != 0;
