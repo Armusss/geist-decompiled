@@ -213,13 +213,22 @@ extern "C" void fn_8027243C(float* p1, float* p2, float* c, float* R, float* sid
 // TODO (not drafted yet, 0x640 bytes at 0x80272A90): closest points between two box segments
 extern "C" void fn_80272A90(void);
 
+static inline float Dot(const float* a, const float* b)
+{
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
 // 0x802730D0: closest approach of two lines (dLineClosestApproach)
 void LineClosestApproach(float* pa, float* ua, float* pb, float* ub, float* alpha, float* beta)
 {
-    float uaub = ua[0] * ub[0] + ua[1] * ub[1] + ua[2] * ub[2];
-    float q1 = ua[0] * (pb[0] - pa[0]) + ua[1] * (pb[1] - pa[1]) + ua[2] * (pb[2] - pa[2]);
-    float q2 = -(ub[0] * (pb[0] - pa[0]) + ub[1] * (pb[1] - pa[1]) + ub[2] * (pb[2] - pa[2]));
-    float d = 1.0f - uaub * uaub;
+    float p[4];
+    p[0] = pb[0] - pa[0];
+    p[1] = pb[1] - pa[1];
+    p[2] = pb[2] - pa[2];
+    float uaub = Dot(ua, ub);
+    float q1 = Dot(ua, p);
+    float q2 = -Dot(ub, p);
+    float d = 1 - uaub * uaub;
 
     if (d <= 0.0001f) {
         *alpha = 0.0f;
@@ -249,16 +258,15 @@ int CollideSpheres(float r1, float r2, float* p1, float* p2, ContactGeom* c)
         c->normal[2] = 0.0f;
         c->depth = r1 + r2;
     } else {
-        float inv = 1.0f / d;
-        float k = 0.5f * ((r2 - r1) - d);
-
-        c->normal[0] = inv * (p1[0] - p2[0]);
-        c->normal[1] = inv * (p1[1] - p2[1]);
-        c->normal[2] = inv * (p1[2] - p2[2]);
-        c->pos[0] = c->normal[0] * k + p1[0];
-        c->pos[1] = c->normal[1] * k + p1[1];
-        c->pos[2] = c->normal[2] * k + p1[2];
-        c->depth = (r1 + r2) - d;
+        float d1 = 1.0f / d;
+        c->normal[0] = (p1[0] - p2[0]) * d1;
+        c->normal[1] = (p1[1] - p2[1]) * d1;
+        c->normal[2] = (p1[2] - p2[2]) * d1;
+        float k = 0.5f * (r2 - r1 - d);
+        c->pos[0] = p1[0] + c->normal[0] * k;
+        c->pos[1] = p1[1] + c->normal[1] * k;
+        c->pos[2] = p1[2] + c->normal[2] * k;
+        c->depth = r1 + r2 - d;
     }
     return 1;
 }
