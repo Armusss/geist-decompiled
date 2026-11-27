@@ -162,13 +162,6 @@ void dBodySetLinearVel(dxBody* b, float x, float y, float z);   // 0x802788D4
 void* dBodyGetData(dxBody* b);                                  // 0x802789C0
 void dBodySetData(dxBody* b, void* data);                       // 0x802789C8
 
-// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
-// array overrides here call directly. Class and member names are guesses.
-class ScreenEffectBuffer {
-public:
-    void Commit(int start, unsigned long size);
-    void Append(unsigned char* data, unsigned long size);
-};
 
 extern "C" {
 int sprintf(char* s, const char* fmt, ...);
@@ -223,9 +216,6 @@ void fn_80278790(float x, float y, float z, dxBody* body);
 void fn_80278850(dxBody* body, Mass* m);
 dxBody* fn_80278B70(dxWorld* w);
 void fn_802789D0(dxBody* body);
-void* fn_8028B3BC(GeomVec* v, void* at, int size);
-void fn_8028B35C(GeomVec* v, void* at, int size);
-void fn_8028B960(GeomVec* v);
 void fn_801D80F4(Geom** first, Geom** last);
 void fn_801D8114(Geom** first, Geom** last);
 u32 __cvt_fp2unsigned(float f);
@@ -376,7 +366,7 @@ void fn_801D4C58(void) {
 // 0x801D4C5C: adds a level-geometry box for a room.
 void fn_801D4C5C(int* box, short room) {
     Geom* g = UserGeomAlloc(sRoomClass);
-    *(Geom**)fn_8028B3BC(sGeoms, (char*)sGeoms->mUnk0C + sGeoms->mLength, 4) = g;
+    *(Geom**)((Buffer*)sGeoms)->Insert((char*)((char*)sGeoms->mUnk0C + sGeoms->mLength), 4) = g;
     RoomGeomData* d = UserGeomGetId((UserGeom*)g);
     d->aabb[0] = 0.0023818598f * (float)box[0];
     d->aabb[1] = 0.0023818598f * (float)box[3];
@@ -603,7 +593,7 @@ static inline void GeomListRemove(Geom* g) {
     Geom** end;
     for (p = (Geom**)sGeoms->mUnk0C, end = (Geom**)((char*)p + sGeoms->mLength); p != end; p++) {
         if (*p == g) {
-            fn_8028B35C(sGeoms, p, 4);
+            ((Buffer*)sGeoms)->Erase((char*)p, 4);
             break;
         }
     }
@@ -647,7 +637,7 @@ static inline int MaterialIndex(int material) {
 
 // Adds a new geom to the geom list.
 static inline void GeomListAdd(Geom* g) {
-    *(Geom**)fn_8028B3BC(sGeoms, (char*)sGeoms->mUnk0C + sGeoms->mLength, 4) = g;
+    *(Geom**)((Buffer*)sGeoms)->Insert((char*)((char*)sGeoms->mUnk0C + sGeoms->mLength), 4) = g;
 }
 
 // 0x801D5694: capsule object.
@@ -1505,12 +1495,12 @@ void fn_801D7F78(float* out, const float* in) {
 
 // 0x801D7FDC
 GeomVec::~GeomVec() {
-    fn_8028B960(this);
+    Free();
 }
 
 // 0x801D8044
 void GeomVec::Construct(void* p, u32 bytes) {
-    ((ScreenEffectBuffer*)this)->Commit((int)p, bytes);
+    ((ScreenEffectBuffer*)this)->ScreenEffectBuffer::Commit((int)p, bytes);
     fn_801D80F4((Geom**)p, (Geom**)((char*)p + (bytes & ~3)));
 }
 
@@ -1518,7 +1508,7 @@ void GeomVec::Construct(void* p, u32 bytes) {
 void GeomVec::Destruct(void* p, u32 bytes) {
     Geom** first = (Geom**)p;
     fn_801D8114(first, (Geom**)((char*)first + (bytes & ~3)));
-    ((ScreenEffectBuffer*)this)->Append((unsigned char*)p, bytes);
+    ((ScreenEffectBuffer*)this)->ScreenEffectBuffer::Append((unsigned char*)p, bytes);
 }
 
 // 0x801D80EC

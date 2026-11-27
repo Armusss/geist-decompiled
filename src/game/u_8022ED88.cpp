@@ -6,6 +6,7 @@
 
 #include <math.h>
 #include "game/types.h"
+#include "game/string.h"
 
 typedef unsigned long u32;
 typedef unsigned char u8;
@@ -163,7 +164,6 @@ float fn_800E1020(Vec3* v);                            // 0x800E1020
 void fn_8016D864(float* out, void* in);                // 0x8016D864
 int fn_8008EA9C(int a, int b);                         // 0x8008EA9C
 Actor* fn_800C7E80(void* desc);                        // 0x800C7E80
-void* fn_8028B3BC(Vector* vec, char* end, int size);   // 0x8028B3BC
 void* memset(void* dst, int val, unsigned long n);     // 0x800050B4
 int rand(void);                                        // 0x802F2CFC
 }
@@ -627,7 +627,7 @@ int SwarmInit(Actor* a) {
                 if (!child) {
                     break;
                 }
-                *(Actor**)fn_8028B3BC(children, children->data + children->size, 4) = child;
+                *(Actor**)((Buffer*)children)->Insert((char*)(children->data + children->size), 4) = child;
             }
         }
         d->flags |= 1;

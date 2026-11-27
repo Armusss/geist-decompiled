@@ -62,9 +62,7 @@ extern float lbl_804D6DA4;
 extern float lbl_804D6D90;
 extern float lbl_804D6D94;
 
-extern "C" void* fn_8028B3BC(Buffer* buf, u8* end, u32 len);
 extern "C" int   rand(void);
-extern "C" void fn_8028B960(void* object);
 extern "C" void fn_800A3AF4(float value);
 extern "C" void fn_800B9528(float value);
 extern "C" void fn_800B4D94(float value);

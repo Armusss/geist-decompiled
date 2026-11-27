@@ -24,11 +24,6 @@ typedef unsigned char u8;
 struct TrailDesc;
 
 int AssetFind(u32 group, u32 name);
-class ScreenEffectBuffer {
-public:
-    void Commit(int start, unsigned long size);
-    void Append(unsigned char* data, unsigned long size);
-};
 void CrouchNop();
 void CrouchAdvancePhases(float dt);
 void CrouchInit();
@@ -109,7 +104,7 @@ extern "C" void fn_801E06F8(void);
 
 //@@801E0760
 extern "C" void fn_801E0760(void* list, u8* start, u32 size) {
-    ((ScreenEffectBuffer*)list)->Commit((int)start, size);
+    ((ScreenEffectBuffer*)list)->ScreenEffectBuffer::Commit((int)start, size);
     fn_801E0810(start, start + (size & ~3u));
 }
 //@@end
@@ -118,7 +113,7 @@ extern "C" void fn_801E0760(void* list, u8* start, u32 size) {
 extern "C" void fn_801E07A8(void* list, u8* data, u32 size) {
     u32 start = (u32)data;
     fn_801E0830((u8*)start, (u8*)(start + (size & ~3u)));
-    ((ScreenEffectBuffer*)list)->Append(data, size);
+    ((ScreenEffectBuffer*)list)->ScreenEffectBuffer::Append(data, size);
 }
 //@@end
 

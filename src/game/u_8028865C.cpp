@@ -963,7 +963,6 @@ extern signed char    lbl_804D56F0;
 void* VAlloc(int size);
 void BasisFromVecs(float* out, Vec3* a, Vec3* b, Vec3* c);
 void BoneSetMatrix(void* dst, Mtx34* src);
-extern "C" void* fn_8028B3BC(void* owner, int index, int size);
 int ClockBuildPageEmitters(void* page, int index, float* pos, void* dir,
                            float scale);
 
@@ -999,7 +998,7 @@ extern "C" int fn_80289CEC(int* a, int* b)
         return 0;
 
     handle = VAlloc(0x68);
-    slot = (int*)fn_8028B3BC(lbl_804D56E0, lbl_804D56E0->count, 4);
+    slot = (int*)((Buffer*)lbl_804D56E0)->Insert((char*)lbl_804D56E0->count, 4);
     *slot = (int)handle;
 
     if (lbl_804D37B0 == 0)
@@ -1049,7 +1048,7 @@ extern "C" int fn_80289EB4(int* a, int* b, u8 type)
         return 0;
 
     handle = VAlloc(0x68);
-    slot = (int*)fn_8028B3BC(lbl_804D56E0, lbl_804D56E0->count, 4);
+    slot = (int*)((Buffer*)lbl_804D56E0)->Insert((char*)lbl_804D56E0->count, 4);
     *slot = (int)handle;
 
     if (lbl_804D37B0 == 0)
@@ -1231,7 +1230,6 @@ struct ClockPageStore
 
 void VFree(void* p);
 void EmitterDestroy(int emitter);
-extern "C" void fn_8028B35C(void* store, void* element, int size);
 
 // Free every emitter list the particle page store still owns, then release
 // the store itself.
@@ -1251,7 +1249,7 @@ extern "C" void fn_8028A388(void)
                 EmitterDestroy(node[i].emitter);
         }
         VFree(lists[0]);
-        fn_8028B35C(store, lists, 4);
+        ((Buffer*)store)->Erase((char*)lists, 4);
     }
     if (lbl_804D56E0 != 0)
     {
@@ -1262,7 +1260,6 @@ extern "C" void fn_8028A388(void)
 }
 
 // Releases the payload block owned by the page buffer's base class.
-extern "C" void fn_8028B960(void* self);
 
 // Engine pooled byte buffer (same hierarchy as in u_8028A8D4): only the
 // destructor chain and constructor of the classes below are used here.
@@ -1341,7 +1338,7 @@ extern "C" void fn_8028A554(float dt)
                     EmitterDestroy(node[i].emitter);
             }
             VFree(node);
-            fn_8028B35C(store, list, 4);
+            ((Buffer*)store)->Erase((char*)list, 4);
         }
         else
         {
@@ -1385,24 +1382,17 @@ extern "C" void fn_8028A728(void)
 
 void DestroyWordRange(unsigned long start, unsigned long end);
 void ClearWordRange(unsigned long start, unsigned long end);
-// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
-// array overrides here call directly. Class and member names are guesses.
-class ScreenEffectBuffer {
-public:
-    void Commit(int start, unsigned long size);
-    void Append(unsigned char* data, unsigned long size);
-};
 
 // fn_8028A77C: deleting destructor of the Buffer-derived object.
 BufferOwner::~BufferOwner()
 {
-    fn_8028B960(this);
+    Free();
 }
 
 // fn_8028A7E4: release the pending clear, then take [start, start + size) down.
 void BufferOwner::Commit(int start, unsigned long size)
 {
-    ((ScreenEffectBuffer*)this)->Commit((int)start, size);
+    ((ScreenEffectBuffer*)this)->ScreenEffectBuffer::Commit((int)start, size);
     DestroyWordRange(start, start + (size & ~3));
 }
 
@@ -1412,7 +1402,7 @@ void BufferOwner::Append(u8* data, unsigned long size)
     unsigned long start = (unsigned long)data;
 
     ClearWordRange(start, start + (size & 0xFFFFFFFC));
-    ((ScreenEffectBuffer*)this)->Append((unsigned char*)data, size);
+    ((ScreenEffectBuffer*)this)->ScreenEffectBuffer::Append((unsigned char*)data, size);
 }
 
 // fn_8028A88C: the buffer's element alignment is always 4 bytes.

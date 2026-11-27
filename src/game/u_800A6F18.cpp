@@ -14,18 +14,11 @@ void RangeTouchWords(void* start, void* end);   // fn_800A6FE8
 // Engine hooks implemented in another unit (still fn_ placeholders).
 extern "C" float lbl_804D6C34;
 extern "C" float lbl_804D6C6C;
-// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
-// array overrides here call directly. Class and member names are guesses.
-class ScreenEffectBuffer {
-public:
-    void Commit(int start, unsigned long size);
-    void Append(unsigned char* data, unsigned long size);
-};
 
 // Sync a whole range through the engine hook, then close it out word by word.
 void MemFlushRange(void* self, void* addr, unsigned long size)
 {
-    ((ScreenEffectBuffer*)self)->Commit((int)addr, size);
+    ((ScreenEffectBuffer*)self)->ScreenEffectBuffer::Commit((int)addr, size);
     RangeSyncWords(addr, (char*)addr + (size & ~3));
 }
 
@@ -35,7 +28,7 @@ void MemStoreRange(void* self, void* addr, unsigned long size)
     char* start = (char*)addr;
 
     RangeTouchWords(start, start + (size & ~3));
-    ((ScreenEffectBuffer*)self)->Append((unsigned char*)addr, size);
+    ((ScreenEffectBuffer*)self)->ScreenEffectBuffer::Append((unsigned char*)addr, size);
 }
 
 // Granularity, in bytes, of the ranges walked by the sync helpers below.

@@ -6,6 +6,8 @@
 // 0x80233070, 0x80233E88) are not drafted yet.  Names are descriptive guesses; unmatched
 // against retail so far.
 
+#include "game/string.h"
+
 typedef unsigned long u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
@@ -49,7 +51,6 @@ void* VAlloc(int size);
 void VFree(void* p);
 int AssetFind(u32 a, u32 b);
 extern unsigned char __upper_map[256];
-void fn_8028B35C(PtrArray* a, void* it, int bytes);
 void fn_8028BA9C(PtrArray* a);
 float fn_802A2080(void);
 void fn_80026660(int msg, void* fn, int arg);
@@ -99,7 +100,7 @@ void ShotArrayShutdown(void) {
     u32 bytes = gShotArray->bytes;
     if (bytes >> 2 != 0) {
         char* begin = gShotArray->data;
-        fn_8028B35C(gShotArray, begin, (int)((void**)(begin + bytes) - (void**)begin) * 4);
+        ((Buffer*)gShotArray)->Erase((char*)begin, (int)((void**)(begin + bytes) - (void**)begin) * 4);
     }
     delete gShotArray;
     gShotArray = NULL;
@@ -192,7 +193,6 @@ float DistPointLineSq(float* p, float* a, float* b, float* t, float* u);
 void fn_800A0328(void* m);
 void fn_800A0168(void* out, void* m);
 void fn_800A0030(float* out, void* m, float* v);
-void* fn_8028B3BC(PtrArray* a, void* where, int n);
 int fn_802A1D04(void);
 int rand(void);
 }
@@ -291,7 +291,7 @@ int ShotFire(Actor* actor, int texA, int texB, float fA, float fB, Vec3* box, Mt
     if (pool == NULL) {
         return 0;
     }
-    *(char**)fn_8028B3BC(gShardArray, gShardArray->data + gShardArray->bytes, 4) = pool;
+    *(char**)((Buffer*)gShardArray)->Insert((char*)(gShardArray->data + gShardArray->bytes), 4) = pool;
     handle = (gShardInit & 0xFFFFFF) | 0xD000000;
     gShardInit++;
     if (fn_802A1D04() == 0) {
@@ -522,7 +522,7 @@ int ShardClip(char* shard, float* rect) {
 void fn_80233848(void) {
     while (gShardArray->bytes >> 2 != 0) {
         VFree(*(void**)gShardArray->data);
-        fn_8028B35C(gShardArray, gShardArray->data, 4);
+        ((Buffer*)gShardArray)->Erase((char*)gShardArray->data, 4);
     }
     delete gShardArray;
 }
@@ -585,7 +585,7 @@ void fn_80233A20(float dt) {
             }
             fn_8021284C(*(int*)((char*)p + 0x38));
             VFree(*it);
-            fn_8028B35C(gShardArray, it, 4);
+            ((Buffer*)gShardArray)->Erase((char*)it, 4);
         } else {
             it++;
         }

@@ -1,13 +1,13 @@
 // u_80158C3C.cpp (0x80158C3C-0x80159AF4): object-definition spawner (lbl_803A59C8, eight 0x2BC-byte
-// definitions) and its spawned-object pool (ResArray lbl_804D4EA0).
-// Split from u_80157730. Evidence: this file has its own Buffer-template vtables (lbl_803A6FA8/6FC8 at .data)
+// definitions) and its spawned-object pool (SpawnObjList lbl_804D4EA0).
+// Split from u_80157730. Evidence: this file has its own BufferPtrArray<SpawnObj> vtables (0x803A6FA8/6FC8, include/game/bufarray.h)
 // and its own copies of the template methods fn_80159A04..fn_80159AD4, emitted last as CodeWarrior does with
 // weak functions at the end of a translation unit (u_80159AF4 and u_8015AA24 each carry another copy);
 // it alone uses .sbss lbl_804D4EA0, .sdata2 0x804D7D18-0x804D7D40 and .rodata lbl_80346630.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include "game/types.h"
-#include "game/string.h"
+#include "game/bufarray.h"
 #include "game/msg.h"
 
 typedef unsigned char u8;
@@ -80,18 +80,6 @@ void fn_80211470(f32, int, int, int);
 void fn_80211638(f32, f32, f32, f32, int, f32*, f32*, int, int);
 void fn_8028B2D4(void*);
 int fn_800391DC(int);
-void fn_8028B35C(void*, void*, int);
-void* fn_8028B3BC(void*, void*, int);
-void fn_8028B960(void*);
-void fn_8028B9C0(void*, int);
-void fn_8028BA9C(void*);
-// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
-// array overrides here call directly. Class and member names are guesses.
-class ScreenEffectBuffer {
-public:
-    void Commit(int start, unsigned long size);
-    void Append(unsigned char* data, unsigned long size);
-};
 void fn_800A0094(f32*, f32*);
 void fn_800A0100(void*);
 f32 fn_800A1394(f32);
@@ -414,30 +402,16 @@ extern s32 lbl_804D2F3C;
 extern f32 lbl_804D2F40;
 extern f32 lbl_804D2F44;
 extern u32 lbl_804D2F48;
-extern f32 lbl_804D2F50;
 
 extern u32 lbl_804D7CE8;
 
-extern u32 lbl_803A6FA8[8];
-extern u32 lbl_803A6FC8[8];
-extern u32 lbl_803A6FE8[8];
-extern u32 lbl_803A7008[8];
-extern u32 lbl_803A7028[8];
-extern u32 lbl_803A7048[8];
 
-// Resizable pointer array used by the effect pools.
-class ResArray {
-public:
-    virtual ~ResArray();
-    s32 unk04;     // 0x04
-    s32 size;      // 0x08 (bytes)
-    void** data;   // 0x0C
-};
+struct SpawnObj;
 
-extern ResArray* lbl_804D4EA0;
-extern ResArray* lbl_804D4EA8;
-extern ResArray* lbl_804D4EB0;
-extern f32 lbl_804D4EB4;
+// The pool: vtables BufferArray<SpawnObj*> and BufferPtrArray<SpawnObj> (include/game/bufarray.h).
+typedef BufferPtrArray<SpawnObj> SpawnObjList;
+
+extern SpawnObjList* lbl_804D4EA0;
 
 
 extern "C" {
@@ -534,7 +508,7 @@ int fn_80158C3C(f32* pos, u32 kind, int a, int b, int c, int d, int e) {
         VFree(obj);
         return 0;
     }
-    *(SpawnObj**)fn_8028B3BC(lbl_804D4EA0, lbl_804D4EA0->data, 4) = obj;
+    *(SpawnObj**)lbl_804D4EA0->Insert((char*)((void**)lbl_804D4EA0->mUnk0C), 4) = obj;
     obj->def = entry;
     obj->pos[0] = pos[0];
     obj->pos[1] = pos[1];
@@ -595,40 +569,26 @@ int fn_80158C3C(f32* pos, u32 kind, int a, int b, int c, int d, int e) {
 // ---- effect pool handle arrays ----
 // 0x80158F90: destroy the focus effect pool.
 void fn_80158F90() {
-    while ((u32)lbl_804D4EA0->size >> 2 != 0) {
-        if (*(u32*)((u8*)*lbl_804D4EA0->data + 0x2c) != 0) {
-            VFree(*(void**)((u8*)*lbl_804D4EA0->data + 0x2c));
-            *(s32*)((u8*)*lbl_804D4EA0->data + 0x2c) = 0;
+    while ((u32)lbl_804D4EA0->mLength >> 2 != 0) {
+        if (*(u32*)((u8*)*((void**)lbl_804D4EA0->mUnk0C) + 0x2c) != 0) {
+            VFree(*(void**)((u8*)*((void**)lbl_804D4EA0->mUnk0C) + 0x2c));
+            *(s32*)((u8*)*((void**)lbl_804D4EA0->mUnk0C) + 0x2c) = 0;
         }
-        VFree(*lbl_804D4EA0->data);
-        fn_8028B35C(lbl_804D4EA0, lbl_804D4EA0->data, 4);
+        VFree(*((void**)lbl_804D4EA0->mUnk0C));
+        lbl_804D4EA0->Erase((char*)((void**)lbl_804D4EA0->mUnk0C), 4);
     }
     delete lbl_804D4EA0;
     fn_80233848();
 }
 
-// 0x8015902C: destroy part of the focus effect pool object.
-void* fn_8015902C(void* p, short freeIt) {
-    if (p != 0) {
-        *(void**)p = &lbl_803A6FC8;
-        if (p != 0) {
-            *(void**)p = &lbl_803A6FA8;
-            fn_8028B960(p);
-            fn_8028B9C0(p, 0);
-        }
-        if (freeIt > 0) {
-            VFree(p);
-        }
-    }
-    return p;
-}
+// fn_8015902C is SpawnObjList's deleting destructor, emitted here for the delete above.
 
 // 0x801590A4: update every focus effect.
 void fn_801590A4() {
     void** p;
 
-    p = lbl_804D4EA0->data;
-    while (p != (void**)((u8*)lbl_804D4EA0->data + lbl_804D4EA0->size)) {
+    p = ((void**)lbl_804D4EA0->mUnk0C);
+    while (p != (void**)((u8*)((void**)lbl_804D4EA0->mUnk0C) + lbl_804D4EA0->mLength)) {
         DeferAdd(2, (Vec3*)(*(int*)p + 4), (void* (*)(void*))fn_80159464, *p);
         p = p + 1;
     }
@@ -681,7 +641,7 @@ static inline int SpawnedUpdate(int* obj, f32 dt) {
 void fn_80159118(f32 dt) {
     int** p;
 
-    for (p = (int**)lbl_804D4EA0->data; p != (int**)((u8*)lbl_804D4EA0->data + lbl_804D4EA0->size);) {
+    for (p = (int**)((void**)lbl_804D4EA0->mUnk0C); p != (int**)((u8*)((void**)lbl_804D4EA0->mUnk0C) + lbl_804D4EA0->mLength);) {
         int* obj = *p;
 
         if (SpawnedUpdate(obj, dt) == -1) {
@@ -694,7 +654,7 @@ void fn_80159118(f32 dt) {
                 (*p)[0xb] = 0;
             }
             VFree(*p);
-            fn_8028B35C(lbl_804D4EA0, p, 4);
+            lbl_804D4EA0->Erase((char*)p, 4);
         } else {
             p++;
         }
@@ -725,29 +685,11 @@ void fn_801592E8() {
 
 // 0x801593A4: create the focus effect pool.
 void fn_801593A4() {
-    void* p = VAlloc(0x14);
-
-    if (p != 0) {
-        fn_8028BA9C(p);
-        *(void**)p = &lbl_803A6FA8;
-        *(void**)p = &lbl_803A6FC8;
-    }
-    lbl_804D4EA0 = (ResArray*)p;
+    lbl_804D4EA0 = new SpawnObjList;
     fn_80233C30();
 }
 
-// 0x801593FC: destroy the focus effect pool object.
-void* fn_801593FC(void* p, short freeIt) {
-    if (p != 0) {
-        *(void**)p = &lbl_803A6FA8;
-        fn_8028B960(p);
-        fn_8028B9C0(p, 0);
-        if (freeIt > 0) {
-            VFree(p);
-        }
-    }
-    return p;
-}
+// fn_801593FC: BufferArray<SpawnObj*>'s destructor, emitted after the pool is created.
 
 // ---- not yet reconstructed ----
 void fn_80159464(void* arg) {
@@ -844,32 +786,6 @@ void fn_80159554(int count, int base, const f32* pos, void* bone, f32 life, f32 
     }
 }
 
-// 0x80159A04 / 0x80159A4C and siblings: pool element array helpers.
-void fn_80159A04(void* pool, int start, unsigned size) {
-    ((ScreenEffectBuffer*)pool)->Commit((int)start, size);
-    fn_80159AB4((int*)start, (int*)(start + (size & 0xfffffffc)));
-}
-
-void fn_80159A4C(void* pool, char* start, int size) {
-    unsigned long p = (unsigned long)start;
-
-    fn_80159AD4((int*)p, (int*)(p + (size & 0xfffffffc)));
-    ((ScreenEffectBuffer*)pool)->Append((unsigned char*)start, size);
-}
-
-int fn_80159AAC() {
-    return 4;
-}
-
-void fn_80159AB4(int* p, int* end) {
-    while (p < end) {
-        p++;
-    }
-}
-
-void fn_80159AD4(int* p, int* end) {
-    while (p < end) {
-        p++;
-    }
-}
+// fn_80159A04-0x80159AF4: BufferArray<SpawnObj*>'s Commit, Append, GetAlignment and range loops, instantiated at
+// the end of the file.
 } // extern "C"

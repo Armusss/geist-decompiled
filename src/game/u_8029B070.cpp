@@ -10,7 +10,6 @@
 
 void* VAlloc(int size);
 void VFree(void* p);
-extern "C" void fn_8028B960(void* buffer);
 extern "C" void fn_8028B5FC(void* self, int size, int a);
 
 inline void* operator new(unsigned long, void* p) { return p; }
@@ -43,6 +42,9 @@ public:
     Buffer();
     virtual void Clear();
     virtual int GetSpan() { return 0; }
+    char* Erase(char* pos, int size);  // 0x8028B35C
+    char* Insert(char* pos, int size); // 0x8028B3BC
+    void Free();                       // 0x8028B960
 };
 
 // 12-byte element. Its destroy hook ClearEntryRange (0x8029C0AC-0x8029C0D0, the last function here; it was the
@@ -61,7 +63,7 @@ class EntryList : public Buffer {
 public:
     EntryList() {}
     EntryList(const EntryList& src);
-    virtual ~EntryList() { fn_8028B960(this); }
+    virtual ~EntryList() { Free(); }
     virtual int GetAlignment();
     virtual void Commit(int start, unsigned long size);
     virtual void Append(unsigned char* data, unsigned long size);
@@ -83,7 +85,7 @@ extern "C" void fn_8029C030(Slot* first, Slot* last);
 class SlotArray : public Buffer {
 public:
     SlotArray() {}
-    virtual ~SlotArray() { fn_8028B960(this); }
+    virtual ~SlotArray() { Free(); }
     virtual int GetAlignment();
     virtual void Commit(int start, unsigned long size);
     virtual void Append(unsigned char* data, unsigned long size);

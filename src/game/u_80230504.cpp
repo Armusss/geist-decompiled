@@ -8,6 +8,7 @@
 
 #include <math.h>
 #include "game/types.h"
+#include "game/string.h"
 
 typedef unsigned char u8;
 typedef unsigned short u16;
@@ -99,8 +100,6 @@ int fn_801E10D8(void* actor);                                    // 0x801E10D8
 void fn_801E1150(void* actor, int flag);                         // 0x801E1150
 void fn_801E11C0(void* actor, int anim, Mtx34* m, char* name);   // 0x801E11C0
 void* fn_801E1230(int model, u32 hash, int anim, Mtx34* m, char* name, int extra); // 0x801E1230
-void fn_8028B35C(void* list, void* pos, int size);               // 0x8028B35C
-void* fn_8028B3BC(void* list, void* pos, int size);              // 0x8028B3BC
 }
 
 // From a shared header: names of the ghost actions and of the human skeleton parts (unused here).
@@ -136,7 +135,7 @@ inline void ExtraListRemove(ExtraHolder* e) {
     ExtraHolder** end = (ExtraHolder**)((char*)p + lbl_804D5440->size);
     for (; p != end; p++) {
         if (e == *p) {
-            fn_8028B35C(lbl_804D5440, p, 4);
+            ((Buffer*)lbl_804D5440)->Erase((char*)p, 4);
             break;
         }
     }
@@ -154,14 +153,14 @@ inline void ExtraListAdd(ExtraHolder* e) {
         }
     }
     if (!found) {
-        *(ExtraHolder**)fn_8028B3BC(lbl_804D5440, end, 4) = e;
+        *(ExtraHolder**)((Buffer*)lbl_804D5440)->Insert((char*)end, 4) = e;
     }
 }
 
 // Appends the holder to the live list.
 inline void ExtraListAppend(ExtraHolder* e) {
     ExtraHolder** end = (ExtraHolder**)((char*)lbl_804D5440->data + lbl_804D5440->size);
-    *(ExtraHolder**)fn_8028B3BC(lbl_804D5440, end, 4) = e;
+    *(ExtraHolder**)((Buffer*)lbl_804D5440)->Insert((char*)end, 4) = e;
 }
 
 // Switches the trail off.
@@ -511,7 +510,7 @@ void ExtraTrailAttach(ExtraHolder* e) {
         fn_801E0FD0(&other->actor);
         other->actor = 0;
         other->state = 2;
-        fn_8028B35C(lbl_804D5440, victim, 4);
+        ((Buffer*)lbl_804D5440)->Erase((char*)victim, 4);
     }
     ExtraListAppend(e);
     e->state = 1;

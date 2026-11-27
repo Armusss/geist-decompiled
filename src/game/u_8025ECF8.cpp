@@ -32,11 +32,13 @@ public:
     int mLength;
     int mUnk0C;
     int mOwned;
+    char* Erase(char* pos, int size);  // 0x8028B35C
+    char* Insert(char* pos, int size); // 0x8028B3BC
+    void Free();                       // 0x8028B960
 };
 
 void* VAlloc(int size);                                         // 0x8009DA68
 void VFree(void* p);                                            // 0x8009DA3C
-extern "C" void fn_8028B960(void* p);
 extern "C" void fn_800225C8(void* out, void* a, void* b);
 
 // Name buffer of the crab: two stacked classes, each with its own vtable (0x803C0060 / 0x803C0080).
@@ -51,7 +53,7 @@ public:
 class ShellNameBase : public Buffer {
 public:
     ShellNameBase() {}
-    virtual ~ShellNameBase() { fn_8028B960(this); }
+    virtual ~ShellNameBase() { Free(); }
     static void* operator new(unsigned long n) { return VAlloc(n); }
     static void operator delete(void* p) { VFree(p); }
 };
@@ -491,7 +493,6 @@ extern "C" void BoneSetMatrix(float* out, Mtx34* m);            // 0x800A0AC4
 extern "C" void fn_8009F7A8(Mtx34* out, Vec3* v);
 extern "C" void fn_800A025C(Vec3* out, Mtx34* m, int col);
 extern "C" void fn_800A02C0(Mtx34* m, Vec3* v, int col);
-extern "C" void* fn_8028B3BC(void* buf, int at, int size);
 extern float lbl_804D9FD0;
 extern float lbl_804D9FD4;
 extern float lbl_804D9FD8;
@@ -580,7 +581,7 @@ int ShellRollDustStart(Actor* a, Vec3* euler) {
     e.iE4 = 0;
     handle = EmitterCreate(&e);
     EmitterSetEnabled(handle, 1);
-    rec = (ShellHandleRec*)fn_8028B3BC(b->name, b->name->mUnk0C + b->name->mLength, 8);
+    rec = (ShellHandleRec*)((Buffer*)b->name)->Insert((char*)(b->name->mUnk0C + b->name->mLength), 8);
     rec->handle = handle;
     rec->unk = 0;
 
@@ -637,14 +638,13 @@ int ShellRollDustStart(Actor* a, Vec3* euler) {
     e2.iE4 = 0;
     handle = EmitterCreate(&e2);
     EmitterSetEnabled(handle, 1);
-    rec = (ShellHandleRec*)fn_8028B3BC(b->name, b->name->mUnk0C + b->name->mLength, 8);
+    rec = (ShellHandleRec*)((Buffer*)b->name)->Insert((char*)(b->name->mUnk0C + b->name->mLength), 8);
     rec->handle = handle;
     rec->unk = 0;
     return 0;
 }
 
 extern "C" {
-void fn_8028B35C(void* buf, int at, int size);
 void fn_8000F550(short* ids, int n);
 void fn_8028C188(Buffer* b, char* data, int len);
 }
@@ -658,7 +658,7 @@ extern int lbl_804D375C;
 static inline void ShellReleaseEffects(ShellBeh* b) {
     while (((u32)b->name->mLength >> 3) != 0) {
         EmitterDestroy(*(int*)b->name->mUnk0C);
-        fn_8028B35C(b->name, b->name->mUnk0C, 8);
+        ((Buffer*)b->name)->Erase((char*)b->name->mUnk0C, 8);
     }
     if (b->fx != -1) {
         fn_8016EEF4(b->fx);
@@ -753,7 +753,7 @@ int ShellCrabMsg(int msg, int* data) {
         if (data[1] == 0) {
             while (((u32)b->name->mLength >> 3) != 0) {
                 EmitterDestroy(*(int*)b->name->mUnk0C);
-                fn_8028B35C(b->name, b->name->mUnk0C, 8);
+                ((Buffer*)b->name)->Erase((char*)b->name->mUnk0C, 8);
             }
         }
         if (b->fx != -1) {
@@ -845,7 +845,7 @@ int ShellCrabUpdate(Actor* a) {
                 break;
             }
             EmitterDestroy(first[0]);
-            fn_8028B35C(nb->name, nb->name->mUnk0C, 8);
+            ((Buffer*)nb->name)->Erase((char*)nb->name->mUnk0C, 8);
         }
     }
     for (i = 0; i < 3; i++) {

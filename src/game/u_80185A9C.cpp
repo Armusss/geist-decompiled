@@ -92,12 +92,12 @@ class Buffer : public ScreenEffectBuffer {
 public:
     Buffer();
     virtual ~Buffer();
+    char* Erase(char* pos, int size);  // 0x8028B35C
+    char* Insert(char* pos, int size); // 0x8028B3BC
+    void Free();                       // 0x8028B960
 };
 
 extern "C" {
-void fn_8028B960(Buffer* self);
-char* fn_8028B3BC(Buffer* self, char* pos, u32 size);
-void fn_8028B35C(Buffer* self, char* pos, u32 size);
 }
 
 // --- Behaviour descriptors ---------------------------------------------------------------------------------
@@ -470,8 +470,7 @@ void fn_80186314(void) {
                 kind.unk38 = fn_800F7920(row, 0x1727C1BF);
                 kind.unk3C = fn_800F7920(row, 0xCF962098);
                 kind.unk40 = fn_800F7920(row, 0xA7355386);
-                *(BehKind*)fn_8028B3BC(lbl_804D50D4, lbl_804D50D4->mStore + lbl_804D50D4->mLength,
-                                       sizeof(BehKind)) = kind;
+                *(BehKind*)((Buffer*)lbl_804D50D4)->Insert((char*)(lbl_804D50D4->mStore + lbl_804D50D4->mLength), sizeof(BehKind)) = kind;
             }
         }
     }
@@ -510,8 +509,7 @@ int fn_80186754(void) {
         }
     }
     if (lbl_804D50D4->Count() != 0) {
-        fn_8028B35C(lbl_804D50D4, (char*)lbl_804D50D4->Begin(),
-                    (lbl_804D50D4->End() - lbl_804D50D4->Begin()) * sizeof(BehKind));
+        ((Buffer*)lbl_804D50D4)->Erase((char*)((char*)lbl_804D50D4->Begin()), (lbl_804D50D4->End() - lbl_804D50D4->Begin()) * sizeof(BehKind));
     }
     delete lbl_804D50D4;
     return 1;
@@ -640,7 +638,7 @@ extern "C" void fn_801870C0(BehKind* first, BehKind* last);
 extern "C" void fn_801870E4(BehKind* first, BehKind* last);
 
 KindArray::~KindArray() {
-    fn_8028B960(this);
+    Free();
 }
 
 void KindArray::Construct(char* data, u32 size) {

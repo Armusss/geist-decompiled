@@ -16,6 +16,9 @@ public:
     /*0x08*/ unsigned long mSize;
     /*0x0C*/ unsigned long mCapacity;
     /*0x10*/ unsigned long mUnk10;
+    char* Erase(char* pos, int size);  // 0x8028B35C
+    char* Insert(char* pos, int size); // 0x8028B3BC
+    void Free();                       // 0x8028B960
 };
 
 class String : public Buffer {
@@ -1580,13 +1583,12 @@ void StoneMenApplyStateAnim(void* owner, int variant)
 // fields they touch are modelled: 0x08 is the byte size of the 0x0C array of
 // actor pointers; the class is polymorphic (the teardown uses delete).  This is
 // the intermediate level of the container's polymorphic chain; its destructor
-// runs the engine-side cleanup fn_8028B960 before the concrete level frees the
+// runs the engine-side cleanup Buffer::Free before the concrete level frees the
 // storage.
-extern "C" void fn_8028B960(void);
 
 class ActorRegistry : public Buffer {
 public:
-    virtual ~ActorRegistry() { fn_8028B960(); }     // 0x00 vptr
+    virtual ~ActorRegistry() { Free(); }     // 0x00 vptr
     Actor** Items() { return (Actor**)mCapacity; }  // 0x0C: pointer array
 };
 
@@ -1601,7 +1603,6 @@ public:
 extern RegistryBuffer* lbl_804D57E0;
 extern "C" float fn_802A2080(Actor* actor);
 extern "C" int fn_802CED5C(float value, Actor* actor);
-extern "C" void fn_8028B35C(void* list, void* element, unsigned long size);
 void FontRelease(int font);
 void ActorUnlinkOwnerObjects(Actor* actor);
 
@@ -1630,7 +1631,7 @@ extern "C" void fn_802CEAAC(float value)
 
             for (; found != end; found++) {
                 if (*found == actor) {
-                    fn_8028B35C(lbl_804D57E0, found, sizeof(Actor*));
+                    ((Buffer*)lbl_804D57E0)->Erase((char*)found, sizeof(Actor*));
                     if (actor->field0B8 != -1) {
                         FontRelease(actor->field0B8);
                         actor->field0B8 = -1;
@@ -1659,7 +1660,7 @@ extern "C" void fn_802CEBAC(void)
 
             for (; it != end; it++) {
                 if (*it == actor) {
-                    fn_8028B35C(lbl_804D57E0, it, sizeof(Actor*));
+                    ((Buffer*)lbl_804D57E0)->Erase((char*)it, sizeof(Actor*));
                     if (actor->field0B8 != -1) {
                         FontRelease(actor->field0B8);
                         actor->field0B8 = -1;

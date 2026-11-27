@@ -3500,6 +3500,17 @@ struct GunTrailList8017B060 {
     void* data;                         // 0x0c
 };
 
+// Declared here for the member calls below.
+class Buffer {
+public:
+    Buffer();
+    virtual ~Buffer();
+    static void operator delete(void* p) { VFree(p); }
+    char* Erase(char* pos, int size);  // 0x8028B35C
+    char* Insert(char* pos, int size); // 0x8028B3BC
+    void Free();                       // 0x8028B960
+};
+
 extern GunTrailList8017B060* lbl_804D5048;
 extern GunTrailFx8017B060 lbl_803A82C0[];
 // Shared trail geometry table: 12 base points, 12 angle offsets and the
@@ -3525,8 +3536,6 @@ void DrawLine(float* from, float* to, unsigned char c0, unsigned char c1,
 void DrawDisableTexOffsets(void);
 void DrawTrailRing(TrailBuffer* buffer, unsigned char r, unsigned char g,
                    unsigned char b, unsigned char a);
-extern "C" void fn_8028B35C(void* list, void* item, int size);
-extern "C" void* fn_8028B3BC(void* list, void* end, int size);
 
 // Name is a guess: allocates a trail effect for the given effect preset and
 // registers it in the live list, dropping the oldest effects once 32 are live.
@@ -3536,13 +3545,11 @@ GunTrailBlock8017B060* GunTrailSpawn8017B060(int effect) {
 
     while ((lbl_804D5048->size >> 2) >= 0x20) {
         VFree(*(void**)lbl_804D5048->data);
-        fn_8028B35C(lbl_804D5048, lbl_804D5048->data, 4);
+        ((Buffer*)lbl_804D5048)->Erase((char*)lbl_804D5048->data, 4);
     }
     block = (GunTrailBlock8017B060*)VAlloc(0xf0);
     if (block != 0) {
-        *(GunTrailBlock8017B060**)fn_8028B3BC(
-            lbl_804D5048,
-            (unsigned char*)lbl_804D5048->data + lbl_804D5048->size, 4) = block;
+        *(GunTrailBlock8017B060**)((Buffer*)lbl_804D5048)->Insert((char*)((unsigned char*)lbl_804D5048->data + lbl_804D5048->size), 4) = block;
         block->state = 1;
         block->counter = 0;
         block->effect = effect;
@@ -3628,7 +3635,7 @@ extern "C" void fn_8017B164(void) {
         }
         if (dead) {
             VFree(block);
-            fn_8028B35C(lbl_804D5048, slot, 4);
+            ((Buffer*)lbl_804D5048)->Erase((char*)slot, 4);
         } else {
             slot++;
         }
@@ -3687,23 +3694,16 @@ extern "C" void fn_8017B488(float dt) {
 extern "C" void fn_8017B6C0(void) {
     while ((lbl_804D5048->size >> 2) != 0) {
         VFree(*(void**)lbl_804D5048->data);
-        fn_8028B35C(lbl_804D5048, lbl_804D5048->data, 4);
+        ((Buffer*)lbl_804D5048)->Erase((char*)lbl_804D5048->data, 4);
     }
     delete lbl_804D5048;
 }
 
 // Shared byte-buffer base class: its destructor is out of line (0x8028B9C0) and the
 // class frees its storage through VFree (declared above).
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-    static void operator delete(void* p) { VFree(p); }
-};
 
 // Address 0x8028B960: per-object cleanup run from the intermediate base destructor.
 // Placeholder name kept (the symbol is unnamed in retail); the call takes only `this`.
-extern "C" void fn_8028B960(void* self);
 
 // Base class of the trail-list container: its destructor is defined inline, which is
 // why the derived deleting destructor below carries an extra vtable store before it
@@ -3711,7 +3711,7 @@ extern "C" void fn_8028B960(void* self);
 class GunTrailNodeBase : public Buffer {
 public:
     virtual ~GunTrailNodeBase() {
-        fn_8028B960(this);
+        Free();
     }
 };
 
@@ -3745,7 +3745,7 @@ public:
 };
 
 GunTrailListBase::~GunTrailListBase() {
-    fn_8028B960(this);
+    Free();
 }
 
 // Most-derived container; its inline constructor chain (Buffer's out-of-line

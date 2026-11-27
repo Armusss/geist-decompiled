@@ -281,7 +281,6 @@ static inline void BossPlayStateAnim(Boss* b, int pick, bool randomize) {
     }
 }
 
-extern "C" void fn_8028B35C(BossBuf* list, void* where, int n);
 extern float lbl_804D3A0C;
 extern float lbl_804D3A44;
 extern float lbl_804DAEAC;
@@ -291,7 +290,6 @@ extern float lbl_804DAEB4;
 extern "C" {
 int fn_802D1640(double a, double b, double c, double d, double e, double f, double g, double h, Boss* owner, unsigned* mask,
                 u32 hash, unsigned flag, int one);
-void* fn_8028B3BC(BossBuf* list, void* where, int n);
 }
 extern int lbl_804D3A3C;
 extern int lbl_804D3A40;
@@ -659,7 +657,7 @@ void BossInit(int unused, Boss* b) {
     if (s == NULL) {
         b->state = NULL;
     } else {
-        new (&s->list) BossBuf;
+        ::new (&s->list) BossBuf;
         s->type = 0;
         s->next = 0;
         s->shotDelay = (lbl_804D3A68 - lbl_804D3A64) * ((float)rand() / 32767.0f) + lbl_804D3A64;
@@ -1198,7 +1196,7 @@ int BossEnterPhaseOut(Boss* b) {
         q.hash = 0x1FF464;
         q.c = 0;
         SendMsg(target, 0x41D, &q);
-        fn_8028B35C(&s->list, (void*)s->list.mUnk0C, 4);
+        ((Buffer*)&s->list)->Erase((char*)((void*)s->list.mUnk0C), 4);
     }
     fn_80049948();
     fn_8006DB74(lbl_804D3A44);
@@ -1276,7 +1274,7 @@ void BossPartInit(Boss* b) {
         q.hash = 0x1FF464;
         q.c = 0;
         SendMsg(target, 0x41D, &q);
-        fn_8028B35C(&s->list, (void*)s->list.mUnk0C, 4);
+        ((Buffer*)&s->list)->Erase((char*)((void*)s->list.mUnk0C), 4);
     }
     for (i = 0; i < lbl_804D3A40; i++) {
         unsigned mask[3];
@@ -1299,7 +1297,7 @@ void BossPartInit(Boss* b) {
             speed = (float)(speed * -1.0);
         fx = fn_802D1640(lbl_804D3A20, lbl_804D3A24, 3400.0, lbl_804D3A34, 0.0, lbl_804D3A28, speed, lbl_804D3A30, b, mask + 1,
                          0xF62EAC61, mask[0], 1);
-        *(int*)fn_8028B3BC(&s->list, (void*)(s->list.mUnk0C + s->list.mLength), 4) = fx;
+        *(int*)((Buffer*)&s->list)->Insert((char*)((void*)(s->list.mUnk0C + s->list.mLength)), 4) = fx;
         {
             struct {
                 int a;

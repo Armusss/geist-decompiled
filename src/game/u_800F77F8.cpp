@@ -146,7 +146,6 @@ extern int gInstPool;           // 0x804D4B8C
 extern float gZeroF;            // 0x804D7488
 
 extern "C" {
-void* fn_8028B3BC(Vector* v, void* where, int n);
 u32 VarGetHash(u32 table, int index, u32 key);              // 0x800DF1D8
 float VarGetFloat(u32 table, int index, u32 key);           // 0x800DF2C8
 int Fn800DF3B8(u32 table, int index, u32 key);              // 0x800DF3B8
@@ -208,7 +207,7 @@ void EffectKindRegister(EffectKind* k) {
         h = h % 0xFFFFFFFF;
     }
     k->hash = h;
-    *(EffectKind**)fn_8028B3BC(gEffectKinds, gEffectKinds->data + gEffectKinds->bytes, 4) = k;
+    *(EffectKind**)((Buffer*)gEffectKinds)->Insert((char*)(gEffectKinds->data + gEffectKinds->bytes), 4) = k;
 }
 
 // HashMix: looks up key `key` in the table of effect row `row` (0 when out of range).
@@ -559,7 +558,6 @@ u32 fn_800F8AF4(u32 row) {
 }
 // Shuts the emitter system down: clears every emitter, runs the kinds' shutdown handlers and
 // empties and deletes the row and kind vectors.
-extern "C" void fn_8028B35C(Vector* v, void* it, int bytes);
 void EffectEmitterShutdown(void);
 void fn_800F86A0(u32 handle);
 
@@ -583,7 +581,7 @@ static inline void EffectRowsClear(Vector* v) {
     if (bytes >> 4 != 0) {
         EffectRow* first = (EffectRow*)v->data;
         EffectRow* last = (EffectRow*)(v->data + bytes);
-        fn_8028B35C(v, first, (last - first) * sizeof(EffectRow));
+        ((Buffer*)v)->Erase((char*)first, (last - first) * sizeof(EffectRow));
     }
 }
 
@@ -592,7 +590,7 @@ static inline void EffectKindsClear(Vector* v) {
     if (bytes >> 2 != 0) {
         EffectKind** first = (EffectKind**)v->data;
         EffectKind** last = (EffectKind**)(v->data + bytes);
-        fn_8028B35C(v, first, (last - first) * sizeof(EffectKind*));
+        ((Buffer*)v)->Erase((char*)first, (last - first) * sizeof(EffectKind*));
     }
 }
 
@@ -701,7 +699,7 @@ int EffectTablesLoad(void) {
         table = VarGetHash(0x47F42363, i, 0x7300AB12);
         ev = Fn800DF3B8(0x47F42363, i, 0x8DD0EEE7);
         index = Fn800DF814(table, GameEvent(0xC0A77187, ev));
-        row = (EffectRow*)fn_8028B3BC(gEffectRows, gEffectRows->data + gEffectRows->bytes, 0x10);
+        row = (EffectRow*)((Buffer*)gEffectRows)->Insert((char*)(gEffectRows->data + gEffectRows->bytes), 0x10);
         row->id = key;
         row->unk04 = (int)kind;
         row->table = table;

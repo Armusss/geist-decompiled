@@ -71,11 +71,12 @@ public:
     u8*   data;     // 0x0c
     Buffer();
     ~Buffer();
+    char* Erase(char* pos, int size);  // 0x8028B35C
+    char* Insert(char* pos, int size); // 0x8028B3BC
+    void Free();                       // 0x8028B960
 };
 
-extern "C" void* fn_8028B3BC(Buffer* buf, u8* end, u32 len);
 extern "C" int   rand(void);
-extern "C" void fn_8028B960(void* object);
 extern "C" void fn_800A3AF4(float value);
 extern "C" void fn_800B9528(float value);
 extern "C" void fn_800B4D94(float value);
@@ -1919,7 +1920,7 @@ extern "C" int fn_800B8B64(u32 kind, u32 dataId, int needUnused,
                     (needUnused == 0 || (s32)entry->asset == -1) &&
                     (callback == 0 || callback(entry->field38, arg) != 0)) {
                     u32* slot =
-                        (u32*)fn_8028B3BC(&buf, buf.data + buf.size, 4);
+                        (u32*)((Buffer*)&buf)->Insert((char*)(buf.data + buf.size), 4);
                     *slot = *(u32*)((u8*)lbl_804D4830 + offset + 0x38);
                 }
             }
@@ -1934,7 +1935,7 @@ extern "C" int fn_800B8B64(u32 kind, u32 dataId, int needUnused,
     }
 
     buf.vtable = lbl_8039B708;
-    fn_8028B960(&buf);
+    ((Buffer*)&buf)->Free();
     buf.~Buffer();
     return (int)value;
 }
@@ -1944,7 +1945,7 @@ extern "C" void* fn_800B8D00(void* object, short freeFlag)
 {
     if (object != 0) {
         *(char**)object = lbl_8039B708;
-        fn_8028B960(object);
+        ((Buffer*)object)->Free();
         ((Buffer*)object)->~Buffer();
         if (freeFlag > 0) {
             VFree(object);
@@ -1967,7 +1968,7 @@ extern "C" int fn_800B8D68(u32 kind, u32 dataId, int needUnused)
                 if ((entry->flags & 4) != 0 && (entry->flags & 3) == 0 &&
                     (needUnused == 0 || (s32)entry->asset == -1)) {
                     u32* slot =
-                        (u32*)fn_8028B3BC(&buf, buf.data + buf.size, 4);
+                        (u32*)((Buffer*)&buf)->Insert((char*)(buf.data + buf.size), 4);
                     *slot = *(u32*)((u8*)lbl_804D4830 + offset + 0x38);
                 }
             }
@@ -1982,7 +1983,7 @@ extern "C" int fn_800B8D68(u32 kind, u32 dataId, int needUnused)
     }
 
     buf.vtable = lbl_8039B708;
-    fn_8028B960(&buf);
+    ((Buffer*)&buf)->Free();
     buf.~Buffer();
     return (int)value;
 }
