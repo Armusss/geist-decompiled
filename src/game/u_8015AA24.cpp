@@ -788,6 +788,7 @@ void fn_8015B5B4(TimedFx* fx) {
         f32 w0 = 40.0f * frac + 8.0f;
         f32 w1 = 10.0f * frac + 8.0f;
         int start = (int)(0.5f * fx->time);
+        int off;
         u8 alpha = (int)(255.0f * (1.0f - fn_800A1394(90.0f * frac)));
         f32 lineW = 8.0f * frac + 2.0f;
 
@@ -801,7 +802,7 @@ void fn_8015B5B4(TimedFx* fx) {
         } else if (fx->type == 2 || fx->type == 3) {
             int i;
 
-            for (i = 0; i < 7; i++) {
+            for (i = 0, off = 0; i < 7; i++, off += 12) {
                 Vec3 d;
                 IVec3 id;
                 Placement pl;
@@ -810,7 +811,7 @@ void fn_8015B5B4(TimedFx* fx) {
                 f32 t1;
                 u8 ra, ga, ba, rb, gb, bb;
 
-                Vec3* cur = &fx->u.curve.pts[i];
+                Vec3* cur = (Vec3*)((u8*)fx->u.curve.pts + off);
                 Vec3* next = &fx->u.curve.pts[i + 1];
 
                 d.x = next->x - cur->x;
@@ -821,7 +822,7 @@ void fn_8015B5B4(TimedFx* fx) {
                 id.z = d.z;
                 fn_8009EC5C(&pl, &id);
                 ActorGetMatrix((Mtx34*)&m, (Actor*)&pl);
-                cur = &fx->u.curve.pts[i];
+                cur = (Vec3*)((u8*)fx->u.curve.pts + off);
                 m.pos.x = cur->x;
                 m.pos.y = cur->y;
                 m.pos.z = cur->z;
