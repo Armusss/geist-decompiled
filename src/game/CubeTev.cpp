@@ -1317,7 +1317,7 @@ void GfxResetTev() {
 
 // 0x8010E9F4 picks the quality level: a forced level (0-3) wins over the caller's.
 void TevSetLevel(int level) {
-    if (gTevForcedLevel > -1 && gTevForcedLevel < 4) {
+    if (gTevForcedLevel >= 0 && gTevForcedLevel <= 3) {
         gTevLevel = gTevForcedLevel;
         return;
     }
@@ -1357,12 +1357,11 @@ void TevSetKColor2(GXColor* color) {
 
 // 0x8010EB18 sets konstant color 1 to a grey level (0..1) with full alpha.
 void TevSetKColor1Grey(float level) {
-    GXColor c;
+    GXColor c = {0, 0, 0, 0xFF};
     u8 v = (int)(255.0f * level);
     c.r = v;
     c.g = v;
     c.b = v;
-    c.a = 0xFF;
     GXSetTevKColor(GX_KCOLOR1, c);
 }
 
@@ -1426,8 +1425,8 @@ void TevSetupViewMtx(float x, float y) {
 // 0x8010EDE4 view-dependent texture matrix 0x30: camera translation scaled into texture space.
 void TevSetupViewScroll(float x, float y) {
     Mtx cam;
-    Mtx m;
     Mtx scale;
+    Mtx m;
     float sx;
     float sy;
     fn_80008C78(cam);
@@ -1467,10 +1466,10 @@ extern "C" void fn_8010EF3C(void) {   // TevLoadBaseMtx; called from other units
 
 // 0x8010EF6C sets the base matrix from a matrix, or from the camera when none is given.
 void TevSetBaseMtx(Mtx src) {
-    if (src == 0) {
-        fn_80008C78(gTevBaseMtx);
-    } else {
+    if (src != 0) {
         PSMTXCopy(src, gTevBaseMtx);
+    } else {
+        fn_80008C78(gTevBaseMtx);
     }
 }
 
