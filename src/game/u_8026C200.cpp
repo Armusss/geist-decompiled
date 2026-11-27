@@ -619,20 +619,10 @@ int SpaceGetCount(Space* s)
 {
     return s->count;
 }
-// 0x8026C148: n-th geometry of a space (dSpaceGetGeom). The symbol keeps its one-parameter guess
-// (SpaceGetNumGeoms__FP4Geom), so the index is never named and passes through in r4 to the getGeom
-// slot (0x14); the real prototype is Geom* (Space*, int).
-struct SpaceGetGeomCall {
-    char pad00[0x48];
-    virtual void slot08();
-    virtual void slot0C();
-    virtual void slot10();
-    virtual int getGeom();  // 0x14
-};
-
-int SpaceGetNumGeoms(Geom* s)
+// 0x8026C148: n-th geometry of a space (dSpaceGetGeom)
+Geom* dSpaceGetGeom(Space* s, int i)
 {
-    return ((SpaceGetGeomCall*)s)->getGeom();
+    return s->getGeom(i);
 }
 
 // 0x8026C11C: collides the geometries of a space with each other (dSpaceCollide)

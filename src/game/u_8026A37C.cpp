@@ -1,8 +1,10 @@
-// u_8026A37C.cpp (0x8026A37C-0x8026BE98): ODE 0.5 collision_kernel.cpp: the user geometry class (dxUserGeom,
-// dCreateGeomClass), the dGeom* API, dxGeom's constructor/destructor, dCollide and the class-pair collider matrix.
+// u_8026A37C.cpp (0x8026A31C-0x8026BE98): ODE 0.5 collision_kernel.cpp: dCloseODE, the user geometry class (dxUserGeom,
+// dCreateGeomClass, dCreateGeom, dGeomGetClassData), the dGeom* API, dxGeom's constructor/destructor, dCollide and the class-pair collider matrix.
 // It ends with space_geom_collider (0x8026BB0C); collision_space.cpp (u_8026C200) starts at 0x8026BE98.
 // Built with -inline deferred like the other ODE files (user-approved 2026-11-27): the functions are in ODE source
-// order and come out reversed; ~UserGeom inlines ~Geom.
+// order and come out reversed; ~UserGeom inlines ~Geom. Boundary (2026-11-27, user-approved): starts at 0x8026A31C
+// with dCloseODE (the last function of the ODE source, so the first one emitted; it clears the two kernel statics
+// at .sbss 0x804D5518), followed by dCreateGeom and dGeomGetClassData (were in u_8026A158).
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 typedef unsigned long u32;
@@ -153,9 +155,9 @@ void SpaceAddGeom(Space* s, Geom* g, int arg);
 ColliderEntry gColliders[GEOM_CLASSES][GEOM_CLASSES];  // 0x804A2A70
 UserGeomClass gUserGeomClasses[4];                     // 0x804A3178
 
-// Other files' statics (sbss).
-extern int lbl_804D5518;
-extern int gUserGeomClassCount;
+// Kernel statics (.sbss 0x804D5518): colliders_initialized and the number of registered user classes.
+static int sCollidersInitialized;
+static int gUserGeomClassCount;
 
 int GeomCollideDispatch(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
 void CollisionInit(void);
@@ -212,10 +214,10 @@ void CollisionInit(void)
     int i;
     int j;
 
-    if (lbl_804D5518 != 0) {
+    if (sCollidersInitialized != 0) {
         return;
     }
-    lbl_804D5518 = 1;
+    sCollidersInitialized = 1;
     memset(gColliders, 0, sizeof(gColliders));
     for (i = 8; i <= 10; i++) {
         for (j = 0; j < GEOM_CLASSES; j++) {
@@ -543,4 +545,23 @@ int GeomRegisterClass(const UserGeomClass* cls)
     GeomSetAllColliders(type, UserGeomCollide);
     gUserGeomClassCount++;
     return type;
+}
+
+// 0x8026A374 (dGeomGetClassData)
+int UserGeomGetId(UserGeom* geom)
+{
+    return (int)geom->userData;
+}
+
+// 0x8026A32C (dCreateGeom)
+UserGeom* UserGeomAlloc(int type)
+{
+    return new UserGeom(type);
+}
+
+// 0x8026A31C
+void dCloseODE()
+{
+    sCollidersInitialized = 0;
+    gUserGeomClassCount = 0;
 }

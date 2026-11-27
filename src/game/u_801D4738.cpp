@@ -101,7 +101,7 @@ void Mtx34StoreTranslation(Mtx34* m, const Vec3* t);                  // 0x800A0
 void DebugDrawSphereWire(int r, int g, int b, float x, float y, float z, float radius); // 0x80023A9C
 void DebugDrawBoneBox(Vec3* box, void* m, int r, int g, int b); // 0x80023EE4
 void RoomGeomDebugDraw();                                       // 0x801D3EC4
-void AmmoRefillResetStatics();                                  // 0x8026A31C
+void dCloseODE();                                               // 0x8026A31C
 Geom* UserGeomAlloc(int cls);                                   // 0x8026A32C
 RoomGeomData* UserGeomGetId(UserGeom* g);                       // 0x8026A374
 int GeomRegisterClass(const UserGeomClass* cls);                // 0x8026A37C
@@ -125,7 +125,7 @@ void GeomSetGFlags(Geom* g, int data);                          // 0x8026AE6C
 void GeomDestroyGeom(Geom* g);                                  // 0x8026AE74
 int GeomCollideDispatch(Geom* a, Geom* b, int flags, ContactGeom* c, int skip); // 0x8026B09C
 void SpaceCollideSelf(Geom* space, void* data, void (*cb)(void*, Geom*, Geom*)); // 0x8026C11C
-Geom* SpaceGetNumGeoms(Geom* space, int i);                     // 0x8026C148
+Geom* dSpaceGetGeom(Space* space, int i);                       // 0x8026C148
 int SpaceGetCount(Space* space);                                // 0x8026C174
 void SpaceAddGeom(Space* space, Geom* g, int a);                // 0x8026C1A8
 void GeomDelete(Geom* g);                                       // 0x8026C1D4
@@ -810,7 +810,7 @@ void fn_801D6104(Geom* space) {
     int n = SpaceGetCount((Space*)space);
     int i;
     for (i = 0; i < n; i++) {
-        Geom* g = SpaceGetNumGeoms(space, i);
+        Geom* g = dSpaceGetGeom((Space*)space, i);
         int type = GeomGetType(g);
         u8 color[4];
         dxBody* body = GeomGetBody(g);
@@ -1003,7 +1003,7 @@ void fn_801D6928(float dt) {
             int count = SpaceGetCount(sp);
             int k;
             for (k = 0; k < count; k++) {
-                Geom* g = SpaceGetNumGeoms((Geom*)sp, k);
+                Geom* g = dSpaceGetGeom((Space*)sp, k);
                 dxBody* body;
                 if (GeomIsEnabled(g) != 0 && (body = GeomGetBody(g)) != 0 && dBodyIsEnabled(body) != 0) {
                     PhysObj* o = GeomGetGFlags(g);
@@ -1043,7 +1043,7 @@ void fn_801D6CB8(Geom* space, float dt) {
     int n = SpaceGetCount((Space*)space);
     int i;
     for (i = 0; i < n; i++) {
-        Geom* g = SpaceGetNumGeoms(space, i);
+        Geom* g = dSpaceGetGeom((Space*)space, i);
         const float* pos;
         const float* vel;
         PhysObj* o;
@@ -1162,7 +1162,7 @@ void fn_801D7068(Geom* space, Geom* g) {
         int n = SpaceGetCount((Space*)space);
         int i;
         for (i = 0; i < n; i++) {
-            Geom* h = SpaceGetNumGeoms(space, i);
+            Geom* h = dSpaceGetGeom((Space*)space, i);
             dxBody* body = GeomGetBody(h);
             if (body != 0 && dBodyIsEnabled(body) == 0) {
                 int hit;
@@ -1406,7 +1406,7 @@ void fn_801D7BC8(void) {
     fn_80277B38(sContacts);
     GeomDelete((Geom*)sSpace);
     fn_80277600(sWorld);
-    AmmoRefillResetStatics();
+    dCloseODE();
     delete sGeoms;
 }
 
