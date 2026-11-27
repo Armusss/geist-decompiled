@@ -162,13 +162,6 @@ void dBodySetLinearVel(dxBody* b, float x, float y, float z);   // 0x802788D4
 void* dBodyGetData(dxBody* b);                                  // 0x802789C0
 void dBodySetData(dxBody* b, void* data);                       // 0x802789C8
 
-// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
-// array overrides here call directly. Class and member names are guesses.
-class ScreenEffectBuffer {
-public:
-    void Commit(int start, unsigned long size);
-    void Append(unsigned char* data, unsigned long size);
-};
 
 extern "C" {
 int sprintf(char* s, const char* fmt, ...);
@@ -1510,7 +1503,7 @@ GeomVec::~GeomVec() {
 
 // 0x801D8044
 void GeomVec::Construct(void* p, u32 bytes) {
-    ((ScreenEffectBuffer*)this)->Commit((int)p, bytes);
+    ((ScreenEffectBuffer*)this)->ScreenEffectBuffer::Commit((int)p, bytes);
     fn_801D80F4((Geom**)p, (Geom**)((char*)p + (bytes & ~3)));
 }
 
@@ -1518,7 +1511,7 @@ void GeomVec::Construct(void* p, u32 bytes) {
 void GeomVec::Destruct(void* p, u32 bytes) {
     Geom** first = (Geom**)p;
     fn_801D8114(first, (Geom**)((char*)first + (bytes & ~3)));
-    ((ScreenEffectBuffer*)this)->Append((unsigned char*)p, bytes);
+    ((ScreenEffectBuffer*)this)->ScreenEffectBuffer::Append((unsigned char*)p, bytes);
 }
 
 // 0x801D80EC

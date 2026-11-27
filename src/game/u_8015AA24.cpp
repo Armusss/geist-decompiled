@@ -83,13 +83,6 @@ void* fn_8028B3BC(void*, void*, int);
 void fn_8028B960(void*);
 void fn_8028B9C0(void*, int);
 void fn_8028BA9C(void*);
-// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
-// array overrides here call directly. Class and member names are guesses.
-class ScreenEffectBuffer {
-public:
-    void Commit(int start, unsigned long size);
-    void Append(unsigned char* data, unsigned long size);
-};
 void fn_800A0094(void*, void*);
 void fn_800A0100(void*);
 void SplineHermiteEval(f32 t, Vec3* p0, Vec3* t0, Vec3* p1, Vec3* t1, Vec3* out);
@@ -948,7 +941,7 @@ void fn_8015BA5C(f32 dt) {
 
 // 0x8015BF90 / 0x8015BFD8 and siblings: emitter pool element array helpers.
 void fn_8015BF90(void* pool, int start, unsigned size) {
-    ((ScreenEffectBuffer*)pool)->Commit((int)start, size);
+    ((ScreenEffectBuffer*)pool)->ScreenEffectBuffer::Commit((int)start, size);
     fn_8015C040((int*)start, (int*)(start + (size & 0xfffffffc)));
 }
 
@@ -956,7 +949,7 @@ void fn_8015BFD8(void* pool, int start, unsigned size) {
     unsigned long p = (unsigned long)start;
 
     fn_8015C060((int*)p, (int*)(p + (size & 0xfffffffc)));
-    ((ScreenEffectBuffer*)pool)->Append((unsigned char*)start, size);
+    ((ScreenEffectBuffer*)pool)->ScreenEffectBuffer::Append((unsigned char*)start, size);
 }
 
 int fn_8015C038() {

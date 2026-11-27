@@ -1385,13 +1385,6 @@ extern "C" void fn_8028A728(void)
 
 void DestroyWordRange(unsigned long start, unsigned long end);
 void ClearWordRange(unsigned long start, unsigned long end);
-// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
-// array overrides here call directly. Class and member names are guesses.
-class ScreenEffectBuffer {
-public:
-    void Commit(int start, unsigned long size);
-    void Append(unsigned char* data, unsigned long size);
-};
 
 // fn_8028A77C: deleting destructor of the Buffer-derived object.
 BufferOwner::~BufferOwner()
@@ -1402,7 +1395,7 @@ BufferOwner::~BufferOwner()
 // fn_8028A7E4: release the pending clear, then take [start, start + size) down.
 void BufferOwner::Commit(int start, unsigned long size)
 {
-    ((ScreenEffectBuffer*)this)->Commit((int)start, size);
+    ((ScreenEffectBuffer*)this)->ScreenEffectBuffer::Commit((int)start, size);
     DestroyWordRange(start, start + (size & ~3));
 }
 
@@ -1412,7 +1405,7 @@ void BufferOwner::Append(u8* data, unsigned long size)
     unsigned long start = (unsigned long)data;
 
     ClearWordRange(start, start + (size & 0xFFFFFFFC));
-    ((ScreenEffectBuffer*)this)->Append((unsigned char*)data, size);
+    ((ScreenEffectBuffer*)this)->ScreenEffectBuffer::Append((unsigned char*)data, size);
 }
 
 // fn_8028A88C: the buffer's element alignment is always 4 bytes.

@@ -18,13 +18,6 @@ int HasCondition(void* conditions, int which);                  // 0x800A7AC4
 int ConditionSetBit(void* cond, int bit, int set);              // 0x800A7A54
 int ActorPlayAnim(int actor, u32 anim, int arg);                // 0x800C5654
 extern "C" void fn_8028B960(void* p);
-// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
-// array overrides here call directly. Class and member names are guesses.
-class ScreenEffectBuffer {
-public:
-    void Commit(int start, unsigned long size);
-    void Append(unsigned char* data, unsigned long size);
-};
 extern "C" int fn_800498D0(void);
 extern "C" void fn_800BBCA8(void* o);
 extern "C" void fn_8029B070(void* o, int v);
@@ -821,13 +814,13 @@ void EmptyRangeLoopA(void* begin, void* end);
 void EmptyRangeLoopB(void* begin, void* end);
 
 void EffectListArrayConstruct(void* self, void* begin, u32 size) {
-    ((ScreenEffectBuffer*)self)->Commit((int)begin, size);
+    ((ScreenEffectBuffer*)self)->ScreenEffectBuffer::Commit((int)begin, size);
     EmptyRangeLoopA(begin, (char*)begin + (size & ~3));
 }
 
 void EffectListArrayDestruct(void* self, void* begin, u32 size) {
     EmptyRangeLoopB(begin, (char*)begin + (size & ~3));
-    ((ScreenEffectBuffer*)self)->Append((unsigned char*)begin, size);
+    ((ScreenEffectBuffer*)self)->ScreenEffectBuffer::Append((unsigned char*)begin, size);
 }
 
 int ReturnFour() {

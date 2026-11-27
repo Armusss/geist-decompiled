@@ -1,38 +1,67 @@
 #ifndef GAME_STRING_H
 #define GAME_STRING_H
 
-// Buffer and String, the engine's text classes (implemented in u_8028A8D4.cpp, 0x8028A8D4-0x8028C54C; the BufferOwner methods in u_8028865C.cpp).
-// Names are descriptive guesses.
+// The engine's growable byte store and its text class: ScreenEffectSlot -> ScreenEffectBuffer -> Buffer -> String
+// (implemented in u_8028A8D4.cpp, 0x8028A8D4-0x8028C54C). Class, member and slot names are descriptive guesses;
+// the two base class names come from the screen-effect code that was decompiled first.
 //
 // Evidence:
 //   sizeof(Buffer) == sizeof(String) == 0x14: stack slots of String locals are 0x14 apart in every Matching
 //   message handler (e.g. names at sp+12 / sp+32 / sp+52 in HostBehMsg).
-//   The vptr is at +0x00: __ct__6BufferFv (0x8028BA9C) calls a base constructor (0x8028BD4C), stores its
-//   vtable at +0x00 and clears +0x10; __ct__6StringFv (0x8028C500) calls it and stores __vt__6String at +0x00.
-//   __vt__6String (0x80393D7C, 0x24 bytes) has six slots after the 8-byte header:
-//     +0x08 destructor, +0x0C 0x8028B2A0, +0x10 0x8028B1CC, +0x14 0x8028BC2C, +0x18 0x8028BC28, +0x1C 0x80023884.
-//   The destructor is slot 0, so the classes are declared with `virtual ~Buffer()` first. Units that only use
-//   strings never call the other five slots; they are declared here as one placeholder (`Release`), exactly as
-//   the 69 client units declared it. u_8028A8D4.cpp, which implements the class, keeps its own fuller
-//   declaration (two base classes, five named virtuals) until its constructors match: see the note there.
-//   ~Buffer (__dt__6BufferFv, 0x8028B9C0) is out of line; ~String is inline (clients set the String vtable,
-//   null-check, then call ~Buffer(this, 0)).
+//   The vptr is at +0x00: __ct__6BufferFv (0x8028BA9C) calls the ScreenEffectBuffer constructor (0x8028BD4C),
+//   stores its vtable at +0x00 and clears +0x10; __ct__6StringFv (0x8028C500) calls it and stores __vt__6String.
+//   Vtables (8-byte header, then): ScreenEffectSlot 0x803C29F0 {dtor, Clear 0x8028B1D4, GetAlignment 0x8028B1CC,
+//   Commit = 0}; ScreenEffectBuffer 0x803C2A28 {dtor, Clear 0x8028BD18, GetAlignment, Commit 0x8028BC2C,
+//   Append 0x8028BC28, GetSpan = 0}; Buffer 0x803C2A08 {~Buffer 0x8028B9C0, Clear 0x8028B2A0, GetAlignment,
+//   Commit, Append, GetSpan 0x8007AD60}; __vt__6String 0x80393D7C {dtor, Buffer::Clear, GetAlignment, Commit,
+//   Append, 0x80023884 (`return 1`: room for the terminator)}.
+//   Slot meanings, from the overrides in the element arrays (include/game/bufarray.h): GetAlignment is the
+//   element size, Commit runs over newly reserved store, Append over store about to be released, GetSpan is the
+//   extra bytes every reserve keeps.
+//   Buffer::GetSpan (`return 0`) is an inline virtual: it is referenced only from the Buffer-derived vtables and
+//   its one surviving copy sits in u_800776FC.cpp, the lowest-addressed file that emits such a vtable (the
+//   linker keeps the first weak copy).
+//   ~Buffer is out of line; ~String is inline (clients set the String vtable, null-check, then call
+//   ~Buffer(this, 0)). String's GetSpan is declared out of line here so that client files never emit
+//   __vt__6String (it lives in another file's .data); retail's copy is the `return 1` at 0x80023884.
+//   The objects are allocated through VAlloc and released through VFree: every deleting destructor of the
+//   chain ends in VFree.
 
-class Buffer {
+void* VAlloc(int size);
+void VFree(void* p);
+
+class ScreenEffectSlot {
+public:
+    ScreenEffectSlot();                                       // 0x8028B23C
+    virtual ~ScreenEffectSlot() {}
+    virtual void Clear();                                     // 0x0C
+    virtual int GetAlignment();                               // 0x10: element size
+    virtual void Commit(int start, unsigned long size) = 0;   // 0x14: newly reserved store
+    static void* operator new(unsigned long size) { return VAlloc(size); }
+    static void operator delete(void* p) { VFree(p); }
+
+    char* mData;                               // 0x04 outside text the store is built from
+    int mLength;                               // 0x08 length in bytes
+    int mUnk0C;                                // 0x0C store
+    int mOwned;                                // 0x10 store capacity (0 while the outside text is used)
+};
+
+class ScreenEffectBuffer : public ScreenEffectSlot {
+public:
+    ScreenEffectBuffer();                                     // 0x8028BD4C
+    virtual ~ScreenEffectBuffer() {}
+    virtual void Clear();
+    virtual void Commit(int start, unsigned long size);
+    virtual void Append(unsigned char* data, unsigned long size); // 0x18: store about to be released
+    virtual int GetSpan() = 0;                                    // 0x1C: extra bytes every reserve keeps
+};
+
+class Buffer : public ScreenEffectBuffer {
 public:
     Buffer();                                  // 0x8028BA9C
     virtual ~Buffer();                         // 0x8028B9C0
-    virtual void Release(char* p);
-    // Slot 0x1C of every Buffer-derived vtable (0x8007AD60, `return 0`). It is referenced only from the 44
-    // vtables, always in slot 0x1C after Buffer::Clear, and sits in u_800776FC.cpp right before the FxList
-    // array methods, the lowest-addressed of those vtables: the shape of an inline virtual emitted with the
-    // first class that needs it. Declared non-virtual here so the clients' vtables keep their layout.
-    int GetSpan();
-
-    char* mData;                               // 0x04
-    int mLength;                               // 0x08
-    int mUnk0C;                                // 0x0C
-    int mOwned;                                // 0x10
+    virtual void Clear();                      // 0x8028B2A0
+    virtual int GetSpan() { return 0; }        // 0x8007AD60
 };
 
 class String : public Buffer {
@@ -40,7 +69,7 @@ public:
     String();                                  // 0x8028C500
     String(const char* s);                     // 0x8028C400
     ~String() {}
-    virtual void Release(char* p);
+    virtual int GetSpan();
 };
 
 #endif

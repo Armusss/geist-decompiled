@@ -84,13 +84,6 @@ void* fn_8028B3BC(void*, void*, int);
 void fn_8028B960(void*);
 void fn_8028B9C0(void*, int);
 void fn_8028BA9C(void*);
-// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
-// array overrides here call directly. Class and member names are guesses.
-class ScreenEffectBuffer {
-public:
-    void Commit(int start, unsigned long size);
-    void Append(unsigned char* data, unsigned long size);
-};
 void fn_800A0094(void*, void*);
 void fn_800A0100(void*);
 f32 fn_800A1394(f32);
@@ -773,7 +766,7 @@ int fn_8015A78C(u8 p1, u8 p2, u8 p3, u8 p4, u8 p5, u8 p6, u8 p7, u8 p8) {
 
 // 0x8015A934 / 0x8015A97C and siblings: grenade pool element array helpers.
 void fn_8015A934(void* pool, int start, unsigned size) {
-    ((ScreenEffectBuffer*)pool)->Commit((int)start, size);
+    ((ScreenEffectBuffer*)pool)->ScreenEffectBuffer::Commit((int)start, size);
     fn_8015A9E4((int*)start, (int*)(start + (size & 0xfffffffc)));
 }
 
@@ -781,7 +774,7 @@ void fn_8015A97C(void* pool, int start, unsigned size) {
     unsigned long p = (unsigned long)start;
 
     fn_8015AA04((int*)p, (int*)(p + (size & 0xfffffffc)));
-    ((ScreenEffectBuffer*)pool)->Append((unsigned char*)start, size);
+    ((ScreenEffectBuffer*)pool)->ScreenEffectBuffer::Append((unsigned char*)start, size);
 }
 
 int fn_8015A9DC() {

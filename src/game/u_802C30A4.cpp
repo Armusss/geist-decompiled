@@ -659,7 +659,7 @@ void BossInit(int unused, Boss* b) {
     if (s == NULL) {
         b->state = NULL;
     } else {
-        new (&s->list) BossBuf;
+        ::new (&s->list) BossBuf;
         s->type = 0;
         s->next = 0;
         s->shotDelay = (lbl_804D3A68 - lbl_804D3A64) * ((float)rand() / 32767.0f) + lbl_804D3A64;
