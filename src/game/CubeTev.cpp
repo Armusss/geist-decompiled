@@ -1326,26 +1326,11 @@ void TevSetLevel(int level) {
 
 // 0x8010EA18 sets konstant color 3, clearing the cached TEV state when the key changes.
 void TevSetKColor3(int key, u8 r, u8 g, u8 b, u8 a) {
-    GXColor c;
     if (gTevResetKey != key) {
-        gTevSlots[0].kind = 0;
-        gTevPrevA = -1;
-        gTevPrevB = -2;
-        gTevSlots[1].kind = 0;
-        gTevSlots[2].kind = 0;
-        gTevSlots[3].kind = 0;
-        gTevSlots[4].kind = 0;
-        gTevSlots[5].kind = 0;
-        gTevSlots[6].kind = 0;
-        gTevSlots[7].kind = 0;
         gTevResetKey = key;
-        PSMTXIdentity(gTevBaseMtx);
-        fn_8000FF7C();
+        TevStateReset();
     }
-    c.r = r;
-    c.g = g;
-    c.b = b;
-    c.a = a;
+    GXColor c = {r, g, b, a};
     GXSetTevKColor(GX_KCOLOR3, c);
 }
 
@@ -1357,25 +1342,23 @@ void TevSetKColor2(GXColor* color) {
 
 // 0x8010EB18 sets konstant color 1 to a grey level (0..1) with full alpha.
 void TevSetKColor1Grey(float level) {
-    GXColor c = {0, 0, 0, 0xFF};
     u8 v = (int)(255.0f * level);
-    c.r = v;
-    c.g = v;
-    c.b = v;
+    GXColor c = {v, v, v, 0xFF};
     GXSetTevKColor(GX_KCOLOR1, c);
 }
 
 // 0x8010EB70 loads a translating texture matrix into a slot unless it is already cached there.
 extern "C" void fn_8010EB70(float x, float y, int slot) {   // TevSlotTranslate; called from other units
     Mtx m;
-    bool same;
-    if (gTevSlots[slot].kind == 2 && gTevSlots[slot].x == x && gTevSlots[slot].y == y) {
+    int same;
+    TevSlot* s = &gTevSlots[slot];
+    if (s->kind == 2 && s->x == x && s->y == y) {
         same = true;
     } else {
         same = false;
-        gTevSlots[slot].kind = 2;
-        gTevSlots[slot].x = x;
-        gTevSlots[slot].y = y;
+        s->kind = 2;
+        s->x = x;
+        s->y = y;
     }
     if (!same) {
         PSMTXTrans(m, x, y, 1.0f);
@@ -1386,14 +1369,15 @@ extern "C" void fn_8010EB70(float x, float y, int slot) {   // TevSlotTranslate;
 // 0x8010EC10 the same for a scaling texture matrix.
 extern "C" void fn_8010EC10(float x, float y, int slot) {   // TevSlotScale; called from other units
     Mtx m;
-    bool same;
-    if (gTevSlots[slot].kind == 1 && gTevSlots[slot].x == x && gTevSlots[slot].y == y) {
+    int same;
+    TevSlot* s = &gTevSlots[slot];
+    if (s->kind == 1 && s->x == x && s->y == y) {
         same = true;
     } else {
         same = false;
-        gTevSlots[slot].kind = 1;
-        gTevSlots[slot].x = x;
-        gTevSlots[slot].y = y;
+        s->kind = 1;
+        s->x = x;
+        s->y = y;
     }
     if (!same) {
         PSMTXScale(m, x, y, 1.0f);
