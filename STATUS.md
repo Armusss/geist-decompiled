@@ -24,6 +24,8 @@ Open shapes worth a dedicated investigation: tick `li r4,N` before `addi r3,rA,6
 - APPROVED: ODE rotation.cpp (u_8027B4F8) and odemath (u_80278D2C) -> GC/2.0 (scratch: rotation 6/7 exact on 2.0, 0 on 1.3.2; dPlaneSpace exact on 2.0). Then test the other ODE files (ode.cpp u_80277600, step.cpp u_80279558, util.cpp u_8027BD5C, colliders u_8026D428, u_8026C200 collision_space, u_80272060, u_80273650, u_80276090) and report to the user before switching them.
 - APPROVED (2026-11-27, 2nd): `-inline deferred` for ODE collision_space.cpp (u_8026C200) and collision_kernel.cpp (u_8026A37C), same flag as game/ode/*.cpp; collision_kernel gets real Geom/Space classes (keep Matching).
 - APPROVED: SpaceGetNumGeoms__FP4Geom -> dSpaceGetGeom(Space*, int); AmmoRefillResetStatics (0x8026A31C) -> dCloseODE and move the collision_kernel.cpp start to it (or earlier on evidence), keeping all Matching units Matching.
+- APPROVED (2026-11-27, 3rd): ODE colliders u_8026D428 -> GC/2.0 (MatMulVec/MatTransMulVec exact only on 2.0 with const ptrs; 16->18/23, none worse); their const signatures change their mangled names (approved with it).
+- Lead (under 2026-11-21 signature-fix approval): RaySphereTest / CollideSpheres mangled names to ODE argument order.
 - APPROVED: rename u_80277600's guessed "SceneNode" accessors to the real ODE dBody API names where code + dxBody layout prove them.
 
 ## User decision (2026-11-22): GC/2.0 for u_801D8FD4
