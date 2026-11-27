@@ -28,11 +28,12 @@ struct TevSlot {
     float x;
     float y;
 };
-extern TevSlot gTevSlots[8];   // 0x8045E800
+static TevSlot gTevSlots[8];   // 0x8045E800
 extern int gTevPrevA;          // 0x804D2DC4
 extern int gTevPrevB;          // 0x804D2DC8
-extern Mtx gTevBaseMtx;        // 0x8045E860
-extern GXTexObj gTevTexObjs[5];   // 0x8045E8F0 (texture objects set up by the effect code)
+static Mtx gTevBaseMtx;        // 0x8045E860
+static GXTexObj gTevTexObjsLo[3];   // 0x8045E890 (fn_8010F110 initialises [0], fn_8010D258 loads [0] and [2])
+static GXTexObj gTevTexObjs[5];   // 0x8045E8F0 (texture objects set up by the effect code)
 extern "C" float fn_80008C70(void);
 
 extern "C" void fn_8000FF7C(void);
@@ -82,8 +83,9 @@ static inline void TevStageSelect(int stage) {
 
 // Writes a TEV color-env/alpha-env pair of constant bits for a stage (the SDK's In/Op words, packed).
 static inline void TevStageWords(int stage, u32 colorBits, u32 alphaBits) {
-    u32 c = ((0xC0 + stage * 2) << 24) | colorBits;
-    u32 a = ((0xC1 + stage * 2) << 24) | alphaBits;
+    int s2 = stage * 2;
+    u32 c = ((0xC0 + s2) << 24) | colorBits;
+    u32 a = ((0xC1 + s2) << 24) | alphaBits;
     BpWrite(c);
     GxState* g = __GXData;
     g->tevc[stage] = c;
