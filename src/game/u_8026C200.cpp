@@ -2,6 +2,10 @@
 // The colliders, utilities, error, joint and mass code that followed are now u_8026D428, u_80272060,
 // u_8027337C, u_80273650 and u_80276090 (each has its own .sdata2 pool).
 // Names are descriptive guesses; the code is matched against the retail DOL.
+// Not flippable as split: the compiled vtables (__vt__5Space before __vt__9HashSpace) and the implicit
+// ~HashSpace (emitted at the end here) sit at 0x803C0434/0x803C0464 in the opposite order and at
+// 0x8026BE98 (SpaceDestroy__FP5Spaces in u_8026A37C) in retail, so collision_space.cpp most likely
+// starts at or before 0x8026BE98; u_8026A37C also emulates the Geom/Space classes with C tables.
 
 typedef unsigned long u32;
 typedef signed long s32;
@@ -30,7 +34,7 @@ void dFree(void* block, u32 size);
 void dSetZero(float* p, int n);
 
 enum { GEOM_HASH_SPACE = 9 };
-enum { GEOM_DIRTY = 1, GEOM_AABB_BAD = 2 };
+enum { GEOM_DIRTY = 1, GEOM_AABB_BAD = 2, GEOM_ENABLED = 8, GEOM_STATIC = 0x10 };
 
 // The geometry base class (dxGeom). Its constructor, destructor and default AABB test
 // live in the neighbouring unit.
@@ -106,6 +110,9 @@ struct HashSpace : Space {
 extern "C" {
 void* memcpy(void* dst, const void* src, unsigned long n);
 void* memset(void* dst, int c, unsigned long n);
+double frexp(double x, int* exp);
+double ldexp(double x, int exp);
+double floor(double x);
 }
 
 // Hash-space sizes per level (bucket counts).
@@ -219,7 +226,7 @@ static inline void CollideAabbs(Geom* g1, Geom* g2, void* data, SpaceCallback cb
     }
     a1 = g1->aabb;
     a2 = g2->aabb;
-    if (g1->aabb[0] > g2->aabb[1] || a1[1] < a2[0] || a1[2] > a2[3] || a1[3] < a2[2] || a1[4] > a2[5]
+    if (a1[0] > a2[1] || a1[1] < a2[0] || a1[2] > a2[3] || a1[3] < a2[2] || a1[4] > a2[5]
         || a1[5] < a2[4]) {
         return;
     }
@@ -249,8 +256,197 @@ void HashSpace::collide2(void* data, Geom* g, SpaceCallback cb)
     lockCount--;
 }
 
-// TODO (not drafted yet, 0xA28 bytes at 0x8026C448): HashSpace::collide (levels, bucket grid)
-extern "C" void fn_8026C448(HashSpace* s, void* data, SpaceCallback cb);
+// An axis-aligned box in the hash space's working lists (dxAABB).
+struct HashAabb {
+    HashAabb* next;  // 0x00 next box in its list
+    int level;       // 0x04 cell size is 2^level
+    int dbounds[6];  // 0x08 bounds in cells
+    Geom* geom;      // 0x20
+    int index;       // 0x24 position in the main list
+};
+
+// One cell entry of the hash table (Node).
+struct HashNode {
+    HashNode* next;  // 0x00
+    int x, y, z;     // 0x04 cell position
+    HashAabb* aabb;  // 0x10
+};
+
+// ALLOCA: stack memory rounded up to 16 bytes.
+#define ALLOCA16(n) ((char*)((((u32)__alloca((n) + 15)) - 1 | 15) + 1))
+
+// Smallest level whose cell size covers the box (findLevel).
+static inline int FindLevel(float* bounds)
+{
+    float q, q2;
+    int level;
+
+    if (bounds[0] <= -3.4028235e38f || bounds[1] >= 3.4028235e38f || bounds[2] <= -3.4028235e38f
+        || bounds[3] >= 3.4028235e38f || bounds[4] <= -3.4028235e38f || bounds[5] >= 3.4028235e38f) {
+        return 0x7fffffff;
+    }
+    q = bounds[1] - bounds[0];
+    q2 = bounds[3] - bounds[2];
+    if (q2 > q) {
+        q = q2;
+    }
+    q2 = bounds[5] - bounds[4];
+    if (q2 > q) {
+        q = q2;
+    }
+    frexp(q, &level);
+    return level;
+}
+
+// Hash key of a cell (getVirtualAddress).
+static inline u32 CellAddress(int level, int x, int y, int z)
+{
+    return level * 1000 + x * 100 + y * 10 + z;
+}
+
+// collideAABBs for the hash lists: two geometries that are both flagged static never collide.
+static inline void CollideHashAabbs(HashAabb* a1, HashAabb* a2, void* data, SpaceCallback cb)
+{
+    if ((a1->geom->flags & GEOM_STATIC) != 0 && (a2->geom->flags & GEOM_STATIC) != 0) {
+        return;
+    }
+    CollideAabbs(a1->geom, a2->geom, data, cb);
+}
+
+// 0x8026C448: collides every geometry of the space against the others (dxHashSpace::collide)
+void HashSpace::collide(void* data, SpaceCallback cb)
+{
+    Geom* geom;
+    int i, maxlevel;
+
+    if (count < 2) {
+        return;
+    }
+    lockCount++;
+    cleanGeoms();
+
+    int n = 0;
+    HashAabb* first_aabb = 0;
+    HashAabb* big_boxes = 0;
+    maxlevel = minLevel - 1;
+    for (geom = first; geom != 0; geom = geom->next) {
+        if ((geom->flags & GEOM_ENABLED) == 0) {
+            continue;
+        }
+        HashAabb* aabb = (HashAabb*)ALLOCA16(sizeof(HashAabb));
+        aabb->geom = geom;
+        int level = FindLevel(geom->aabb);
+        if (level < minLevel) {
+            level = minLevel;
+        }
+        if (level <= maxLevel) {
+            aabb->next = first_aabb;
+            first_aabb = aabb;
+            aabb->level = level;
+            if (level > maxlevel) {
+                maxlevel = level;
+            }
+            float cellsize = (float)ldexp(1.0, level);
+            for (i = 0; i < 6; i++) {
+                aabb->dbounds[i] = (int)(float)floor(geom->aabb[i] / cellsize);
+            }
+            aabb->index = n;
+            n++;
+        } else {
+            aabb->next = big_boxes;
+            big_boxes = aabb;
+        }
+    }
+
+    int tested_rowsize = (n + 7) >> 3;
+    unsigned char* tested = (unsigned char*)__alloca(n * tested_rowsize);
+    memset(tested, 0, n * tested_rowsize);
+
+    for (i = 0; i < 31; i++) {
+        if (lbl_803C03B8[i] >= 8 * n) {
+            break;
+        }
+    }
+    if (i >= 31) {
+        i = 30;
+    }
+    int sz = lbl_803C03B8[i];
+
+    HashNode** table = (HashNode**)ALLOCA16(sizeof(HashNode*) * sz);
+    for (i = 0; i < sz; i++) {
+        table[i] = 0;
+    }
+
+    HashAabb* aabb;
+    for (aabb = first_aabb; aabb != 0; aabb = aabb->next) {
+        int* dbounds = aabb->dbounds;
+        for (int xi = dbounds[0]; xi <= dbounds[1]; xi++) {
+            for (int yi = dbounds[2]; yi <= dbounds[3]; yi++) {
+                for (int zi = dbounds[4]; zi <= dbounds[5]; zi++) {
+                    u32 hi = CellAddress(aabb->level, xi, yi, zi) % sz;
+                    HashNode* node = (HashNode*)__alloca(sizeof(HashNode));
+                    node->x = xi;
+                    node->y = yi;
+                    node->z = zi;
+                    node->aabb = aabb;
+                    node->next = table[hi];
+                    table[hi] = node;
+                }
+            }
+        }
+    }
+
+    int db[6];
+    for (aabb = first_aabb; aabb != 0; aabb = aabb->next) {
+        for (i = 0; i < 6; i++) {
+            db[i] = aabb->dbounds[i];
+        }
+        for (int level = aabb->level; level <= maxlevel; level++) {
+            for (int xi = db[0]; xi <= db[1]; xi++) {
+                for (int yi = db[2]; yi <= db[3]; yi++) {
+                    for (int zi = db[4]; zi <= db[5]; zi++) {
+                        u32 hi = CellAddress(level, xi, yi, zi) % sz;
+                        HashNode* node;
+                        for (node = table[hi]; node != 0; node = node->next) {
+                            if (node->aabb == aabb) {
+                                continue;
+                            }
+                            if (node->aabb->level == level && node->x == xi && node->y == yi && node->z == zi) {
+                                unsigned char mask;
+                                if (aabb->index <= node->aabb->index) {
+                                    i = (aabb->index * tested_rowsize) + (node->aabb->index >> 3);
+                                    mask = 1 << (node->aabb->index & 7);
+                                } else {
+                                    i = (node->aabb->index * tested_rowsize) + (aabb->index >> 3);
+                                    mask = 1 << (aabb->index & 7);
+                                }
+                                if ((tested[i] & mask) == 0) {
+                                    CollideHashAabbs(aabb, node->aabb, data, cb);
+                                }
+                                tested[i] |= mask;
+                            }
+                        }
+                    }
+                }
+            }
+            for (i = 0; i < 6; i++) {
+                db[i] >>= 1;
+            }
+        }
+    }
+
+    for (aabb = first_aabb; aabb != 0; aabb = aabb->next) {
+        for (HashAabb* aabb2 = big_boxes; aabb2 != 0; aabb2 = aabb2->next) {
+            CollideHashAabbs(aabb, aabb2, data, cb);
+        }
+    }
+    for (aabb = big_boxes; aabb != 0; aabb = aabb->next) {
+        for (HashAabb* aabb2 = aabb->next; aabb2 != 0; aabb2 = aabb2->next) {
+            CollideHashAabbs(aabb, aabb2, data, cb);
+        }
+    }
+    lockCount--;
+}
 
 // 0x8026CE70: recomputes the bounds of every dirty geometry
 void HashSpace::cleanGeoms()
@@ -299,7 +495,7 @@ void Space::add(Geom* g, int placeable)
     currentGeom = 0;
     g->flags |= GEOM_DIRTY | GEOM_AABB_BAD;
     if (placeable == 0) {
-        g->flags |= 0x10;
+        g->flags |= GEOM_STATIC;
     }
     GeomMoved(this);
 }
