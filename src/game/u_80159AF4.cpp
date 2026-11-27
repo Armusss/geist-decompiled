@@ -1,12 +1,12 @@
-// u_80159AF4.cpp (0x80159AF4-0x8015AA24): pooled 2D/3D overlay effects (ResArray lbl_804D4EA8).
-// Split from u_80157730. Evidence: own Buffer-template vtables (lbl_803A6FE8/7008) and own copies of the
+// u_80159AF4.cpp (0x80159AF4-0x8015AA24): pooled 2D/3D overlay effects (HudFxList lbl_804D4EA8).
+// Split from u_80157730. Evidence: own BufferPtrArray<HudFx> vtables (0x803A6FE8/7008, include/game/bufarray.h) and own copies of the
 // template methods fn_8015A934..fn_8015AA04 at the end of the file (one copy per file, see u_80158C3C);
 // it alone uses .sbss lbl_804D4EA8 and .sdata2 0x804D7D40-0x804D7D90. fn_80159AF4 (colour setter, called from
 // SplineGun) opens it: it follows the previous file's template block.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #include "game/types.h"
-#include "game/string.h"
+#include "game/bufarray.h"
 #include "game/msg.h"
 
 typedef unsigned char u8;
@@ -79,8 +79,6 @@ void fn_80211470(f32, int, int, int);
 void fn_80211638(f64, int, f64, f64, int, void*, void*, int, int);
 void fn_8028B2D4(void*);
 int fn_800391DC(int);
-void fn_8028B9C0(void*, int);
-void fn_8028BA9C(void*);
 void fn_800A0094(void*, void*);
 void fn_800A0100(void*);
 f32 fn_800A1394(f32);
@@ -407,22 +405,13 @@ extern u32 lbl_804D2F48;
 extern u32 lbl_804D7CE8;
 
 extern u32 lbl_803A59C8[];
-extern u32 lbl_803A6FA8[8];
-extern u32 lbl_803A6FC8[8];
-extern u32 lbl_803A6FE8[8];
-extern u32 lbl_803A7008[8];
 
-// Resizable pointer array used by the effect pools.
-class ResArray {
-public:
-    virtual ~ResArray();
-    s32 unk04;     // 0x04
-    s32 size;      // 0x08 (bytes)
-    void** data;   // 0x0C
-};
+struct HudFx;
 
-extern ResArray* lbl_804D4EA0;
-extern ResArray* lbl_804D4EA8;
+// The pool: vtables BufferArray<HudFx*> and BufferPtrArray<HudFx> (include/game/bufarray.h).
+typedef BufferPtrArray<HudFx> HudFxList;
+
+extern HudFxList* lbl_804D4EA8;
 
 extern u8 lbl_80346630[16];
 
@@ -449,33 +438,19 @@ void fn_80159AF4(u32 p, u8 r, u8 g, u8 b) {
 
 // 0x80159B2C: destroy the grenade HUD pool.
 void fn_80159B2C() {
-    while ((u32)lbl_804D4EA8->size >> 2 != 0) {
-        VFree(*(void**)lbl_804D4EA8->data);
-        ((Buffer*)lbl_804D4EA8)->Erase((char*)lbl_804D4EA8->data, 4);
+    while ((u32)lbl_804D4EA8->mLength >> 2 != 0) {
+        VFree(*(void**)((void**)lbl_804D4EA8->mUnk0C));
+        lbl_804D4EA8->Erase((char*)((void**)lbl_804D4EA8->mUnk0C), 4);
     }
     delete lbl_804D4EA8;
 }
 
-// 0x80159B94: destroy part of the grenade HUD pool object.
-void* fn_80159B94(void* p, short freeIt) {
-    if (p != 0) {
-        *(void**)p = &lbl_803A7008;
-        if (p != 0) {
-            *(void**)p = &lbl_803A6FE8;
-            ((Buffer*)p)->Free();
-            fn_8028B9C0(p, 0);
-        }
-        if (freeIt > 0) {
-            VFree(p);
-        }
-    }
-    return p;
-}
+// fn_80159B94 is HudFxList's deleting destructor, emitted here for the delete above.
 void fn_80159C0C() {
     int** p;
 
-    for (p = (int**)lbl_804D4EA8->data;
-         p != (int**)((u8*)lbl_804D4EA8->data + lbl_804D4EA8->size); p++) {
+    for (p = (int**)((void**)lbl_804D4EA8->mUnk0C);
+         p != (int**)((u8*)((void**)lbl_804D4EA8->mUnk0C) + lbl_804D4EA8->mLength); p++) {
         int obj = (int)*p;
         int base;
         int passA;
@@ -554,8 +529,8 @@ void fn_80159D48(f32* p) {
 void fn_80159F88(f32 dt) {
     void** p;
 
-    p = lbl_804D4EA8->data;
-    while (p != (void**)((u8*)lbl_804D4EA8->data + lbl_804D4EA8->size)) {
+    p = ((void**)lbl_804D4EA8->mUnk0C);
+    while (p != (void**)((u8*)((void**)lbl_804D4EA8->mUnk0C) + lbl_804D4EA8->mLength)) {
         fn_8015A1A0(dt, (int)*p);
         p = p + 1;
     }
@@ -574,42 +549,24 @@ void fn_80159FEC() {
 
 // 0x8015A050: create the grenade HUD pool.
 void fn_8015A050() {
-    void* p = VAlloc(0x14);
-
-    if (p != 0) {
-        fn_8028BA9C(p);
-        *(void**)p = &lbl_803A6FE8;
-        *(void**)p = &lbl_803A7008;
-    }
-    lbl_804D4EA8 = (ResArray*)p;
+    lbl_804D4EA8 = new HudFxList;
 }
 
-// 0x8015A0A4: destroy the grenade HUD pool object.
-void* fn_8015A0A4(void* p, short freeIt) {
-    if (p != 0) {
-        *(void**)p = &lbl_803A6FE8;
-        ((Buffer*)p)->Free();
-        fn_8028B9C0(p, 0);
-        if (freeIt > 0) {
-            VFree(p);
-        }
-    }
-    return p;
-}
+// fn_8015A0A4: BufferArray<HudFx*>'s destructor, emitted after the pool is created.
 
 // 0x8015A10C: remove one grenade HUD entry.
 void fn_8015A10C(void* arg) {
     s32* entry = (s32*)arg;
-    void** p = lbl_804D4EA8->data;
+    void** p = ((void**)lbl_804D4EA8->mUnk0C);
     if (entry != 0) {
-        void** end = (void**)((u8*)lbl_804D4EA8->data + lbl_804D4EA8->size);
+        void** end = (void**)((u8*)((void**)lbl_804D4EA8->mUnk0C) + lbl_804D4EA8->mLength);
         for (; p != end; p++) {
             if (entry == *p) {
                 if (entry[0x1b] == 1) {
                     fn_800390F4(entry[0x14]);
                 }
                 VFree(entry);
-                ((Buffer*)lbl_804D4EA8)->Erase((char*)p, 4);
+                lbl_804D4EA8->Erase((char*)p, 4);
                 return;
             }
         }
@@ -662,13 +619,13 @@ int fn_8015A570(f32 a, f32 b, u8 p3, u8 p4, u8 p5, u8 p6, u8 p7, u8 p8, u8 p9, u
                 int kind, int arg) {
     int* obj;
 
-    while ((u32)lbl_804D4EA8->size >> 2 >= 8) {
-        VFree(*(void**)lbl_804D4EA8->data);
-        ((Buffer*)lbl_804D4EA8)->Erase((char*)lbl_804D4EA8->data, 4);
+    while ((u32)lbl_804D4EA8->mLength >> 2 >= 8) {
+        VFree(*(void**)((void**)lbl_804D4EA8->mUnk0C));
+        lbl_804D4EA8->Erase((char*)((void**)lbl_804D4EA8->mUnk0C), 4);
     }
     obj = (int*)VAlloc(0x570);
     if (obj != 0) {
-        *(int*)((Buffer*)lbl_804D4EA8)->Insert((char*)((u8*)lbl_804D4EA8->data + lbl_804D4EA8->size), 4) = (int)obj;
+        *(int*)lbl_804D4EA8->Insert((char*)((u8*)((void**)lbl_804D4EA8->mUnk0C) + lbl_804D4EA8->mLength), 4) = (int)obj;
         LinkInfoInit(obj);
         *(int*)((u8*)obj + 0x30) = 0x10;
         *(u8*)((u8*)obj + 0x34) = p3;
@@ -714,9 +671,9 @@ int fn_8015A570(f32 a, f32 b, u8 p3, u8 p4, u8 p5, u8 p6, u8 p7, u8 p8, u8 p9, u
 int fn_8015A78C(u8 p1, u8 p2, u8 p3, u8 p4, u8 p5, u8 p6, u8 p7, u8 p8) {
     int* obj;
 
-    while ((u32)lbl_804D4EA8->size >> 2 >= 8) {
-        VFree(*(void**)lbl_804D4EA8->data);
-        ((Buffer*)lbl_804D4EA8)->Erase((char*)lbl_804D4EA8->data, 4);
+    while ((u32)lbl_804D4EA8->mLength >> 2 >= 8) {
+        VFree(*(void**)((void**)lbl_804D4EA8->mUnk0C));
+        lbl_804D4EA8->Erase((char*)((void**)lbl_804D4EA8->mUnk0C), 4);
     }
     obj = (int*)VAlloc(0x570);
     if (obj != 0) {
@@ -724,7 +681,7 @@ int fn_8015A78C(u8 p1, u8 p2, u8 p3, u8 p4, u8 p5, u8 p6, u8 p7, u8 p8) {
         int n;
         int i;
 
-        *(int*)((Buffer*)lbl_804D4EA8)->Insert((char*)((u8*)lbl_804D4EA8->data + lbl_804D4EA8->size), 4) = (int)obj;
+        *(int*)lbl_804D4EA8->Insert((char*)((u8*)((void**)lbl_804D4EA8->mUnk0C) + lbl_804D4EA8->mLength), 4) = (int)obj;
         LinkInfoInit(obj);
         *(int*)((u8*)obj + 0x30) = 0x10;
         *(u8*)((u8*)obj + 0x34) = p1;
@@ -754,32 +711,6 @@ int fn_8015A78C(u8 p1, u8 p2, u8 p3, u8 p4, u8 p5, u8 p6, u8 p7, u8 p8) {
     return (int)obj;
 }
 
-// 0x8015A934 / 0x8015A97C and siblings: grenade pool element array helpers.
-void fn_8015A934(void* pool, int start, unsigned size) {
-    ((ScreenEffectBuffer*)pool)->ScreenEffectBuffer::Commit((int)start, size);
-    fn_8015A9E4((int*)start, (int*)(start + (size & 0xfffffffc)));
-}
-
-void fn_8015A97C(void* pool, int start, unsigned size) {
-    unsigned long p = (unsigned long)start;
-
-    fn_8015AA04((int*)p, (int*)(p + (size & 0xfffffffc)));
-    ((ScreenEffectBuffer*)pool)->ScreenEffectBuffer::Append((unsigned char*)start, size);
-}
-
-int fn_8015A9DC() {
-    return 4;
-}
-
-void fn_8015A9E4(int* p, int* end) {
-    while (p < end) {
-        p++;
-    }
-}
-
-void fn_8015AA04(int* p, int* end) {
-    while (p < end) {
-        p++;
-    }
-}
+// fn_8015A934-0x8015AA24: BufferArray<HudFx*>'s Commit, Append, GetAlignment and range loops, instantiated at
+// the end of the file.
 } // extern "C"
