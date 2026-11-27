@@ -10,6 +10,8 @@
 #define MUSY_VERSION_MINOR 0
 #define MUSY_VERSION_PATCH 3
 #include <musyx/musyx.h>
+#include <dolphin/dvd.h>
+#include <string.h>
 #include "game/types.h"
 
 typedef short s16;
@@ -213,6 +215,29 @@ struct SoundDef {
 
 extern SoundSlot* lbl_804D4FBC;   // table of 256 slots
 extern SoundDef* lbl_804D4F68;    // sound definitions
+// A loaded song (0xC bytes).
+struct Song {
+    void* data;      // 0x00: the loaded song (0 when not loaded)
+    SND_SEQID seq;   // 0x04: -1 when not playing
+    int pad8;
+};
+
+extern Song* lbl_804D4F6C;   // songs
+extern int lbl_804D4F54;     // number of songs
+extern int lbl_804D3000;     // current song (-1 none)
+extern int lbl_804D4FFC;     // music pause depth
+
+extern void* lbl_804D4F30;      // sound data read buffer
+extern int lbl_804D4F34;        // bytes read so far
+
+extern int lbl_804D4FB4;   // the loader thread is running
+
+extern "C" void fn_80170EFC(int song);
+extern int lbl_804D4F38;   // sound group stack depth
+extern int lbl_804D4F94;   // ARAM used by the pushed groups
+extern int lbl_804D4F98;   // ARAM size of the top group
+extern DVDFileInfo lbl_80488F64;   // the sound data file
+
 extern SND_LISTENER lbl_8046F798;
 // Listener position, velocity, heading and up vectors: this file's own .data (retail addresses them from the
 // unit's data base lbl_803A7CA8 + 0x464..0x488); symbols.txt lists them as separate objects.
@@ -935,6 +960,49 @@ extern "C" void fn_8016F8EC(void) {
 extern "C" int stricmp(const char* a, const char* b);
 extern int lbl_804D4F4C;   // number of sound definitions
 
+extern "C" unsigned char __upper_map[256];
+
+// MSL's toupper (ctype inline).
+inline int toupper(int c) { return c == -1 ? -1 : (int)__upper_map[(unsigned char)c]; }
+
+extern char** lbl_804D4F40;   // sound group names
+extern int lbl_804D4F50;      // number of sound groups
+extern void* lbl_804D4F5C;    // sample pool
+extern void* lbl_804D4F60;    // project data
+extern void* lbl_804D4F64;    // sample directory
+extern u8 lbl_80488FA0[0x8000];
+void LevelLoadNames(const char* path, int* drive, char* dir, char* name, char* ext);
+
+// SoundPushGroups: loads every sound group whose name starts with prefix from Fear.samp.
+static inline void SoundPushGroups(const char* prefix) {
+    int len;
+    int i;
+
+    lbl_804D4F34 = 0;
+    DVDOpen("Fear.samp", &lbl_80488F64);
+    lbl_804D4F30 = lbl_80488FA0;
+    len = strlen(prefix);
+    for (i = 0; i < lbl_804D4F50; i++) {
+        if (strncmp(lbl_804D4F40[i], prefix, len) == 0) {
+            sndPushGroup(lbl_804D4F60, i, 0, lbl_804D4F64, lbl_804D4F5C);
+            lbl_804D4F38++;
+        }
+    }
+    DVDClose(&lbl_80488F64);
+    lbl_804D4F98 = lbl_804D4F34;
+    lbl_804D4F94 += lbl_804D4F34;
+}
+
+// SoundPushGroup: name is upper-cased in place.
+extern "C" void fn_80170214(char* name) {
+    char* start = name;
+
+    for (; *name != 0; name++) {
+        *name = toupper(*name);
+    }
+    SoundPushGroups(start);
+}
+
 // FxFind: sound definition index by name, tagged with the top bit; -1 if not found.
 int FxFind(const char* name) {
     int i;
@@ -947,10 +1015,58 @@ int FxFind(const char* name) {
     return -1;
 }
 
-extern int lbl_804D4FB4;   // the loader thread is running
 extern OSThread lbl_8046E480;
 void GfxFrameSwap(void);
 void GfxFrameBegin(void);
+
+// SongStopInline: the body of SongStop (fn_80170EFC), also inlined into LevelUnload.
+static inline void SongStopInline(int song) {
+    if (song > -1 && song < lbl_804D4F54) {
+        if (lbl_804D4F6C[song].seq != -1) {
+            sndSeqStop(lbl_804D4F6C[song].seq);
+            lbl_804D4F6C[song].seq = -1;
+        }
+    }
+}
+
+// SongsFree: stops and frees every loaded song.
+static inline void SongsFree(void) {
+    int i;
+
+    for (i = 0; i < lbl_804D4F54; i++) {
+        if (lbl_804D4F6C[i].data != 0) {
+            if (lbl_804D4F6C[i].seq != -1) {
+                SongStopInline(i);
+            }
+            MemFree(lbl_804D4F6C[i].data, "Msx.cpp", 0xBA7);
+            lbl_804D4F6C[i].data = 0;
+        }
+    }
+}
+
+// LevelUnload: frees the level's songs and pops its sound groups.
+void LevelUnload(void) {
+    int i;
+
+    SongsFree();
+    lbl_804D3000 = -1;
+    for (i = 0; i < lbl_804D4F38; i++) {
+        sndPopGroup();
+    }
+    lbl_804D4F38 = 0;
+    lbl_804D4F94 = 0;
+}
+
+// LevelLoaded: pushes the sound groups named after the level.
+void LevelLoaded(const char* level) {
+    int drive;
+    char dir[256];
+    char name[256];
+    char ext[256];
+
+    LevelLoadNames(level, &drive, dir, name, ext);
+    SoundPushGroups(name);
+}
 
 // SoundLoadWait: waits for the loader thread, keeping the screen alive.
 extern "C" void fn_80170AA4(void) {
@@ -989,17 +1105,6 @@ extern "C" void fn_80170D48(int percent) { lbl_804D2FC8 = RoundF((127.0f * perce
 
 extern "C" void fn_80170DD4(int percent) { lbl_804D2FCC = RoundF((127.0f * percent) / 100.0f); }
 
-// A loaded song (0xC bytes).
-struct Song {
-    int id;          // 0x00
-    SND_SEQID seq;   // 0x04: -1 when not playing
-    int pad8;
-};
-
-extern Song* lbl_804D4F6C;   // songs
-extern int lbl_804D4F54;     // number of songs
-extern int lbl_804D3000;     // current song (-1 none)
-extern int lbl_804D4FFC;     // music pause depth
 
 // MusicPause: nested pause/resume of the current song.
 extern "C" void fn_80170E60(int pause) {
@@ -1019,27 +1124,17 @@ extern "C" void fn_80170E60(int pause) {
 }
 
 // SongStop
-extern "C" void fn_80170EFC(int song) {
-    if (song > -1 && song < lbl_804D4F54) {
-        if (lbl_804D4F6C[song].seq != -1) {
-            sndSeqStop(lbl_804D4F6C[song].seq);
-            lbl_804D4F6C[song].seq = -1;
-        }
-    }
-}
+extern "C" void fn_80170EFC(int song) { SongStopInline(song); }
 
 int FileReadSync(void* file, void* dst, int size, int offset);
 extern "C" int fn_8000786C(void* file, void* dst, int size, int offset);
-extern u8 lbl_80488F64[0x3C];   // the sound data file
-extern void* lbl_804D4F30;      // sound data read buffer
-extern int lbl_804D4F34;        // bytes read so far
 
 // SoundDataRead: reads the next chunk of the sound data file (async while the loader thread runs).
 extern "C" void* fn_80173D5C(int offset, int size) {
     if (lbl_804D4FB4 == 0) {
-        FileReadSync(lbl_80488F64, lbl_804D4F30, size, offset);
+        FileReadSync(&lbl_80488F64, lbl_804D4F30, size, offset);
     } else {
-        fn_8000786C(lbl_80488F64, lbl_804D4F30, size, offset);
+        fn_8000786C(&lbl_80488F64, lbl_804D4F30, size, offset);
     }
     lbl_804D4F34 += size;
     return lbl_804D4F30;
@@ -1054,10 +1149,7 @@ extern "C" void fn_80175000(int size) { MemAlloc(size, "Msx.cpp", 0x413); }
 // TODO (not drafted yet, 0x2C bytes at 0x8016E578): fn_8016E578
 // TODO (not drafted yet, 0x134 bytes at 0x8016E5A4): fn_8016E5A4
 // TODO (not drafted yet, 0x864 bytes at 0x8016F950): fn_8016F950
-// TODO (not drafted yet, 0x134 bytes at 0x80170214): fn_80170214
 // TODO (not drafted yet, 0x4EC bytes at 0x80170348): fn_80170348
-// TODO (not drafted yet, 0xF4 bytes at 0x801708B0): LevelUnload__Fv
-// TODO (not drafted yet, 0x100 bytes at 0x801709A4): LevelLoaded__FPCc
 // TODO (not drafted yet, 0x114 bytes at 0x80170B14): fn_80170B14
 // TODO (not drafted yet, 0x180 bytes at 0x80170F64): fn_80170F64
 // TODO (not drafted yet, 0x16C bytes at 0x801710E4): fn_801710E4
@@ -1073,9 +1165,6 @@ extern "C" void fn_80175000(int size) { MemAlloc(size, "Msx.cpp", 0x413); }
 // TODO (not drafted yet, 0x294 bytes at 0x801740EC): fn_801740EC
 extern float lbl_80488910[2][SND_AUX_BLOCKSIZE];   // reverb work buffers (left, right)
 
-extern int lbl_804D4F38;   // sound group stack depth
-extern int lbl_804D4F94;   // ARAM used by the pushed groups
-extern int lbl_804D4F98;   // ARAM size of the top group
 
 // SoundPopGroup
 extern "C" void fn_801701B4(void) {
