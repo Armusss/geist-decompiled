@@ -572,12 +572,14 @@ extern "C" void fn_8016E768(float level, int on) {
 extern "C" void fn_8016E910(int on, int param) {
     int enable;
     int off;
+    u32 value;
     int i;
 
     if (lbl_804D4FA4 != on || lbl_804D2FD4 != param) {
         lbl_804D4FA4 = on;
         lbl_804D4FA8 = on;
         enable = on != 0;
+        value = param;
         lbl_804D2FD4 = param;
         lbl_804D2FDC = param;
         for (i = 0, off = 0; i < 0x100; i++, off += sizeof(SoundSlot)) {
@@ -587,11 +589,11 @@ extern "C" void fn_8016E910(int on, int param) {
                     if (SoundSlotSetParams(slot)) {
                         SND_VOICEID vid = sndEmitterVoiceID(&((SoundSlot*)((char*)lbl_804D4FBC + off))->emitter);
                         if (vid != -1) {
-                            sndFXSetFilter(vid, enable, param);
+                            sndFXSetFilter(vid, enable, value);
                         }
                     }
                 } else if (lbl_804D4F68[slot->def].reverb > 0) {
-                    sndFXSetFilter(slot->voice, enable, param);
+                    sndFXSetFilter(slot->voice, enable, value);
                 }
             }
         }
