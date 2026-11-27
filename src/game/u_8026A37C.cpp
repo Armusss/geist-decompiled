@@ -1,6 +1,6 @@
-// u_8026A37C.cpp: the ODE-style collision kernel (geometry classes, the class-pair
-// collider matrix, and collision spaces). This file is the part of the game's physics
-// library that dispatches collision queries between geometry types.
+// u_8026A37C.cpp (0x8026A37C-0x8026BE98): the ODE collision kernel (collision_kernel.cpp: geometry classes,
+// the class-pair collider matrix). It ends with space_geom_collider (0x8026BB0C); collision_space.cpp
+// (u_8026C200) starts at 0x8026BE98 with the implicit ~dxHashSpace.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #pragma auto_inline off
@@ -160,10 +160,6 @@ void dDebug(int level, const char* msg, ...);
 void dFree(void* block, u32 size);
 void dSetZero(float* p, int n);
 
-// Class tables handed to spaces; they live in the neighbouring unit's .data.
-extern SpaceVtbl lbl_803C0434;
-extern SpaceVtbl lbl_803C0464;
-
 // The class tables of this file.
 extern GeomVtbl gUserGeomVtbl;
 extern GeomVtbl gGeomVtbl;
@@ -192,15 +188,9 @@ int GeomCollideDispatch(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int
 void CollisionInit(void);
 int DefaultCollider(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
 void SpaceCollideCallback(void* data, Geom* o1, Geom* o2);
-Geom* SpaceDestroy(Space* s, short del);
 void SpaceCollidePair(Geom* g1, Geom* g2, void* data, SpaceCallback callback);
-void SpaceCollideSelf(Geom* s, void* data, SpaceCallback callback);
-int SpaceGetNumGeoms(Geom* s);
-int SpaceGetCount(Space* s);
 void SpaceRemoveGeom(Space* s, Geom* g);
 void SpaceAddGeom(Space* s, Geom* g, int arg);
-void GeomDelete(Geom* g);
-void SpaceSetFields(Space* s, int a, int b);
 
 // 0x8026A37C
 static inline void GeomSetAllColliders(int type, ColliderFn fn)
@@ -758,125 +748,6 @@ void SpaceCollideCallback(void* arg, Geom* o1, Geom* o2)
         data->contact = (ContactGeom*)((char*)data->contact + data->skip * result);
         data->count -= result;
     }
-}
-
-// 0x8026BE98
-Geom* SpaceDestroy(Space* s, short del)
-{
-    if (s != 0) {
-        s->vtbl = &lbl_803C0434;
-        if (s != 0) {
-            s->vtbl = &lbl_803C0464;
-            if (s->dirty != 0) {
-                Geom* g = s->firstGeom;
-                while (g != 0) {
-                    Geom* next = (Geom*)g->nextInSpace;
-                    GeomDestroyGeom(g);
-                    g = next;
-                }
-            } else {
-                Geom* g = s->firstGeom;
-                while (g != 0) {
-                    Geom* next = (Geom*)g->nextInSpace;
-                    ((GeomV*)s)->removeGeom(g);
-                    g = next;
-                }
-            }
-            GeomDestroyBase(s, 0);
-        }
-        if (del > 0) {
-            dFree(s, 0x6c);
-        }
-    }
-    return s;
-}
-
-// 0x8026BF70
-void SpaceCollidePair(Geom* g1, Geom* g2, void* data, SpaceCallback callback)
-{
-    Space* s1;
-    Space* s2;
-
-    if (g1->type >= 8 && g1->type <= 10) {
-        s1 = (Space*)g1;
-    } else {
-        s1 = 0;
-    }
-    if (g2->type >= 8 && g2->type <= 10) {
-        s2 = (Space*)g2;
-    } else {
-        s2 = 0;
-    }
-    if (s1 != 0) {
-        if (s2 != 0) {
-            if (s1 == s2) {
-                ((GeomV*)s1)->collideSpace(data, callback);
-            } else if (s1->count < s2->count) {
-                Geom* g = s1->firstGeom;
-                while (g != 0) {
-                    ((GeomV*)s2)->collideGeom(data, g, callback);
-                    g = (Geom*)g->nextInSpace;
-                }
-            } else {
-                Geom* g = s2->firstGeom;
-                while (g != 0) {
-                    ((GeomV*)s1)->collideGeom(data, g, callback);
-                    g = (Geom*)g->nextInSpace;
-                }
-            }
-        } else {
-            ((GeomV*)s1)->collideGeom(data, g2, callback);
-        }
-    } else {
-        if (s2 != 0) {
-            ((GeomV*)s2)->collideGeom(data, g1, callback);
-        } else {
-            callback(data, g1, g2);
-        }
-    }
-}
-
-// 0x8026C11C
-void SpaceCollideSelf(Geom* s, void* data, SpaceCallback callback)
-{
-    ((GeomV*)s)->collideSpace(data, callback);
-}
-
-// 0x8026C148
-int SpaceGetNumGeoms(Geom* s)
-{
-    return ((GeomV*)s)->getNumGeoms();
-}
-
-// 0x8026C174
-int SpaceGetCount(Space* s)
-{
-    return s->count;
-}
-
-// 0x8026C17C
-void SpaceRemoveGeom(Space* s, Geom* g)
-{
-    ((GeomV*)s)->removeGeom(g);
-}
-
-// 0x8026C1A8
-void SpaceAddGeom(Space* s, Geom* g, int arg)
-{
-    ((GeomV*)s)->addGeom(g, arg);
-}
-
-// 0x8026C1D4
-void GeomDelete(Geom* g)
-{
-    GeomDestroyGeom(g);
-}
-
-// 0x8026C1F4
-void SpaceSetFields(Space* s, int a, int b)
-{
-    s->unk64 = a;
-    s->unk68 = b;
 }
 
 // The two class tables of this file (0x803C0390, 0x803C03A4).
