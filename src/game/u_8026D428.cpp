@@ -207,17 +207,18 @@ static inline void GeomLink(Geom* g, Geom** list)
 }
 
 
+// ODE's dot products (odemath.h inlines)
+static inline float Dot(const float* a, const float* b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+static inline float Dot14(const float* a, const float* b) { return a[0] * b[0] + a[1] * b[4] + a[2] * b[8]; }
+
 // A ray geometry: the base plus its length.
 struct RayGeom : Geom {
     float length;  // 0x4c
 };
 
-// A plane geometry: the base plus the plane equation a*x + b*y + c*z = d.
+// A plane geometry (dxPlane): the base plus the plane equation p[0]*x + p[1]*y + p[2]*z = p[3].
 struct PlaneGeom : Geom {
-    float a;  // 0x4c
-    float b;  // 0x50
-    float c;  // 0x54
-    float d;  // 0x58
+    float p[4];  // 0x4c
 };
 
 // 0x8026D428: ray against plane (RayPlaneCollide)
@@ -225,30 +226,27 @@ extern "C" int fn_8026D428(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
 {
     RayGeom* ray = (RayGeom*)o1;
     PlaneGeom* plane = (PlaneGeom*)o2;
-    float* pos = ray->pos;
-    float dp = plane->a * pos[0] + plane->b * pos[1] + plane->c * pos[2];
-    float alpha = plane->d - dp;
-    float nsign = (alpha > 0.0f) ? -1.0f : 1.0f;
-    float* rot = ray->rot;
-    float k = plane->a * rot[2] + plane->b * rot[6] + plane->c * rot[10];
-    float t;
 
-    if (k == 0.0f) {
+    float alpha = plane->p[3] - Dot(plane->p, ray->pos);
+    // note: if alpha > 0 the starting point is below the plane
+    float nsign = (alpha > 0) ? -1.0f : 1.0f;
+    float k = Dot14(plane->p, ray->rot + 2);
+    if (k == 0) {
+        return 0;  // ray parallel to plane
+    }
+    alpha /= k;
+    if (alpha < 0 || alpha > ray->length) {
         return 0;
     }
-    t = alpha / k;
-    if (t < 0.0f || t > ray->length) {
-        return 0;
-    }
-    contact->pos[0] = ray->pos[0] + t * ray->rot[2];
-    contact->pos[1] = ray->pos[1] + t * ray->rot[6];
-    contact->pos[2] = ray->pos[2] + t * ray->rot[10];
-    contact->normal[0] = nsign * plane->a;
-    contact->normal[1] = nsign * plane->b;
-    contact->normal[2] = nsign * plane->c;
-    contact->depth = t;
-    contact->g1 = o1;
-    contact->g2 = o2;
+    contact->pos[0] = ray->pos[0] + alpha * ray->rot[0 * 4 + 2];
+    contact->pos[1] = ray->pos[1] + alpha * ray->rot[1 * 4 + 2];
+    contact->pos[2] = ray->pos[2] + alpha * ray->rot[2 * 4 + 2];
+    contact->normal[0] = nsign * plane->p[0];
+    contact->normal[1] = nsign * plane->p[1];
+    contact->normal[2] = nsign * plane->p[2];
+    contact->depth = alpha;
+    contact->g1 = ray;
+    contact->g2 = plane;
     return 1;
 }
 
@@ -315,12 +313,6 @@ extern "C" int fn_8026DEAC(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
     return RaySphereTest(ray, sphere->pos, sphere->radius, contact, 0);
 }
 
-// ODE's dot-product macros (odemath.h)
-#define dDOTpq(a, b, p, q) ((a)[0] * (b)[0] + (a)[p] * (b)[q] + (a)[2 * (p)] * (b)[2 * (q)])
-#define dDOT14(a, b) dDOTpq(a, b, 1, 4)
-
-static inline float Dot(const float* a, const float* b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
-static inline float Dot14(const float* a, const float* b) { return a[0] * b[0] + a[1] * b[4] + a[2] * b[8]; }
 
 // 0x8026DEE8: ray against a sphere given by centre and radius (ray_sphere_helper); mode 1 uses the exit point
 int RaySphereTest(RayGeom* ray, float* sphere_pos, float radius, ContactGeom* contact, int mode)
@@ -366,8 +358,63 @@ int RaySphereTest(RayGeom* ray, float* sphere_pos, float radius, ContactGeom* co
     return 1;
 }
 
-// TODO (not drafted yet, 0x304 bytes at 0x8026E194): ray against cylinder
-extern "C" int fn_8026E194(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
+enum { NUMC_MASK = 0xffff };
+#define CONTACT(p, skip) ((ContactGeom*)(((char*)p) + (skip)))
+
+// 0x8026E194: capsule against plane (dCollideCCylinderPlane)
+extern "C" int fn_8026E194(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
+{
+    CapsuleGeom* ccyl = (CapsuleGeom*)o1;
+    PlaneGeom* plane = (PlaneGeom*)o2;
+
+    // collide the deepest capping sphere with the plane
+    float sign = (Dot14(plane->p, o1->rot + 2) > 0) ? -1.0f : 1.0f;
+    float p[4];
+    p[0] = o1->pos[0] + o1->rot[2] * ccyl->lz * 0.5f * sign;
+    p[1] = o1->pos[1] + o1->rot[6] * ccyl->lz * 0.5f * sign;
+    p[2] = o1->pos[2] + o1->rot[10] * ccyl->lz * 0.5f * sign;
+
+    float k = Dot(p, plane->p);
+    float depth = plane->p[3] - k + ccyl->radius;
+    if (depth < 0) {
+        return 0;
+    }
+    contact->normal[0] = plane->p[0];
+    contact->normal[1] = plane->p[1];
+    contact->normal[2] = plane->p[2];
+    contact->pos[0] = p[0] - plane->p[0] * ccyl->radius;
+    contact->pos[1] = p[1] - plane->p[1] * ccyl->radius;
+    contact->pos[2] = p[2] - plane->p[2] * ccyl->radius;
+    contact->depth = depth;
+
+    int ncontacts = 1;
+    if ((flags & NUMC_MASK) >= 2) {
+        // collide the other capping sphere with the plane
+        p[0] = o1->pos[0] - o1->rot[2] * ccyl->lz * 0.5f * sign;
+        p[1] = o1->pos[1] - o1->rot[6] * ccyl->lz * 0.5f * sign;
+        p[2] = o1->pos[2] - o1->rot[10] * ccyl->lz * 0.5f * sign;
+
+        k = Dot(p, plane->p);
+        depth = plane->p[3] - k + ccyl->radius;
+        if (depth >= 0) {
+            ContactGeom* c2 = CONTACT(contact, skip);
+            c2->normal[0] = plane->p[0];
+            c2->normal[1] = plane->p[1];
+            c2->normal[2] = plane->p[2];
+            c2->pos[0] = p[0] - plane->p[0] * ccyl->radius;
+            c2->pos[1] = p[1] - plane->p[1] * ccyl->radius;
+            c2->pos[2] = p[2] - plane->p[2] * ccyl->radius;
+            c2->depth = depth;
+            ncontacts = 2;
+        }
+    }
+
+    for (int i = 0; i < ncontacts; i++) {
+        CONTACT(contact, i * skip)->g1 = o1;
+        CONTACT(contact, i * skip)->g2 = o2;
+    }
+    return ncontacts;
+}
 
 // TODO (not drafted yet, 0x454 bytes at 0x8026E498): box against sphere / capsule family
 extern "C" int fn_8026E498(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
@@ -380,62 +427,62 @@ int CollideSpheres(float* p1, float r1, float* p2, float r2, ContactGeom* contac
 // 0x8026E8EC: capsule against box (CapsuleBoxCollide)
 extern "C" int fn_8026E8EC(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
 {
-    CapsuleGeom* cap = (CapsuleGeom*)o1;
+    CapsuleGeom* cyl = (CapsuleGeom*)o1;
     BoxGeom* box = (BoxGeom*)o2;
-    float* pos;
-    float* rot;
-    float half;
-    float radius;
-    float p1[3];
-    float p2[3];
-    float lret[4];
-    float bret[4];
 
     contact->g1 = o1;
     contact->g2 = o2;
-    rot = o1->rot;
-    pos = o1->pos;
-    half = 0.5f * cap->lz;
-    p1[0] = half * rot[2] + pos[0];
-    p2[0] = -(half * rot[2] - pos[0]);
-    p1[1] = half * rot[6] + pos[1];
-    p2[1] = -(half * rot[6] - pos[1]);
-    p1[2] = half * rot[10] + pos[2];
-    p2[2] = -(half * rot[10] - pos[2]);
-    radius = cap->radius;
-    ClosestLineBoxPoints(p1, p2, o2->pos, o2->rot, box->side, lret, bret);
-    return CollideSpheres(lret, radius, bret, 0.0f, contact);
+
+    // get p1,p2 = cylinder axis endpoints, get radius
+    float p1[4], p2[4];
+    float clen = cyl->lz * 0.5f;
+    p1[0] = o1->pos[0] + clen * o1->rot[2];
+    p1[1] = o1->pos[1] + clen * o1->rot[6];
+    p1[2] = o1->pos[2] + clen * o1->rot[10];
+    p2[0] = o1->pos[0] - clen * o1->rot[2];
+    p2[1] = o1->pos[1] - clen * o1->rot[6];
+    p2[2] = o1->pos[2] - clen * o1->rot[10];
+    float radius = cyl->radius;
+
+    // copy out box center, rotation matrix, and side array
+    float* c = o2->pos;
+    float* R = o2->rot;
+    float* side = box->side;
+
+    // get the closest point between the cylinder axis and the box
+    float pl[4], pb[4];
+    ClosestLineBoxPoints(p1, p2, c, R, side, pl, pb);
+
+    // generate contact point
+    return CollideSpheres(pl, radius, pb, 0, contact);
 }
 
 // 0x8026E9C8: capsule against sphere (CapsuleSphereCollide)
 extern "C" int fn_8026E9C8(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
 {
-    CapsuleGeom* cap = (CapsuleGeom*)o1;
+    CapsuleGeom* ccyl = (CapsuleGeom*)o1;
     SphereGeom* sphere = (SphereGeom*)o2;
-    float half;
-    float alpha;
-    float p[3];
-    float* cpos;
-    float* spos;
-    float* rot;
 
-    half = 0.5f * cap->lz;
     contact->g1 = o1;
     contact->g2 = o2;
-    cpos = o1->pos;
-    spos = o2->pos;
-    rot = o1->rot;
-    alpha = rot[10] * (spos[2] - cpos[2]) + rot[2] * (spos[0] - cpos[0]) + rot[6] * (spos[1] - cpos[1]);
-    if (alpha > half) {
-        alpha = half;
+
+    // find the point on the cylinder axis that is closest to the sphere
+    float alpha = o1->rot[2] * (o2->pos[0] - o1->pos[0]) + o1->rot[6] * (o2->pos[1] - o1->pos[1]) +
+                  o1->rot[10] * (o2->pos[2] - o1->pos[2]);
+    float lz2 = ccyl->lz * 0.5f;
+    if (alpha > lz2) {
+        alpha = lz2;
     }
-    if (alpha < -half) {
-        alpha = -half;
+    if (alpha < -lz2) {
+        alpha = -lz2;
     }
-    p[0] = alpha * rot[2] + cpos[0];
-    p[1] = alpha * o1->rot[6] + o1->pos[1];
-    p[2] = alpha * o1->rot[10] + o1->pos[2];
-    return CollideSpheres(p, cap->radius, o2->pos, sphere->radius, contact);
+
+    // collide the spheres
+    float p[4];
+    p[0] = o1->pos[0] + alpha * o1->rot[2];
+    p[1] = o1->pos[1] + alpha * o1->rot[6];
+    p[2] = o1->pos[2] + alpha * o1->rot[10];
+    return CollideSpheres(p, ccyl->radius, o2->pos, sphere->radius, contact);
 }
 
 // TODO (not drafted yet, 0x770 bytes at 0x8026EAAC): capsule against capsule
@@ -445,9 +492,6 @@ extern "C" int fn_8026EAAC(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
 extern "C" int fn_8026FA3C(const float* p1, const float* R1, const float* side1, const float* p2,
                            const float* R2, const float* side2, float* normal, float* depth, int* return_code,
                            int maxc, ContactGeom* contact, int skip);
-
-enum { NUMC_MASK = 0xffff };
-#define CONTACT(p, skip) ((ContactGeom*)(((char*)p) + (skip)))
 
 // 0x8026F21C: box against box (dCollideBoxBox)
 extern "C" int fn_8026F21C(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
@@ -477,15 +521,15 @@ extern "C" int fn_8026F4D0(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
 
     contact->g1 = o1;
     contact->g2 = o2;
-    float k = Dot(o1->pos, &plane->a);
-    float depth = plane->d - k + sphere->radius;
+    float k = Dot(o1->pos, plane->p);
+    float depth = plane->p[3] - k + sphere->radius;
     if (depth >= 0) {
-        contact->normal[0] = plane->a;
-        contact->normal[1] = plane->b;
-        contact->normal[2] = plane->c;
-        contact->pos[0] = o1->pos[0] - plane->a * sphere->radius;
-        contact->pos[1] = o1->pos[1] - plane->b * sphere->radius;
-        contact->pos[2] = o1->pos[2] - plane->c * sphere->radius;
+        contact->normal[0] = plane->p[0];
+        contact->normal[1] = plane->p[1];
+        contact->normal[2] = plane->p[2];
+        contact->pos[0] = o1->pos[0] - plane->p[0] * sphere->radius;
+        contact->pos[1] = o1->pos[1] - plane->p[1] * sphere->radius;
+        contact->pos[2] = o1->pos[2] - plane->p[2] * sphere->radius;
         contact->depth = depth;
         return 1;
     } else {
@@ -638,23 +682,21 @@ done:
 extern "C" float fn_80271714(float x, float y, float z, Geom* g)
 {
     CapsuleGeom* c = (CapsuleGeom*)g;
-    float* pos = g->pos;
-    float* R = g->rot;
-    float a[3];
+    float a[4];
 
-    a[0] = x - pos[0];
-    a[1] = y - pos[1];
-    a[2] = z - pos[2];
-    float beta = dDOT14(a, R + 2);
+    a[0] = x - c->pos[0];
+    a[1] = y - c->pos[1];
+    a[2] = z - c->pos[2];
+    float beta = Dot14(a, c->rot + 2);
     float lz2 = c->lz * 0.5f;
     if (beta < -lz2) {
         beta = -lz2;
     } else if (beta > lz2) {
         beta = lz2;
     }
-    a[0] = pos[0] + beta * c->rot[0 * 4 + 2];
-    a[1] = pos[1] + beta * c->rot[1 * 4 + 2];
-    a[2] = pos[2] + beta * c->rot[2 * 4 + 2];
+    a[0] = c->pos[0] + beta * c->rot[0 * 4 + 2];
+    a[1] = c->pos[1] + beta * c->rot[1 * 4 + 2];
+    a[2] = c->pos[2] + beta * c->rot[2 * 4 + 2];
     return c->radius - SqrtF((x - a[0]) * (x - a[0]) + (y - a[1]) * (y - a[1]) + (z - a[2]) * (z - a[2]));
 }
 
