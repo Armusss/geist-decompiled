@@ -111,7 +111,6 @@ void* memset(void* dst, int c, unsigned long n);
 }
 
 // Hash-space sizes per level (bucket counts).
-extern int lbl_803C03B8[31];
 
 extern int __float_nan[];
 
