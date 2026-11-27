@@ -613,14 +613,15 @@ void* fn_8015A0A4(void* p, short freeIt) {
 }
 
 // 0x8015A10C: remove one grenade HUD entry.
-void fn_8015A10C(void* entry) {
+void fn_8015A10C(void* arg) {
+    s32* entry = (s32*)arg;
     void** p = lbl_804D4EA8->data;
     if (entry != 0) {
         void** end = (void**)((u8*)lbl_804D4EA8->data + lbl_804D4EA8->size);
         for (; p != end; p++) {
             if (entry == *p) {
-                if (((s32*)entry)[0x1b] == 1) {
-                    fn_800390F4(((s32*)entry)[0x14]);
+                if (entry[0x1b] == 1) {
+                    fn_800390F4(entry[0x14]);
                 }
                 VFree(entry);
                 fn_8028B35C(lbl_804D4EA8, p, 4);
@@ -632,40 +633,45 @@ void fn_8015A10C(void* entry) {
 // TODO (not drafted yet, 0x30C bytes at 0x8015A1A0)
 
 // 0x8015A4AC: copy a HUD/effect description into a new entry.
+// The light record an overlay effect follows (fn_8015A4AC fills it from the caller's light).
+struct FxLight {
+    PlaceF place;     // 0x00
+    u8 pad30[0x18];
+    int active;       // 0x48
+    int arg;          // 0x4C
+    f32 unk50;        // 0x50
+    f32 length;       // 0x54
+    u8 pad58[8];
+    Vec3 pos;         // 0x60
+};
+
+static inline void FxLightSet(f32 b, FxLight* l, const PlaceF* src, int active, int arg, const Vec3* pos) {
+    if (l == 0) {
+        return;
+    }
+    l->place = *src;
+    if (active != 0) {
+        l->active = 1;
+        l->arg = arg;
+        l->length = b;
+        l->pos.x = pos->x;
+        l->pos.y = pos->y;
+        l->pos.z = pos->z;
+        return;
+    }
+    l->active = 0;
+    l->arg = 0;
+    l->length = 0.0f;
+    l->pos.x = 0.0f;
+    l->pos.y = 0.0f;
+    l->pos.z = 0.0f;
+}
+
 void fn_8015A4AC(f32 a, f32 b, void* dst, void* src, int active, int arg, void* vec) {
     if (dst == 0) {
         return;
     }
-    if (dst == 0) {
-        return;
-    }
-    *(u32*)((u8*)dst + 0x00) = *(u32*)((u8*)src + 0x00);
-    *(u32*)((u8*)dst + 0x04) = *(u32*)((u8*)src + 0x04);
-    *(u32*)((u8*)dst + 0x08) = *(u32*)((u8*)src + 0x08);
-    *(u32*)((u8*)dst + 0x0c) = *(u32*)((u8*)src + 0x0c);
-    *(u32*)((u8*)dst + 0x10) = *(u32*)((u8*)src + 0x10);
-    *(u32*)((u8*)dst + 0x14) = *(u32*)((u8*)src + 0x14);
-    *(u32*)((u8*)dst + 0x18) = *(u32*)((u8*)src + 0x18);
-    *(u32*)((u8*)dst + 0x1c) = *(u32*)((u8*)src + 0x1c);
-    *(u32*)((u8*)dst + 0x20) = *(u32*)((u8*)src + 0x20);
-    *(u32*)((u8*)dst + 0x24) = *(u32*)((u8*)src + 0x24);
-    *(u32*)((u8*)dst + 0x28) = *(u32*)((u8*)src + 0x28);
-    *(u32*)((u8*)dst + 0x2c) = *(u32*)((u8*)src + 0x2c);
-    if (active != 0) {
-        *(u32*)((u8*)dst + 0x48) = 1;
-        *(u32*)((u8*)dst + 0x4c) = arg;
-        *(f32*)((u8*)dst + 0x54) = b;
-        *(u32*)((u8*)dst + 0x60) = *(u32*)((u8*)vec + 0x00);
-        *(u32*)((u8*)dst + 0x64) = *(u32*)((u8*)vec + 0x04);
-        *(u32*)((u8*)dst + 0x68) = *(u32*)((u8*)vec + 0x08);
-        return;
-    }
-    *(u32*)((u8*)dst + 0x48) = 0;
-    *(u32*)((u8*)dst + 0x4c) = 0;
-    *(f32*)((u8*)dst + 0x54) = 0.0f;
-    *(u32*)((u8*)dst + 0x60) = 0.0f;
-    *(u32*)((u8*)dst + 0x64) = 0.0f;
-    *(u32*)((u8*)dst + 0x68) = 0.0f;
+    FxLightSet(b, (FxLight*)dst, (const PlaceF*)src, active, arg, (const Vec3*)vec);
 }
 int fn_8015A570(f32 a, f32 b, u8 p3, u8 p4, u8 p5, u8 p6, u8 p7, u8 p8, u8 p9, u8 p10,
                 int kind, int arg) {
