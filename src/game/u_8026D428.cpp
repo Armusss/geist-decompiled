@@ -134,8 +134,8 @@ static inline int FpClassifyF(float x)
     }
 }
 
-// Single-precision square root: reciprocal-square-root estimate refined with
-// three Newton steps. Negative inputs and NaNs give NaN.
+// Single-precision square root (the MSL sqrtf inline): reciprocal-square-root estimate refined
+// with three Newton steps. Negative inputs and NaNs give NaN.
 static inline float SqrtF(float x)
 {
     static const double _half = 0.5;
@@ -207,9 +207,17 @@ static inline void GeomLink(Geom* g, Geom** list)
 }
 
 
+// Out-of-line helpers at the end of this file (dMULTIPLY0_331, dMULTIPLY1_331, dSqrt).
+void MatMulVec(float* A, const float* B, const float* C);
+void MatTransMulVec(float* A, const float* B, const float* C);
+float SqrtFloat(float x);
+
 // ODE's dot products (odemath.h inlines)
 static inline float Dot(const float* a, const float* b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
 static inline float Dot14(const float* a, const float* b) { return a[0] * b[0] + a[1] * b[4] + a[2] * b[8]; }
+static inline float Dot41(const float* a, const float* b) { return a[0] * b[0] + a[4] * b[1] + a[8] * b[2]; }
+static inline float Dot44(const float* a, const float* b) { return a[0] * b[0] + a[4] * b[4] + a[8] * b[8]; }
+
 
 // A ray geometry: the base plus its length.
 struct RayGeom : Geom {
@@ -537,8 +545,108 @@ extern "C" int fn_8026F4D0(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
     }
 }
 
-// TODO (not drafted yet, 0x468 bytes at 0x8026F590): sphere against box
-extern "C" int fn_8026F590(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
+// 0x8026F590: sphere against box (dCollideSphereBox)
+extern "C" int fn_8026F590(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
+{
+    // this is easy. get the sphere center `p' relative to the box, and then clip
+    // that to the boundary of the box (call that point `q'). if q is on the
+    // boundary of the box and |p-q| is <= sphere radius, they touch.
+    // if q is inside the box, the sphere is inside the box, so set a contact
+    // normal to push the sphere to the closest box edge.
+
+    float l[4], t[4], p[4], q[4], r[4];
+    float depth;
+    int onborder = 0;
+
+    SphereGeom* sphere = (SphereGeom*)o1;
+    BoxGeom* box = (BoxGeom*)o2;
+
+    contact->g1 = o1;
+    contact->g2 = o2;
+
+    p[0] = o1->pos[0] - o2->pos[0];
+    p[1] = o1->pos[1] - o2->pos[1];
+    p[2] = o1->pos[2] - o2->pos[2];
+
+    l[0] = box->side[0] * 0.5f;
+    t[0] = Dot14(p, o2->rot);
+    if (t[0] < -l[0]) {
+        t[0] = -l[0];
+        onborder = 1;
+    }
+    if (t[0] > l[0]) {
+        t[0] = l[0];
+        onborder = 1;
+    }
+
+    l[1] = box->side[1] * 0.5f;
+    t[1] = Dot14(p, o2->rot + 1);
+    if (t[1] < -l[1]) {
+        t[1] = -l[1];
+        onborder = 1;
+    }
+    if (t[1] > l[1]) {
+        t[1] = l[1];
+        onborder = 1;
+    }
+
+    t[2] = Dot14(p, o2->rot + 2);
+    l[2] = box->side[2] * 0.5f;
+    if (t[2] < -l[2]) {
+        t[2] = -l[2];
+        onborder = 1;
+    }
+    if (t[2] > l[2]) {
+        t[2] = l[2];
+        onborder = 1;
+    }
+
+    if (!onborder) {
+        // sphere center inside box. find closest face to `t'
+        float min_distance = l[0] - FAbs(t[0]);
+        int mini = 0;
+        for (int i = 1; i < 3; i++) {
+            float face_distance = l[i] - FAbs(t[i]);
+            if (face_distance < min_distance) {
+                min_distance = face_distance;
+                mini = i;
+            }
+        }
+        // contact position = sphere center
+        contact->pos[0] = o1->pos[0];
+        contact->pos[1] = o1->pos[1];
+        contact->pos[2] = o1->pos[2];
+        // contact normal points to closest face
+        float tmp[4];
+        tmp[0] = 0;
+        tmp[1] = 0;
+        tmp[2] = 0;
+        tmp[mini] = (t[mini] > 0) ? 1.0f : -1.0f;
+        MatMulVec(contact->normal, o2->rot, tmp);
+        // contact depth = distance to wall along normal plus radius
+        contact->depth = min_distance + sphere->radius;
+        return 1;
+    }
+
+    t[3] = 0;  //@@@ hmmm
+    MatMulVec(q, o2->rot, t);
+    r[0] = p[0] - q[0];
+    r[1] = p[1] - q[1];
+    r[2] = p[2] - q[2];
+    depth = sphere->radius - SqrtF(Dot(r, r));
+    if (depth < 0) {
+        return 0;
+    }
+    contact->pos[0] = q[0] + o2->pos[0];
+    contact->pos[1] = q[1] + o2->pos[1];
+    contact->pos[2] = q[2] + o2->pos[2];
+    contact->normal[0] = r[0];
+    contact->normal[1] = r[1];
+    contact->normal[2] = r[2];
+    fn_8027914C(contact->normal);
+    contact->depth = depth;
+    return 1;
+}
 
 // 0x8026F9F8: sphere against sphere (SphereSphereCollide)
 extern "C" int fn_8026F9F8(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
@@ -551,7 +659,415 @@ extern "C" int fn_8026F9F8(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
     return CollideSpheres(o1->pos, s1->radius, o2->pos, s2->radius, contact);
 }
 
-// TODO (not drafted yet, 0x1708 bytes at 0x8026FA3C): box-box contact generation (dBoxBox)
+extern "C" void fn_80271144(int n, float* p, int m, int i0, int* iret);
+extern "C" int fn_80271508(float* h, float* p, float* ret);
+
+#define FLT_MAX 3.402823466e+38f
+
+// Closest points of two lines (dLineClosestApproach); in collision_util.
+void LineClosestApproach(float* pa, float* ua, float* pb, float* ub, float* alpha, float* beta);
+
+// 0x8026FA3C: box-box contact generation (dBoxBox). Given two boxes (p1,R1,side1) and (p2,R2,side2),
+// collide them together and generate contact points; returns the number of contacts (0 = none).
+extern "C" int fn_8026FA3C(const float* p1, const float* R1, const float* side1, const float* p2,
+                           const float* R2, const float* side2, float* normal, float* depth, int* return_code,
+                           int maxc, ContactGeom* contact, int skip)
+{
+    const float fudge_factor = 1.05f;
+    float p[4], pp[4], normalC[4];
+    const float* normalR = 0;
+    float A[3], B[3], R11, R12, R13, R21, R22, R23, R31, R32, R33, Q11, Q12, Q13, Q21, Q22, Q23, Q31, Q32, Q33, s,
+        s2, l;
+    int i, j, invert_normal, code;
+
+    // get vector from centers of box 1 to box 2, relative to box 1
+    p[0] = p2[0] - p1[0];
+    p[1] = p2[1] - p1[1];
+    p[2] = p2[2] - p1[2];
+    MatTransMulVec(pp, R1, p);  // get pp = p relative to body 1
+
+    // get side lengths / 2
+    A[0] = side1[0] * 0.5f;
+    A[1] = side1[1] * 0.5f;
+    A[2] = side1[2] * 0.5f;
+    B[0] = side2[0] * 0.5f;
+    B[1] = side2[1] * 0.5f;
+    B[2] = side2[2] * 0.5f;
+
+    // Rij is R1'*R2, i.e. the relative rotation between R1 and R2
+    R11 = Dot44(R1 + 0, R2 + 0);
+    R12 = Dot44(R1 + 0, R2 + 1);
+    R13 = Dot44(R1 + 0, R2 + 2);
+    R21 = Dot44(R1 + 1, R2 + 0);
+    R22 = Dot44(R1 + 1, R2 + 1);
+    R23 = Dot44(R1 + 1, R2 + 2);
+    R31 = Dot44(R1 + 2, R2 + 0);
+    R32 = Dot44(R1 + 2, R2 + 1);
+    R33 = Dot44(R1 + 2, R2 + 2);
+
+    Q11 = FAbs(R11);
+    Q12 = FAbs(R12);
+    Q13 = FAbs(R13);
+    Q21 = FAbs(R21);
+    Q22 = FAbs(R22);
+    Q23 = FAbs(R23);
+    Q31 = FAbs(R31);
+    Q32 = FAbs(R32);
+    Q33 = FAbs(R33);
+
+    // for all 15 possible separating axes:
+    //   * see if the axis separates the boxes. if so, return 0.
+    //   * find the depth of the penetration along the separating axis (s2)
+    //   * if this is the largest depth so far, record it.
+    // the normal vector will be set to the separating axis with the smallest
+    // depth. note: normalR is set to point to a column of R1 or R2 if that is
+    // the smallest depth normal so far. otherwise normalR is 0 and normalC is
+    // set to a vector relative to body 1. invert_normal is 1 if the sign of
+    // the normal should be flipped.
+
+#define TST(expr1, expr2, norm, cc)          \
+    s2 = FAbs(expr1) - (expr2);              \
+    if (s2 > 0) return 0;                    \
+    if (s2 > s) {                            \
+        s = s2;                              \
+        normalR = norm;                      \
+        invert_normal = ((expr1) < 0);       \
+        code = (cc);                         \
+    }
+
+    s = -FLT_MAX;
+    invert_normal = 0;
+    code = 0;
+
+    // separating axis = u1,u2,u3
+    TST(pp[0], (A[0] + B[0] * Q11 + B[1] * Q12 + B[2] * Q13), R1 + 0, 1);
+    TST(pp[1], (A[1] + B[0] * Q21 + B[1] * Q22 + B[2] * Q23), R1 + 1, 2);
+    TST(pp[2], (A[2] + B[0] * Q31 + B[1] * Q32 + B[2] * Q33), R1 + 2, 3);
+
+    // separating axis = v1,v2,v3
+    TST(Dot41(R2 + 0, p), (A[0] * Q11 + A[1] * Q21 + A[2] * Q31 + B[0]), R2 + 0, 4);
+    TST(Dot41(R2 + 1, p), (A[0] * Q12 + A[1] * Q22 + A[2] * Q32 + B[1]), R2 + 1, 5);
+    TST(Dot41(R2 + 2, p), (A[0] * Q13 + A[1] * Q23 + A[2] * Q33 + B[2]), R2 + 2, 6);
+
+    // note: cross product axes need to be scaled when s is computed.
+    // normal (n1,n2,n3) is relative to box 1.
+#undef TST
+#define TST(expr1, expr2, n1, n2, n3, cc)                \
+    s2 = FAbs(expr1) - (expr2);                          \
+    if (s2 > 0) return 0;                                \
+    l = SqrtFloat((n1) * (n1) + (n2) * (n2) + (n3) * (n3)); \
+    if (l > 0) {                                         \
+        s2 /= l;                                         \
+        if (s2 * fudge_factor > s) {                     \
+            s = s2;                                      \
+            normalR = 0;                                 \
+            normalC[0] = (n1) / l;                       \
+            normalC[1] = (n2) / l;                       \
+            normalC[2] = (n3) / l;                       \
+            invert_normal = ((expr1) < 0);               \
+            code = (cc);                                 \
+        }                                                \
+    }
+
+    // separating axis = u1 x (v1,v2,v3)
+    TST(pp[2] * R21 - pp[1] * R31, (A[1] * Q31 + A[2] * Q21 + B[1] * Q13 + B[2] * Q12), 0, -R31, R21, 7);
+    TST(pp[2] * R22 - pp[1] * R32, (A[1] * Q32 + A[2] * Q22 + B[0] * Q13 + B[2] * Q11), 0, -R32, R22, 8);
+    TST(pp[2] * R23 - pp[1] * R33, (A[1] * Q33 + A[2] * Q23 + B[0] * Q12 + B[1] * Q11), 0, -R33, R23, 9);
+
+    // separating axis = u2 x (v1,v2,v3)
+    TST(pp[0] * R31 - pp[2] * R11, (A[0] * Q31 + A[2] * Q11 + B[1] * Q23 + B[2] * Q22), R31, 0, -R11, 10);
+    TST(pp[0] * R32 - pp[2] * R12, (A[0] * Q32 + A[2] * Q12 + B[0] * Q23 + B[2] * Q21), R32, 0, -R12, 11);
+    TST(pp[0] * R33 - pp[2] * R13, (A[0] * Q33 + A[2] * Q13 + B[0] * Q22 + B[1] * Q21), R33, 0, -R13, 12);
+
+    // separating axis = u3 x (v1,v2,v3)
+    TST(pp[1] * R11 - pp[0] * R21, (A[0] * Q21 + A[1] * Q11 + B[1] * Q33 + B[2] * Q32), -R21, R11, 0, 13);
+    TST(pp[1] * R12 - pp[0] * R22, (A[0] * Q22 + A[1] * Q12 + B[0] * Q33 + B[2] * Q31), -R22, R12, 0, 14);
+    TST(pp[1] * R13 - pp[0] * R23, (A[0] * Q23 + A[1] * Q13 + B[0] * Q32 + B[1] * Q31), -R23, R13, 0, 15);
+
+#undef TST
+
+    if (!code) {
+        return 0;
+    }
+
+    // if we get to this point, the boxes interpenetrate. compute the normal
+    // in global coordinates.
+    if (normalR) {
+        normal[0] = normalR[0];
+        normal[1] = normalR[4];
+        normal[2] = normalR[8];
+    } else {
+        MatMulVec(normal, R1, normalC);
+    }
+    if (invert_normal) {
+        normal[0] = -normal[0];
+        normal[1] = -normal[1];
+        normal[2] = -normal[2];
+    }
+    *depth = -s;
+
+    // compute contact point(s)
+
+    if (code > 6) {
+        // an edge from box 1 touches an edge from box 2.
+        // find a point pa on the intersecting edge of box 1
+        float pa[4];
+        float sign;
+        for (i = 0; i < 3; i++) {
+            pa[i] = p1[i];
+        }
+        for (j = 0; j < 3; j++) {
+            sign = (Dot14(normal, R1 + j) > 0) ? 1.0f : -1.0f;
+            for (i = 0; i < 3; i++) {
+                pa[i] += sign * A[j] * R1[i * 4 + j];
+            }
+        }
+
+        // find a point pb on the intersecting edge of box 2
+        float pb[4];
+        for (i = 0; i < 3; i++) {
+            pb[i] = p2[i];
+        }
+        for (j = 0; j < 3; j++) {
+            sign = (Dot14(normal, R2 + j) > 0) ? -1.0f : 1.0f;
+            for (i = 0; i < 3; i++) {
+                pb[i] += sign * B[j] * R2[i * 4 + j];
+            }
+        }
+
+        float alpha, beta;
+        float ua[4], ub[4];
+        for (i = 0; i < 3; i++) {
+            ua[i] = R1[((code)-7) / 3 + i * 4];
+        }
+        for (i = 0; i < 3; i++) {
+            ub[i] = R2[((code)-7) % 3 + i * 4];
+        }
+
+        LineClosestApproach(pa, ua, pb, ub, &alpha, &beta);
+        for (i = 0; i < 3; i++) {
+            pa[i] += ua[i] * alpha;
+        }
+        for (i = 0; i < 3; i++) {
+            pb[i] += ub[i] * beta;
+        }
+
+        for (i = 0; i < 3; i++) {
+            contact[0].pos[i] = 0.5f * (pa[i] + pb[i]);
+        }
+        contact[0].depth = *depth;
+        *return_code = code;
+        return 1;
+    }
+
+    // okay, we have a face-something intersection (because the separating
+    // axis is perpendicular to a face). define face 'a' to be the reference
+    // face (i.e. the normal vector is perpendicular to this) and face 'b' to be
+    // the incident face (the closest face of the other box).
+
+    const float *Ra, *Rb, *pa, *pb, *Sa, *Sb;
+    if (code <= 3) {
+        Ra = R1;
+        Rb = R2;
+        pa = p1;
+        pb = p2;
+        Sa = A;
+        Sb = B;
+    } else {
+        Ra = R2;
+        Rb = R1;
+        pa = p2;
+        pb = p1;
+        Sa = B;
+        Sb = A;
+    }
+
+    // nr = normal vector of reference face dotted with axes of incident box.
+    // anr = absolute values of nr.
+    float normal2[4], nr[4], anr[4];
+    if (code <= 3) {
+        normal2[0] = normal[0];
+        normal2[1] = normal[1];
+        normal2[2] = normal[2];
+    } else {
+        normal2[0] = -normal[0];
+        normal2[1] = -normal[1];
+        normal2[2] = -normal[2];
+    }
+    MatTransMulVec(nr, Rb, normal2);
+    anr[0] = FAbs(nr[0]);
+    anr[1] = FAbs(nr[1]);
+    anr[2] = FAbs(nr[2]);
+
+    // find the largest compontent of anr: this corresponds to the normal
+    // for the indident face. the other axis numbers of the indicent face
+    // are stored in a1,a2.
+    int lanr, a1, a2;
+    if (anr[1] > anr[0]) {
+        if (anr[1] > anr[2]) {
+            a1 = 0;
+            lanr = 1;
+            a2 = 2;
+        } else {
+            a1 = 0;
+            a2 = 1;
+            lanr = 2;
+        }
+    } else {
+        if (anr[0] > anr[2]) {
+            lanr = 0;
+            a1 = 1;
+            a2 = 2;
+        } else {
+            a1 = 0;
+            a2 = 1;
+            lanr = 2;
+        }
+    }
+
+    // compute center point of incident face, in reference-face coordinates
+    float center[4];
+    if (nr[lanr] < 0) {
+        for (i = 0; i < 3; i++) {
+            center[i] = pb[i] - pa[i] + Sb[lanr] * Rb[i * 4 + lanr];
+        }
+    } else {
+        for (i = 0; i < 3; i++) {
+            center[i] = pb[i] - pa[i] - Sb[lanr] * Rb[i * 4 + lanr];
+        }
+    }
+
+    // find the normal and non-normal axis numbers of the reference box
+    int codeN, code1, code2;
+    if (code <= 3) {
+        codeN = code - 1;
+    } else {
+        codeN = code - 4;
+    }
+    if (codeN == 0) {
+        code1 = 1;
+        code2 = 2;
+    } else if (codeN == 1) {
+        code1 = 0;
+        code2 = 2;
+    } else {
+        code1 = 0;
+        code2 = 1;
+    }
+
+    // find the four corners of the incident face, in reference-face coordinates
+    float quad[8];  // 2D coordinate of incident face (x,y pairs)
+    float c1, c2, m11, m12, m21, m22;
+    c1 = Dot14(center, Ra + code1);
+    c2 = Dot14(center, Ra + code2);
+    // optimize this? - we have already computed this data above, but it is not
+    // stored in an easy-to-index format. for now it's quicker just to recompute
+    // the four dot products.
+    m11 = Dot44(Ra + code1, Rb + a1);
+    m12 = Dot44(Ra + code1, Rb + a2);
+    m21 = Dot44(Ra + code2, Rb + a1);
+    m22 = Dot44(Ra + code2, Rb + a2);
+    {
+        float k1 = m11 * Sb[a1];
+        float k2 = m21 * Sb[a1];
+        float k3 = m12 * Sb[a2];
+        float k4 = m22 * Sb[a2];
+        quad[0] = c1 - k1 - k3;
+        quad[1] = c2 - k2 - k4;
+        quad[2] = c1 - k1 + k3;
+        quad[3] = c2 - k2 + k4;
+        quad[4] = c1 + k1 + k3;
+        quad[5] = c2 + k2 + k4;
+        quad[6] = c1 + k1 - k3;
+        quad[7] = c2 + k2 - k4;
+    }
+
+    // find the size of the reference face
+    float rect[2];
+    rect[0] = Sa[code1];
+    rect[1] = Sa[code2];
+
+    // intersect the incident and reference faces
+    float ret[16];
+    int n = fn_80271508(rect, quad, ret);
+    if (n < 1) {
+        return 0;  // this should never happen
+    }
+
+    // convert the intersection points into reference-face coordinates,
+    // and compute the contact position and depth for each point. only keep
+    // those points that have a positive (penetrating) depth. delete points in
+    // the 'ret' array as necessary so that 'point' and 'ret' correspond.
+    float point[3 * 8];  // penetrating contact points
+    float dep[8];        // depths for those points
+    float det1 = 1.0f / (m11 * m22 - m12 * m21);
+    m11 *= det1;
+    m12 *= det1;
+    m21 *= det1;
+    m22 *= det1;
+    int cnum = 0;  // number of penetrating contact points found
+    for (j = 0; j < n; j++) {
+        float k1 = m22 * (ret[j * 2] - c1) - m12 * (ret[j * 2 + 1] - c2);
+        float k2 = -m21 * (ret[j * 2] - c1) + m11 * (ret[j * 2 + 1] - c2);
+        for (i = 0; i < 3; i++) {
+            point[cnum * 3 + i] = center[i] + k1 * Rb[i * 4 + a1] + k2 * Rb[i * 4 + a2];
+        }
+        dep[cnum] = Sa[codeN] - Dot(normal2, point + cnum * 3);
+        if (dep[cnum] >= 0) {
+            ret[cnum * 2] = ret[j * 2];
+            ret[cnum * 2 + 1] = ret[j * 2 + 1];
+            cnum++;
+        }
+    }
+    if (cnum < 1) {
+        return 0;  // this should never happen
+    }
+
+    // we can't generate more contacts than we actually have
+    if (maxc > cnum) {
+        maxc = cnum;
+    }
+    if (maxc < 1) {
+        maxc = 1;
+    }
+
+    if (cnum <= maxc) {
+        // we have less contacts than we need, so we use them all
+        for (j = 0; j < cnum; j++) {
+            ContactGeom* con = CONTACT(contact, skip * j);
+            for (i = 0; i < 3; i++) {
+                con->pos[i] = point[j * 3 + i] + pa[i];
+            }
+            con->depth = dep[j];
+        }
+    } else {
+        // we have more contacts than are wanted, some of them must be culled.
+        // find the deepest point, it is always the first contact.
+        int i1 = 0;
+        float maxdepth = dep[0];
+        for (i = 1; i < cnum; i++) {
+            if (dep[i] > maxdepth) {
+                maxdepth = dep[i];
+                i1 = i;
+            }
+        }
+
+        int iret[8];
+        fn_80271144(cnum, ret, maxc, i1, iret);
+
+        for (j = 0; j < maxc; j++) {
+            ContactGeom* con = CONTACT(contact, skip * j);
+            for (i = 0; i < 3; i++) {
+                con->pos[i] = point[iret[j] * 3 + i] + pa[i];
+            }
+            con->depth = dep[iret[j]];
+        }
+        cnum = maxc;
+    }
+
+    *return_code = code;
+    return cnum;
+}
 
 // ODE's float pi (M_PI as a dReal)
 #define M_PI 3.1415926535897932384626433832795029f
