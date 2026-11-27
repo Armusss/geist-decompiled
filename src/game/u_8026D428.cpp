@@ -304,8 +304,129 @@ extern "C" int fn_8026D428(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
     return 1;
 }
 
-// TODO (not drafted yet, 0x518 bytes at 0x8026D538): ray against box
-extern "C" int fn_8026D538(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip);
+int RaySphereTest(RayGeom* ray, float* sphere_pos, float radius, ContactGeom* contact, int mode);
+
+// 0x8026D538: ray against capsule (dCollideRayCCylinder)
+extern "C" int fn_8026D538(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
+{
+    RayGeom* ray = (RayGeom*)o1;
+    CapsuleGeom* ccyl = (CapsuleGeom*)o2;
+
+    contact->g1 = ray;
+    contact->g2 = ccyl;
+    float lz2 = ccyl->lz * 0.5f;
+
+    // compute some useful info
+    float cs[4], q[4], r[4];
+    float C, k;
+    cs[0] = ray->pos[0] - ccyl->pos[0];
+    cs[1] = ray->pos[1] - ccyl->pos[1];
+    cs[2] = ray->pos[2] - ccyl->pos[2];
+    k = Dot41(ccyl->rot + 2, cs);  // position of ray start along ccyl axis
+    q[0] = k * ccyl->rot[0 * 4 + 2] - cs[0];
+    q[1] = k * ccyl->rot[1 * 4 + 2] - cs[1];
+    q[2] = k * ccyl->rot[2 * 4 + 2] - cs[2];
+    C = Dot(q, q) - ccyl->radius * ccyl->radius;
+    // if C < 0 then ray start position within infinite extension of cylinder
+
+    // see if ray start position is inside the capped cylinder
+    int inside_ccyl = 0;
+    if (C < 0) {
+        if (k < -lz2) {
+            k = -lz2;
+        } else if (k > lz2) {
+            k = lz2;
+        }
+        r[0] = ccyl->pos[0] + k * ccyl->rot[0 * 4 + 2];
+        r[1] = ccyl->pos[1] + k * ccyl->rot[1 * 4 + 2];
+        r[2] = ccyl->pos[2] + k * ccyl->rot[2 * 4 + 2];
+        if ((ray->pos[0] - r[0]) * (ray->pos[0] - r[0]) + (ray->pos[1] - r[1]) * (ray->pos[1] - r[1]) +
+                (ray->pos[2] - r[2]) * (ray->pos[2] - r[2]) <
+            ccyl->radius * ccyl->radius) {
+            inside_ccyl = 1;
+        }
+    }
+
+    // compute ray collision with infinite cylinder, except for the case where
+    // the ray is outside the capped cylinder but within the infinite cylinder
+    // (it that case the ray can only hit endcaps)
+    if (!inside_ccyl && C < 0) {
+        // set k to cap position to check
+        if (k < 0) {
+            k = -lz2;
+        } else {
+            k = lz2;
+        }
+    } else {
+        float uv = Dot44(ccyl->rot + 2, ray->rot + 2);
+        r[0] = uv * ccyl->rot[0 * 4 + 2] - ray->rot[0 * 4 + 2];
+        r[1] = uv * ccyl->rot[1 * 4 + 2] - ray->rot[1 * 4 + 2];
+        r[2] = uv * ccyl->rot[2 * 4 + 2] - ray->rot[2 * 4 + 2];
+        float A = Dot(r, r);
+        float B = 2 * Dot(q, r);
+        k = B * B - 4 * A * C;
+        if (k < 0) {
+            // the ray does not intersect the infinite cylinder, but if the ray is
+            // inside and parallel to the cylinder axis it may intersect the end
+            // caps. set k to cap position to check.
+            if (!inside_ccyl) {
+                return 0;
+            }
+            if (uv < 0) {
+                k = -lz2;
+            } else {
+                k = lz2;
+            }
+        } else {
+            k = SqrtF(k);
+            A = 1.0f / (2 * A);
+            float alpha = (-B - k) * A;
+            if (alpha < 0) {
+                alpha = (-B + k) * A;
+                if (alpha < 0) {
+                    return 0;
+                }
+            }
+            if (alpha > ray->length) {
+                return 0;
+            }
+
+            // the ray intersects the infinite cylinder. check to see if the
+            // intersection point is between the caps
+            contact->pos[0] = ray->pos[0] + alpha * ray->rot[0 * 4 + 2];
+            contact->pos[1] = ray->pos[1] + alpha * ray->rot[1 * 4 + 2];
+            contact->pos[2] = ray->pos[2] + alpha * ray->rot[2 * 4 + 2];
+            q[0] = contact->pos[0] - ccyl->pos[0];
+            q[1] = contact->pos[1] - ccyl->pos[1];
+            q[2] = contact->pos[2] - ccyl->pos[2];
+            k = Dot14(q, ccyl->rot + 2);
+            float nsign = inside_ccyl ? -1.0f : 1.0f;
+            if (k >= -lz2 && k <= lz2) {
+                contact->normal[0] = nsign * (contact->pos[0] - (ccyl->pos[0] + k * ccyl->rot[0 * 4 + 2]));
+                contact->normal[1] = nsign * (contact->pos[1] - (ccyl->pos[1] + k * ccyl->rot[1 * 4 + 2]));
+                contact->normal[2] = nsign * (contact->pos[2] - (ccyl->pos[2] + k * ccyl->rot[2 * 4 + 2]));
+                fn_8027914C(contact->normal);
+                contact->depth = alpha;
+                return 1;
+            }
+
+            // the infinite cylinder intersection point is not between the caps.
+            // set k to cap position to check.
+            if (k < 0) {
+                k = -lz2;
+            } else {
+                k = lz2;
+            }
+        }
+    }
+
+    // check for ray intersection with the caps. k must indicate the cap
+    // position to check
+    q[0] = ccyl->pos[0] + k * ccyl->rot[0 * 4 + 2];
+    q[1] = ccyl->pos[1] + k * ccyl->rot[1 * 4 + 2];
+    q[2] = ccyl->pos[2] + k * ccyl->rot[2 * 4 + 2];
+    return RaySphereTest(ray, q, ccyl->radius, contact, inside_ccyl);
+}
 
 // 0x8026DA50: ray against box (dCollideRayBox)
 extern "C" int fn_8026DA50(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
@@ -400,8 +521,6 @@ extern "C" int fn_8026DA50(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
     contact->depth = alpha;
     return 1;
 }
-
-int RaySphereTest(RayGeom* ray, float* sphere_pos, float radius, ContactGeom* contact, int mode);
 
 // 0x8026DEAC: ray against sphere (dCollideRaySphere)
 extern "C" int fn_8026DEAC(Geom* o1, Geom* o2, int flags, ContactGeom* contact, int skip)
