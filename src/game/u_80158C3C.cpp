@@ -627,56 +627,66 @@ void fn_801590A4() {
     }
     fn_80233928();
 }
+// Steps every particle slot of one spawned object and its sound timer; -1 once every particle is dead.
+static inline int SpawnedUpdate(int* obj, f32 dt) {
+    int off;
+    int base;
+    int alive;
+    int i;
+
+    alive = 0;
+    i = 0;
+    base = obj[0xb];
+    off = 0;
+    for (; i < *(u16*)(*obj + 0xc); i++) {
+        f32 v = *(f32*)(*obj + off + 0x34);
+
+        if (0.0f != v) {
+            f32 color[3];
+
+            color[0] = 0.0f;
+            color[1] = 0.0f;
+            color[2] = v;
+            fn_802113F0(dt, base, 0x44, *(int*)(*obj + off + 0x14), color);
+        }
+        fn_80211470(dt, base, 0x44, *(int*)(*obj + off + 0x14));
+        {
+            int n = *(int*)(*obj + off + 0x14) * 0x44;
+
+            if (*(f32*)(base + n - 0x40) > dt) {
+                alive = 1;
+            }
+            base += n;
+        }
+        off += 0x88;
+    }
+    if (obj[4] != -1) {
+        *(f32*)((u8*)obj + 0x14) -= dt;
+        if (*(f32*)((u8*)obj + 0x14) <= 0.0f) {
+            fn_80027690(obj[4]);
+            obj[4] = -1;
+        }
+    }
+    return alive ? 0 : -1;
+}
+
+// 0x80159118: per-frame update of the spawned objects; removes the finished ones.
 void fn_80159118(f32 dt) {
     int** p;
 
-    for (p = (int**)lbl_804D4EA0->data;
-         p != (int**)((u8*)lbl_804D4EA0->data + lbl_804D4EA0->size); ) {
+    for (p = (int**)lbl_804D4EA0->data; p != (int**)((u8*)lbl_804D4EA0->data + lbl_804D4EA0->size);) {
         int* obj = *p;
-        int alive = 0;
-        int base = obj[0xb];
-        int off = 0;
-        int i;
 
-        for (i = 0; i < *(u16*)(*obj + 0xc); i++) {
-            f32 v = *(f32*)(*obj + off + 0x34);
-
-            if (0.0f != v) {
-                f32 color[3];
-
-                color[0] = 0.0f;
-                color[1] = 0.0f;
-                color[2] = v;
-                fn_802113F0(dt, base, 0x44, *(int*)(*obj + off + 0x14), color);
-            }
-            fn_80211470(dt, base, 0x44, *(int*)(*obj + off + 0x14));
-            {
-                int n = *(int*)(*obj + off + 0x14) * 0x44;
-
-                if (*(f32*)(base + n - 0x40) > dt) {
-                    alive = 1;
-                }
-                base += n;
-            }
-            off += 0x88;
-        }
-        if (obj[4] != -1) {
-            *(f32*)((u8*)obj + 0x14) -= dt;
-            if (*(f32*)((u8*)obj + 0x14) <= 0.0f) {
-                fn_80027690(obj[4]);
-                obj[4] = -1;
-            }
-        }
-        if (!alive) {
+        if (SpawnedUpdate(obj, dt) == -1) {
             if (obj[4] != -1) {
                 fn_80027690(obj[4]);
                 obj[4] = -1;
             }
-            if (*(int*)(*p + 0x2c) != 0) {
-                VFree(*(void**)(*p + 0x2c));
-                *(int*)(*p + 0x2c) = 0;
+            if ((void*)(*p)[0xb] != 0) {
+                VFree((void*)(*p)[0xb]);
+                (*p)[0xb] = 0;
             }
-            VFree((void*)*p);
+            VFree(*p);
             fn_8028B35C(lbl_804D4EA0, p, 4);
         } else {
             p++;
