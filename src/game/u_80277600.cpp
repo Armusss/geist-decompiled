@@ -1,7 +1,8 @@
-// u_80277600.cpp: scene node list helpers and actor state helpers (0x80277600-0x8027D3EC).
-// A linked list of scene nodes with lock / pin flags and position / velocity vectors, plus the
-// per-actor state functions of a large actor class.  Names are descriptive guesses; only the tiny
-// accessors are drafted so far, the rest are placeholders waiting to be drafted.
+// u_80277600.cpp: ODE 0.5 ode.cpp (0x802775AC-0x80278D2C): world, joint and body API in reverse source order
+// (dWorld* first). "SceneNode" is ODE's dxBody (pos at 0xE8, lvel 0xF8, facc 0x108, tacc 0x118); its accessor
+// names are the earlier descriptive guesses. Own .sdata2 pool 0x804DA2F8-0x804DA318 (0.2f, ..., FLT_MAX, 1.0f).
+// Split (2026-11-26, data evidence in each file's header): u_80278D2C (math), u_80279558 (step.cpp),
+// u_8027B4F8, u_8027BD5C (util.cpp), u_8027C650 (game code).
 
 #include "game/types.h"
 
@@ -37,30 +38,6 @@ struct SceneNode {
     float curA;             // 0x148
     float curB;             // 0x14C
 };
-
-struct ActorBig {
-    u8 pad00[0x50];
-    u32 flags50;            // 0x050
-    u8 pad54[0x44];
-    int target;             // 0x098
-    u8 pad9C[0x5DC];
-    u32 flags678;           // 0x678
-    u8 pad67C[0x128];
-    int stateIndex;         // 0x7A4
-    u8 pad7A8[0x28];
-    int timer;              // 0x7D0
-};
-
-// State table entry (0x48 bytes; 25 entries at 0x803C0570, the same shape as the player state table).
-struct ActorStateEntry {
-    u8 pad00[0x44];
-    int value;              // 0x44
-};
-extern ActorStateEntry lbl_803C0570[25];
-extern float lbl_804D3780;
-
-// Functions called from other units under their placeholder names.
-extern "C" void fn_8027D3E4(float v);
 
 // ODE 0.5 ode.cpp world functions (0x802775AC-0x80277600; reverse source order, as the ODE library was
 // built with -inline deferred). dxWorld layout from ODE 0.5 objects.h.
@@ -250,137 +227,3 @@ extern "C" void fn_802789D0(void);
 
 // TODO (not drafted yet, 0x1BC bytes at 0x80278B70)
 extern "C" void fn_80278B70(void);
-
-// TODO (not drafted yet, 0x2B4 bytes at 0x80278D2C)
-extern "C" void fn_80278D2C(void);
-
-// TODO (not drafted yet, 0x16C bytes at 0x80278FE0)
-extern "C" void fn_80278FE0(void);
-
-// TODO (not drafted yet, 0x40C bytes at 0x8027914C)
-extern "C" void fn_8027914C(void);
-
-// TODO (not drafted yet, 0x1468 bytes at 0x80279558)
-extern "C" void fn_80279558(void);
-
-// TODO (not drafted yet, 0xB38 bytes at 0x8027A9C0)
-extern "C" void fn_8027A9C0(void);
-
-// TODO (not drafted yet, 0x78 bytes at 0x8027B4F8)
-extern "C" void fn_8027B4F8(void);
-
-// TODO (not drafted yet, 0x530 bytes at 0x8027B570)
-extern "C" void fn_8027B570(void);
-
-// TODO (not drafted yet, 0xA8 bytes at 0x8027BAA0)
-extern "C" void fn_8027BAA0(void);
-
-// TODO (not drafted yet, 0x78 bytes at 0x8027BB48)
-extern "C" void fn_8027BB48(void);
-
-// TODO (not drafted yet, 0x78 bytes at 0x8027BBC0)
-extern "C" void fn_8027BBC0(void);
-
-// TODO (not drafted yet, 0x74 bytes at 0x8027BC38)
-extern "C" void fn_8027BC38(void);
-
-// TODO (not drafted yet, 0x74 bytes at 0x8027BCAC)
-extern "C" void fn_8027BCAC(void);
-
-// TODO (not drafted yet, 0x3C bytes at 0x8027BD20)
-extern "C" void fn_8027BD20(void);
-
-// TODO (not drafted yet, 0x4E4 bytes at 0x8027BD5C)
-extern "C" void fn_8027BD5C(void);
-
-// TODO (not drafted yet, 0x410 bytes at 0x8027C240)
-extern "C" void fn_8027C240(void);
-
-// TODO (not drafted yet, 0x9C bytes at 0x8027C650)
-extern "C" void fn_8027C650(void);
-
-// TODO (not drafted yet, 0x2C bytes at 0x8027C6EC)
-extern "C" void fn_8027C6EC(void);
-
-// TODO (not drafted yet, 0x80 bytes at 0x8027C718)
-extern "C" void fn_8027C718(void);
-
-// TODO (not drafted yet, 0xFC bytes at 0x8027C798)
-extern "C" void fn_8027C798(void);
-
-// TODO (not drafted yet, 0x78 bytes at 0x8027C894)
-extern "C" void fn_8027C894(void);
-
-// TODO (not drafted yet, 0x170 bytes at 0x8027C90C)
-extern "C" void fn_8027C90C(void);
-
-// TODO (not drafted yet, 0x60 bytes at 0x8027CA7C)
-extern "C" void fn_8027CA7C(void);
-
-// TODO (not drafted yet, 0x160 bytes at 0x8027CADC)
-extern "C" void fn_8027CADC(void);
-
-// TODO (not drafted yet, 0x2C bytes at 0x8027CC3C)
-extern "C" void fn_8027CC3C(void);
-
-// TODO (not drafted yet, 0x60 bytes at 0x8027CC68)
-extern "C" void fn_8027CC68(void);
-
-// TODO (not drafted yet, 0x15C bytes at 0x8027CCC8)
-extern "C" void fn_8027CCC8(void);
-
-void ActorClearFlag50(ActorBig* a) {
-    a->flags50 &= ~0x40000;
-}
-
-// TODO (not drafted yet, 0x58 bytes at 0x8027CE34)
-extern "C" void fn_8027CE34(void);
-
-// TODO (not drafted yet, 0x110 bytes at 0x8027CE8C)
-extern "C" void fn_8027CE8C(void);
-
-// TODO (not drafted yet, 0x1A0 bytes at 0x8027CF9C)
-extern "C" void fn_8027CF9C(void);
-
-void ActorResetTarget(ActorBig* a) {
-    a->target = -1;
-}
-
-// TODO (not drafted yet, 0x8C bytes at 0x8027D148)
-extern "C" void fn_8027D148(void);
-
-void ActorResetTargetAndTimer(ActorBig* a) {
-    a->target = -1;
-    a->timer = 0;
-}
-
-// TODO (not drafted yet, 0x5C bytes at 0x8027D1E8)
-extern "C" void fn_8027D1E8(void);
-
-// TODO (not drafted yet, 0x9C bytes at 0x8027D244)
-extern "C" void fn_8027D244(void);
-
-void ActorClearFlag678(ActorBig* a) {
-    a->flags678 &= ~0x200;
-}
-
-void ActorSetFlag678(ActorBig* a) {
-    a->flags678 |= 0x200;
-}
-
-int ActorGetStateValue(ActorBig* a) {
-    return lbl_803C0570[a->stateIndex].value;
-}
-
-// TODO (not drafted yet, 0x44 bytes at 0x8027D31C)
-extern "C" void fn_8027D31C(void);
-
-// TODO (not drafted yet, 0x44 bytes at 0x8027D360)
-extern "C" void fn_8027D360(void);
-
-// TODO (not drafted yet, 0x40 bytes at 0x8027D3A4)
-extern "C" void fn_8027D3A4(void);
-
-void fn_8027D3E4(float v) {
-    lbl_804D3780 = v;
-}

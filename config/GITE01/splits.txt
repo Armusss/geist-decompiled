@@ -1267,7 +1267,22 @@ game/ode/obstack.cpp:
 	.rodata     start:0x8034AE78 end:0x8034AE90
 
 game/u_80277600.cpp:
-	.text       start:0x802775AC end:0x8027D3EC
+	.text       start:0x802775AC end:0x80278D2C
+
+game/u_80278D2C.cpp:
+	.text       start:0x80278D2C end:0x80279558
+
+game/u_80279558.cpp:
+	.text       start:0x80279558 end:0x8027B4F8
+
+game/u_8027B4F8.cpp:
+	.text       start:0x8027B4F8 end:0x8027BD5C
+
+game/u_8027BD5C.cpp:
+	.text       start:0x8027BD5C end:0x8027C650
+
+game/u_8027C650.cpp:
+	.text       start:0x8027C650 end:0x8027D3EC
 
 game/u_8027D3EC.cpp:
 	.text       start:0x8027D3EC end:0x8028009C

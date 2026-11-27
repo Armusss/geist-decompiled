@@ -836,7 +836,12 @@ config.libs = [
             Object(Matching, "game/ode/memory.cpp", extra_cflags=["-inline deferred"]),
             Object(Matching, "game/ode/misc.cpp", extra_cflags=["-inline deferred"]),
             Object(Matching, "game/ode/obstack.cpp", extra_cflags=["-inline deferred"]),
-            Object(NonMatching, "game/u_80277600.cpp"),  # guess
+            Object(NonMatching, "game/u_80277600.cpp"),  # ODE 0.5 ode.cpp (body/joint/world API)
+            Object(NonMatching, "game/u_80278D2C.cpp"),  # ODE math (split from u_80277600)
+            Object(NonMatching, "game/u_80279558.cpp"),  # ODE step.cpp (split from u_80277600)
+            Object(NonMatching, "game/u_8027B4F8.cpp"),  # ODE rotation? (split from u_80277600)
+            Object(NonMatching, "game/u_8027BD5C.cpp"),  # ODE util.cpp (split from u_80277600)
+            Object(NonMatching, "game/u_8027C650.cpp"),  # player states (split from u_80277600)
             Object(NonMatching, "game/u_8027D3EC.cpp"),  # guess
             Object(NonMatching, "game/u_8028009C.cpp"),  # guess
             Object(Matching, "game/u_80285014.cpp"),  # known
