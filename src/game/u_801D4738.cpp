@@ -96,7 +96,7 @@ inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned c
 // Engine functions with C++ names.
 void* VAlloc(int size);                                         // 0x8009DA68
 void VFree(void* p);                                            // 0x8009DA3C
-void Mtx34StoreTranslation(Mtx34* m, Vec3* t);                  // 0x800A0280
+void Mtx34StoreTranslation(Mtx34* m, const Vec3* t);                  // 0x800A0280
 void DebugDrawSphereWire(int r, int g, int b, float x, float y, float z, float radius); // 0x80023A9C
 void DebugDrawBoneBox(Vec3* box, void* m, int r, int g, int b); // 0x80023EE4
 void RoomGeomDebugDraw();                                       // 0x801D3EC4

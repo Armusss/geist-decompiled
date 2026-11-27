@@ -82,7 +82,7 @@ extern unsigned char __upper_map[256];
 static inline int toupper(int c) { return (c == -1) ? -1 : (int)__upper_map[(unsigned char)c]; }
 
 extern "C" void PSQUATMultiply(Quat* a, Quat* b, Quat* out);
-void Mtx34StoreTranslation(Mtx34* mtx, Vec3* v);
+void Mtx34StoreTranslation(Mtx34* mtx, const Vec3* v);
 void QuatRotateVec(Vec3* out, float* q, Vec3* in);
 extern "C" void fn_801D5110(void* cb, int value);
 extern "C" void fn_801D513C(void* cb, void* out);
@@ -453,7 +453,7 @@ extern "C" void fn_801D550C(void* source);
 
 
 void BoneSetMatrix(void* bone, Mtx34* matrix);
-void Mtx34GetTranslation(Vec3* out, Mtx34* matrix);
+void Mtx34GetTranslation(Vec3* out, const Mtx34* matrix);
 void QuatRotateVec(Vec3* out, float* quat, Vec3* vec);
 
 

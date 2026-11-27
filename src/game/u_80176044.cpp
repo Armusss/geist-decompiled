@@ -2280,7 +2280,7 @@ int BehTarget(Beh* beh);
 extern "C" int fn_800F7C64(int channel, unsigned long id);
 extern "C" int fn_800FC3B8(int condition);
 extern "C" void fn_800A025C(Vec3* out, Mtx34* m, int index);
-void Mtx34StoreColumn(Mtx34* m, Vec3* v, int index);
+void Mtx34StoreColumn(Mtx34* m, const Vec3* v, int index);
 extern "C" int fn_80049940(void);
 
 extern int lbl_804D4EC0;

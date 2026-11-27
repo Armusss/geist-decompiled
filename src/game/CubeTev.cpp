@@ -198,15 +198,11 @@ extern "C" void fn_8010475C(u32 phase) {   // called from other units, keeps its
 // 0x80104AAC tinted four-layer wobble (seven stages): the phase drives two small texture offsets.
 extern "C" void fn_80104AAC(u32 phase, u8 r, u8 g, u8 b) {   // called from other units
     Mtx m;
-    GXColor color;
     float ang;
     double dy;
     double dx;
     TevStateReset();
-    color.r = r;
-    color.g = g;
-    color.b = b;
-    color.a = 0xFF;
+    GXColor color = {r, g, b, 0xFF};
     GXSetTevColor(GX_TEVREG2, color);
     GXSetNumTevStages(7);
     GXSetNumIndStages(0);
@@ -465,7 +461,6 @@ static inline void TevRingTexCoords(float x, float y) {
 
 // 0x801062F4 hexagonal ring of seven offset samples (a spread, x horizontally and y vertically scaled).
 extern "C" void fn_801062F4(float x, float y) {   // called from other units
-    GXColor c;
     TevStateReset();
     GXSetNumTevStages(9);
     GXSetNumIndStages(0);
@@ -473,7 +468,7 @@ extern "C" void fn_801062F4(float x, float y) {   // called from other units
     GXSetNumTexGens(7);
     GfxSetChannelEnables(0, 0, 0);
     TevRingTexCoords(x, y);
-    c.r = c.g = c.b = c.a = 0x55;
+    GXColor c = {0x55, 0x55, 0x55, 0x55};
     GXSetTevColor(GX_TEVREG2, c);
     int stage = 0;
     TevStageSelect(stage);
@@ -558,7 +553,6 @@ extern "C" void fn_80106AE0(float x, float y) {   // called from other units
 
 // 0x80107514 seven-stage averaging of the hexagon samples.
 extern "C" void fn_80107514(float x, float y) {   // called from other units
-    GXColor c;
     TevStateReset();
     GXSetNumTevStages(7);
     GXSetNumIndStages(0);
@@ -566,7 +560,7 @@ extern "C" void fn_80107514(float x, float y) {   // called from other units
     GXSetNumTexGens(7);
     GfxSetChannelEnables(0, 0, 0);
     TevRingTexCoords(x, y);
-    c.r = c.g = c.b = c.a = 0x55;
+    GXColor c = {0x55, 0x55, 0x55, 0x55};
     GXSetTevColor(GX_TEVREG1, c);
     int stage = 0;
     TevStageSelect(stage);
@@ -594,7 +588,6 @@ extern "C" void fn_80107514(float x, float y) {   // called from other units
 
 // 0x80107BD8 same as the previous setup with a different final combine.
 extern "C" void fn_80107BD8(float x, float y) {   // called from other units
-    GXColor c;
     TevStateReset();
     GXSetNumTevStages(7);
     GXSetNumIndStages(0);
@@ -602,7 +595,7 @@ extern "C" void fn_80107BD8(float x, float y) {   // called from other units
     GXSetNumTexGens(7);
     GfxSetChannelEnables(0, 0, 0);
     TevRingTexCoords(x, y);
-    c.r = c.g = c.b = c.a = 0x55;
+    GXColor c = {0x55, 0x55, 0x55, 0x55};
     GXSetTevColor(GX_TEVREG1, c);
     int stage = 0;
     TevStageSelect(stage);
@@ -886,7 +879,6 @@ void CubeTevSetupRingAndBlend(float x, float y) {
     float hx;
     float hy;
     float nx;
-    GXColor c;
     TevStateReset();
     GXSetNumTevStages(8);
     GXSetNumIndStages(0);
@@ -920,7 +912,7 @@ void CubeTevSetupRingAndBlend(float x, float y) {
     TexGen(5,1,4,0x2a,0,0x7d);
     TexGen(6,1,4,0x2d,0,0x7d);
     TexGen(7,1,4,0x30,0,0x7d);
-    c.r = c.g = c.b = c.a = 0x2A;
+    GXColor c = {0x2A, 0x2A, 0x2A, 0x2A};
     GXSetTevColor(GX_TEVREG1, c);
     int stage = 0;
     TevStageSelect(stage);
@@ -975,12 +967,11 @@ void CubeTevSetupChannelSwap() {
 // 0x801094B4 hexagon ring whose eighth sample is perturbed through an indirect stage
 void CubeTevSetupRingIndirect(float x, float y) {
     float ind[2][3];
-    GXColor c;
     TevStateReset();
     GXLoadTexObj(&gTevTexObjs[0], GX_TEXMAP2);
     TevRingTexCoords(x, y);
     TexGen(7,1,4,0x3c,0,0x7d);
-    c.r = c.g = c.b = c.a = 0x55;
+    GXColor c = {0x55, 0x55, 0x55, 0x55};
     GXSetTevColor(GX_TEVREG1, c);
     GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_GREEN, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
     GXSetTevSwapModeTable(GX_TEV_SWAP2, GX_CH_RED, GX_CH_RED, GX_CH_RED, GX_CH_RED);
@@ -1059,7 +1050,6 @@ void CubeTevSetupIndirectTwo() {
 // 0x80109CD4 hexagon ring plus an extra scaled sample (fifteen stages, two per sample)
 void CubeTevSetupRingBlend15(float x, float y) {
     Mtx scale;
-    GXColor c;
     TevStateReset();
     GXSetNumTevStages(0xf);
     GXSetNumIndStages(0);
@@ -1069,7 +1059,7 @@ void CubeTevSetupRingBlend15(float x, float y) {
     GXLoadTexObj(&gTevTexObjs[2], GX_TEXMAP1);
     TevRingTexCoords(x, y);
     TexGen(7,1,4,0x30,0,0x7d);
-    c.r = c.g = c.b = c.a = 0x2A;
+    GXColor c = {0x2A, 0x2A, 0x2A, 0x2A};
     GXSetTevColor(GX_TEVREG1, c);
     GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_BLUE, GX_CH_GREEN, GX_CH_RED, GX_CH_ALPHA);
     TevStageSelect(0);
@@ -1121,7 +1111,6 @@ void CubeTevSetupRingBlend15(float x, float y) {
 
 // 0x8010AAD0 six-sample hexagon ring (no center sample)
 void CubeTevSetupRingSix(float x, float y) {
-    GXColor c;
     TevStateReset();
     GXSetNumTevStages(6);
     GXSetNumIndStages(0);
@@ -1135,7 +1124,7 @@ void CubeTevSetupRingSix(float x, float y) {
     TexGen(3,1,4,0x27,0,0x7d);
     TexGen(4,1,4,0x2a,0,0x7d);
     TexGen(5,1,4,0x2d,0,0x7d);
-    c.r = c.g = c.b = c.a = 0x55;
+    GXColor c = {0x55, 0x55, 0x55, 0x55};
     GXSetTevColor(GX_TEVREG1, c);
     int stage = 0;
     TevStageSelect(stage);
@@ -1160,7 +1149,6 @@ void CubeTevSetupRingSix(float x, float y) {
 
 // 0x8010B0E4 six hexagon samples combined in pairs (thirteen stages)
 void CubeTevSetupRingPairs(float x, float y) {
-    GXColor c;
     TevStateReset();
     GXSetNumTevStages(0xd);
     GXSetNumIndStages(0);
@@ -1174,7 +1162,7 @@ void CubeTevSetupRingPairs(float x, float y) {
     TexGen(3,1,4,0x27,0,0x7d);
     TexGen(4,1,4,0x2a,0,0x7d);
     TexGen(5,1,4,0x2d,0,0x7d);
-    c.r = c.g = c.b = c.a = 0x7F;
+    GXColor c = {0x7F, 0x7F, 0x7F, 0x7F};
     GXSetTevColor(GX_TEVREG1, c);
     TevStageSelect(0);
     TevOrder(0, 0, 0, 0xff);
@@ -1317,7 +1305,7 @@ void GfxResetTev() {
 
 // 0x8010E9F4 picks the quality level: a forced level (0-3) wins over the caller's.
 void TevSetLevel(int level) {
-    if (gTevForcedLevel > -1 && gTevForcedLevel < 4) {
+    if (gTevForcedLevel >= 0 && gTevForcedLevel <= 3) {
         gTevLevel = gTevForcedLevel;
         return;
     }
@@ -1326,26 +1314,11 @@ void TevSetLevel(int level) {
 
 // 0x8010EA18 sets konstant color 3, clearing the cached TEV state when the key changes.
 void TevSetKColor3(int key, u8 r, u8 g, u8 b, u8 a) {
-    GXColor c;
     if (gTevResetKey != key) {
-        gTevSlots[0].kind = 0;
-        gTevPrevA = -1;
-        gTevPrevB = -2;
-        gTevSlots[1].kind = 0;
-        gTevSlots[2].kind = 0;
-        gTevSlots[3].kind = 0;
-        gTevSlots[4].kind = 0;
-        gTevSlots[5].kind = 0;
-        gTevSlots[6].kind = 0;
-        gTevSlots[7].kind = 0;
         gTevResetKey = key;
-        PSMTXIdentity(gTevBaseMtx);
-        fn_8000FF7C();
+        TevStateReset();
     }
-    c.r = r;
-    c.g = g;
-    c.b = b;
-    c.a = a;
+    GXColor c = {r, g, b, a};
     GXSetTevKColor(GX_KCOLOR3, c);
 }
 
@@ -1357,26 +1330,23 @@ void TevSetKColor2(GXColor* color) {
 
 // 0x8010EB18 sets konstant color 1 to a grey level (0..1) with full alpha.
 void TevSetKColor1Grey(float level) {
-    GXColor c;
     u8 v = (int)(255.0f * level);
-    c.r = v;
-    c.g = v;
-    c.b = v;
-    c.a = 0xFF;
+    GXColor c = {v, v, v, 0xFF};
     GXSetTevKColor(GX_KCOLOR1, c);
 }
 
 // 0x8010EB70 loads a translating texture matrix into a slot unless it is already cached there.
 extern "C" void fn_8010EB70(float x, float y, int slot) {   // TevSlotTranslate; called from other units
     Mtx m;
-    bool same;
-    if (gTevSlots[slot].kind == 2 && gTevSlots[slot].x == x && gTevSlots[slot].y == y) {
+    int same;
+    TevSlot* s = &gTevSlots[slot];
+    if (s->kind == 2 && s->x == x && s->y == y) {
         same = true;
     } else {
         same = false;
-        gTevSlots[slot].kind = 2;
-        gTevSlots[slot].x = x;
-        gTevSlots[slot].y = y;
+        s->kind = 2;
+        s->x = x;
+        s->y = y;
     }
     if (!same) {
         PSMTXTrans(m, x, y, 1.0f);
@@ -1387,14 +1357,15 @@ extern "C" void fn_8010EB70(float x, float y, int slot) {   // TevSlotTranslate;
 // 0x8010EC10 the same for a scaling texture matrix.
 extern "C" void fn_8010EC10(float x, float y, int slot) {   // TevSlotScale; called from other units
     Mtx m;
-    bool same;
-    if (gTevSlots[slot].kind == 1 && gTevSlots[slot].x == x && gTevSlots[slot].y == y) {
+    int same;
+    TevSlot* s = &gTevSlots[slot];
+    if (s->kind == 1 && s->x == x && s->y == y) {
         same = true;
     } else {
         same = false;
-        gTevSlots[slot].kind = 1;
-        gTevSlots[slot].x = x;
-        gTevSlots[slot].y = y;
+        s->kind = 1;
+        s->x = x;
+        s->y = y;
     }
     if (!same) {
         PSMTXScale(m, x, y, 1.0f);
@@ -1426,8 +1397,8 @@ void TevSetupViewMtx(float x, float y) {
 // 0x8010EDE4 view-dependent texture matrix 0x30: camera translation scaled into texture space.
 void TevSetupViewScroll(float x, float y) {
     Mtx cam;
-    Mtx m;
     Mtx scale;
+    Mtx m;
     float sx;
     float sy;
     fn_80008C78(cam);
@@ -1467,10 +1438,10 @@ extern "C" void fn_8010EF3C(void) {   // TevLoadBaseMtx; called from other units
 
 // 0x8010EF6C sets the base matrix from a matrix, or from the camera when none is given.
 void TevSetBaseMtx(Mtx src) {
-    if (src == 0) {
-        fn_80008C78(gTevBaseMtx);
-    } else {
+    if (src != 0) {
         PSMTXCopy(src, gTevBaseMtx);
+    } else {
+        fn_80008C78(gTevBaseMtx);
     }
 }
 
