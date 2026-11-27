@@ -117,7 +117,6 @@ extern "C" void fn_8003F15C(float f, int a, int b, int c, int* out, int e);
 typedef int (*ActorCallback)(int a, int b, void* owner);
 extern "C" void fn_800BDA0C(void* owner, ActorCallback callback, void* arg);
 extern "C" void fn_80090390(void* a, int b);
-extern "C" void fn_8028B35C(void* dst, void* src, int size);
 extern "C" unsigned int fn_800BA84C(int n);
 extern "C" void* memcpy(void* dst, const void* src, unsigned long n);
 extern "C" int SendMsg(int to, int msg, void* data);
@@ -167,6 +166,16 @@ static inline unsigned long TypeNameHash(const char* name)
     }
     return hash;
 }
+
+// Declared here for the member calls below.
+class Buffer {
+public:
+    Buffer();
+    virtual ~Buffer();
+    char* Erase(char* pos, int size);  // 0x8028B35C
+    char* Insert(char* pos, int size); // 0x8028B3BC
+    void Free();                       // 0x8028B960
+};
 
 int ActorMessageHandler802B7120(int msg, int* data)
 {
@@ -235,7 +244,7 @@ int ActorMessageHandler802B7120(int msg, int* data)
                         dst++;
                     }
                 }
-                fn_8028B35C(extra->unk24, dst, (end - dst) * 4);
+                ((Buffer*)extra->unk24)->Erase((char*)dst, (end - dst) * 4);
                 break;
             }
         }
@@ -401,11 +410,6 @@ struct FollowBlock {
     unsigned char padTail[0x1c];
 };
 
-class Buffer {
-public:
-    Buffer();
-    virtual ~Buffer();
-};
 
 class String : public Buffer {
 public:
@@ -678,7 +682,6 @@ extern "C" void fn_800BAEE4(void* owner, int enable);
 extern "C" void fn_800CE96C(void* owner);
 extern "C" void fn_800CF064(void* owner);
 extern "C" void fn_800CC984(void* owner);
-extern "C" int* fn_8028B3BC(void* list, int offset, int size);
 extern "C" int fn_80212730(int id);
 extern "C" void fn_8021284C(int id);
 extern "C" void fn_80212814(int id, int other, unsigned long asset,
@@ -750,7 +753,7 @@ int ActorShouldCollect802B84C8(void* playerArg, void* ownerArg)
         player->iA8 = owner->id;
         state->count++;
         state->added++;
-        entry = fn_8028B3BC(&state->list, state->list.unk0c + state->list.unk08, 4);
+        entry = (int*)((Buffer*)&state->list)->Insert((char*)(state->list.unk0c + state->list.unk08), 4);
         *entry = player->id;
     }
     return 1;

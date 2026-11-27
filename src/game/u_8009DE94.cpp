@@ -3421,7 +3421,6 @@ extern "C" void fn_800C9B68(void* agent);
 extern "C" void fn_800390F4(void* p);
 extern "C" void fn_80090D6C(void* p);
 extern "C" void fn_800F86A0(void* p);
-extern "C" void fn_8028B35C(void* p, void* q, int n);
 extern "C" void fn_800B6EDC(unsigned int id, int flag);
 struct ExtraHolder;
 void ExtraTrailClear(ExtraHolder* holder);
@@ -3489,7 +3488,7 @@ extern "C" void NeoAgentRelease(void* agent)
     list = *(int**)((char*)a + 0x90C);
     count = (unsigned int)list[2];
     if (count >> 2) {
-        fn_8028B35C(list, (void*)list[3], ((int)count / 4) * 4);
+        ((Buffer*)list)->Erase((char*)((void*)list[3]), ((int)count / 4) * 4);
     }
     list = *(int**)((char*)a + 0x90C);
     if (list != 0) {
@@ -3526,13 +3525,12 @@ struct BufferObject {
 };
 
 extern void* lbl_8039B67C[];   // virtual table of a buffer-derived object
-extern "C" void fn_8028B960(void* p);
 
 void* BufferObjectRelease(void* p, short freeIt)
 {
     if (p != 0) {
         ((BufferObject*)p)->vtable = lbl_8039B67C;
-        fn_8028B960(p);
+        ((Buffer*)p)->Free();
         ((Buffer*)p)->Buffer::~Buffer();
         if (freeIt > 0) {
             VFree(p);

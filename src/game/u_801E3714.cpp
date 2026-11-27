@@ -10,7 +10,6 @@
 
 void* VAlloc(int size);
 void VFree(void* p);
-extern "C" void fn_8028B960(void* buffer);
 extern "C" void fn_8028B5FC(void* self, int size, int a);
 
 inline void* operator new(unsigned long, void* p) { return p; }
@@ -43,6 +42,9 @@ public:
     Buffer();
     virtual void Clear();
     virtual int GetSpan() { return 0; }
+    char* Erase(char* pos, int size);  // 0x8028B35C
+    char* Insert(char* pos, int size); // 0x8028B3BC
+    void Free();                       // 0x8028B960
 };
 
 extern "C" void fn_801E4584(u32* first, u32* last);
@@ -52,7 +54,7 @@ extern "C" void fn_801E45A4(u32* first, u32* last);
 class WordArray : public Buffer {
 public:
     WordArray() {}
-    virtual ~WordArray() { fn_8028B960(this); }
+    virtual ~WordArray() { Free(); }
     virtual int GetAlignment();
     virtual void Commit(int start, unsigned long size);
     virtual void Append(unsigned char* data, unsigned long size);
@@ -99,7 +101,6 @@ void fn_801E3A88(void) {
 }
 //@@end
 //@@801E3AD4
-extern "C" void fn_8028B35C(void* self, char* pos, int size);
 extern WordList* lbl_804D5230;
 extern int lbl_804D523C;
 
@@ -107,7 +108,7 @@ extern "C" void fn_801E3AD4(void);
 void fn_801E3AD4(void) {
     while (lbl_804D5230->mSize / sizeof(u32) != 0) {
         VFree(*(void**)lbl_804D5230->mStore);
-        fn_8028B35C(lbl_804D5230, lbl_804D5230->mStore, sizeof(u32));
+        ((Buffer*)lbl_804D5230)->Erase((char*)lbl_804D5230->mStore, sizeof(u32));
     }
     lbl_804D523C = 0;
     delete lbl_804D5230;

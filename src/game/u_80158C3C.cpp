@@ -80,9 +80,6 @@ void fn_80211470(f32, int, int, int);
 void fn_80211638(f32, f32, f32, f32, int, f32*, f32*, int, int);
 void fn_8028B2D4(void*);
 int fn_800391DC(int);
-void fn_8028B35C(void*, void*, int);
-void* fn_8028B3BC(void*, void*, int);
-void fn_8028B960(void*);
 void fn_8028B9C0(void*, int);
 void fn_8028BA9C(void*);
 void fn_800A0094(f32*, f32*);
@@ -407,7 +404,6 @@ extern s32 lbl_804D2F3C;
 extern f32 lbl_804D2F40;
 extern f32 lbl_804D2F44;
 extern u32 lbl_804D2F48;
-extern f32 lbl_804D2F50;
 
 extern u32 lbl_804D7CE8;
 
@@ -415,8 +411,6 @@ extern u32 lbl_803A6FA8[8];
 extern u32 lbl_803A6FC8[8];
 extern u32 lbl_803A6FE8[8];
 extern u32 lbl_803A7008[8];
-extern u32 lbl_803A7028[8];
-extern u32 lbl_803A7048[8];
 
 // Resizable pointer array used by the effect pools.
 class ResArray {
@@ -429,8 +423,6 @@ public:
 
 extern ResArray* lbl_804D4EA0;
 extern ResArray* lbl_804D4EA8;
-extern ResArray* lbl_804D4EB0;
-extern f32 lbl_804D4EB4;
 
 
 extern "C" {
@@ -527,7 +519,7 @@ int fn_80158C3C(f32* pos, u32 kind, int a, int b, int c, int d, int e) {
         VFree(obj);
         return 0;
     }
-    *(SpawnObj**)fn_8028B3BC(lbl_804D4EA0, lbl_804D4EA0->data, 4) = obj;
+    *(SpawnObj**)((Buffer*)lbl_804D4EA0)->Insert((char*)lbl_804D4EA0->data, 4) = obj;
     obj->def = entry;
     obj->pos[0] = pos[0];
     obj->pos[1] = pos[1];
@@ -594,7 +586,7 @@ void fn_80158F90() {
             *(s32*)((u8*)*lbl_804D4EA0->data + 0x2c) = 0;
         }
         VFree(*lbl_804D4EA0->data);
-        fn_8028B35C(lbl_804D4EA0, lbl_804D4EA0->data, 4);
+        ((Buffer*)lbl_804D4EA0)->Erase((char*)lbl_804D4EA0->data, 4);
     }
     delete lbl_804D4EA0;
     fn_80233848();
@@ -606,7 +598,7 @@ void* fn_8015902C(void* p, short freeIt) {
         *(void**)p = &lbl_803A6FC8;
         if (p != 0) {
             *(void**)p = &lbl_803A6FA8;
-            fn_8028B960(p);
+            ((Buffer*)p)->Free();
             fn_8028B9C0(p, 0);
         }
         if (freeIt > 0) {
@@ -687,7 +679,7 @@ void fn_80159118(f32 dt) {
                 (*p)[0xb] = 0;
             }
             VFree(*p);
-            fn_8028B35C(lbl_804D4EA0, p, 4);
+            ((Buffer*)lbl_804D4EA0)->Erase((char*)p, 4);
         } else {
             p++;
         }
@@ -733,7 +725,7 @@ void fn_801593A4() {
 void* fn_801593FC(void* p, short freeIt) {
     if (p != 0) {
         *(void**)p = &lbl_803A6FA8;
-        fn_8028B960(p);
+        ((Buffer*)p)->Free();
         fn_8028B9C0(p, 0);
         if (freeIt > 0) {
             VFree(p);

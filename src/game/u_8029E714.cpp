@@ -17,7 +17,6 @@ void TextureLoad(short* ids, int n);                            // 0x8000F738
 int HasCondition(void* conditions, int which);                  // 0x800A7AC4
 int ConditionSetBit(void* cond, int bit, int set);              // 0x800A7A54
 int ActorPlayAnim(int actor, u32 anim, int arg);                // 0x800C5654
-extern "C" void fn_8028B960(void* p);
 extern "C" int fn_800498D0(void);
 extern "C" void fn_800BBCA8(void* o);
 extern "C" void fn_8029B070(void* o, int v);
@@ -155,7 +154,7 @@ struct HostObjFx {
 class EffectListBase : public Buffer {
 public:
     EffectListBase() {}
-    virtual ~EffectListBase() { fn_8028B960(this); }
+    virtual ~EffectListBase() { Free(); }
     static void* operator new(unsigned long n) { return VAlloc(n); }
     static void operator delete(void* p) { VFree(p); }
 };
@@ -728,7 +727,6 @@ int StructCopy18(u32* src, u32* dst) {
 // TODO (not drafted yet, 0xEC bytes at 0x802A3778): not analysed
 // TODO (not drafted yet, 0x254 bytes at 0x802A3864): not analysed
 void EmitterDestroy(int handle);                        // 0x800D3694
-extern "C" void fn_8028B35C(void* buf, int at, int size);
 
 struct FxRecItem {
     int pad00;
@@ -754,7 +752,7 @@ void EffectListFreeAll() {
             }
         }
         VFree(*(FxRec**)lbl_804D5750->mUnk0C);
-        fn_8028B35C(lbl_804D5750, lbl_804D5750->mUnk0C, 4);
+        ((Buffer*)lbl_804D5750)->Erase((char*)lbl_804D5750->mUnk0C, 4);
     }
     if (lbl_804D5750 != 0) {
         delete lbl_804D5750;
@@ -780,7 +778,7 @@ void EffectListUpdate(float dt) {
                 }
             }
             VFree(rec);
-            fn_8028B35C(lbl_804D5750, (int)p, 4);
+            ((Buffer*)lbl_804D5750)->Erase((char*)((int)p), 4);
         } else {
             p++;
         }

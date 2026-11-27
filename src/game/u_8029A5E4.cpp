@@ -15,7 +15,6 @@
 
 void* VAlloc(int size);
 void VFree(void* p);
-extern "C" void fn_8028B960(void* buffer);
 extern "C" void fn_8028B2D4(void* slot);
 
 // The Buffer class chain of u_8028A8D4.cpp (ScreenEffectSlot -> ScreenEffectBuffer -> Buffer; base names are
@@ -46,9 +45,11 @@ public:
     Buffer();
     virtual void Clear();
     virtual int GetSpan() { return 0; }
+    char* Erase(char* pos, int size);  // 0x8028B35C
+    char* Insert(char* pos, int size); // 0x8028B3BC
+    void Free();                       // 0x8028B960
 };
 
-extern "C" char* fn_8028B3BC(Buffer* self, char* pos, int size);
 
 // Construct / destroy hooks for a range of 12-byte elements (trivial: empty loops).
 extern "C" void fn_8029B028(Vec3* first, Vec3* last);
@@ -59,7 +60,7 @@ extern "C" void fn_8029B04C(Vec3* first, Vec3* last);
 class Vec3Array : public Buffer {
 public:
     Vec3Array() {}
-    virtual ~Vec3Array() { fn_8028B960(this); }
+    virtual ~Vec3Array() { Free(); }
     virtual int GetAlignment();
     virtual void Commit(int start, unsigned long size);
     virtual void Append(unsigned char* data, unsigned long size);
@@ -150,7 +151,6 @@ extern "C" int fn_80183DD0(void* src, void** ctx);
 extern "C" void fn_8016F120(void* fx, int* pos);
 extern "C" void fn_80184BCC(int* delta, int* in, int* out);
 extern "C" int fn_80049940(void);
-extern "C" void fn_8028B35C(Buffer* self, char* pos, int size);
 
 // TODO (not drafted yet, 0x2D8 bytes at 0x8029A5E4)
 // fn_8029A5E4
@@ -169,7 +169,7 @@ void fn_8029A8BC(void* self, Projectile* o) {
 //@@end
 //@@8029A914
 static inline void Vec3Erase(Vec3Array* a, Vec3* first, Vec3* last) {
-    fn_8028B35C(a, (char*)first, (last - first) * sizeof(Vec3));
+    ((Buffer*)a)->Erase((char*)((char*)first), (last - first) * sizeof(Vec3));
 }
 
 extern "C" int fn_8029A914(void* type, Projectile* p);
@@ -186,7 +186,7 @@ int fn_8029A914(void* type, Projectile* p) {
     if (a == 0) {
         return 0;
     }
-    v = (Vec3*)fn_8028B3BC(a, a->mStore + a->mSize, sizeof(Vec3));
+    v = (Vec3*)((Buffer*)a)->Insert((char*)(a->mStore + a->mSize), sizeof(Vec3));
     *v = p->pos;
     if (a->mSize / sizeof(Vec3) > 6) {
         Vec3Erase(a, (Vec3*)a->mStore, (Vec3*)a->mStore + 1);
@@ -293,7 +293,7 @@ int fn_8029AE58(void* self, Projectile* o) {
         return 0;
     }
     o->trail = a;
-    v = (Vec3*)fn_8028B3BC(a, a->mStore + a->mSize, sizeof(Vec3));
+    v = (Vec3*)((Buffer*)a)->Insert((char*)(a->mStore + a->mSize), sizeof(Vec3));
     *v = o->pos;
     return 1;
 }

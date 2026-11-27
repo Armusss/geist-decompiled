@@ -17,7 +17,6 @@ typedef unsigned char u8;
 
 void VFree(void* p);
 
-extern "C" void fn_8028B960(void* buffer);
 extern "C" void ScreenEffectMemFill(void* dst, u32 size, u8 fill);
 extern u8 lbl_804D37C8;
 extern "C" void fn_8028BC5C(void* self, int pos, int size);
@@ -69,6 +68,9 @@ public:
     Buffer();
     virtual void Clear();
     virtual int GetSpan() { return 0; }
+    char* Erase(char* pos, int size);
+    char* Insert(char* pos, int size);
+    void Free();
 };
 
 // String: a Buffer whose text source (mStart) and length (mSize) describe an
@@ -375,15 +377,15 @@ extern "C" void fn_8028B2D4(ScreenEffectSlot* slot)
     SlotErase(slot, slot->unk0C + slot->mSize - slot->GetAlignment(), slot->GetAlignment());
 }
 
-// 0x8028B35C: mark [pos, pos + size) of the current window as written.  The
-// window base is re-read from the object after the write call, as retail does.
-// ScreenEffectSlotConsume
-extern "C" char* fn_8028B35C(ScreenEffectSlot* slot, char* pos, int size)
+// 0x8028B35C: erase `size` bytes at `pos` (an address inside the store) and
+// return the address after the erased range.  The store base is re-read after
+// the move call, as retail does.
+char* Buffer::Erase(char* pos, int size)
 {
-    int rel = pos - slot->unk0C;
-    fn_8028BC5C(slot, (int)(slot->unk0C + rel), size);
-    slot->mSize -= size;
-    return slot->unk0C + rel;
+    int rel = pos - unk0C;
+    fn_8028BC5C(this, (int)(unk0C + rel), size);
+    mSize -= size;
+    return unk0C + rel;
 }
 
 // 0x8009D974: grow (or, with a null base, allocate) a heap block.
@@ -460,18 +462,17 @@ static inline void BufferReserve(Buffer* self, u32 size, u8 exact)
 }
 
 // Insert `size` bytes at `pos` (an address inside the store), growing the
-// store when needed, and return the address of the new window.  Kept under its
-// placeholder name: five other units call it.
-extern "C" char* fn_8028B3BC(Buffer* self, char* pos, int size)
+// store when needed, and return the address of the new window.
+char* Buffer::Insert(char* pos, int size)
 {
-    int rel = pos - self->unk0C;
-    int newSize = size + self->mSize;
+    int rel = pos - unk0C;
+    int newSize = size + mSize;
 
-    if (self->mState < newSize + self->GetSpan())
-        BufferReserve(self, newSize, 0);
-    self->mSize = newSize;
-    fn_8028BC94(self, (int)(self->unk0C + rel), size);
-    return self->unk0C + rel;
+    if (mState < newSize + GetSpan())
+        BufferReserve(this, newSize, 0);
+    mSize = newSize;
+    fn_8028BC94(this, (int)(unk0C + rel), size);
+    return unk0C + rel;
 }
 
 // Reserve room for `size` bytes; a non-zero `exact` skips the block rounding
@@ -493,18 +494,15 @@ void ScreenEffectSlotReserveAndCopy(ScreenEffectSlot* slot, int text, int size)
 }
 
 // 0x8028B960: release the backing store through VFree when the slot holds
-// one, then clear the pending state.  Other units call this helper under its
-// placeholder name, so the C symbol stays.
-extern "C" void fn_8028B960(void* buffer)
+// one, then clear the pending state.
+void Buffer::Free()
 {
-    Buffer* self = (Buffer*)buffer;
-
-    if (self->mState != 0) {
-        self->Append((unsigned char*)self->unk0C, self->mState);
-        VFree((void*)self->unk0C);
+    if (mState != 0) {
+        Append((unsigned char*)unk0C, mState);
+        VFree((void*)unk0C);
     }
-    self->ScreenEffectBuffer::Clear();
-    self->mState = 0;
+    ScreenEffectBuffer::Clear();
+    mState = 0;
 }
 
 // __dt__6BufferFv: deleting destructor of Buffer.  The body releases the

@@ -160,6 +160,9 @@ class Buffer {
 public:
     Buffer();
     virtual ~Buffer();
+    char* Erase(char* pos, int size);  // 0x8028B35C
+    char* Insert(char* pos, int size); // 0x8028B3BC
+    void Free();                       // 0x8028B960
 };
 class String : public Buffer {
 public:
@@ -438,19 +441,17 @@ s32 HazardZoneNodeCheck(s32 unused, f32 dist, void* walkerPtr, void* ownerPtr) {
 // --- hazard spline-zone creation ---
 
 void* VAlloc(s32 size);
-extern "C" void** fn_8028B3BC(void* list, s32 offset, s32 size);
 struct HazardSplineActor;
 struct HazardSplineZone;
 s32 HazardSplineZoneCheck(f32, HazardSplineActor*, HazardSplineZone*);
 void ZoneSetCallback(void*, s32, s32 (*)(s32, Actor*, Actor*), s32, Actor*);
 
 // Base of the hazard spline-instance list: releases the engine-side resources.
-extern "C" void fn_8028B960(void* self);
 class HazardZoneBase : public Buffer {
 public:
     HazardZoneBase() {}
     virtual void Clear(s32 flag);
-    virtual ~HazardZoneBase() { fn_8028B960(this); }
+    virtual ~HazardZoneBase() { Free(); }
 };
 
 // Dynamic list of hazard spline instances; the third virtual clears the list.
@@ -505,8 +506,7 @@ s32 HazardSplineZoneCreate(f32 p1, f32 p2, f32 p3, f32 p4, Actor* owner, s32 fla
     if (obj == 0) {
         return -1;
     }
-    HazardSplineZone** slot = (HazardSplineZone**)fn_8028B3BC(
-        lbl_804D4CC8, lbl_804D4CC8->used + lbl_804D4CC8->len, 4);
+    HazardSplineZone** slot = (HazardSplineZone**)((Buffer*)lbl_804D4CC8)->Insert((char*)(lbl_804D4CC8->used + lbl_804D4CC8->len), 4);
     *slot = obj;
 
     s32 id = ++lbl_804D4CCC;
@@ -549,8 +549,7 @@ s32 HazardCreateSpline(Actor* owner, s32 typeA, Vec3* vec, s32 typeB, f32 p1, f3
     if (obj == 0) {
         return -1;
     }
-    HazardSplineZone** slot = (HazardSplineZone**)fn_8028B3BC(
-        lbl_804D4CC8, lbl_804D4CC8->used + lbl_804D4CC8->len, 4);
+    HazardSplineZone** slot = (HazardSplineZone**)((Buffer*)lbl_804D4CC8)->Insert((char*)(lbl_804D4CC8->used + lbl_804D4CC8->len), 4);
     *slot = obj;
 
     s32 id = ++lbl_804D4CCC;
@@ -596,8 +595,7 @@ s32 HazardCreate(Actor* owner, s32 typeA, Vec3* vec, s32 typeB, s32 typeC, f32 p
     if (obj == 0) {
         return -1;
     }
-    HazardSplineZone** slot = (HazardSplineZone**)fn_8028B3BC(
-        lbl_804D4CC8, lbl_804D4CC8->used + lbl_804D4CC8->len, 4);
+    HazardSplineZone** slot = (HazardSplineZone**)((Buffer*)lbl_804D4CC8)->Insert((char*)(lbl_804D4CC8->used + lbl_804D4CC8->len), 4);
     *slot = obj;
 
     s32 id = ++lbl_804D4CCC;
@@ -642,8 +640,7 @@ s32 fn_80122108(Actor* owner, s32 typeA, Vec3* vec, s32 typeB, s32 typeC, f32 p1
     if (obj == 0) {
         return -1;
     }
-    HazardSplineZone** slot = (HazardSplineZone**)fn_8028B3BC(
-        lbl_804D4CC8, lbl_804D4CC8->used + lbl_804D4CC8->len, 4);
+    HazardSplineZone** slot = (HazardSplineZone**)((Buffer*)lbl_804D4CC8)->Insert((char*)(lbl_804D4CC8->used + lbl_804D4CC8->len), 4);
     *slot = obj;
 
     s32 id = ++lbl_804D4CCC;
@@ -699,7 +696,6 @@ void HazardSetFlag(s32 id, s32 flagA, s32 flagB) {
     }
 }
 
-extern "C" void fn_8028B35C(void* list, void* at, s32 size);
 void VFree(void*);
 
 // Frees the hazard spline with serial number id and removes it from the list.
@@ -711,7 +707,7 @@ void HazardDestroy(s32 id) {
         HazardSplineZone* obj = *p;
         if (obj->id - id == 0) {
             VFree(obj);
-            fn_8028B35C(lbl_804D4CC8, p, 4);
+            ((Buffer*)lbl_804D4CC8)->Erase((char*)p, 4);
             return;
         }
         p++;
@@ -767,14 +763,13 @@ void HazardSetActive(s32 id, s32 active) {
 void HazardSplineClearAll() {
     while (lbl_804D4CC8->len >> 2 != 0) {
         VFree(*(void**)lbl_804D4CC8->used);
-        fn_8028B35C(lbl_804D4CC8, (void*)lbl_804D4CC8->used, 4);
+        ((Buffer*)lbl_804D4CC8)->Erase((char*)((void*)lbl_804D4CC8->used), 4);
     }
     delete lbl_804D4CC8;
 }
 
 // Destructor of the hazard spline-instance list (the deleting-destructor slot
 // of its vtable): tears down the engine base object and releases the storage.
-extern "C" void fn_8028B960(void* self);
 
 HazardZoneBuffer::~HazardZoneBuffer() {
 }
@@ -888,7 +883,7 @@ s32 HazardSplineUpdateAll(f32 dt) {
             p++;
         } else {
             fn_8009DA3C();
-            fn_8028B35C(lbl_804D4CC8, p, 4);
+            ((Buffer*)lbl_804D4CC8)->Erase((char*)p, 4);
         }
     }
     return 1;
@@ -929,7 +924,7 @@ public:
 };
 
 HazardZoneList::~HazardZoneList() {
-    fn_8028B960(this);
+    Free();
 }
 
 // --- spline zone proximity-effect callback ---

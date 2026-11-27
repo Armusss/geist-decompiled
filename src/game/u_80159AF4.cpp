@@ -79,9 +79,6 @@ void fn_80211470(f32, int, int, int);
 void fn_80211638(f64, int, f64, f64, int, void*, void*, int, int);
 void fn_8028B2D4(void*);
 int fn_800391DC(int);
-void fn_8028B35C(void*, void*, int);
-void* fn_8028B3BC(void*, void*, int);
-void fn_8028B960(void*);
 void fn_8028B9C0(void*, int);
 void fn_8028BA9C(void*);
 void fn_800A0094(void*, void*);
@@ -406,7 +403,6 @@ extern s32 lbl_804D2F3C;
 extern f32 lbl_804D2F40;
 extern f32 lbl_804D2F44;
 extern u32 lbl_804D2F48;
-extern f32 lbl_804D2F50;
 
 extern u32 lbl_804D7CE8;
 
@@ -415,8 +411,6 @@ extern u32 lbl_803A6FA8[8];
 extern u32 lbl_803A6FC8[8];
 extern u32 lbl_803A6FE8[8];
 extern u32 lbl_803A7008[8];
-extern u32 lbl_803A7028[8];
-extern u32 lbl_803A7048[8];
 
 // Resizable pointer array used by the effect pools.
 class ResArray {
@@ -429,8 +423,6 @@ public:
 
 extern ResArray* lbl_804D4EA0;
 extern ResArray* lbl_804D4EA8;
-extern ResArray* lbl_804D4EB0;
-extern f32 lbl_804D4EB4;
 
 extern u8 lbl_80346630[16];
 
@@ -459,7 +451,7 @@ void fn_80159AF4(u32 p, u8 r, u8 g, u8 b) {
 void fn_80159B2C() {
     while ((u32)lbl_804D4EA8->size >> 2 != 0) {
         VFree(*(void**)lbl_804D4EA8->data);
-        fn_8028B35C(lbl_804D4EA8, lbl_804D4EA8->data, 4);
+        ((Buffer*)lbl_804D4EA8)->Erase((char*)lbl_804D4EA8->data, 4);
     }
     delete lbl_804D4EA8;
 }
@@ -470,7 +462,7 @@ void* fn_80159B94(void* p, short freeIt) {
         *(void**)p = &lbl_803A7008;
         if (p != 0) {
             *(void**)p = &lbl_803A6FE8;
-            fn_8028B960(p);
+            ((Buffer*)p)->Free();
             fn_8028B9C0(p, 0);
         }
         if (freeIt > 0) {
@@ -596,7 +588,7 @@ void fn_8015A050() {
 void* fn_8015A0A4(void* p, short freeIt) {
     if (p != 0) {
         *(void**)p = &lbl_803A6FE8;
-        fn_8028B960(p);
+        ((Buffer*)p)->Free();
         fn_8028B9C0(p, 0);
         if (freeIt > 0) {
             VFree(p);
@@ -617,7 +609,7 @@ void fn_8015A10C(void* arg) {
                     fn_800390F4(entry[0x14]);
                 }
                 VFree(entry);
-                fn_8028B35C(lbl_804D4EA8, p, 4);
+                ((Buffer*)lbl_804D4EA8)->Erase((char*)p, 4);
                 return;
             }
         }
@@ -672,12 +664,11 @@ int fn_8015A570(f32 a, f32 b, u8 p3, u8 p4, u8 p5, u8 p6, u8 p7, u8 p8, u8 p9, u
 
     while ((u32)lbl_804D4EA8->size >> 2 >= 8) {
         VFree(*(void**)lbl_804D4EA8->data);
-        fn_8028B35C(lbl_804D4EA8, lbl_804D4EA8->data, 4);
+        ((Buffer*)lbl_804D4EA8)->Erase((char*)lbl_804D4EA8->data, 4);
     }
     obj = (int*)VAlloc(0x570);
     if (obj != 0) {
-        *(int*)fn_8028B3BC(lbl_804D4EA8,
-                           (u8*)lbl_804D4EA8->data + lbl_804D4EA8->size, 4) = (int)obj;
+        *(int*)((Buffer*)lbl_804D4EA8)->Insert((char*)((u8*)lbl_804D4EA8->data + lbl_804D4EA8->size), 4) = (int)obj;
         LinkInfoInit(obj);
         *(int*)((u8*)obj + 0x30) = 0x10;
         *(u8*)((u8*)obj + 0x34) = p3;
@@ -725,7 +716,7 @@ int fn_8015A78C(u8 p1, u8 p2, u8 p3, u8 p4, u8 p5, u8 p6, u8 p7, u8 p8) {
 
     while ((u32)lbl_804D4EA8->size >> 2 >= 8) {
         VFree(*(void**)lbl_804D4EA8->data);
-        fn_8028B35C(lbl_804D4EA8, lbl_804D4EA8->data, 4);
+        ((Buffer*)lbl_804D4EA8)->Erase((char*)lbl_804D4EA8->data, 4);
     }
     obj = (int*)VAlloc(0x570);
     if (obj != 0) {
@@ -733,8 +724,7 @@ int fn_8015A78C(u8 p1, u8 p2, u8 p3, u8 p4, u8 p5, u8 p6, u8 p7, u8 p8) {
         int n;
         int i;
 
-        *(int*)fn_8028B3BC(lbl_804D4EA8,
-                           (u8*)lbl_804D4EA8->data + lbl_804D4EA8->size, 4) = (int)obj;
+        *(int*)((Buffer*)lbl_804D4EA8)->Insert((char*)((u8*)lbl_804D4EA8->data + lbl_804D4EA8->size), 4) = (int)obj;
         LinkInfoInit(obj);
         *(int*)((u8*)obj + 0x30) = 0x10;
         *(u8*)((u8*)obj + 0x34) = p1;

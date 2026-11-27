@@ -118,15 +118,17 @@ public:
     u32 unk04;     // 0x04
     u32 size;      // 0x08 (bytes used)
     u8* data;      // 0x0c
+    char* Erase(char* pos, int size);  // 0x8028B35C
+    char* Insert(char* pos, int size); // 0x8028B3BC
+    void Free();                       // 0x8028B960
 };
 
-extern "C" void fn_8028B960(void* object);
 
 // Intermediate class: its destructor releases the storage before the base destructor runs.
 class BeeBase : public Buffer {
 public:
     BeeBase() {}
-    virtual ~BeeBase() { fn_8028B960(this); }
+    virtual ~BeeBase() { Free(); }
 };
 
 class BeeList : public BeeBase {
@@ -145,8 +147,6 @@ float fn_800E1020(Vec3* v);
 void fn_8016D4EC(Vec3* out, Vec3* in);
 void fn_8016D864(void* mtx, int handle);
 void* fn_800C7E80(void* place);
-int fn_8028B3BC(BeeList* list, int offset, int size);
-void fn_8028B35C(BeeList* list, int data, int size);
 void fn_8028B2D4(BeeList* list);
 }
 
@@ -358,7 +358,7 @@ inline void BeesFreeAll(BeesState* s)
         TrailDestroy(b->trail[1]);
         TrailDestroy(b->trail[2]);
         VFree(*(void**)s->bees.data);
-        fn_8028B35C(&s->bees, (int)s->bees.data, 4);
+        ((Buffer*)&s->bees)->Erase((char*)((int)s->bees.data), 4);
     }
 }
 
@@ -781,7 +781,7 @@ void BeesSpawn(Actor* actor, BeesState* s, int count)
         if (b == 0) {
             break;
         }
-        slot = (Bee**)fn_8028B3BC(&s->bees, (int)s->bees.data + s->bees.size, 4);
+        slot = (Bee**)((Buffer*)&s->bees)->Insert((char*)((int)s->bees.data + s->bees.size), 4);
         *slot = b;
         {
             float r1 = (float)rand() / 32767.0f;

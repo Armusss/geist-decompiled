@@ -20,6 +20,7 @@ typedef signed short s16;
 typedef unsigned long u32;
 
 #include "game/types.h"
+#include "game/bufarray.h"
 
 struct StreamEntry;
 int StreamRead(int type, StreamEntry* e, void (*cb)(int, void*, void*), void* arg);   // 0x8017C32C
@@ -104,7 +105,6 @@ struct AnimItem {
     ~AnimItem() {}
 };
 
-inline void* operator new(unsigned long, void* p) { return p; }
 
 // A record set (0x28 bytes); lbl_804D4724 points at 300 of them. +0x14 is a Buffer-derived array of AnimItem.
 struct AnimRecSet {
@@ -249,7 +249,6 @@ extern "C" void fn_80090974();
 extern "C" void fn_80090B74();
 //@@80090D6C
 // Releases record set i and erases its records.
-extern "C" void fn_8028B35C(void* arr, void* p, u32 bytes);
 extern "C" void fn_80090D6C(int i);
 void fn_80090D6C(int i) {
     if (lbl_804D4724 != 0 && i >= 0 && i < 300) {
@@ -260,7 +259,7 @@ void fn_80090D6C(int i) {
             r->active = 0;
             first = r->items;
             last = (AnimItem*)((u8*)first + r->bytes);
-            fn_8028B35C(&r->arrVtbl, first, (last - first) * sizeof(AnimItem));
+            ((Buffer*)&r->arrVtbl)->Erase((char*)first, (last - first) * sizeof(AnimItem));
         }
     }
 }
@@ -478,13 +477,6 @@ int fn_80093990(void* data, int size) {
 extern "C" void fn_80093A04();
 //@@80093A6C
 // Record array: construct hook (base call, then construct the new records).
-// Base Commit/Append (0x8028BC2C / 0x8028BC28) of the Buffer classes in u_8028A8D4.cpp, which the
-// array overrides here call directly. Class and member names are guesses.
-class ScreenEffectBuffer {
-public:
-    void Commit(int start, unsigned long size);
-    void Append(unsigned char* data, unsigned long size);
-};
 extern "C" void fn_80093B3C(AnimItem* p, AnimItem* end);
 extern "C" void fn_80093BCC(AnimItem* p, AnimItem* end);
 

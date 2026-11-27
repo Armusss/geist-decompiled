@@ -62,6 +62,10 @@ public:
     virtual ~Buffer();                         // 0x8028B9C0
     virtual void Clear();                      // 0x8028B2A0
     virtual int GetSpan() { return 0; }        // 0x8007AD60
+
+    char* Erase(char* pos, int size);          // 0x8028B35C: remove `size` bytes at pos (an address in the store)
+    char* Insert(char* pos, int size);         // 0x8028B3BC: open `size` bytes at pos, growing the store
+    void Free();                               // 0x8028B960: release the store
 };
 
 class String : public Buffer {
