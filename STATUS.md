@@ -20,6 +20,10 @@ Next, in order:
 4. u_800C6E8C: re-test GC/2.0 when more is drafted; ask the user.
 Open shapes worth a dedicated investigation: tick `li r4,N` before `addi r3,rA,624` (6+ sites, needs scheduler insight), hoisted function address in r31, GC/2.0 declaration-position effect on registers.
 
+## User decisions (2026-11-27)
+- APPROVED: ODE rotation.cpp (u_8027B4F8) and odemath (u_80278D2C) -> GC/2.0 (scratch: rotation 6/7 exact on 2.0, 0 on 1.3.2; dPlaneSpace exact on 2.0). Then test the other ODE files (ode.cpp u_80277600, step.cpp u_80279558, util.cpp u_8027BD5C, colliders u_8026D428, u_8026C200 collision_space, u_80272060, u_80273650, u_80276090) and report to the user before switching them.
+- APPROVED: rename u_80277600's guessed "SceneNode" accessors to the real ODE dBody API names where code + dxBody layout prove them.
+
 ## User decision (2026-11-22): GC/2.0 for u_801D8FD4
 - APPROVED: u_801D8FD4 -> GC/2.0 (G4 evidence: fn_801D8FD4 loads through its const Vec3* argument before `stw r0`; scratch GC/2.0 compile reproduces it, all other functions identical on both compilers). Kept only if the unit fully matches with AUDIT OK (with the VecNormalize helper in fn_801D96C4).
 - DONE: u_801D8FD4 GC/2.0 + Matching (474f2f8).
