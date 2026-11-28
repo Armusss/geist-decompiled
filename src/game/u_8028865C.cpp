@@ -1243,10 +1243,14 @@ extern "C" void fn_8028A388(void)
     delete lbl_804D56E0;
 }
 
-extern float lbl_804DA538;
 
 void DrawParticlePoints(float* mtx, int stride, int count, int sample,
                         void* data, u8 r, u8 g, u8 b, u8 a, float scale);
+
+static inline int ClockMin(int a, int b)
+{
+    return a < b ? a : b;
+}
 
 // Draw every resident particle transform through the particle point renderer.
 // fn_8028A4BC
@@ -1254,9 +1258,9 @@ extern "C" void fn_8028A4BC()
 {
     int i;
 
-    for (i = 0; i != (lbl_804D56F4 < 0x40 ? lbl_804D56F4 : 0x40); i++)
+    for (i = 0; i != ClockMin(lbl_804D56F4, 0x40); i++)
         DrawParticlePoints(lbl_804A3BF8[i].mtx, 0x24, 1, lbl_804A3BF8[i].sample,
-                           0, 0xFF, 0xFF, 0xFF, 0xFF, lbl_804DA538);
+                           0, 0xFF, 0xFF, 0xFF, 0xFF, 8.0f);
 }
 
 
@@ -1274,11 +1278,6 @@ static inline int ClockPageAge(ClockPageEmitterNode* node, float dt)
         return -1;
     node->time -= dt;
     return 0;
-}
-
-static inline int ClockMin(int a, int b)
-{
-    return a < b ? a : b;
 }
 
 extern "C" void fn_8028A554(float dt)
