@@ -3,8 +3,13 @@
 // Evidence: own .sdata2 pool 0x804DA258-0x804DA298 (0.0f, 1.0f, -FLT_MAX/FLT_MAX, pi, 0.5/3.0 doubles again).
 // fn_80273650 opens it: it calls fn_80273B7C and sets joint fields; the error file before it has no such code.
 // This is ODE 0.5 joint.cpp (the used subset: ball, hinge, contact and angular-motor joints, the
-// dxJointLimitMotor helpers). The functions sit in reverse ODE source order (addLimot, the first in
-// joint.cpp, is last), like the other ODE files built with -inline deferred; setBall is the exception.
+// dxJointLimitMotor helpers, and their vtables __dball/__dhinge/__dcontact/__damotor_vtable at .data 0x803C04D8).
+// Built with -inline deferred (user-approved 2026-11-27): the functions are in ODE source order and come out
+// reversed, as in retail. setBall is `static inline` as in ODE: its out-of-line copy is emitted next to its
+// first non-inlined caller, which in retail is a linker-dropped joint between contact and amotor
+// (universalGetInfo2), so here it lands after hingeGetInfo2 instead.
+// Not yet Matching: the .sdata2 pool head (1, -1, 0, 2) and -pi/pi/0.5d/3.0d/0.0d/2pi before hingeGetInfo1 come
+// from the dropped fixed/universal/hinge2 joint code (setFixedOrientation uses 1, -1, 0, 2 in that order).
 // Function names are the ODE ones in comments; symbols keep their placeholder names.
 
 typedef unsigned long u32;
@@ -231,12 +236,15 @@ struct dxJoint : public dObject {
         int* findex;
     };
 
+    typedef void init_fn(dxJoint* joint);
+    typedef void getInfo1_fn(dxJoint* joint, Info1* info);
+    typedef void getInfo2_fn(dxJoint* joint, Info2* info);
     struct Vtable {
         int size;
-        void* init;
-        void* getInfo1;
-        void* getInfo2;
-        int typenum;
+        init_fn* init;
+        getInfo1_fn* getInfo1;
+        getInfo2_fn* getInfo2;
+        int typenum;  // a dJointTypeXXX type number
     };
 
     Vtable* vtable;           // 0x14
@@ -250,6 +258,19 @@ enum {
     dJOINT_INGROUP = 1,
     dJOINT_REVERSE = 2,
     dJOINT_TWOBODIES = 4
+};
+
+enum {
+    dJointTypeNone = 0,
+    dJointTypeBall,
+    dJointTypeHinge,
+    dJointTypeSlider,
+    dJointTypeContact,
+    dJointTypeUniversal,
+    dJointTypeHinge2,
+    dJointTypeFixed,
+    dJointTypeNull,
+    dJointTypeAMotor
 };
 
 enum {
@@ -367,7 +388,39 @@ struct dxJointAMotor : public dxJoint {
 
 // set three "ball-and-socket" rows in the constraint equation, and the
 // corresponding right hand side.
-static void setBall(dxJoint* joint, dxJoint::Info2* info, dVector3 anchor1, dVector3 anchor2);
+static inline void setBall(dxJoint* joint, dxJoint::Info2* info, dVector3 anchor1, dVector3 anchor2)
+{
+    // anchor points in global coordinates with respect to body PORs.
+    dVector3 a1, a2;
+
+    int s = info->rowskip;
+
+    // set jacobian
+    info->J1l[0] = 1;
+    info->J1l[s + 1] = 1;
+    info->J1l[2 * s + 2] = 1;
+    dMULTIPLY0_331(a1, joint->node[0].body->R, anchor1);
+    dCROSSMAT(info->J1a, a1, s, -, +);
+    if (joint->node[1].body) {
+        info->J2l[0] = -1;
+        info->J2l[s + 1] = -1;
+        info->J2l[2 * s + 2] = -1;
+        dMULTIPLY0_331(a2, joint->node[1].body->R, anchor2);
+        dCROSSMAT(info->J2a, a2, s, +, -);
+    }
+
+    // set right hand side
+    dReal k = info->fps * info->erp;
+    if (joint->node[1].body) {
+        for (int j = 0; j < 3; j++) {
+            info->c[j] = k * (a2[j] + joint->node[1].body->pos[j] - a1[j] - joint->node[0].body->pos[j]);
+        }
+    } else {
+        for (int j = 0; j < 3; j++) {
+            info->c[j] = k * (anchor2[j] - a1[j] - joint->node[0].body->pos[j]);
+        }
+    }
+}
 
 // set the anchor points of a joint relative to its bodies
 static inline void setAnchors(dxJoint* j, dReal x, dReal y, dReal z, dVector3 anchor1, dVector3 anchor2)
@@ -538,303 +591,380 @@ inline int dxJointLimitMotor::testRotationalLimit(dReal angle)
     }
 }
 
-//****************************************************************************
-// angular motor
-
-static void amotorSetEulerReferenceVectors(dxJointAMotor* j);
-static void amotorComputeEulerAngles(dxJointAMotor* joint, dVector3 ax[3]);
-static void amotorComputeGlobalAxes(dxJointAMotor* joint, dVector3 ax[3]);
-
-// 0x80273650: dJointSetAMotorMode
-extern "C" void fn_80273650(dxJointAMotor* joint, int mode)
+// 0x80275B40: dxJointLimitMotor::addLimot. if the joint is powered, or has joint limits, add in
+// the extra row (returns 1 if a row was added)
+int dxJointLimitMotor::addLimot(dxJoint* joint, dxJoint::Info2* info, int row, dVector3 ax1, int rotational)
 {
-    joint->mode = mode;
-    if (joint->mode == dAMotorEuler) {
-        joint->num = 3;
-        amotorSetEulerReferenceVectors(joint);
-    }
-}
+    int srow = row * info->rowskip;
 
-// 0x80273688: dJointSetAMotorParam
-extern "C" void fn_80273688(dxJointAMotor* joint, int parameter, dReal value)
-{
-    int anum = parameter >> 8;
-    if (anum < 0) {
-        anum = 0;
-    }
-    if (anum > 2) {
-        anum = 2;
-    }
-    parameter &= 0xff;
-    joint->limot[anum].set(parameter, value);
-}
+    // if the joint is powered, or has joint limits, add in the extra row
+    int powered = fmax > 0;
+    if (powered || limit) {
+        dReal* J1 = rotational ? info->J1a : info->J1l;
+        dReal* J2 = rotational ? info->J2a : info->J2l;
 
-// 0x802737A4: dJointSetAMotorAxis
-extern "C" void fn_802737A4(dxJointAMotor* joint, int anum, int rel, dReal x, dReal y, dReal z)
-{
-    if (anum < 0) {
-        anum = 0;
-    }
-    if (anum > 2) {
-        anum = 2;
-    }
-
-    // adjust rel to match the internal body order
-    if (!joint->node[1].body && rel == 2) {
-        rel = 1;
-    }
-
-    joint->rel[anum] = rel;
-
-    // x,y,z is always in global coordinates regardless of rel, so we may have
-    // to convert it to be relative to a body
-    dVector3 r;
-    r[0] = x;
-    r[1] = y;
-    r[2] = z;
-    r[3] = 0;
-    if (rel > 0) {
-        if (rel == 1) {
-            dMULTIPLY1_331(joint->axis[anum], joint->node[0].body->R, r);
-        } else {
-            dMULTIPLY1_331(joint->axis[anum], joint->node[1].body->R, r);
-        }
-    } else {
-        joint->axis[anum][0] = r[0];
-        joint->axis[anum][1] = r[1];
-        joint->axis[anum][2] = r[2];
-    }
-    dNormalize3(joint->axis[anum]);
-    if (joint->mode == dAMotorEuler) {
-        amotorSetEulerReferenceVectors(joint);
-    }
-}
-
-// 0x80273918: dJointSetAMotorNumAxes
-extern "C" void fn_80273918(dxJointAMotor* joint, int num)
-{
-    if (joint->mode == dAMotorEuler) {
-        joint->num = 3;
-    } else {
-        if (num < 0) {
-            num = 0;
-        }
-        if (num > 3) {
-            num = 3;
-        }
-        joint->num = num;
-    }
-}
-
-// 0x80273950: amotorGetInfo2
-extern "C" void fn_80273950(dxJointAMotor* joint, dxJoint::Info2* info)
-{
-    int i;
-
-    // compute the axes (if not global)
-    dVector3 ax[3];
-    amotorComputeGlobalAxes(joint, ax);
-
-    // in euler angle mode we do not actually constrain the angular velocity
-    // along the axes axis[0] and axis[2] (although we do use axis[1]) :
-    //
-    //    to get                    constrain
-    //    ---------------------     ---------
-    //    d(angle[0])/dt = 0        ax[1] x ax[2]
-    //    d(angle[1])/dt = 0        ax[1]
-    //    d(angle[2])/dt = 0        ax[0] x ax[1]
-    //
-    // constraining w2-w1 along an axis 'a' means that a'*(w2-w1)=0.
-    // to get the constraint to be d(angle[i])/dt = 0, we need to use axes
-    // ax[0] x ax[1] etc.
-
-    dVector3* axptr[3];
-    axptr[0] = &ax[0];
-    axptr[1] = &ax[1];
-    axptr[2] = &ax[2];
-
-    dVector3 ax0_cross_ax1;
-    dVector3 ax1_cross_ax2;
-    if (joint->mode == dAMotorEuler) {
-        dCROSS(ax0_cross_ax1, =, ax[0], ax[1]);
-        axptr[2] = &ax0_cross_ax1;
-        dCROSS(ax1_cross_ax2, =, ax[1], ax[2]);
-        axptr[0] = &ax1_cross_ax2;
-    }
-
-    int row = 0;
-    for (i = 0; i < joint->num; i++) {
-        row += joint->limot[i].addLimot(joint, info, row, *(axptr[i]), 1);
-    }
-}
-
-// 0x80273A70: amotorGetInfo1
-extern "C" void fn_80273A70(dxJointAMotor* j, dxJoint::Info1* info)
-{
-    info->m = 0;
-    info->nub = 0;
-
-    // compute the axes and angles, if in euler mode
-    if (j->mode == dAMotorEuler) {
-        dVector3 ax[3];
-        amotorComputeGlobalAxes(j, ax);
-        amotorComputeEulerAngles(j, ax);
-    }
-
-    // see if we're powered or at a joint limit for each axis
-    for (int i = 0; i < j->num; i++) {
-        if (j->limot[i].testRotationalLimit(j->angle[i]) || j->limot[i].fmax > 0) {
-            info->m++;
-        }
-    }
-}
-
-// 0x80273B7C: amotorSetEulerReferenceVectors. set the reference vectors as follows:
-//   * reference1 = current axis[2] relative to body 1
-//   * reference2 = current axis[0] relative to body 2
-// this assumes that:
-//    * axis[0] is relative to body 1
-//    * axis[2] is relative to body 2
-static void amotorSetEulerReferenceVectors(dxJointAMotor* j)
-{
-    if (j->node[0].body && j->node[1].body) {
-        dVector3 r;  // axis[2] and axis[0] in global coordinates
-        dMULTIPLY0_331(r, j->node[1].body->R, j->axis[2]);
-        dMULTIPLY1_331(j->reference1, j->node[0].body->R, r);
-        dMULTIPLY0_331(r, j->node[0].body->R, j->axis[0]);
-        dMULTIPLY1_331(j->reference2, j->node[1].body->R, r);
-    } else if (j->node[0].body) {  // jds
-        dMULTIPLY1_331(j->reference1, j->node[0].body->R, j->axis[2]);
-        dMULTIPLY0_331(j->reference2, j->node[0].body->R, j->axis[0]);
-    }
-}
-
-// 0x80273DF0: amotorComputeEulerAngles. compute the 3 euler angles, given the global axes ax[] (the
-// reference vectors must be set up already)
-static void amotorComputeEulerAngles(dxJointAMotor* joint, dVector3 ax[3])
-{
-    // assumptions:
-    //   global axes already calculated --> ax
-    //   axis[0] is relative to body 1 --> global ax[0]
-    //   axis[2] is relative to body 2 --> global ax[2]
-    //   ax[1] = ax[2] x ax[0]
-    //   original ax[0] and ax[2] are perpendicular
-    //   reference1 is perpendicular to ax[0] (in body 1 frame)
-    //   reference2 is perpendicular to ax[2] (in body 2 frame)
-    //   all ax[] and reference vectors are unit length
-
-    // calculate references in global frame
-    dVector3 ref1, ref2;
-    dMULTIPLY0_331(ref1, joint->node[0].body->R, joint->reference1);
-    if (joint->node[1].body) {
-        dMULTIPLY0_331(ref2, joint->node[1].body->R, joint->reference2);
-    } else {
-        ref2[0] = joint->reference2[0];
-        ref2[1] = joint->reference2[1];
-        ref2[2] = joint->reference2[2];
-    }
-
-    // get q perpendicular to both ax[0] and ref1, get first euler angle
-    dVector3 q;
-    dCROSS(q, =, ax[0], ref1);
-    joint->angle[0] = -dAtan2(dDOT(ax[2], q), dDOT(ax[2], ref1));
-
-    // get q perpendicular to both ax[0] and ax[1], get second euler angle
-    dCROSS(q, =, ax[0], ax[1]);
-    joint->angle[1] = -dAtan2(dDOT(ax[2], ax[0]), dDOT(ax[2], q));
-
-    // get q perpendicular to both ax[1] and ax[2], get third euler angle
-    dCROSS(q, =, ax[1], ax[2]);
-    joint->angle[2] = -dAtan2(dDOT(ref2, ax[1]), dDOT(ref2, q));
-}
-
-// 0x8027403C: amotorComputeGlobalAxes. compute the 3 axes in global coordinates
-static void amotorComputeGlobalAxes(dxJointAMotor* joint, dVector3 ax[3])
-{
-    if (joint->mode == dAMotorEuler) {
-        // special handling for euler mode
-        dMULTIPLY0_331(ax[0], joint->node[0].body->R, joint->axis[0]);
+        J1[srow + 0] = ax1[0];
+        J1[srow + 1] = ax1[1];
+        J1[srow + 2] = ax1[2];
         if (joint->node[1].body) {
-            dMULTIPLY0_331(ax[2], joint->node[1].body->R, joint->axis[2]);
-        } else {
-            ax[2][0] = joint->axis[2][0];
-            ax[2][1] = joint->axis[2][1];
-            ax[2][2] = joint->axis[2][2];
+            J2[srow + 0] = -ax1[0];
+            J2[srow + 1] = -ax1[1];
+            J2[srow + 2] = -ax1[2];
         }
-        dCROSS(ax[1], =, ax[2], ax[0]);
-        dNormalize3(ax[1]);
-    } else {
-        for (int i = 0; i < joint->num; i++) {
-            if (joint->rel[i] == 1) {
-                // relative to b1
-                dMULTIPLY0_331(ax[i], joint->node[0].body->R, joint->axis[i]);
-            }
-            if (joint->rel[i] == 2) {
-                // relative to b2
-                dMULTIPLY0_331(ax[i], joint->node[1].body->R, joint->axis[i]);
+
+        // linear limot torque decoupling step: apply the constraint forces at
+        // the point halfway between the body centers (only for two bodies).
+
+        dVector3 ltd;  // Linear Torque Decoupling vector (a torque)
+        if (!rotational && joint->node[1].body) {
+            dVector3 c;
+            c[0] = REAL(0.5) * (joint->node[1].body->pos[0] - joint->node[0].body->pos[0]);
+            c[1] = REAL(0.5) * (joint->node[1].body->pos[1] - joint->node[0].body->pos[1]);
+            c[2] = REAL(0.5) * (joint->node[1].body->pos[2] - joint->node[0].body->pos[2]);
+            dCROSS(ltd, =, c, ax1);
+            info->J1a[srow + 0] = ltd[0];
+            info->J1a[srow + 1] = ltd[1];
+            info->J1a[srow + 2] = ltd[2];
+            info->J2a[srow + 0] = ltd[0];
+            info->J2a[srow + 1] = ltd[1];
+            info->J2a[srow + 2] = ltd[2];
+        }
+
+        // if we're limited low and high simultaneously, the joint motor is
+        // ineffective
+        if (limit && (lostop == histop)) {
+            powered = 0;
+        }
+
+        if (powered) {
+            info->cfm[row] = normal_cfm;
+            if (!limit) {
+                info->c[row] = vel;
+                info->lo[row] = -fmax;
+                info->hi[row] = fmax;
             } else {
-                // global - just copy it
-                ax[i][0] = joint->axis[i][0];
-                ax[i][1] = joint->axis[i][1];
-                ax[i][2] = joint->axis[i][2];
+                // the joint is at a limit, AND is being powered. if the joint is
+                // being powered into the limit then we apply the maximum motor force
+                // in that direction, because the motor is working against the
+                // immovable limit. if the joint is being powered away from the limit
+                // then we have problems because actually we need *two* lcp
+                // constraints to handle this case. so we fake it and apply some
+                // fraction of the maximum force. the fraction to use can be set as
+                // a fudge factor.
+
+                dReal fm = fmax;
+                if (vel > 0) {
+                    fm = -fm;
+                }
+
+                // if we're powering away from the limit, apply the fudge factor
+                if ((limit == 1 && vel > 0) || (limit == 2 && vel < 0)) {
+                    fm *= fudge_factor;
+                }
+
+                if (rotational) {
+                    dBodyAddTorque(joint->node[0].body, -fm * ax1[0], -fm * ax1[1], -fm * ax1[2]);
+                    if (joint->node[1].body) {
+                        dBodyAddTorque(joint->node[1].body, fm * ax1[0], fm * ax1[1], fm * ax1[2]);
+                    }
+                } else {
+                    dBodyAddForce(joint->node[0].body, -fm * ax1[0], -fm * ax1[1], -fm * ax1[2]);
+                    if (joint->node[1].body) {
+                        dBodyAddForce(joint->node[1].body, fm * ax1[0], fm * ax1[1], fm * ax1[2]);
+
+                        // linear limot torque decoupling step: refer to above discussion
+                        dBodyAddTorque(joint->node[0].body, -fm * ltd[0], -fm * ltd[1], -fm * ltd[2]);
+                        dBodyAddTorque(joint->node[1].body, -fm * ltd[0], -fm * ltd[1], -fm * ltd[2]);
+                    }
+                }
+            }
+        }
+
+        if (limit) {
+            dReal k = info->fps * stop_erp;
+            info->c[row] = -k * limit_err;
+            info->cfm[row] = stop_cfm;
+
+            if (lostop == histop) {
+                // limited low and high simultaneously
+                info->lo[row] = -dInfinity;
+                info->hi[row] = dInfinity;
+            } else {
+                if (limit == 1) {
+                    // low limit
+                    info->lo[row] = 0;
+                    info->hi[row] = dInfinity;
+                } else {
+                    // high limit
+                    info->lo[row] = -dInfinity;
+                    info->hi[row] = 0;
+                }
+
+                // deal with bounce
+                if (bounce > 0) {
+                    // calculate joint velocity
+                    dReal vel;
+                    if (rotational) {
+                        vel = dDOT(joint->node[0].body->avel, ax1);
+                        if (joint->node[1].body) {
+                            vel -= dDOT(joint->node[1].body->avel, ax1);
+                        }
+                    } else {
+                        vel = dDOT(joint->node[0].body->lvel, ax1);
+                        if (joint->node[1].body) {
+                            vel -= dDOT(joint->node[1].body->lvel, ax1);
+                        }
+                    }
+
+                    // only apply bounce if the velocity is incoming, and if the
+                    // resulting c[] exceeds what we already have.
+                    if (limit == 1) {
+                        // low limit
+                        if (vel < 0) {
+                            dReal newc = -bounce * vel;
+                            if (newc > info->c[row]) {
+                                info->c[row] = newc;
+                            }
+                        }
+                    } else {
+                        // high limit - all those computations are reversed
+                        if (vel > 0) {
+                            dReal newc = -bounce * vel;
+                            if (newc < info->c[row]) {
+                                info->c[row] = newc;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+//****************************************************************************
+// ball and socket
+
+// 0x80275B00: ballInit
+extern "C" void fn_80275B00(dxJointBall* j)
+{
+    dSetZero(j->anchor1, 4);
+    dSetZero(j->anchor2, 4);
+}
+
+// 0x80275AF0: ballGetInfo1
+extern "C" void fn_80275AF0(dxJointBall* j, dxJoint::Info1* info)
+{
+    info->m = 3;
+    info->nub = 3;
+}
+
+// 0x80275AC8: ballGetInfo2
+extern "C" void fn_80275AC8(dxJointBall* joint, dxJoint::Info2* info)
+{
+    setBall(joint, info, joint->anchor1, joint->anchor2);
+}
+
+// 0x802759B8: dJointSetBallAnchor
+extern "C" void fn_802759B8(dxJointBall* joint, dReal x, dReal y, dReal z)
+{
+    setAnchors(joint, x, y, z, joint->anchor1, joint->anchor2);
+}
+
+dxJoint::Vtable __dball_vtable = { sizeof(dxJointBall),
+                            (dxJoint::init_fn*)fn_80275B00,
+                            (dxJoint::getInfo1_fn*)fn_80275AF0,
+                            (dxJoint::getInfo2_fn*)fn_80275AC8,
+                            dJointTypeBall };
+
+//****************************************************************************
+// hinge
+
+static inline void hingeComputeInitialRelativeRotation(dxJointHinge* joint)
+{
+    if (joint->node[0].body) {
+        if (joint->node[1].body) {
+            dQMultiply1(joint->qrel, joint->node[0].body->q, joint->node[1].body->q);
+        } else {
+            // set joint->qrel to the transpose of the first body q
+            joint->qrel[0] = joint->node[0].body->q[0];
+            for (int i = 1; i < 4; i++) {
+                joint->qrel[i] = -joint->node[0].body->q[i];
             }
         }
     }
 }
 
-// 0x80274338: amotorInit
-extern "C" void fn_80274338(dxJointAMotor* j)
+// 0x802758F4: hingeInit
+extern "C" void fn_802758F4(dxJointHinge* j)
 {
-    int i;
-    j->num = 0;
-    j->mode = dAMotorUser;
-    for (i = 0; i < 3; i++) {
-        j->rel[i] = 0;
-        dSetZero(j->axis[i], 4);
-        j->limot[i].init(j->world);
-        j->angle[i] = 0;
-    }
-    dSetZero(j->reference1, 4);
-    dSetZero(j->reference2, 4);
+    dSetZero(j->anchor1, 4);
+    dSetZero(j->anchor2, 4);
+    dSetZero(j->axis1, 4);
+    j->axis1[0] = 1;
+    dSetZero(j->axis2, 4);
+    j->axis2[0] = 1;
+    dSetZero(j->qrel, 4);
+    j->limot.init(j->world);
 }
 
-// 0x80274454: setBall
-static void setBall(dxJoint* joint, dxJoint::Info2* info, dVector3 anchor1, dVector3 anchor2)
+// 0x80275640: hingeGetInfo1
+extern "C" void fn_80275640(dxJointHinge* j, dxJoint::Info1* info)
 {
-    // anchor points in global coordinates with respect to body PORs.
-    dVector3 a1, a2;
+    info->nub = 5;
 
-    int s = info->rowskip;
-
-    // set jacobian
-    info->J1l[0] = 1;
-    info->J1l[s + 1] = 1;
-    info->J1l[2 * s + 2] = 1;
-    dMULTIPLY0_331(a1, joint->node[0].body->R, anchor1);
-    dCROSSMAT(info->J1a, a1, s, -, +);
-    if (joint->node[1].body) {
-        info->J2l[0] = -1;
-        info->J2l[s + 1] = -1;
-        info->J2l[2 * s + 2] = -1;
-        dMULTIPLY0_331(a2, joint->node[1].body->R, anchor2);
-        dCROSSMAT(info->J2a, a2, s, +, -);
-    }
-
-    // set right hand side
-    dReal k = info->fps * info->erp;
-    if (joint->node[1].body) {
-        for (int j = 0; j < 3; j++) {
-            info->c[j] = k * (a2[j] + joint->node[1].body->pos[j] - a1[j] - joint->node[0].body->pos[j]);
-        }
+    // see if joint is powered
+    if (j->limot.fmax > 0) {
+        info->m = 6;  // powered hinge needs an extra constraint row
     } else {
-        for (int j = 0; j < 3; j++) {
-            info->c[j] = k * (anchor2[j] - a1[j] - joint->node[0].body->pos[j]);
+        info->m = 5;
+    }
+
+    // see if we're at a joint limit.
+    if ((j->limot.lostop >= -M_PI || j->limot.histop <= M_PI) && j->limot.lostop <= j->limot.histop) {
+        dReal angle = getHingeAngle(j->node[0].body, j->node[1].body, j->axis1, j->qrel);
+        if (j->limot.testRotationalLimit(angle)) {
+            info->m = 6;
         }
     }
 }
+
+// 0x802753A4: hingeGetInfo2
+extern "C" void fn_802753A4(dxJointHinge* joint, dxJoint::Info2* info)
+{
+    // set the three ball-and-socket rows
+    setBall(joint, info, joint->anchor1, joint->anchor2);
+
+    // set the two hinge rows. the hinge axis should be the only unconstrained
+    // rotational axis, the angular velocity of the two bodies perpendicular to
+    // the hinge axis should be equal. thus the constraint equations are
+    //    p*w1 - p*w2 = 0
+    //    q*w1 - q*w2 = 0
+    // where p and q are unit vectors normal to the hinge axis, and w1 and w2
+    // are the angular velocity vectors of the two bodies.
+
+    dVector3 ax1;  // length 1 joint axis in global coordinates, from 1st body
+    dVector3 p, q; // plane space vectors for ax1
+    dMULTIPLY0_331(ax1, joint->node[0].body->R, joint->axis1);
+    dPlaneSpace(ax1, p, q);
+
+    int s3 = 3 * info->rowskip;
+    int s4 = 4 * info->rowskip;
+
+    info->J1a[s3 + 0] = p[0];
+    info->J1a[s3 + 1] = p[1];
+    info->J1a[s3 + 2] = p[2];
+    info->J1a[s4 + 0] = q[0];
+    info->J1a[s4 + 1] = q[1];
+    info->J1a[s4 + 2] = q[2];
+
+    if (joint->node[1].body) {
+        info->J2a[s3 + 0] = -p[0];
+        info->J2a[s3 + 1] = -p[1];
+        info->J2a[s3 + 2] = -p[2];
+        info->J2a[s4 + 0] = -q[0];
+        info->J2a[s4 + 1] = -q[1];
+        info->J2a[s4 + 2] = -q[2];
+    }
+
+    // compute the right hand side of the constraint equation. set relative
+    // body velocities along p and q to bring the hinge back into alignment.
+    // ax1 x ax2 is in the plane space of ax1, so we project the angular
+    // velocity to p and q to find the right hand side.
+
+    dVector3 ax2, b;
+    if (joint->node[1].body) {
+        dMULTIPLY0_331(ax2, joint->node[1].body->R, joint->axis2);
+    } else {
+        ax2[0] = joint->axis2[0];
+        ax2[1] = joint->axis2[1];
+        ax2[2] = joint->axis2[2];
+    }
+    dCROSS(b, =, ax1, ax2);
+    dReal k = info->fps * info->erp;
+    info->c[3] = k * dDOT(b, p);
+    info->c[4] = k * dDOT(b, q);
+
+    // if the hinge is powered, or has joint limits, add in the stuff
+    joint->limot.addLimot(joint, info, 5, ax1, 1);
+}
+
+// 0x80275218: dJointSetHingeAnchor
+extern "C" void fn_80275218(dxJointHinge* joint, dReal x, dReal y, dReal z)
+{
+    setAnchors(joint, x, y, z, joint->anchor1, joint->anchor2);
+    hingeComputeInitialRelativeRotation(joint);
+}
+
+// 0x80274FF8: dJointSetHingeAxis
+extern "C" void fn_80274FF8(dxJointHinge* joint, dReal x, dReal y, dReal z)
+{
+    setAxes(joint, x, y, z, joint->axis1, joint->axis2);
+    hingeComputeInitialRelativeRotation(joint);
+}
+
+// 0x80274F40: dJointSetHingeParam
+extern "C" void fn_80274F40(dxJointHinge* joint, int parameter, dReal value)
+{
+    joint->limot.set(parameter, value);
+}
+
+dxJoint::Vtable __dhinge_vtable = { sizeof(dxJointHinge),
+                            (dxJoint::init_fn*)fn_802758F4,
+                            (dxJoint::getInfo1_fn*)fn_80275640,
+                            (dxJoint::getInfo2_fn*)fn_802753A4,
+                            dJointTypeHinge };
 
 //****************************************************************************
 // contact
+
+// 0x80274F3C: contactInit
+extern "C" void fn_80274F3C(dxJointContact* j)
+{
+    // default frictionless contact. hmmm, this info gets overwritten
+    // by dJointCreateContact() anyway, so why do we bother?
+}
+
+// 0x80274E7C: contactGetInfo1
+extern "C" void fn_80274E7C(dxJointContact* j, dxJoint::Info1* info)
+{
+    // make sure mu's >= 0, then calculate number of constraint rows and number
+    // of unbounded rows.
+    int m = 1, nub = 0;
+    if (j->contact.surface.mu < 0) {
+        j->contact.surface.mu = 0;
+    }
+    if (j->contact.surface.mode & dContactMu2) {
+        if (j->contact.surface.mu > 0) {
+            m++;
+        }
+        if (j->contact.surface.mu2 < 0) {
+            j->contact.surface.mu2 = 0;
+        }
+        if (j->contact.surface.mu2 > 0) {
+            m++;
+        }
+        if (j->contact.surface.mu == dInfinity) {
+            nub++;
+        }
+        if (j->contact.surface.mu2 == dInfinity) {
+            nub++;
+        }
+    } else {
+        if (j->contact.surface.mu > 0) {
+            m += 2;
+        }
+        if (j->contact.surface.mu == dInfinity) {
+            nub += 2;
+        }
+    }
+
+    j->the_m = m;
+    info->m = m;
+    info->nub = nub;
+}
 
 // 0x80274714: contactGetInfo2
 extern "C" void fn_80274714(dxJointContact* j, dxJoint::Info2* info)
@@ -994,362 +1124,274 @@ extern "C" void fn_80274714(dxJointContact* j, dxJoint::Info2* info)
     }
 }
 
-// 0x80274E7C: contactGetInfo1
-extern "C" void fn_80274E7C(dxJointContact* j, dxJoint::Info1* info)
-{
-    // make sure mu's >= 0, then calculate number of constraint rows and number
-    // of unbounded rows.
-    int m = 1, nub = 0;
-    if (j->contact.surface.mu < 0) {
-        j->contact.surface.mu = 0;
-    }
-    if (j->contact.surface.mode & dContactMu2) {
-        if (j->contact.surface.mu > 0) {
-            m++;
-        }
-        if (j->contact.surface.mu2 < 0) {
-            j->contact.surface.mu2 = 0;
-        }
-        if (j->contact.surface.mu2 > 0) {
-            m++;
-        }
-        if (j->contact.surface.mu == dInfinity) {
-            nub++;
-        }
-        if (j->contact.surface.mu2 == dInfinity) {
-            nub++;
-        }
-    } else {
-        if (j->contact.surface.mu > 0) {
-            m += 2;
-        }
-        if (j->contact.surface.mu == dInfinity) {
-            nub += 2;
-        }
-    }
-
-    j->the_m = m;
-    info->m = m;
-    info->nub = nub;
-}
-
-// 0x80274F3C: contactInit
-extern "C" void fn_80274F3C(dxJointContact* j)
-{
-    // default frictionless contact. hmmm, this info gets overwritten
-    // by dJointCreateContact() anyway, so why do we bother?
-}
+dxJoint::Vtable __dcontact_vtable = { sizeof(dxJointContact),
+                            (dxJoint::init_fn*)fn_80274F3C,
+                            (dxJoint::getInfo1_fn*)fn_80274E7C,
+                            (dxJoint::getInfo2_fn*)fn_80274714,
+                            dJointTypeContact };
 
 //****************************************************************************
-// hinge
+// angular motor
 
-static inline void hingeComputeInitialRelativeRotation(dxJointHinge* joint)
+static void amotorSetEulerReferenceVectors(dxJointAMotor* j);
+static void amotorComputeEulerAngles(dxJointAMotor* joint, dVector3 ax[3]);
+static void amotorComputeGlobalAxes(dxJointAMotor* joint, dVector3 ax[3]);
+
+// 0x80274338: amotorInit
+extern "C" void fn_80274338(dxJointAMotor* j)
 {
-    if (joint->node[0].body) {
+    int i;
+    j->num = 0;
+    j->mode = dAMotorUser;
+    for (i = 0; i < 3; i++) {
+        j->rel[i] = 0;
+        dSetZero(j->axis[i], 4);
+        j->limot[i].init(j->world);
+        j->angle[i] = 0;
+    }
+    dSetZero(j->reference1, 4);
+    dSetZero(j->reference2, 4);
+}
+
+// 0x8027403C: amotorComputeGlobalAxes. compute the 3 axes in global coordinates
+static void amotorComputeGlobalAxes(dxJointAMotor* joint, dVector3 ax[3])
+{
+    if (joint->mode == dAMotorEuler) {
+        // special handling for euler mode
+        dMULTIPLY0_331(ax[0], joint->node[0].body->R, joint->axis[0]);
         if (joint->node[1].body) {
-            dQMultiply1(joint->qrel, joint->node[0].body->q, joint->node[1].body->q);
+            dMULTIPLY0_331(ax[2], joint->node[1].body->R, joint->axis[2]);
         } else {
-            // set joint->qrel to the transpose of the first body q
-            joint->qrel[0] = joint->node[0].body->q[0];
-            for (int i = 1; i < 4; i++) {
-                joint->qrel[i] = -joint->node[0].body->q[i];
+            ax[2][0] = joint->axis[2][0];
+            ax[2][1] = joint->axis[2][1];
+            ax[2][2] = joint->axis[2][2];
+        }
+        dCROSS(ax[1], =, ax[2], ax[0]);
+        dNormalize3(ax[1]);
+    } else {
+        for (int i = 0; i < joint->num; i++) {
+            if (joint->rel[i] == 1) {
+                // relative to b1
+                dMULTIPLY0_331(ax[i], joint->node[0].body->R, joint->axis[i]);
             }
-        }
-    }
-}
-
-// 0x80274F40: dJointSetHingeParam
-extern "C" void fn_80274F40(dxJointHinge* joint, int parameter, dReal value)
-{
-    joint->limot.set(parameter, value);
-}
-
-// 0x80274FF8: dJointSetHingeAxis
-extern "C" void fn_80274FF8(dxJointHinge* joint, dReal x, dReal y, dReal z)
-{
-    setAxes(joint, x, y, z, joint->axis1, joint->axis2);
-    hingeComputeInitialRelativeRotation(joint);
-}
-
-// 0x80275218: dJointSetHingeAnchor
-extern "C" void fn_80275218(dxJointHinge* joint, dReal x, dReal y, dReal z)
-{
-    setAnchors(joint, x, y, z, joint->anchor1, joint->anchor2);
-    hingeComputeInitialRelativeRotation(joint);
-}
-
-// 0x802753A4: hingeGetInfo2
-extern "C" void fn_802753A4(dxJointHinge* joint, dxJoint::Info2* info)
-{
-    // set the three ball-and-socket rows
-    setBall(joint, info, joint->anchor1, joint->anchor2);
-
-    // set the two hinge rows. the hinge axis should be the only unconstrained
-    // rotational axis, the angular velocity of the two bodies perpendicular to
-    // the hinge axis should be equal. thus the constraint equations are
-    //    p*w1 - p*w2 = 0
-    //    q*w1 - q*w2 = 0
-    // where p and q are unit vectors normal to the hinge axis, and w1 and w2
-    // are the angular velocity vectors of the two bodies.
-
-    dVector3 ax1;  // length 1 joint axis in global coordinates, from 1st body
-    dVector3 p, q; // plane space vectors for ax1
-    dMULTIPLY0_331(ax1, joint->node[0].body->R, joint->axis1);
-    dPlaneSpace(ax1, p, q);
-
-    int s3 = 3 * info->rowskip;
-    int s4 = 4 * info->rowskip;
-
-    info->J1a[s3 + 0] = p[0];
-    info->J1a[s3 + 1] = p[1];
-    info->J1a[s3 + 2] = p[2];
-    info->J1a[s4 + 0] = q[0];
-    info->J1a[s4 + 1] = q[1];
-    info->J1a[s4 + 2] = q[2];
-
-    if (joint->node[1].body) {
-        info->J2a[s3 + 0] = -p[0];
-        info->J2a[s3 + 1] = -p[1];
-        info->J2a[s3 + 2] = -p[2];
-        info->J2a[s4 + 0] = -q[0];
-        info->J2a[s4 + 1] = -q[1];
-        info->J2a[s4 + 2] = -q[2];
-    }
-
-    // compute the right hand side of the constraint equation. set relative
-    // body velocities along p and q to bring the hinge back into alignment.
-    // ax1 x ax2 is in the plane space of ax1, so we project the angular
-    // velocity to p and q to find the right hand side.
-
-    dVector3 ax2, b;
-    if (joint->node[1].body) {
-        dMULTIPLY0_331(ax2, joint->node[1].body->R, joint->axis2);
-    } else {
-        ax2[0] = joint->axis2[0];
-        ax2[1] = joint->axis2[1];
-        ax2[2] = joint->axis2[2];
-    }
-    dCROSS(b, =, ax1, ax2);
-    dReal k = info->fps * info->erp;
-    info->c[3] = k * dDOT(b, p);
-    info->c[4] = k * dDOT(b, q);
-
-    // if the hinge is powered, or has joint limits, add in the stuff
-    joint->limot.addLimot(joint, info, 5, ax1, 1);
-}
-
-// 0x80275640: hingeGetInfo1
-extern "C" void fn_80275640(dxJointHinge* j, dxJoint::Info1* info)
-{
-    info->nub = 5;
-
-    // see if joint is powered
-    if (j->limot.fmax > 0) {
-        info->m = 6;  // powered hinge needs an extra constraint row
-    } else {
-        info->m = 5;
-    }
-
-    // see if we're at a joint limit.
-    if ((j->limot.lostop >= -M_PI || j->limot.histop <= M_PI) && j->limot.lostop <= j->limot.histop) {
-        dReal angle = getHingeAngle(j->node[0].body, j->node[1].body, j->axis1, j->qrel);
-        if (j->limot.testRotationalLimit(angle)) {
-            info->m = 6;
-        }
-    }
-}
-
-// 0x802758F4: hingeInit
-extern "C" void fn_802758F4(dxJointHinge* j)
-{
-    dSetZero(j->anchor1, 4);
-    dSetZero(j->anchor2, 4);
-    dSetZero(j->axis1, 4);
-    j->axis1[0] = 1;
-    dSetZero(j->axis2, 4);
-    j->axis2[0] = 1;
-    dSetZero(j->qrel, 4);
-    j->limot.init(j->world);
-}
-
-//****************************************************************************
-// ball and socket
-
-// 0x802759B8: dJointSetBallAnchor
-extern "C" void fn_802759B8(dxJointBall* joint, dReal x, dReal y, dReal z)
-{
-    setAnchors(joint, x, y, z, joint->anchor1, joint->anchor2);
-}
-
-// 0x80275AC8: ballGetInfo2
-extern "C" void fn_80275AC8(dxJointBall* joint, dxJoint::Info2* info)
-{
-    setBall(joint, info, joint->anchor1, joint->anchor2);
-}
-
-// 0x80275AF0: ballGetInfo1
-extern "C" void fn_80275AF0(dxJointBall* j, dxJoint::Info1* info)
-{
-    info->m = 3;
-    info->nub = 3;
-}
-
-// 0x80275B00: ballInit
-extern "C" void fn_80275B00(dxJointBall* j)
-{
-    dSetZero(j->anchor1, 4);
-    dSetZero(j->anchor2, 4);
-}
-
-// 0x80275B40: dxJointLimitMotor::addLimot. if the joint is powered, or has joint limits, add in
-// the extra row (returns 1 if a row was added)
-int dxJointLimitMotor::addLimot(dxJoint* joint, dxJoint::Info2* info, int row, dVector3 ax1, int rotational)
-{
-    int srow = row * info->rowskip;
-
-    // if the joint is powered, or has joint limits, add in the extra row
-    int powered = fmax > 0;
-    if (powered || limit) {
-        dReal* J1 = rotational ? info->J1a : info->J1l;
-        dReal* J2 = rotational ? info->J2a : info->J2l;
-
-        J1[srow + 0] = ax1[0];
-        J1[srow + 1] = ax1[1];
-        J1[srow + 2] = ax1[2];
-        if (joint->node[1].body) {
-            J2[srow + 0] = -ax1[0];
-            J2[srow + 1] = -ax1[1];
-            J2[srow + 2] = -ax1[2];
-        }
-
-        // linear limot torque decoupling step: apply the constraint forces at
-        // the point halfway between the body centers (only for two bodies).
-
-        dVector3 ltd;  // Linear Torque Decoupling vector (a torque)
-        if (!rotational && joint->node[1].body) {
-            dVector3 c;
-            c[0] = REAL(0.5) * (joint->node[1].body->pos[0] - joint->node[0].body->pos[0]);
-            c[1] = REAL(0.5) * (joint->node[1].body->pos[1] - joint->node[0].body->pos[1]);
-            c[2] = REAL(0.5) * (joint->node[1].body->pos[2] - joint->node[0].body->pos[2]);
-            dCROSS(ltd, =, c, ax1);
-            info->J1a[srow + 0] = ltd[0];
-            info->J1a[srow + 1] = ltd[1];
-            info->J1a[srow + 2] = ltd[2];
-            info->J2a[srow + 0] = ltd[0];
-            info->J2a[srow + 1] = ltd[1];
-            info->J2a[srow + 2] = ltd[2];
-        }
-
-        // if we're limited low and high simultaneously, the joint motor is
-        // ineffective
-        if (limit && (lostop == histop)) {
-            powered = 0;
-        }
-
-        if (powered) {
-            info->cfm[row] = normal_cfm;
-            if (!limit) {
-                info->c[row] = vel;
-                info->lo[row] = -fmax;
-                info->hi[row] = fmax;
+            if (joint->rel[i] == 2) {
+                // relative to b2
+                dMULTIPLY0_331(ax[i], joint->node[1].body->R, joint->axis[i]);
             } else {
-                // the joint is at a limit, AND is being powered. if the joint is
-                // being powered into the limit then we apply the maximum motor force
-                // in that direction, because the motor is working against the
-                // immovable limit. if the joint is being powered away from the limit
-                // then we have problems because actually we need *two* lcp
-                // constraints to handle this case. so we fake it and apply some
-                // fraction of the maximum force. the fraction to use can be set as
-                // a fudge factor.
-
-                dReal fm = fmax;
-                if (vel > 0) {
-                    fm = -fm;
-                }
-
-                // if we're powering away from the limit, apply the fudge factor
-                if ((limit == 1 && vel > 0) || (limit == 2 && vel < 0)) {
-                    fm *= fudge_factor;
-                }
-
-                if (rotational) {
-                    dBodyAddTorque(joint->node[0].body, -fm * ax1[0], -fm * ax1[1], -fm * ax1[2]);
-                    if (joint->node[1].body) {
-                        dBodyAddTorque(joint->node[1].body, fm * ax1[0], fm * ax1[1], fm * ax1[2]);
-                    }
-                } else {
-                    dBodyAddForce(joint->node[0].body, -fm * ax1[0], -fm * ax1[1], -fm * ax1[2]);
-                    if (joint->node[1].body) {
-                        dBodyAddForce(joint->node[1].body, fm * ax1[0], fm * ax1[1], fm * ax1[2]);
-
-                        // linear limot torque decoupling step: refer to above discussion
-                        dBodyAddTorque(joint->node[0].body, -fm * ltd[0], -fm * ltd[1], -fm * ltd[2]);
-                        dBodyAddTorque(joint->node[1].body, -fm * ltd[0], -fm * ltd[1], -fm * ltd[2]);
-                    }
-                }
+                // global - just copy it
+                ax[i][0] = joint->axis[i][0];
+                ax[i][1] = joint->axis[i][1];
+                ax[i][2] = joint->axis[i][2];
             }
         }
-
-        if (limit) {
-            dReal k = info->fps * stop_erp;
-            info->c[row] = -k * limit_err;
-            info->cfm[row] = stop_cfm;
-
-            if (lostop == histop) {
-                // limited low and high simultaneously
-                info->lo[row] = -dInfinity;
-                info->hi[row] = dInfinity;
-            } else {
-                if (limit == 1) {
-                    // low limit
-                    info->lo[row] = 0;
-                    info->hi[row] = dInfinity;
-                } else {
-                    // high limit
-                    info->lo[row] = -dInfinity;
-                    info->hi[row] = 0;
-                }
-
-                // deal with bounce
-                if (bounce > 0) {
-                    // calculate joint velocity
-                    dReal vel;
-                    if (rotational) {
-                        vel = dDOT(joint->node[0].body->avel, ax1);
-                        if (joint->node[1].body) {
-                            vel -= dDOT(joint->node[1].body->avel, ax1);
-                        }
-                    } else {
-                        vel = dDOT(joint->node[0].body->lvel, ax1);
-                        if (joint->node[1].body) {
-                            vel -= dDOT(joint->node[1].body->lvel, ax1);
-                        }
-                    }
-
-                    // only apply bounce if the velocity is incoming, and if the
-                    // resulting c[] exceeds what we already have.
-                    if (limit == 1) {
-                        // low limit
-                        if (vel < 0) {
-                            dReal newc = -bounce * vel;
-                            if (newc > info->c[row]) {
-                                info->c[row] = newc;
-                            }
-                        }
-                    } else {
-                        // high limit - all those computations are reversed
-                        if (vel > 0) {
-                            dReal newc = -bounce * vel;
-                            if (newc < info->c[row]) {
-                                info->c[row] = newc;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return 1;
-    } else {
-        return 0;
     }
 }
+
+// 0x80273DF0: amotorComputeEulerAngles. compute the 3 euler angles, given the global axes ax[] (the
+// reference vectors must be set up already)
+static void amotorComputeEulerAngles(dxJointAMotor* joint, dVector3 ax[3])
+{
+    // assumptions:
+    //   global axes already calculated --> ax
+    //   axis[0] is relative to body 1 --> global ax[0]
+    //   axis[2] is relative to body 2 --> global ax[2]
+    //   ax[1] = ax[2] x ax[0]
+    //   original ax[0] and ax[2] are perpendicular
+    //   reference1 is perpendicular to ax[0] (in body 1 frame)
+    //   reference2 is perpendicular to ax[2] (in body 2 frame)
+    //   all ax[] and reference vectors are unit length
+
+    // calculate references in global frame
+    dVector3 ref1, ref2;
+    dMULTIPLY0_331(ref1, joint->node[0].body->R, joint->reference1);
+    if (joint->node[1].body) {
+        dMULTIPLY0_331(ref2, joint->node[1].body->R, joint->reference2);
+    } else {
+        ref2[0] = joint->reference2[0];
+        ref2[1] = joint->reference2[1];
+        ref2[2] = joint->reference2[2];
+    }
+
+    // get q perpendicular to both ax[0] and ref1, get first euler angle
+    dVector3 q;
+    dCROSS(q, =, ax[0], ref1);
+    joint->angle[0] = -dAtan2(dDOT(ax[2], q), dDOT(ax[2], ref1));
+
+    // get q perpendicular to both ax[0] and ax[1], get second euler angle
+    dCROSS(q, =, ax[0], ax[1]);
+    joint->angle[1] = -dAtan2(dDOT(ax[2], ax[0]), dDOT(ax[2], q));
+
+    // get q perpendicular to both ax[1] and ax[2], get third euler angle
+    dCROSS(q, =, ax[1], ax[2]);
+    joint->angle[2] = -dAtan2(dDOT(ref2, ax[1]), dDOT(ref2, q));
+}
+
+// 0x80273B7C: amotorSetEulerReferenceVectors. set the reference vectors as follows:
+//   * reference1 = current axis[2] relative to body 1
+//   * reference2 = current axis[0] relative to body 2
+// this assumes that:
+//    * axis[0] is relative to body 1
+//    * axis[2] is relative to body 2
+static void amotorSetEulerReferenceVectors(dxJointAMotor* j)
+{
+    if (j->node[0].body && j->node[1].body) {
+        dVector3 r;  // axis[2] and axis[0] in global coordinates
+        dMULTIPLY0_331(r, j->node[1].body->R, j->axis[2]);
+        dMULTIPLY1_331(j->reference1, j->node[0].body->R, r);
+        dMULTIPLY0_331(r, j->node[0].body->R, j->axis[0]);
+        dMULTIPLY1_331(j->reference2, j->node[1].body->R, r);
+    } else if (j->node[0].body) {  // jds
+        dMULTIPLY1_331(j->reference1, j->node[0].body->R, j->axis[2]);
+        dMULTIPLY0_331(j->reference2, j->node[0].body->R, j->axis[0]);
+    }
+}
+
+// 0x80273A70: amotorGetInfo1
+extern "C" void fn_80273A70(dxJointAMotor* j, dxJoint::Info1* info)
+{
+    info->m = 0;
+    info->nub = 0;
+
+    // compute the axes and angles, if in euler mode
+    if (j->mode == dAMotorEuler) {
+        dVector3 ax[3];
+        amotorComputeGlobalAxes(j, ax);
+        amotorComputeEulerAngles(j, ax);
+    }
+
+    // see if we're powered or at a joint limit for each axis
+    for (int i = 0; i < j->num; i++) {
+        if (j->limot[i].testRotationalLimit(j->angle[i]) || j->limot[i].fmax > 0) {
+            info->m++;
+        }
+    }
+}
+
+// 0x80273950: amotorGetInfo2
+extern "C" void fn_80273950(dxJointAMotor* joint, dxJoint::Info2* info)
+{
+    int i;
+
+    // compute the axes (if not global)
+    dVector3 ax[3];
+    amotorComputeGlobalAxes(joint, ax);
+
+    // in euler angle mode we do not actually constrain the angular velocity
+    // along the axes axis[0] and axis[2] (although we do use axis[1]) :
+    //
+    //    to get                    constrain
+    //    ---------------------     ---------
+    //    d(angle[0])/dt = 0        ax[1] x ax[2]
+    //    d(angle[1])/dt = 0        ax[1]
+    //    d(angle[2])/dt = 0        ax[0] x ax[1]
+    //
+    // constraining w2-w1 along an axis 'a' means that a'*(w2-w1)=0.
+    // to get the constraint to be d(angle[i])/dt = 0, we need to use axes
+    // ax[0] x ax[1] etc.
+
+    dVector3* axptr[3];
+    axptr[0] = &ax[0];
+    axptr[1] = &ax[1];
+    axptr[2] = &ax[2];
+
+    dVector3 ax0_cross_ax1;
+    dVector3 ax1_cross_ax2;
+    if (joint->mode == dAMotorEuler) {
+        dCROSS(ax0_cross_ax1, =, ax[0], ax[1]);
+        axptr[2] = &ax0_cross_ax1;
+        dCROSS(ax1_cross_ax2, =, ax[1], ax[2]);
+        axptr[0] = &ax1_cross_ax2;
+    }
+
+    int row = 0;
+    for (i = 0; i < joint->num; i++) {
+        row += joint->limot[i].addLimot(joint, info, row, *(axptr[i]), 1);
+    }
+}
+
+// 0x80273918: dJointSetAMotorNumAxes
+extern "C" void fn_80273918(dxJointAMotor* joint, int num)
+{
+    if (joint->mode == dAMotorEuler) {
+        joint->num = 3;
+    } else {
+        if (num < 0) {
+            num = 0;
+        }
+        if (num > 3) {
+            num = 3;
+        }
+        joint->num = num;
+    }
+}
+
+// 0x802737A4: dJointSetAMotorAxis
+extern "C" void fn_802737A4(dxJointAMotor* joint, int anum, int rel, dReal x, dReal y, dReal z)
+{
+    if (anum < 0) {
+        anum = 0;
+    }
+    if (anum > 2) {
+        anum = 2;
+    }
+
+    // adjust rel to match the internal body order
+    if (!joint->node[1].body && rel == 2) {
+        rel = 1;
+    }
+
+    joint->rel[anum] = rel;
+
+    // x,y,z is always in global coordinates regardless of rel, so we may have
+    // to convert it to be relative to a body
+    dVector3 r;
+    r[0] = x;
+    r[1] = y;
+    r[2] = z;
+    r[3] = 0;
+    if (rel > 0) {
+        if (rel == 1) {
+            dMULTIPLY1_331(joint->axis[anum], joint->node[0].body->R, r);
+        } else {
+            dMULTIPLY1_331(joint->axis[anum], joint->node[1].body->R, r);
+        }
+    } else {
+        joint->axis[anum][0] = r[0];
+        joint->axis[anum][1] = r[1];
+        joint->axis[anum][2] = r[2];
+    }
+    dNormalize3(joint->axis[anum]);
+    if (joint->mode == dAMotorEuler) {
+        amotorSetEulerReferenceVectors(joint);
+    }
+}
+
+// 0x80273688: dJointSetAMotorParam
+extern "C" void fn_80273688(dxJointAMotor* joint, int parameter, dReal value)
+{
+    int anum = parameter >> 8;
+    if (anum < 0) {
+        anum = 0;
+    }
+    if (anum > 2) {
+        anum = 2;
+    }
+    parameter &= 0xff;
+    joint->limot[anum].set(parameter, value);
+}
+
+// 0x80273650: dJointSetAMotorMode
+extern "C" void fn_80273650(dxJointAMotor* joint, int mode)
+{
+    joint->mode = mode;
+    if (joint->mode == dAMotorEuler) {
+        joint->num = 3;
+        amotorSetEulerReferenceVectors(joint);
+    }
+}
+
+dxJoint::Vtable __damotor_vtable = { sizeof(dxJointAMotor),
+                            (dxJoint::init_fn*)fn_80274338,
+                            (dxJoint::getInfo1_fn*)fn_80273A70,
+                            (dxJoint::getInfo2_fn*)fn_80273950,
+                            dJointTypeAMotor };

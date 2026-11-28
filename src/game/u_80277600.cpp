@@ -457,14 +457,14 @@ static dxJoint* createJoint(dWorldID w, dJointGroupID group, dxJoint::Vtable* vt
     return j;
 }
 
-extern dxJoint::Vtable lbl_803C0514;
-extern dxJoint::Vtable lbl_803C0500;
-extern dxJoint::Vtable lbl_803C04EC;
-extern dxJoint::Vtable lbl_803C04D8;
+extern dxJoint::Vtable __damotor_vtable;
+extern dxJoint::Vtable __dcontact_vtable;
+extern dxJoint::Vtable __dhinge_vtable;
+extern dxJoint::Vtable __dball_vtable;
 
 // dJointCreate* (joint type by vtable; guess: a later joint type than contact)
 extern "C" dxJoint* fn_80277D80(dWorldID w, dJointGroupID group) {
-    return createJoint(w, group, &lbl_803C0514);
+    return createJoint(w, group, &__damotor_vtable);
 }
 
 // dContact (0.5 contact.h, as the copy size in retail).
@@ -479,17 +479,17 @@ struct dxJointContact : public dxJoint {
 
 // dJointCreateContact
 extern "C" dxJoint* fn_80277EC8(dWorldID w, dJointGroupID group, const dContactBytes* c) {
-    dxJointContact* j = (dxJointContact*)createJoint(w, group, &lbl_803C0500);
+    dxJointContact* j = (dxJointContact*)createJoint(w, group, &__dcontact_vtable);
     j->contact = *c;
     return j;
 }
 
 extern "C" dxJoint* fn_802780CC(dWorldID w, dJointGroupID group) {
-    return createJoint(w, group, &lbl_803C04EC);
+    return createJoint(w, group, &__dhinge_vtable);
 }
 
 extern "C" dxJoint* fn_80278214(dWorldID w, dJointGroupID group) {
-    return createJoint(w, group, &lbl_803C04D8);
+    return createJoint(w, group, &__dball_vtable);
 }
 
 void dBodySetGravityMode(dBodyID b, int mode) {
