@@ -1263,6 +1263,7 @@ game/u_80272060.cpp:
 
 game/u_8027243C.cpp:
 	.text       start:0x8027243C end:0x8027337C
+	.sdata2     start:0x804DA228 end:0x804DA258
 
 game/u_8027337C.cpp:
 	.text       start:0x8027337C end:0x80273650

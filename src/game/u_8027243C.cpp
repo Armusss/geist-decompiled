@@ -1,6 +1,8 @@
 // u_8027243C.cpp (0x8027243C-0x8027337C): ODE 0.5 collision_util.cpp: dClosestLineBoxPoints, the segment helper,
 // dLineClosestApproach and dCollideSpheres. Split (2026-11-27) from u_80272060 (collision_transform.cpp ends at
 // 0x8027243C). Evidence: own .sdata2 pool 0x804DA228-0x804DA258 (0.5f, -1, 1, 2 and the 0.5/3.0 doubles again).
+// Built with GC/2.0 and -inline deferred (both user-approved 2026-11-27): the functions are in ODE source order
+// (dCollideSpheres first) and come out reversed, as in retail; dBoxTouchesBox (linker-dropped) closes the file.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 typedef unsigned long u32;
@@ -233,6 +235,181 @@ static inline void dMULTIPLY1_331(float* A, const float* B, const float* C)
     A[2] = Dot41(B + 2, C);
 }
 
+// 0x8027317C: collides two spheres (dCollideSpheres)
+int CollideSpheres(float* p1, float r1, float* p2, float r2, ContactGeom* c)
+{
+    float d = SqrtF((p1[0] - p2[0]) * (p1[0] - p2[0]) + (p1[1] - p2[1]) * (p1[1] - p2[1])
+                    + (p1[2] - p2[2]) * (p1[2] - p2[2]));
+
+    if (d > r1 + r2) {
+        return 0;
+    }
+    if (d <= 0.0f) {
+        c->pos[0] = p1[0];
+        c->pos[1] = p1[1];
+        c->pos[2] = p1[2];
+        c->normal[0] = 1.0f;
+        c->normal[1] = 0.0f;
+        c->normal[2] = 0.0f;
+        c->depth = r1 + r2;
+    } else {
+        float d1 = 1.0f / d;
+        c->normal[0] = (p1[0] - p2[0]) * d1;
+        c->normal[1] = (p1[1] - p2[1]) * d1;
+        c->normal[2] = (p1[2] - p2[2]) * d1;
+        float k = 0.5f * (r2 - r1 - d);
+        c->pos[0] = p1[0] + c->normal[0] * k;
+        c->pos[1] = p1[1] + c->normal[1] * k;
+        c->pos[2] = p1[2] + c->normal[2] * k;
+        c->depth = r1 + r2 - d;
+    }
+    return 1;
+}
+
+// 0x802730D0: closest approach of two lines (dLineClosestApproach)
+void LineClosestApproach(float* pa, float* ua, float* pb, float* ub, float* alpha, float* beta)
+{
+    float p[4];
+    p[0] = pb[0] - pa[0];
+    p[1] = pb[1] - pa[1];
+    p[2] = pb[2] - pa[2];
+    float uaub = Dot(ua, ub);
+    float q1 = Dot(ua, p);
+    float q2 = -Dot(ub, p);
+    float d = 1 - uaub * uaub;
+
+    if (d <= 0.0001f) {
+        *alpha = 0.0f;
+        *beta = 0.0f;
+    } else {
+        d = 1.0f / d;
+        *alpha = (q1 + uaub * q2) * d;
+        *beta = (uaub * q1 + q2) * d;
+    }
+}
+
+// 0x80272A90: closest points between the segments a1-a2 and b1-b2 (dClosestLineSegmentPoints)
+extern "C" void fn_80272A90(const float* a1, const float* a2, const float* b1, const float* b2, float* cp1,
+                            float* cp2)
+{
+    float a1a2[4], b1b2[4], a1b1[4], a1b2[4], a2b1[4], a2b2[4], n[4];
+    float la, lb, k, da1, da2, da3, da4, db1, db2, db3, db4, det;
+
+#define SET2(a, b) \
+    a[0] = b[0];   \
+    a[1] = b[1];   \
+    a[2] = b[2];
+#define SET3(a, b, op, c) \
+    a[0] = b[0] op c[0];  \
+    a[1] = b[1] op c[1];  \
+    a[2] = b[2] op c[2];
+
+    // check vertex-vertex features
+
+    SET3(a1a2, a2, -, a1);
+    SET3(b1b2, b2, -, b1);
+    SET3(a1b1, b1, -, a1);
+    da1 = Dot(a1a2, a1b1);
+    db1 = Dot(b1b2, a1b1);
+    if (da1 <= 0 && db1 >= 0) {
+        SET2(cp1, a1);
+        SET2(cp2, b1);
+        return;
+    }
+
+    SET3(a1b2, b2, -, a1);
+    da2 = Dot(a1a2, a1b2);
+    db2 = Dot(b1b2, a1b2);
+    if (da2 <= 0 && db2 <= 0) {
+        SET2(cp1, a1);
+        SET2(cp2, b2);
+        return;
+    }
+
+    SET3(a2b1, b1, -, a2);
+    da3 = Dot(a1a2, a2b1);
+    db3 = Dot(b1b2, a2b1);
+    if (da3 >= 0 && db3 >= 0) {
+        SET2(cp1, a2);
+        SET2(cp2, b1);
+        return;
+    }
+
+    SET3(a2b2, b2, -, a2);
+    da4 = Dot(a1a2, a2b2);
+    db4 = Dot(b1b2, a2b2);
+    if (da4 >= 0 && db4 <= 0) {
+        SET2(cp1, a2);
+        SET2(cp2, b2);
+        return;
+    }
+
+    // check edge-vertex features.
+    // if one or both of the lines has zero length, we will never get to here,
+    // so we do not have to worry about the following divisions by zero.
+
+    la = Dot(a1a2, a1a2);
+    if (da1 >= 0 && da3 <= 0) {
+        k = da1 / la;
+        SET3(n, a1b1, -, k * a1a2);
+        if (Dot(b1b2, n) >= 0) {
+            SET3(cp1, a1, +, k * a1a2);
+            SET2(cp2, b1);
+            return;
+        }
+    }
+
+    if (da2 >= 0 && da4 <= 0) {
+        k = da2 / la;
+        SET3(n, a1b2, -, k * a1a2);
+        if (Dot(b1b2, n) <= 0) {
+            SET3(cp1, a1, +, k * a1a2);
+            SET2(cp2, b2);
+            return;
+        }
+    }
+
+    lb = Dot(b1b2, b1b2);
+    if (db1 <= 0 && db2 >= 0) {
+        k = -db1 / lb;
+        SET3(n, -a1b1, -, k * b1b2);
+        if (Dot(a1a2, n) >= 0) {
+            SET2(cp1, a1);
+            SET3(cp2, b1, +, k * b1b2);
+            return;
+        }
+    }
+
+    if (db3 <= 0 && db4 >= 0) {
+        k = -db3 / lb;
+        SET3(n, -a2b1, -, k * b1b2);
+        if (Dot(a1a2, n) <= 0) {
+            SET2(cp1, a2);
+            SET3(cp2, b1, +, k * b1b2);
+            return;
+        }
+    }
+
+    // it must be edge-edge
+
+    k = Dot(a1a2, b1b2);
+    det = la * lb - k * k;
+    if (det <= 0) {
+        // this should never happen, but just in case...
+        SET2(cp1, a1);
+        SET2(cp2, b1);
+        return;
+    }
+    det = 1.0f / det;
+    float alpha = (lb * da1 - k * db1) * det;
+    float beta = (k * da1 - la * db1) * det;
+    SET3(cp1, a1, +, alpha * a1a2);
+    SET3(cp2, b1, +, beta * b1b2);
+
+#undef SET2
+#undef SET3
+}
+
 // 0x8027243C: closest points between the line segment p1-p2 and the box (c,R,side) (dClosestLineBoxPoints).
 // lret is the point on the segment and bret the point on the box.
 extern "C" void fn_8027243C(const float* p1, const float* p2, const float* c, const float* R, const float* side,
@@ -365,177 +542,82 @@ got_answer:
     }
 }
 
-// 0x80272A90: closest points between the segments a1-a2 and b1-b2 (dClosestLineSegmentPoints)
-extern "C" void fn_80272A90(const float* a1, const float* a2, const float* b1, const float* b2, float* cp1,
-                            float* cp2)
+static inline float Dot44(const float* a, const float* b)
 {
-    float a1a2[4], b1b2[4], a1b1[4], a1b2[4], a2b1[4], a2b2[4], n[4];
-    float la, lb, k, da1, da2, da3, da4, db1, db2, db3, db4, det;
-
-#define SET2(a, b) \
-    a[0] = b[0];   \
-    a[1] = b[1];   \
-    a[2] = b[2];
-#define SET3(a, b, op, c) \
-    a[0] = b[0] op c[0];  \
-    a[1] = b[1] op c[1];  \
-    a[2] = b[2] op c[2];
-
-    // check vertex-vertex features
-
-    SET3(a1a2, a2, -, a1);
-    SET3(b1b2, b2, -, b1);
-    SET3(a1b1, b1, -, a1);
-    da1 = Dot(a1a2, a1b1);
-    db1 = Dot(b1b2, a1b1);
-    if (da1 <= 0 && db1 >= 0) {
-        SET2(cp1, a1);
-        SET2(cp2, b1);
-        return;
-    }
-
-    SET3(a1b2, b2, -, a1);
-    da2 = Dot(a1a2, a1b2);
-    db2 = Dot(b1b2, a1b2);
-    if (da2 <= 0 && db2 <= 0) {
-        SET2(cp1, a1);
-        SET2(cp2, b2);
-        return;
-    }
-
-    SET3(a2b1, b1, -, a2);
-    da3 = Dot(a1a2, a2b1);
-    db3 = Dot(b1b2, a2b1);
-    if (da3 >= 0 && db3 >= 0) {
-        SET2(cp1, a2);
-        SET2(cp2, b1);
-        return;
-    }
-
-    SET3(a2b2, b2, -, a2);
-    da4 = Dot(a1a2, a2b2);
-    db4 = Dot(b1b2, a2b2);
-    if (da4 >= 0 && db4 <= 0) {
-        SET2(cp1, a2);
-        SET2(cp2, b2);
-        return;
-    }
-
-    // check edge-vertex features.
-    // if one or both of the lines has zero length, we will never get to here,
-    // so we do not have to worry about the following divisions by zero.
-
-    la = Dot(a1a2, a1a2);
-    if (da1 >= 0 && da3 <= 0) {
-        k = da1 / la;
-        SET3(n, a1b1, -, k * a1a2);
-        if (Dot(b1b2, n) >= 0) {
-            SET3(cp1, a1, +, k * a1a2);
-            SET2(cp2, b1);
-            return;
-        }
-    }
-
-    if (da2 >= 0 && da4 <= 0) {
-        k = da2 / la;
-        SET3(n, a1b2, -, k * a1a2);
-        if (Dot(b1b2, n) <= 0) {
-            SET3(cp1, a1, +, k * a1a2);
-            SET2(cp2, b2);
-            return;
-        }
-    }
-
-    lb = Dot(b1b2, b1b2);
-    if (db1 <= 0 && db2 >= 0) {
-        k = -db1 / lb;
-        SET3(n, -a1b1, -, k * b1b2);
-        if (Dot(a1a2, n) >= 0) {
-            SET2(cp1, a1);
-            SET3(cp2, b1, +, k * b1b2);
-            return;
-        }
-    }
-
-    if (db3 <= 0 && db4 >= 0) {
-        k = -db3 / lb;
-        SET3(n, -a2b1, -, k * b1b2);
-        if (Dot(a1a2, n) <= 0) {
-            SET2(cp1, a2);
-            SET3(cp2, b1, +, k * b1b2);
-            return;
-        }
-    }
-
-    // it must be edge-edge
-
-    k = Dot(a1a2, b1b2);
-    det = la * lb - k * k;
-    if (det <= 0) {
-        // this should never happen, but just in case...
-        SET2(cp1, a1);
-        SET2(cp2, b1);
-        return;
-    }
-    det = 1.0f / det;
-    float alpha = (lb * da1 - k * db1) * det;
-    float beta = (k * da1 - la * db1) * det;
-    SET3(cp1, a1, +, alpha * a1a2);
-    SET3(cp2, b1, +, beta * b1b2);
-
-#undef SET2
-#undef SET3
+    return a[0] * b[0] + a[4] * b[4] + a[8] * b[8];
 }
 
-// 0x802730D0: closest approach of two lines (dLineClosestApproach)
-void LineClosestApproach(float* pa, float* ua, float* pb, float* ub, float* alpha, float* beta)
+// dBoxTouchesBox (ODE 0.5 collision_util.cpp, verbatim; no caller in the game, so the linker dropped it).
+// It is the last function of the file and, built with -inline deferred, the first one generated: its 0.5f is
+// why the .sdata2 pool starts with 0.5f (0x804DA228) although dClosestLineBoxPoints loads 0.0f first.
+// two boxes are disjoint if (and only if) there is a separating axis perpendicular to a face from one box or
+// perpendicular to an edge from either box.
+int dBoxTouchesBox(const float* p1, const float* R1, const float* side1, const float* p2, const float* R2,
+                   const float* side2)
 {
-    float p[4];
-    p[0] = pb[0] - pa[0];
-    p[1] = pb[1] - pa[1];
-    p[2] = pb[2] - pa[2];
-    float uaub = Dot(ua, ub);
-    float q1 = Dot(ua, p);
-    float q2 = -Dot(ub, p);
-    float d = 1 - uaub * uaub;
+    float p[4], pp[4];
+    float A1, A2, A3, B1, B2, B3, R11, R12, R13, R21, R22, R23, R31, R32, R33, Q11, Q12, Q13, Q21, Q22, Q23, Q31,
+        Q32, Q33;
 
-    if (d <= 0.0001f) {
-        *alpha = 0.0f;
-        *beta = 0.0f;
-    } else {
-        d = 1.0f / d;
-        *alpha = (q1 + uaub * q2) * d;
-        *beta = (uaub * q1 + q2) * d;
-    }
-}
+    // compute vector from centers of box 1 to box 2, relative to box 1
+    p[0] = p2[0] - p1[0];
+    p[1] = p2[1] - p1[1];
+    p[2] = p2[2] - p1[2];
+    dMULTIPLY1_331(pp, R1, p);  // get pp = p relative to body 1
 
-// 0x8027317C: collides two spheres (dCollideSpheres)
-int CollideSpheres(float* p1, float r1, float* p2, float r2, ContactGeom* c)
-{
-    float d = SqrtF((p1[0] - p2[0]) * (p1[0] - p2[0]) + (p1[1] - p2[1]) * (p1[1] - p2[1])
-                    + (p1[2] - p2[2]) * (p1[2] - p2[2]));
+    // get side lengths / 2
+    A1 = side1[0] * 0.5f;
+    A2 = side1[1] * 0.5f;
+    A3 = side1[2] * 0.5f;
+    B1 = side2[0] * 0.5f;
+    B2 = side2[1] * 0.5f;
+    B3 = side2[2] * 0.5f;
 
-    if (d > r1 + r2) {
-        return 0;
-    }
-    if (d <= 0.0f) {
-        c->pos[0] = p1[0];
-        c->pos[1] = p1[1];
-        c->pos[2] = p1[2];
-        c->normal[0] = 1.0f;
-        c->normal[1] = 0.0f;
-        c->normal[2] = 0.0f;
-        c->depth = r1 + r2;
-    } else {
-        float d1 = 1.0f / d;
-        c->normal[0] = (p1[0] - p2[0]) * d1;
-        c->normal[1] = (p1[1] - p2[1]) * d1;
-        c->normal[2] = (p1[2] - p2[2]) * d1;
-        float k = 0.5f * (r2 - r1 - d);
-        c->pos[0] = p1[0] + c->normal[0] * k;
-        c->pos[1] = p1[1] + c->normal[1] * k;
-        c->pos[2] = p1[2] + c->normal[2] * k;
-        c->depth = r1 + r2 - d;
-    }
+    // compute matrix of rotation from box 1's frame to box 2's frame
+    R11 = Dot44(R1 + 0, R2 + 0);
+    R12 = Dot44(R1 + 0, R2 + 1);
+    R13 = Dot44(R1 + 0, R2 + 2);
+    R21 = Dot44(R1 + 1, R2 + 0);
+    R22 = Dot44(R1 + 1, R2 + 1);
+    R23 = Dot44(R1 + 1, R2 + 2);
+    R31 = Dot44(R1 + 2, R2 + 0);
+    R32 = Dot44(R1 + 2, R2 + 1);
+    R33 = Dot44(R1 + 2, R2 + 2);
+
+    Q11 = FAbs(R11);
+    Q12 = FAbs(R12);
+    Q13 = FAbs(R13);
+    Q21 = FAbs(R21);
+    Q22 = FAbs(R22);
+    Q23 = FAbs(R23);
+    Q31 = FAbs(R31);
+    Q32 = FAbs(R32);
+    Q33 = FAbs(R33);
+
+    // separating axis = u1,u2,u3
+    if (FAbs(pp[0]) > (A1 + B1 * Q11 + B2 * Q12 + B3 * Q13)) return 0;
+    if (FAbs(pp[1]) > (A2 + B1 * Q21 + B2 * Q22 + B3 * Q23)) return 0;
+    if (FAbs(pp[2]) > (A3 + B1 * Q31 + B2 * Q32 + B3 * Q33)) return 0;
+
+    // separating axis = v1,v2,v3
+    if (FAbs(Dot41(R2 + 0, p)) > (A1 * Q11 + A2 * Q21 + A3 * Q31 + B1)) return 0;
+    if (FAbs(Dot41(R2 + 1, p)) > (A1 * Q12 + A2 * Q22 + A3 * Q32 + B2)) return 0;
+    if (FAbs(Dot41(R2 + 2, p)) > (A1 * Q13 + A2 * Q23 + A3 * Q33 + B3)) return 0;
+
+    // separating axis = u1 x (v1,v2,v3)
+    if (FAbs(pp[2] * R21 - pp[1] * R31) > A2 * Q31 + A3 * Q21 + B2 * Q13 + B3 * Q12) return 0;
+    if (FAbs(pp[2] * R22 - pp[1] * R32) > A2 * Q32 + A3 * Q22 + B1 * Q13 + B3 * Q11) return 0;
+    if (FAbs(pp[2] * R23 - pp[1] * R33) > A2 * Q33 + A3 * Q23 + B1 * Q12 + B2 * Q11) return 0;
+
+    // separating axis = u2 x (v1,v2,v3)
+    if (FAbs(pp[0] * R31 - pp[2] * R11) > A1 * Q31 + A3 * Q11 + B2 * Q23 + B3 * Q22) return 0;
+    if (FAbs(pp[0] * R32 - pp[2] * R12) > A1 * Q32 + A3 * Q12 + B1 * Q23 + B3 * Q21) return 0;
+    if (FAbs(pp[0] * R33 - pp[2] * R13) > A1 * Q33 + A3 * Q13 + B1 * Q22 + B2 * Q21) return 0;
+
+    // separating axis = u3 x (v1,v2,v3)
+    if (FAbs(pp[1] * R11 - pp[0] * R21) > A1 * Q21 + A2 * Q11 + B2 * Q33 + B3 * Q32) return 0;
+    if (FAbs(pp[1] * R12 - pp[0] * R22) > A1 * Q22 + A2 * Q12 + B1 * Q33 + B3 * Q31) return 0;
+    if (FAbs(pp[1] * R13 - pp[0] * R23) > A1 * Q23 + A2 * Q13 + B1 * Q32 + B2 * Q31) return 0;
+
     return 1;
 }
