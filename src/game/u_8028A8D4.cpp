@@ -342,28 +342,16 @@ extern "C" void ScreenEffectSlotQueueCopy(void* self, u32 base, u32 offset, u32 
 static inline u32 AlignUp(u32 value, u32 align)
 {
     u32 rem;
-
-    if (align == 4) {
-        if (value & 3)
-            return (value & ~3u) + 4;
-        return value;
-    } else if (align == 2) {
-        if (value & 1)
-            return value + 1;
-        return value;
-    } else if (align == 8) {
-        if (value & 7)
-            return (value & ~7u) + 8;
-        return value;
-    } else if (align == 16) {
-        if (value & 15)
-            return (value & ~15u) + 16;
-        return value;
-    }
+    if (align == 4)
+        return (value & 3) ? (value & ~3u) + 4 : value;
+    if (align == 2)
+        return (value & 1) ? value + 1 : value;
+    if (align == 8)
+        return (value & 7) ? (value & ~7u) + 8 : value;
+    if (align == 16)
+        return (value & 15) ? (value & ~15u) + 16 : value;
     rem = value % align;
-    if (rem != 0)
-        return value + (align - rem);
-    return value;
+    return rem ? value + (align - rem) : value;
 }
 
 // Is the buffer still reading its outside text (no store of its own)?
@@ -405,14 +393,18 @@ static inline void BufferReserve(Buffer* self, u32 size, u8 exact)
 
 // Insert `size` bytes at `pos` (an address inside the store), growing the
 // store when needed, and return the address of the new window.
+static inline void BufferResize(Buffer* self, int n, u8 exact)
+{
+    if (self->mOwned < n + self->GetSpan())
+        BufferReserve(self, n, exact);
+    self->mLength = n;
+}
+
 char* Buffer::Insert(char* pos, int size)
 {
     int rel = pos - mUnk0C;
-    int newSize = size + mLength;
 
-    if (mOwned < newSize + GetSpan())
-        BufferReserve(this, newSize, 0);
-    mLength = newSize;
+    BufferResize(this, size + mLength, 0);
     fn_8028BC94(this, (int)(mUnk0C + rel), size);
     return mUnk0C + rel;
 }
@@ -421,7 +413,26 @@ char* Buffer::Insert(char* pos, int size)
 // (the text writers use it).  Also kept under its placeholder name.
 extern "C" void fn_8028B5FC(Buffer* self, int size, u8 exact)
 {
-    BufferReserve(self, size, exact);
+    u32 want = size + self->GetSpan();
+
+    if (self->mOwned < want) {
+        char* old = BufferShared(self) ? 0 : self->mUnk0C;
+        char* store;
+
+        if (!exact)
+            want = AlignUp(want, AlignUp(0x40, (u32)self->GetAlignment()));
+        store = (char*)VRealloc(old, (int)want);
+        self->Commit((int)(store + self->mOwned), want - self->mOwned);
+        if (old == 0 && self->mData != 0) {
+            u32 count = want;
+            if ((u32)self->mLength + 1 < want)
+                count = (u32)self->mLength + 1;
+            CopyBytes((const u8*)self->mData, count, (u8*)store);
+        }
+        self->Set((int)store, self->mLength);
+        self->mUnk0C = store;
+        self->mOwned = want;
+    }
 }
 
 // 0x8028B828: replace the contents with `size` bytes copied from `text`.
@@ -429,9 +440,7 @@ void ScreenEffectSlotReserveAndCopy(ScreenEffectSlot* slot, int text, int size)
 {
     Buffer* self = (Buffer*)slot;
 
-    if (self->mOwned < size + self->GetSpan())
-        BufferReserve(self, size, 1);
-    self->mLength = size;
+    BufferResize(self, size, 1);
     ScreenEffectSlotQueueCopy(self, (u32)self->mUnk0C, text, size);
 }
 
