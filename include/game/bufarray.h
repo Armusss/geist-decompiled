@@ -58,7 +58,25 @@ public:
     T* Begin() const { return (T*)mUnk0C; }
     T* End() const { return (T*)((char*)mUnk0C + mLength); }
     T& operator[](int i) const { return ((T*)mUnk0C)[i]; }   // u_80185A9C: an inline index temp ranks the regs
+    BufferArray& operator=(const BufferArray& src);
 };
+
+// Assignment (u_8029B070's slot copies): like the copy constructor, but sized from the source's text range
+// (Buffer::TextEnd is an out-of-line call there).
+template <class T>
+inline BufferArray<T>& BufferArray<T>::operator=(const BufferArray<T>& src)
+{
+    T* last = (T*)src.TextEnd();
+    T* first = (T*)src.mData;
+    unsigned long bytes = (last - first) * sizeof(T);
+
+    if (mOwned < bytes + GetSpan()) {
+        fn_8028B5FC(this, bytes, 1);
+    }
+    mLength = bytes;
+    BufferCopy((T*)mUnk0C, first, last);
+    return *this;
+}
 
 template <class T>
 void BufferArray<T>::Commit(int start, unsigned long size)

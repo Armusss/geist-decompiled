@@ -439,3 +439,30 @@ and loads through a read-only parameter are hoisted above stores into a local me
 parameter `const T*` (extern "C" callbacks can take typed parameters without a mangling change; the descriptor's
 function-pointer type follows). In BarrierActorUpdate (u_801E14E8) the same entry-block order came from passing the
 original `Actor*` parameter to ActorUpdate instead of the casted copy.
+
+## Emission order and scheduling findings from the BufferArray units (sonnet-3, 2026-11-27 .. 11-28)
+- **Loop-invariant end pointer**: CW hoists `p != arr->End()` out of a loop condition when the loop body only calls on
+  its exit paths (return right after the call). The hoisted end is created late, so it gets a different volatile
+  register than an explicit `T* end = arr->End();` local: when retail's outer end and inner end registers come out
+  swapped, write the End() call in the condition (u_8029B070 fn_8029B070/B218/B3B0). Loops that store through the
+  walker (fn_8029B85C) are not hoisted: there retail re-reads End() every iteration.
+- **Walker before counters**: `Entry12* e = list.Begin(); Entry12* best = 0; int count = 0;` gives the walker the
+  lower volatile register; declaration order of the walker vs. the counters decides it (u_8029B070).
+- **An inline-looking call that stays a call**: a small function (`Buffer::TextEnd`, 0x8029BC3C) called from an inline
+  is not inlined when its definition comes after the caller in the file; it is emitted at its definition, among the
+  file's own functions. A template member defined in the .cpp is instead emitted with the template instances.
+- **Delete through the base type**: `delete arr;` of a BufferArray<T>* emits the array's inline destructor right after
+  that function; `delete (Buffer*)arr;` (same virtual call) leaves it for the template block at the end of the file
+  (u_80185A9C, u_8029B070 fn_8029B7D0).
+- **Locals with an implicit destructor pull it**: a local struct holding a BufferArray (u_8029B070's Slot) makes CW emit
+  the struct's implicit dtor (weak, unreferenced) and the member array's dtor right after the function. A
+  user-declared `~Slot() {}` or `Slot() {}` does not change this; an extern "C" { } block around the functions does
+  not defer it either. Still open: retail has the Entry12 array dtor in the end block, not after fn_8029B560.
+- **Template block order is sensitive to every use**: removing one local or one copy changes the order of the
+  BufferConstruct/BufferDestroy instances and of the copy constructor relative to the vtable methods; moving the copy
+  constructor's declaration in the class or the range-loop templates' definitions does not.
+- **Copy constructors read the source before the vptr store** in retail (String(const String&) 0x8028C46C,
+  BufferArray<Entry12>(const&) 0x8029BEBC); ordinary bodies (also through a const local pointer) give the store first.
+  Not solved.
+- **Float argument after the int arguments**: in `ParticleStepPlain(dt, buf, 0x24, min(n, 0x40))` retail sets f1 after
+  the conditional; an inline min helper gets r3/r4 before the branch (24 -> 20 diffs), f1 is still early.

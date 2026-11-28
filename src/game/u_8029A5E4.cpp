@@ -69,8 +69,8 @@ struct HitBlob {
     int unk24;
     int unk28;
     int unk2C;
-    int pos[3];  // 0x30
-    int vec[3];  // 0x3C
+    IVec3 pos;   // 0x30
+    IVec3 vec;   // 0x3C
 };
 
 struct Hit {
@@ -88,9 +88,9 @@ struct HitMsg407 {
     float damage;       // 0x0C
     int unk10;
     int kind;           // 0x14
-    int pos[3];         // 0x18
-    int normal[3];      // 0x24
-    int vel[3];         // 0x30
+    IVec3 pos;          // 0x18
+    IVec3 normal;       // 0x24
+    IVec3 vel;          // 0x30
     int unk3C;          // 0x3C
     int unk40;          // 0x40
     int unk44;          // 0x44
@@ -106,8 +106,79 @@ extern "C" void fn_8016F120(void* fx, int* pos);
 extern "C" void fn_80184BCC(int* delta, int* in, int* out);
 extern "C" int fn_80049940(void);
 
-// TODO (not drafted yet, 0x2D8 bytes at 0x8029A5E4)
-// fn_8029A5E4
+inline void VecToInt(IVec3* d, Vec3* s) {
+    d->x = s->x;
+    d->y = s->y;
+    d->z = s->z;
+}
+
+extern "C" int fn_80122108(void* owner, int typeA, Vec3* pos, u32 typeB, int typeC, float p1, float p2, float p3,
+                           float p4, float p5, float p6, float p7);
+
+//@@8029A5E4
+// Hit test along the last step; on a hit, tell the target (message 0x407) or leave a hazard zone.
+extern "C" bool fn_8029A5E4(void* type, void* proj);
+bool fn_8029A5E4(void* type, void* proj) {
+    ProjType* self = (ProjType*)type;
+    Projectile* p = (Projectile*)proj;
+    int ints[6];
+    HitBlob hitInfo;
+    void* ctx[2];
+    int delta[3];
+    Vec3 vtmp;
+
+    ctx[0] = &hitInfo;
+    ctx[1] = (void*)p->owner;
+    ints[0] = (int)p->lastPos.x;
+    ints[1] = (int)p->lastPos.y;
+    ints[2] = (int)p->lastPos.z;
+    ints[3] = (int)p->pos.x;
+    ints[4] = (int)p->pos.y;
+    ints[5] = (int)p->pos.z;
+    if (fn_8001F928(p, ints, 0x12000000, fn_80183DD0, ctx) != 0) {
+        float damage;
+
+        if (self->hook != 0 && self->hook->hit != 0) {
+            return !self->hook->hit(self, p, &hitInfo);
+        }
+        fn_8016F120(self->hitFx, &hitInfo.pos.x);
+        delta[0] = ints[3] - ints[0];
+        delta[1] = ints[4] - ints[1];
+        delta[2] = ints[5] - ints[2];
+        fn_80184BCC(delta, &hitInfo.vec.x, (int*)&vtmp);
+        if (fn_80049940()) {
+            damage = self->damage2;
+        } else {
+            damage = self->damage;
+        }
+        if (hitInfo.obj != 0) {
+            HitMsg407 m;
+
+            m.from = p;
+            m.owner = p->owner;
+            m.kind = self->kind;
+            m.damage = damage;
+            m.force = self->force;
+            m.vel.x = p->vel.x;
+            m.vel.y = p->vel.y;
+            m.vel.z = p->vel.z;
+            m.pos = hitInfo.pos;
+            m.unk48 = hitInfo.unk0C;
+            m.unk44 = hitInfo.unk14;
+            m.normal = hitInfo.vec;
+            m.unk40 = hitInfo.unk18;
+            m.unk3C = hitInfo.unk10;
+            m.target = (Hit*)hitInfo.obj;
+            m.target->msg(0x407, &m);
+        } else {
+            fn_80122108(0, p->owner, &p->pos, 0x75715902, p->owner, 800.0f, 1000.0f, damage, 0.0f, 0.75f, 0.4f,
+                        100.0f);
+        }
+        return 0;
+    }
+    return 1;
+}
+//@@end
 //@@8029A8BC
 struct Actor;
 void ActorGetMatrix(Mtx34* m, Actor* a);
@@ -126,9 +197,11 @@ static inline void Vec3Erase(Vec3Array* a, Vec3* first, Vec3* last) {
     a->Erase((char*)((char*)first), (last - first) * sizeof(Vec3));
 }
 
-extern "C" int fn_8029A914(void* type, Projectile* p);
-int fn_8029A914(void* type, Projectile* p) {
+// Trail step: record the position (at most 6 kept), then hit test along the last step like fn_8029A5E4.
+extern "C" bool fn_8029A914(void* type, void* proj);
+bool fn_8029A914(void* type, void* proj) {
     ProjType* self = (ProjType*)type;
+    Projectile* p = (Projectile*)proj;
     int ints[6];
     HitBlob hitInfo;
     void* ctx[2];
@@ -153,51 +226,47 @@ int fn_8029A914(void* type, Projectile* p) {
     ints[3] = (int)p->pos.x;
     ints[4] = (int)p->pos.y;
     ints[5] = (int)p->pos.z;
-    if (fn_8001F928(p, ints, 0x12000000, fn_80183DD0, ctx) == 0) {
-        return 1;
-    }
-    if (self->hook != 0 && self->hook->hit != 0) {
-        return self->hook->hit(self, p, &hitInfo) == 0;
-    }
-    delta[0] = ints[3] - ints[0];
-    delta[1] = ints[4] - ints[1];
-    delta[2] = ints[5] - ints[2];
-    fn_80184BCC(delta, hitInfo.vec, (int*)&vtmp);
-    if (hitInfo.obj != 0) {
-        HitMsg407 m;
-        float damage;
-        int kind = (int)(((Hit*)hitInfo.obj)->handle >> 24);
+    if (fn_8001F928(p, ints, 0x12000000, fn_80183DD0, ctx) != 0) {
+        if (self->hook != 0 && self->hook->hit != 0) {
+            return !self->hook->hit(self, p, &hitInfo);
+        }
+        delta[0] = ints[3] - ints[0];
+        delta[1] = ints[4] - ints[1];
+        delta[2] = ints[5] - ints[2];
+        fn_80184BCC(delta, &hitInfo.vec.x, (int*)&vtmp);
+        if (hitInfo.obj != 0) {
+            HitMsg407 m;
+            float damage;
+            int kind = (int)(((Hit*)hitInfo.obj)->handle >> 24);
 
-        if (kind == 2 || kind == 4) {
-            fn_8016F120(self->hitFx, hitInfo.pos);
+            if (kind == 2 || kind == 4) {
+                fn_8016F120(self->hitFx, &hitInfo.pos.x);
+            }
+            if (fn_80049940()) {
+                damage = self->damage2;
+            } else {
+                damage = self->damage;
+            }
+            m.from = p;
+            m.owner = p->owner;
+            m.kind = self->kind;
+            m.damage = damage;
+            m.force = self->force;
+            m.vel.x = p->vel.x;
+            m.vel.y = p->vel.y;
+            m.vel.z = p->vel.z;
+            m.pos = hitInfo.pos;
+            m.unk48 = hitInfo.unk0C;
+            m.unk44 = hitInfo.unk14;
+            m.normal = hitInfo.vec;
+            m.unk40 = hitInfo.unk18;
+            m.unk3C = hitInfo.unk10;
+            m.target = (Hit*)hitInfo.obj;
+            m.target->msg(0x407, &m);
         }
-        if (fn_80049940()) {
-            damage = self->damage2;
-        } else {
-            damage = self->damage;
-        }
-        m.from = p;
-        m.owner = p->owner;
-        m.damage = damage;
-        m.kind = self->kind;
-        m.pos[0] = hitInfo.pos[0];
-        m.pos[1] = hitInfo.pos[1];
-        m.pos[2] = hitInfo.pos[2];
-        m.normal[0] = hitInfo.vec[0];
-        m.normal[1] = hitInfo.vec[1];
-        m.normal[2] = hitInfo.vec[2];
-        m.vel[0] = (int)p->vel.x;
-        m.vel[1] = (int)p->vel.y;
-        m.vel[2] = (int)p->vel.z;
-        m.unk3C = hitInfo.unk10;
-        m.unk40 = hitInfo.unk18;
-        m.unk44 = hitInfo.unk14;
-        m.unk48 = hitInfo.unk0C;
-        m.force = self->force;
-        m.target = (Hit*)hitInfo.obj;
-        m.target->msg(0x407, &m);
+        return 0;
     }
-    return 0;
+    return 1;
 }
 //@@end
 //@@8029AC60

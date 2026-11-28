@@ -108,7 +108,8 @@ struct Owner {
     char pad8FC[4];                            // 0x8FC
     float unk900;                              // 0x900: u_80251CB8, u_8016C244
     float health;                              // 0x904: u_80251CB8
-    char pad908[0x14];                         // 0x908
+    unsigned long unk908;                      // 0x908: u_8029B070 (compared unsigned with a slot entry)
+    char pad90C[0x10];                         // 0x90C
     float unk91C;                              // 0x91C: u_802DB9D0
 };
 
