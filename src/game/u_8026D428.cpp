@@ -456,56 +456,55 @@ extern "C" int fn_8026DA50(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
 
     int i;
 
-    // compute v = start point of segment relative to box center
-    float v[4];
-    for (i = 0; i < 3; i++) {
-        v[i] = ray->pos[i] - box->pos[i];
-    }
-
-    // compute v = ray start relative to box, and transformed direction (s,t)
-    float tmp[4], s[4], dir[4];
-    MatTransMulVec(s, box->rot, v);
+    // compute the start and delta of the ray relative to the box.
+    // we will do all subsequent computations in this box-relative coordinate
+    // system. we have to do a translation and rotation for each point.
+    float tmp[4], s[4], v[4];
+    tmp[0] = ray->pos[0] - box->pos[0];
+    tmp[1] = ray->pos[1] - box->pos[1];
+    tmp[2] = ray->pos[2] - box->pos[2];
+    MatTransMulVec(s, box->rot, tmp);
     tmp[0] = ray->rot[0 * 4 + 2];
     tmp[1] = ray->rot[1 * 4 + 2];
     tmp[2] = ray->rot[2 * 4 + 2];
-    MatTransMulVec(dir, box->rot, tmp);
+    MatTransMulVec(v, box->rot, tmp);
 
     // mirror the line so that v has all components >= 0
     float sign[4];
     for (i = 0; i < 3; i++) {
-        if (dir[i] < 0) {
+        if (v[i] < 0) {
             s[i] = -s[i];
-            dir[i] = -dir[i];
+            v[i] = -v[i];
             sign[i] = 1;
         } else {
             sign[i] = -1;
         }
     }
 
-    // compute h = half the side lengths
-    float h[4];
+    // compute the half-sides of the box
+    float h[3];
     h[0] = 0.5f * box->side[0];
     h[1] = 0.5f * box->side[1];
     h[2] = 0.5f * box->side[2];
 
     // do a few early exit tests
-    if ((s[0] < -h[0] && dir[0] <= 0) || s[0] > h[0] || (s[1] < -h[1] && dir[1] <= 0) || s[1] > h[1] ||
-        (s[2] < -h[2] && dir[2] <= 0) || s[2] > h[2] || (dir[0] == 0 && dir[1] == 0 && dir[2] == 0)) {
+    if ((s[0] < -h[0] && v[0] <= 0) || s[0] > h[0] || (s[1] < -h[1] && v[1] <= 0) || s[1] > h[1] ||
+        (s[2] < -h[2] && v[2] <= 0) || s[2] > h[2] || (v[0] == 0 && v[1] == 0 && v[2] == 0)) {
         return 0;
     }
 
-    // compute [lo..hi] range for t
+    // compute the t=[lo..hi] range for where s+v*t intersects the box
     float lo = -FLT_MAX;
     float hi = FLT_MAX;
     int nlo = 0, nhi = 0;
     for (i = 0; i < 3; i++) {
-        if (dir[i] != 0) {
-            float k = (-h[i] - s[i]) / dir[i];
+        if (v[i] != 0) {
+            float k = (-h[i] - s[i]) / v[i];
             if (k > lo) {
                 lo = k;
                 nlo = i;
             }
-            k = (h[i] - s[i]) / dir[i];
+            k = (h[i] - s[i]) / v[i];
             if (k < hi) {
                 hi = k;
                 nhi = i;
