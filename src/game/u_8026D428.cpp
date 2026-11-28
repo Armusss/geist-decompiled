@@ -2,7 +2,8 @@
 // capsule, plane, ray; ODE's collision_std.cpp). Split from u_8026C200.
 // Evidence: its own .sdata2 pool 0x804DA1D0-0x804DA224 (-FLT_MAX/FLT_MAX again at 0x804DA200 although
 // u_8026C200 has them at 0x804DA1C0; 0.5f/-1/1/2 again in u_80272060); its class vtables lbl_803C0498/04AC/04C0;
-// the out-of-line helpers MatMulVec/SqrtFloat/MatTransMulVec used only here close the file.
+// the out-of-line copies of the inlines MatMulVec/SqrtFloat/MatTransMulVec (dMULTIPLY0_331, dSqrt, dMULTIPLY1_331),
+// which only the huge dBoxBox fails to inline, close the file.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 typedef unsigned long u32;
@@ -136,7 +137,7 @@ static inline int FpClassifyF(float x)
 
 // Single-precision square root (the MSL sqrtf inline): reciprocal-square-root estimate refined
 // with three Newton steps. Negative inputs and NaNs give NaN.
-static inline float SqrtF(float x)
+static inline float SqrtFloat(float x)
 {
     static const double _half = 0.5;
     static const double _three = 3.0;
@@ -162,10 +163,13 @@ static inline double _fabs(double x)
     return __fabs(x);
 }
 
-static inline float FAbs(float x)
+static inline float fabsf(float x)
 {
     return (float)_fabs((double)x);
 }
+
+// ODE's dFabs (common.h)
+#define FAbs(x) ((float)fabsf(float(x)))
 
 // Collider helpers further down in this file / in the neighbouring unit.
 extern "C" void fn_8027914C(float* v);  // Normalize3 (neighbouring unit)
@@ -208,15 +212,28 @@ static inline void GeomLink(Geom* g, Geom** list)
 
 
 // Out-of-line helpers at the end of this file (dMULTIPLY0_331, dMULTIPLY1_331, dSqrt).
-void MatMulVec(float* A, const float* B, const float* C);
-void MatTransMulVec(float* A, const float* B, const float* C);
-float SqrtFloat(float x);
 
 // ODE's dot products (odemath.h inlines)
 static inline float Dot(const float* a, const float* b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
 static inline float Dot14(const float* a, const float* b) { return a[0] * b[0] + a[1] * b[4] + a[2] * b[8]; }
 static inline float Dot41(const float* a, const float* b) { return a[0] * b[0] + a[4] * b[1] + a[8] * b[2]; }
 static inline float Dot44(const float* a, const float* b) { return a[0] * b[0] + a[4] * b[4] + a[8] * b[8]; }
+
+// 0x80271EB4: out = R * v (dMULTIPLY0_331)
+inline void MatMulVec(float* A, const float* B, const float* C)
+{
+    A[0] = Dot(B, C);
+    A[1] = Dot(B + 4, C);
+    A[2] = Dot(B + 8, C);
+}
+
+// 0x80271FFC: out = R^T * v (dMULTIPLY1_331)
+inline void MatTransMulVec(float* A, const float* B, const float* C)
+{
+    A[0] = Dot41(B, C);
+    A[1] = Dot41(B + 1, C);
+    A[2] = Dot41(B + 2, C);
+}
 
 
 #define FLT_MAX 3.402823466e+38f
@@ -378,7 +395,7 @@ extern "C" int fn_8026D538(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
                 k = lz2;
             }
         } else {
-            k = SqrtF(k);
+            k = SqrtFloat(k);
             A = 1.0f / (2 * A);
             float alpha = (-B - k) * A;
             if (alpha < 0) {
@@ -547,7 +564,7 @@ int RaySphereTest(RayGeom* ray, float* sphere_pos, float radius, ContactGeom* co
     if (k < 0) {
         return 0;
     }
-    k = SqrtF(k);
+    k = SqrtFloat(k);
     float alpha;
     if (mode && C >= 0) {
         alpha = -B + k;
@@ -1101,7 +1118,7 @@ extern "C" int fn_8026F590(Geom* o1, Geom* o2, int flags, ContactGeom* contact, 
     r[0] = p[0] - q[0];
     r[1] = p[1] - q[1];
     r[2] = p[2] - q[2];
-    depth = sphere->radius - SqrtF(Dot(r, r));
+    depth = sphere->radius - SqrtFloat(Dot(r, r));
     if (depth < 0) {
         return 0;
     }
@@ -1679,7 +1696,7 @@ extern "C" float fn_80271714(float x, float y, float z, Geom* g)
     a[0] = c->pos[0] + beta * c->rot[0 * 4 + 2];
     a[1] = c->pos[1] + beta * c->rot[1 * 4 + 2];
     a[2] = c->pos[2] + beta * c->rot[2 * 4 + 2];
-    return c->radius - SqrtF((x - a[0]) * (x - a[0]) + (y - a[1]) * (y - a[1]) + (z - a[2]) * (z - a[2]));
+    return c->radius - SqrtFloat((x - a[0]) * (x - a[0]) + (y - a[1]) * (y - a[1]) + (z - a[2]) * (z - a[2]));
 }
 
 // 0x802718A0: reads a capsule's radius and length
@@ -1816,24 +1833,4 @@ SphereGeom::~SphereGeom()
 {
 }
 
-// 0x80271EB4: out = R * v (dMULTIPLY0_331)
-void MatMulVec(float* A, const float* B, const float* C)
-{
-    A[0] = B[0] * C[0] + B[1] * C[1] + B[2] * C[2];
-    A[1] = B[4] * C[0] + B[5] * C[1] + B[6] * C[2];
-    A[2] = B[8] * C[0] + B[9] * C[1] + B[10] * C[2];
-}
 
-// 0x80271F18: square root (dSqrt)
-float SqrtFloat(float x)
-{
-    return SqrtF(x);
-}
-
-// 0x80271FFC: out = R^T * v (dMULTIPLY1_331)
-void MatTransMulVec(float* A, const float* B, const float* C)
-{
-    A[0] = B[0] * C[0] + B[4] * C[1] + B[8] * C[2];
-    A[1] = B[1] * C[0] + B[5] * C[1] + B[9] * C[2];
-    A[2] = B[2] * C[0] + B[6] * C[1] + B[10] * C[2];
-}
