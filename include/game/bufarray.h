@@ -37,9 +37,18 @@ void BufferConstruct(T* first, T* last)
 }
 
 template <class T>
+inline void BufferCopy(T* dst, T* first, T* last)
+{
+    for (; first != last; first++, dst++) {
+        *dst = *first;
+    }
+}
+
+template <class T>
 class BufferArray : public Buffer {
 public:
     BufferArray() {}
+    BufferArray(const BufferArray& src);
     virtual ~BufferArray() { Free(); }
     virtual void Commit(int start, unsigned long size);
     virtual void Append(unsigned char* data, unsigned long size);
@@ -71,6 +80,20 @@ template <class T>
 int BufferArray<T>::GetAlignment()
 {
     return sizeof(T);
+}
+
+// Copy constructor (u_8029B070's Entry12 array, 0x8029BEBC): size the store exactly, then copy the elements
+// from the source's text range.
+template <class T>
+BufferArray<T>::BufferArray(const BufferArray<T>& src)
+{
+    unsigned long bytes = src.mLength / sizeof(T) * sizeof(T);
+
+    if (mOwned < bytes + GetSpan()) {
+        fn_8028B5FC(this, bytes, 1);
+    }
+    mLength = bytes;
+    BufferCopy((T*)mUnk0C, (T*)src.mData, (T*)(src.mData + src.mLength));
 }
 
 // BufferPtrArray<T>: an array of T pointers. Every pointer array in the game has this second vtable, which
