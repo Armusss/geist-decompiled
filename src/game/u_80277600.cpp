@@ -424,15 +424,7 @@ extern "C" dxJointGroup* fn_80277D38(int max_size) {
     return group;
 }
 
-static dxJoint* createJoint(dWorldID w, dJointGroupID group, dxJoint::Vtable* vtable) {
-    dxJoint* j;
-    if (group) {
-        j = (dxJoint*)group->stack.alloc(vtable->size);
-        group->num++;
-    } else {
-        j = (dxJoint*)dAlloc(vtable->size);
-    }
-
+static void dJointInit(dxWorld* w, dxJoint* j) {
     initObject(j, w);
     j->vtable = 0;
     j->flags = 0;
@@ -445,7 +437,17 @@ static dxJoint* createJoint(dWorldID w, dJointGroupID group, dxJoint::Vtable* vt
     dSetZero(j->lambda, 6);
     addObjectToList(j, (dObject**)&w->firstjoint);
     w->nj++;
+}
 
+static dxJoint* createJoint(dWorldID w, dJointGroupID group, dxJoint::Vtable* vtable) {
+    dxJoint* j;
+    if (group) {
+        j = (dxJoint*)group->stack.alloc(vtable->size);
+        group->num++;
+    } else {
+        j = (dxJoint*)dAlloc(vtable->size);
+    }
+    dJointInit(w, j);
     j->vtable = vtable;
     if (group) {
         j->flags |= dJOINT_INGROUP;
@@ -467,18 +469,39 @@ extern "C" dxJoint* fn_80277D80(dWorldID w, dJointGroupID group) {
     return createJoint(w, group, &__damotor_vtable);
 }
 
-// dContact (0.5 contact.h, as the copy size in retail).
-struct dContactBytes {
-    int data[0x58 / 4];
+// contact.h
+struct dSurfaceParameters {
+    int mode;
+    dReal mu;
+    dReal mu2;
+    dReal bounce;
+    dReal bounce_vel;
+    dReal soft_erp;
+    dReal soft_cfm;
+    dReal motion1, motion2;
+    dReal slip1, slip2;
+};
+
+struct dContactGeom {
+    dVector3 pos;
+    dVector3 normal;
+    dReal depth;
+    dxGeom *g1, *g2;
+};
+
+struct dContact {
+    dSurfaceParameters surface;
+    dContactGeom geom;
+    dVector3 fdir1;
 };
 
 struct dxJointContact : public dxJoint {
-    int the_m;
-    dContactBytes contact;
+    int the_m;  // number of rows computed by getInfo1
+    dContact contact;
 };
 
 // dJointCreateContact
-extern "C" dxJoint* fn_80277EC8(dWorldID w, dJointGroupID group, const dContactBytes* c) {
+extern "C" dxJoint* fn_80277EC8(dWorldID w, dJointGroupID group, const dContact* c) {
     dxJointContact* j = (dxJointContact*)createJoint(w, group, &__dcontact_vtable);
     j->contact = *c;
     return j;
