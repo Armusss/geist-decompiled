@@ -839,7 +839,7 @@ config.libs = [
             Object(Matching, "game/ode/obstack.cpp", extra_cflags=["-inline deferred"]),
             Object(NonMatching, "game/u_80277600.cpp"),  # ODE 0.5 ode.cpp (body/joint/world API)
             Object(Matching, "game/u_80278D2C.cpp", mw_version="GC/2.0"),  # ODE math (split from u_80277600); GC/2.0 (user-approved 2026-11-27): dPlaneSpace exact only on 2.0 (109 diffs on 1.3.2)
-            Object(NonMatching, "game/u_80279558.cpp", mw_version="GC/2.0"),  # ODE quickstep.cpp (split from u_80277600); GC/2.0 (user-approved 2026-11-27): SOR_LCP fn_8027A9C0 exact only on 2.0 (76 diffs on 1.3.2), none worse
+            Object(NonMatching, "game/u_80279558.cpp", mw_version="GC/2.0", extra_cflags=["-inline deferred"]),  # ODE quickstep.cpp (split from u_80277600); GC/2.0 (user-approved 2026-11-27): SOR_LCP fn_8027A9C0 exact only on 2.0 (76 diffs on 1.3.2), none worse; -inline deferred (user-approved 2026-11-27): 1/2 either way, ODE source order
             Object(Matching, "game/u_8027B4F8.cpp", mw_version="GC/2.0"),  # ODE rotation.cpp (split from u_80277600); GC/2.0 (user-approved 2026-11-27): 7/8 exact on 2.0, 1/8 on 1.3.2
             Object(NonMatching, "game/u_8027BD5C.cpp"),  # ODE util.cpp (split from u_80277600)
             Object(NonMatching, "game/u_8027C650.cpp"),  # player states (split from u_80277600)
