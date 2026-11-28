@@ -1298,6 +1298,8 @@ game/ode/obstack.cpp:
 
 game/u_80277600.cpp:
 	.text       start:0x802775AC end:0x80278D2C
+	.rodata     start:0x8034AE90 end:0x8034B080
+	.sdata2     start:0x804DA2F8 end:0x804DA318
 
 game/u_80278D2C.cpp:
 	.text       start:0x80278D2C end:0x80279558
@@ -1305,6 +1307,7 @@ game/u_80278D2C.cpp:
 
 game/u_80279558.cpp:
 	.text       start:0x80279558 end:0x8027B4F8
+	.sdata2     start:0x804DA340 end:0x804DA358
 
 game/u_8027B4F8.cpp:
 	.text       start:0x8027B4F8 end:0x8027BD5C

@@ -4,7 +4,7 @@
 // compute_invM_JT/multiply_invM_JT), fn_80279558 calls it and dxStepBody (fn_8027C240).
 // Split from u_80277600 on data evidence: own .sdata2 pool 0x804DA340-0x804DA358 (1.0f, -FLT_MAX, FLT_MAX,
 // 0.0f, 0.9 double); 1.0f and 0.0f are also pooled by u_80278D2C and u_8027B4F8 (duplicates mean separate files).
-// Built with GC/2.0 and -inline deferred (both user-approved 2026-11-27): SOR_LCP precedes dxQuickStepper as in
+// Built with -inline deferred (user-approved 2026-11-27) and GC/2.6 (2026-11-28; fn_80279558 exact only on 2.5-2.7): SOR_LCP precedes dxQuickStepper as in
 // ODE and the two come out reversed, as in retail.
 
 #include "game/types.h"
