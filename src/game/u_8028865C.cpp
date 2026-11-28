@@ -1276,6 +1276,11 @@ static inline int ClockPageAge(ClockPageEmitterNode* node, float dt)
     return 0;
 }
 
+static inline int ClockMin(int a, int b)
+{
+    return a < b ? a : b;
+}
+
 extern "C" void fn_8028A554(float dt)
 {
     ClockPageEmitterNode** list = lbl_804D56E0->Begin();
@@ -1297,10 +1302,8 @@ extern "C" void fn_8028A554(float dt)
     }
 
     Vec3 range = {0.0f, 0.0f, -0.002f}; // 0x8034B4A0
-    fn_802113F0(dt, (float*)lbl_804A3BF8, 0x24,
-                lbl_804D56F4 < 0x40 ? lbl_804D56F4 : 0x40, &range);
-    ParticleStepPlain(dt, (float*)lbl_804A3BF8, 0x24,
-                      lbl_804D56F4 < 0x40 ? lbl_804D56F4 : 0x40);
+    fn_802113F0(dt, (float*)lbl_804A3BF8, 0x24, ClockMin(lbl_804D56F4, 0x40), &range);
+    ParticleStepPlain(dt, (float*)lbl_804A3BF8, 0x24, ClockMin(lbl_804D56F4, 0x40));
 }
 
 unsigned long AssetFind(unsigned long type, unsigned long id);
