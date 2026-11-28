@@ -463,6 +463,50 @@ original `Actor*` parameter to ActorUpdate instead of the casted copy.
   constructor's declaration in the class or the range-loop templates' definitions does not.
 - **Copy constructors read the source before the vptr store** in retail (String(const String&) 0x8028C46C,
   BufferArray<Entry12>(const&) 0x8029BEBC); ordinary bodies (also through a const local pointer) give the store first.
-  Not solved.
+  Explained (2026-11-28, next section): a GC/2.0 trait, not a source form.
 - **Float argument after the int arguments**: in `ParticleStepPlain(dt, buf, 0x24, min(n, 0x40))` retail sets f1 after
   the conditional; an inline min helper gets r3/r4 before the branch (24 -> 20 diffs), f1 is still early.
+
+## Copy-constructor vptr order and the template block order (opus-ctor1, 2026-11-28)
+Toy programs (cflags_game, GC/1.3.2 unless noted; sources in ~/geist-work/ds/opus-ctor1-tools/s, tools tc.py/gen.py/uc.py).
+
+**1. Loads hoisted above the vptr store are the GC/2.0 const-pointer trait.** In a constructor CW 1.3.2 emits, in this
+order: base constructor call, vptr store, member initialisers, body. Member-initialiser lists, explicit `: Base()`,
+an inline helper doing the work, a pointer instead of a reference, const vs non-const: the vptr store stays first.
+The scheduler never moves a load above an earlier store through a different base register: `void f(S* d, const S* s)
+{ d->vp = &vt; g(s->len * 3); }` keeps `stw` first on 1.3.2 (also 1.3, 1.3.2r, 1.2.5n); GC/2.0, 2.0p1 and 2.5 put
+`lwz r0,8(r4)` first, but only when `s` is const (a non-const `S*` keeps the order). So retail's
+`bl Buffer(); lwz r0,8(src); ... stw vptr` cannot come from 1.3.2 source. Evidence on the real files (scratch only):
+u_8029B070 on GC/2.0 is 23/23 exact (the copy constructor 10 -> 0, every other function unchanged; 2.0p1 breaks 4 other
+functions); u_8028A8D4's String(const String&) is 6 -> 0 on 2.0 with all other counts unchanged. Not switched: per-file
+GC/2.0 is the user's decision (STATUS G4).
+
+**2. Where CW emits implicit, inline and template functions** (all compilers 1.2.5n .. 3.0a5 behave the same):
+- Constructing or destroying an object whose class has a member (or is itself a template class) with a template
+  destructor (a local, `new S`, `new S(*p)`, placement new, a temporary) makes CW emit that destructor, and the
+  containing class's implicit destructor when a local is destroyed, **right after the function being compiled**
+  (`f1 ~S ~A<E> f2`). User-declared inline ctors/dtors, `S` as a template, extern "C" blocks or an earlier use of the
+  vtable do not change this. Only a destructor defined out of class after the function moves it to the end, but then
+  it is called instead of inlined.
+- Inline template members that were inlined but are also needed out of line (a qualified `p->A<E>::~A()` or a
+  vtable entry) and inline virtuals of ordinary classes (Buffer::GetSpan) come first in the end block, newest first.
+- End block: class-template instances newest first by the first mention of the specialisation (even `A<E>* p;`);
+  within an instance the constructors first (wherever declared or defined), then the other members in declaration
+  order (request order does not matter); then the function templates grouped per template in reverse definition
+  order (BufferDestroy is defined before BufferConstruct, so the BufferConstruct instances come first); inside a group
+  newest first by the first reference in compiled code (a direct call in a file function counts; otherwise the member
+  that calls it when compiled in the end block).
+- Functions defined as `extern "C" void f() { ... }` (linkage on the definition) whose body needs a generated
+  function (a class local, `new` of a template class, a struct assignment) are held back and emitted after the next
+  C++ function definition (an unused inline one counts) or, if none follows, after the last function, in reverse
+  order, each followed by its own immediate instantiations. The declaration-then-definition form
+  (`extern "C" void f(); void f() { ... }`) never holds. This is the mechanism behind the "struct assignment" rule
+  above (u_801E092C's Update was defined extern "C" on the definition).
+**Retail u_8029B070 contradicts these rules in three places**, so its source differs in a way not found yet:
+~BufferArray<Entry12> comes after TextEnd although fn_8029B560 constructs and destroys Slot locals (retail inlines both,
+so they exist); the copy constructor comes after GetAlignment<Entry12> although constructors lead their instance; and
+BufferConstruct/Destroy<Slot> precede the Entry12 ones, which would need the Entry12 instances referenced before
+Commit<Slot>/Append<Slot> are compiled. u_8008DCDC has the first shape too (fn_800938C4's placement-new of
+AnimRecSet emits ~BufferArray<AnimItem> after it; retail has it after the last function, fn_80093990). Both
+retail files put the array destructor right after the last file function, where a deadstripped weak function
+(the implicit ~Slot) followed by its immediate destructor would sit, but no source form here reproduces that.
