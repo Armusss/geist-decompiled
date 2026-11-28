@@ -1,5 +1,5 @@
 // u_8029B070.cpp (0x8029B070-0x8029C0D0), split from the old u_80294548 range: a manager over .sbss
-// 0x804D5718 with two Buffer-derived array classes (vtables 0x803C3148 and 0x803C3168).
+// 0x804D5718 with two BufferArray instances (Slot, vtable 0x803C3148; Entry12, vtable 0x803C3168).
 // Boundary evidence:
 // - .sdata2: own pool 0x804DA760-0x804DA778 (0.0f at 0x804DA760 duplicates the previous file's 0x804DA730).
 // - .data 0x803C3148-0x803C3188 (the two vtables) and .sbss 0x804D5718 are referenced only from this range;
@@ -8,67 +8,17 @@
 
 #include <dolphin/types.h>
 
-void* VAlloc(int size);
-void VFree(void* p);
-extern "C" void fn_8028B5FC(void* self, int size, int a);
+#include "game/bufarray.h"
 
-inline void* operator new(unsigned long, void* p) { return p; }
-
-// The Buffer class chain of u_8028A8D4.cpp (ScreenEffectSlot -> ScreenEffectBuffer -> Buffer; base names are
-// guesses there). The arrays below override the element hooks and call the base ones directly.
-class ScreenEffectSlot {
-public:
-    virtual ~ScreenEffectSlot() {}
-    virtual void Clear();
-    virtual int GetAlignment();
-    virtual void Commit(int start, unsigned long size) = 0;
-
-    char* mStart;   // 0x04
-    int mSize;      // 0x08
-    char* mStore;   // 0x0C
-    u32 mCapacity;  // 0x10
-};
-
-class ScreenEffectBuffer : public ScreenEffectSlot {
-public:
-    virtual void Commit(int start, unsigned long size);
-    virtual void Append(unsigned char* data, unsigned long size);
-    virtual int GetSpan() = 0;
-};
-
-class Buffer : public ScreenEffectBuffer {
-public:
-    virtual ~Buffer();
-    Buffer();
-    virtual void Clear();
-    virtual int GetSpan() { return 0; }
-    char* Erase(char* pos, int size);  // 0x8028B35C
-    char* Insert(char* pos, int size); // 0x8028B3BC
-    void Free();                       // 0x8028B960
-};
-
-// 12-byte element. Its destroy hook ClearEntryRange (0x8029C0AC-0x8029C0D0, the last function here; it was the
-// first function of the old u_8029C0AC range) is called only from EntryList::Append and pairs with the construct
-// hook fn_8029C00C.
+// 12-byte element.
 struct Entry12 {
     int a;
     int b;
     float c;
 };
-void ClearEntryRange(Entry12* begin, Entry12* end);
-extern "C" void fn_8029C00C(Entry12* first, Entry12* last);
 
-// An array of Entry12 (vtable 0x803C3168). Class name is a guess.
-class EntryList : public Buffer {
-public:
-    EntryList() {}
-    EntryList(const EntryList& src);
-    virtual ~EntryList() { Free(); }
-    virtual int GetAlignment();
-    virtual void Commit(int start, unsigned long size);
-    virtual void Append(unsigned char* data, unsigned long size);
-    static void operator delete(void* p) { VFree(p); }
-};
+// An array of Entry12 (vtable 0x803C3168).
+typedef BufferArray<Entry12> EntryList;
 
 // 0x2C-byte record holding an EntryList at +0x08.
 struct Slot {
@@ -76,21 +26,13 @@ struct Slot {
     int unk04;        // 0x04
     EntryList list;   // 0x08
     float unk1C;      // 0x1C
-    u8 pad20[0xC];
+    float unk20;      // 0x20
+    float unk24;      // 0x24
+    int unk28;        // 0x28
 };
-extern "C" void fn_8029BF98(Slot* first, Slot* last);
-extern "C" void fn_8029C030(Slot* first, Slot* last);
 
-// An array of Slot (vtable 0x803C3148). Class name is a guess.
-class SlotArray : public Buffer {
-public:
-    SlotArray() {}
-    virtual ~SlotArray() { Free(); }
-    virtual int GetAlignment();
-    virtual void Commit(int start, unsigned long size);
-    virtual void Append(unsigned char* data, unsigned long size);
-    static void operator delete(void* p) { VFree(p); }
-};
+// An array of Slot (vtable 0x803C3148).
+typedef BufferArray<Slot> SlotArray;
 
 // TODO (not drafted yet, 0xD0 bytes at 0x8029B070)
 // fn_8029B070
@@ -105,8 +47,8 @@ extern SlotArray* lbl_804D5718;
 
 extern "C" void fn_8029B528(u32 key, float value);
 void fn_8029B528(u32 key, float value) {
-    Slot* end = (Slot*)(lbl_804D5718->mStore + lbl_804D5718->mSize);
-    Slot* p = (Slot*)lbl_804D5718->mStore;
+    Slot* end = lbl_804D5718->End();
+    Slot* p = lbl_804D5718->Begin();
 
     for (; p != end; p++) {
         if (key == p->key) {
@@ -116,108 +58,80 @@ void fn_8029B528(u32 key, float value) {
     }
 }
 //@@end
-// TODO (not drafted yet, 0x270 bytes at 0x8029B560)
-// fn_8029B560
+//@@8029B560
+// Make sure `key` has a slot: copy the matching one out (the copy is dropped again), or append a default slot;
+// then reset the last slot. (Draft: the shape is not matched yet.)
+extern "C" void fn_8029B560(u32 key, int value);
+void fn_8029B560(u32 key, int value) {
+    Slot* found = 0;
+    Slot* p;
+    Slot* last;
+
+    for (p = lbl_804D5718->Begin(); p != lbl_804D5718->End(); p++) {
+        if (key == p->key) {
+            Slot copy = *p;
+            found = &copy;
+            break;
+        }
+    }
+    if (found != 0) {
+        return;
+    }
+    {
+        Slot def;
+        *(Slot*)lbl_804D5718->Insert((char*)lbl_804D5718->End(), sizeof(Slot)) = def;
+    }
+    last = lbl_804D5718->End() - 1;
+    last->key = key;
+    last->unk1C = 15000.0f;
+    last->unk24 = 0.0f;
+    last->unk20 = 200.0f;
+    last->unk28 = -1;
+    last->unk04 = value;
+    last->list.Erase((char*)last->list.Begin(), (last->list.End() - last->list.Begin()) * sizeof(Entry12));
+}
+//@@end
 // TODO (not drafted yet, 0x8C bytes at 0x8029B7D0)
 // fn_8029B7D0
 // TODO (not drafted yet, 0xC4 bytes at 0x8029B85C)
 // fn_8029B85C
-// TODO (not drafted yet, 0x31C bytes at 0x8029B920)
-// fn_8029B920
+//@@8029B920
+// Create (or empty) the slot array and register the default slots.
+extern "C" void fn_8029B920(void);
+void fn_8029B920(void) {
+    if (lbl_804D5718 == 0) {
+        lbl_804D5718 = new SlotArray;
+    }
+    if (lbl_804D5718->Count() != 0) {
+        lbl_804D5718->Erase((char*)lbl_804D5718->Begin(), (lbl_804D5718->End() - lbl_804D5718->Begin()) * sizeof(Slot));
+    }
+    fn_8029B560(0x73B1E248, 2);
+    fn_8029B560(0x86A69297, 1);
+    fn_8029B560(0x55F3E922, 1);
+    fn_8029B528(0x55F3E922, 0.0f);
+    fn_8029B560(0xB3D49C39, 1);
+    fn_8029B528(0xB3D49C39, 0.0f);
+    fn_8029B560(0xC1F6F975, 1);
+    fn_8029B528(0xC1F6F975, 0.0f);
+    fn_8029B560(0x31992E8D, 1);
+    fn_8029B528(0x31992E8D, 0.0f);
+    fn_8029B560(0x00013E6B, 11);
+    fn_8029B528(0x00013E6B, 0.0f);
+    fn_8029B560(0x03C72B83, 4);
+    fn_8029B528(0x03C72B83, 0.0f);
+    fn_8029B560(0x766A16B4, 1);
+    fn_8029B528(0x766A16B4, 0.0f);
+    fn_8029B560(0x002237D4, 1);
+    fn_8029B528(0x002237D4, 8000.0f);
+}
+//@@end
 //@@8029BC3C
 extern "C" char* fn_8029BC3C(Buffer* b);
 char* fn_8029BC3C(Buffer* b) {
-    return b->mStart + b->mSize;
+    return b->mData + b->mLength;
 }
 //@@end
 // TODO (not drafted yet, 0x68 bytes at 0x8029BC4C)
 // fn_8029BC4C
 // TODO (not drafted yet, 0x68 bytes at 0x8029BCB4)
 // fn_8029BCB4
-//@@8029BD1C
-void SlotArray::Commit(int start, unsigned long size) {
-    ScreenEffectBuffer::Commit(start, size);
-    fn_8029BF98((Slot*)start, (Slot*)start + size / sizeof(Slot));
-}
-//@@end
-//@@8029BD74
-static inline void SlotsDestroy(void* p, u32 bytes) {
-    Slot* first = (Slot*)p;
-    fn_8029C030(first, first + bytes / sizeof(Slot));
-}
-
-void SlotArray::Append(unsigned char* data, unsigned long size) {
-    SlotsDestroy(data, size);
-    ScreenEffectBuffer::Append(data, size);
-}
-//@@end
-//@@8029BDE4
-int SlotArray::GetAlignment() {
-    return sizeof(Slot);
-}
-//@@end
-//@@8029BDEC
-void EntryList::Commit(int start, unsigned long size) {
-    ScreenEffectBuffer::Commit(start, size);
-    fn_8029C00C((Entry12*)start, (Entry12*)start + size / sizeof(Entry12));
-}
-//@@end
-//@@8029BE44
-static inline void EntriesDestroy(void* p, u32 bytes) {
-    Entry12* first = (Entry12*)p;
-    ClearEntryRange(first, first + bytes / sizeof(Entry12));
-}
-
-void EntryList::Append(unsigned char* data, unsigned long size) {
-    EntriesDestroy(data, size);
-    ScreenEffectBuffer::Append(data, size);
-}
-//@@end
-//@@8029BEB4
-int EntryList::GetAlignment() {
-    return sizeof(Entry12);
-}
-//@@end
-//@@8029BEBC
-static inline void EntriesCopy(Entry12* dst, Entry12* first, Entry12* last) {
-    for (; first != last; first++, dst++) {
-        *dst = *first;
-    }
-}
-
-EntryList::EntryList(const EntryList& src) {
-    u32 bytes = src.mSize / sizeof(Entry12) * sizeof(Entry12);
-
-    if (mCapacity < bytes + GetSpan()) {
-        fn_8028B5FC(this, bytes, 1);
-    }
-    mSize = bytes;
-    EntriesCopy((Entry12*)mStore, (Entry12*)src.mStart, (Entry12*)(src.mStart + src.mSize));
-}
-//@@end
-//@@8029BF98
-void fn_8029BF98(Slot* first, Slot* last) {
-    for (; first < last; first++) {
-        new (first) Slot;
-    }
-}
-//@@end
-//@@8029C00C
-void fn_8029C00C(Entry12* first, Entry12* last) {
-    for (; first < last; first++) {
-    }
-}
-//@@end
-//@@8029C030
-void fn_8029C030(Slot* first, Slot* last) {
-    for (; first < last; first++) {
-        first->~Slot();
-    }
-}
-//@@end
-//@@8029C0AC
-void ClearEntryRange(Entry12* begin, Entry12* end) {
-    for (; begin < end; begin++) {
-    }
-}
-//@@end

@@ -1,15 +1,15 @@
 // u_8028865C.cpp: clock texture pages and particle rendering (0x8028865C-0x8028A8D4).
 // Boundary evidence (end 0x8028A8D4, was 0x8028A77C): the functions at 0x8028A77C-0x8028A8D4 are the
-// BufferOwner destructor and virtuals; they appear only in the vtables 0x803C29B0 (BufferOwner) and
-// 0x803C29D0 (ClockPageBuffer), and only this file uses those vtables (__dt__15ClockPageBufferFv,
-// fn_8028A728). CW emits them after the file's own functions; .data 0x803C29B0-0x803C29F0 is this file's.
+// BufferArray<ClockPageEmitterNode*> template methods (include/game/bufarray.h); they appear only in the
+// vtables 0x803C29B0 / 0x803C29D0 (BufferPtrArray), which only this file uses (fn_8028A388's delete,
+// fn_8028A728's new). CW emits them after the file's own functions; .data 0x803C29B0-0x803C29F0 is this file's.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 // Function names are descriptive guesses.
 
 #include <math.h>
 #include <string.h>
 #include "game/types.h"
-#include "game/string.h"
+#include "game/bufarray.h"
 
 typedef unsigned char u8;
 typedef unsigned int u32;
@@ -947,14 +947,26 @@ int ClockEmitParticlePageFromInts(int* a, int* b, u8 type)
     return ClockEmitParticlePage(va, vb, type);
 }
 
-// List of live particle pages the clock keeps; new pages are appended here.
-struct ClockPageList
+// One emitter of a live particle page (stride 0x30).
+struct ClockPageEmitter
 {
-    u8  unk00[0xC];
-    int count;      // 0x0C
+    u8    unk00[0x2C];
+    int   emitter;   // 0x2C
 };
 
-extern ClockPageList* lbl_804D56E0;
+// A live particle page (0x68 bytes from VAlloc: the header and two emitters).
+struct ClockPageEmitterNode
+{
+    float            time;        // 0x00: remaining lifetime
+    int              count;       // 0x04
+    ClockPageEmitter emitters[2]; // 0x08
+};
+
+// The clock page buffer (vtables 0x803C29B0 BufferArray<ClockPageEmitterNode*> and 0x803C29D0
+// BufferPtrArray<ClockPageEmitterNode>): the live particle pages; new pages are put at the front.
+typedef BufferPtrArray<ClockPageEmitterNode> ClockPageBuffer;
+
+extern ClockPageBuffer* lbl_804D56E0;
 extern float          lbl_804D56E4;
 extern signed char    lbl_804D56E8;
 extern float          lbl_804D56EC;
@@ -998,7 +1010,7 @@ extern "C" int fn_80289CEC(int* a, int* b)
         return 0;
 
     handle = VAlloc(0x68);
-    slot = (int*)((Buffer*)lbl_804D56E0)->Insert((char*)lbl_804D56E0->count, 4);
+    slot = (int*)lbl_804D56E0->Insert((char*)lbl_804D56E0->Begin(), sizeof(ClockPageEmitterNode*));
     *slot = (int)handle;
 
     if (lbl_804D37B0 == 0)
@@ -1048,7 +1060,7 @@ extern "C" int fn_80289EB4(int* a, int* b, u8 type)
         return 0;
 
     handle = VAlloc(0x68);
-    slot = (int*)((Buffer*)lbl_804D56E0)->Insert((char*)lbl_804D56E0->count, 4);
+    slot = (int*)lbl_804D56E0->Insert((char*)lbl_804D56E0->Begin(), sizeof(ClockPageEmitterNode*));
     *slot = (int)handle;
 
     if (lbl_804D37B0 == 0)
@@ -1203,95 +1215,33 @@ int ClockBuildPageEntries(void* handle_, int index, float* pos, void* dir_)
     return 1;
 }
 
-// One emitter list element in the clock page store (stride 0x30).
-struct ClockPageEmitterNode
-{
-    float time;      // 0x00: remaining lifetime
-    int   count;     // 0x04
-    u8    unk08[0x2C];
-    int   emitter;   // 0x34
-};
-
-struct ClockPageStoreVtbl
-{
-    void* unk00;                                  // 0x00
-    void* unk04;                                  // 0x04
-    void (*release)(void* self, int flags);       // 0x08
-};
-
-// Layout of the page store at 0x804D56E0: a vector of emitter lists.
-struct ClockPageStore
-{
-    ClockPageStoreVtbl*    vtbl;      // 0x00
-    u8                     unk04[4];
-    u32                    usedBytes; // 0x08
-    ClockPageEmitterNode** lists;     // 0x0C
-};
-
-void VFree(void* p);
 void EmitterDestroy(int emitter);
+
+// Destroy the live emitters of a particle page.
+static inline void ClockPageDestroyEmitters(ClockPageEmitterNode* node)
+{
+    int i;
+
+    for (i = 0; i != node->count; i++)
+    {
+        if (node->emitters[i].emitter != -1)
+            EmitterDestroy(node->emitters[i].emitter);
+    }
+}
 
 // Free every emitter list the particle page store still owns, then release
 // the store itself.
 // Other units call this by its placeholder name, so the symbol stays fn_8028A388.
 extern "C" void fn_8028A388(void)
 {
-    while ((((ClockPageStore*)lbl_804D56E0)->usedBytes >> 2) != 0)
+    while (lbl_804D56E0->Count() != 0)
     {
-        ClockPageStore*        store = (ClockPageStore*)lbl_804D56E0;
-        ClockPageEmitterNode** lists = store->lists;
-        ClockPageEmitterNode*  node = (ClockPageEmitterNode*)lists[0];
-        int                    i;
-
-        for (i = 0; i != node->count; i++)
-        {
-            if (node[i].emitter != -1)
-                EmitterDestroy(node[i].emitter);
-        }
-        VFree(lists[0]);
-        ((Buffer*)store)->Erase((char*)lists, 4);
+        ClockPageDestroyEmitters(*lbl_804D56E0->Begin());
+        VFree(*lbl_804D56E0->Begin());
+        lbl_804D56E0->Erase((char*)lbl_804D56E0->Begin(), sizeof(ClockPageEmitterNode*));
     }
-    if (lbl_804D56E0 != 0)
-    {
-        ClockPageStore* store = (ClockPageStore*)lbl_804D56E0;
-
-        store->vtbl->release(store, 1);
-    }
+    delete lbl_804D56E0;
 }
-
-// Releases the payload block owned by the page buffer's base class.
-
-// Engine pooled byte buffer (same hierarchy as in u_8028A8D4): only the
-// destructor chain and constructor of the classes below are used here.
-class BufferBase2 {
-public:
-    virtual ~BufferBase2() {}
-};
-
-class BufferBase : public BufferBase2 {
-public:
-    virtual ~BufferBase() {}
-};
-
-// Guessed class name: Buffer that releases its payload block when destroyed (vtable 0x803C29B0).
-// Its methods are defined at the end of this file (0x8028A77C-0x8028A8D4).
-class BufferOwner : public Buffer {
-public:
-    virtual ~BufferOwner();
-    virtual int GetAlignment();                             // 0x10
-    virtual void Commit(int start, unsigned long size);     // 0x14
-    virtual void Append(unsigned char* data, unsigned long size); // 0x18
-    static void operator delete(void* p) { VFree(p); }
-};
-
-// The clock page buffer (vtable 0x803C29D0): no members of its own; storage
-// comes from and returns to the VM heap.
-class ClockPageBuffer : public BufferOwner {
-public:
-    virtual ~ClockPageBuffer() {}
-    static void* operator new(unsigned long size) { return VAlloc(size); }
-    static void operator delete(void* p) { VFree(p); }
-};
 
 extern float lbl_804DA538;
 
@@ -1309,8 +1259,6 @@ extern "C" void fn_8028A4BC()
                            0, 0xFF, 0xFF, 0xFF, 0xFF, lbl_804DA538);
 }
 
-// Three-float block handed to the particle stepper along with the slots.
-extern Vec3 lbl_8034B4A0;
 
 extern "C" void fn_802113F0(float dt, float* slots, int stride, int count,
                             void* range);
@@ -1319,35 +1267,36 @@ void ParticleStepPlain(float dt, float* slots, int stride, int count);
 // Age the live particle pages: a page whose timer ran out is destroyed and
 // removed from the store, the rest are stepped one frame.
 // Other units call this by its placeholder name, so the symbol stays fn_8028A554.
+// Age a particle page by dt: -1 once its time has run out.
+static inline int ClockPageAge(ClockPageEmitterNode* node, float dt)
+{
+    if (node->time < dt)
+        return -1;
+    node->time -= dt;
+    return 0;
+}
+
 extern "C" void fn_8028A554(float dt)
 {
-    ClockPageStore*        store = (ClockPageStore*)lbl_804D56E0;
-    ClockPageEmitterNode** list = store->lists;
-    Vec3                   range;
+    ClockPageEmitterNode** list = lbl_804D56E0->Begin();
 
-    while (list != (ClockPageEmitterNode**)((u8*)store->lists + store->usedBytes))
+    while (list != lbl_804D56E0->End())
     {
         ClockPageEmitterNode* node = *list;
-        int                   i;
 
-        if (node->time < dt)
+        if (ClockPageAge(node, dt) == -1)
         {
-            for (i = 0; i != node->count; i++)
-            {
-                if (node[i].emitter != -1)
-                    EmitterDestroy(node[i].emitter);
-            }
+            ClockPageDestroyEmitters(node);
             VFree(node);
-            ((Buffer*)store)->Erase((char*)list, 4);
+            lbl_804D56E0->Erase((char*)list, sizeof(ClockPageEmitterNode*));
         }
         else
         {
-            node->time = node->time - dt;
             list++;
         }
     }
 
-    range = lbl_8034B4A0;
+    Vec3 range = {0.0f, 0.0f, -0.002f}; // 0x8034B4A0
     fn_802113F0(dt, (float*)lbl_804A3BF8, 0x24,
                 lbl_804D56F4 < 0x40 ? lbl_804D56F4 : 0x40, &range);
     ParticleStepPlain(dt, (float*)lbl_804A3BF8, 0x24,
@@ -1370,60 +1319,11 @@ extern "C" void fn_8028A6B8()
 }
 
 // Creates the clock page buffer singleton (placeholder name fn_8028A728, still
-// called by other units) and publishes the pointer.
-extern "C" void fn_8028A728(void)
+// called by other units) and publishes the pointer.  Defined in a linkage block: the array's
+// destructor is then emitted after it, with the template methods (as in retail).
+extern "C" {
+void fn_8028A728(void)
 {
-    lbl_804D56E0 = (ClockPageList*)new ClockPageBuffer;
+    lbl_804D56E0 = new ClockPageBuffer;
 }
-
-// ---- BufferOwner methods (0x8028A77C-0x8028A8D4; vtables 0x803C29B0 / 0x803C29D0) ---------------------
-// They fill slots 0x08-0x18 of the BufferOwner and ClockPageBuffer vtables, which only this file uses
-// (moved here from u_8028A77C, now u_8028A8D4). Slot names follow u_8028A8D4.cpp (guesses).
-
-void DestroyWordRange(unsigned long start, unsigned long end);
-void ClearWordRange(unsigned long start, unsigned long end);
-
-// fn_8028A77C: deleting destructor of the Buffer-derived object.
-BufferOwner::~BufferOwner()
-{
-    Free();
-}
-
-// fn_8028A7E4: release the pending clear, then take [start, start + size) down.
-void BufferOwner::Commit(int start, unsigned long size)
-{
-    ((ScreenEffectBuffer*)this)->ScreenEffectBuffer::Commit((int)start, size);
-    DestroyWordRange(start, start + (size & ~3));
-}
-
-// fn_8028A82C: append `size` bytes of data to the buffer, then copy them in.
-void BufferOwner::Append(u8* data, unsigned long size)
-{
-    unsigned long start = (unsigned long)data;
-
-    ClearWordRange(start, start + (size & 0xFFFFFFFC));
-    ((ScreenEffectBuffer*)this)->ScreenEffectBuffer::Append((unsigned char*)data, size);
-}
-
-// fn_8028A88C: the buffer's element alignment is always 4 bytes.
-int BufferOwner::GetAlignment()
-{
-    return 4;
-}
-
-// fn_8028A894: run the empty destructor over a range of 4-byte elements
-// (count is derived from the byte range; the loop body optimises away).
-void DestroyWordRange(unsigned long start, unsigned long end)
-{
-    unsigned long p;
-    for (p = start; p < end; p += 4) {
-    }
-}
-
-// fn_8028A8B4: same range walk for the byte buffer append path.
-void ClearWordRange(unsigned long start, unsigned long end)
-{
-    unsigned long p;
-    for (p = start; p < end; p += 4) {
-    }
 }

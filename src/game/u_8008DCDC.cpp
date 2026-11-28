@@ -1,13 +1,13 @@
 // u_8008DCDC.cpp (0x8008DCDC-0x80093BF0): the animation system: a table of 0x50-byte animation entries
 // (lbl_804D4718: reference counting, apply/blend, clip lookup), a 300-entry table of 0x28-byte records
-// (lbl_804D4724) and the 0x5C-byte record array helpers at the end.
+// (lbl_804D4724) and the BufferArray<AnimItem> template methods at the end (0x80093A04-0x80093BF0).
 // Boundary evidence (the end cut at 0x80093BF0; the next file is u_80093BF0.cpp, 2D drawing):
 // - .sdata2: this file's pool is 0x804D6938-0x804D6960 (0.0f, u32 int-to-float double, 1.0f, -1.0f, 2^-15,
 //   s32 int-to-float double); the next file has its own 0.0f/1.0f/doubles (0x804D69BC/0x804D69C0/0x804D69D0/
 //   0x804D6A10). fn_80093B3C is the last reader of this pool, fn_80093BF0 the first of the next.
 // - .sbss: only 0x804D4718-0x804D4727 is touched here; the next file uses 0x804D4728-0x804D4763.
-// - fn_80093BCC (empty destructor loop over 0x5C-byte records, no data) is the partner of fn_80093B3C (the
-//   constructor loop, which reads this pool's 0.0f) and is called from fn_80093AC4, so it stays here.
+// - BufferDestroy<AnimItem> (0x80093BCC, empty destructor loop over 0x5C-byte records, no data) is the partner of fn_80093B3C (the
+//   constructor loop, which reads this pool's 0.0f) and is called from Append (0x80093AC4), so it stays here.
 // G4 note: fn_80092E88 has the GC/2.0 pre-stwu load fingerprint (lwz r6,0x24(r3) / lfs before stwu); the file
 // stays on GC/1.3.2 (per-file compiler changes need the user's approval).
 // Only the small accessors are drafted so far; every larger function is declared with a TODO.
@@ -106,17 +106,26 @@ struct AnimItem {
 };
 
 
-// A record set (0x28 bytes); lbl_804D4724 points at 300 of them. +0x14 is a Buffer-derived array of AnimItem.
+// The record array behind a record set's +0x14 (vtable 0x80398608); its methods close the file
+// (0x80093A04-0x80093BF0).
+typedef BufferArray<AnimItem> AnimRecordArray;
+
+// A record set (0x28 bytes); lbl_804D4724 points at 300 of them (fn_800938C4).
 struct AnimRecSet {
+    AnimRecSet() {
+        active = 0;
+        unk04 = 0;
+        unk08 = -1;
+        owner = 0;
+        unk10 = 0.0f;
+    }
+
     int active;               // 0x00
-    u8 pad04[0x0C - 0x04];    // 0x04
+    int unk04;                // 0x04
+    int unk08;                // 0x08
     int owner;                // 0x0C
     float unk10;              // 0x10
-    void* arrVtbl;            // 0x14
-    int arr04;                // 0x18
-    u32 bytes;                // 0x1C
-    AnimItem* items;          // 0x20
-    u32 capacity;             // 0x24
+    AnimRecordArray items;    // 0x14
 };
 
 extern AnimRecSet* lbl_804D4724;
@@ -224,8 +233,8 @@ void fn_80090138(int i) {
     if (i >= 0 && i < 300) {
         r = &lbl_804D4724[i];
         if (r->active != 0) {
-            for (k = 0, off = 0; k < r->bytes / sizeof(AnimItem); k++, off += sizeof(AnimItem)) {
-                if (*(s16*)((u8*)r->items + off) == 1) *(s16*)((u8*)r->items + off) = 2;
+            for (k = 0, off = 0; k < r->items.Count(); k++, off += sizeof(AnimItem)) {
+                if (*(s16*)((u8*)r->items.Begin() + off) == 1) *(s16*)((u8*)r->items.Begin() + off) = 2;
             }
         }
     }
@@ -257,9 +266,9 @@ void fn_80090D6C(int i) {
             AnimItem* first;
             AnimItem* last;
             r->active = 0;
-            first = r->items;
-            last = (AnimItem*)((u8*)first + r->bytes);
-            ((Buffer*)&r->arrVtbl)->Erase((char*)first, (last - first) * sizeof(AnimItem));
+            first = r->items.Begin();
+            last = r->items.End();
+            r->items.Erase((char*)first, (last - first) * sizeof(AnimItem));
         }
     }
 }
@@ -269,8 +278,8 @@ static inline void AnimRecSetResetItems(AnimRecSet* r) {
     AnimItem* it;
     u32 k;
     int off;
-    for (k = 0, off = 0; k < r->bytes / sizeof(AnimItem); k++, off += sizeof(AnimItem)) {
-        it = (AnimItem*)((u8*)r->items + off);
+    for (k = 0, off = 0; k < r->items.Count(); k++, off += sizeof(AnimItem)) {
+        it = (AnimItem*)((u8*)r->items.Begin() + off);
         it->state = 0;
         it->unk28 = it->unk40 = it->unk10 = it->unk1C = -1;
         it->unk04.x = it->unk04.y = it->unk04.z = 0.0f;
@@ -453,8 +462,27 @@ extern "C" void fn_80093710();
 extern "C" void fn_800938C0();
 void fn_800938C0() {}
 
-// TODO (not drafted yet, 0xCC bytes at 0x800938C4)
-extern "C" void fn_800938C4();
+//@@800938C4
+// Allocates the 300 record sets and registers the animation table loader (file type 7).
+typedef int (*FileHandlerFn)(void*, int, void*);
+void FileAddHandler(int type, FileHandlerFn fn, void* ctx);
+extern "C" int fn_80093990(void* data, int size);
+
+extern "C" int fn_800938C4();
+int fn_800938C4() {
+    int i;
+
+    lbl_804D4724 = (AnimRecSet*)VAlloc(300 * sizeof(AnimRecSet));
+    if (lbl_804D4724 == 0) {
+        return 0;
+    }
+    for (i = 0; i < 300; i++) {
+        new (&lbl_804D4724[i]) AnimRecSet;
+    }
+    FileAddHandler(7, (FileHandlerFn)fn_80093990, 0);
+    return 1;
+}
+//@@end
 //@@80093990
 // Installs the animation table file (magic 50); the entries follow the 16-byte header.
 extern "C" int fn_80093990(void* data, int size);
@@ -473,56 +501,3 @@ int fn_80093990(void* data, int size) {
     return 1;
 }
 //@@end
-// TODO (not drafted yet, 0x68 bytes at 0x80093A04)
-extern "C" void fn_80093A04();
-//@@80093A6C
-// Record array: construct hook (base call, then construct the new records).
-extern "C" void fn_80093B3C(AnimItem* p, AnimItem* end);
-extern "C" void fn_80093BCC(AnimItem* p, AnimItem* end);
-
-// The record array behind a record set's +0x14 (vtable 0x80398608: destructor 0x80093A04, Buffer::Clear,
-// GetAlignment, Commit, Append, Buffer::GetSpan). Class name is a guess; its slots override the Buffer
-// slots of u_8028A8D4.cpp and call the base ones directly.
-class AnimRecordArray : public ScreenEffectBuffer {
-public:
-    void Commit(AnimItem* p, u32 bytes);
-    void Append(AnimItem* p, u32 bytes);
-    int GetAlignment();
-};
-
-void AnimRecordArray::Commit(AnimItem* p, u32 bytes) {
-    ScreenEffectBuffer::Commit((int)p, bytes);
-    fn_80093B3C(p, p + bytes / sizeof(AnimItem));
-}
-//@@end
-//@@80093AC4
-static inline void AnimItemsDestroy(void* p, u32 bytes) { AnimItem* first = (AnimItem*)p; fn_80093BCC(first, first + bytes / sizeof(AnimItem)); }
-void AnimRecordArray::Append(AnimItem* p, u32 bytes) {
-    AnimItemsDestroy(p, bytes);
-    ScreenEffectBuffer::Append((unsigned char*)p, bytes);
-}
-//@@end
-
-// Size of one 0x5C-byte record (slot 0x10).
-int AnimRecordArray::GetAlignment() {
-    return 0x5C;
-}
-
-//@@80093B3C
-// Constructs the records in [p, end).
-extern "C" void fn_80093B3C(AnimItem* p, AnimItem* end);
-void fn_80093B3C(AnimItem* p, AnimItem* end) {
-    for (; p < end; p++) {
-        new (p) AnimItem;
-    }
-}
-
-// Destroys the records in [p, end) (nothing to do).
-extern "C" void fn_80093BCC(AnimItem* p, AnimItem* end);
-void fn_80093BCC(AnimItem* p, AnimItem* end) {
-    for (; p < end; p++) {
-        p->~AnimItem();
-    }
-}
-//@@end
-

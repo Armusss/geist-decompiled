@@ -4,7 +4,7 @@
 // - .sdata2: this file's pool starts at 0x804D6960 and has its own copies of constants the previous file
 //   (u_8008DCDC.cpp, pool 0x804D6938-0x804D6960) also has: 0.0f 0x804D69BC vs 0x804D6938, 1.0f 0x804D69C0 vs
 //   0x804D6948, the int-to-float doubles 0x804D69D0/0x804D6A10 vs 0x804D6958/0x804D6940. Last reader of the old
-//   pool is fn_80093B3C, first reader of the new one is fn_80093BF0.
+//   pool is fn_80093B3C, first reader of the new one is fn_80093BF0. (fn_80093B3C is now BufferConstruct<AnimItem>.)
 // - The 4-byte colour constants at 0x804D6960-0x804D69B8 (local GXColor initialisers, never merged) are laid out
 //   in exact reverse order of their using functions from fn_80093BF0 (0x804D69B8) down to fn_8009851C
 //   (0x804D6960): one contiguous run, consistent with a single file; no float constant is duplicated after it.

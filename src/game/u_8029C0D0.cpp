@@ -1,6 +1,6 @@
 // u_8029C0D0.cpp: NPC / path-follow actor ("Sve") message handlers and follow states (0x8029C0D0-0x8029E714).
-// Starts at 0x8029C0D0: ClearEntryRange (0x8029C0AC) is the destroy hook of u_8029B070's EntryList, called only
-// from EntryList::Append there.
+// Starts at 0x8029C0D0: BufferDestroy<Entry12> (0x8029C0AC) is the destroy hook of u_8029B070's EntryList, called only
+// from BufferArray<Entry12>::Append there.
 // Sister of u_801CA16C (HostRideJ): same 8-state table layout, message handler and save tag scheme.
 // Data: .rodata 0x8034B818 (POSSESS..SCAN, "", "[NPCSVE]", "\n", "QUERY"), state table 0x803C3188,
 // asset .sdata 0x804D3848, .sdata2 0x804DA778-0x804DA7C0.
