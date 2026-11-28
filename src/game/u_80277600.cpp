@@ -3,6 +3,9 @@
 // dxBody layout (pos 0x98, lvel 0xE8, avel 0xF8, facc 0x108, tacc 0x118). Own .sdata2 pool 0x804DA2F8-0x804DA318 (0.2f, ..., FLT_MAX, 1.0f).
 // Split (2026-11-26, data evidence in each file's header): u_80278D2C (math), u_80279558 (step.cpp),
 // u_8027B4F8, u_8027BD5C (util.cpp), u_8027C650 (game code).
+// Matching on GC/2.6 (2026-11-28). .rodata string pool 0x8034AE90: dWorldDestroy's warning, then the dDebug
+// strings of ODE's checkWorld (linker-dropped, at the end of this file). extern "C" functions with a struct copy or
+// new/delete are declared first and defined in C++ form, so CW emits them in source order (docs/matching-tricks.md).
 
 #include "game/types.h"
 
@@ -241,10 +244,8 @@ static void initObject(dObject* obj, dxWorld* w) {
 }
 
 typedef void dstepper_fn_t(dxWorld* world, void* body, int nb, void* joint, int nj, float stepsize);
-extern "C" void fn_80279558(void);  // dxQuickStepper (quickstep.cpp)
-extern "C" void fn_8027BD5C(void);  // dxProcessIslands (util.cpp)
-void dxProcessIslands(dxWorld* world, float stepsize, dstepper_fn_t* stepper);
-void dInternalStepIsland(dxWorld* world, void* body, int nb, void* joint, int nj, float stepsize);
+extern "C" void fn_80279558(dxWorld* world, void* body, int nb, void* joint, int nj, float stepsize);  // dxQuickStepper (quickstep.cpp)
+extern "C" void fn_8027BD5C(dxWorld* world, float stepsize, dstepper_fn_t* stepper);  // dxProcessIslands (util.cpp)
 
 void dWorldSetQuickStepNumIterations(dWorldID w, int num) {
     w->qs.num_iterations = num;
@@ -255,7 +256,7 @@ void dWorldSetAutoDisableFlag(dWorldID w, int do_auto_disable) {
 }
 
 void dWorldStep(dWorldID w, float stepsize) {
-    dxProcessIslands(w, stepsize, &dInternalStepIsland);
+    fn_8027BD5C(w, stepsize, &fn_80279558);
 }
 
 void dWorldSetGravity(dWorldID w, float x, float y, float z) {
@@ -412,13 +413,15 @@ extern "C" void fn_80277958(dJointGroupID group) {
 }
 
 // dJointGroupDestroy
-extern "C" void fn_80277B38(dJointGroupID group) {
+extern "C" void fn_80277B38(dJointGroupID group);
+void fn_80277B38(dJointGroupID group) {
     fn_80277958(group);
     delete group;
 }
 
 // dJointGroupCreate
-extern "C" dxJointGroup* fn_80277D38(int max_size) {
+extern "C" dxJointGroup* fn_80277D38(int max_size);
+dxJointGroup* fn_80277D38(int max_size) {
     dxJointGroup* group = new dxJointGroup;
     group->num = 0;
     return group;
@@ -501,7 +504,8 @@ struct dxJointContact : public dxJoint {
 };
 
 // dJointCreateContact
-extern "C" dxJoint* fn_80277EC8(dWorldID w, dJointGroupID group, const dContact* c) {
+extern "C" dxJoint* fn_80277EC8(dWorldID w, dJointGroupID group, const dContact* c);
+dxJoint* fn_80277EC8(dWorldID w, dJointGroupID group, const dContact* c) {
     dxJointContact* j = (dxJointContact*)createJoint(w, group, &__dcontact_vtable);
     j->contact = *c;
     return j;
@@ -804,3 +808,102 @@ extern "C" dxBody* fn_80278B70(dxWorld* w) {
     return b;
 }
 
+
+// ---- debugging (ODE 0.5 ode.cpp listHasLoops/checkWorld/dWorldCheck). The game never calls dWorldCheck, so the
+// linker drops this code, but its dDebug strings stay in the file's .rodata string pool (0x8034AE90, after
+// dWorldDestroy's warning), which is how the retail pool holds them.
+void dDebug(int num, const char* msg, ...);   // error.cpp
+
+// see if an object list loops on itself (if so, it's bad).
+static int listHasLoops(dObject* first) {
+    if (first == 0 || first->next == 0) return 0;
+    dObject *a = first, *b = first->next;
+    int skip = 0;
+    while (b) {
+        if (a == b) return 1;
+        b = b->next;
+        if (skip) a = a->next;
+        skip ^= 1;
+    }
+    return 0;
+}
+
+// check the validity of the world data structures
+static void checkWorld(dxWorld* w) {
+    dxBody* b;
+    dxJoint* j;
+
+    // check there are no loops
+    if (listHasLoops(w->firstbody)) dDebug(0, "body list has loops");
+    if (listHasLoops(w->firstjoint)) dDebug(0, "joint list has loops");
+
+    // check lists are well formed (check `tome' pointers)
+    for (b = w->firstbody; b; b = (dxBody*)b->next) {
+        if (b->next && b->next->tome != &b->next)
+            dDebug(0, "bad tome pointer in body list");
+    }
+    for (j = w->firstjoint; j; j = (dxJoint*)j->next) {
+        if (j->next && j->next->tome != &j->next)
+            dDebug(0, "bad tome pointer in joint list");
+    }
+
+    // check counts
+    int n = 0;
+    for (b = w->firstbody; b; b = (dxBody*)b->next) n++;
+    if (w->nb != n) dDebug(0, "body count incorrect");
+    n = 0;
+    for (j = w->firstjoint; j; j = (dxJoint*)j->next) n++;
+    if (w->nj != n) dDebug(0, "joint count incorrect");
+
+    // set all tag values to a known value
+    static int count = 0;
+    count++;
+    for (b = w->firstbody; b; b = (dxBody*)b->next) b->tag = count;
+    for (j = w->firstjoint; j; j = (dxJoint*)j->next) j->tag = count;
+
+    // check all body/joint world pointers are ok
+    for (b = w->firstbody; b; b = (dxBody*)b->next) if (b->world != w)
+        dDebug(0, "bad world pointer in body list");
+    for (j = w->firstjoint; j; j = (dxJoint*)j->next) if (j->world != w)
+        dDebug(0, "bad world pointer in joint list");
+
+    // check that every joint node appears in the joint lists of both bodies it attaches
+    for (j = w->firstjoint; j; j = (dxJoint*)j->next) {
+        for (int i = 0; i < 2; i++) {
+            if (j->node[i].body) {
+                int ok = 0;
+                for (dxJointNode* n = j->node[i].body->firstjoint; n; n = n->next) {
+                    if (n->joint == j) ok = 1;
+                }
+                if (ok == 0) dDebug(0, "joint not in joint list of attached body");
+            }
+        }
+    }
+
+    // check all body joint lists (correct body ptrs)
+    for (b = w->firstbody; b; b = (dxBody*)b->next) {
+        for (dxJointNode* n = b->firstjoint; n; n = n->next) {
+            if (&n->joint->node[0] == n) {
+                if (n->joint->node[1].body != b)
+                    dDebug(0, "bad body pointer in joint node of body list (1)");
+            } else {
+                if (n->joint->node[0].body != b)
+                    dDebug(0, "bad body pointer in joint node of body list (2)");
+            }
+            if (n->joint->tag != count) dDebug(0, "bad joint node pointer in body");
+        }
+    }
+
+    // check all body pointers in joints, check they are distinct
+    for (j = w->firstjoint; j; j = (dxJoint*)j->next) {
+        if (j->node[0].body && (j->node[0].body == j->node[1].body))
+            dDebug(0, "non-distinct body pointers in joint");
+        if ((j->node[0].body && j->node[0].body->tag != count) ||
+            (j->node[1].body && j->node[1].body->tag != count))
+            dDebug(0, "bad body pointer in joint");
+    }
+}
+
+void dWorldCheck(dxWorld* w) {
+    checkWorld(w);
+}
