@@ -26,6 +26,8 @@ Open shapes worth a dedicated investigation: tick `li r4,N` before `addi r3,rA,6
 - APPROVED: SpaceGetNumGeoms__FP4Geom -> dSpaceGetGeom(Space*, int); AmmoRefillResetStatics (0x8026A31C) -> dCloseODE and move the collision_kernel.cpp start to it (or earlier on evidence), keeping all Matching units Matching.
 - APPROVED (2026-11-27, 3rd): ODE colliders u_8026D428 -> GC/2.0 (MatMulVec/MatTransMulVec exact only on 2.0 with const ptrs; 16->18/23, none worse); their const signatures change their mangled names (approved with it).
 - Lead (under 2026-11-21 signature-fix approval): RaySphereTest / CollideSpheres mangled names to ODE argument order.
+- APPROVED (2026-11-27, 4th): `-inline deferred` for ODE collision_std (u_8026D428), joint.cpp (u_80273650), collision_util (u_8027243C), quickstep (u_80279558) — keep only where the unit matches at least as well; joint.cpp with ODE source order expected to flip.
+- APPROVED: GC/2.0 for ODE collision_util (u_8027243C, 4/4 on 2.0) and quickstep (u_80279558, SOR_LCP exact on 2.0).
 - APPROVED: rename u_80277600's guessed "SceneNode" accessors to the real ODE dBody API names where code + dxBody layout prove them.
 
 ## User decision (2026-11-22): GC/2.0 for u_801D8FD4
