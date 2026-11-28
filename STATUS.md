@@ -25,6 +25,7 @@ Open shapes worth a dedicated investigation: tick `li r4,N` before `addi r3,rA,6
 - APPROVED: GC/2.0 for u_8029B070 (23/23 on 2.0, copy-ctor vptr order) and u_8028A8D4 (String copy ctor 6->0), nothing else changes.
 - DONE: all 17 ODE units on GC/2.6 (no unit worse); ode.cpp + quickstep Matching (aef54ff).
 - APPROVED: collision_std ODE API renames (CapsuleGetParams->dGeomCCylinderGetParams, CapsuleCreate->dCreateCCylinder, BoxPointDepth->dGeomBoxPointDepth, BoxGetLengths->dGeomBoxGetLengths, BoxCreate->dCreateBox, SphereGetRadius->dGeomSphereGetRadius, SphereCreate->dCreateSphere, RaySphereTest->ray_sphere_helper, fn_80271714->dGeomCCylinderPointDepth) and dWorldStep__FP7dxWorldf -> dWorldQuickStep; then try ODE source order + -inline deferred for collision_std, kept only if not worse.
+- `-sym on` (per-file): NOT YET (user, 2026-11-28). Scratch: it fixes part of u_8029B070's end-block order and u_8008DCDC's array-dtor position, breaks u_8015AA24 project-wide. Bring back only when a unit would fully match with it.
 - ODE 0.5.0 reference source at ~/geist-work/ref/ode-0.5 (read-only, user-approved download).
 
 ## User decisions (2026-11-27)
