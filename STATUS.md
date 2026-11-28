@@ -20,6 +20,11 @@ Next, in order:
 4. u_800C6E8C: re-test GC/2.0 when more is drafted; ask the user.
 Open shapes worth a dedicated investigation: tick `li r4,N` before `addi r3,rA,624` (6+ sites, needs scheduler insight), hoisted function address in r31, GC/2.0 declaration-position effect on registers.
 
+## User decisions (2026-11-28)
+- ODE GC/2.6: scratch-test every ODE unit on GC/2.6; if every unit matches at least as well as now, switch the whole ODE library to GC/2.6; otherwise bring the per-file table to the user first. (quickstep 2/2 only on 2.5-2.7; ode.cpp 41/41 on 2.6.)
+- APPROVED: GC/2.0 for u_8029B070 (23/23 on 2.0, copy-ctor vptr order) and u_8028A8D4 (String copy ctor 6->0), nothing else changes.
+- ODE 0.5.0 reference source at ~/geist-work/ref/ode-0.5 (read-only, user-approved download).
+
 ## User decisions (2026-11-27)
 - APPROVED: ODE rotation.cpp (u_8027B4F8) and odemath (u_80278D2C) -> GC/2.0 (scratch: rotation 6/7 exact on 2.0, 0 on 1.3.2; dPlaneSpace exact on 2.0). Then test the other ODE files (ode.cpp u_80277600, step.cpp u_80279558, util.cpp u_8027BD5C, colliders u_8026D428, u_8026C200 collision_space, u_80272060, u_80273650, u_80276090) and report to the user before switching them.
 - APPROVED (2026-11-27, 2nd): `-inline deferred` for ODE collision_space.cpp (u_8026C200) and collision_kernel.cpp (u_8026A37C), same flag as game/ode/*.cpp; collision_kernel gets real Geom/Space classes (keep Matching).
