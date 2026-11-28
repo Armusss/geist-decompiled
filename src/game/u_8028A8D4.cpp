@@ -1,9 +1,8 @@
 // u_8028A8D4.cpp: Buffer/String classes, screen-effect slots and buffers, and comm helpers (0x8028A8D4-0x8028C54C).
-// Boundary evidence (start 0x8028A8D4, was 0x8028A77C): 0x8028A77C-0x8028A8D4 (the BufferOwner destructor,
-// Commit/Append/GetAlignment and the two word-range walks) fill only the vtables 0x803C29B0 (BufferOwner)
-// and 0x803C29D0 (ClockPageBuffer), which are referenced only by u_8028865C.cpp (__dt__15ClockPageBufferFv,
-// fn_8028A728); this file's own vtables start at 0x803C29F0. Those functions and .data 0x803C29B0-0x803C29F0
-// now belong to the end of u_8028865C.cpp.
+// Boundary evidence (start 0x8028A8D4, was 0x8028A77C): 0x8028A77C-0x8028A8D4 (the BufferArray<ClockPageEmitterNode*>
+// destructor, Commit/Append/GetAlignment and range loops) fill only the vtables 0x803C29B0 / 0x803C29D0, which only
+// u_8028865C.cpp uses; this file's own vtables start at 0x803C29F0. Those functions and .data 0x803C29B0-0x803C29F0
+// belong to the end of u_8028865C.cpp.
 // Names are descriptive guesses; the code is matched against the retail DOL.
 
 #pragma auto_inline off
