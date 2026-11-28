@@ -23,6 +23,8 @@ Open shapes worth a dedicated investigation: tick `li r4,N` before `addi r3,rA,6
 ## User decisions (2026-11-28)
 - ODE GC/2.6: scratch-test every ODE unit on GC/2.6; if every unit matches at least as well as now, switch the whole ODE library to GC/2.6; otherwise bring the per-file table to the user first. (quickstep 2/2 only on 2.5-2.7; ode.cpp 41/41 on 2.6.)
 - APPROVED: GC/2.0 for u_8029B070 (23/23 on 2.0, copy-ctor vptr order) and u_8028A8D4 (String copy ctor 6->0), nothing else changes.
+- DONE: all 17 ODE units on GC/2.6 (no unit worse); ode.cpp + quickstep Matching (aef54ff).
+- APPROVED: collision_std ODE API renames (CapsuleGetParams->dGeomCCylinderGetParams, CapsuleCreate->dCreateCCylinder, BoxPointDepth->dGeomBoxPointDepth, BoxGetLengths->dGeomBoxGetLengths, BoxCreate->dCreateBox, SphereGetRadius->dGeomSphereGetRadius, SphereCreate->dCreateSphere, RaySphereTest->ray_sphere_helper, fn_80271714->dGeomCCylinderPointDepth) and dWorldStep__FP7dxWorldf -> dWorldQuickStep; then try ODE source order + -inline deferred for collision_std, kept only if not worse.
 - ODE 0.5.0 reference source at ~/geist-work/ref/ode-0.5 (read-only, user-approved download).
 
 ## User decisions (2026-11-27)
