@@ -70,6 +70,7 @@ public:
     char* Erase(char* pos, int size);          // 0x8028B35C: remove `size` bytes at pos (an address in the store)
     char* Insert(char* pos, int size);         // 0x8028B3BC: open `size` bytes at pos, growing the store
     void Free();                               // 0x8028B960: release the store
+    char* TextEnd() const;                     // 0x8029BC3C (u_8029B070.cpp): end of the outside text
 };
 
 class String : public Buffer {
