@@ -857,14 +857,14 @@ config.libs = [
             Object(NonMatching, "game/u_8028703C.cpp"),  # guess
             Object(Matching, "game/Clock.cpp"),  # (helper-game-b)
             Object(NonMatching, "game/u_8028865C.cpp"),  # split from u_8028703C
-            Object(NonMatching, "game/u_8028A8D4.cpp"),  # guess (was u_8028A77C)
+            Object(NonMatching, "game/u_8028A8D4.cpp", mw_version="GC/2.0"),  # guess (was u_8028A77C); GC/2.0 (user-approved 2026-11-28): String(const String&) loads the source before the vptr store, a const-pointer load hoist only GC/2.0 does (6->0 on 2.0, STATUS G4)
             Object(NonMatching, "game/u_8028C54C.cpp"),  # guess
             Object(NonMatching, "game/u_8028DA1C.cpp"),  # guess
             Object(NonMatching, "game/u_80290C58.cpp"),  # guess
             Object(NonMatching, "game/u_80294548.cpp"),  # guess
             Object(Matching, "game/u_80299F0C.cpp"),  # "SpitAndSqueal" effect type (split from u_80294548)
             Object(NonMatching, "game/u_8029A5E4.cpp"),  # split from u_80294548
-            Object(NonMatching, "game/u_8029B070.cpp"),  # split from u_80294548
+            Object(NonMatching, "game/u_8029B070.cpp", mw_version="GC/2.0"),  # split from u_80294548; GC/2.0 (user-approved 2026-11-28): copy constructor reads the source before the vptr store, a const-pointer load hoist only GC/2.0 does (10->0 on 2.0, STATUS G4)
             Object(NonMatching, "game/u_8029C0D0.cpp"),  # guess (was u_8029C0AC)
             Object(NonMatching, "game/u_8029E714.cpp"),  # pinned
             Object(Matching, "game/u_802A770C.cpp"),  # host types
