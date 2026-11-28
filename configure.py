@@ -822,26 +822,31 @@ config.libs = [
             Object(NonMatching, "game/u_802698D0.cpp"),  # view sensors (split from u_802690C8)
             Object(Matching, "game/Timer.cpp"),  # per-level timer hooks
             Object(Matching, "game/u_8026A158.cpp"),  # guess
-            Object(Matching, "game/u_8026A37C.cpp", extra_cflags=["-inline deferred"]),  # ODE collision_kernel.cpp (-inline deferred, user-approved 2026-11-27)
-            Object(Matching, "game/u_8026C200.cpp", extra_cflags=["-inline deferred"]),  # ODE collision_space.cpp (-inline deferred, user-approved 2026-11-27)
-            Object(NonMatching, "game/u_8026D428.cpp", mw_version="GC/2.0"),  # ODE collision_std.cpp (split from u_8026C200; own .sdata2 pool); GC/2.0 (user-approved 2026-11-27): MatMulVec/MatTransMulVec (ODE dMULTIPLY0_331/dMULTIPLY1_331 with const args) exact only on 2.0 (16->18/23 on 2.0, none worse)
-            Object(Matching, "game/u_80272060.cpp"),  # ODE collision_transform.cpp (split from u_8026C200)
-            Object(Matching, "game/u_8027243C.cpp", mw_version="GC/2.0", extra_cflags=["-inline deferred"]),  # ODE collision_util.cpp (split from u_80272060; own .sdata2 pool); GC/2.0 (user-approved 2026-11-27): dClosestLineBoxPoints-area fn_8027243C/fn_80272A90 exact only on 2.0 (80/334 diffs on 1.3.2), 4/4 on 2.0; -inline deferred (user-approved 2026-11-27): 4/4 either way, ODE source order
-            Object(Matching, "game/u_8027337C.cpp"),  # split from u_8026C200 (ODE error.cpp)
-            Object(Matching, "game/u_80273650.cpp", extra_cflags=["-inline deferred"]),  # ODE joint.cpp (split from u_8026C200; own .sdata2 pool); -inline deferred (user-approved 2026-11-27), 25/25 both ways, ODE source order; linker-dropped joint types restored from real ODE 0.5
-            Object(Matching, "game/u_80276090.cpp"),  # ODE mass.cpp (split from u_8026C200; own .sdata2 pool)
+            # ODE 0.5 library (u_8026A37C..u_8027BD5C, game/ode/*): GC/2.6 for every ODE unit (user decision 2026-11-28,
+            # test then switch). Scratch evidence: ode.cpp fn_80277EC8 38->0 diffs (41/41) and quickstep fn_80279558
+            # 1096->0 (2/2) only on 2.6; every other unit gives the same function bytes, relocs and symbols as on its
+            # previous compiler (1.3.2 or 2.0); only dead-stripped matrix.cpp dLDLTRemove differs. The GC/2.0 notes
+            # below record the earlier 1.3.2-vs-2.0 evidence (const-pointer loads), which 2.6 shares.
+            Object(Matching, "game/u_8026A37C.cpp", mw_version="GC/2.6", extra_cflags=["-inline deferred"]),  # ODE collision_kernel.cpp (-inline deferred, user-approved 2026-11-27)
+            Object(Matching, "game/u_8026C200.cpp", mw_version="GC/2.6", extra_cflags=["-inline deferred"]),  # ODE collision_space.cpp (-inline deferred, user-approved 2026-11-27)
+            Object(NonMatching, "game/u_8026D428.cpp", mw_version="GC/2.6"),  # ODE collision_std.cpp (split from u_8026C200; own .sdata2 pool); GC/2.0 (user-approved 2026-11-27): MatMulVec/MatTransMulVec (ODE dMULTIPLY0_331/dMULTIPLY1_331 with const args) exact only on 2.0 (16->18/23 on 2.0, none worse)
+            Object(Matching, "game/u_80272060.cpp", mw_version="GC/2.6"),  # ODE collision_transform.cpp (split from u_8026C200)
+            Object(Matching, "game/u_8027243C.cpp", mw_version="GC/2.6", extra_cflags=["-inline deferred"]),  # ODE collision_util.cpp (split from u_80272060; own .sdata2 pool); GC/2.0 (user-approved 2026-11-27): dClosestLineBoxPoints-area fn_8027243C/fn_80272A90 exact only on 2.0 (80/334 diffs on 1.3.2), 4/4 on 2.0; -inline deferred (user-approved 2026-11-27): 4/4 either way, ODE source order
+            Object(Matching, "game/u_8027337C.cpp", mw_version="GC/2.6"),  # split from u_8026C200 (ODE error.cpp)
+            Object(Matching, "game/u_80273650.cpp", mw_version="GC/2.6", extra_cflags=["-inline deferred"]),  # ODE joint.cpp (split from u_8026C200; own .sdata2 pool); -inline deferred (user-approved 2026-11-27), 25/25 both ways, ODE source order; linker-dropped joint types restored from real ODE 0.5
+            Object(Matching, "game/u_80276090.cpp", mw_version="GC/2.6"),  # ODE mass.cpp (split from u_8026C200; own .sdata2 pool)
             # ODE 0.5 library files (STATUS G4): the ODE library was built with -inline deferred, so functions come
             # out in reverse source order (also error.cpp, collision_std.cpp); with the default setting the
             # .sdata2 literal order of matrix.cpp / misc.cpp cannot be produced. Proof: whole DOL matches.
-            Object(Matching, "game/ode/matrix.cpp", extra_cflags=["-inline deferred"]),
-            Object(Matching, "game/ode/memory.cpp", extra_cflags=["-inline deferred"]),
-            Object(Matching, "game/ode/misc.cpp", extra_cflags=["-inline deferred"]),
-            Object(Matching, "game/ode/obstack.cpp", extra_cflags=["-inline deferred"]),
-            Object(NonMatching, "game/u_80277600.cpp"),  # ODE 0.5 ode.cpp (body/joint/world API)
-            Object(Matching, "game/u_80278D2C.cpp", mw_version="GC/2.0"),  # ODE math (split from u_80277600); GC/2.0 (user-approved 2026-11-27): dPlaneSpace exact only on 2.0 (109 diffs on 1.3.2)
-            Object(NonMatching, "game/u_80279558.cpp", mw_version="GC/2.0", extra_cflags=["-inline deferred"]),  # ODE quickstep.cpp (split from u_80277600); GC/2.0 (user-approved 2026-11-27): SOR_LCP fn_8027A9C0 exact only on 2.0 (76 diffs on 1.3.2), none worse; -inline deferred (user-approved 2026-11-27): 1/2 either way, ODE source order
-            Object(Matching, "game/u_8027B4F8.cpp", mw_version="GC/2.0"),  # ODE rotation.cpp (split from u_80277600); GC/2.0 (user-approved 2026-11-27): 7/8 exact on 2.0, 1/8 on 1.3.2
-            Object(NonMatching, "game/u_8027BD5C.cpp"),  # ODE util.cpp (split from u_80277600)
+            Object(Matching, "game/ode/matrix.cpp", mw_version="GC/2.6", extra_cflags=["-inline deferred"]),
+            Object(Matching, "game/ode/memory.cpp", mw_version="GC/2.6", extra_cflags=["-inline deferred"]),
+            Object(Matching, "game/ode/misc.cpp", mw_version="GC/2.6", extra_cflags=["-inline deferred"]),
+            Object(Matching, "game/ode/obstack.cpp", mw_version="GC/2.6", extra_cflags=["-inline deferred"]),
+            Object(NonMatching, "game/u_80277600.cpp", mw_version="GC/2.6"),  # ODE 0.5 ode.cpp (body/joint/world API)
+            Object(Matching, "game/u_80278D2C.cpp", mw_version="GC/2.6"),  # ODE math (split from u_80277600); GC/2.0 (user-approved 2026-11-27): dPlaneSpace exact only on 2.0 (109 diffs on 1.3.2)
+            Object(NonMatching, "game/u_80279558.cpp", mw_version="GC/2.6", extra_cflags=["-inline deferred"]),  # ODE quickstep.cpp (split from u_80277600); GC/2.0 (user-approved 2026-11-27): SOR_LCP fn_8027A9C0 exact only on 2.0 (76 diffs on 1.3.2), none worse; -inline deferred (user-approved 2026-11-27): 1/2 either way, ODE source order
+            Object(Matching, "game/u_8027B4F8.cpp", mw_version="GC/2.6"),  # ODE rotation.cpp (split from u_80277600); GC/2.0 (user-approved 2026-11-27): 7/8 exact on 2.0, 1/8 on 1.3.2
+            Object(NonMatching, "game/u_8027BD5C.cpp", mw_version="GC/2.6"),  # ODE util.cpp (split from u_80277600)
             Object(NonMatching, "game/u_8027C650.cpp"),  # player states (split from u_80277600)
             Object(NonMatching, "game/u_8027D3EC.cpp"),  # guess
             Object(NonMatching, "game/u_8028009C.cpp"),  # guess
