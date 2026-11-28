@@ -481,8 +481,8 @@ extern "C" void fn_80279558(dxWorld* world, dxBody* const* body, int nb, dxJoint
     // for all bodies, compute the inertia tensor and its inverse in the global
     // frame, and compute the rotational force and add it to the torque
     // accumulator. I and invI are a vertical stack of 3x4 matrices, one per body.
+    dRealAllocaArray(I, 3 * 4 * nb);  // need to remember all I's for feedback purposes only
     dRealAllocaArray(invI, 3 * 4 * nb);
-    dRealAllocaArray(I, 3 * 4 * nb);
     for (i = 0; i < nb; i++) {
         dMatrix3 tmp;
         // compute inertia tensor in global frame
